@@ -28,3 +28,4 @@ export { Accordion, AccordionItem, type AccordionItemProps } from "./components/
 export { Kbd } from "./components/Kbd.js";
 export { PropertySection, PropertyRow } from "./components/PropertyPanel.js";
 export { ChatThread, ChatMessage, Suggestion, ChatComposer, type ChatMessageProps, type ChatComposerProps } from "./components/Chat.js";
+export { NavRail, NavRailItem, type NavRailItemProps } from "./components/NavRail.js";

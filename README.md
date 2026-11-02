@@ -47,7 +47,7 @@ Everything is a `--ad-*` variable. Dark mode: set `data-theme="dark"` on `<html>
 - States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`), invalid (fields).
 
 ## Examples
-`examples/` has two working mock screens (Home and Slide editor with inspector, AI agent chat and Share dialog) built only from this package. See `examples/README.md`.
+`examples/` rebuilds the 11 AirDesign screens (Home, Getting started, slide editor, overview, Agents, Inserts, Media, Shapes, Share) from this package. See `examples/README.md`.
 
 ## Layout
 ```

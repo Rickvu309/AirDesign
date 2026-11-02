@@ -9,11 +9,13 @@ export type IconButtonProps = Omit<ComponentProps<"button">, "children" | "aria-
   label: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md";
+  /** Icon pixel size. Default 16 (14 for sm). */
+  iconSize?: number;
   /** Toggle state (sets aria-pressed). Leave undefined for a plain button. */
   pressed?: boolean;
 };
 
-export function IconButton({ icon, label, variant = "ghost", size = "md", pressed, className, type = "button", ...rest }: IconButtonProps) {
+export function IconButton({ icon, label, variant = "ghost", size = "md", iconSize, pressed, className, type = "button", ...rest }: IconButtonProps) {
   return (
     <button
       type={type}
@@ -23,7 +25,7 @@ export function IconButton({ icon, label, variant = "ghost", size = "md", presse
       className={cx("ad ad-btn ad-btn--icon", `ad-btn--${variant}`, size === "sm" && "ad-btn--sm", className)}
       {...rest}
     >
-      <Icon name={icon} size={size === "sm" ? 14 : 16} />
+      <Icon name={icon} size={iconSize ?? (size === "sm" ? 14 : 16)} />
     </button>
   );
 }

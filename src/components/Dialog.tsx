@@ -8,22 +8,25 @@ export type DialogProps = Omit<ComponentProps<"dialog">, "title" | "open" | "onC
   title: ReactNode;
   /** Buttons for the footer, usually a primary and a secondary Button. */
   actions?: ReactNode;
+  /** Where focus lands on open: the first control (default) or the dialog itself, which avoids a focus ring on an arbitrary button. */
+  initialFocus?: "first" | "dialog";
 };
 
 /** Modal built on the native dialog element: focus trap, Escape and backdrop are handled by the browser. */
-export function Dialog({ open, onClose, title, actions, className, children, ...rest }: DialogProps) {
+export function Dialog({ open, onClose, title, actions, initialFocus = "first", className, children, ...rest }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (open && !el.open) el.showModal();
+    if (open && !el.open) { el.showModal(); if (initialFocus === "dialog") el.focus(); }
     if (!open && el.open) el.close();
-  }, [open]);
+  }, [open, initialFocus]);
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
+      tabIndex={initialFocus === "dialog" ? -1 : undefined}
       className={cx("ad ad-dialog", className)}
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}

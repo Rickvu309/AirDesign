@@ -2,7 +2,22 @@
   "name": "airdesign-ui-examples",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc --noEmit && vite build", "preview": "vite preview" },
-  "dependencies": { "@airdesign/ui": "file:..", "react": "^19", "react-dom": "^19" },
-  "devDependencies": { "@types/react": "^19", "@types/react-dom": "^19", "@vitejs/plugin-react": "^5", "typescript": "^5", "vite": "^7" }
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@airdesign/ui": "file:..",
+    "@fontsource-variable/inter": "^5.3.0",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5",
+    "typescript": "^5",
+    "vite": "^7"
+  }
 }

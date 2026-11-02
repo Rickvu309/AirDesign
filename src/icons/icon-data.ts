@@ -348,6 +348,9 @@ const traced = {
 } as const satisfies Record<string, IconShape>;
 
 const stroked = {
+  "folder": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z" }] },
+  "mic": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z" }, { d: "M6.5 11.5a5.5 5.5 0 0 0 11 0" }, { d: "M12 17v3" }] },
+  "chevron-down-small": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M9 10.5l3 3 3-3" }] },
   "check": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M5 12.5l4.5 4.5L19 7.5" }] },
   "minus": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M6 12h12" }] },
   "chevron-up": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M7 14.5l5-5 5 5" }] },

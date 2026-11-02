@@ -132,3 +132,8 @@ test("Input labels are wired and ids are unique", () => {
   assert.equal(new Set(ids).size, 3);
 });
 console.error = origErr;
+
+test("Dialog initialFocus=dialog focuses the dialog, not a button", async () => {
+  render(h(k.Dialog, { open: true, onClose() {}, title: "Share", initialFocus: "dialog" }, "Body"));
+  assert.equal(document.activeElement, document.querySelector("dialog"));
+});

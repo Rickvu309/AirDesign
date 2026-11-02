@@ -1,18 +1,34 @@
 # Examples
 
-Two mock screens built only from `@airdesign/ui`, in a small Vite app. They exercise the kit the way the real app would.
+The 11 AirDesign screens, rebuilt from `@airdesign/ui` in a small Vite app. Use the dropdown at the top to switch screens (or open `#home`, `#start`, `#slide`, `#overview`, `#agents`, `#inserts`, `#inserts-overview`, `#media-overview`, `#media`, `#shapes`, `#share`).
 
 ```sh
 npm run build          # in the repo root, once (the app links the package from ../)
 cd examples && npm install && npm run dev
 ```
 
-- **Home** (`src/Home.tsx`): sidebar navigation, search, tabs, file cards with a Popover menu, loading Skeletons, an EmptyState when search finds nothing.
-- **Slide editor** (`src/Editor.tsx`): top bar with breadcrumbs, mode tabs and Share; slide list; canvas with a floating Toolbar; inspector with PropertySection, NumberField, ColorSwatch (changes the shape live), Slider, Select and Accordion; an AI Agent tab with ChatThread and ChatComposer; a Share Dialog with Input, Select, Switch and an Alert.
-- Toggle dark mode with the moon button, or open the app with `?dark`.
+| Screen | Built with |
+|---|---|
+| Home, Drafts (`HomeDrafts.tsx`) | `Sidebar`, `SearchField`, `Card`, `Badge`, `Avatar`, `Button` |
+| Getting started dialog | `Dialog`, `ChatComposer`, `Button` |
+| Slide editor | `NavRail`, `Toolbar`, `Tabs`, `IconButton`, `Select`-style controls |
+| Slides overview, Inserts + overview, Shapes tray | the same editor shell with `canvas: "overview"`, a floating inspector and a shapes tray |
+| Agents panel | `ChatComposer`, `Button` rows |
+| Inserts panel, Media panel (+ slide view) | list rows, colour tiles, `SearchField`, a masonry grid |
+| Share | `Dialog` with `Input`, `Button`, rows and a call-to-action row |
 
-![Home](screenshots/home.png)
-![Share dialog](screenshots/editor-share.png)
-![Agent panel](screenshots/editor-agent.png)
+`src/EditorApp.tsx` is one editor with a small state object (`panel`, `canvas`, `inspector`, `overlay`, `shapes`), so every editor screen is a preset of the same component. Interactive bits work: the rail switches panels, Inserts → Media opens the media panel, the shapes tool opens the tray, Share opens the dialog.
+
+Content is generic (the account is "Ada Lovelace", the photos are tonal placeholders). Dark mode toggles from the switcher bar.
 
 Linking note: when an app links the kit from a folder that has its own `react`, set `resolve.dedupe: ["react", "react-dom"]` (see `vite.config.ts`) or you get "Cannot read properties of null (reading 'useState')". A normal install from npm does not need this.
+
+![Home](screenshots/home.png)
+![Getting started](screenshots/start.png)
+![Slide editor](screenshots/slide.png)
+![Overview](screenshots/overview.png)
+![Agents](screenshots/agents.png)
+![Inserts](screenshots/inserts.png)
+![Media](screenshots/media.png)
+![Shapes](screenshots/shapes.png)
+![Share](screenshots/share.png)

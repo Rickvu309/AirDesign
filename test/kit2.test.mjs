@@ -80,3 +80,9 @@ test("Card accepts rich content as title", () => {
   const out = r(h(k.Card, { title: h("b", null, "Brand deck"), meta: "Edited today" }));
   assert.match(out, /<b>Brand deck<\/b>/);
 });
+
+test("NavRail marks the active destination", () => {
+  const out = r(h(k.NavRail, { label: "Editor" }, h(k.NavRailItem, { icon: "file", active: true }, "File"), h(k.NavRailItem, { icon: "sparkle", active: false }, "Agents")));
+  assert.match(out, /<nav[^>]*aria-label="Editor"/);
+  assert.equal((out.match(/aria-pressed="true"/g) ?? []).length, 1);
+});

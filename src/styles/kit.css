@@ -266,3 +266,13 @@
 @media (prefers-reduced-motion: reduce) {
   .ad-progress__bar, .ad-progress--indeterminate .ad-progress__bar, .ad-skeleton, .ad-msg__caret, .ad-accordion__chevron, .ad-swatch, .ad-suggestion, .ad-popover:popover-open { animation: none !important; transition: none !important; }
 }
+
+/* ---------- NavRail ---------- */
+.ad-rail { display: flex; flex-direction: column; align-items: center; gap: var(--ad-space-2); width: 56px; padding: var(--ad-space-3) 0; background: var(--ad-surface); border-inline-end: 1px solid var(--ad-border); }
+.ad-rail__item { display: grid; justify-items: center; gap: 2px; width: 48px; padding: 0; border: 0; background: transparent; font: inherit; color: var(--ad-ink-muted); cursor: pointer; }
+.ad-rail__icon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--ad-radius-md); transition: background-color var(--ad-duration-micro) var(--ad-ease-micro), color var(--ad-duration-micro) var(--ad-ease-micro); }
+.ad-rail__item:hover .ad-rail__icon { background: var(--ad-surface-subtle); }
+.ad-rail__item[aria-pressed="true"] { color: var(--ad-ink); }
+.ad-rail__item[aria-pressed="true"] .ad-rail__icon { background: var(--ad-brand-subtle); color: var(--ad-brand-strong); }
+.ad-rail__label { font-size: var(--ad-text-xs); }
+.ad-dialog:focus, .ad-dialog:focus-visible { outline: none; box-shadow: var(--ad-shadow-float); }
