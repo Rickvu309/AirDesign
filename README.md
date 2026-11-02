@@ -1,3 +1,5 @@
 # AirDesign
 
-Lunagraph export: `lunagraph/components/airdesign` (components, compositions, manifest) and `lunagraph/canvas/page-1-screens.json` (Page 1 screens).
+- `lunagraph/`: Lunagraph export (source of truth).
+- `ui-pack/`: `@airdesign/ui`, React components built from it. See `ui-pack/README.md`.
+- `scripts/build-ui-pack.mjs`: regenerates `ui-pack/src` from `lunagraph/components/airdesign`.
