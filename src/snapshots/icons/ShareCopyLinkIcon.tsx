@@ -1,0 +1,25 @@
+import type { AirDesignProps } from "../types.js";
+
+export function ShareCopyLinkIcon({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"svg">) {
+  return <svg style={{
+    "display": "block",
+    "height": "24px",
+    "overflowX": "hidden",
+    "overflowY": "hidden",
+    "fill": "var(--ad-brand-strong, rgb(226, 76, 12))",
+    position: "relative",
+    fontFamily: "Inter, sans-serif",
+    fontSize: 11,
+    lineHeight: "16px",
+    boxSizing: "border-box",
+    flexShrink: 0,
+    width: 24,
+    ...style
+  }} width="24" height="24" fill="none" viewBox="0 0 24 24" className={className} {...rest}>
+                      <path d="M12.444 10.37a2.998 2.998 0 0 1 .677 4.75l-2 2a3 3 0 1 1-4.243-4.242l1.27-1.27c.262-.263.746-.069.826.293a.44.44 0 0 1-.111.405l-1.278 1.279a2 2 0 1 0 2.829 2.828l2-2a2 2 0 0 0 0-2.828l-.029-.028c-.093-.089-.187-.184-.224-.307a.88.88 0 0 1 .22-.87.05.05 0 0 1 .063-.01m.434-3.492a3 3 0 1 1 4.243 4.242l-1.27 1.27c-.262.262-.745.068-.826-.294a.44.44 0 0 1 .111-.405l1.278-1.278a2 2 0 1 0-2.829-2.828l-2 2a2 2 0 0 0 0 2.828l.029.026c.093.089.186.183.223.306a.88.88 0 0 1-.218.874.05.05 0 0 1-.062.009 3 3 0 0 1-.679-4.75z"></path>
+                    </svg>;
+}

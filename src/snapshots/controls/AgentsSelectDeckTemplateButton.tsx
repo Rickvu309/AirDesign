@@ -1,0 +1,58 @@
+import type { AirDesignProps } from "../types.js";
+
+export function AgentsSelectDeckTemplateButton({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
+  return <button style={{
+    "alignItems": "center",
+    "appearance": "auto",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
+    "display": "grid",
+    "fontFamily": "Inter, sans-serif",
+    "fontSize": "11px",
+    "fontWeight": "400",
+    "gridTemplateColumns": "24px",
+    "gridTemplateRows": "24px",
+    "height": "24px",
+    "justifyItems": "center",
+    "lineHeight": "16px",
+    "minWidth": "24px",
+    "outlineColor": "rgba(0, 0, 0, 0)",
+    "outlineOffset": "-1px",
+    "outlineStyle": "solid",
+    "outlineWidth": "1px",
+    "textAlign": "start",
+    "width": "24px",
+    "borderRadius": "5px",
+    "padding": "0px",
+    position: "relative",
+    boxSizing: "border-box",
+    flexShrink: 0,
+    ...style
+  }} aria-haspopup="dialog" aria-label="Select deck template" aria-expanded="false" type="button" className={className} {...rest}>
+                            <span style={{
+      "alignItems": "center",
+      "display": "flex",
+      "height": "24px",
+      "justifyContent": "center",
+      "minWidth": "24px",
+      "width": "24px",
+      "borderRadius": "5px"
+    }} aria-hidden="true">
+  <svg style={{
+        "display": "block",
+        "height": "24px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "24px"
+      }} width="24" height="24" fill="none" viewBox="0 0 24 24">
+    <path style={{
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} d="M7.312 6.803a7 7 0 0 1 9.639.248l.28.298a7 7 0 0 1 1.76 4.998l-.029.38C18.807 14.222 17.446 15 16.242 15H13.5l-.101.01a.5.5 0 0 0-.4.49v.5c0 .82-.338 1.603-.92 2.127-.6.542-1.468.8-2.37.488a7 7 0 0 1-2.362-1.385l-.297-.28a7 7 0 0 1 0-9.9zm8.93.955a6 6 0 0 0-8.485 0l-.212.225a6 6 0 0 0 2.492 9.689c.978.337 1.848-.457 1.953-1.467L12 16v-.499a1.5 1.5 0 0 1 1.5-1.5h2.743l.158-.006c.733-.057 1.391-.513 1.543-1.216l.024-.155a6 6 0 0 0-1.484-4.611zM8.5 12.001a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7-2a1 1 0 1 1-.001 2 1 1 0 0 1 0-2m-6-1.5a1 1 0 1 1 0 2.001 1 1 0 0 1 0-2m3.5-1a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
+  </svg>
+</span>
+                          </button>;
+}

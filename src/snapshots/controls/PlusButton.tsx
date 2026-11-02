@@ -1,0 +1,57 @@
+import type { AirDesignProps } from "../types.js";
+
+export function PlusButton({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
+  return <button style={{
+    "alignItems": "center",
+    "appearance": "auto",
+    "backgroundColor": "rgba(0, 0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
+    "display": "flex",
+    "fontFamily": "Inter, sans-serif",
+    "fontSize": "11px",
+    "fontWeight": "400",
+    "height": "24px",
+    "justifyContent": "center",
+    "justifyItems": "center",
+    "lineHeight": "16px",
+    "textAlign": "start",
+    "width": "24px",
+    "borderRadius": "3px",
+    "padding": "0px",
+    position: "relative",
+    boxSizing: "border-box",
+    flexShrink: 0,
+    ...style
+  }} aria-current="false" aria-label="Plus" type="button" className={className} {...rest}>
+  <span style={{
+      "alignItems": "center",
+      "display": "flex",
+      "filter": "drop-shadow(var(--ad-ink-subtle, rgba(0, 0, 0, 0.3)) 0px 0px 0.5px) drop-shadow(var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 1px 3px)",
+      "height": "24px",
+      "justifyContent": "center",
+      "scale": "1",
+      "transform": "matrix(0.75, 0, 0, 0.75, 0, 0)",
+      "transformOrigin": "12px 12px",
+      "width": "24px"
+    }}>
+    <svg style={{
+        "display": "block",
+        "height": "26px",
+        "overflowX": "hidden",
+        "overflowY": "hidden",
+        "width": "24px",
+        "fill": "var(--ad-accent, rgb(61, 56, 245))",
+        "stroke": "var(--ad-accent-strong, rgb(43, 39, 172))",
+        "strokeWidth": "2px"
+      }} width="27" height="26" viewBox="0 0 27 26">
+      <path style={{
+          "strokeOpacity": "0.9"
+        }} stroke="var(--ad-ink-strong, #000)" strokeOpacity=".9" d="M7.972 8.083h.5V1.477c0-.54.438-.977.978-.977h7.878c.54 0 .978.438.978.977v6.606h6.606c.54 0 .977.438.977.978v7.878c0 .54-.437.978-.977.978h-6.606v6.606c0 .54-.438.977-.978.977H9.45c-.54 0-.978-.437-.978-.977v-6.606H1.866c-.54 0-.977-.438-.977-.978V9.061c0-.54.438-.978.977-.978z"></path>
+    </svg>
+  </span>
+</button>;
+}

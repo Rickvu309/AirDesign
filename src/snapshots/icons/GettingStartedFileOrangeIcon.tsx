@@ -1,0 +1,26 @@
+import type { AirDesignProps } from "../types.js";
+
+export function GettingStartedFileOrangeIcon({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"svg">) {
+  return <svg style={{
+    "display": "block",
+    "height": "24px",
+    "overflowX": "hidden",
+    "overflowY": "hidden",
+    position: "relative",
+    fontFamily: "Inter, sans-serif",
+    fontSize: 11,
+    lineHeight: "16px",
+    boxSizing: "border-box",
+    flexShrink: 0,
+    width: 24,
+    ...style
+  }} width="24" height="24" fill="none" viewBox="0 0 24 24" className={className} {...rest}>
+        <path style={{
+      "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+    }} d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
+      </svg>;
+}
