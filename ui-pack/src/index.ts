@@ -409,3 +409,4 @@ export { MediaSidebar } from "./panels/MediaSidebar.tsx";
 export { PresenterNotes } from "./panels/PresenterNotes.tsx";
 export { SlidePropertiesPanel } from "./panels/SlidePropertiesPanel.tsx";
 export { TextPanel } from "./panels/TextPanel.tsx";
+export * from "./kit/index.ts";

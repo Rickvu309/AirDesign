@@ -1,5 +1,23 @@
 # @airdesign/ui
 
+Two layers in one package:
+
+1. **Kit** (hand-designed): `Button`, `IconButton`, `Input`, `SearchField`, `Avatar`, `Badge`, `Divider`, `Tabs`, `Menu`/`MenuItem`, `Card`, `Switch`, `Dialog`, `Tooltip` and an `Icon` set of 42 single-colour icons. Props-driven, accessible, themed through tokens, with hover, focus, disabled and loading states and reduced-motion support. Source: `src/kit/`.
+2. **Snapshots** (generated): 409 pixel-faithful components exported from Lunagraph. Use them as design reference or for whole-screen composites until the kit covers the same ground.
+
+```tsx
+import "@airdesign/ui/tokens.css";
+import "@airdesign/ui/base.css";
+import "@airdesign/ui/kit.css";
+import { Button, IconButton, Input, Tabs, Dialog } from "@airdesign/ui";
+
+<Button variant="primary" iconStart="plus">New file</Button>
+<IconButton icon="trash" label="Delete" variant="danger" />
+<Input label="Name" labelHidden={false} hint="Shown in the file list" />
+```
+
+Kit rules: icon-only controls require a `label`; every field requires a `label`; colours, radii, spacing, shadow and motion come from `--ad-*` variables (motion: 150ms micro, 280ms panel); one icon per concept, drawn from the Lunagraph icons by `scripts/build-ui-kit-icons.mjs`.
+
 React components generated from the Lunagraph export in `lunagraph/components/airdesign`.
 409 components in 7 groups: brand, cards, controls, dialogs, icons, navigation, panels. Full list: [COMPONENTS.md](COMPONENTS.md).
 

@@ -8,8 +8,9 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const from = join(root, "lunagraph/components/airdesign");
 const to = join(root, "ui-pack/src");
-rmSync(to, { recursive: true, force: true });
 mkdirSync(to, { recursive: true });
+// src/kit is hand-written; everything else in src is generated.
+for (const f of readdirSync(to)) if (f !== "kit") rmSync(join(to, f), { recursive: true, force: true });
 
 writeFileSync(join(to, "types.ts"), `import type React from "react";
 import type { CSSProperties } from "react";
@@ -59,5 +60,6 @@ for (const g of groups) {
     lines.push(`export { ${name} } from "./${g}/${name}.tsx";`);
   }
 }
+lines.push('export * from "./kit/index.ts";');
 writeFileSync(join(to, "index.ts"), lines.join("\n") + "\n");
 console.log(`ui-pack: ${groups.length} groups, ${seen.size} components`);

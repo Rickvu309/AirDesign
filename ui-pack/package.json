@@ -16,7 +16,8 @@
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
     },
-    "./base.css": "./src/base.css"
+    "./base.css": "./src/base.css",
+    "./kit.css": "./src/kit/kit.css"
   },
   "files": [
     "dist",
@@ -24,11 +25,11 @@
     "COMPONENTS.md"
   ],
   "scripts": {
-    "generate": "node ../scripts/build-ui-pack.mjs",
+    "generate": "node ../scripts/build-ui-pack.mjs && node ../scripts/build-ui-kit-icons.mjs",
     "build": "npm run generate && tsc -p tsconfig.json",
     "docs": "npm run build && node ../scripts/build-ui-pack-docs.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test test/pack.test.mjs"
+    "test": "npm run build && node --test \"test/*.test.mjs\""
   },
   "peerDependencies": {
     "react": ">=19"

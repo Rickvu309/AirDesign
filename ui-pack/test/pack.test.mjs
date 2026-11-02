@@ -6,7 +6,8 @@ import * as pack from "../dist/index.js";
 
 const origError = console.error;
 console.error = () => {}; // controlled-input warnings from static snapshots
-const entries = Object.entries(pack);
+const kit = new Set(["Icon", "iconData", "Button", "IconButton", "Input", "SearchField", "Avatar", "Badge", "Divider", "Tabs", "Menu", "MenuItem", "Card", "Switch", "Dialog", "Tooltip"]);
+const entries = Object.entries(pack).filter(([k]) => !kit.has(k)); // snapshot components only
 const html = Object.fromEntries(entries.map(([k, C]) => [k, renderToStaticMarkup(h(C))]));
 
 test("every component renders", () => assert.equal(entries.length, 409));
