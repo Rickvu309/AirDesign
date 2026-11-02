@@ -8,14 +8,14 @@ import { IconButton, Select } from "@airdesign/ui";
 import { Editor, type EditorState } from "./EditorApp";
 import { HomeDrafts } from "./HomeDrafts";
 
-const base: EditorState = { panel: "file", canvas: "slide", zoom: "38%", inspector: "docked", header: "docked", slides: 1 };
+const base: EditorState = { panel: "file", canvas: "slide", zoom: "45%", inspector: "docked", header: "docked", slides: 1 };
 const screens: { id: string; label: string; render: () => React.ReactNode }[] = [
   { id: "home", label: "1. Home, Drafts", render: () => <HomeDrafts /> },
   { id: "start", label: "2. Getting started", render: () => <Editor initial={{ ...base, zoom: "100%", empty: true, overlay: "start" }} /> },
   { id: "slide", label: "3. Slide editor", render: () => <Editor initial={base} /> },
   { id: "overview", label: "4. Slides overview", render: () => <Editor initial={{ ...base, canvas: "overview", header: "floating", inspector: "floating", zoom: "12%", slides: 3, selected: [3] }} /> },
   { id: "agents", label: "5. Agents panel", render: () => <Editor initial={{ ...base, panel: "agents", zoom: "38%" }} /> },
-  { id: "inserts", label: "6. Inserts panel", render: () => <Editor initial={{ ...base, panel: "inserts", zoom: "45%" }} /> },
+  { id: "inserts", label: "6. Inserts panel", render: () => <Editor initial={{ ...base, panel: "inserts", zoom: "38%" }} /> },
   { id: "inserts-overview", label: "7. Inserts and overview", render: () => <Editor initial={{ ...base, panel: "inserts", canvas: "overview", inspector: "floating", zoom: "12%", slides: 3, selected: [3] }} /> },
   { id: "media-overview", label: "8. Media and overview", render: () => <Editor initial={{ ...base, panel: "media", canvas: "overview", inspector: "floating", zoom: "12%", slides: 3, selected: [2, 3] }} /> },
   { id: "media", label: "9. Media, slide view", render: () => <Editor initial={{ ...base, panel: "media", inspector: "none", zoom: "48%" }} /> },

@@ -80,7 +80,7 @@ export function Editor({ initial }: { initial: EditorState }) {
         </aside>
       )}
 
-      <Dialog open={startOpen} onClose={() => setStartOpen(false)} title={<span className="start__title"><AppMark />Getting started</span>} className="start" initialFocus="dialog">
+      <Dialog open={startOpen} onClose={() => setStartOpen(false)} title={<span className="start__title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path fill="#ff5c16" d="M0 5a5 5 0 0 1 5-5h14a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5z" /><path fill="#fff" d="M17 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1.68l.661 2.365a.5.5 0 1 1-.962.27L14.28 16H9.72l-.738 2.635a.5.5 0 0 1-.962-.27L8.68 16H7l-.204-.01A2 2 0 0 1 5 14V8a2 2 0 0 1 2-2zM7 7a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm1.5 4.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2m0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2" /></svg>Getting started</span>} className="start" initialFocus="dialog">
         <div className="start__body">
           <h2>What would you like to present?</h2>
           <ChatComposer value="" onValueChange={() => {}} onSend={() => {}} placeholder="Add your thoughts, notes, or outline to start building your first draft" label="Describe your deck" tools={<><IconButton icon="plus" label="Add context" size="sm" /><Button size="sm" variant="secondary" iconStart="palette">Select deck template</Button></>} />

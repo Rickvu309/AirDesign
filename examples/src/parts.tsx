@@ -72,8 +72,8 @@ export function AgentsPanel() {
 }
 
 const tiles: { label: string; icon: IconName; bg: string; fg: string }[] = [
-  { label: "Text", icon: "text", bg: "#b9e0ff", fg: "#0d99ff" }, { label: "Media", icon: "image", bg: "#ffbdf2", fg: "#ff58ae" }, { label: "Shapes", icon: "shapes", bg: "#b6ecf7", fg: "#0a8aa6" },
-  { label: "Prototypes", icon: "layout", bg: "#b4b2ff", fg: "#3d38f5" }, { label: "Interactive", icon: "hand", bg: "#ffd966", fg: "#d98a00" }, { label: "Libraries", icon: "resources", bg: "#b9ebc6", fg: "#1a9d45" },
+  { label: "Text", icon: "text", bg: "#b8e0ff", fg: "#1e90ff" }, { label: "Media", icon: "image", bg: "#ffc0ee", fg: "#ff4fa0" }, { label: "Shapes", icon: "shapes", bg: "#b5eaf2", fg: "#0e9ab5" },
+  { label: "Prototypes", icon: "layout", bg: "#b4b0f8", fg: "#4b4bf0" }, { label: "Interactive", icon: "hand", bg: "#ffd966", fg: "#d98a00" }, { label: "Libraries", icon: "resources", bg: "#b9ebc6", fg: "#1a9d45" },
 ];
 
 export function InsertsPanel({ onOpen }: { onOpen?: (id: string) => void }) {
@@ -84,12 +84,14 @@ export function InsertsPanel({ onOpen }: { onOpen?: (id: string) => void }) {
       <div className="lp__title2">Inserts</div>
       <Divider />
       <div className="inserts">
-        <div className="inserts__rows">{(["table", "code", "slide-number"] as const).map((n) => <button key={n} className="inserts__row"><Icon name={n} size={18} />{{ table: "Table", code: "Code block", "slide-number": "Slide number" }[n]}</button>)}</div>
-        {tiles.map((t) => (
-          <button key={t.label} className="inserts__tile" onClick={() => onOpen?.(t.label.toLowerCase())}>
-            <span className="tile" style={{ background: t.bg }}><span style={{ color: t.fg }}><Icon name={t.icon} size={18} /></span></span>{t.label}
-          </button>
-        ))}
+        <div className="inserts__rows">{([ "table", "code", "slide-number"] as const).map((n) => <button key={n} className="inserts__row"><Icon name={n} size={18} />{{ table: "Table", code: "Code block", "slide-number": "Slide number" }[n]}</button>)}</div>
+        <div className="inserts__tiles">
+          {tiles.map((t) => (
+            <button key={t.label} className="inserts__tile" onClick={() => onOpen?.(t.label.toLowerCase())}>
+              <span className="tile" style={{ background: t.bg }}><span style={{ color: t.fg }}><Icon name={t.icon} size={22} /></span></span>{t.label}
+            </button>
+          ))}
+        </div>
       </div>
     </>
   );
@@ -149,14 +151,14 @@ export function SlideInspector({ n, withColors, ai }: { n: number; withColors?: 
       </div>
       <div className="insp__sec insp__sec--template">
         <div className="insp__sec--row">
-          <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Template style</span></span>
+          <span className="insp__sec-title">Template style</span>
           {ai && <IconButton icon="adjust" label="Template options" size="sm" />}
         </div>
-        <button className="style"><span className="style__sw"><i style={{ background: "#b5b5b5" }} /><i style={{ background: "#4f8a99" }} /><i style={{ background: "#3d38f5" }} /></span><span><b>Light slides</b><small>Inter</small></span></button>
+        <button className="style"><span className="style__sw"><i style={{ background: "#d0d0d0" }} /><i style={{ background: "#4f8a99" }} /><i style={{ background: "#3d38f5" }} /></span><span><b>Light slides</b><small>Inter</small></span></button>
       </div>
       <div className="insp__sec insp__sec--bg">
         <div className="insp__sec--row">
-          <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Background</span></span>
+          <span className="insp__sec-title">Background</span>
         </div>
         <div className="seg" role="group" aria-label="Background type">
           {([["solid", "frame"], ["texture", "palette"], ["image", "image"]] as const).map(([id, icon]) => <IconButton key={id} icon={icon} label={id} size="sm" variant="ghost" pressed={mode === id} onClick={() => setMode(id)} />)}
@@ -166,7 +168,7 @@ export function SlideInspector({ n, withColors, ai }: { n: number; withColors?: 
       {withColors && (
         <div className="insp__sec insp__sec--colors">
           <div className="insp__sec--row">
-            <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Selection colors</span></span>
+            <span className="insp__sec-title">Selection colors</span>
           </div>
           <div className="colors"><span><i className="chip" style={{ background: "#000" }} />Black</span><span><i className="chip" />White</span></div>
         </div>
