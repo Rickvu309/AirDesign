@@ -23,6 +23,26 @@ Content is generic (the account is "Ada Lovelace", the photos are tonal placehol
 
 Linking note: when an app links the kit from a folder that has its own `react`, set `resolve.dedupe: ["react", "react-dom"]` (see `vite.config.ts`) or you get "Cannot read properties of null (reading 'useState')". A normal install from npm does not need this.
 
+## Fidelity to the originals
+
+Measured against the 11 original screenshots (1470x923, photo areas and the account name masked) after 5 rounds of compare-and-fix:
+
+| Screen | ssim | ink-F1 |
+|---|---|---|
+| home | 96.9 | 84.4 |
+| start | 97.6 | 87.3 |
+| slide | 96.2 | 86.3 |
+| overview | 98.4 | 82.0 |
+| agents | 95.6 | 88.0 |
+| inserts | 96.0 | 88.9 |
+| inserts-overview | 98.1 | 86.6 |
+| media-overview | 97.7 | 93.8 |
+| media | 97.2 | 87.8 |
+| shapes | 97.8 | 87.7 |
+| share | 97.2 | 80.8 |
+
+ssim is structural similarity (mean 97.1). ink-F1 is stricter: text, icons and edges must land within 2px of the original (mean 87). Open the app with `?bare` to get a 1470x923 view without the switcher bar. The remaining gap is mostly icon drawings that differ from the originals and font rasterisation.
+
 ![Home](screenshots/home.png)
 ![Getting started](screenshots/start.png)
 ![Slide editor](screenshots/slide.png)
