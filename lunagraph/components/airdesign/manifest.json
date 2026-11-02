@@ -1,0 +1,2456 @@
+[
+  {
+    "name": "HomeSidebar",
+    "group": "navigation",
+    "sourceElementId": "html-_CFLwvoIIdxOgklhNE5QE",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "AccountDropdownForQuanVuRichardButton",
+    "group": "controls",
+    "sourceElementId": "html-4MpjZUR9zOM4xQ0UO89Ph",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ProfileAvatar",
+    "group": "controls",
+    "sourceElementId": "html-CB-tAhLLUnc--Fn8vSkE4",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "AccountDropdownForQuanVuRichardIcon",
+    "group": "icons",
+    "sourceElementId": "html-uooakzjEeniIvqdztpu_P",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "NotificationsNewNotificationReceivedButton",
+    "group": "controls",
+    "sourceElementId": "html-_QAL0fono_PzCzTs6WheF",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon",
+    "group": "icons",
+    "sourceElementId": "html-X6cstehool7oX1e8peuqV",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon2",
+    "group": "icons",
+    "sourceElementId": "html-Bl7CAGviSdDc7WtscAG7Q",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "SearchInput",
+    "group": "controls",
+    "sourceElementId": "html-oZGTAv6HGmC5zYnQjWTWv",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "RecentsButton",
+    "group": "controls",
+    "sourceElementId": "html-40usFLRxw2iA404AfXV1-",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon3",
+    "group": "icons",
+    "sourceElementId": "html-jvzUtSg0EDApRgi9qoIRJ",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon4",
+    "group": "icons",
+    "sourceElementId": "html-vBf7XzibW4r0UVrMgQ_qG",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "PlanQuanVuButton",
+    "group": "controls",
+    "sourceElementId": "html-5uH5x7Lqxu5uyfFfT8JHS",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ProfileAvatar2",
+    "group": "controls",
+    "sourceElementId": "html-aP0gj5O8Wo6P2-xXsawRr",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "PlanQuanVuIcon",
+    "group": "icons",
+    "sourceElementId": "html-wUEAVbboZ3dQYJ7WxNBiv",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ChangePlanQuanVuIsCurrentlyOnTheProfessionalPlanButton",
+    "group": "controls",
+    "sourceElementId": "html-M_1SEcomGCMMYHiGY6Un0",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon5",
+    "group": "icons",
+    "sourceElementId": "html-WSDKYYrNEEZtzYWqg_Rw_",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "AllFoldersButton",
+    "group": "controls",
+    "sourceElementId": "html-CtT6cRhna-P9WFgnGLGnr",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon6",
+    "group": "icons",
+    "sourceElementId": "html-odKdB0lUH0zURpf-T37C6",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ResourcesButton",
+    "group": "controls",
+    "sourceElementId": "html-nOV-LHLGVRleQzCPegRnw",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon7",
+    "group": "icons",
+    "sourceElementId": "html-iPjrbXDKNdOcmTbtq0xai",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "TrashButton",
+    "group": "controls",
+    "sourceElementId": "html-gO05wWWyeNCtlrbTrY6lN",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon8",
+    "group": "icons",
+    "sourceElementId": "html-oG3Mu24g8ccybTJXMhuwe",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Admin2Button",
+    "group": "controls",
+    "sourceElementId": "html-KNN03803bTHMdGhM7pqQm",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon9",
+    "group": "icons",
+    "sourceElementId": "html-MMavkY3Qp1DwIFJQ_s96j",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Value2AdminNotificationsBadge",
+    "group": "controls",
+    "sourceElementId": "html-yKcpWtC0W7cfMN1W4ZjY7",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "StarredButton",
+    "group": "controls",
+    "sourceElementId": "html-XnV3KgOgnTHt4JG7Pw3A4",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon10",
+    "group": "icons",
+    "sourceElementId": "html-shNdmbhaBVaCEGhQyJdvC",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Quan01PersonalProjectButton",
+    "group": "controls",
+    "sourceElementId": "html-ZpEPIqrd1JO2zgpPy8NuA",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon11",
+    "group": "icons",
+    "sourceElementId": "html-GVG2PPDK1bpx3GuAiXSZm",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Quan02WorkProjectButton",
+    "group": "controls",
+    "sourceElementId": "html-PbxqITHnenQFIvdxz7r3O",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Quan03CollabButton",
+    "group": "controls",
+    "sourceElementId": "html-F4RRIkKuTKcya55JgxMnT",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "Quan99ArchiveButton",
+    "group": "controls",
+    "sourceElementId": "html-qP-Yk9RJsLxkRXKay9Shg",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "NovaMembershipButton",
+    "group": "controls",
+    "sourceElementId": "html-ygt7lsw53B8qiSvWj2fVb",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon12",
+    "group": "icons",
+    "sourceElementId": "html-9Ys5FsA8r9MdUZASSb7to",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ProjectConsultingButton",
+    "group": "controls",
+    "sourceElementId": "html-7fraXJQGMRFOQp7tPc9Z2",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "ProfessionalTemplateButton",
+    "group": "controls",
+    "sourceElementId": "html-3X_fBSaY82CnmE3eGfB-9",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "VietjetProjectButton",
+    "group": "controls",
+    "sourceElementId": "html-IYjaWomehQl9ecFAv81Hz",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "GrokBotSlideButton",
+    "group": "controls",
+    "sourceElementId": "html-ljEC2GDAGFgzcrvBaOxay",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "HomeHeader",
+    "group": "navigation",
+    "sourceElementId": "html-hL-IVqAcVA8W9LBGWLux_",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "CreateFileButtons",
+    "group": "navigation",
+    "sourceElementId": "html-qs9r1kr-S3tJq0zYM1d6O",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "NewDesignFileButton",
+    "group": "controls",
+    "sourceElementId": "html-nDDyIMvY3apmkFdoVjTZB",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon13",
+    "group": "icons",
+    "sourceElementId": "html-kDLKJ6QgRyE5PQkeJuJwC",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon14",
+    "group": "icons",
+    "sourceElementId": "html-f-P-VIg1IFkJHCAhZdCtb",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "NewSlidesFileButton",
+    "group": "controls",
+    "sourceElementId": "html-5cAmk4qTvmIlQQ16bfFRb",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon15",
+    "group": "icons",
+    "sourceElementId": "html-O0PN8DUCdPetyAM_KfVce",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon16",
+    "group": "icons",
+    "sourceElementId": "html-uMEB7CJClCEkxqxoFZwNG",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "MoreButton",
+    "group": "controls",
+    "sourceElementId": "html-vRENJwr6ZgQFIK2Yi6Cao",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "MoreIcon",
+    "group": "icons",
+    "sourceElementId": "html-_nuqCOZabCB-DILzBIX_w",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "HomeFileToolbar",
+    "group": "navigation",
+    "sourceElementId": "html-s5iKjJIjMJIDa1Y47y1Lq",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon17",
+    "group": "icons",
+    "sourceElementId": "html-bvf0VtFvRJvbqERYmOCsF",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon18",
+    "group": "icons",
+    "sourceElementId": "html-u_tRztEDIP0Kdx4enzt2u",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon19",
+    "group": "icons",
+    "sourceElementId": "html-lsXJoHjVQ0c6kwlxd5Wsm",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon20",
+    "group": "icons",
+    "sourceElementId": "html-ag_Eq9TqjcgsUS-SKpWEo",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon21",
+    "group": "icons",
+    "sourceElementId": "html-oXScixDSzsmOFdhjF8TLp",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "PresentationFileCard",
+    "group": "cards",
+    "sourceElementId": "html-YPpEQGJ3VVToNHTfdHwnI",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "InterfaceIcon22",
+    "group": "icons",
+    "sourceElementId": "html-FdRs2N9VI6BFkFpTLV80z",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "QuanVuRichardButton",
+    "group": "controls",
+    "sourceElementId": "html-1NeXzzbKiZ7hXcpwwDsRX",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "EmptyPresentationFileCard",
+    "group": "cards",
+    "sourceElementId": "html-wLSGaPq9XbTUffI-0K83a",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "HelpButton",
+    "group": "controls",
+    "sourceElementId": "html-g0r8QzAurPeNe5pq41HxN",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "HelpIcon",
+    "group": "icons",
+    "sourceElementId": "html-aCSMcgMfqyccWJI3z2jws",
+    "source": "00-Home.jsx"
+  },
+  {
+    "name": "EditorToolbar",
+    "group": "navigation",
+    "sourceElementId": "html-aWrbr6un6qKBc0ry4JnPR",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveToolGroup",
+    "group": "navigation",
+    "sourceElementId": "html-VhTqmgq_RM06hWYPfGfKL",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveButton",
+    "group": "controls",
+    "sourceElementId": "html-pU5g5xD6k5fkLd0S958zn",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveIcon",
+    "group": "icons",
+    "sourceElementId": "html-bOe6rM4yvyiyXGVPjYwPg",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveToolsButton",
+    "group": "controls",
+    "sourceElementId": "html-Z9oYGjpp7hj0Rnio8gaTU",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon23",
+    "group": "icons",
+    "sourceElementId": "html-RijHuIgm4sWQNVzQSjYXs",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TextButton",
+    "group": "controls",
+    "sourceElementId": "html-yQ80LSrE7ngS-v-D4hWxH",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TextIcon",
+    "group": "icons",
+    "sourceElementId": "html-ttlWExbSV_E9g5pMFrRev",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ImageVideoButton",
+    "group": "controls",
+    "sourceElementId": "html-STgP3HR0DLIbL0POTiMiH",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ImageVideoIcon",
+    "group": "icons",
+    "sourceElementId": "html-dG3W2YadCEgcKaOSBbXXB",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ShapesButton",
+    "group": "controls",
+    "sourceElementId": "html-6v-UMCpIHm7Q0O51uKQ4D",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ShapesIcon",
+    "group": "icons",
+    "sourceElementId": "html-1OJP7dOufN5N6GVJpxBf5",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CommentButton",
+    "group": "controls",
+    "sourceElementId": "html-BO-mQtPhXe0JLyQ3JjMR7",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CommentIcon",
+    "group": "icons",
+    "sourceElementId": "html-xvHjnWLz7F1ZiseL3lyh4",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ActionsButton",
+    "group": "controls",
+    "sourceElementId": "html-hWteR4E8bBkK-LKWFURJR",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ActionsIcon",
+    "group": "icons",
+    "sourceElementId": "html-FfSvQvsBffpnuglLVxG0g",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveToolGroup2",
+    "group": "navigation",
+    "sourceElementId": "html-N9kxewGBh2UopIqO3ZnyN",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveButton2",
+    "group": "controls",
+    "sourceElementId": "html-P2sbmL9P911RwZthG2otd",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveIcon2",
+    "group": "icons",
+    "sourceElementId": "html-rhKcFOIU-OvBcLBeewNjx",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MoveToolsButton2",
+    "group": "controls",
+    "sourceElementId": "html-kVZIyydLYwaKlK2ksAyZQ",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon24",
+    "group": "icons",
+    "sourceElementId": "html-EH6YpibyBpPvSMXYL35oU",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "FrameButton",
+    "group": "controls",
+    "sourceElementId": "html-Hpk1SF1hUundhCIT_LDJO",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "FrameIcon",
+    "group": "icons",
+    "sourceElementId": "html-lKK3eSZbcUT_hEyOeqVVv",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "RectangleToolGroup",
+    "group": "navigation",
+    "sourceElementId": "html-SH0-NNVnpGR88NjsT7Psu",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "RectangleButton",
+    "group": "controls",
+    "sourceElementId": "html-XQA7D07Tykry7X8eLE7RI",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "RectangleIcon",
+    "group": "icons",
+    "sourceElementId": "html-kCJXzlrbOrzcjmAc352ei",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ShapeToolsButton",
+    "group": "controls",
+    "sourceElementId": "html-4FaJ8RcZ4Lx9673ytDyf-",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PenToolGroup",
+    "group": "navigation",
+    "sourceElementId": "html-KWZKlVbpaOhXCtyRTB5Fb",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PenButton",
+    "group": "controls",
+    "sourceElementId": "html-GWKTryrHfLIF-72SpK5O5",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PenIcon",
+    "group": "icons",
+    "sourceElementId": "html--McZ0qdKDWEEGXVrwhjbn",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CreationToolsButton",
+    "group": "controls",
+    "sourceElementId": "html-qcp52f-6ZBoM1DVsaHeTL",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TextToolGroup",
+    "group": "navigation",
+    "sourceElementId": "html-pFMSpWN8IJxO3mKuzstdG",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TextButton2",
+    "group": "controls",
+    "sourceElementId": "html-qbiCDFQJl6WnDevNqG1Is",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TextIcon2",
+    "group": "icons",
+    "sourceElementId": "html-H11F_q8heIcReUYVYpUnS",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "TypeToolsButton",
+    "group": "controls",
+    "sourceElementId": "html-DLF0b8czwzS3A4mt3VrXZ",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CommentButton2",
+    "group": "controls",
+    "sourceElementId": "html-7l8iy5Oi6yoepnE_1ODgR",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CommentIcon2",
+    "group": "icons",
+    "sourceElementId": "html-HhCNcw_XeQ610C_YBsfBt",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ActionsButton2",
+    "group": "controls",
+    "sourceElementId": "html-ZjekhXYfzhG0sMQ2Tx2md",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ActionsIcon2",
+    "group": "icons",
+    "sourceElementId": "html-lF6jMnb7i7r6ayHl0y6Yj",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AssetsButton",
+    "group": "controls",
+    "sourceElementId": "html-3Eu4_zaQ4weXxyjmV6r8W",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon25",
+    "group": "icons",
+    "sourceElementId": "html-0ouT8RFjDjlWQj6ABNCfm",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon26",
+    "group": "icons",
+    "sourceElementId": "html-pB-xpi6LIMF7DpvANe38H",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon27",
+    "group": "icons",
+    "sourceElementId": "html-rxKgkal9K7UqYK7DTcuwW",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "EditorNavigationRail",
+    "group": "navigation",
+    "sourceElementId": "html-GqecoP-fC2k-XR9dbpsbj",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MainMenuButton",
+    "group": "controls",
+    "sourceElementId": "html-3plIeyuyBwq1agEo7vK0I",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MainMenuIcon",
+    "group": "icons",
+    "sourceElementId": "html-Fy4TGNoboV6EP2fcxvJAL",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "FileButton",
+    "group": "controls",
+    "sourceElementId": "html-QoE1v5LlCIJdJ0QRa7a-n",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon28",
+    "group": "icons",
+    "sourceElementId": "html-UXuHKFoBfec1DBN1zTMWO",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AgentsButton",
+    "group": "controls",
+    "sourceElementId": "html-MAq1ZaDgOdIEFniKlpO11",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon29",
+    "group": "icons",
+    "sourceElementId": "html-kkT3NRfo2TjQ028awUpxo",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InsertsButton",
+    "group": "controls",
+    "sourceElementId": "html-klTIJPnPv9oYV7CL-avSG",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon30",
+    "group": "icons",
+    "sourceElementId": "html-O4gu0J6OJN96J8oVsU1xf",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "UntitledFileNameButton",
+    "group": "controls",
+    "sourceElementId": "html-CtSdTkI01N6f2NU1SBGwD",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "EditFileMenuButton",
+    "group": "controls",
+    "sourceElementId": "html-XmcupQ4DE5kJJMEiDArxd",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon31",
+    "group": "icons",
+    "sourceElementId": "html-b2X2vGd33tbPVOHrDW2Fq",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "GridViewButton",
+    "group": "controls",
+    "sourceElementId": "html-3eYpfIuX261mWxRFJFr_z",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon32",
+    "group": "icons",
+    "sourceElementId": "html-Wo0eBdjowQLn-Y4unl3JD",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "NewSlideButton",
+    "group": "controls",
+    "sourceElementId": "html-HPt051ivw9c8-8b0N_gRK",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "NewSlideIcon",
+    "group": "icons",
+    "sourceElementId": "html-leKOEXARk0ximrTceIi0t",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AddBlankSlideButton",
+    "group": "controls",
+    "sourceElementId": "html-HuofJxVBgdxfeEXrzR4Z8",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AddBlankSlideIcon",
+    "group": "icons",
+    "sourceElementId": "html-SA-C0IA1M3e138OSSAQDI",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "GettingStartedDialog",
+    "group": "dialogs",
+    "sourceElementId": "html-onauKqnMGMoOqLf-1Eii8",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon33",
+    "group": "icons",
+    "sourceElementId": "html-ttwSmjIsXoXglhx0rdx2q",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CloseButton",
+    "group": "controls",
+    "sourceElementId": "html-pGd37eGNVM0-RuvzS30vp",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon34",
+    "group": "icons",
+    "sourceElementId": "html-y7Ce9zjrUMtCKz5x4F37r",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PresentationPrompt",
+    "group": "cards",
+    "sourceElementId": "html-DFiPCdn01ZepX93Ie3W3X",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AddContextButton",
+    "group": "controls",
+    "sourceElementId": "html-Yh-op15ztNMa3a3it3Fop",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon35",
+    "group": "icons",
+    "sourceElementId": "html-r-3a6xLeBYVkcKT1QYmS3",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "SelectDeckTemplateButton",
+    "group": "controls",
+    "sourceElementId": "html-8bLBiEpM1UQnNnsy3dq-X",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "SelectDeckTemplateIcon",
+    "group": "icons",
+    "sourceElementId": "html-WiQcgxphHrPfZG9oNxcee",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "SendPromptButton",
+    "group": "controls",
+    "sourceElementId": "html-3aZRfxdEpZ7L7aa22J9zG",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "SendPromptIcon",
+    "group": "icons",
+    "sourceElementId": "html-AahVg8VpSa9T2THi-VsMj",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "CreatePresentationOptions",
+    "group": "cards",
+    "sourceElementId": "html-LZkw3uaDdmLvQQ-YD9vkV",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "StartFromScratchCard",
+    "group": "cards",
+    "sourceElementId": "html-GPDTzQNCGQrY7tvbvwfpc",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "UseTemplateCard",
+    "group": "cards",
+    "sourceElementId": "html-E_xhXUa9abSj7L6nkrXvq",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "EditorHeaderActions",
+    "group": "navigation",
+    "sourceElementId": "html-CxPf27s0LWdib82Hiab5m",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "MultiplayerToolsButton",
+    "group": "controls",
+    "sourceElementId": "html-SaIrIhpQh7LDhLc7Mumck",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "QIcon",
+    "group": "icons",
+    "sourceElementId": "html-RMDj1AfkHpoQ5SLP_a_16",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ProfileAvatar3",
+    "group": "controls",
+    "sourceElementId": "html-tcfieZb5hq7clDClzdd6a",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PresentButton",
+    "group": "controls",
+    "sourceElementId": "html-DbzZMm-Pz2XMD3Gl106ls",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "PresentIcon",
+    "group": "icons",
+    "sourceElementId": "html-MMAmGkcuY51hTHSU3b3MI",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "ShareButton",
+    "group": "controls",
+    "sourceElementId": "html-5efHXkwgjZExDnYlzT37S",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InspectorTabsAndZoom",
+    "group": "navigation",
+    "sourceElementId": "html-Z6ySDMyrO6HWxMPtJjNnv",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "DesignDesignButton",
+    "group": "controls",
+    "sourceElementId": "html-I8GOzRcIErgwqWJf0m_Zk",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AnimateAnimateButton",
+    "group": "controls",
+    "sourceElementId": "html-KGPOdQg1_XlPH7hj5pWDq",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "Value100ZoomAndViewOptionsButton",
+    "group": "controls",
+    "sourceElementId": "html-U2XuyOi0IfaJSdtTzqaQX",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "Value100ZoomAndViewOptionsIcon",
+    "group": "icons",
+    "sourceElementId": "html-CvwAPApxw7nzYaJhLD0BS",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "InterfaceIcon36",
+    "group": "icons",
+    "sourceElementId": "html-clwgtYKpNyQTApHd5kzmu",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "HelpButton2",
+    "group": "controls",
+    "sourceElementId": "html-7yLut7LjPZwS0m682L3nl",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "HelpIcon2",
+    "group": "icons",
+    "sourceElementId": "html-WyaqgmLWssyRvQatNqqpt",
+    "source": "01-Getting-started.jsx"
+  },
+  {
+    "name": "AgentsSidebar",
+    "group": "panels",
+    "sourceElementId": "html-9CplZw7GCPSQWZm7CLpWT",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "MainMenuButton2",
+    "group": "controls",
+    "sourceElementId": "html-x5h7jLGLG5f1t_I8NlZcS",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "MainMenuIcon2",
+    "group": "icons",
+    "sourceElementId": "html-sOocEmgNskMumb0lVynV6",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "FileButton2",
+    "group": "controls",
+    "sourceElementId": "html-sqGHnZz0O2KpudCyP_1P_",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon37",
+    "group": "icons",
+    "sourceElementId": "html-FOgLFLLlt7EzE3lQdzedh",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "AgentsButton2",
+    "group": "controls",
+    "sourceElementId": "html-8CpFWAVvx4Tt08mwzpBkY",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon38",
+    "group": "icons",
+    "sourceElementId": "html-2JzTY6WJimKsEdmy_ZjNA",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InsertsButton2",
+    "group": "controls",
+    "sourceElementId": "html-CjhZjgqv3X4qzZO97T6mi",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon39",
+    "group": "icons",
+    "sourceElementId": "html-1Wx8eZxQStiKOfdy5xWW1",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "UntitledFileNameButton2",
+    "group": "controls",
+    "sourceElementId": "html-cmaSMQhKVcm8SHi5vbn74",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "EditFileMenuButton2",
+    "group": "controls",
+    "sourceElementId": "html-yFKGXSQlK_6F1HJnkuyRz",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon40",
+    "group": "icons",
+    "sourceElementId": "html--qCLb4aaP1FZWcpp2Chi6",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "GridViewButton2",
+    "group": "controls",
+    "sourceElementId": "html-CcRu8UhYJdg-gbyGONlnW",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon41",
+    "group": "icons",
+    "sourceElementId": "html-PUjhWrhqNYw-N11nXatyA",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "MoreOptionsButton",
+    "group": "controls",
+    "sourceElementId": "html-KUEA6cvXVgOjVwaR-aNb4",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon42",
+    "group": "icons",
+    "sourceElementId": "html-fTYOjy3qbpA4sqtphodUB",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon43",
+    "group": "icons",
+    "sourceElementId": "html--gCXBPBuHCOpsHI_Ap1o2",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "AgentSuggestions",
+    "group": "cards",
+    "sourceElementId": "html-Gs1lfObDTjm_vk9Acgov0",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "ImproveTheDeckButton",
+    "group": "controls",
+    "sourceElementId": "html-ATWPnLSKpojp2mS8va4gX",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon44",
+    "group": "icons",
+    "sourceElementId": "html-JKxk1A6JOFikYbDwCZGL6",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon45",
+    "group": "icons",
+    "sourceElementId": "html-dKLUfjW1uS808GHf0bcDK",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "AddToTheDeckButton",
+    "group": "controls",
+    "sourceElementId": "html-3n-8y31LKXbYlKOxSwGRQ",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon46",
+    "group": "icons",
+    "sourceElementId": "html-AU-O0UbFj0Vhz2wODwqv3",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon47",
+    "group": "icons",
+    "sourceElementId": "html-9dsxoBO_T19bvDHF0GspD",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "PrepareToPresentButton",
+    "group": "controls",
+    "sourceElementId": "html-2DO8f5baN09L7Vf0Hln43",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon48",
+    "group": "icons",
+    "sourceElementId": "html-I56p81NtW07hQ4ExWJU-N",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "UnderstandTheDeckButton",
+    "group": "controls",
+    "sourceElementId": "html-zYHMDXPPIQaTbojINhVJp",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon49",
+    "group": "icons",
+    "sourceElementId": "html-E3J38OG9gXraPDL6L5NUD",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "AgentComposer",
+    "group": "cards",
+    "sourceElementId": "html-nWIsetUPuEU1gKC9mo71J",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "AddContextButton2",
+    "group": "controls",
+    "sourceElementId": "html-IKpEe-t8_0bCN05gJ5o1k",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon50",
+    "group": "icons",
+    "sourceElementId": "html-bwZ4kvQX5c4nl0h_SbHU6",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "SelectDeckTemplateButton2",
+    "group": "controls",
+    "sourceElementId": "html-FQ6J67X73jlPAOtViX9W-",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon51",
+    "group": "icons",
+    "sourceElementId": "html-rCKnkrnWb8TZNoSss5re4",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "DictateButton",
+    "group": "controls",
+    "sourceElementId": "html-ZszYaOAGF4hpyUowlFQU1",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon52",
+    "group": "icons",
+    "sourceElementId": "html-btpo5V_X7iAY8WO1DrbkX",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "SendButton",
+    "group": "controls",
+    "sourceElementId": "html-DtvLb9DtolK-7nT9SD_BI",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon53",
+    "group": "icons",
+    "sourceElementId": "html-NrggwqcMe0IKADc3zO534",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "NewChatJustNowNotStartedButton",
+    "group": "controls",
+    "sourceElementId": "html-TjtHN90-u7nnZUPHDhkVg",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon54",
+    "group": "icons",
+    "sourceElementId": "html-6InnMRasKmG82l_ixDEBp",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "NewSlideButton2",
+    "group": "controls",
+    "sourceElementId": "html-t0zRRG_D5Fu6kx5K5kf6y",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "NewSlideIcon2",
+    "group": "icons",
+    "sourceElementId": "html-0BnEJvRE-g5pltXttrjSp",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "Slide1Button",
+    "group": "controls",
+    "sourceElementId": "html-gKKzfi_y11v4QszJMjqnY",
+    "source": "AgentsPanel.jsx"
+  },
+  {
+    "name": "EditorToolbar2",
+    "group": "navigation",
+    "sourceElementId": "html-uMZqBQu3Ow4NgHAYR-Ss0",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "MoveToolGroup3",
+    "group": "navigation",
+    "sourceElementId": "html-YDWNP4Cmg7ImV9DHQuRAr",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "TextButton3",
+    "group": "controls",
+    "sourceElementId": "html-ftf_n_btehwV8fT-w6oTh",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "TextIcon3",
+    "group": "icons",
+    "sourceElementId": "html-nW-EPcTinq2C_J2Usf8a4",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ImageVideoButton2",
+    "group": "controls",
+    "sourceElementId": "html-Bndn4wFUKNCwQMwhnK5ez",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ImageVideoIcon2",
+    "group": "icons",
+    "sourceElementId": "html-NYR8D8J4ydPqTAZiyxxzZ",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ShapesButton2",
+    "group": "controls",
+    "sourceElementId": "html-f7evK906Tzgixo6geI3lJ",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ShapesIcon2",
+    "group": "icons",
+    "sourceElementId": "html-CCCdWES-EQd_iN0m7Uai8",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "CommentButton3",
+    "group": "controls",
+    "sourceElementId": "html-0wujmsVA2ak1mL4rn28ei",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsButton3",
+    "group": "controls",
+    "sourceElementId": "html-IzGOL7hKUL7j5COryn9t8",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "FrameButton2",
+    "group": "controls",
+    "sourceElementId": "html-i8B618pDrKqhyRgdigkvt",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "CommentButton4",
+    "group": "controls",
+    "sourceElementId": "html-TcyipGBkSfjTrrgxGe6sv",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsButton4",
+    "group": "controls",
+    "sourceElementId": "html-aB-_ycwA9gJAlybNfT4Gi",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon55",
+    "group": "icons",
+    "sourceElementId": "html-5xnzyFzU1qJ0U8NOP4p33",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon56",
+    "group": "icons",
+    "sourceElementId": "html-J8fvd_9C0qT5nwnLlNijZ",
+    "source": "EditorToolbar.jsx"
+  },
+  {
+    "name": "FileSidebar",
+    "group": "panels",
+    "sourceElementId": "html-yY31sApAYSkZxC2pl1NL1",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "FileButton3",
+    "group": "controls",
+    "sourceElementId": "html-8bCaedsiJK7ME12KbHxSV",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon57",
+    "group": "icons",
+    "sourceElementId": "html-ihyYdDPGN_9DxdCo1i6q8",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "AgentsButton3",
+    "group": "controls",
+    "sourceElementId": "html-tnpWqt6HL1csSiQmiEPWT",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon58",
+    "group": "icons",
+    "sourceElementId": "html-tqr9ZIBa9DiJXe21l46Md",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "GridViewButton3",
+    "group": "controls",
+    "sourceElementId": "html-Fxv_-aGVPepmGeBvWVpXt",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "NewSlideButton3",
+    "group": "controls",
+    "sourceElementId": "html-918oSVbK--RqDSrUOEXml",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "AddBlankSlideButton2",
+    "group": "controls",
+    "sourceElementId": "html--NT01NXQseaSGp1mvUtGN",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "AddBlankSlideIcon2",
+    "group": "icons",
+    "sourceElementId": "html-VZ_fCml56IjPklU-deJNW",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "Slide1Button2",
+    "group": "controls",
+    "sourceElementId": "html-vWWzNQBgcE0J00ZpECPHl",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "SlideThumbnail",
+    "group": "cards",
+    "sourceElementId": "html-i0NgWSHlSGJUgET9biXIm",
+    "source": "FilePanel.jsx"
+  },
+  {
+    "name": "InsertSidebar",
+    "group": "panels",
+    "sourceElementId": "html-cFwqQ66Tha-zgfG3EL7zG",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InsertsButton3",
+    "group": "controls",
+    "sourceElementId": "html-33g5jQ40uiYwpe2d6bPoC",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon59",
+    "group": "icons",
+    "sourceElementId": "html-mjQDELukAnW89fEjHZFoL",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "TableButton",
+    "group": "controls",
+    "sourceElementId": "html-tmFw3iPWCXuTpjO2M5cnh",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon60",
+    "group": "icons",
+    "sourceElementId": "html-Op6Ms2JpWHVFHiQ_dPG16",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "CodeBlockButton",
+    "group": "controls",
+    "sourceElementId": "html-IjomXS5A3imLibAn4JeT5",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon61",
+    "group": "icons",
+    "sourceElementId": "html-dtBOSot1GtmjfzQIOPb3B",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "SlideNumberButton",
+    "group": "controls",
+    "sourceElementId": "html-yM8ACDZs3igdNwYAaXNuR",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon62",
+    "group": "icons",
+    "sourceElementId": "html-uwzNlx-v3hCFd5l28nSfF",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "TextButton4",
+    "group": "controls",
+    "sourceElementId": "html--H4e5eDpUFwxmMufCOYqx",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "MediaButton",
+    "group": "controls",
+    "sourceElementId": "html-mj9YI9zcekzvulvUULGSS",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "ShapesButton3",
+    "group": "controls",
+    "sourceElementId": "html-CyzzcceCYP9Yf53h26Cmj",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "PrototypesButton",
+    "group": "controls",
+    "sourceElementId": "html-Bbq24_BUjAk6DEjkfI2Eq",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "InteractiveButton",
+    "group": "controls",
+    "sourceElementId": "html-_-_-szUVG9eE1DbPFRElk",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "LibrariesButton",
+    "group": "controls",
+    "sourceElementId": "html-l0HGR3EF1Tof2gz0tOzOG",
+    "source": "InsertPanel.jsx"
+  },
+  {
+    "name": "AirDesignLogo",
+    "group": "brand",
+    "sourceElementId": "html-i_r0TvKy21HanTT8agy2z",
+    "source": "Logo.jsx"
+  },
+  {
+    "name": "InterfaceIcon63",
+    "group": "icons",
+    "sourceElementId": "html-NcG-H6ymZ1Q1zTCEuypqX",
+    "source": "Logo.jsx"
+  },
+  {
+    "name": "InterfaceIcon64",
+    "group": "icons",
+    "sourceElementId": "html-NglcaxkPe2Z6UYsSb9aAn",
+    "source": "Logo.jsx"
+  },
+  {
+    "name": "MediaSidebar",
+    "group": "panels",
+    "sourceElementId": "html-YZ11bty2BsOXsSslF7f9w",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "UntitledFileNameButton3",
+    "group": "controls",
+    "sourceElementId": "html-kC2aKWsmmGWZO-QLYHUUB",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "EditFileMenuButton3",
+    "group": "controls",
+    "sourceElementId": "html-cT3Xzl99S3-3tvfFjtica",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon65",
+    "group": "icons",
+    "sourceElementId": "html-MVEkfRlGGnfJmx5Xs66lz",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "SlideViewButton",
+    "group": "controls",
+    "sourceElementId": "html-op3_XRE8cdPVMQcPcHTiW",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon66",
+    "group": "icons",
+    "sourceElementId": "html-juDhWRIoz3HPW3bt06-D9",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "BackButton",
+    "group": "controls",
+    "sourceElementId": "html--p4BD76OdYpoulkR_VFDV",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon67",
+    "group": "icons",
+    "sourceElementId": "html-aYtkbE82bVXkTsE1GVpas",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "MediaSearchFieldButton",
+    "group": "controls",
+    "sourceElementId": "html-8KV9V3tbzYXXCx3Md6OCF",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon68",
+    "group": "icons",
+    "sourceElementId": "html-xV_xgJnctyLyHI3lRPLWE",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "SearchStockPhotosInput",
+    "group": "controls",
+    "sourceElementId": "html-E_tdk-MegWGbReB9gAHFP",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "MediaImageGrid",
+    "group": "cards",
+    "sourceElementId": "html-uXf2S4T3bbvadYn09dBzj",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton",
+    "group": "controls",
+    "sourceElementId": "html-tWPLJmq-9uhUKdTWOuFjF",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton2",
+    "group": "controls",
+    "sourceElementId": "html-Au0lecCpXP4YdrNEcHlVX",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton3",
+    "group": "controls",
+    "sourceElementId": "html-aOKWyEnK4NXPbzQVAm2zJ",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton4",
+    "group": "controls",
+    "sourceElementId": "html-EdoqCd-SgW3YRlsYdi4Fd",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton5",
+    "group": "controls",
+    "sourceElementId": "html-XkKDAdM4bG9BIdj91LiN6",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton6",
+    "group": "controls",
+    "sourceElementId": "html-vqudbtWNnRRVu8Pp-vngt",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton7",
+    "group": "controls",
+    "sourceElementId": "html-TudZo-e6K38wcdjHW73_9",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton8",
+    "group": "controls",
+    "sourceElementId": "html-pTf-aHjadACHcj9iPAHPT",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton9",
+    "group": "controls",
+    "sourceElementId": "html-FLbHsOn9xy3j60wm0rk4B",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton10",
+    "group": "controls",
+    "sourceElementId": "html-DW25WtDIvtJ7gB0In-Vcu",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton11",
+    "group": "controls",
+    "sourceElementId": "html-ZYpsXrFBaWUcIP8WkwhYW",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton12",
+    "group": "controls",
+    "sourceElementId": "html-iVbctyTKWUCQTNED0OcQG",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton13",
+    "group": "controls",
+    "sourceElementId": "html-7nVZFPoG4X_yfLTZZmSOc",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton14",
+    "group": "controls",
+    "sourceElementId": "html-M0GQL3G_mDI39_xZBqSzG",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton15",
+    "group": "controls",
+    "sourceElementId": "html-msEtVugxUtFQESDGX9bJz",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton16",
+    "group": "controls",
+    "sourceElementId": "html-4azOf39se59r1kJPETFzc",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton17",
+    "group": "controls",
+    "sourceElementId": "html-ykJvMwprr1ZDQfXrG9Gvb",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton18",
+    "group": "controls",
+    "sourceElementId": "html-cKQCO_X0jW3E8f0OV7QOy",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton19",
+    "group": "controls",
+    "sourceElementId": "html-MTYF1i5NtUm1J_mb81coc",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton20",
+    "group": "controls",
+    "sourceElementId": "html-s52tsOjdR76KpMop5iEig",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton21",
+    "group": "controls",
+    "sourceElementId": "html-AbLWC9H1fXwjaFV5mJm5U",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton22",
+    "group": "controls",
+    "sourceElementId": "html--KxqcOaPGxXa3ysG4QAWb",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton23",
+    "group": "controls",
+    "sourceElementId": "html-6IsmHIjKN8I2GtZEeQegS",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "IconButton24",
+    "group": "controls",
+    "sourceElementId": "html-BuvTMgsSTAKzJ06ipbwSg",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "MakeAnImageButton",
+    "group": "controls",
+    "sourceElementId": "html-Nu8-QPbz2FQiS5kpf2c3Q",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon69",
+    "group": "icons",
+    "sourceElementId": "html-tRjZ-AzwYD4TL4TnW59rA",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "UploadImageOrVideoButton",
+    "group": "controls",
+    "sourceElementId": "html-NGwNLEbkz_vOqJydenxKz",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon70",
+    "group": "icons",
+    "sourceElementId": "html-boZ_ouDAv94UpzKCHPUU4",
+    "source": "MediaPanel.jsx"
+  },
+  {
+    "name": "MoveToolMenu",
+    "group": "navigation",
+    "sourceElementId": "html-UDcbTSWhduiwBqKV9Dm_3",
+    "source": "MoveMenu.jsx"
+  },
+  {
+    "name": "MoveVIcon",
+    "group": "icons",
+    "sourceElementId": "html-SHJ5RSuFSJPXJL321npxH",
+    "source": "MoveMenu.jsx"
+  },
+  {
+    "name": "InterfaceIcon71",
+    "group": "icons",
+    "sourceElementId": "html-vU7KPZooQqIsyZGugoIsx",
+    "source": "MoveMenu.jsx"
+  },
+  {
+    "name": "InterfaceIcon72",
+    "group": "icons",
+    "sourceElementId": "html--R2Th_FTzS04eApmbAhJc",
+    "source": "MoveMenu.jsx"
+  },
+  {
+    "name": "InterfaceIcon73",
+    "group": "icons",
+    "sourceElementId": "html-OKoPnbO9jvhMXlLOnARLY",
+    "source": "MoveMenu.jsx"
+  },
+  {
+    "name": "PresenterNotes",
+    "group": "panels",
+    "sourceElementId": "html-ofFT-AvTL7IWFznh2J_7Y",
+    "source": "PresenterNotes.jsx"
+  },
+  {
+    "name": "StartWithAnAIDraftButton",
+    "group": "controls",
+    "sourceElementId": "html-3jicBjplJ_OkIL1tVRAY7",
+    "source": "PresenterNotes.jsx"
+  },
+  {
+    "name": "StartWithAnAIDraftIcon",
+    "group": "icons",
+    "sourceElementId": "html-hJlbP_uXRD_0V18JtACPZ",
+    "source": "PresenterNotes.jsx"
+  },
+  {
+    "name": "SlidePropertiesPanel",
+    "group": "panels",
+    "sourceElementId": "html-OZA4EHjAJ3yDmbNTEqF3a",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "AdjustToneButton",
+    "group": "controls",
+    "sourceElementId": "html-_yzdG7CeuSKDTJyoRMi6D",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon74",
+    "group": "icons",
+    "sourceElementId": "html-0m_z1OuIdFftUGXrt0T6W",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "EditTemplateStyleButton",
+    "group": "controls",
+    "sourceElementId": "html-qxUSDkVutZ7XOAikfQOUg",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon75",
+    "group": "icons",
+    "sourceElementId": "html-nwkolOoiaUWXo2_j0iANk",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "StyleLightSlidesFontsInterButton",
+    "group": "controls",
+    "sourceElementId": "html-ceDsOiMqslMHw-m1TxGK8",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon76",
+    "group": "icons",
+    "sourceElementId": "html-K7f1FjSs6Kra8TH8mu8Wn",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon77",
+    "group": "icons",
+    "sourceElementId": "html-Nx6dBmMs0TekyU9Py9Dau",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon78",
+    "group": "icons",
+    "sourceElementId": "html-fJsUotbaTxHd6jmchnj2w",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "ColorPickerButton",
+    "group": "controls",
+    "sourceElementId": "html-R7GrAiCODNVHL5ooo8RoT",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon79",
+    "group": "icons",
+    "sourceElementId": "html-RsYM0p8M52Hv7S2_y3r1I",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "ColorVariableBlackWithValue000At100Button",
+    "group": "controls",
+    "sourceElementId": "html-W5WzBAqob38iBr0DIFIe3",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "ColorVariableWhiteWithValueFFFAt100Button",
+    "group": "controls",
+    "sourceElementId": "html-SfQBNAPS59G8_fMrAbAgf",
+    "source": "PropertiesPanel.jsx"
+  },
+  {
+    "name": "ShapesEditorToolbar",
+    "group": "navigation",
+    "sourceElementId": "html-BC_L2kanwlU56wEKgs2py",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveToolGroup4",
+    "group": "navigation",
+    "sourceElementId": "html-egQIa0rurgbKK1yxWSneB",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveButton3",
+    "group": "controls",
+    "sourceElementId": "html-JFkkD-NMgIOojOs9jK8F5",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveIcon3",
+    "group": "icons",
+    "sourceElementId": "html-wrUZhQc7-gGzLUlIglcSf",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveToolsButton3",
+    "group": "controls",
+    "sourceElementId": "html-yTY5Q1pDNvd_cMaWDI8eg",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon80",
+    "group": "icons",
+    "sourceElementId": "html-Q9Et2ec0Tu0hQfK_Xr3pB",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TextButton5",
+    "group": "controls",
+    "sourceElementId": "html-toy571h_okZoJOF2zc-tG",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TextIcon4",
+    "group": "icons",
+    "sourceElementId": "html-ZFbWqK6b4NKqIb1WAwAjf",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ImageVideoButton3",
+    "group": "controls",
+    "sourceElementId": "html-bYdPOXE_RJmsTlgb4qpNT",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ImageVideoIcon3",
+    "group": "icons",
+    "sourceElementId": "html--8uIbGYxdfia98EwUYfRe",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ShapesButton4",
+    "group": "controls",
+    "sourceElementId": "html-VPtu4_vuHm-GOJW2I8kdP",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ShapesIcon3",
+    "group": "icons",
+    "sourceElementId": "html-D7NHwxiCA_VcA4ni2Oqmn",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "CommentButton5",
+    "group": "controls",
+    "sourceElementId": "html-SIzHSI4dCcpraFy9aug1r",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "CommentIcon3",
+    "group": "icons",
+    "sourceElementId": "html-lg94mhi1EpSh7MU42fdfm",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsButton5",
+    "group": "controls",
+    "sourceElementId": "html-vOe6hJrqECdCZYKhHYYlR",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsIcon3",
+    "group": "icons",
+    "sourceElementId": "html-Ec4ZRLRO8VAZze4iE0THw",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveToolGroup5",
+    "group": "navigation",
+    "sourceElementId": "html-c0r2jjBccLgP6knGQDBxO",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveButton4",
+    "group": "controls",
+    "sourceElementId": "html-TfXVm3ocaYBgiPNWs_Cqs",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveIcon4",
+    "group": "icons",
+    "sourceElementId": "html-VxvXxIi0RiN0ym6-l3crE",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoveToolsButton4",
+    "group": "controls",
+    "sourceElementId": "html-j0WmXzh9AqNCOpdlCqZ2W",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon81",
+    "group": "icons",
+    "sourceElementId": "html-F8Z3Mkv2l85cz-L-uFXOf",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "FrameButton3",
+    "group": "controls",
+    "sourceElementId": "html-LMKUVf06L0yR2tboZ7gM5",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "FrameIcon2",
+    "group": "icons",
+    "sourceElementId": "html-BZ-VoYRHOtxJ8kj3HtJty",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "RectangleToolGroup2",
+    "group": "navigation",
+    "sourceElementId": "html-e05_FbN3TApALswv8tHOo",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "RectangleButton2",
+    "group": "controls",
+    "sourceElementId": "html-0novuUukvbpjk2xkmOlil",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "RectangleIcon2",
+    "group": "icons",
+    "sourceElementId": "html-H3nKQtbv50hofhWC1aCMp",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ShapeToolsButton2",
+    "group": "controls",
+    "sourceElementId": "html-BNeYSKIhsQbcRPfYsDpzu",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "PenToolGroup2",
+    "group": "navigation",
+    "sourceElementId": "html-zHfyHRbi-9_8YDDRpiJTc",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "PenButton2",
+    "group": "controls",
+    "sourceElementId": "html-ZnCr0R9OmOTwvYiVqi5xq",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "PenIcon2",
+    "group": "icons",
+    "sourceElementId": "html-cicgcI3TCdHE3r6tDUGJ9",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "CreationToolsButton2",
+    "group": "controls",
+    "sourceElementId": "html-cP7fok9FozNUTjFNP2pKh",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TextToolGroup2",
+    "group": "navigation",
+    "sourceElementId": "html-_ksPUh9D5J9T33tLkWJ5J",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TextButton6",
+    "group": "controls",
+    "sourceElementId": "html-ARP4rpum2P_4lLNHSyc5_",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TextIcon5",
+    "group": "icons",
+    "sourceElementId": "html-2ct0VFueJbnLrGxYlYtGX",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TypeToolsButton2",
+    "group": "controls",
+    "sourceElementId": "html-M_2X3O4WKdD5tksJYglZ7",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "CommentButton6",
+    "group": "controls",
+    "sourceElementId": "html-EYjXQbdrKDROh8-EBqast",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "CommentIcon4",
+    "group": "icons",
+    "sourceElementId": "html-esvc6WIgrxzxpgJFzNRK8",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsButton6",
+    "group": "controls",
+    "sourceElementId": "html-2MhsARAYr9wDB71EM0vSI",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ActionsIcon4",
+    "group": "icons",
+    "sourceElementId": "html-s9i8YQPqJLiv35gccHbZS",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "AssetsButton2",
+    "group": "controls",
+    "sourceElementId": "html-Ht0VC7osV2NYXCqhktPzS",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon82",
+    "group": "icons",
+    "sourceElementId": "html-xjeBeNqF5-SMrwDLQqrRD",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon83",
+    "group": "icons",
+    "sourceElementId": "html-NeDNP-yNBISy8sxGzoU8E",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon84",
+    "group": "icons",
+    "sourceElementId": "html-8qD8L30d8D9SoOXqoclxc",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ArrowButton",
+    "group": "controls",
+    "sourceElementId": "html-up_uSXXx3vTvMCGqkWyrN",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ArrowIcon",
+    "group": "icons",
+    "sourceElementId": "html-xJ4xwnFh8IBqazSdxycKi",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "LineButton",
+    "group": "controls",
+    "sourceElementId": "html-s5lVBrhQ2k1Ge0AF0C3vH",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "LineIcon",
+    "group": "icons",
+    "sourceElementId": "html-qyA10PSuFXWIYFHVrWeoQ",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "SquareButton",
+    "group": "controls",
+    "sourceElementId": "html-Yfn6mFX1Pd2HnDfYJaJbd",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon85",
+    "group": "icons",
+    "sourceElementId": "html-d5zlnVYSnR86EDTpbohdf",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "EllipseButton",
+    "group": "controls",
+    "sourceElementId": "html-F3hXnbwdY6HqVNs37OGN3",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon86",
+    "group": "icons",
+    "sourceElementId": "html-QXc02OwufApOi3LHFSB7-",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "DiamondButton",
+    "group": "controls",
+    "sourceElementId": "html-R9FIAg0viPjU8Hxt-yHwS",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon87",
+    "group": "icons",
+    "sourceElementId": "html-hJolC6DPl_dl3RkurIeEd",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "TriangleButton",
+    "group": "controls",
+    "sourceElementId": "html-mYkYOcIu1P7vEFaDfWaUb",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon88",
+    "group": "icons",
+    "sourceElementId": "html-E9WU3NtEdNYdtYbywcq_4",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "StarButton",
+    "group": "controls",
+    "sourceElementId": "html-0ojFqfjcKfc6aCkyj5_WL",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon89",
+    "group": "icons",
+    "sourceElementId": "html-AZisfxhN6LC2gCe2W4_bD",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "PlusButton",
+    "group": "controls",
+    "sourceElementId": "html-XAZCDlvG_CDLGdGZC_Yv3",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon90",
+    "group": "icons",
+    "sourceElementId": "html-dlmRzGAeGj6H3oTT0QTfN",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "LeftArrowButton",
+    "group": "controls",
+    "sourceElementId": "html-u3JVhLEFvVkk7-HzfojID",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon91",
+    "group": "icons",
+    "sourceElementId": "html-bcoTjvOMmXYjm-TTtH9sI",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "RightArrowButton",
+    "group": "controls",
+    "sourceElementId": "html-aJeACPrC-Kp2w0fE63mRm",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon92",
+    "group": "icons",
+    "sourceElementId": "html-jTGCaoKNSbW5wRohkeHBs",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "SpeechBubbleButton",
+    "group": "controls",
+    "sourceElementId": "html-0yEzrYVMFRJJLFAO9XL0c",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "InterfaceIcon93",
+    "group": "icons",
+    "sourceElementId": "html-NFN5CcAjU36bybKsNCQhm",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "MoreShapesButton",
+    "group": "controls",
+    "sourceElementId": "html-oqZrGnB4NKD9Oj543FJwK",
+    "source": "ShapesEditorToolbar.jsx"
+  },
+  {
+    "name": "ShareDialog",
+    "group": "dialogs",
+    "sourceElementId": "html-Yg0m1Zb-YJWF8S69ZHHTZ",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "CopyLinkButton",
+    "group": "controls",
+    "sourceElementId": "html-7RK0ZJaRtXL4Mi5-Tx2Yb",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "CopyLinkIcon",
+    "group": "icons",
+    "sourceElementId": "html-HVqT_CiupwmN3vdyAxCOD",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "CopyLinkIcon2",
+    "group": "icons",
+    "sourceElementId": "html-DonzJnjmIoQzOZM98dLs6",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InviteEmailFieldButton",
+    "group": "controls",
+    "sourceElementId": "html-HRF3oVS_SRLjwR81fPAaG",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "AddCommaSeparatedEmailsToInviteInput",
+    "group": "controls",
+    "sourceElementId": "html-OoB0Dsoko7ldSNPZPk2a3",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InviteButton",
+    "group": "controls",
+    "sourceElementId": "html-xR9jVPCRYqTJ11R8OPTYP",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "AnyoneCanViewButton",
+    "group": "controls",
+    "sourceElementId": "html-UmNBZGFML1CeaKVmTntO3",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon94",
+    "group": "icons",
+    "sourceElementId": "html-3iv99N47orSqADVbn1r1G",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "CanViewIcon",
+    "group": "icons",
+    "sourceElementId": "html-IP2yccd5gETOgJLFQPjyx",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon95",
+    "group": "icons",
+    "sourceElementId": "html-bJxHf1yUO1zwCZNljvvRB",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon96",
+    "group": "icons",
+    "sourceElementId": "html-h_ZZ00XSxRrYOm4WrHpqT",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon97",
+    "group": "icons",
+    "sourceElementId": "html-BYkknyPYwD_iJ6ZpegQGJ",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon98",
+    "group": "icons",
+    "sourceElementId": "html-7ZwhVFbvnFFk_TiM-yo9q",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "MoveToFolderButton",
+    "group": "controls",
+    "sourceElementId": "html-BmEz6Qx4kcfRW1-BjwGgR",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "CloseButton2",
+    "group": "controls",
+    "sourceElementId": "html-xdZ71AZTxBK9PIkRPwmjH",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "InterfaceIcon99",
+    "group": "icons",
+    "sourceElementId": "html-QwY33LCfyxrhWJ-VSuz3S",
+    "source": "ShareDialog.jsx"
+  },
+  {
+    "name": "ShareMoreActions",
+    "group": "dialogs",
+    "sourceElementId": "html-w1i9qJLGlYnDtQgdlgRnS",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "InterfaceIcon100",
+    "group": "icons",
+    "sourceElementId": "html-LRcAuuGDnRTOJfjRsMwiJ",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "InterfaceIcon101",
+    "group": "icons",
+    "sourceElementId": "html-bJxHf1yUO1zwCZNljvvRB",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "InterfaceIcon102",
+    "group": "icons",
+    "sourceElementId": "html-h_ZZ00XSxRrYOm4WrHpqT",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "InterfaceIcon103",
+    "group": "icons",
+    "sourceElementId": "html-BYkknyPYwD_iJ6ZpegQGJ",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "InterfaceIcon104",
+    "group": "icons",
+    "sourceElementId": "html-7ZwhVFbvnFFk_TiM-yo9q",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "MoveToFolderButton2",
+    "group": "controls",
+    "sourceElementId": "html-BmEz6Qx4kcfRW1-BjwGgR",
+    "source": "ShareMoreActions.jsx"
+  },
+  {
+    "name": "TextPanel",
+    "group": "panels",
+    "sourceElementId": "html-Cs8BBIA07Dmi7pNVqMQ5p",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "UntitledFileNameButton4",
+    "group": "controls",
+    "sourceElementId": "html-d8x9cfimvbzstmG1qcE2P",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "EditFileMenuButton4",
+    "group": "controls",
+    "sourceElementId": "html-Obx_IDVUF8LVY-KazN1Op",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon105",
+    "group": "icons",
+    "sourceElementId": "html-OPvwXU9Cl9VfaFayHjrFq",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "SlideViewButton2",
+    "group": "controls",
+    "sourceElementId": "html-CxCKUobM3oLQUFIbBIl3w",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon106",
+    "group": "icons",
+    "sourceElementId": "html-rsZoIbgvneyBlrwWbV9Sl",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "BackButton2",
+    "group": "controls",
+    "sourceElementId": "html-Iat4Db9DUMAz4PwDx6Fb5",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon107",
+    "group": "icons",
+    "sourceElementId": "html-A0oWrb8F3PETf5fHy01BF",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "AddTextBoxButton",
+    "group": "controls",
+    "sourceElementId": "html-hDdRnqO5ArhE495-1MlVp",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "AddTextBoxIcon",
+    "group": "icons",
+    "sourceElementId": "html-Tt86aJhpla8GP8v8Jgme6",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "TextButton7",
+    "group": "controls",
+    "sourceElementId": "html-1dfKvcL0YdeKhcWJR2qMo",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon108",
+    "group": "icons",
+    "sourceElementId": "html-ErBBAsYTDZ2spjU4g4aev",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton25",
+    "group": "controls",
+    "sourceElementId": "html-LrpVpCJybdi7YnghttlGS",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton26",
+    "group": "controls",
+    "sourceElementId": "html-U8Wf3mFnS42fdZr2rRjj0",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton27",
+    "group": "controls",
+    "sourceElementId": "html-L-9ZxlKdCoJwn8SW42IT4",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton28",
+    "group": "controls",
+    "sourceElementId": "html-7PVcUgU3AFpL9hIK1tp4L",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton29",
+    "group": "controls",
+    "sourceElementId": "html-REcxEwsu_9nk_J3y8YtR4",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton30",
+    "group": "controls",
+    "sourceElementId": "html--_9h4Vb9OAkuPCiKjLD0l",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton31",
+    "group": "controls",
+    "sourceElementId": "html-_MyPypEUR3AE_TbHDX0_a",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "IconButton32",
+    "group": "controls",
+    "sourceElementId": "html-CHKzUeB3HbIAbqMnFUHom",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "FontCombinationsButton",
+    "group": "controls",
+    "sourceElementId": "html-KHfC339DoFJgpbGMIzznO",
+    "source": "TextPanel.jsx"
+  },
+  {
+    "name": "InterfaceIcon109",
+    "group": "icons",
+    "sourceElementId": "html-7hqQAM_Ed4eiy6cOLLAPV",
+    "source": "TextPanel.jsx"
+  }
+]
