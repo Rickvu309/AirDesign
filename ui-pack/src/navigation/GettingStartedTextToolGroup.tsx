@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function GettingStartedTextToolGroup({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "columnGap": "1px",
     "display": "flex",
@@ -15,13 +16,13 @@ export function GettingStartedTextToolGroup({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Text" role="group" className={className}>
+  }} aria-label="Text" role="group" className={className} {...rest}>
   <button style={{
       "alignItems": "center",
       "appearance": "auto",
       "backgroundColor": "rgba(0, 0, 0, 0)",
       "boxSizing": "border-box",
-      "color": "rgba(0, 0, 0, 0.3)",
+      "color": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))",
       "display": "flex",
       "fontFamily": "Inter, sans-serif",
       "fontSize": "11px",
@@ -40,8 +41,8 @@ export function GettingStartedTextToolGroup({
         "width": "24px"
       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-          "fill": "rgba(0, 0, 0, 0.3)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M19.5 4a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V5h-6.5v14H15a.5.5 0 0 1 0 1H9a.5.5 0 0 1 0-1h2.5V5H5v2.5a.5.5 0 0 1-1 0v-3a.5.5 0 0 1 .5-.5z"></path>
+          "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+        }} d="M19.5 4a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V5h-6.5v14H15a.5.5 0 0 1 0 1H9a.5.5 0 0 1 0-1h2.5V5H5v2.5a.5.5 0 0 1-1 0v-3a.5.5 0 0 1 .5-.5z"></path>
     </svg>
   </button>
   <button style={{
@@ -49,7 +50,7 @@ export function GettingStartedTextToolGroup({
       "appearance": "auto",
       "backgroundColor": "rgba(0, 0, 0, 0)",
       "boxSizing": "border-box",
-      "color": "rgb(0, 0, 0)",
+      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
       "display": "flex",
       "fontFamily": "Inter, sans-serif",
       "fontSize": "11px",
@@ -73,8 +74,8 @@ export function GettingStartedTextToolGroup({
           "width": "24px"
         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-            "fill": "rgba(0, 0, 0, 0.3)"
-          }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
+            "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+          }} d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
       </svg>
     </span>
   </button>

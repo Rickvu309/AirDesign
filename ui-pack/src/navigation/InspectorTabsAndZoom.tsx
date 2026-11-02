@@ -1,12 +1,13 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InspectorTabsAndZoom({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "alignItems": "flex-end",
-    "borderBottomColor": "rgb(230, 230, 230)",
+    "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderBottomStyle": "solid",
     "borderBottomWidth": "1px",
     "boxSizing": "content-box",
@@ -21,7 +22,7 @@ export function InspectorTabsAndZoom({
     flexShrink: 0,
     width: 240,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
             <div style={{
       "alignItems": "center",
       "boxSizing": "content-box",
@@ -41,9 +42,9 @@ export function InspectorTabsAndZoom({
                 <button style={{
           "alignItems": "center",
           "appearance": "auto",
-          "backgroundColor": "rgb(245, 245, 245)",
+          "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
           "boxSizing": "border-box",
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "grid",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "11px",
@@ -82,9 +83,9 @@ export function InspectorTabsAndZoom({
                 <button style={{
           "alignItems": "center",
           "appearance": "auto",
-          "backgroundColor": "rgb(255, 255, 255)",
+          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
           "boxSizing": "border-box",
-          "color": "rgba(0, 0, 0, 0.5)",
+          "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
           "display": "grid",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "11px",
@@ -141,9 +142,9 @@ export function InspectorTabsAndZoom({
                 <button style={{
           "alignItems": "center",
           "appearance": "auto",
-          "backgroundColor": "rgb(255, 255, 255)",
+          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
           "boxSizing": "border-box",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "flex",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -167,8 +168,8 @@ export function InspectorTabsAndZoom({
             "width": "16px"
           }} width="16" height="16" fill="none" viewBox="0 0 16 16">
                     <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
                   </svg>
                 </button>
               </div>

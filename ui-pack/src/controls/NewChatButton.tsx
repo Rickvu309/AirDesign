@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function NewChatButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "flex-start",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "columnGap": "14px",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
@@ -25,7 +26,7 @@ export function NewChatButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
           <div style={{
       "flexShrink": "0",
       "height": "32px",
@@ -34,13 +35,13 @@ export function NewChatButton({
     }}>
             <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(245, 245, 245)",
+        "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
         "boxSizing": "content-box",
         "display": "flex",
         "height": "32px",
         "justifyContent": "center",
         "width": "32px",
-        "border": "1px solid rgba(0, 0, 0, 0.1)",
+        "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
         "borderRadius": "5px"
       }} aria-hidden="true">
               <svg style={{
@@ -51,8 +52,8 @@ export function NewChatButton({
           "width": "24px"
         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-            "fill": "rgba(0, 0, 0, 0.898)"
-          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
+            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+          }} fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
               </svg>
             </div>
           </div>
@@ -80,7 +81,7 @@ export function NewChatButton({
           "minWidth": "0px"
         }}>
                 <div style={{
-            "color": "rgba(0, 0, 0, 0.898)",
+            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
             "fontWeight": "550",
             "letterSpacing": "0.05504px",
@@ -104,7 +105,7 @@ export function NewChatButton({
           "rowGap": "8px"
         }}>
                 <div style={{
-            "color": "rgba(0, 0, 0, 0.5)",
+            "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
             "flexShrink": "0",
             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
             "fontWeight": "450",
@@ -122,7 +123,7 @@ export function NewChatButton({
               </div>
             </div>
             <div style={{
-        "color": "rgba(0, 0, 0, 0.5)",
+        "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
         "display": "-webkit-box",
         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
         "fontWeight": "450",

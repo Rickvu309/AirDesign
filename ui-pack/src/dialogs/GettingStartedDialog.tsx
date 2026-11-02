@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function GettingStartedDialog({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"section">) {
   return <section style={{
     "maxHeight": "738.4px",
     "minWidth": "240px",
@@ -16,10 +17,10 @@ export function GettingStartedDialog({
     width: 840,
     maxWidth: "none",
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
                           <h2 style={{
       "clipPath": "inset(50%)",
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "fontFamily": "Inter, sans-serif",
       "fontSize": "11px",
       "fontWeight": "400",
@@ -37,8 +38,8 @@ export function GettingStartedDialog({
       }}>Getting started</span>
 </h2>
                           <div style={{
-      "backgroundColor": "rgb(255, 255, 255)",
-      "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
+      "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+      "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
       "display": "grid",
       "gridTemplateAreas": "\"header header\" \"sidebar body\" \"sidebar footer\"",
       "gridTemplateColumns": "0px 840px",
@@ -90,11 +91,11 @@ export function GettingStartedDialog({
                 "width": "24px"
               }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-                  "fill": "rgb(255, 92, 22)"
-                }} fill="var(--color-bg-brand)" d="M0 5a5 5 0 0 1 5-5h14a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5z"></path>
+                  "fill": "var(--ad-brand, rgb(255, 92, 22))"
+                }} d="M0 5a5 5 0 0 1 5-5h14a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5z"></path>
             <path style={{
-                  "fill": "rgb(255, 255, 255)"
-                }} fill="var(--color-icon-onbrand)" d="M17 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1.68l.661 2.365a.5.5 0 1 1-.962.27L14.28 16H9.72l-.738 2.635a.5.5 0 0 1-.962-.27L8.68 16H7l-.204-.01A2 2 0 0 1 5 14V8a2 2 0 0 1 2-2zM7 7a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm1.5 4.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2m0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
+                  "fill": "var(--ad-surface, rgb(255, 255, 255))"
+                }} d="M17 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1.68l.661 2.365a.5.5 0 1 1-.962.27L14.28 16H9.72l-.738 2.635a.5.5 0 0 1-.962-.27L8.68 16H7l-.204-.01A2 2 0 0 1 5 14V8a2 2 0 0 1 2-2zM7 7a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm1.5 4.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2m0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
           </svg>
         </div>
         <span style={{
@@ -124,7 +125,7 @@ export function GettingStartedDialog({
                 "alignItems": "center",
                 "appearance": "auto",
                 "backgroundColor": "rgba(0, 0, 0, 0)",
-                "color": "rgb(0, 0, 0)",
+                "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                 "display": "grid",
                 "fontFamily": "Inter, sans-serif",
                 "fontSize": "11px",
@@ -161,8 +162,8 @@ export function GettingStartedDialog({
                     "width": "24px"
                   }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-                      "fill": "rgba(0, 0, 0, 0.898)"
-                    }} fill="var(--fpl-icon-color, var(--color-icon))" d="M16.224 7.082a.501.501 0 0 1 .694.693l-.065.078L12.707 12l4.146 4.146.065.078a.5.5 0 0 1-.694.694l-.078-.065L12 12.706l-4.147 4.147a.5.5 0 1 1-.707-.707l4.147-4.147-4.147-4.146-.064-.078a.501.501 0 0 1 .693-.693l.078.064L12 11.293l4.146-4.147z"></path>
+                      "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                    }} d="M16.224 7.082a.501.501 0 0 1 .694.693l-.065.078L12.707 12l4.146 4.146.065.078a.5.5 0 0 1-.694.694l-.078-.065L12 12.706l-4.147 4.147a.5.5 0 1 1-.707-.707l4.147-4.147-4.147-4.146-.064-.078a.501.501 0 0 1 .693-.693l.078.064L12 11.293l4.146-4.147z"></path>
               </svg>
             </span>
           </button>
@@ -255,7 +256,7 @@ export function GettingStartedDialog({
                       "padding": "24px"
                     }}>
                   <h1 style={{
-                        "color": "rgba(0, 0, 0, 0.898)",
+                        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                         "fontSize": "24px",
                         "fontWeight": "550",
@@ -274,8 +275,8 @@ export function GettingStartedDialog({
                         "width": "680px"
                       }}>
                     <form style={{
-                          "backgroundColor": "rgb(255, 255, 255)",
-                          "boxShadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 3px 8px 0px, rgba(0, 0, 0, 0.18) 0px 0px 0.5px 0px",
+                          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+                          "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 1px 3px 0px, var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 3px 8px 0px, rgba(0, 0, 0, 0.18) 0px 0px 0.5px 0px",
                           "boxSizing": "border-box",
                           "maxWidth": "680px",
                           "overflowX": "hidden",
@@ -291,7 +292,7 @@ export function GettingStartedDialog({
                             "flexDirection": "column"
                           }}>
                         <div style={{
-                              "backgroundColor": "rgb(255, 255, 255)",
+                              "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                               "display": "flex",
                               "flexGrow": "1",
                               "position": "relative"
@@ -313,7 +314,7 @@ export function GettingStartedDialog({
                                 "whiteSpace": "pre-wrap"
                               }} role="textbox" aria-disabled="false" aria-placeholder="">
                             <p style={{
-                                  "color": "rgba(0, 0, 0, 0.898)",
+                                  "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                   "fontFamily": "Inter",
                                   "fontSize": "13px",
                                   "fontWeight": "450",
@@ -327,7 +328,7 @@ export function GettingStartedDialog({
                           </div>
                           <div aria-hidden="true"></div>
                           <div style={{
-                                "color": "rgba(0, 0, 0, 0.3)",
+                                "color": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))",
                                 "display": "-webkit-box",
                                 "fontFamily": "Inter",
                                 "fontSize": "13px",
@@ -384,7 +385,7 @@ export function GettingStartedDialog({
                                   "appearance": "auto",
                                   "backgroundColor": "rgba(0, 0, 0, 0)",
                                   "boxSizing": "border-box",
-                                  "color": "rgb(0, 0, 0)",
+                                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                   "display": "grid",
                                   "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                   "fontSize": "11px",
@@ -395,7 +396,7 @@ export function GettingStartedDialog({
                                   "justifyItems": "center",
                                   "lineHeight": "16px",
                                   "minWidth": "32px",
-                                  "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                  "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                   "outlineOffset": "-1px",
                                   "outlineStyle": "solid",
                                   "outlineWidth": "1px",
@@ -421,8 +422,8 @@ export function GettingStartedDialog({
                                       "width": "24px"
                                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                        "fill": "rgba(0, 0, 0, 0.898)"
-                                      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6"></path>
+                                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                      }} d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6"></path>
     </svg>
   </span>
 </button>
@@ -430,9 +431,9 @@ export function GettingStartedDialog({
                           <button style={{
                                 "alignItems": "center",
                                 "appearance": "auto",
-                                "backgroundColor": "rgb(255, 255, 255)",
+                                "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                 "boxSizing": "border-box",
-                                "color": "rgba(0, 0, 0, 0.898)",
+                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                 "columnGap": "4px",
                                 "display": "flex",
                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -447,7 +448,7 @@ export function GettingStartedDialog({
                                 "rowGap": "4px",
                                 "textAlign": "start",
                                 "minWidth": "0px",
-                                "border": "1px solid rgb(230, 230, 230)",
+                                "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                 "borderRadius": "9999px",
                                 "padding": "4px 8px"
                               }} aria-label="Select deck template" type="button">
@@ -460,8 +461,8 @@ export function GettingStartedDialog({
                                   "width": "16px"
                                 }} width="16" height="16" fill="none" viewBox="0 0 16 16">
   <path style={{
-                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M8 2a6 6 0 0 1 5.934 6.895C13.719 10.325 12.39 11 11.274 11H9c0 .821-.343 1.61-.93 2.129-.576.508-1.394.75-2.238.463l-.169-.065A6.001 6.001 0 0 1 8 2m0 1a5 5 0 0 0-1.947 9.606C7.07 13.036 8 12.104 8 11a1 1 0 0 1 1-1h2.274l.149-.006c.69-.05 1.321-.452 1.492-1.104l.03-.144Q13 8.381 13 8a5 5 0 0 0-5-5M5.25 7.986a.75.75 0 1 1-.002 1.502.75.75 0 0 1 .002-1.502m5.5-1.486a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5m-5-1.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5m3-.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5"></path>
+                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                  }} d="M8 2a6 6 0 0 1 5.934 6.895C13.719 10.325 12.39 11 11.274 11H9c0 .821-.343 1.61-.93 2.129-.576.508-1.394.75-2.238.463l-.169-.065A6.001 6.001 0 0 1 8 2m0 1a5 5 0 0 0-1.947 9.606C7.07 13.036 8 12.104 8 11a1 1 0 0 1 1-1h2.274l.149-.006c.69-.05 1.321-.452 1.492-1.104l.03-.144Q13 8.381 13 8a5 5 0 0 0-5-5M5.25 7.986a.75.75 0 1 1-.002 1.502.75.75 0 0 1 .002-1.502m5.5-1.486a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5m-5-1.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5m3-.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5"></path>
 </svg>
                             <span style={{
                                   "display": "block",
@@ -486,7 +487,7 @@ export function GettingStartedDialog({
                           <button style={{
                                 "alignItems": "center",
                                 "appearance": "auto",
-                                "backgroundColor": "rgb(217, 217, 217)",
+                                "backgroundColor": "var(--ad-divider-strong, rgb(217, 217, 217))",
                                 "color": "rgba(16, 16, 16, 0.3)",
                                 "display": "flex",
                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -509,8 +510,8 @@ export function GettingStartedDialog({
                                   "width": "24px"
                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                    "fill": "rgb(255, 255, 255)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M11.725 5.582a.5.5 0 0 1 .629.064l4.5 4.5a.5.5 0 1 1-.707.707L12.5 7.208V18a.5.5 0 0 1-1 0V7.207l-3.646 3.647a.5.5 0 1 1-.708-.707l4.5-4.5z"></path>
+                                    "fill": "var(--ad-surface, rgb(255, 255, 255))"
+                                  }} d="M11.725 5.582a.5.5 0 0 1 .629.064l4.5 4.5a.5.5 0 1 1-.707.707L12.5 7.208V18a.5.5 0 0 1-1 0V7.207l-3.646 3.647a.5.5 0 1 1-.708-.707l4.5-4.5z"></path>
   </svg>
 </button>
                         </div>
@@ -535,9 +536,9 @@ export function GettingStartedDialog({
                             "alignItems": "center",
                             "appearance": "auto",
                             "aspectRatio": "1.25 / 1",
-                            "backgroundColor": "rgb(255, 255, 255)",
+                            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                             "boxSizing": "border-box",
-                            "color": "rgb(0, 0, 0)",
+                            "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                             "display": "flex",
                             "flexBasis": "0px",
                             "flexGrow": "1",
@@ -553,7 +554,7 @@ export function GettingStartedDialog({
                             "overflowY": "hidden",
                             "position": "relative",
                             "textAlign": "start",
-                            "border": "1px solid rgb(230, 230, 230)",
+                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                             "borderRadius": "13px",
                             "padding": "0px"
                           }} aria-label="Start from scratch" type="button">
@@ -572,7 +573,7 @@ export function GettingStartedDialog({
                               "minHeight": "0px"
                             }} aria-hidden="true">
                           <span style={{
-                                "color": "rgba(0, 0, 0, 0.898)",
+                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                 "display": "block",
                                 "fontSize": "13px",
                                 "fontWeight": "550",
@@ -582,7 +583,7 @@ export function GettingStartedDialog({
   Start from scratch
 </span>
                           <span style={{
-                                "color": "rgba(0, 0, 0, 0.5)",
+                                "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                 "display": "block",
                                 "textAlign": "center"
                               }}>
@@ -600,7 +601,7 @@ export function GettingStartedDialog({
                               "minHeight": "0px"
                             }}>
                           <img style={{
-                                "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
+                                "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
                                 "display": "block",
                                 "height": "110px",
                                 "objectFit": "cover",
@@ -618,9 +619,9 @@ export function GettingStartedDialog({
                             "alignItems": "center",
                             "appearance": "auto",
                             "aspectRatio": "1.25 / 1",
-                            "backgroundColor": "rgb(255, 255, 255)",
+                            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                             "boxSizing": "border-box",
-                            "color": "rgb(0, 0, 0)",
+                            "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                             "display": "flex",
                             "flexBasis": "0px",
                             "flexGrow": "1",
@@ -636,7 +637,7 @@ export function GettingStartedDialog({
                             "overflowY": "hidden",
                             "position": "relative",
                             "textAlign": "start",
-                            "border": "1px solid rgb(230, 230, 230)",
+                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                             "borderRadius": "13px",
                             "padding": "0px"
                           }} aria-label="Use a template" type="button">
@@ -655,7 +656,7 @@ export function GettingStartedDialog({
                               "minHeight": "0px"
                             }} aria-hidden="true">
                           <span style={{
-                                "color": "rgba(0, 0, 0, 0.898)",
+                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                 "display": "block",
                                 "fontSize": "13px",
                                 "fontWeight": "550",
@@ -665,7 +666,7 @@ export function GettingStartedDialog({
   Use a template
 </span>
                           <span style={{
-                                "color": "rgba(0, 0, 0, 0.5)",
+                                "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                 "display": "block",
                                 "textAlign": "center"
                               }}>
@@ -701,11 +702,11 @@ export function GettingStartedDialog({
                                   "transform": "matrix(0.997224, 0.0744566, -0.0744566, 0.997224, 0, 0)",
                                   "transformOrigin": "92px 52px",
                                   "width": "184px",
-                                  "border": "1px solid rgba(0, 0, 0, 0.1)",
+                                  "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                                   "borderRadius": "5px"
-                                }} alt="" src="https://static.figma.com/uploads/bc26f7aba942ed9012e84b07a510c6b17d291ecb" aria-hidden="true"></img>
+                                }} alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" aria-hidden="true"></img>
   <img style={{
-                                  "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
+                                  "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
                                   "boxSizing": "border-box",
                                   "display": "block",
                                   "height": "104px",
@@ -719,9 +720,9 @@ export function GettingStartedDialog({
                                   "transform": "matrix(0.997564, 0.0697565, -0.0697565, 0.997564, 0, 0)",
                                   "transformOrigin": "92px 52px",
                                   "width": "184px",
-                                  "border": "1px solid rgba(0, 0, 0, 0.1)",
+                                  "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                                   "borderRadius": "5px"
-                                }} alt="" src="https://static.figma.com/uploads/b47bf7fc72021ed470c7c2f65b194be3e49fcd0f" aria-hidden="true"></img>
+                                }} alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" aria-hidden="true"></img>
 </div>
                         </div>
                       </button>

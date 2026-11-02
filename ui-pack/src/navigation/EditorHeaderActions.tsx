@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function EditorHeaderActions({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "alignItems": "center",
     "display": "flex",
@@ -17,7 +18,7 @@ export function EditorHeaderActions({
     flexShrink: 0,
     width: 240,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
               <div style={{
       "alignItems": "center",
       "display": "flex",
@@ -62,7 +63,7 @@ export function EditorHeaderActions({
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -130,7 +131,7 @@ export function EditorHeaderActions({
                                   "minHeight": "0px"
                                 }} viewBox="0 0 30 40" aria-hidden="true">
           <circle style={{
-                                    "stroke": "rgb(255, 92, 22)",
+                                    "stroke": "var(--ad-brand, rgb(255, 92, 22))",
                                     "strokeWidth": "2px",
                                     "strokeDasharray": "400px",
                                     "strokeDashoffset": "400px"
@@ -151,7 +152,7 @@ export function EditorHeaderActions({
                                   }} aria-hidden="true">
             <div style={{
                                       "alignItems": "center",
-                                      "color": "rgb(255, 255, 255)",
+                                      "color": "var(--ad-surface, rgb(255, 255, 255))",
                                       "display": "flex",
                                       "flexShrink": "0",
                                       "height": "24px",
@@ -163,7 +164,7 @@ export function EditorHeaderActions({
                                       "verticalAlign": "top",
                                       "width": "24px",
                                       "borderRadius": "9999px"
-                                    }} aria-label="Quan Vu (Richard)" role="img">
+                                    }} aria-label="Your Name" role="img">
               <span style={{
                                         "display": "block",
                                         "fontSize": "13px",
@@ -187,10 +188,10 @@ export function EditorHeaderActions({
                                         "width": "24px",
                                         "minWidth": "0px",
                                         "minHeight": "0px"
-                                      }} src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271" alt=""></img>
+                                      }} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" alt=""></img>
               <span style={{
                                         "bottom": "0px",
-                                        "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset",
+                                        "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 1px inset",
                                         "display": "block",
                                         "height": "24px",
                                         "left": "0px",
@@ -220,7 +221,7 @@ export function EditorHeaderActions({
                                 <span style={{
                         "boxSizing": "content-box",
                         "display": "flex",
-                        "maskImage": "radial-gradient(14px at -3px 50%, rgba(0, 0, 0, 0) 99%, rgb(255, 255, 255) 100%)",
+                        "maskImage": "radial-gradient(14px at -3px 50%, rgba(0, 0, 0, 0) 99%, var(--ad-surface, rgb(255, 255, 255)) 100%)",
                         "padding": "6px",
                         "margin": "-6px"
                       }}>
@@ -230,14 +231,14 @@ export function EditorHeaderActions({
                         }}>
   <div style={{
                             "alignItems": "center",
-                            "backgroundColor": "rgb(245, 245, 245)",
+                            "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                             "boxSizing": "content-box",
-                            "color": "rgba(0, 0, 0, 0.5)",
+                            "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                             "display": "flex",
                             "height": "24px",
                             "justifyContent": "center",
                             "width": "24px",
-                            "border": "2px solid rgb(255, 255, 255)",
+                            "border": "2px solid var(--ad-surface, rgb(255, 255, 255))",
                             "borderRadius": "9999px"
                           }}>
     <svg style={{
@@ -248,8 +249,8 @@ export function EditorHeaderActions({
                               "width": "24px"
                             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                "fill": "rgba(0, 0, 0, 0.898)"
-                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
+                                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                              }} d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
     </svg>
   </div>
 </span>
@@ -283,7 +284,7 @@ export function EditorHeaderActions({
             "alignItems": "center",
             "appearance": "auto",
             "backgroundColor": "rgba(0, 0, 0, 0)",
-            "color": "rgb(0, 0, 0)",
+            "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
             "display": "flex",
             "fontFamily": "Inter, sans-serif",
             "fontSize": "11px",
@@ -305,8 +306,8 @@ export function EditorHeaderActions({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M6 5.903C6 4.43 7.604 3.517 8.87 4.269l10.15 6.028c1.307.776 1.305 2.669-.003 3.442l-10.15 5.995c-1.228.724-2.768-.11-2.863-1.5L6 18.098zm1 12.195a.9.9 0 0 0 1.357.774l10.152-5.995a1 1 0 0 0 .002-1.72L8.359 5.129A.9.9 0 0 0 7 5.903z" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M6 5.903C6 4.43 7.604 3.517 8.87 4.269l10.15 6.028c1.307.776 1.305 2.669-.003 3.442l-10.15 5.995c-1.228.724-2.768-.11-2.863-1.5L6 18.098zm1 12.195a.9.9 0 0 0 1.357.774l10.152-5.995a1 1 0 0 0 .002-1.72L8.359 5.129A.9.9 0 0 0 7 5.903z" clipRule="evenodd"></path>
                       </svg>
                     </button>
                   </div>
@@ -325,8 +326,8 @@ export function EditorHeaderActions({
                       <button style={{
               "alignItems": "center",
               "appearance": "auto",
-              "backgroundColor": "rgb(255, 92, 22)",
-              "color": "rgb(255, 255, 255)",
+              "backgroundColor": "var(--ad-brand, rgb(255, 92, 22))",
+              "color": "var(--ad-surface, rgb(255, 255, 255))",
               "display": "flex",
               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
               "fontSize": "11px",

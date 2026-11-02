@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ResourcesButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -23,7 +24,7 @@ export function ResourcesButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
               <div style={{
       "alignItems": "center",
       "boxSizing": "border-box",
@@ -64,8 +65,8 @@ export function ResourcesButton({
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7 7h10a1 1 0 0 1 1 1v2H6V8a1 1 0 0 1 1-1m-1 4v5a1 1 0 0 0 1 1h2v-6zm4 6h7a1 1 0 0 0 1-1v-5h-8zM5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} fillRule="evenodd" d="M7 7h10a1 1 0 0 1 1 1v2H6V8a1 1 0 0 1 1-1m-1 4v5a1 1 0 0 0 1 1h2v-6zm4 6h7a1 1 0 0 0 1-1v-5h-8zM5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
   </svg>
 </div>
                   <span style={{

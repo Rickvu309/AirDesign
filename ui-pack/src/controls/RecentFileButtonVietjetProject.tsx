@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function RecentFileButtonVietjetProject({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -23,7 +24,7 @@ export function RecentFileButtonVietjetProject({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-description="Folder" type="button" className={className}>
+  }} aria-description="Folder" type="button" className={className} {...rest}>
       <div style={{
       "alignItems": "center",
       "boxSizing": "border-box",
@@ -64,8 +65,8 @@ export function RecentFileButtonVietjetProject({
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
               <path style={{
-              "fill": "rgb(175, 188, 207)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M10.379 6a2 2 0 0 1 1.414.586L13.207 8H16.5a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM8.5 14a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1z"></path>
+              "fill": "var(--ad-folder, rgb(175, 188, 207))"
+            }} d="M10.379 6a2 2 0 0 1 1.414.586L13.207 8H16.5a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM8.5 14a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1z"></path>
             </svg>
           </div>
           <span style={{

@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AdminNotificationsBadge({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"strong">) {
   return <strong style={{
     "alignItems": "center",
-    "backgroundColor": "rgb(230, 230, 230)",
+    "backgroundColor": "var(--ad-divider, rgb(230, 230, 230))",
     "boxSizing": "content-box",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "inline-flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -24,7 +25,7 @@ export function AdminNotificationsBadge({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-label="2 admin notifications" className={className}>
+  }} aria-label="2 admin notifications" className={className} {...rest}>
       <span style={{
       "display": "block",
       "flexGrow": "1",

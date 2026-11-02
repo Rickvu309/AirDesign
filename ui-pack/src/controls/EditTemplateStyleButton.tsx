@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function EditTemplateStyleButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "grid",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -31,7 +32,7 @@ export function EditTemplateStyleButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Edit template style" type="button" className={className}>
+  }} aria-label="Edit template style" type="button" className={className} {...rest}>
                         <span style={{
       "alignItems": "center",
       "display": "flex",
@@ -49,8 +50,8 @@ export function EditTemplateStyleButton({
         "width": "24px"
       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-          "fill": "rgba(0, 0, 0, 0.898)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M8.5 18a.5.5 0 0 0 .5-.5v-1.55a2.5 2.5 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v4.55a2.501 2.501 0 0 0 0 4.9v1.55a.5.5 0 0 0 .5.5m7 0a.5.5 0 0 0 .5-.5v-4.55a2.501 2.501 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v1.55a2.5 2.5 0 0 0 0 4.9v4.55a.5.5 0 0 0 .5.5m0-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m-7 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} d="M8.5 18a.5.5 0 0 0 .5-.5v-1.55a2.5 2.5 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v4.55a2.501 2.501 0 0 0 0 4.9v1.55a.5.5 0 0 0 .5.5m7 0a.5.5 0 0 0 .5-.5v-4.55a2.501 2.501 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v1.55a2.5 2.5 0 0 0 0 4.9v4.55a.5.5 0 0 0 .5.5m0-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m-7 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
   </svg>
 </span>
                       </button>;

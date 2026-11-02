@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ShareButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(255, 92, 22)",
-    "color": "rgb(255, 255, 255)",
+    "backgroundColor": "var(--ad-brand, rgb(255, 92, 22))",
+    "color": "var(--ad-surface, rgb(255, 255, 255))",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -28,7 +29,7 @@ export function ShareButton({
     "justifyContent": "center",
     position: "relative",
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
                         <span style={{
       "display": "flex",
       "height": "32px",

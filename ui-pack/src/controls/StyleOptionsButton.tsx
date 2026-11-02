@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function StyleOptionsButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "appearance": "auto",
-    "backgroundColor": "rgb(255, 255, 255)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -17,13 +18,13 @@ export function StyleOptionsButton({
     "lineHeight": "16px",
     "textAlign": "left",
     "width": "208px",
-    "border": "1px solid rgb(230, 230, 230)",
+    "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
     "borderRadius": "5px",
     "padding": "0px",
     position: "relative",
     flexShrink: 0,
     ...style
-  }} type="button" aria-disabled="true" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-label="Style: Light slides, Fonts: Inter" className={className}>
+  }} type="button" aria-disabled="true" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-label="Style: Light slides, Fonts: Inter" className={className} {...rest}>
   <div style={{
       "isolation": "isolate",
       "position": "relative",
@@ -59,7 +60,7 @@ export function StyleOptionsButton({
               "position": "absolute",
               "top": "0px",
               "width": "32px",
-              "border": "1px solid rgba(0, 0, 0, 0.1)",
+              "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
               "borderRadius": "2px"
             }}></div>
           <div style={{
@@ -78,7 +79,7 @@ export function StyleOptionsButton({
                 "height": "32px"
               }}></div>
             <div style={{
-                "backgroundColor": "rgb(61, 56, 245)",
+                "backgroundColor": "var(--ad-accent, rgb(61, 56, 245))",
                 "flexGrow": "1",
                 "height": "32px"
               }}></div>
@@ -100,7 +101,7 @@ export function StyleOptionsButton({
       </div>
       <div style={{
           "alignItems": "center",
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "flex",
           "flexGrow": "1",
           "justifyContent": "space-between",
@@ -136,7 +137,7 @@ export function StyleOptionsButton({
             }}>
             <div>
               <p style={{
-                  "color": "rgba(0, 0, 0, 0.898)",
+                  "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "15px",
                   "fontWeight": "400",

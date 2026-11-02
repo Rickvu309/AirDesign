@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function NewDesignFileButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(245, 245, 245)",
-    "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
-    "color": "rgb(0, 0, 0)",
+    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+    "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "flexShrink": "0",
     "fontFamily": "Inter, sans-serif",
@@ -25,7 +26,7 @@ export function NewDesignFileButton({
     position: "relative",
     boxSizing: "border-box",
     ...style
-  }} aria-label="New Design file" type="button" className={className}>
+  }} aria-label="New Design file" type="button" className={className} {...rest}>
                 <div style={{
       "display": "grid",
       "gridTemplateColumns": "92.4375px",
@@ -46,7 +47,7 @@ export function NewDesignFileButton({
           "padding": "8px 16px"
         }}>
                       <div style={{
-            "backgroundColor": "rgb(13, 153, 255)",
+            "backgroundColor": "var(--ad-selection, rgb(13, 153, 255))",
             "borderRadius": "2px"
           }}>
                         <svg style={{
@@ -55,7 +56,7 @@ export function NewDesignFileButton({
               "overflowX": "hidden",
               "overflowY": "hidden",
               "width": "16px"
-            }} width="16" height="16" fill="none" viewBox="0 0 64 64"><path d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /><path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
+            }} width="16" height="16" fill="none" viewBox="0 0 64 64"><path d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /><path d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
                       </div>
                       <span style={{
             "alignItems": "center",
@@ -64,7 +65,7 @@ export function NewDesignFileButton({
             "rowGap": "4px"
           }}>
                         <span style={{
-              "color": "rgba(0, 0, 0, 0.898)",
+              "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
               "display": "block",
               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
               "fontWeight": "450",
@@ -85,7 +86,7 @@ export function NewDesignFileButton({
         "gridRowStart": "1"
       }}>
                     <div style={{
-          "backgroundColor": "rgb(255, 255, 255)"
+          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))"
         }}>
                       <div style={{
             "backgroundColor": "rgba(0, 0, 0, 0.05)",

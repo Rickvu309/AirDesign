@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MultiplayerToolsButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -26,7 +27,7 @@ export function MultiplayerToolsButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-expanded="false" aria-label="Multiplayer tools" aria-haspopup="dialog" className={className}>
+  }} aria-expanded="false" aria-label="Multiplayer tools" aria-haspopup="dialog" className={className} {...rest}>
                             <div style={{
       "alignItems": "center",
       "display": "flex"
@@ -79,7 +80,7 @@ export function MultiplayerToolsButton({
                     "minHeight": "0px"
                   }} viewBox="0 0 30 40" aria-hidden="true">
           <circle style={{
-                      "stroke": "rgb(255, 92, 22)",
+                      "stroke": "var(--ad-brand, rgb(255, 92, 22))",
                       "strokeWidth": "2px",
                       "strokeDasharray": "400px",
                       "strokeDashoffset": "400px"
@@ -100,7 +101,7 @@ export function MultiplayerToolsButton({
                     }} aria-hidden="true">
             <div style={{
                         "alignItems": "center",
-                        "color": "rgb(255, 255, 255)",
+                        "color": "var(--ad-surface, rgb(255, 255, 255))",
                         "display": "flex",
                         "flexShrink": "0",
                         "height": "24px",
@@ -112,7 +113,7 @@ export function MultiplayerToolsButton({
                         "verticalAlign": "top",
                         "width": "24px",
                         "borderRadius": "9999px"
-                      }} aria-label="Quan Vu (Richard)" role="img">
+                      }} aria-label="Your Name" role="img">
               <span style={{
                           "display": "block",
                           "fontSize": "13px",
@@ -136,10 +137,10 @@ export function MultiplayerToolsButton({
                           "width": "24px",
                           "minWidth": "0px",
                           "minHeight": "0px"
-                        }} src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271" alt=""></img>
+                        }} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" alt=""></img>
               <span style={{
                           "bottom": "0px",
-                          "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset",
+                          "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 1px inset",
                           "display": "block",
                           "height": "24px",
                           "left": "0px",
@@ -169,7 +170,7 @@ export function MultiplayerToolsButton({
                                 <span style={{
           "boxSizing": "content-box",
           "display": "flex",
-          "maskImage": "radial-gradient(14px at -3px 50%, rgba(0, 0, 0, 0) 99%, rgb(255, 255, 255) 100%)",
+          "maskImage": "radial-gradient(14px at -3px 50%, rgba(0, 0, 0, 0) 99%, var(--ad-surface, rgb(255, 255, 255)) 100%)",
           "padding": "6px",
           "margin": "-6px"
         }}>
@@ -179,14 +180,14 @@ export function MultiplayerToolsButton({
           }}>
   <div style={{
               "alignItems": "center",
-              "backgroundColor": "rgb(245, 245, 245)",
+              "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
               "boxSizing": "content-box",
-              "color": "rgba(0, 0, 0, 0.5)",
+              "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
               "display": "flex",
               "height": "24px",
               "justifyContent": "center",
               "width": "24px",
-              "border": "2px solid rgb(255, 255, 255)",
+              "border": "2px solid var(--ad-surface, rgb(255, 255, 255))",
               "borderRadius": "9999px"
             }}>
     <svg style={{
@@ -197,8 +198,8 @@ export function MultiplayerToolsButton({
                 "width": "24px"
               }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                  "fill": "rgba(0, 0, 0, 0.898)"
-                }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
+                  "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                }} d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
     </svg>
   </div>
 </span>

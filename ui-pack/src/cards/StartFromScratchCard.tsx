@@ -1,16 +1,17 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function StartFromScratchCard({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "aspectRatio": "1.25 / 1",
-    "backgroundColor": "rgb(255, 255, 255)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -23,14 +24,14 @@ export function StartFromScratchCard({
     "overflowX": "hidden",
     "overflowY": "hidden",
     "textAlign": "start",
-    "border": "1px solid rgb(230, 230, 230)",
+    "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
     "borderRadius": "13px",
     "padding": "0px",
     position: "relative",
     flexShrink: 0,
     width: 310,
     ...style
-  }} aria-label="Start from scratch" type="button" className={className}>
+  }} aria-label="Start from scratch" type="button" className={className} {...rest}>
                         <div style={{
       "alignItems": "center",
       "boxSizing": "content-box",
@@ -46,7 +47,7 @@ export function StartFromScratchCard({
       "minHeight": "0px"
     }} aria-hidden="true">
                           <span style={{
-        "color": "rgba(0, 0, 0, 0.898)",
+        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
         "display": "block",
         "fontSize": "13px",
         "fontWeight": "550",
@@ -56,7 +57,7 @@ export function StartFromScratchCard({
   Start from scratch
 </span>
                           <span style={{
-        "color": "rgba(0, 0, 0, 0.5)",
+        "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
         "display": "block",
         "textAlign": "center"
       }}>
@@ -74,7 +75,7 @@ export function StartFromScratchCard({
       "minHeight": "0px"
     }}>
                           <img style={{
-        "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
+        "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
         "display": "block",
         "height": "110px",
         "objectFit": "cover",

@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ShareDialog({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"section">) {
   return <section style={{
     "maxHeight": "738.4px",
     "minWidth": "240px",
@@ -16,7 +17,7 @@ export function ShareDialog({
     width: 480,
     maxWidth: "none",
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
     <div style={{
       "columnGap": "8px",
       "display": "flex",
@@ -25,8 +26,8 @@ export function ShareDialog({
       "rowGap": "8px"
     }}>
       <div style={{
-        "backgroundColor": "rgb(255, 255, 255)",
-        "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+        "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
         "display": "grid",
         "gridTemplateAreas": "\"header header\" \"sidebar body\" \"sidebar footer\"",
         "gridTemplateColumns": "0px 480px",
@@ -38,7 +39,7 @@ export function ShareDialog({
       }}>
         <div style={{
           "alignItems": "center",
-          "boxShadow": "rgb(230, 230, 230) 0px -1px 0px 0px inset",
+          "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px -1px 0px 0px inset",
           "boxSizing": "border-box",
           "display": "flex",
           "gridColumnEnd": "header",
@@ -62,7 +63,7 @@ export function ShareDialog({
               "justifyContent": "space-between"
             }}>
               <h2 style={{
-                "color": "rgba(0, 0, 0, 0.898)",
+                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                 "fontSize": "11px",
                 "fontWeight": "550",
@@ -98,7 +99,7 @@ export function ShareDialog({
                     "alignItems": "center",
                     "appearance": "auto",
                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                    "color": "rgb(226, 76, 12)",
+                    "color": "var(--ad-brand-strong, rgb(226, 76, 12))",
                     "display": "flex",
                     "fontFamily": "Inter, sans-serif",
                     "fontSize": "11px",
@@ -115,9 +116,9 @@ export function ShareDialog({
                       "overflowX": "hidden",
                       "overflowY": "hidden",
                       "width": "24px",
-                      "fill": "rgb(226, 76, 12)"
+                      "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
-                      <path fill="var(--fpl-icon-color, var(--color-icon))" d="M12.444 10.37a2.998 2.998 0 0 1 .677 4.75l-2 2a3 3 0 1 1-4.243-4.242l1.27-1.27c.262-.263.746-.069.826.293a.44.44 0 0 1-.111.405l-1.278 1.279a2 2 0 1 0 2.829 2.828l2-2a2 2 0 0 0 0-2.828l-.029-.028c-.093-.089-.187-.184-.224-.307a.88.88 0 0 1 .22-.87.05.05 0 0 1 .063-.01m.434-3.492a3 3 0 1 1 4.243 4.242l-1.27 1.27c-.262.262-.745.068-.826-.294a.44.44 0 0 1 .111-.405l1.278-1.278a2 2 0 1 0-2.829-2.828l-2 2a2 2 0 0 0 0 2.828l.029.026c.093.089.186.183.223.306a.88.88 0 0 1-.218.874.05.05 0 0 1-.062.009 3 3 0 0 1-.679-4.75z"></path>
+                      <path d="M12.444 10.37a2.998 2.998 0 0 1 .677 4.75l-2 2a3 3 0 1 1-4.243-4.242l1.27-1.27c.262-.263.746-.069.826.293a.44.44 0 0 1-.111.405l-1.278 1.279a2 2 0 1 0 2.829 2.828l2-2a2 2 0 0 0 0-2.828l-.029-.028c-.093-.089-.187-.184-.224-.307a.88.88 0 0 1 .22-.87.05.05 0 0 1 .063-.01m.434-3.492a3 3 0 1 1 4.243 4.242l-1.27 1.27c-.262.262-.745.068-.826-.294a.44.44 0 0 1 .111-.405l1.278-1.278a2 2 0 1 0-2.829-2.828l-2 2a2 2 0 0 0 0 2.828l.029.026c.093.089.186.183.223.306a.88.88 0 0 1-.218.874.05.05 0 0 1-.062.009 3 3 0 0 1-.679-4.75z"></path>
                     </svg>
                     <span style={{
                       "display": "block"
@@ -134,9 +135,9 @@ export function ShareDialog({
                       "overflowX": "hidden",
                       "overflowY": "hidden",
                       "width": "16px",
-                      "fill": "rgb(226, 76, 12)"
+                      "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
                     }} width="16" height="16" fill="none" viewBox="0 0 16 16">
-                      <path fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                      <path d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
                     </svg>
                   </button>
                 </div>
@@ -196,11 +197,11 @@ export function ShareDialog({
                       }}>
   <div style={{
                           "alignItems": "flex-start",
-                          "backgroundColor": "rgb(245, 245, 245)",
+                          "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                           "boxSizing": "content-box",
                           "display": "flex",
                           "justifyContent": "space-between",
-                          "border": "1px solid rgb(245, 245, 245)",
+                          "border": "1px solid var(--ad-surface-subtle, rgb(245, 245, 245))",
                           "borderRadius": "5px",
                           "padding": "4px"
                         }} role="group">
@@ -217,9 +218,9 @@ export function ShareDialog({
                           }}>
       <input style={{
                               "appearance": "auto",
-                              "backgroundColor": "rgb(245, 245, 245)",
+                              "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                               "boxSizing": "content-box",
-                              "color": "rgba(0, 0, 0, 0.898)",
+                              "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                               "display": "block",
                               "flexGrow": "1",
                               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -240,9 +241,9 @@ export function ShareDialog({
                       <button style={{
                         "alignItems": "center",
                         "appearance": "auto",
-                        "backgroundColor": "rgb(217, 217, 217)",
+                        "backgroundColor": "var(--ad-divider-strong, rgb(217, 217, 217))",
                         "boxSizing": "border-box",
-                        "color": "rgb(255, 255, 255)",
+                        "color": "var(--ad-surface, rgb(255, 255, 255))",
                         "display": "flex",
                         "flexShrink": "0",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -280,7 +281,7 @@ export function ShareDialog({
                     <div style={{
                       "alignItems": "center",
                       "boxSizing": "border-box",
-                      "color": "rgba(0, 0, 0, 0.5)",
+                      "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                       "display": "flex",
                       "height": "28px",
                       "marginTop": "4px",
@@ -288,7 +289,7 @@ export function ShareDialog({
                       "paddingTop": "6px"
                     }}>
                       <h2 style={{
-                        "color": "rgba(0, 0, 0, 0.5)",
+                        "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                         "fontSize": "11px",
                         "fontWeight": "550",
@@ -305,7 +306,7 @@ export function ShareDialog({
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -340,8 +341,8 @@ export function ShareDialog({
                           "width": "24px"
                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                            "fill": "rgba(0, 0, 0, 0.898)"
-                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M12.465 17.738c-.233.23-.389.262-.465.262s-.232-.032-.465-.262c-.238-.234-.498-.623-.737-1.182-.434-1.013-.738-2.433-.79-4.056h3.984c-.052 1.623-.356 3.044-.79 4.056-.24.56-.5.948-.737 1.182m1.527-6.238h-3.984c.052-1.623.356-3.044.79-4.056.24-.56.5-.948.737-1.182.233-.23.389-.262.465-.262s.232.032.465.262c.238.234.498.623.737 1.182.434 1.012.738 2.433.79 4.056m1 1c-.065 2.176-.558 4.078-1.282 5.253a6.005 6.005 0 0 0 4.27-5.253zm2.988-1a6.005 6.005 0 0 0-4.27-5.253c.724 1.175 1.217 3.077 1.282 5.253zm-8.972 0c.065-2.176.558-4.078 1.282-5.253A6.005 6.005 0 0 0 6.02 11.5zm-2.987 1a6.005 6.005 0 0 0 4.27 5.253c-.725-1.175-1.218-3.077-1.283-5.253zM19 12a7 7 0 1 0-14 0 7 7 0 0 0 14 0" clipRule="evenodd"></path>
+                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                          }} fillRule="evenodd" d="M12.465 17.738c-.233.23-.389.262-.465.262s-.232-.032-.465-.262c-.238-.234-.498-.623-.737-1.182-.434-1.013-.738-2.433-.79-4.056h3.984c-.052 1.623-.356 3.044-.79 4.056-.24.56-.5.948-.737 1.182m1.527-6.238h-3.984c.052-1.623.356-3.044.79-4.056.24-.56.5-.948.737-1.182.233-.23.389-.262.465-.262s.232.032.465.262c.238.234.498.623.737 1.182.434 1.012.738 2.433.79 4.056m1 1c-.065 2.176-.558 4.078-1.282 5.253a6.005 6.005 0 0 0 4.27-5.253zm2.988-1a6.005 6.005 0 0 0-4.27-5.253c.724 1.175 1.217 3.077 1.282 5.253zm-8.972 0c.065-2.176.558-4.078 1.282-5.253A6.005 6.005 0 0 0 6.02 11.5zm-2.987 1a6.005 6.005 0 0 0 4.27 5.253c-.725-1.175-1.218-3.077-1.283-5.253zM19 12a7 7 0 1 0-14 0 7 7 0 0 0 14 0" clipRule="evenodd"></path>
     </svg>
   </span>
   <div style={{
@@ -356,7 +357,7 @@ export function ShareDialog({
                       }}>
     <div style={{
                           "alignItems": "center",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "columnGap": "5px",
                           "display": "flex",
                           "flexGrow": "1",
@@ -397,8 +398,8 @@ export function ShareDialog({
                               "width": "24px"
                             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path style={{
-                                "fill": "rgba(0, 0, 0, 0.898)"
-                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
+                                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                              }} d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
         </svg>
       </div>
     </div>
@@ -420,7 +421,7 @@ export function ShareDialog({
                         "width": "32px"
                       }}>
     <img style={{
-                          "color": "rgb(255, 255, 255)",
+                          "color": "var(--ad-surface, rgb(255, 255, 255))",
                           "display": "block",
                           "flexBasis": "24px",
                           "flexShrink": "0",
@@ -429,7 +430,7 @@ export function ShareDialog({
                           "overflowY": "clip",
                           "width": "24px",
                           "borderRadius": "100%"
-                        }} alt="" src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271"></img>
+                        }} alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
                         "alignItems": "center",
@@ -457,7 +458,7 @@ export function ShareDialog({
                             "minHeight": "0px"
                           }}>
         <b style={{
-                              "color": "rgba(0, 0, 0, 0.898)",
+                              "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                               "display": "block",
                               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                               "fontSize": "11px",
@@ -470,11 +471,11 @@ export function ShareDialog({
                             }}>
           <span style={{
                                 "whiteSpace": "nowrap"
-                              }}>Quan Vu (Richard)</span>
+                              }}>Your Name</span>
         </b>
          
         <span style={{
-                              "color": "rgba(0, 0, 0, 0.5)",
+                              "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                               "display": "block"
                             }}>
           <span style={{
@@ -504,8 +505,8 @@ export function ShareDialog({
         </div>
       </div>
       <div style={{
-        "backgroundColor": "rgb(255, 255, 255)",
-        "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+        "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
         "display": "grid",
         "gridTemplateAreas": "\"header header\" \"sidebar body\" \"sidebar footer\"",
         "gridTemplateColumns": "0px 480px",
@@ -571,7 +572,7 @@ export function ShareDialog({
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "bottom": "0px",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -604,8 +605,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7 7h10a1 1 0 0 1 1 1v2H6V8a1 1 0 0 1 1-1m-1 4v5a1 1 0 0 0 1 1h2v-6zm4 6h7a1 1 0 0 0 1-1v-5h-8zM5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} fillRule="evenodd" d="M7 7h10a1 1 0 0 1 1 1v2H6V8a1 1 0 0 1 1-1m-1 4v5a1 1 0 0 0 1 1h2v-6zm4 6h7a1 1 0 0 0 1-1v-5h-8zM5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
   </svg>
 </div>
                     <div style={{
@@ -646,8 +647,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
   </svg>
 </div>
                   </div>
@@ -673,7 +674,7 @@ export function ShareDialog({
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "bottom": "0px",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -706,8 +707,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M6 5.903C6 4.43 7.604 3.517 8.87 4.269l10.15 6.028c1.307.776 1.305 2.669-.003 3.442l-10.15 5.995c-1.228.724-2.768-.11-2.863-1.5L6 18.098zm1 12.195a.9.9 0 0 0 1.357.774l10.152-5.995a1 1 0 0 0 .002-1.72L8.359 5.129A.9.9 0 0 0 7 5.903z" clipRule="evenodd"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} fillRule="evenodd" d="M6 5.903C6 4.43 7.604 3.517 8.87 4.269l10.15 6.028c1.307.776 1.305 2.669-.003 3.442l-10.15 5.995c-1.228.724-2.768-.11-2.863-1.5L6 18.098zm1 12.195a.9.9 0 0 0 1.357.774l10.152-5.995a1 1 0 0 0 .002-1.72L8.359 5.129A.9.9 0 0 0 7 5.903z" clipRule="evenodd"></path>
   </svg>
 </div>
                     <div style={{
@@ -756,7 +757,7 @@ export function ShareDialog({
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "bottom": "0px",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -789,8 +790,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M16.5 7h-9a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5m-9-1A1.5 1.5 0 0 0 6 7.5v9A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 16.5 6zm3.354 4.146a.5.5 0 0 1 0 .708L9.707 12l1.147 1.146a.5.5 0 0 1-.708.708l-1.5-1.5a.5.5 0 0 1 0-.708l1.5-1.5a.5.5 0 0 1 .708 0m2.292.708a.5.5 0 0 1 .708-.708l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708-.708L14.293 12z" clipRule="evenodd"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} fillRule="evenodd" d="M16.5 7h-9a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5m-9-1A1.5 1.5 0 0 0 6 7.5v9A1.5 1.5 0 0 0 7.5 18h9a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 16.5 6zm3.354 4.146a.5.5 0 0 1 0 .708L9.707 12l1.147 1.146a.5.5 0 0 1-.708.708l-1.5-1.5a.5.5 0 0 1 0-.708l1.5-1.5a.5.5 0 0 1 .708 0m2.292.708a.5.5 0 0 1 .708-.708l1.5 1.5a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708-.708L14.293 12z" clipRule="evenodd"></path>
   </svg>
 </div>
                     <div style={{
@@ -831,8 +832,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} d="M10.647 9.147a.5.5 0 0 1 .707 0l2.5 2.5a.5.5 0 0 1 0 .707l-2.5 2.5a.5.5 0 0 1-.707-.707L12.793 12l-2.146-2.146a.5.5 0 0 1 0-.707"></path>
   </svg>
 </div>
                   </div>
@@ -857,9 +858,9 @@ export function ShareDialog({
                     <button style={{
                       "alignItems": "center",
                       "appearance": "auto",
-                      "backgroundColor": "rgb(255, 223, 204)",
+                      "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
                       "bottom": "0px",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -893,8 +894,8 @@ export function ShareDialog({
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M11.725 11.082a.5.5 0 0 1 .629.064l2.5 2.5a.5.5 0 0 1-.707.707L12.5 12.708V18.5a.5.5 0 0 1-1 0v-5.793l-1.646 1.646a.5.5 0 1 1-.707-.707l2.5-2.5zM10.379 6a2 2 0 0 1 1.414.586l1.411 1.411.007.003h3.29a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-2a.5.5 0 1 1 0-1h2a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-3.704l-.007-.003-1.704-1.704A1 1 0 0 0 10.379 7H7.5a1 1 0 0 0-1 1v7.5a1 1 0 0 0 1 1h2a.5.5 0 0 1 0 1h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} d="M11.725 11.082a.5.5 0 0 1 .629.064l2.5 2.5a.5.5 0 0 1-.707.707L12.5 12.708V18.5a.5.5 0 0 1-1 0v-5.793l-1.646 1.646a.5.5 0 1 1-.707-.707l2.5-2.5zM10.379 6a2 2 0 0 1 1.414.586l1.411 1.411.007.003h3.29a2 2 0 0 1 2 2v5.5a2 2 0 0 1-2 2h-2a.5.5 0 1 1 0-1h2a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1h-3.704l-.007-.003-1.704-1.704A1 1 0 0 0 10.379 7H7.5a1 1 0 0 0-1 1v7.5a1 1 0 0 0 1 1h2a.5.5 0 0 1 0 1h-2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"></path>
   </svg>
 </div>
                     <div style={{
@@ -944,8 +945,8 @@ export function ShareDialog({
   <button style={{
                         "alignItems": "center",
                         "appearance": "auto",
-                        "backgroundColor": "rgb(255, 223, 204)",
-                        "color": "rgb(226, 76, 12)",
+                        "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
+                        "color": "var(--ad-brand-strong, rgb(226, 76, 12))",
                         "display": "inline-flex",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                         "fontSize": "11px",
@@ -982,7 +983,7 @@ export function ShareDialog({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "grid",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
@@ -1019,8 +1020,8 @@ export function ShareDialog({
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M16.224 7.082a.501.501 0 0 1 .694.693l-.065.078L12.707 12l4.146 4.146.065.078a.5.5 0 0 1-.694.694l-.078-.065L12 12.706l-4.147 4.147a.5.5 0 1 1-.707-.707l4.147-4.147-4.147-4.146-.064-.078a.501.501 0 0 1 .693-.693l.078.064L12 11.293l4.146-4.147z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M16.224 7.082a.501.501 0 0 1 .694.693l-.065.078L12.707 12l4.146 4.146.065.078a.5.5 0 0 1-.694.694l-.078-.065L12 12.706l-4.147 4.147a.5.5 0 1 1-.707-.707l4.147-4.147-4.147-4.146-.064-.078a.501.501 0 0 1 .693-.693l.078.064L12 11.293l4.146-4.147z"></path>
           </svg>
         </span>
       </button>

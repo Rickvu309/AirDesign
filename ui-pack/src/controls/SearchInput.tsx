@@ -1,13 +1,14 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function SearchInput({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"input">) {
   return <input style={{
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
     "fontWeight": "400",
@@ -22,5 +23,5 @@ export function SearchInput({
     flexShrink: 0,
     width: 200,
     ...style
-  }} aria-description="Search results; results will update as you type" aria-label="Search" placeholder="Search" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-haspopup="listbox" type="text" value="" className={className}></input>;
+  }} aria-description="Search results; results will update as you type" aria-label="Search" placeholder="Search" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-haspopup="listbox" type="text" value="" className={className} {...rest}></input>;
 }

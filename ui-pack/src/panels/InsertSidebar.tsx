@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function InsertSidebar({ style, className }: AirDesignComponentProps) {
+export function InsertSidebar({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   position: "relative",
   fontFamily: "Inter, sans-serif",
@@ -12,10 +16,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
   height: 923,
   width: 365,
   ...style
-}} role="region" aria-label="Left sidebar" className={className}>
+}} role="region" aria-label="Left sidebar" className={className} {...rest}>
   <div style={{
-    "backgroundColor": "rgb(255, 255, 255)",
-    "borderRightColor": "rgb(230, 230, 230)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+    "borderRightColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderRightStyle": "solid",
     "borderRightWidth": "1px",
     "boxSizing": "border-box",
@@ -40,7 +44,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
@@ -58,12 +62,12 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
           "height": 24,
           "flexShrink": 0
         }} viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden="true" width={24} height={24}>
-          <path d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
-          <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
         </svg>
       </button>
       <div style={{
-        "borderBottomColor": "rgb(230, 230, 230)",
+        "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
         "borderBottomStyle": "solid",
         "borderBottomWidth": "1px",
         "boxSizing": "content-box",
@@ -76,7 +80,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -107,12 +111,12 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -139,7 +143,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -179,14 +183,14 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                 "width": "24px"
               }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-                  "fill": "rgba(0, 0, 0, 0.898)"
-                }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
+                  "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                }} fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
               </svg>
             </div>
           </span>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -213,7 +217,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -230,7 +234,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
       }} aria-expanded="true" aria-label="Inserts" type="button">
         <div style={{
           "alignItems": "center",
-          "backgroundColor": "rgb(255, 223, 204)",
+          "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
           "display": "flex",
           "height": "32px",
           "justifyContent": "center",
@@ -245,12 +249,12 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgb(226, 76, 12)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
+              "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+            }} fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -306,8 +310,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
           "width": "306px"
         }}>
           <div style={{
-            "backgroundColor": "rgb(255, 255, 255)",
-            "borderRightColor": "rgba(0, 0, 0, 0.1)",
+            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+            "borderRightColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
             "borderRightStyle": "solid",
             "borderRightWidth": "1px",
             "boxSizing": "content-box",
@@ -321,7 +325,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
             "width": "306px"
           }}>
             <div style={{
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -373,7 +377,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                           "alignItems": "center",
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                           "fontSize": "13px",
@@ -396,7 +400,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
       <label style={{
                           "clip": "rect(0px, 0px, 0px, 0px)",
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -437,7 +441,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                               "backgroundColor": "rgba(0, 0, 0, 0)",
                               "borderBottomRightRadius": "5px",
                               "borderTopRightRadius": "5px",
-                              "color": "rgb(0, 0, 0)",
+                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                               "display": "grid",
                               "fontFamily": "Inter, sans-serif",
                               "fontSize": "11px",
@@ -474,8 +478,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                                   "width": "16px"
                                 }} width="16" height="16" fill="none" viewBox="0 0 16 16">
                 <path style={{
-                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                  }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
               </svg>
             </span>
           </button>
@@ -489,7 +493,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "grid",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -526,8 +530,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "width": "24px"
                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.898)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M5 6h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1M3 7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm12-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2zm6 7h-4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1m-4-1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zM5 14h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
+                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                      }} fillRule="evenodd" d="M5 6h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1M3 7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm12-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2zm6 7h-4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1m-4-1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zM5 14h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
   </svg>
 </span>
                 </button>
@@ -550,7 +554,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                 }}>
                   <a style={{
                     "boxSizing": "content-box",
-                    "color": "rgba(0, 0, 0, 0.5)",
+                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                     "display": "block",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "11px",
@@ -567,7 +571,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                     "textOverflow": "ellipsis",
                     "whiteSpace": "nowrap",
                     "borderRadius": "5px"
-                  }} aria-label="Drafts" href="https://www.figma.com/files/team/1505619433971646255/project/386051928" rel="noopener" target="_blank">
+                  }} aria-label="Drafts" href="#" rel="noopener" target="_blank">
   <span style={{
                       "whiteSpace": "nowrap"
                     }}>Drafts</span>
@@ -577,8 +581,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
             </div>
             <div style={{
               "alignItems": "center",
-              "backgroundColor": "rgb(255, 255, 255)",
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -607,7 +611,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "minWidth": "0px"
                 }}>
                   <h2 style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "13px",
                     "fontWeight": "550",
@@ -653,7 +657,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -689,8 +693,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M4 14v-4h5v4zm-1 1V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm1-6h5V5H5a1 1 0 0 0-1 1zm6-4v4h10V6a1 1 0 0 0-1-1zm10 5H10v4h10zm0 5H10v4h9a1 1 0 0 0 1-1zM9 19H5a1 1 0 0 1-1-1v-3h5z" clipRule="evenodd"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} fillRule="evenodd" d="M4 14v-4h5v4zm-1 1V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm1-6h5V5H5a1 1 0 0 0-1 1zm6-4v4h10V6a1 1 0 0 0-1-1zm10 5H10v4h10zm0 5H10v4h9a1 1 0 0 0 1-1zM9 19H5a1 1 0 0 1-1-1v-3h5z" clipRule="evenodd"></path>
     </svg>
   </span>
   <span style={{
@@ -717,7 +721,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -753,8 +757,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.354 4.146a.5.5 0 0 1 0 .708L5.207 7l2.147 2.146a.5.5 0 1 1-.708.708l-2.5-2.5a.5.5 0 0 1 0-.708l2.5-2.5a.5.5 0 0 1 .708 0M14 4.5a.5.5 0 0 1 .5-.5H18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5a.5.5 0 0 1 1 0V18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3.5a.5.5 0 0 1-.5-.5m-4.354.354a.5.5 0 1 1 .708-.708l2.5 2.5a.5.5 0 0 1 0 .708l-2.5 2.5a.5.5 0 0 1-.708-.708L11.793 7z" clipRule="evenodd"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} fillRule="evenodd" d="M7.354 4.146a.5.5 0 0 1 0 .708L5.207 7l2.147 2.146a.5.5 0 1 1-.708.708l-2.5-2.5a.5.5 0 0 1 0-.708l2.5-2.5a.5.5 0 0 1 .708 0M14 4.5a.5.5 0 0 1 .5-.5H18a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5a.5.5 0 0 1 1 0V18a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-3.5a.5.5 0 0 1-.5-.5m-4.354.354a.5.5 0 1 1 .708-.708l2.5 2.5a.5.5 0 0 1 0 .708l-2.5 2.5a.5.5 0 0 1-.708-.708L11.793 7z" clipRule="evenodd"></path>
       </svg>
     </span>
     <span style={{
@@ -781,7 +785,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -817,8 +821,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18m0 1a8 8 0 1 0 0 16 8 8 0 0 0 0-16m3.056 3.003a.5.5 0 0 1 .441.553L15.336 9H16.5a.5.5 0 0 1 0 1h-1.274l-.445 4H16.5a.5.5 0 0 1 0 1h-1.83l-.173 1.556a.5.5 0 0 1-.994-.112L13.664 15H9.67l-.173 1.556a.5.5 0 0 1-.994-.112L8.664 15H7.5a.5.5 0 0 1 0-1h1.274l.445-4H7.5a.5.5 0 0 1 0-1h1.83l.173-1.556a.5.5 0 0 1 .994.112L10.336 9h3.994l.173-1.556a.5.5 0 0 1 .553-.441M9.78 14h3.993l.445-4h-3.993z"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18m0 1a8 8 0 1 0 0 16 8 8 0 0 0 0-16m3.056 3.003a.5.5 0 0 1 .441.553L15.336 9H16.5a.5.5 0 0 1 0 1h-1.274l-.445 4H16.5a.5.5 0 0 1 0 1h-1.83l-.173 1.556a.5.5 0 0 1-.994-.112L13.664 15H9.67l-.173 1.556a.5.5 0 0 1-.994-.112L8.664 15H7.5a.5.5 0 0 1 0-1h1.274l.445-4H7.5a.5.5 0 0 1 0-1h1.83l.173-1.556a.5.5 0 0 1 .994.112L10.336 9h3.994l.173-1.556a.5.5 0 0 1 .553-.441M9.78 14h3.993l.445-4h-3.993z"></path>
       </svg>
     </span>
     <span style={{
@@ -853,7 +857,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -882,10 +886,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Text" src="https://static.figma.com/uploads/e614e423effbdc48395995943326a08f9627c698"></img>
+                    }} alt="Text" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -898,7 +902,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -927,10 +931,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Media" src="https://static.figma.com/uploads/70d5d9b596cda9a5ad0a74fb2a86cf7eaa2c7d62"></img>
+                    }} alt="Media" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -943,7 +947,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -972,10 +976,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Shapes" src="https://static.figma.com/uploads/cd5738b523b4155c28b21b7b3af707b7c587b267"></img>
+                    }} alt="Shapes" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -988,7 +992,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -1017,10 +1021,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Prototypes" src="https://static.figma.com/uploads/90daffd5edf313ad0d686805b52c6cb6617ec7b9"></img>
+                    }} alt="Prototypes" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -1033,7 +1037,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -1062,10 +1066,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Interactive" src="https://static.figma.com/uploads/96f13404e92d659b4ce0645e976e0c8b0039fa05"></img>
+                    }} alt="Interactive" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -1078,7 +1082,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "columnGap": "8px",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
@@ -1107,10 +1111,10 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                       "overflowX": "clip",
                       "overflowY": "clip",
                       "width": "48px"
-                    }} alt="Libraries" src="https://static.figma.com/uploads/c51212a3c827a5555105b7dae8a2bf8861016a1b"></img>
+                    }} alt="Libraries" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px"
@@ -1121,8 +1125,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
               </div>
             </div>
             <div style={{
-              "backgroundColor": "rgb(245, 245, 245)",
-              "borderRightColor": "rgb(230, 230, 230)",
+              "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+              "borderRightColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderRightStyle": "solid",
               "borderRightWidth": "1px",
               "boxSizing": "content-box",
@@ -1139,7 +1143,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
             }}>
               <div style={{
                 "alignItems": "center",
-                "borderBottomColor": "rgba(0, 0, 0, 0.1)",
+                "borderBottomColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                 "borderBottomStyle": "solid",
                 "borderBottomWidth": "1px",
                 "boxSizing": "content-box",
@@ -1151,9 +1155,9 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                 <button style={{
                   "alignItems": "center",
                   "appearance": "auto",
-                  "backgroundColor": "rgb(255, 255, 255)",
+                  "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -1164,7 +1168,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   "lineHeight": "16px",
                   "textAlign": "start",
                   "width": "48px",
-                  "border": "1px solid rgba(0, 0, 0, 0.1)",
+                  "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                   "borderRadius": "2px",
                   "padding": "0px"
                 }} aria-label="New slide" type="button">
@@ -1176,8 +1180,8 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                     "width": "24px"
                   }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                      "fill": "rgba(0, 0, 0, 0.898)"
-                    }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6" clipRule="evenodd"></path>
+                      "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                    }} fillRule="evenodd" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6" clipRule="evenodd"></path>
   </svg>
 </button>
               </div>
@@ -1203,7 +1207,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                 }}>
   <ul style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "border-box",
                     "columnGap": "12px",
                     "display": "flex",
@@ -1224,7 +1228,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                   }}>
     <li style={{
                       "boxSizing": "border-box",
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
                       "fontWeight": "400",
@@ -1246,14 +1250,14 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                     }} value="1:42">
       <button style={{
                         "appearance": "auto",
-                        "backgroundColor": "rgb(245, 245, 245)",
-                        "color": "rgb(0, 0, 0)",
+                        "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                         "fontFamily": "Inter, sans-serif",
                         "fontSize": "11px",
                         "fontWeight": "400",
                         "height": "28px",
                         "lineHeight": "16px",
-                        "outlineColor": "rgb(0, 123, 229)",
+                        "outlineColor": "var(--ad-selection-strong, rgb(0, 123, 229))",
                         "outlineStyle": "solid",
                         "outlineWidth": "2px",
                         "position": "relative",
@@ -1281,7 +1285,7 @@ export function InsertSidebar({ style, className }: AirDesignComponentProps) {
                           }}>
             <div style={{
                               "alignItems": "center",
-                              "backgroundColor": "rgb(242, 249, 255)",
+                              "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
                               "display": "flex",
                               "height": "28px",
                               "justifyContent": "center",

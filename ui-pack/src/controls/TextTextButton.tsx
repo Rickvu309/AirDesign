@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function TextTextButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -23,7 +24,7 @@ export function TextTextButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-expanded="true" type="button" className={className}>
+  }} aria-expanded="true" type="button" className={className} {...rest}>
                   <span style={{
       "alignItems": "center",
       "display": "flex",
@@ -38,12 +39,12 @@ export function TextTextButton({
         "width": "16px"
       }} width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
     <path style={{
-          "fill": "rgba(0, 0, 0, 0.3)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+          "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+        }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
   </svg>
 </span>
                   <span style={{
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "display": "block",
       "flexBasis": "0%",
       "flexGrow": "1",

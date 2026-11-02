@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AddTextBoxButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -18,7 +19,7 @@ export function AddTextBoxButton({
     "letterSpacing": "0.05504px",
     "lineHeight": "16px",
     "maxWidth": "100%",
-    "outlineColor": "rgba(0, 0, 0, 0.1)",
+    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
     "outlineOffset": "-1px",
     "outlineStyle": "solid",
     "outlineWidth": "1px",
@@ -30,7 +31,7 @@ export function AddTextBoxButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
         <span style={{
       "display": "flex",
       "height": "24px",
@@ -69,8 +70,8 @@ export function AddTextBoxButton({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                   <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M6 6.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a.5.5 0 0 1-1 0V7h-4.5v10h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2V7H7v2a.5.5 0 0 1-1 0z" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M6 6.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a.5.5 0 0 1-1 0V7h-4.5v10h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2V7H7v2a.5.5 0 0 1-1 0z" clipRule="evenodd"></path>
                 </svg>
                 <span style={{
               "whiteSpace": "nowrap"

@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AccountMenuButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -25,7 +26,7 @@ export function AccountMenuButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-haspopup="menu" aria-expanded="false" aria-label="Account dropdown for Quan Vu (Richard)" type="button" className={className}>
+  }} aria-haspopup="menu" aria-expanded="false" aria-label="Account dropdown for Your Name" type="button" className={className} {...rest}>
     <div style={{
       "alignItems": "center",
       "columnGap": "8px",
@@ -42,7 +43,7 @@ export function AccountMenuButton({
         }} aria-hidden="true">
           <div style={{
             "alignItems": "center",
-            "color": "rgb(255, 255, 255)",
+            "color": "var(--ad-surface, rgb(255, 255, 255))",
             "display": "flex",
             "flexShrink": "0",
             "height": "24px",
@@ -53,7 +54,7 @@ export function AccountMenuButton({
             "position": "relative",
             "width": "24px",
             "borderRadius": "9999px"
-          }} aria-label="Quan Vu (Richard)" role="img">
+          }} aria-label="Your Name" role="img">
             <span style={{
               "display": "block",
               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -78,10 +79,10 @@ export function AccountMenuButton({
               "width": "24px",
               "minWidth": "0px",
               "minHeight": "0px"
-            }} src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271" alt=""></img>
+            }} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" alt=""></img>
             <span style={{
               "bottom": "0px",
-              "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset",
+              "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 1px inset",
               "display": "block",
               "height": "24px",
               "left": "0px",
@@ -97,7 +98,7 @@ export function AccountMenuButton({
         </span>
       </div>
       <span style={{
-        "color": "rgba(0, 0, 0, 0.898)",
+        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
         "display": "block",
         "fontSize": "13px",
         "fontWeight": "500",
@@ -111,7 +112,7 @@ export function AccountMenuButton({
       }}>
         <span style={{
           "whiteSpace": "nowrap"
-        }}>Quan Vu (Richard)</span>
+        }}>Your Name</span>
       </span>
     </div>
     <svg style={{
@@ -123,8 +124,8 @@ export function AccountMenuButton({
       "width": "16px"
     }} width="16" height="16" fill="none" viewBox="0 0 16 16">
       <path style={{
-        "fill": "rgba(0, 0, 0, 0.898)"
-      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+      }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
     </svg>
   </button>;
 }

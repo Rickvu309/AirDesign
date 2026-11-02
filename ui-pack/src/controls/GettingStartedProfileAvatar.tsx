@@ -1,12 +1,13 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function GettingStartedProfileAvatar({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "alignItems": "center",
-    "color": "rgb(255, 255, 255)",
+    "color": "var(--ad-surface, rgb(255, 255, 255))",
     "display": "flex",
     "flexShrink": "0",
     "height": "24px",
@@ -23,7 +24,7 @@ export function GettingStartedProfileAvatar({
     lineHeight: "16px",
     boxSizing: "border-box",
     ...style
-  }} aria-label="Quan Vu (Richard)" role="img" className={className}>
+  }} aria-label="Your Name" role="img" className={className} {...rest}>
               <span style={{
       "display": "block",
       "fontSize": "13px",
@@ -47,10 +48,10 @@ export function GettingStartedProfileAvatar({
       "width": "24px",
       "minWidth": "0px",
       "minHeight": "0px"
-    }} src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271" alt=""></img>
+    }} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" alt=""></img>
               <span style={{
       "bottom": "0px",
-      "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 1px inset",
+      "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 1px inset",
       "display": "block",
       "height": "24px",
       "left": "0px",

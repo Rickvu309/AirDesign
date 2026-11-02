@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MediaBackButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "grid",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "13px",
@@ -31,7 +32,7 @@ export function MediaBackButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Back" type="button" className={className}>
+  }} aria-label="Back" type="button" className={className} {...rest}>
                   <span style={{
       "alignItems": "center",
       "display": "flex",
@@ -49,8 +50,8 @@ export function MediaBackButton({
         "width": "24px"
       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-          "fill": "rgba(0, 0, 0, 0.898)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
   </svg>
 </span>
                 </button>;

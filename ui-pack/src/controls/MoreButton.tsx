@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MoreButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(245, 245, 245)",
-    "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
-    "color": "rgb(0, 0, 0)",
+    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+    "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "flexShrink": "0",
     "fontFamily": "Inter, sans-serif",
@@ -25,7 +26,7 @@ export function MoreButton({
     position: "relative",
     boxSizing: "border-box",
     ...style
-  }} aria-haspopup="menu" aria-expanded="false" aria-label="More" type="button" className={className}>
+  }} aria-haspopup="menu" aria-expanded="false" aria-label="More" type="button" className={className} {...rest}>
                 <div style={{
       "display": "grid",
       "gridTemplateColumns": "75.0391px",
@@ -44,7 +45,7 @@ export function MoreButton({
           "padding": "8px 16px"
         }}>
                       <span style={{
-            "color": "rgba(0, 0, 0, 0.898)",
+            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
             "display": "block",
             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
             "fontWeight": "450",
@@ -60,8 +61,8 @@ export function MoreButton({
             "width": "16px"
           }} width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
                         <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
                       </svg>
                     </div>
                   </div>
@@ -75,7 +76,7 @@ export function MoreButton({
         "gridRowStart": "1"
       }}>
                     <div style={{
-          "backgroundColor": "rgb(255, 255, 255)"
+          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))"
         }}>
                       <div style={{
             "backgroundColor": "rgba(0, 0, 0, 0.05)",

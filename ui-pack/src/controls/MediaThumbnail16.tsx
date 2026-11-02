@@ -1,21 +1,22 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MediaThumbnail16({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
     "fontWeight": "400",
     "justifyItems": "center",
     "lineHeight": "16px",
-    "outlineColor": "rgba(0, 0, 0, 0.1)",
+    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
     "outlineOffset": "-1px",
     "outlineStyle": "solid",
     "outlineWidth": "1px",
@@ -28,7 +29,7 @@ export function MediaThumbnail16({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
   <img style={{
       "display": "block",
       "height": "199.5px",

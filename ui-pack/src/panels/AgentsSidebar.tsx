@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
+export function AgentsSidebar({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   position: "relative",
   fontFamily: "Inter, sans-serif",
@@ -12,10 +16,10 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
   height: 923,
   width: 365,
   ...style
-}} role="region" aria-label="Left sidebar" className={className}>
+}} role="region" aria-label="Left sidebar" className={className} {...rest}>
   <div style={{
-    "backgroundColor": "rgb(255, 255, 255)",
-    "borderRightColor": "rgb(230, 230, 230)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+    "borderRightColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderRightStyle": "solid",
     "borderRightWidth": "1px",
     "boxSizing": "border-box",
@@ -40,7 +44,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
@@ -58,12 +62,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
           "height": 24,
           "flexShrink": 0
         }} viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden="true" width={24} height={24}>
-          <path d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
-          <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
         </svg>
       </button>
       <div style={{
-        "borderBottomColor": "rgb(230, 230, 230)",
+        "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
         "borderBottomStyle": "solid",
         "borderBottomWidth": "1px",
         "boxSizing": "content-box",
@@ -76,7 +80,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -107,12 +111,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -139,7 +143,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -156,7 +160,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
       }} aria-expanded="true" aria-label="Agents" type="button">
         <div style={{
           "alignItems": "center",
-          "backgroundColor": "rgb(255, 223, 204)",
+          "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
           "display": "flex",
           "height": "32px",
           "justifyContent": "center",
@@ -180,14 +184,14 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                 "width": "24px"
               }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-                  "fill": "rgb(226, 76, 12)"
-                }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
+                  "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+                }} fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
               </svg>
             </div>
           </span>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -214,7 +218,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -245,12 +249,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -306,8 +310,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
           "width": "306px"
         }}>
           <div style={{
-            "backgroundColor": "rgb(255, 255, 255)",
-            "borderRightColor": "rgba(0, 0, 0, 0.1)",
+            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+            "borderRightColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
             "borderRightStyle": "solid",
             "borderRightWidth": "1px",
             "boxSizing": "content-box",
@@ -321,7 +325,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
             "width": "306px"
           }}>
             <div style={{
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -373,7 +377,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                           "alignItems": "center",
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                           "fontSize": "13px",
@@ -396,7 +400,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
       <label style={{
                           "clip": "rect(0px, 0px, 0px, 0px)",
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -437,7 +441,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                               "backgroundColor": "rgba(0, 0, 0, 0)",
                               "borderBottomRightRadius": "5px",
                               "borderTopRightRadius": "5px",
-                              "color": "rgb(0, 0, 0)",
+                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                               "display": "grid",
                               "fontFamily": "Inter, sans-serif",
                               "fontSize": "11px",
@@ -474,8 +478,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                   "width": "16px"
                                 }} width="16" height="16" fill="none" viewBox="0 0 16 16">
                 <path style={{
-                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                  }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
               </svg>
             </span>
           </button>
@@ -489,7 +493,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "grid",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -526,8 +530,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                       "width": "24px"
                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.898)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M5 6h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1M3 7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm12-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2zm6 7h-4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1m-4-1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zM5 14h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
+                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                      }} fillRule="evenodd" d="M5 6h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1M3 7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zm12-1h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2zm6 7h-4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1m-4-1a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2zM5 14h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1m-2 1a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" clipRule="evenodd"></path>
   </svg>
 </span>
                 </button>
@@ -550,7 +554,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                 }}>
                   <a style={{
                     "boxSizing": "content-box",
-                    "color": "rgba(0, 0, 0, 0.5)",
+                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                     "display": "block",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "11px",
@@ -567,7 +571,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                     "textOverflow": "ellipsis",
                     "whiteSpace": "nowrap",
                     "borderRadius": "5px"
-                  }} aria-label="Drafts" href="https://www.figma.com/files/team/1505619433971646255/project/386051928" rel="noopener" target="_blank">
+                  }} aria-label="Drafts" href="#" rel="noopener" target="_blank">
   <span style={{
                       "whiteSpace": "nowrap"
                     }}>Drafts</span>
@@ -577,8 +581,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
             </div>
             <div style={{
               "alignItems": "flex-start",
-              "backgroundColor": "rgb(255, 255, 255)",
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -607,7 +611,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                   "minWidth": "0px"
                 }}>
                   <h2 style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "13px",
                     "fontWeight": "550",
@@ -625,7 +629,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                     }}>New chat</span>
 </h2>
                   <div style={{
-                    "color": "rgba(0, 0, 0, 0.5)",
+                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                     "fontSize": "11px",
                     "fontWeight": "450",
                     "letterSpacing": "0.05504px",
@@ -665,11 +669,11 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                     "fontWeight": "550",
                     "lineHeight": "22px",
                     "borderRadius": "5px"
-                  }} aria-label="Beta, Learn more" href="https://help.figma.com/hc/articles/37998629035799" rel="noopener" target="_blank">
+                  }} aria-label="Beta, Learn more" href="#" rel="noopener" target="_blank">
   <div style={{
                       "alignItems": "center",
                       "boxSizing": "content-box",
-                      "color": "rgba(0, 0, 0, 0.5)",
+                      "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                       "columnGap": "4px",
                       "display": "flex",
                       "fontSize": "11px",
@@ -678,7 +682,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                       "paddingLeft": "4px",
                       "paddingRight": "4px",
                       "rowGap": "4px",
-                      "border": "1px solid rgb(230, 230, 230)",
+                      "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                       "borderRadius": "5px"
                     }}>
     Beta
@@ -695,7 +699,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                       "alignItems": "center",
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "grid",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "13px",
@@ -732,8 +736,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                           "width": "24px"
                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                            "fill": "rgba(0, 0, 0, 0.898)"
-                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -865,7 +869,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                         }}>
                         <div style={{
                                             "alignItems": "center",
-                                            "backgroundColor": "rgb(255, 223, 204)",
+                                            "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
                                             "boxSizing": "content-box",
                                             "display": "flex",
                                             "justifyContent": "center",
@@ -880,12 +884,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "width": "24px"
                                             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                             <path style={{
-                                                "fill": "rgb(226, 76, 12)"
-                                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9 13a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm7.5 0a.5.5 0 0 1 .5.5V16h2.5a.5.5 0 0 1 0 1H17v2.5a.5.5 0 0 1-1 0V17h-2.5a.5.5 0 0 1 0-1H16v-2.5a.5.5 0 0 1 .5-.5M6 14a1 1 0 0 0-1 1v3a1 1 0 0 0 .897.995L6 19h3a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1zm.87-10.275a1 1 0 0 1 1.337.068l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 0-1.414l3-3zM16.5 4a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7m-12 3.5 3 3 3-3-3-3zm12-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5"></path>
+                                                "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+                                              }} d="M9 13a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2zm7.5 0a.5.5 0 0 1 .5.5V16h2.5a.5.5 0 0 1 0 1H17v2.5a.5.5 0 0 1-1 0V17h-2.5a.5.5 0 0 1 0-1H16v-2.5a.5.5 0 0 1 .5-.5M6 14a1 1 0 0 0-1 1v3a1 1 0 0 0 .897.995L6 19h3a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1zm.87-10.275a1 1 0 0 1 1.337.068l3 3a1 1 0 0 1 0 1.414l-3 3a1 1 0 0 1-1.414 0l-3-3a1 1 0 0 1 0-1.414l3-3zM16.5 4a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7m-12 3.5 3 3 3-3-3-3zm12-2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5"></path>
                           </svg>
                         </div>
                         <h2 style={{
-                                            "color": "rgba(0, 0, 0, 0.898)",
+                                            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                             "fontSize": "15px",
                                             "fontWeight": "550",
@@ -913,7 +917,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                             "overflowX": "hidden",
                                             "overflowY": "hidden",
                                             "width": "274px",
-                                            "border": "1px solid rgb(230, 230, 230)",
+                                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                             "borderRadius": "13px"
                                           }} role="group">
                           <button style={{
@@ -921,7 +925,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "appearance": "auto",
                                               "backgroundColor": "rgba(0, 0, 0, 0)",
                                               "boxSizing": "border-box",
-                                              "color": "rgb(0, 0, 0)",
+                                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                               "display": "flex",
                                               "fontFamily": "Inter, sans-serif",
                                               "fontSize": "11px",
@@ -948,12 +952,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
   <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.5)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M7.312 6.803a7 7 0 0 1 9.639.248l.28.298a7 7 0 0 1 1.76 4.998l-.029.38C18.807 14.222 17.446 15 16.242 15H13.5l-.101.01a.5.5 0 0 0-.4.49v.5c0 .82-.338 1.603-.92 2.127-.6.542-1.468.8-2.37.488a7 7 0 0 1-2.362-1.385l-.297-.28a7 7 0 0 1 0-9.9zm8.93.955a6 6 0 0 0-8.485 0l-.212.225a6 6 0 0 0 2.492 9.689c.978.337 1.848-.457 1.953-1.467L12 16v-.499a1.5 1.5 0 0 1 1.5-1.5h2.743l.158-.006c.733-.057 1.391-.513 1.543-1.216l.024-.155a6 6 0 0 0-1.484-4.611zM8.5 12.001a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7-2a1 1 0 1 1-.001 2 1 1 0 0 1 0-2m-6-1.5a1 1 0 1 1 0 2.001 1 1 0 0 1 0-2m3.5-1a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
+                                                    "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                                                  }} d="M7.312 6.803a7 7 0 0 1 9.639.248l.28.298a7 7 0 0 1 1.76 4.998l-.029.38C18.807 14.222 17.446 15 16.242 15H13.5l-.101.01a.5.5 0 0 0-.4.49v.5c0 .82-.338 1.603-.92 2.127-.6.542-1.468.8-2.37.488a7 7 0 0 1-2.362-1.385l-.297-.28a7 7 0 0 1 0-9.9zm8.93.955a6 6 0 0 0-8.485 0l-.212.225a6 6 0 0 0 2.492 9.689c.978.337 1.848-.457 1.953-1.467L12 16v-.499a1.5 1.5 0 0 1 1.5-1.5h2.743l.158-.006c.733-.057 1.391-.513 1.543-1.216l.024-.155a6 6 0 0 0-1.484-4.611zM8.5 12.001a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7-2a1 1 0 1 1-.001 2 1 1 0 0 1 0-2m-6-1.5a1 1 0 1 1 0 2.001 1 1 0 0 1 0-2m3.5-1a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
 </svg>
                             </span>
                             <span style={{
-                                                "color": "rgba(0, 0, 0, 0.898)",
+                                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                                 "display": "block",
                                                 "flexGrow": "1",
                                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -982,8 +986,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
   <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.3)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
+                                                    "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                                                  }} d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
 </svg>
                             </span>
                           </button>
@@ -995,7 +999,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                             "overflowX": "hidden",
                                             "overflowY": "hidden",
                                             "width": "274px",
-                                            "border": "1px solid rgb(230, 230, 230)",
+                                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                             "borderRadius": "13px"
                                           }} role="group">
                           <button style={{
@@ -1003,7 +1007,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "appearance": "auto",
                                               "backgroundColor": "rgba(0, 0, 0, 0)",
                                               "boxSizing": "border-box",
-                                              "color": "rgb(0, 0, 0)",
+                                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                               "display": "flex",
                                               "fontFamily": "Inter, sans-serif",
                                               "fontSize": "11px",
@@ -1030,12 +1034,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
   <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.5)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
+                                                    "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                                                  }} fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
 </svg>
                             </span>
                             <span style={{
-                                                "color": "rgba(0, 0, 0, 0.898)",
+                                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                                 "display": "block",
                                                 "flexGrow": "1",
                                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -1064,8 +1068,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.3)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
+                                                    "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                                                  }} d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
   </svg>
 </span>
                           </button>
@@ -1077,7 +1081,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                             "overflowX": "hidden",
                                             "overflowY": "hidden",
                                             "width": "274px",
-                                            "border": "1px solid rgb(230, 230, 230)",
+                                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                             "borderRadius": "13px"
                                           }} role="group">
                           <button style={{
@@ -1085,7 +1089,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "appearance": "auto",
                                               "backgroundColor": "rgba(0, 0, 0, 0)",
                                               "boxSizing": "border-box",
-                                              "color": "rgb(0, 0, 0)",
+                                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                               "display": "flex",
                                               "fontFamily": "Inter, sans-serif",
                                               "fontSize": "11px",
@@ -1112,12 +1116,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.5)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.5 7.001a.5.5 0 0 1 0 1H7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-4.5a.5.5 0 1 1 1 0v4.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zm-1 6a.5.5 0 1 1 0 1h-5a.5.5 0 0 1 0-1zm2-3a.5.5 0 1 1 0 1h-7a.5.5 0 0 1 0-1zm2.515-4.56c.126-.505.844-.505.97 0l.315 1.26 1.26.315c.505.126.505.844 0 .97l-1.26.315-.315 1.26c-.126.505-.844.505-.97 0L17.7 8.3l-1.26-.315c-.505-.126-.505-.844 0-.97L17.7 6.7z"></path>
+                                                    "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                                                  }} d="M14.5 7.001a.5.5 0 0 1 0 1H7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-4.5a.5.5 0 1 1 1 0v4.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zm-1 6a.5.5 0 1 1 0 1h-5a.5.5 0 0 1 0-1zm2-3a.5.5 0 1 1 0 1h-7a.5.5 0 0 1 0-1zm2.515-4.56c.126-.505.844-.505.97 0l.315 1.26 1.26.315c.505.126.505.844 0 .97l-1.26.315-.315 1.26c-.126.505-.844.505-.97 0L17.7 8.3l-1.26-.315c-.505-.126-.505-.844 0-.97L17.7 6.7z"></path>
   </svg>
 </span>
                             <span style={{
-                                                "color": "rgba(0, 0, 0, 0.898)",
+                                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                                 "display": "block",
                                                 "flexGrow": "1",
                                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -1146,8 +1150,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.3)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
+                                                    "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                                                  }} d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
   </svg>
 </span>
                           </button>
@@ -1159,7 +1163,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                             "overflowX": "hidden",
                                             "overflowY": "hidden",
                                             "width": "274px",
-                                            "border": "1px solid rgb(230, 230, 230)",
+                                            "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                             "borderRadius": "13px"
                                           }} role="group">
                           <button style={{
@@ -1167,7 +1171,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "appearance": "auto",
                                               "backgroundColor": "rgba(0, 0, 0, 0)",
                                               "boxSizing": "border-box",
-                                              "color": "rgb(0, 0, 0)",
+                                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                               "display": "flex",
                                               "fontFamily": "Inter, sans-serif",
                                               "fontSize": "11px",
@@ -1194,12 +1198,12 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.5)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M6.057 14.763c.184-.35.7-.35.884 0l.034.08.295.886.886.294c.458.153.458.8 0 .953l-.886.294-.295.886a.502.502 0 0 1-.952 0l-.295-.886-.886-.294a.502.502 0 0 1 0-.953l.885-.296.296-.884zM18.5 16a.5.5 0 1 1 0 1h-8a.5.5 0 0 1 0-1zM6.057 9.763c.184-.35.7-.35.884 0l.034.08.295.886.886.294c.458.153.457.8 0 .953l-.886.294-.295.886a.502.502 0 0 1-.952 0l-.295-.886-.886-.294a.502.502 0 0 1 0-.953l.885-.296.296-.884zM18.5 11a.5.5 0 1 1 0 1h-8a.5.5 0 0 1 0-1zM6.058 4.763c.185-.35.7-.35.884 0l.034.08.295.886.886.294c.457.153.457.8 0 .953l-.886.295-.295.885a.502.502 0 0 1-.952 0l-.295-.885-.886-.295a.502.502 0 0 1 0-.953l.885-.295.296-.885zM18.5 6a.5.5 0 0 1 0 1h-8a.5.5 0 0 1 0-1z" clipRule="evenodd"></path>
+                                                    "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                                                  }} fillRule="evenodd" d="M6.057 14.763c.184-.35.7-.35.884 0l.034.08.295.886.886.294c.458.153.458.8 0 .953l-.886.294-.295.886a.502.502 0 0 1-.952 0l-.295-.886-.886-.294a.502.502 0 0 1 0-.953l.885-.296.296-.884zM18.5 16a.5.5 0 1 1 0 1h-8a.5.5 0 0 1 0-1zM6.057 9.763c.184-.35.7-.35.884 0l.034.08.295.886.886.294c.458.153.457.8 0 .953l-.886.294-.295.886a.502.502 0 0 1-.952 0l-.295-.886-.886-.294a.502.502 0 0 1 0-.953l.885-.296.296-.884zM18.5 11a.5.5 0 1 1 0 1h-8a.5.5 0 0 1 0-1zM6.058 4.763c.185-.35.7-.35.884 0l.034.08.295.886.886.294c.457.153.457.8 0 .953l-.886.295-.295.885a.502.502 0 0 1-.952 0l-.295-.885-.886-.295a.502.502 0 0 1 0-.953l.885-.295.296-.885zM18.5 6a.5.5 0 0 1 0 1h-8a.5.5 0 0 1 0-1z" clipRule="evenodd"></path>
   </svg>
 </span>
                             <span style={{
-                                                "color": "rgba(0, 0, 0, 0.898)",
+                                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                                 "display": "block",
                                                 "flexGrow": "1",
                                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -1228,8 +1232,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.3)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
+                                                    "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                                                  }} d="M15.647 10.147a.5.5 0 1 1 .707.707l-4 4a.5.5 0 0 1-.707 0l-4-4a.5.5 0 1 1 .707-.707L12 13.793z"></path>
   </svg>
 </span>
                           </button>
@@ -1259,7 +1263,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                   </div>
                 </div>
                 <div style={{
-                                    "backgroundImage": "linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(0, 0, 0, 0) 100%)",
+                                    "backgroundImage": "linear-gradient(to top, var(--ad-surface, rgb(255, 255, 255)) 0%, rgba(0, 0, 0, 0) 100%)",
                                     "bottom": "0px",
                                     "height": "20px",
                                     "left": "0px",
@@ -1297,7 +1301,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                       "position": "relative"
                                     }}></div>
                   <div style={{
-                                      "backgroundColor": "rgb(255, 255, 255)",
+                                      "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                       "bottom": "0px",
                                       "boxSizing": "content-box",
                                       "columnGap": "12px",
@@ -1313,11 +1317,11 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                       "paddingTop": "4px",
                                       "position": "relative",
                                       "rowGap": "12px",
-                                      "border": "1px solid rgb(230, 230, 230)",
+                                      "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                                       "borderRadius": "13px"
                                     }}>
                     <div style={{
-                                        "backgroundColor": "rgb(255, 255, 255)",
+                                        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                         "display": "flex",
                                         "flexBasis": "0px",
                                         "flexDirection": "column",
@@ -1345,7 +1349,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                             }}>The button action for this text area changes between Send and Stop as the agent works.</span>
                         </div>
                         <div style={{
-                                            "backgroundColor": "rgb(255, 255, 255)",
+                                            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                             "display": "flex",
                                             "flexGrow": "1",
                                             "position": "relative"
@@ -1368,7 +1372,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "padding": "12px 16px"
                                             }} aria-label="Prompt for AI agent" role="textbox" aria-disabled="false" aria-placeholder="">
                             <p style={{
-                                                "color": "rgba(0, 0, 0, 0.898)",
+                                                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                                 "fontFamily": "Inter",
                                                 "fontSize": "13px",
                                                 "fontWeight": "450",
@@ -1382,7 +1386,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                           </div>
                           <div aria-hidden="true"></div>
                           <div style={{
-                                              "color": "rgba(0, 0, 0, 0.5)",
+                                              "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                               "display": "-webkit-box",
                                               "fontFamily": "Inter",
                                               "fontSize": "13px",
@@ -1455,7 +1459,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "alignItems": "center",
                                                   "appearance": "auto",
                                                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                                                  "color": "rgb(0, 0, 0)",
+                                                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                                   "display": "grid",
                                                   "fontFamily": "Inter, sans-serif",
                                                   "fontSize": "11px",
@@ -1492,8 +1496,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                       "width": "24px"
                                                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                                        "fill": "rgba(0, 0, 0, 0.898)"
-                                                      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6"></path>
+                                                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                                      }} d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6"></path>
       </svg>
     </span>
   </button>
@@ -1503,7 +1507,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                               "alignItems": "center",
                                               "appearance": "auto",
                                               "backgroundColor": "rgba(0, 0, 0, 0)",
-                                              "color": "rgb(0, 0, 0)",
+                                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                               "display": "grid",
                                               "fontFamily": "Inter, sans-serif",
                                               "fontSize": "11px",
@@ -1540,8 +1544,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                   "width": "24px"
                                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M7.312 6.803a7 7 0 0 1 9.639.248l.28.298a7 7 0 0 1 1.76 4.998l-.029.38C18.807 14.222 17.446 15 16.242 15H13.5l-.101.01a.5.5 0 0 0-.4.49v.5c0 .82-.338 1.603-.92 2.127-.6.542-1.468.8-2.37.488a7 7 0 0 1-2.362-1.385l-.297-.28a7 7 0 0 1 0-9.9zm8.93.955a6 6 0 0 0-8.485 0l-.212.225a6 6 0 0 0 2.492 9.689c.978.337 1.848-.457 1.953-1.467L12 16v-.499a1.5 1.5 0 0 1 1.5-1.5h2.743l.158-.006c.733-.057 1.391-.513 1.543-1.216l.024-.155a6 6 0 0 0-1.484-4.611zM8.5 12.001a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7-2a1 1 0 1 1-.001 2 1 1 0 0 1 0-2m-6-1.5a1 1 0 1 1 0 2.001 1 1 0 0 1 0-2m3.5-1a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
+                                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                                  }} d="M7.312 6.803a7 7 0 0 1 9.639.248l.28.298a7 7 0 0 1 1.76 4.998l-.029.38C18.807 14.222 17.446 15 16.242 15H13.5l-.101.01a.5.5 0 0 0-.4.49v.5c0 .82-.338 1.603-.92 2.127-.6.542-1.468.8-2.37.488a7 7 0 0 1-2.362-1.385l-.297-.28a7 7 0 0 1 0-9.9zm8.93.955a6 6 0 0 0-8.485 0l-.212.225a6 6 0 0 0 2.492 9.689c.978.337 1.848-.457 1.953-1.467L12 16v-.499a1.5 1.5 0 0 1 1.5-1.5h2.743l.158-.006c.733-.057 1.391-.513 1.543-1.216l.024-.155a6 6 0 0 0-1.484-4.611zM8.5 12.001a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7-2a1 1 0 1 1-.001 2 1 1 0 0 1 0-2m-6-1.5a1 1 0 1 1 0 2.001 1 1 0 0 1 0-2m3.5-1a1 1 0 1 1 0 2 1 1 0 0 1 0-2"></path>
   </svg>
 </span>
                           </button>
@@ -1570,8 +1574,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
     <button style={{
                                                     "alignItems": "center",
                                                     "appearance": "auto",
-                                                    "backgroundColor": "rgb(255, 223, 204)",
-                                                    "color": "rgb(0, 0, 0)",
+                                                    "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
+                                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                                     "display": "grid",
                                                     "fontFamily": "Inter, sans-serif",
                                                     "fontSize": "11px",
@@ -1608,8 +1612,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                         "width": "24px"
                                                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
           <path style={{
-                                                          "fill": "rgb(226, 76, 12)"
-                                                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M16.5 11.5a.5.5 0 0 1 .5.5 5 5 0 0 1-4.5 4.975V18h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-1.025A5 5 0 0 1 7 12a.5.5 0 0 1 1 0 4 4 0 0 0 8 0 .5.5 0 0 1 .5-.5M12 5a3 3 0 0 1 3 3v4l-.004.154a3 3 0 0 1-5.992 0L9 12V8a3 3 0 0 1 3-3m0 1a2 2 0 0 0-2 2v4a2 2 0 1 0 4 0V8a2 2 0 0 0-2-2"></path>
+                                                          "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+                                                        }} d="M16.5 11.5a.5.5 0 0 1 .5.5 5 5 0 0 1-4.5 4.975V18h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2v-1.025A5 5 0 0 1 7 12a.5.5 0 0 1 1 0 4 4 0 0 0 8 0 .5.5 0 0 1 .5-.5M12 5a3 3 0 0 1 3 3v4l-.004.154a3 3 0 0 1-5.992 0L9 12V8a3 3 0 0 1 3-3m0 1a2 2 0 0 0-2 2v4a2 2 0 1 0 4 0V8a2 2 0 0 0-2-2"></path>
         </svg>
       </span>
     </button>
@@ -1622,8 +1626,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
     <button style={{
                                                     "alignItems": "center",
                                                     "appearance": "auto",
-                                                    "backgroundColor": "rgb(217, 217, 217)",
-                                                    "color": "rgb(0, 0, 0)",
+                                                    "backgroundColor": "var(--ad-divider-strong, rgb(217, 217, 217))",
+                                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                                     "display": "flex",
                                                     "flexShrink": "0",
                                                     "fontFamily": "Inter, sans-serif",
@@ -1659,8 +1663,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                                           "width": "24px"
                                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-                                                            "fill": "rgb(255, 255, 255)"
-                                                          }} fill="var(--fpl-icon-color, var(--color-icon))" d="M11.725 5.582a.5.5 0 0 1 .629.064l4.5 4.5a.5.5 0 1 1-.707.707L12.5 7.208V18a.5.5 0 0 1-1 0V7.207l-3.646 3.647a.5.5 0 1 1-.708-.707l4.5-4.5z"></path>
+                                                            "fill": "var(--ad-surface, rgb(255, 255, 255))"
+                                                          }} d="M11.725 5.582a.5.5 0 0 1 .629.064l4.5 4.5a.5.5 0 1 1-.707.707L12.5 7.208V18a.5.5 0 0 1-1 0V7.207l-3.646 3.647a.5.5 0 1 1-.708-.707l4.5-4.5z"></path>
           </svg>
         </div>
       </div>
@@ -1736,7 +1740,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                           "padding": "8px 8px 4px 8px"
                         }}>
         <h3 style={{
-                            "color": "rgba(0, 0, 0, 0.5)",
+                            "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                             "fontSize": "11px",
                             "fontWeight": "450",
@@ -1752,7 +1756,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
         </h3>
       </div>
       <div style={{
-                          "backgroundColor": "rgb(255, 255, 255)",
+                          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                           "minHeight": "48px",
                           "position": "relative",
                           "minWidth": "0px",
@@ -1763,7 +1767,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                             "appearance": "auto",
                             "backgroundColor": "rgba(0, 0, 0, 0)",
                             "boxSizing": "border-box",
-                            "color": "rgb(0, 0, 0)",
+                            "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                             "columnGap": "14px",
                             "display": "flex",
                             "fontFamily": "Inter, sans-serif",
@@ -1785,13 +1789,13 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                             }}>
             <div style={{
                                 "alignItems": "center",
-                                "backgroundColor": "rgb(245, 245, 245)",
+                                "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                                 "boxSizing": "content-box",
                                 "display": "flex",
                                 "height": "32px",
                                 "justifyContent": "center",
                                 "width": "32px",
-                                "border": "1px solid rgba(0, 0, 0, 0.1)",
+                                "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                                 "borderRadius": "5px"
                               }} aria-hidden="true">
               <svg style={{
@@ -1802,8 +1806,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                   "width": "24px"
                                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
+                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                  }} fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
               </svg>
             </div>
           </div>
@@ -1831,7 +1835,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                   "minWidth": "0px"
                                 }}>
                 <div style={{
-                                    "color": "rgba(0, 0, 0, 0.898)",
+                                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                     "fontWeight": "550",
                                     "letterSpacing": "0.05504px",
@@ -1855,7 +1859,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                                   "rowGap": "8px"
                                 }}>
                 <div style={{
-                                    "color": "rgba(0, 0, 0, 0.5)",
+                                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                     "flexShrink": "0",
                                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                     "fontWeight": "450",
@@ -1873,7 +1877,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
               </div>
             </div>
             <div style={{
-                                "color": "rgba(0, 0, 0, 0.5)",
+                                "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                 "display": "-webkit-box",
                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                 "fontWeight": "450",
@@ -1902,8 +1906,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
               </div>
             </div>
             <div style={{
-              "backgroundColor": "rgb(245, 245, 245)",
-              "borderRightColor": "rgb(230, 230, 230)",
+              "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+              "borderRightColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderRightStyle": "solid",
               "borderRightWidth": "1px",
               "boxSizing": "content-box",
@@ -1920,7 +1924,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
             }}>
               <div style={{
                 "alignItems": "center",
-                "borderBottomColor": "rgba(0, 0, 0, 0.1)",
+                "borderBottomColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                 "borderBottomStyle": "solid",
                 "borderBottomWidth": "1px",
                 "boxSizing": "content-box",
@@ -1932,9 +1936,9 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                 <button style={{
                   "alignItems": "center",
                   "appearance": "auto",
-                  "backgroundColor": "rgb(255, 255, 255)",
+                  "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                   "boxSizing": "border-box",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -1945,7 +1949,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                   "lineHeight": "16px",
                   "textAlign": "start",
                   "width": "48px",
-                  "border": "1px solid rgba(0, 0, 0, 0.1)",
+                  "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                   "borderRadius": "2px",
                   "padding": "0px"
                 }} aria-label="New slide" type="button">
@@ -1957,8 +1961,8 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                     "width": "24px"
                   }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                      "fill": "rgba(0, 0, 0, 0.898)"
-                    }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6" clipRule="evenodd"></path>
+                      "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                    }} fillRule="evenodd" d="M12 6a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 12 6" clipRule="evenodd"></path>
   </svg>
 </button>
               </div>
@@ -1984,7 +1988,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                 }}>
   <ul style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "border-box",
                     "columnGap": "12px",
                     "display": "flex",
@@ -2005,7 +2009,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                   }}>
     <li style={{
                       "boxSizing": "border-box",
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
                       "fontWeight": "400",
@@ -2027,14 +2031,14 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                     }} value="1:42">
       <button style={{
                         "appearance": "auto",
-                        "backgroundColor": "rgb(245, 245, 245)",
-                        "color": "rgb(0, 0, 0)",
+                        "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                         "fontFamily": "Inter, sans-serif",
                         "fontSize": "11px",
                         "fontWeight": "400",
                         "height": "28px",
                         "lineHeight": "16px",
-                        "outlineColor": "rgb(0, 123, 229)",
+                        "outlineColor": "var(--ad-selection-strong, rgb(0, 123, 229))",
                         "outlineStyle": "solid",
                         "outlineWidth": "2px",
                         "position": "relative",
@@ -2062,7 +2066,7 @@ export function AgentsSidebar({ style, className }: AirDesignComponentProps) {
                           }}>
             <div style={{
                               "alignItems": "center",
-                              "backgroundColor": "rgb(242, 249, 255)",
+                              "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
                               "display": "flex",
                               "height": "28px",
                               "justifyContent": "center",

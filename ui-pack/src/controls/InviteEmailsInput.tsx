@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InviteEmailsInput({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"input">) {
   return <input style={{
     "appearance": "auto",
-    "backgroundColor": "rgb(245, 245, 245)",
+    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
     "boxSizing": "content-box",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "block",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -24,5 +25,5 @@ export function InviteEmailsInput({
     flexShrink: 0,
     width: 200,
     ...style
-  }} aria-expanded="false" aria-label="Add comma separated emails to invite" placeholder="Add comma separated emails to invite" role="combobox" value="" className={className}></input>;
+  }} aria-expanded="false" aria-label="Add comma separated emails to invite" placeholder="Add comma separated emails to invite" role="combobox" value="" className={className} {...rest}></input>;
 }

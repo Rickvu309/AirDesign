@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ColorSwatchBlackButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -16,7 +17,7 @@ export function ColorSwatchBlackButton({
     "height": "24px",
     "justifyItems": "center",
     "lineHeight": "16px",
-    "outlineColor": "rgb(230, 230, 230)",
+    "outlineColor": "var(--ad-divider, rgb(230, 230, 230))",
     "outlineOffset": "-1px",
     "outlineStyle": "solid",
     "outlineWidth": "1px",
@@ -28,7 +29,7 @@ export function ColorSwatchBlackButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Color Variable Black with value #000 at 100%" type="button" className={className}>
+  }} aria-label="Color Variable Black with value var(--ad-ink-strong, #000) at 100%" type="button" className={className} {...rest}>
     <div style={{
       "alignItems": "center",
       "display": "flex",
@@ -39,7 +40,7 @@ export function ColorSwatchBlackButton({
       "margin": "4px 4px 4px 5px"
     }}>
       <div style={{
-        "backgroundColor": "rgb(0, 0, 0)",
+        "backgroundColor": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "flexBasis": "14px",
         "flexShrink": "0",
         "height": "14px",
@@ -66,7 +67,7 @@ export function ColorSwatchBlackButton({
     <div style={{
       "alignContent": "center",
       "boxSizing": "content-box",
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "height": "24px",
       "overflowX": "hidden",
       "overflowY": "hidden",

@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function PlanButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -25,7 +26,7 @@ export function PlanButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-haspopup="menu" aria-expanded="false" aria-label="Plan: Quan Vu" type="button" className={className}>
+  }} aria-haspopup="menu" aria-expanded="false" aria-label="Plan: Your Name" type="button" className={className} {...rest}>
                 <div style={{
       "alignItems": "center",
       "display": "flex",
@@ -47,7 +48,7 @@ export function PlanButton({
       <div style={{
               "alignItems": "center",
               "backgroundColor": "rgb(242, 72, 34)",
-              "color": "rgb(255, 255, 255)",
+              "color": "var(--ad-surface, rgb(255, 255, 255))",
               "display": "flex",
               "flexShrink": "0",
               "height": "16px",
@@ -58,7 +59,7 @@ export function PlanButton({
               "position": "relative",
               "width": "16px",
               "borderRadius": "9999px"
-            }} aria-label="Quan Vu" role="img">
+            }} aria-label="Your Name" role="img">
         <span style={{
                 "display": "block",
                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -87,7 +88,7 @@ export function PlanButton({
         "overflowY": "hidden"
       }}>
   <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "13px",
@@ -103,7 +104,7 @@ export function PlanButton({
         }}>
     <span style={{
             "whiteSpace": "nowrap"
-          }}>Quan Vu</span>
+          }}>Your Name</span>
   </span>
 </div>
                 </div>
@@ -116,8 +117,8 @@ export function PlanButton({
       "width": "24px"
     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                   <path style={{
-        "fill": "rgba(0, 0, 0, 0.898)"
-      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
+        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+      }} d="M14.147 10.647a.5.5 0 0 1 .707.707l-2.5 2.5a.5.5 0 0 1-.707 0l-2.5-2.5a.5.5 0 0 1 .707-.707L12 12.793z"></path>
                 </svg>
               </button>;
 }

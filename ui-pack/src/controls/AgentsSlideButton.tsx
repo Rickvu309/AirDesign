@@ -1,19 +1,20 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AgentsSlideButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "appearance": "auto",
-    "backgroundColor": "rgb(245, 245, 245)",
-    "color": "rgb(0, 0, 0)",
+    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
     "fontWeight": "400",
     "height": "28px",
     "lineHeight": "16px",
-    "outlineColor": "rgb(0, 123, 229)",
+    "outlineColor": "var(--ad-selection-strong, rgb(0, 123, 229))",
     "outlineStyle": "solid",
     "outlineWidth": "2px",
     "textAlign": "center",
@@ -24,7 +25,7 @@ export function AgentsSlideButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Slide 1" aria-pressed="true" aria-selected="true" className={className}>
+  }} aria-label="Slide 1" aria-pressed="true" aria-selected="true" className={className} {...rest}>
         <div style={{
       "alignItems": "center",
       "display": "inline-flex",
@@ -43,7 +44,7 @@ export function AgentsSlideButton({
       }}>
             <div style={{
           "alignItems": "center",
-          "backgroundColor": "rgb(242, 249, 255)",
+          "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
           "display": "flex",
           "height": "28px",
           "justifyContent": "center",

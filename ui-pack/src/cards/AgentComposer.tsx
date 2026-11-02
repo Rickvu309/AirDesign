@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AgentComposer({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "display": "flex",
     position: "relative",
@@ -14,7 +15,7 @@ export function AgentComposer({
     flexShrink: 0,
     width: 274,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
                         <div style={{
       "clipPath": "inset(50%)",
       "height": "1px",
@@ -32,7 +33,7 @@ export function AgentComposer({
       }}>The button action for this text area changes between Send and Stop as the agent works.</span>
                         </div>
                         <div style={{
-      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
       "display": "flex",
       "flexGrow": "1",
       "position": "relative"
@@ -55,7 +56,7 @@ export function AgentComposer({
         "padding": "12px 16px"
       }} aria-label="Prompt for AI agent" role="textbox" aria-disabled="false" aria-placeholder="">
                             <p style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "fontFamily": "Inter",
           "fontSize": "13px",
           "fontWeight": "450",
@@ -69,7 +70,7 @@ export function AgentComposer({
                           </div>
                           <div aria-hidden="true"></div>
                           <div style={{
-        "color": "rgba(0, 0, 0, 0.5)",
+        "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
         "display": "-webkit-box",
         "fontFamily": "Inter",
         "fontSize": "13px",

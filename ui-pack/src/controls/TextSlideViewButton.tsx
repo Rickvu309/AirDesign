@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function TextSlideViewButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "grid",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -31,7 +32,7 @@ export function TextSlideViewButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Slide view" type="button" className={className}>
+  }} aria-label="Slide view" type="button" className={className} {...rest}>
         <span style={{
       "alignItems": "center",
       "display": "flex",
@@ -49,8 +50,8 @@ export function TextSlideViewButton({
         "width": "24px"
       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-          "fill": "rgba(0, 0, 0, 0.898)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
           </svg>
         </span>
       </button>;

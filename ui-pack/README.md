@@ -1,15 +1,32 @@
 # @airdesign/ui
 
 React components generated from the Lunagraph export in `lunagraph/components/airdesign`.
-409 components in 7 groups: brand, cards, controls, dialogs, icons, navigation, panels.
+409 components in 7 groups: brand, cards, controls, dialogs, icons, navigation, panels. Full list: [COMPONENTS.md](COMPONENTS.md).
 
 ```tsx
-import { HomeSidebar, ShareDialog } from "@airdesign/ui";
+import "@airdesign/ui/tokens.css"; // design tokens (--ad-*)
+import "@airdesign/ui/base.css";   // minimal reset; skip if your app has a preflight
+import { HomeSidebar, SearchIcon } from "@airdesign/ui";
+
 <HomeSidebar style={{ width: 240 }} />
+<SearchIcon style={{ "--ad-icon": "tomato" } as React.CSSProperties} />
 ```
 
-Each component takes `style` and `className`. Styles are inline, no CSS or extra dependencies; `react` is a peer.
+## What a component gives you
+- **Native props:** every component takes all props of its root element (`onClick`, `ref`, `aria-*`, `data-*`, `disabled`, ...) plus `style` and `className`. Props you pass override the defaults (for example `aria-label`). React 19.
+- **Tokens:** colours are `var(--ad-*, fallback)`, so the pack looks right with no CSS and can be re-themed by overriding variables. Icons use `--ad-icon`.
+- **Self-contained:** inline styles, no runtime dependencies, one file per component (`src/<group>/<Name>.tsx`), tree-shakeable.
+- **Neutral content:** no Figma-hosted images or links, no personal names (`Your Name`). Stock photos still hotlink Unsplash.
 
-Layout: `src/<group>/<ComponentName>.tsx`, one file per component. Rebuild after the Lunagraph export changes: `cd ui-pack && npm run build`.
+## Develop
+- `npm run build`: regenerate `src/` from Lunagraph and compile to `dist/`.
+- `npm test`: build, then check that all components render, no Figma or personal data remains, colours are tokenised, images have alt text and `props` pass through. It also prints accessibility findings (unnamed buttons).
+- `npm run docs`: write `COMPONENTS.md` and `catalog.html` (a filterable visual catalog, not committed).
 
-Names were cleaned with `scripts/rename-components.mjs` (old to new map in `lunagraph/components/airdesign/rename-map.json`). Icons are named by shape; a screen prefix (`Home`, `GettingStarted`, `Agents`, ...) separates look-alike variants from different screens. Some labels inside the components still carry demo data (for example the account name "Quan Vu (Richard)").
+## Pipeline
+`scripts/build-ui-pack.mjs` splits the export per component and runs `scripts/ui-pack-transforms.mjs` (tokens, prop pass-through, Figma and personal-data cleanup, alt text). Names come from `scripts/rename-components.mjs` (old to new in `lunagraph/components/airdesign/rename-map.json`). Because every improvement is a build step, a cleaned-up Lunagraph file only needs `npm run build`.
+
+## Known gaps
+- Components are still snapshots: text, labels and icons are baked in, not props. The big composites (`HomeSidebar`, `MediaSidebar`, `AgentsSidebar`) repeat their parts inline instead of using the small components. Fix this in Lunagraph by building composites from instances, then rebuild.
+- 12 unnamed buttons remain (swatches and toggles); the test prints them.
+- About 100 one-off colours (shadow tints and similar) are not tokenised.

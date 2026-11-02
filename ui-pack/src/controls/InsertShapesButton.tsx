@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InsertShapesButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "columnGap": "8px",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
@@ -24,7 +25,7 @@ export function InsertShapesButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
   <div style={{
       "alignItems": "center",
       "backgroundColor": "rgb(182, 236, 247)",
@@ -41,10 +42,10 @@ export function InsertShapesButton({
         "overflowX": "clip",
         "overflowY": "clip",
         "width": "48px"
-      }} alt="Shapes" src="https://static.figma.com/uploads/cd5738b523b4155c28b21b7b3af707b7c587b267"></img>
+      }} alt="Shapes" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E"></img>
   </div>
   <div style={{
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
       "fontWeight": "450",
       "letterSpacing": "0.05504px"

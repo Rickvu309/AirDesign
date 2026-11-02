@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ResourcesIcon({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"svg">) {
   return <svg style={{
     "display": "block",
     "height": "24px",
@@ -17,9 +18,9 @@ export function ResourcesIcon({
     flexShrink: 0,
     width: 24,
     ...style
-  }} width="24" height="24" fill="none" viewBox="0 0 24 24" className={className}>
+  }} width="24" height="24" fill="none" viewBox="0 0 24 24" className={className} {...rest}>
     <path style={{
-      "fill": "rgba(0, 0, 0, 0.898)"
-    }} fill="var(--fpl-icon-color, var(--color-icon))" d="M5.5 10.309a1 1 0 0 1 1.448-.894l5.053 2.525 5.053-2.525a1 1 0 0 1 1.447.894v4.573c0 .568-.321 1.087-.83 1.342l-5.447 2.723a.5.5 0 0 1-.448 0L6.33 16.224a1.5 1.5 0 0 1-.83-1.342zm1.001 4.573a.5.5 0 0 0 .276.447L11.5 17.69v-4.88l-4.999-2.5zm5.999-2.073v4.881l4.725-2.36a.5.5 0 0 0 .276-.448v-4.573zM12.001 5a2.5 2.5 0 1 1-.002 5.002A2.5 2.5 0 0 1 12.001 5m0 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"></path>
+      "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+    }} d="M5.5 10.309a1 1 0 0 1 1.448-.894l5.053 2.525 5.053-2.525a1 1 0 0 1 1.447.894v4.573c0 .568-.321 1.087-.83 1.342l-5.447 2.723a.5.5 0 0 1-.448 0L6.33 16.224a1.5 1.5 0 0 1-.83-1.342zm1.001 4.573a.5.5 0 0 0 .276.447L11.5 17.69v-4.88l-4.999-2.5zm5.999-2.073v4.881l4.725-2.36a.5.5 0 0 0 .276-.448v-4.573zM12.001 5a2.5 2.5 0 1 1-.002 5.002A2.5 2.5 0 0 1 12.001 5m0 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3"></path>
   </svg>;
 }

@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function HomeHeader({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"span">) {
   return <span style={{
     "display": "block",
     "minWidth": "0px",
@@ -15,7 +16,7 @@ export function HomeHeader({
     flexShrink: 0,
     width: 1165,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
   <div style={{
       "alignItems": "center",
       "columnGap": "16px",
@@ -30,7 +31,7 @@ export function HomeHeader({
         "gap": "8px"
       }}>
       <h1 style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
           "fontWeight": "400",
@@ -88,9 +89,9 @@ export function HomeHeader({
               <button style={{
                   "alignItems": "center",
                   "appearance": "auto",
-                  "backgroundColor": "rgb(245, 245, 245)",
-                  "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
-                  "color": "rgb(0, 0, 0)",
+                  "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                  "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "flexShrink": "0",
                   "fontFamily": "Inter, sans-serif",
@@ -124,7 +125,7 @@ export function HomeHeader({
                         "padding": "8px 16px"
                       }}>
                       <div style={{
-                          "backgroundColor": "rgb(13, 153, 255)",
+                          "backgroundColor": "var(--ad-selection, rgb(13, 153, 255))",
                           "borderRadius": "2px"
                         }}>
                         <svg style={{
@@ -133,7 +134,7 @@ export function HomeHeader({
                             "overflowX": "hidden",
                             "overflowY": "hidden",
                             "width": "16px"
-                          }} width="16" height="16" fill="none" viewBox="0 0 64 64"><path d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /><path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
+                          }} width="16" height="16" fill="none" viewBox="0 0 64 64"><path d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" /><path d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke" /></svg>
                       </div>
                       <span style={{
                           "alignItems": "center",
@@ -142,7 +143,7 @@ export function HomeHeader({
                           "rowGap": "4px"
                         }}>
                         <span style={{
-                            "color": "rgba(0, 0, 0, 0.898)",
+                            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                             "display": "block",
                             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                             "fontWeight": "450",
@@ -163,7 +164,7 @@ export function HomeHeader({
                       "gridRowStart": "1"
                     }}>
                     <div style={{
-                        "backgroundColor": "rgb(255, 255, 255)"
+                        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))"
                       }}>
                       <div style={{
                           "backgroundColor": "rgba(0, 0, 0, 0.05)",
@@ -190,9 +191,9 @@ export function HomeHeader({
               <button style={{
                   "alignItems": "center",
                   "appearance": "auto",
-                  "backgroundColor": "rgb(245, 245, 245)",
-                  "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
-                  "color": "rgb(0, 0, 0)",
+                  "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                  "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "flexShrink": "0",
                   "fontFamily": "Inter, sans-serif",
@@ -226,7 +227,7 @@ export function HomeHeader({
                         "padding": "8px 16px"
                       }}>
                       <div style={{
-                          "backgroundColor": "rgb(255, 92, 22)",
+                          "backgroundColor": "var(--ad-brand, rgb(255, 92, 22))",
                           "borderRadius": "2px"
                         }}>
                         <svg style={{
@@ -237,8 +238,8 @@ export function HomeHeader({
                             "width": "16px"
                           }} width="16" height="16" fill="none" viewBox="0 0 16 16">
   <path style={{
-                              "fill": "rgb(255, 255, 255)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M4 4h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1m.434 8H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-.434l.412 1.354a.5.5 0 1 1-.956.292L10.52 12H5.479l-.5 1.646a.5.5 0 1 1-.957-.292zM5 5a1 1 0 1 0 0 2 1 1 0 0 0 0-2m0 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2" clipRule="evenodd"></path>
+                              "fill": "var(--ad-surface, rgb(255, 255, 255))"
+                            }} fillRule="evenodd" d="M4 4h8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1m.434 8H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-.434l.412 1.354a.5.5 0 1 1-.956.292L10.52 12H5.479l-.5 1.646a.5.5 0 1 1-.957-.292zM5 5a1 1 0 1 0 0 2 1 1 0 0 0 0-2m0 3a1 1 0 1 0 0 2 1 1 0 0 0 0-2" clipRule="evenodd"></path>
 </svg>
                       </div>
                       <span style={{
@@ -248,7 +249,7 @@ export function HomeHeader({
                           "rowGap": "4px"
                         }}>
                         <span style={{
-                            "color": "rgba(0, 0, 0, 0.898)",
+                            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                             "display": "block",
                             "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                             "fontWeight": "450",
@@ -269,7 +270,7 @@ export function HomeHeader({
                       "gridRowStart": "1"
                     }}>
                     <div style={{
-                        "backgroundColor": "rgb(255, 255, 255)"
+                        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))"
                       }}>
                       <div style={{
                           "backgroundColor": "rgba(0, 0, 0, 0.05)",
@@ -296,9 +297,9 @@ export function HomeHeader({
               <button style={{
                   "alignItems": "center",
                   "appearance": "auto",
-                  "backgroundColor": "rgb(245, 245, 245)",
-                  "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
-                  "color": "rgb(0, 0, 0)",
+                  "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                  "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "flexShrink": "0",
                   "fontFamily": "Inter, sans-serif",
@@ -330,7 +331,7 @@ export function HomeHeader({
                         "padding": "8px 16px"
                       }}>
                       <span style={{
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                           "fontWeight": "450",
@@ -346,8 +347,8 @@ export function HomeHeader({
                           "width": "16px"
                         }} width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
                         <path style={{
-                            "fill": "rgba(0, 0, 0, 0.898)"
-                          }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                          }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
                       </svg>
                     </div>
                   </div>
@@ -361,7 +362,7 @@ export function HomeHeader({
                       "gridRowStart": "1"
                     }}>
                     <div style={{
-                        "backgroundColor": "rgb(255, 255, 255)"
+                        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))"
                       }}>
                       <div style={{
                           "backgroundColor": "rgba(0, 0, 0, 0.05)",

@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function MediaSidebar({ style, className }: AirDesignComponentProps) {
+export function MediaSidebar({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   position: "relative",
   fontFamily: "Inter, sans-serif",
@@ -12,10 +16,10 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
   height: 923,
   width: 365,
   ...style
-}} role="region" aria-label="Left sidebar" className={className}>
+}} role="region" aria-label="Left sidebar" className={className} {...rest}>
   <div style={{
-    "backgroundColor": "rgb(255, 255, 255)",
-    "borderRightColor": "rgb(230, 230, 230)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+    "borderRightColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderRightStyle": "solid",
     "borderRightWidth": "1px",
     "boxSizing": "border-box",
@@ -40,7 +44,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
@@ -58,12 +62,12 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
           "height": 24,
           "flexShrink": 0
         }} viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden="true" width={24} height={24}>
-          <path d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
-          <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth={3.063} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
+          <path d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth={2.188} strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
         </svg>
       </button>
       <div style={{
-        "borderBottomColor": "rgb(230, 230, 230)",
+        "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
         "borderBottomStyle": "solid",
         "borderBottomWidth": "1px",
         "boxSizing": "content-box",
@@ -76,7 +80,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -107,12 +111,12 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M12.598 5.01a.5.5 0 0 1 .255.136l4 4A.5.5 0 0 1 16.5 10h-4a.5.5 0 0 1-.5-.5V6H8.5a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 7 17.5v-11A1.5 1.5 0 0 1 8.5 5h4zM13 9h2.293L13 6.707z"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -139,7 +143,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -179,14 +183,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 "width": "24px"
               }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path style={{
-                  "fill": "rgba(0, 0, 0, 0.898)"
-                }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
+                  "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                }} fillRule="evenodd" d="M10.39 6.057c.599-1.407 2.624-1.407 3.222 0l.056.146L14.7 9.302l3.1 1.034c1.6.534 1.6 2.799 0 3.333L14.7 14.7l-1.032 3.1-.055.145c-.618 1.454-2.76 1.406-3.278-.145l-1.034-3.1-3.099-1.032c-1.551-.517-1.6-2.66-.145-3.279l.145-.054 3.099-1.034 1.034-3.1zm2.3.387c-.256-.59-1.123-.59-1.378 0l-.034.087-1.029 3.087-.158.474-.474.158-3.098 1.034c-.69.23-.69 1.206 0 1.435l3.098 1.033.474.158.158.475 1.034 3.1.052.12c.298.566 1.168.526 1.384-.12l1.032-3.1.158-.475.475-.158 3.1-1.033.12-.05c.566-.298.526-1.17-.12-1.385l-3.1-1.034-.475-.158-.158-.475-1.032-3.099h-.001z" clipRule="evenodd"></path>
               </svg>
             </div>
           </span>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -213,7 +217,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
         "boxSizing": "border-box",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "columnGap": "2px",
         "display": "flex",
         "flexDirection": "column",
@@ -230,7 +234,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
       }} aria-expanded="true" aria-label="Inserts" type="button">
         <div style={{
           "alignItems": "center",
-          "backgroundColor": "rgb(255, 223, 204)",
+          "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
           "display": "flex",
           "height": "32px",
           "justifyContent": "center",
@@ -245,12 +249,12 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgb(226, 76, 12)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
+              "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+            }} fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
           </svg>
         </div>
         <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "9px",
@@ -306,8 +310,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
           "width": "306px"
         }}>
           <div style={{
-            "backgroundColor": "rgb(255, 255, 255)",
-            "borderRightColor": "rgba(0, 0, 0, 0.1)",
+            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+            "borderRightColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
             "borderRightStyle": "solid",
             "borderRightWidth": "1px",
             "boxSizing": "content-box",
@@ -321,7 +325,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
             "width": "306px"
           }}>
             <div style={{
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -373,7 +377,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                           "alignItems": "center",
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                           "fontSize": "13px",
@@ -396,7 +400,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
     <label style={{
                           "clip": "rect(0px, 0px, 0px, 0px)",
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -437,7 +441,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                               "backgroundColor": "rgba(0, 0, 0, 0)",
                               "borderBottomRightRadius": "5px",
                               "borderTopRightRadius": "5px",
-                              "color": "rgb(0, 0, 0)",
+                              "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                               "display": "grid",
                               "fontFamily": "Inter, sans-serif",
                               "fontSize": "11px",
@@ -474,8 +478,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                   "width": "16px"
                                 }} width="16" height="16" fill="none" viewBox="0 0 16 16">
               <path style={{
-                                    "fill": "rgba(0, 0, 0, 0.898)"
-                                  }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                  }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
             </svg>
           </span>
         </button>
@@ -489,7 +493,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "grid",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -526,8 +530,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "width": "24px"
                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.898)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
+                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                      }} d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
   </svg>
 </span>
                 </button>
@@ -550,7 +554,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 }}>
                   <a style={{
                     "boxSizing": "content-box",
-                    "color": "rgba(0, 0, 0, 0.5)",
+                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                     "display": "block",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "11px",
@@ -567,7 +571,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                     "textOverflow": "ellipsis",
                     "whiteSpace": "nowrap",
                     "borderRadius": "5px"
-                  }} aria-label="Drafts" href="https://www.figma.com/files/team/1505619433971646255/project/386051928" rel="noopener" target="_blank">
+                  }} aria-label="Drafts" href="#" rel="noopener" target="_blank">
   <span style={{
                       "whiteSpace": "nowrap"
                     }}>Drafts</span>
@@ -577,7 +581,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
             </div>
             <div style={{
               "alignItems": "center",
-              "backgroundColor": "rgb(255, 255, 255)",
+              "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
               "boxSizing": "content-box",
               "display": "flex",
               "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -602,7 +606,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "grid",
                   "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                   "fontSize": "13px",
@@ -639,8 +643,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "width": "24px"
                     }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.898)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
+                        "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                      }} fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
   </svg>
 </span>
                 </button>
@@ -650,7 +654,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                   "minWidth": "0px"
                 }}>
                   <h2 style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "13px",
                     "fontWeight": "550",
@@ -681,7 +685,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
             </div>
             <div style={{
               "alignItems": "center",
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box",
@@ -706,7 +710,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                   }}>
   <div style={{
                       "alignItems": "center",
-                      "backgroundColor": "rgb(245, 245, 245)",
+                      "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                       "boxSizing": "border-box",
                       "display": "flex",
                       "height": "24px",
@@ -724,13 +728,13 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                         "width": "24px"
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                          "fill": "rgba(0, 0, 0, 0.5)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M11.5 6a5.5 5.5 0 0 1 4.226 9.019l2.127 2.127a.5.5 0 1 1-.707.707l-2.127-2.127A5.5 5.5 0 1 1 11.5 6m0 1a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9"></path>
+                          "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                        }} d="M11.5 6a5.5 5.5 0 0 1 4.226 9.019l2.127 2.127a.5.5 0 1 1-.707.707l-2.127-2.127A5.5 5.5 0 1 1 11.5 6m0 1a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9"></path>
     </svg>
     <input style={{
                         "appearance": "auto",
-                        "backgroundColor": "rgb(245, 245, 245)",
-                        "color": "rgba(0, 0, 0, 0.898)",
+                        "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
+                        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                         "display": "block",
                         "flexGrow": "1",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -802,7 +806,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                             }}>
             <h2 style={{
                                 "boxSizing": "content-box",
-                                "color": "rgba(0, 0, 0, 0.5)",
+                                "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                                 "fontSize": "11px",
                                 "fontWeight": "550",
@@ -841,14 +845,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -868,7 +872,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -886,7 +890,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -923,8 +927,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -940,14 +944,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -967,7 +971,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -985,7 +989,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1022,8 +1026,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -1039,14 +1043,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1066,7 +1070,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1084,7 +1088,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1121,8 +1125,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -1138,14 +1142,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1165,7 +1169,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1183,7 +1187,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1220,8 +1224,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -1237,14 +1241,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1264,7 +1268,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1282,7 +1286,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1319,8 +1323,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1336,14 +1340,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1363,7 +1367,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1381,7 +1385,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1418,8 +1422,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1435,14 +1439,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1462,7 +1466,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1480,7 +1484,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1517,8 +1521,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1534,14 +1538,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1561,7 +1565,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1579,7 +1583,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1616,8 +1620,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1633,14 +1637,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1660,7 +1664,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1678,7 +1682,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1715,8 +1719,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1732,14 +1736,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1759,7 +1763,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1777,7 +1781,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1814,8 +1818,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1831,14 +1835,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1858,7 +1862,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1876,7 +1880,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -1913,8 +1917,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1930,14 +1934,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -1957,7 +1961,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -1975,7 +1979,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2012,8 +2016,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2029,14 +2033,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2056,7 +2060,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2074,7 +2078,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2111,8 +2115,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2135,14 +2139,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2162,7 +2166,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2180,7 +2184,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2217,8 +2221,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2234,14 +2238,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2261,7 +2265,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2279,7 +2283,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2316,8 +2320,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2333,14 +2337,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2360,7 +2364,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2378,7 +2382,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2415,8 +2419,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2432,14 +2436,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2459,7 +2463,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2477,7 +2481,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2514,8 +2518,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2531,14 +2535,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2558,7 +2562,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2576,7 +2580,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2613,8 +2617,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2630,14 +2634,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2657,7 +2661,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2675,7 +2679,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2712,8 +2716,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2729,14 +2733,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2756,7 +2760,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2774,7 +2778,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2811,8 +2815,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2828,14 +2832,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2855,7 +2859,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2873,7 +2877,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -2910,8 +2914,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -2927,14 +2931,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -2954,7 +2958,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -2972,7 +2976,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -3009,8 +3013,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -3026,14 +3030,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -3053,7 +3057,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -3071,7 +3075,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -3108,8 +3112,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -3125,14 +3129,14 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                     "alignItems": "center",
                                     "appearance": "auto",
                                     "backgroundColor": "rgba(0, 0, 0, 0)",
-                                    "color": "rgb(0, 0, 0)",
+                                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                     "display": "flex",
                                     "fontFamily": "Inter, sans-serif",
                                     "fontSize": "11px",
                                     "fontWeight": "400",
                                     "justifyItems": "center",
                                     "lineHeight": "16px",
-                                    "outlineColor": "rgba(0, 0, 0, 0.1)",
+                                    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                                     "outlineOffset": "-1px",
                                     "outlineStyle": "solid",
                                     "outlineWidth": "1px",
@@ -3152,7 +3156,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </button>
                 <div style={{
                                     "alignItems": "center",
-                                    "backgroundColor": "rgb(255, 255, 255)",
+                                    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                     "display": "flex",
                                     "height": "24px",
                                     "justifyContent": "center",
@@ -3170,7 +3174,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                       "alignItems": "center",
                                       "appearance": "auto",
                                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                                      "color": "rgb(0, 0, 0)",
+                                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                                       "display": "grid",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "11px",
@@ -3207,8 +3211,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                                           "width": "24px"
                                         }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                                            "fill": "rgba(0, 0, 0, 0.898)"
-                                          }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                                            "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                                          }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -3235,8 +3239,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
 </div>
                 </div>
                 <div style={{
-                  "backgroundColor": "rgb(255, 255, 255)",
-                  "borderTopColor": "rgb(230, 230, 230)",
+                  "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+                  "borderTopColor": "var(--ad-divider, rgb(230, 230, 230))",
                   "borderTopStyle": "solid",
                   "borderTopWidth": "1px",
                   "boxSizing": "content-box",
@@ -3255,7 +3259,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "alignItems": "center",
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -3265,7 +3269,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "letterSpacing": "0.05504px",
                       "lineHeight": "16px",
                       "maxWidth": "100%",
-                      "outlineColor": "rgba(0, 0, 0, 0.1)",
+                      "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                       "outlineOffset": "-1px",
                       "outlineStyle": "solid",
                       "outlineWidth": "1px",
@@ -3308,8 +3312,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                               "width": "24px"
                             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-                                "fill": "rgba(0, 0, 0, 0.898)"
-                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M13.5 5.999a.5.5 0 0 1 0 1h-6a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-9a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5zm-3.275 5.082a.5.5 0 0 1 .629.065l4 4a.5.5 0 0 1-.707.706L10.5 12.206l-1.646 1.646a.5.5 0 1 1-.708-.707l2-2zm6.79-6.642c.126-.505.844-.505.97 0L18.3 5.7l1.26.315c.505.126.505.844 0 .97L18.3 7.3l-.315 1.26c-.126.505-.844.505-.97 0L16.7 7.3l-1.26-.315c-.505-.126-.505-.844 0-.97L16.7 5.7z"></path>
+                                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                              }} d="M13.5 5.999a.5.5 0 0 1 0 1h-6a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-6a.5.5 0 0 1 1 0v6a1.5 1.5 0 0 1-1.5 1.5h-9a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5zm-3.275 5.082a.5.5 0 0 1 .629.065l4 4a.5.5 0 0 1-.707.706L10.5 12.206l-1.646 1.646a.5.5 0 1 1-.708-.707l2-2zm6.79-6.642c.126-.505.844-.505.97 0L18.3 5.7l1.26.315c.505.126.505.844 0 .97L18.3 7.3l-.315 1.26c-.126.505-.844.505-.97 0L16.7 7.3l-1.26-.315c-.505-.126-.505-.844 0-.97L16.7 5.7z"></path>
           </svg>
         </span>
         <span style={{
@@ -3342,7 +3346,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "alignItems": "center",
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "11px",
@@ -3352,7 +3356,7 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                       "letterSpacing": "0.05504px",
                       "lineHeight": "16px",
                       "maxWidth": "100%",
-                      "outlineColor": "rgba(0, 0, 0, 0.1)",
+                      "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
                       "outlineOffset": "-1px",
                       "outlineStyle": "solid",
                       "outlineWidth": "1px",
@@ -3395,8 +3399,8 @@ export function MediaSidebar({ style, className }: AirDesignComponentProps) {
                               "width": "24px"
                             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-                                "fill": "rgba(0, 0, 0, 0.898)"
-                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M17.5 13a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 16.5v-3a.5.5 0 0 1 1 0v3a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5m-5.775-7.918a.5.5 0 0 1 .629.064l3.5 3.5a.5.5 0 0 1-.707.708L12.5 6.707V12.5a.5.5 0 0 1-1 0V6.707L8.854 9.354a.5.5 0 1 1-.708-.708l3.5-3.5z"></path>
+                                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                              }} d="M17.5 13a.5.5 0 0 1 .5.5v3a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 16.5v-3a.5.5 0 0 1 1 0v3a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 1 .5-.5m-5.775-7.918a.5.5 0 0 1 .629.064l3.5 3.5a.5.5 0 0 1-.707.708L12.5 6.707V12.5a.5.5 0 0 1-1 0V6.707L8.854 9.354a.5.5 0 1 1-.708-.708l3.5-3.5z"></path>
           </svg>
         </span>
         <span style={{

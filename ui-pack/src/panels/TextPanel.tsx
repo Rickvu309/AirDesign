@@ -1,13 +1,17 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function TextPanel({ style, className }: AirDesignComponentProps) {
+export function TextPanel({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
-  "backgroundColor": "rgb(255, 255, 255)",
-  "borderRightColor": "rgba(0, 0, 0, 0.1)",
+  "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+  "borderRightColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
   "borderRightStyle": "solid",
   "borderRightWidth": "1px",
   "boxSizing": "content-box",
-  "color": "rgba(0, 0, 0, 0.898)",
+  "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
   "direction": "ltr",
   "display": "flex",
   "flexDirection": "column",
@@ -31,9 +35,9 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
   flexShrink: 0,
   width: 307,
   ...style
-}} className={className}>
+}} className={className} {...rest}>
   <div style={{
-    "borderBottomColor": "rgb(230, 230, 230)",
+    "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderBottomStyle": "solid",
     "borderBottomWidth": "1px",
     "boxSizing": "content-box",
@@ -85,7 +89,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                 "alignItems": "center",
                 "appearance": "auto",
                 "backgroundColor": "rgba(0, 0, 0, 0)",
-                "color": "rgba(0, 0, 0, 0.898)",
+                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                 "display": "block",
                 "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                 "fontSize": "13px",
@@ -108,7 +112,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
               <label style={{
                 "clip": "rect(0px, 0px, 0px, 0px)",
                 "clipPath": "inset(50%)",
-                "color": "rgba(0, 0, 0, 0.898)",
+                "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                 "display": "block",
                 "fontFamily": "Inter, sans-serif",
                 "fontSize": "11px",
@@ -149,7 +153,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                     "backgroundColor": "rgba(0, 0, 0, 0)",
                     "borderBottomRightRadius": "5px",
                     "borderTopRightRadius": "5px",
-                    "color": "rgb(0, 0, 0)",
+                    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                     "display": "grid",
                     "fontFamily": "Inter, sans-serif",
                     "fontSize": "11px",
@@ -186,8 +190,8 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         "width": "16px"
                       }} width="16" height="16" fill="none" viewBox="0 0 16 16">
       <path style={{
-                          "fill": "rgba(0, 0, 0, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                        }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
     </svg>
   </span>
 </button>
@@ -201,7 +205,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "grid",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
@@ -238,8 +242,8 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} d="M19.5 19a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1zM19 8a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM5 15h14V9H5zM19.5 4a.5.5 0 0 1 0 1h-15a.5.5 0 0 1 0-1z"></path>
           </svg>
         </span>
       </button>
@@ -262,7 +266,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
       }}>
         <a style={{
           "boxSizing": "content-box",
-          "color": "rgba(0, 0, 0, 0.5)",
+          "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
           "display": "block",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "11px",
@@ -279,7 +283,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
           "textOverflow": "ellipsis",
           "whiteSpace": "nowrap",
           "borderRadius": "5px"
-        }} aria-label="Drafts" href="https://www.figma.com/files/team/1505619433971646255/project/386051928" rel="noopener" target="_blank">
+        }} aria-label="Drafts" href="#" rel="noopener" target="_blank">
           <span style={{
             "whiteSpace": "nowrap"
           }}>Drafts</span>
@@ -289,7 +293,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
   </div>
   <div style={{
     "alignItems": "center",
-    "backgroundColor": "rgb(255, 255, 255)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
     "boxSizing": "content-box",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -314,7 +318,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "grid",
         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
         "fontSize": "13px",
@@ -351,8 +355,8 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
             "width": "24px"
           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-              "fill": "rgba(0, 0, 0, 0.898)"
-            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
+              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+            }} fillRule="evenodd" d="M13.854 7.146a.5.5 0 0 1 0 .708L9.707 12l4.147 4.146a.5.5 0 0 1-.708.708l-4.5-4.5a.5.5 0 0 1 0-.708l4.5-4.5a.5.5 0 0 1 .708 0" clipRule="evenodd"></path>
           </svg>
         </span>
       </button>
@@ -362,7 +366,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
         "minWidth": "0px"
       }}>
         <h2 style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
           "fontSize": "13px",
           "fontWeight": "550",
@@ -393,7 +397,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
   </div>
   <div style={{
     "alignItems": "center",
-    "borderBottomColor": "rgb(230, 230, 230)",
+    "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
     "borderBottomStyle": "solid",
     "borderBottomWidth": "1px",
     "boxSizing": "content-box",
@@ -412,7 +416,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgba(0, 0, 0, 0.898)",
+        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
         "display": "flex",
         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
         "fontSize": "11px",
@@ -422,7 +426,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
         "letterSpacing": "0.05504px",
         "lineHeight": "16px",
         "maxWidth": "100%",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -470,8 +474,8 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                   "width": "24px"
                 }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                   <path style={{
-                    "fill": "rgba(0, 0, 0, 0.898)"
-                  }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M6 6.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a.5.5 0 0 1-1 0V7h-4.5v10h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2V7H7v2a.5.5 0 0 1-1 0z" clipRule="evenodd"></path>
+                    "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                  }} fillRule="evenodd" d="M6 6.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a.5.5 0 0 1-1 0V7h-4.5v10h2a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1h2V7H7v2a.5.5 0 0 1-1 0z" clipRule="evenodd"></path>
                 </svg>
                 <span style={{
                   "whiteSpace": "nowrap"
@@ -520,7 +524,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -546,12 +550,12 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "width": "16px"
                     }} width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.3)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                        "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                      }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
   </svg>
 </span>
                   <span style={{
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "display": "block",
                     "flexBasis": "0%",
                     "flexGrow": "1",
@@ -576,7 +580,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                 }}>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -587,7 +591,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -608,13 +612,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 32,
                         fontWeight: 550,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Title</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -625,7 +629,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -646,13 +650,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 24,
                         fontWeight: 550,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Header 1</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -663,7 +667,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -684,13 +688,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 20,
                         fontWeight: 550,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Header 2</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -701,7 +705,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -722,13 +726,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 16,
                         fontWeight: 550,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Header 3</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -739,7 +743,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -760,13 +764,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 14,
                         fontWeight: 400,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Body 1</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -777,7 +781,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -798,13 +802,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 12,
                         fontWeight: 400,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Body 2</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -815,7 +819,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -836,13 +840,13 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 11,
                         fontWeight: 400,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Body 3</span>
   </button>
 </div>
                   <div style={{
                     "alignItems": "center",
-                    "backgroundColor": "rgb(245, 245, 245)",
+                    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                     "boxSizing": "content-box",
                     "display": "flex",
                     "border": "1px solid rgba(0, 0, 0, 0)",
@@ -853,7 +857,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
                       "boxSizing": "border-box",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -874,7 +878,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                         fontFamily: "Inter, sans-serif",
                         fontSize: 11,
                         fontWeight: 400,
-                        color: "#222222"
+                        color: "var(--ad-ink, #222222)"
                       }}>Note</span>
   </button>
 </div>
@@ -894,7 +898,7 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                   "alignItems": "center",
                   "appearance": "auto",
                   "backgroundColor": "rgba(0, 0, 0, 0)",
-                  "color": "rgb(0, 0, 0)",
+                  "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                   "display": "flex",
                   "fontFamily": "Inter, sans-serif",
                   "fontSize": "11px",
@@ -920,12 +924,12 @@ export function TextPanel({ style, className }: AirDesignComponentProps) {
                       "width": "16px"
                     }} width="16" height="16" fill="none" viewBox="0 0 16 16" aria-hidden="true">
     <path style={{
-                        "fill": "rgba(0, 0, 0, 0.3)"
-                      }} fill="var(--fpl-icon-color, var(--color-icon))" d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
+                        "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                      }} d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
   </svg>
 </span>
                   <span style={{
-                    "color": "rgba(0, 0, 0, 0.5)",
+                    "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
                     "display": "block",
                     "flexBasis": "0%",
                     "flexGrow": "1",

@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function TextStyleNoteButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -24,7 +25,7 @@ export function TextStyleNoteButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-label="" type="button" className={className}>
+  }} aria-label="" type="button" className={className} {...rest}>
     <span style={{
       display: "flex",
       alignItems: "center",
@@ -33,7 +34,7 @@ export function TextStyleNoteButton({
       fontFamily: "Inter, sans-serif",
       fontSize: 11,
       fontWeight: 400,
-      color: "#222222"
+      color: "var(--ad-ink, #222222)"
     }}>Note</span>
   </button>;
 }

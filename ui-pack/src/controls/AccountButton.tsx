@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function AccountButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(255, 255, 255)",
+    "color": "var(--ad-surface, rgb(255, 255, 255))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -25,7 +26,7 @@ export function AccountButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-haspopup="dialog" aria-expanded="false" aria-label="Quan Vu (Richard)" type="button" className={className}>
+  }} aria-haspopup="dialog" aria-expanded="false" aria-label="Your Name" type="button" className={className} {...rest}>
                       <span style={{
       "alignItems": "center",
       "bottom": "0px",
@@ -65,7 +66,7 @@ export function AccountButton({
         "width": "24px",
         "minWidth": "0px",
         "minHeight": "0px"
-      }} src="https://s3-alpha.figma.com/profile/2352a4b9-1db3-49d6-bb4d-651586207271" alt=""></img>
+      }} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" alt=""></img>
                         <span style={{
         "bottom": "0px",
         "boxSizing": "border-box",
@@ -78,7 +79,7 @@ export function AccountButton({
         "width": "24px",
         "minWidth": "0px",
         "minHeight": "0px",
-        "border": "1px solid rgba(0, 0, 0, 0.1)",
+        "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
         "borderRadius": "9999px"
       }}></span>
                       </span>

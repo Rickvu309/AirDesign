@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function CreatePresentationOptions({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "boxSizing": "border-box",
     "columnGap": "24px",
@@ -19,14 +20,14 @@ export function CreatePresentationOptions({
     flexShrink: 0,
     width: 644,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
                       <button style={{
       "alignItems": "center",
       "appearance": "auto",
       "aspectRatio": "1.25 / 1",
-      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
       "boxSizing": "border-box",
-      "color": "rgb(0, 0, 0)",
+      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
       "display": "flex",
       "flexBasis": "0px",
       "flexGrow": "1",
@@ -42,7 +43,7 @@ export function CreatePresentationOptions({
       "overflowY": "hidden",
       "position": "relative",
       "textAlign": "start",
-      "border": "1px solid rgb(230, 230, 230)",
+      "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
       "borderRadius": "13px",
       "padding": "0px"
     }} aria-label="Start from scratch" type="button">
@@ -61,7 +62,7 @@ export function CreatePresentationOptions({
         "minHeight": "0px"
       }} aria-hidden="true">
                           <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontSize": "13px",
           "fontWeight": "550",
@@ -71,7 +72,7 @@ export function CreatePresentationOptions({
   Start from scratch
 </span>
                           <span style={{
-          "color": "rgba(0, 0, 0, 0.5)",
+          "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
           "display": "block",
           "textAlign": "center"
         }}>
@@ -89,7 +90,7 @@ export function CreatePresentationOptions({
         "minHeight": "0px"
       }}>
                           <img style={{
-          "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
+          "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.12) 0px 10px 16px 0px, rgba(0, 0, 0, 0.12) 0px 0px 0.5px 0px",
           "display": "block",
           "height": "110px",
           "objectFit": "cover",
@@ -107,9 +108,9 @@ export function CreatePresentationOptions({
       "alignItems": "center",
       "appearance": "auto",
       "aspectRatio": "1.25 / 1",
-      "backgroundColor": "rgb(255, 255, 255)",
+      "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
       "boxSizing": "border-box",
-      "color": "rgb(0, 0, 0)",
+      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
       "display": "flex",
       "flexBasis": "0px",
       "flexGrow": "1",
@@ -125,7 +126,7 @@ export function CreatePresentationOptions({
       "overflowY": "hidden",
       "position": "relative",
       "textAlign": "start",
-      "border": "1px solid rgb(230, 230, 230)",
+      "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
       "borderRadius": "13px",
       "padding": "0px"
     }} aria-label="Use a template" type="button">
@@ -144,7 +145,7 @@ export function CreatePresentationOptions({
         "minHeight": "0px"
       }} aria-hidden="true">
                           <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontSize": "13px",
           "fontWeight": "550",
@@ -154,7 +155,7 @@ export function CreatePresentationOptions({
   Use a template
 </span>
                           <span style={{
-          "color": "rgba(0, 0, 0, 0.5)",
+          "color": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))",
           "display": "block",
           "textAlign": "center"
         }}>
@@ -190,11 +191,11 @@ export function CreatePresentationOptions({
             "transform": "matrix(0.997224, 0.0744566, -0.0744566, 0.997224, 0, 0)",
             "transformOrigin": "92px 52px",
             "width": "184px",
-            "border": "1px solid rgba(0, 0, 0, 0.1)",
+            "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
             "borderRadius": "5px"
-          }} alt="" src="https://static.figma.com/uploads/bc26f7aba942ed9012e84b07a510c6b17d291ecb" aria-hidden="true"></img>
+          }} alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" aria-hidden="true"></img>
   <img style={{
-            "boxShadow": "rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
+            "boxShadow": "var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px",
             "boxSizing": "border-box",
             "display": "block",
             "height": "104px",
@@ -208,9 +209,9 @@ export function CreatePresentationOptions({
             "transform": "matrix(0.997564, 0.0697565, -0.0697565, 0.997564, 0, 0)",
             "transformOrigin": "92px 52px",
             "width": "184px",
-            "border": "1px solid rgba(0, 0, 0, 0.1)",
+            "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
             "borderRadius": "5px"
-          }} alt="" src="https://static.figma.com/uploads/b47bf7fc72021ed470c7c2f65b194be3e49fcd0f" aria-hidden="true"></img>
+          }} alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23e6e6e6'/%3E%3C/svg%3E" aria-hidden="true"></img>
 </div>
                         </div>
                       </button>

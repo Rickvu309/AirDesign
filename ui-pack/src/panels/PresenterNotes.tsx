@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function PresenterNotes({ style, className }: AirDesignComponentProps) {
+export function PresenterNotes({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   "alignItems": "center",
   "display": "flex",
@@ -16,7 +20,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
   marginLeft: 0,
   marginRight: 0,
   ...style
-}} className={className}>
+}} className={className} {...rest}>
     <div style={{
     "boxSizing": "content-box",
     "display": "flex",
@@ -52,7 +56,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
           "padding": "2px 8px"
         }}>
             <p style={{
-            "color": "rgba(0, 0, 0, 0.898)",
+            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
             "fontFamily": "Inter, sans-serif",
             "fontSize": "11px",
             "fontWeight": "400",
@@ -83,7 +87,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
       "position": "relative"
     }}>
         <div style={{
-        "backgroundColor": "rgb(230, 230, 230)",
+        "backgroundColor": "var(--ad-divider, rgb(230, 230, 230))",
         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
         "fontSize": "13px",
         "height": "96px",
@@ -126,7 +130,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                       "alignItems": "center",
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                       "fontSize": "13px",
@@ -154,7 +158,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                       "whiteSpace": "pre-wrap"
                     }} role="textbox" aria-placeholder="Add presenter notes…">
                         <p style={{
-                        "color": "rgba(0, 0, 0, 0.898)",
+                        "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                         "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                         "fontSize": "13px",
                         "fontWeight": "400",
@@ -170,7 +174,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                     </section>
                     <div style={{
                     "boxSizing": "content-box",
-                    "color": "rgba(0, 0, 0, 0.3)",
+                    "color": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))",
                     "left": "0px",
                     "position": "absolute",
                     "right": "0px",
@@ -222,7 +226,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
                           "boxSizing": "border-box",
-                          "color": "rgba(0, 0, 0, 0.3)",
+                          "color": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))",
                           "display": "flex",
                           "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                           "fontSize": "13px",
@@ -230,7 +234,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                           "justifyItems": "center",
                           "lineHeight": "17px",
                           "textAlign": "start",
-                          "border": "1px solid rgba(0, 0, 0, 0.1)",
+                          "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                           "borderRadius": "5px",
                           "padding": "0px 36px 0px 4px"
                         }} aria-label="Start with an AI draft" type="button">
@@ -242,8 +246,8 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
                               <path style={{
-                              "fill": "rgba(0, 0, 0, 0.3)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M14.5 7.001a.5.5 0 0 1 0 1H7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-4.5a.5.5 0 1 1 1 0v4.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zm-1 6a.5.5 0 1 1 0 1h-5a.5.5 0 0 1 0-1zm2-3a.5.5 0 1 1 0 1h-7a.5.5 0 0 1 0-1zm2.515-4.56c.126-.505.844-.505.97 0l.315 1.26 1.26.315c.505.126.505.844 0 .97l-1.26.315-.315 1.26c-.126.505-.844.505-.97 0L17.7 8.3l-1.26-.315c-.505-.126-.505-.844 0-.97L17.7 6.7z"></path>
+                              "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                            }} d="M14.5 7.001a.5.5 0 0 1 0 1H7a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-4.5a.5.5 0 1 1 1 0v4.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zm-1 6a.5.5 0 1 1 0 1h-5a.5.5 0 0 1 0-1zm2-3a.5.5 0 1 1 0 1h-7a.5.5 0 0 1 0-1zm2.515-4.56c.126-.505.844-.505.97 0l.315 1.26 1.26.315c.505.126.505.844 0 .97l-1.26.315-.315 1.26c-.126.505-.844.505-.97 0L17.7 8.3l-1.26-.315c-.505-.126-.505-.844 0-.97L17.7 6.7z"></path>
                             </svg>
                             Start with a draft
                           </button>
@@ -268,11 +272,11 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                             "fontWeight": "400",
                             "lineHeight": "17px",
                             "borderRadius": "5px"
-                          }} aria-label="AI, Learn more" href="https://help.figma.com/hc/articles/24245848829847#h_01JBF670XY6WGXKE8F76112N9W" rel="noopener" target="_blank">
+                          }} aria-label="AI, Learn more" href="#" rel="noopener" target="_blank">
                               <div style={{
                               "alignItems": "center",
                               "boxSizing": "content-box",
-                              "color": "rgba(0, 0, 0, 0.3)",
+                              "color": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))",
                               "columnGap": "4px",
                               "display": "flex",
                               "fontSize": "11px",
@@ -281,7 +285,7 @@ export function PresenterNotes({ style, className }: AirDesignComponentProps) {
                               "paddingLeft": "4px",
                               "paddingRight": "4px",
                               "rowGap": "4px",
-                              "border": "1px solid rgba(0, 0, 0, 0.1)",
+                              "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                               "borderRadius": "5px"
                             }}>
                                 AI

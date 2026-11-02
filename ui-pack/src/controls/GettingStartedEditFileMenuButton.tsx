@@ -1,16 +1,17 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function GettingStartedEditFileMenuButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "borderBottomRightRadius": "5px",
     "borderTopRightRadius": "5px",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "grid",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -32,7 +33,7 @@ export function GettingStartedEditFileMenuButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-haspopup="menu" aria-expanded="false" aria-label="Edit file menu" type="button" className={className}>
+  }} aria-haspopup="menu" aria-expanded="false" aria-label="Edit file menu" type="button" className={className} {...rest}>
                             <span style={{
       "alignItems": "center",
       "borderBottomRightRadius": "5px",
@@ -51,8 +52,8 @@ export function GettingStartedEditFileMenuButton({
         "width": "16px"
       }} width="16" height="16" fill="none" viewBox="0 0 16 16">
   <path style={{
-          "fill": "rgba(0, 0, 0, 0.898)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
 </svg>
                             </span>
                           </button>;

@@ -1,13 +1,14 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ChangePlanButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "appearance": "auto",
-    "backgroundColor": "rgb(255, 255, 255)",
-    "color": "rgb(0, 0, 0)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "block",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -19,11 +20,11 @@ export function ChangePlanButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Change plan. Quan Vu is currently on the Professional plan" aria-expanded="false" className={className}>
+  }} aria-label="Change plan. Your Name is currently on the Professional plan" aria-expanded="false" className={className} {...rest}>
                   <span style={{
-      "backgroundColor": "rgb(242, 249, 255)",
+      "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
       "boxSizing": "border-box",
-      "color": "rgb(0, 123, 229)",
+      "color": "var(--ad-selection-strong, rgb(0, 123, 229))",
       "display": "flex",
       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
       "fontWeight": "500",

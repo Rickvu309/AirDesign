@@ -1,16 +1,17 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ShapeCircleIcon({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"svg">) {
   return <svg style={{
     "display": "block",
     "height": "26px",
     "overflowX": "hidden",
     "overflowY": "hidden",
-    "fill": "rgb(61, 56, 245)",
-    "stroke": "rgb(43, 39, 172)",
+    "fill": "var(--ad-accent, rgb(61, 56, 245))",
+    "stroke": "var(--ad-accent-strong, rgb(43, 39, 172))",
     "strokeWidth": "2px",
     position: "relative",
     fontFamily: "Inter, sans-serif",
@@ -20,7 +21,7 @@ export function ShapeCircleIcon({
     flexShrink: 0,
     width: 24,
     ...style
-  }} width="27" height="26" viewBox="0 0 27 26" className={className}>
+  }} width="27" height="26" viewBox="0 0 27 26" className={className} {...rest}>
     <circle style={{
       "strokeOpacity": "0.9"
     }} cx="13.5" cy="13" r="12.458" strokeLinecap="square" strokeOpacity=".9"></circle>

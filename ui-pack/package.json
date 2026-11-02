@@ -11,22 +11,27 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./tokens.css": "./src/tokens.css",
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
-    }
+    },
+    "./base.css": "./src/base.css"
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "COMPONENTS.md"
   ],
   "scripts": {
     "generate": "node ../scripts/build-ui-pack.mjs",
     "build": "npm run generate && tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "docs": "npm run build && node ../scripts/build-ui-pack-docs.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/pack.test.mjs"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=19"
   },
   "devDependencies": {
     "@types/react": "^19",

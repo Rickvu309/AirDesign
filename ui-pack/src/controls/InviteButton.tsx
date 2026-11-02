@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InviteButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(217, 217, 217)",
+    "backgroundColor": "var(--ad-divider-strong, rgb(217, 217, 217))",
     "boxSizing": "border-box",
-    "color": "rgb(255, 255, 255)",
+    "color": "var(--ad-surface, rgb(255, 255, 255))",
     "display": "flex",
     "flexShrink": "0",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
@@ -26,7 +27,7 @@ export function InviteButton({
     "padding": "4px 12px",
     position: "relative",
     ...style
-  }} type="submit" aria-disabled="true" disabled={true} className={className}>
+  }} type="submit" aria-disabled="true" disabled={true} className={className} {...rest}>
   Invite
 </button>;
 }

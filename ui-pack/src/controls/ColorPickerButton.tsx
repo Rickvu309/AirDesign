@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function ColorPickerButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(255, 255, 255)",
+    "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
     "boxSizing": "border-box",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -24,13 +25,13 @@ export function ColorPickerButton({
     "textOverflow": "ellipsis",
     "width": "208px",
     "whiteSpace": "nowrap",
-    "border": "1px solid rgb(230, 230, 230)",
+    "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
     "borderRadius": "5px",
     "padding": "0px 4px 0px 0px",
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-label="Color picker" aria-expanded="false" type="button" className={className}>
+  }} aria-label="Color picker" aria-expanded="false" type="button" className={className} {...rest}>
     <span style={{
       "display": "flex"
     }}>
@@ -45,7 +46,7 @@ export function ColorPickerButton({
         "rowGap": "6px"
       }}>
         <div style={{
-          "backgroundColor": "rgb(255, 255, 255)",
+          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
           "flexShrink": "0",
           "height": "14px",
           "overflowX": "hidden",
@@ -67,7 +68,7 @@ export function ColorPickerButton({
           }}></div>
           <div style={{
             "bottom": "-7px",
-            "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px inset",
+            "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 2px inset",
             "left": "-7px",
             "position": "absolute",
             "right": "-7px",
@@ -118,8 +119,8 @@ export function ColorPickerButton({
         "width": "16px"
       }} width="16" height="16" fill="none" viewBox="0 0 16 16">
         <path style={{
-          "fill": "rgba(0, 0, 0, 0.898)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+          "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+        }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
       </svg>
     </div>
   </button>;

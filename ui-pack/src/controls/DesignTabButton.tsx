@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function DesignTabButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
-    "backgroundColor": "rgb(245, 245, 245)",
+    "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
     "boxSizing": "border-box",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "grid",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -27,7 +28,7 @@ export function DesignTabButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} type="button" role="tab" aria-selected="true" className={className}>
+  }} type="button" role="tab" aria-selected="true" className={className} {...rest}>
                   <span style={{
       "display": "block",
       "gridColumnStart": "1",

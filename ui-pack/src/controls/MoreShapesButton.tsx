@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MoreShapesButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgba(0, 0, 0, 0.898)",
+    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
     "display": "flex",
     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
     "fontSize": "11px",
@@ -18,7 +19,7 @@ export function MoreShapesButton({
     "letterSpacing": "0.05504px",
     "lineHeight": "16px",
     "maxWidth": "100%",
-    "outlineColor": "rgba(0, 0, 0, 0.1)",
+    "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
     "outlineOffset": "-1px",
     "outlineStyle": "solid",
     "outlineWidth": "1px",
@@ -29,7 +30,7 @@ export function MoreShapesButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} type="button" className={className}>
+  }} type="button" className={className} {...rest}>
             <span style={{
       "display": "flex",
       "height": "24px",

@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InviteEmailFieldButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "alignContent": "flex-start",
     "columnGap": "4px",
@@ -20,12 +21,12 @@ export function InviteEmailFieldButton({
     flexShrink: 0,
     width: 448,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
       <input style={{
       "appearance": "auto",
-      "backgroundColor": "rgb(245, 245, 245)",
+      "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
       "boxSizing": "content-box",
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "display": "block",
       "flexGrow": "1",
       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",

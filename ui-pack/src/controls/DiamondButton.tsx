@@ -1,14 +1,15 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function DiamondButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "display": "flex",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
@@ -25,11 +26,11 @@ export function DiamondButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-current="false" aria-label="Diamond" type="button" className={className}>
+  }} aria-current="false" aria-label="Diamond" type="button" className={className} {...rest}>
                   <span style={{
       "alignItems": "center",
       "display": "flex",
-      "filter": "drop-shadow(rgba(0, 0, 0, 0.3) 0px 0px 0.5px) drop-shadow(rgba(0, 0, 0, 0.15) 0px 1px 3px)",
+      "filter": "drop-shadow(var(--ad-ink-subtle, rgba(0, 0, 0, 0.3)) 0px 0px 0.5px) drop-shadow(var(--ad-border-strong, rgba(0, 0, 0, 0.15)) 0px 1px 3px)",
       "height": "24px",
       "justifyContent": "center",
       "scale": "1",
@@ -43,8 +44,8 @@ export function DiamondButton({
         "overflowX": "hidden",
         "overflowY": "hidden",
         "width": "24px",
-        "fill": "rgb(61, 56, 245)",
-        "stroke": "rgb(43, 39, 172)",
+        "fill": "var(--ad-accent, rgb(61, 56, 245))",
+        "stroke": "var(--ad-accent-strong, rgb(43, 39, 172))",
         "strokeWidth": "2px"
       }} width="29" height="30" viewBox="0 0 29 30">
     <rect style={{

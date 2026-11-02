@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function SlidePropertiesPanel({ style, className }: AirDesignComponentProps) {
+export function SlidePropertiesPanel({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   "height": "842px",
   position: "relative",
@@ -11,7 +15,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
   flexShrink: 0,
   width: 240,
   ...style
-}} className={className}>
+}} className={className} {...rest}>
   <div style={{
     "bottom": "0px",
     "overflowX": "hidden",
@@ -37,7 +41,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
       }}>
         <div>
           <div style={{
-            "backgroundColor": "rgb(255, 255, 255)",
+            "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
             "boxSizing": "border-box",
             "display": "flex",
             "flexDirection": "column",
@@ -47,7 +51,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
             "width": "240px"
           }}>
             <div style={{
-              "borderBottomColor": "rgb(230, 230, 230)",
+              "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
               "borderBottomStyle": "solid",
               "borderBottomWidth": "1px",
               "boxSizing": "content-box"
@@ -68,7 +72,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                 }}>
                   <h1 style={{
                     "boxSizing": "content-box",
-                    "color": "rgba(0, 0, 0, 0.898)",
+                    "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                     "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
                     "fontSize": "13px",
                     "fontWeight": "550",
@@ -106,7 +110,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         "alignItems": "center",
                         "appearance": "auto",
                         "backgroundColor": "rgba(0, 0, 0, 0)",
-                        "color": "rgb(0, 0, 0)",
+                        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                         "display": "grid",
                         "fontFamily": "Inter, sans-serif",
                         "fontSize": "11px",
@@ -143,8 +147,8 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                              "fill": "rgba(0, 0, 0, 0.898)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18.5 14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V15h-1v3h.5a.5.5 0 0 1 0 1h-2a.5.5 0 1 1 0-1h.5v-3h-1v.5a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5zM9.62 5.906c.513-1.205 2.248-1.205 2.762 0l.047.125.884 2.656 2.658.886c1.372.458 1.372 2.399 0 2.857l-2.658.884-.884 2.658c-.458 1.372-2.4 1.372-2.857 0l-.885-2.658-2.657-.884c-1.372-.458-1.372-2.4 0-2.857l2.657-.886.885-2.656zm1.825.352.011.028c-.173-.379-.74-.379-.912 0l.012-.028-.937-.352.92.392.005-.012-.035.097.012-.035-.949-.317.937.352-.874 2.62-.158.475-.474.159-2.656.885a.505.505 0 0 0 0 .96l2.656.884.474.158.158.474.886 2.657a.505.505 0 0 0 .959.001L12.364 13l.159-.475.474-.158 2.657-.885a.505.505 0 0 0 0-.959l-3.131-1.044-1.04-3.12.01.025.936-.352-.95.317.004.01-.027-.072.006.012.92-.392z" clipRule="evenodd"></path>
+                              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                            }} fillRule="evenodd" d="M18.5 14a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-1 0V15h-1v3h.5a.5.5 0 0 1 0 1h-2a.5.5 0 1 1 0-1h.5v-3h-1v.5a.5.5 0 0 1-1 0v-1a.5.5 0 0 1 .5-.5zM9.62 5.906c.513-1.205 2.248-1.205 2.762 0l.047.125.884 2.656 2.658.886c1.372.458 1.372 2.399 0 2.857l-2.658.884-.884 2.658c-.458 1.372-2.4 1.372-2.857 0l-.885-2.658-2.657-.884c-1.372-.458-1.372-2.4 0-2.857l2.657-.886.885-2.656zm1.825.352.011.028c-.173-.379-.74-.379-.912 0l.012-.028-.937-.352.92.392.005-.012-.035.097.012-.035-.949-.317.937.352-.874 2.62-.158.475-.474.159-2.656.885a.505.505 0 0 0 0 .96l2.656.884.474.158.158.474.886 2.657a.505.505 0 0 0 .959.001L12.364 13l.159-.475.474-.158 2.657-.885a.505.505 0 0 0 0-.959l-3.131-1.044-1.04-3.12.01.025.936-.352-.95.317.004.01-.027-.072.006.012.92-.392z" clipRule="evenodd"></path>
   </svg>
 </span>
                       </button>
@@ -165,7 +169,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
               "minHeight": "0px"
             }}>
               <div style={{
-                "borderBottomColor": "rgb(230, 230, 230)",
+                "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
                 "borderBottomStyle": "solid",
                 "borderBottomWidth": "1px",
                 "boxSizing": "content-box",
@@ -208,12 +212,12 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         "width": "16px"
                       }} width="16" height="16" fill="none" viewBox="0 0 16 16">
                         <path style={{
-                          "fill": "rgba(0, 0, 0, 0.5)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
+                          "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                        }} d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
                       </svg>
                     </div>
                     <h2 style={{
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
                       "fontWeight": "550",
@@ -246,7 +250,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         "alignItems": "center",
                         "appearance": "auto",
                         "backgroundColor": "rgba(0, 0, 0, 0)",
-                        "color": "rgb(0, 0, 0)",
+                        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                         "display": "grid",
                         "fontFamily": "Inter, sans-serif",
                         "fontSize": "11px",
@@ -283,8 +287,8 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
     <path style={{
-                              "fill": "rgba(0, 0, 0, 0.898)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M8.5 18a.5.5 0 0 0 .5-.5v-1.55a2.5 2.5 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v4.55a2.501 2.501 0 0 0 0 4.9v1.55a.5.5 0 0 0 .5.5m7 0a.5.5 0 0 0 .5-.5v-4.55a2.501 2.501 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v1.55a2.5 2.5 0 0 0 0 4.9v4.55a.5.5 0 0 0 .5.5m0-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m-7 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
+                              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                            }} d="M8.5 18a.5.5 0 0 0 .5-.5v-1.55a2.5 2.5 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v4.55a2.501 2.501 0 0 0 0 4.9v1.55a.5.5 0 0 0 .5.5m7 0a.5.5 0 0 0 .5-.5v-4.55a2.501 2.501 0 0 0 0-4.9V6.5a.5.5 0 0 0-1 0v1.55a2.5 2.5 0 0 0 0 4.9v4.55a.5.5 0 0 0 .5.5m0-6a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m-7 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"></path>
   </svg>
 </span>
                       </button>
@@ -307,9 +311,9 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                     }} role="presentation">
                       <button style={{
                         "appearance": "auto",
-                        "backgroundColor": "rgb(255, 255, 255)",
+                        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                         "boxSizing": "border-box",
-                        "color": "rgb(0, 0, 0)",
+                        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                         "display": "flex",
                         "fontFamily": "Inter, sans-serif",
                         "fontSize": "11px",
@@ -318,7 +322,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         "lineHeight": "16px",
                         "textAlign": "left",
                         "width": "208px",
-                        "border": "1px solid rgb(230, 230, 230)",
+                        "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                         "borderRadius": "5px",
                         "padding": "0px"
                       }} type="button" aria-disabled="true" aria-haspopup="listbox" aria-expanded="false" role="combobox" aria-label="Style: Light slides, Fonts: Inter">
@@ -357,7 +361,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                                   "position": "absolute",
                                   "top": "0px",
                                   "width": "32px",
-                                  "border": "1px solid rgba(0, 0, 0, 0.1)",
+                                  "border": "1px solid var(--ad-border, rgba(0, 0, 0, 0.1))",
                                   "borderRadius": "2px"
                                 }}></div>
           <div style={{
@@ -376,7 +380,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                                     "height": "32px"
                                   }}></div>
             <div style={{
-                                    "backgroundColor": "rgb(61, 56, 245)",
+                                    "backgroundColor": "var(--ad-accent, rgb(61, 56, 245))",
                                     "flexGrow": "1",
                                     "height": "32px"
                                   }}></div>
@@ -398,7 +402,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
       </div>
       <div style={{
                               "alignItems": "center",
-                              "color": "rgba(0, 0, 0, 0.898)",
+                              "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                               "display": "flex",
                               "flexGrow": "1",
                               "justifyContent": "space-between",
@@ -434,7 +438,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                                 }}>
             <div>
               <p style={{
-                                      "color": "rgba(0, 0, 0, 0.898)",
+                                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                                       "fontFamily": "Inter, sans-serif",
                                       "fontSize": "15px",
                                       "fontWeight": "400",
@@ -459,7 +463,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                       "alignItems": "center",
                       "appearance": "auto",
                       "backgroundColor": "rgba(0, 0, 0, 0)",
-                      "color": "rgb(0, 0, 0)",
+                      "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                       "display": "flex",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
@@ -485,7 +489,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
   <path style={{
                           "fill": "rgba(255, 255, 255, 0.898)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M12.453 10.155a.5.5 0 0 0 .753.659l1.573-1.797a1.5 1.5 0 0 1 1.129-.512h1.36c.008 0 .013.01.007.016l-1.129 1.13a.501.501 0 0 0 .708.706l2-2a.5.5 0 0 0 0-.707l-1.999-2a.501.501 0 0 0-.709.707l1.13 1.13c.006.007.001.018-.008.018h-1.361a2.5 2.5 0 0 0-1.881.853zM5 8.003a.5.5 0 0 0 .5.5h1.59c.433 0 .844.187 1.13.513l5.804 6.633a2.5 2.5 0 0 0 1.88.854h1.386l-1.146 1.147a.5.5 0 0 0 0 .707.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0 0-.707l-2-2a.5.5 0 0 0-.708 0 .5.5 0 0 0 0 .707l1.146 1.146h-1.384c-.432 0-.845-.187-1.13-.512L8.974 8.356a2.5 2.5 0 0 0-1.882-.853H5.5a.5.5 0 0 0-.5.5m0 8.002a.5.5 0 0 0 .5.5h1.592a2.5 2.5 0 0 0 1.882-.854l1.574-1.8a.5.5 0 0 0-.753-.659l-1.574 1.8a1.5 1.5 0 0 1-1.129.513H5.5a.5.5 0 0 0-.5.5"></path>
+                        }} d="M12.453 10.155a.5.5 0 0 0 .753.659l1.573-1.797a1.5 1.5 0 0 1 1.129-.512h1.36c.008 0 .013.01.007.016l-1.129 1.13a.501.501 0 0 0 .708.706l2-2a.5.5 0 0 0 0-.707l-1.999-2a.501.501 0 0 0-.709.707l1.13 1.13c.006.007.001.018-.008.018h-1.361a2.5 2.5 0 0 0-1.881.853zM5 8.003a.5.5 0 0 0 .5.5h1.59c.433 0 .844.187 1.13.513l5.804 6.633a2.5 2.5 0 0 0 1.88.854h1.386l-1.146 1.147a.5.5 0 0 0 0 .707.5.5 0 0 0 .708 0l2-2a.5.5 0 0 0 0-.707l-2-2a.5.5 0 0 0-.708 0 .5.5 0 0 0 0 .707l1.146 1.146h-1.384c-.432 0-.845-.187-1.13-.512L8.974 8.356a2.5 2.5 0 0 0-1.882-.853H5.5a.5.5 0 0 0-.5.5m0 8.002a.5.5 0 0 0 .5.5h1.592a2.5 2.5 0 0 0 1.882-.854l1.574-1.8a.5.5 0 0 0-.753-.659l-1.574 1.8a1.5 1.5 0 0 1-1.129.513H5.5a.5.5 0 0 0-.5.5"></path>
 </svg>
                     </button>
                   </div>
@@ -498,7 +502,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
               "minHeight": "0px"
             }}>
               <div style={{
-                "borderBottomColor": "rgb(230, 230, 230)",
+                "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
                 "borderBottomStyle": "solid",
                 "borderBottomWidth": "1px",
                 "boxSizing": "content-box",
@@ -529,7 +533,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                     "minWidth": "0px"
                   }}>
                     <h2 style={{
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
                       "fontWeight": "550",
@@ -598,7 +602,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
 </span>
                     </legend>
                     <div style={{
-                      "backgroundColor": "rgb(245, 245, 245)",
+                      "backgroundColor": "var(--ad-surface-subtle, rgb(245, 245, 245))",
                       "display": "flex",
                       "width": "208px",
                       "borderRadius": "5px"
@@ -612,7 +616,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
                           "bottom": "0px",
-                          "color": "rgb(0, 0, 0)",
+                          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -632,8 +636,8 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         }} type="radio" value="SOLID" checked={true}></input>
   <span style={{
                           "alignItems": "center",
-                          "backgroundColor": "rgb(255, 255, 255)",
-                          "boxShadow": "rgb(230, 230, 230) 0px 0px 0px 1px inset",
+                          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
+                          "boxShadow": "var(--ad-divider, rgb(230, 230, 230)) 0px 0px 0px 1px inset",
                           "display": "flex",
                           "height": "24px",
                           "justifyContent": "center",
@@ -648,16 +652,16 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                              "fill": "rgba(0, 0, 0, 0.3)"
-                            }} fill="var(--fpl-icon-color-3, var(--color-icon-tertiary))" d="M9 9h6v6H9z"></path>
+                              "fill": "var(--ad-ink-subtle, rgba(0, 0, 0, 0.3))"
+                            }} d="M9 9h6v6H9z"></path>
       <path style={{
-                              "fill": "rgba(0, 0, 0, 0.898)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M8 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1M6 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zm3 7V9h6v6zM8 8.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" clipRule="evenodd"></path>
+                              "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                            }} fillRule="evenodd" d="M8 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1M6 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zm3 7V9h6v6zM8 8.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5h-7a.5.5 0 0 1-.5-.5z" clipRule="evenodd"></path>
     </svg>
   </span>
   <label style={{
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -685,7 +689,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
                           "bottom": "0px",
-                          "color": "rgb(0, 0, 0)",
+                          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -719,13 +723,13 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                              "fill": "rgba(0, 0, 0, 0.5)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M8 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1M6 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zm3.75.875a.875.875 0 1 1-1.75 0 .875.875 0 0 1 1.75 0m3.791.625a.625.625 0 1 0 0-1.25.625.625 0 0 0 0 1.25m-1.458.875a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m0 3.12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.458 2.245a.625.625 0 1 0 0-1.25.625.625 0 0 0 0 1.25m.625-3.865a.625.625 0 1 1-1.25 0 .625.625 0 0 1 1.25 0M8.875 15.99a.875.875 0 1 0 0-1.75.875.875 0 0 0 0 1.75m.875-4.115a.875.875 0 1 1-1.75 0 .875.875 0 0 1 1.75 0m5.75-1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1m.5 2.623a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" clipRule="evenodd"></path>
+                              "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                            }} fillRule="evenodd" d="M8 7h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1M6 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2zm3.75.875a.875.875 0 1 1-1.75 0 .875.875 0 0 1 1.75 0m3.791.625a.625.625 0 1 0 0-1.25.625.625 0 0 0 0 1.25m-1.458.875a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m0 3.12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.458 2.245a.625.625 0 1 0 0-1.25.625.625 0 0 0 0 1.25m.625-3.865a.625.625 0 1 1-1.25 0 .625.625 0 0 1 1.25 0M8.875 15.99a.875.875 0 1 0 0-1.75.875.875 0 0 0 0 1.75m.875-4.115a.875.875 0 1 1-1.75 0 .875.875 0 0 1 1.75 0m5.75-1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1m.5 2.623a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0" clipRule="evenodd"></path>
     </svg>
   </span>
   <label style={{
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -753,7 +757,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
                           "bottom": "0px",
-                          "color": "rgb(0, 0, 0)",
+                          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -787,13 +791,13 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "width": "24px"
                           }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                              "fill": "rgba(0, 0, 0, 0.5)"
-                            }} fill="var(--fpl-icon-color, var(--color-icon))" d="M16 6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM8 7a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm2.225 4.082a.5.5 0 0 1 .629.064l4 4a.5.5 0 1 1-.707.707L10.5 12.208l-1.646 1.646a.5.5 0 1 1-.708-.707l2-2zM14.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m0 1a.5.5 0 1 0 0 1 .5.5 0 0 0 0-1"></path>
+                              "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                            }} d="M16 6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2zM8 7a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm2.225 4.082a.5.5 0 0 1 .629.064l4 4a.5.5 0 1 1-.707.707L10.5 12.208l-1.646 1.646a.5.5 0 1 1-.708-.707l2-2zM14.5 8a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m0 1a.5.5 0 1 0 0 1 .5.5 0 0 0 0-1"></path>
     </svg>
   </span>
   <label style={{
                           "clipPath": "inset(50%)",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "block",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -829,9 +833,9 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
   <button style={{
                           "alignItems": "center",
                           "appearance": "auto",
-                          "backgroundColor": "rgb(255, 255, 255)",
+                          "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                           "boxSizing": "border-box",
-                          "color": "rgba(0, 0, 0, 0.898)",
+                          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                           "display": "flex",
                           "fontFamily": "Inter, sans-serif",
                           "fontSize": "11px",
@@ -846,7 +850,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "textOverflow": "ellipsis",
                           "width": "208px",
                           "whiteSpace": "nowrap",
-                          "border": "1px solid rgb(230, 230, 230)",
+                          "border": "1px solid var(--ad-divider, rgb(230, 230, 230))",
                           "borderRadius": "5px",
                           "padding": "0px 4px 0px 0px"
                         }} aria-label="Color picker" aria-expanded="false" type="button">
@@ -864,7 +868,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                               "rowGap": "6px"
                             }}>
         <div style={{
-                                "backgroundColor": "rgb(255, 255, 255)",
+                                "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                                 "flexShrink": "0",
                                 "height": "14px",
                                 "overflowX": "hidden",
@@ -886,7 +890,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                                 }}></div>
           <div style={{
                                   "bottom": "-7px",
-                                  "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px inset",
+                                  "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 2px inset",
                                   "left": "-7px",
                                   "position": "absolute",
                                   "right": "-7px",
@@ -937,8 +941,8 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                               "width": "16px"
                             }} width="16" height="16" fill="none" viewBox="0 0 16 16">
         <path style={{
-                                "fill": "rgba(0, 0, 0, 0.898)"
-                              }} fill="var(--fpl-icon-color, var(--color-icon))" d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
+                                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+                              }} d="M9.768 6.768a.5.5 0 0 1 .707.707l-2.12 2.121a.5.5 0 0 1-.708 0L5.525 7.475a.5.5 0 0 1 .708-.707l1.768 1.767z"></path>
       </svg>
     </div>
   </button>
@@ -954,7 +958,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
               "minHeight": "0px"
             }}>
               <div style={{
-                "borderBottomColor": "rgb(230, 230, 230)",
+                "borderBottomColor": "var(--ad-divider, rgb(230, 230, 230))",
                 "borderBottomStyle": "solid",
                 "borderBottomWidth": "1px",
                 "boxSizing": "content-box",
@@ -997,12 +1001,12 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                         "width": "16px"
                       }} width="16" height="16" fill="none" viewBox="0 0 16 16">
   <path style={{
-                          "fill": "rgba(0, 0, 0, 0.5)"
-                        }} fill="var(--fpl-icon-color, var(--color-icon))" d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
+                          "fill": "var(--ad-ink-muted, rgba(0, 0, 0, 0.5))"
+                        }} d="M6.768 5.525a.5.5 0 0 1 .707 0l2.121 2.121a.5.5 0 0 1 0 .707l-2.121 2.122a.5.5 0 0 1-.707-.708L8.535 8 6.768 6.232a.5.5 0 0 1 0-.707"></path>
 </svg>
                     </div>
                     <h2 style={{
-                      "color": "rgba(0, 0, 0, 0.898)",
+                      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                       "fontFamily": "Inter, sans-serif",
                       "fontSize": "11px",
                       "fontWeight": "550",
@@ -1063,7 +1067,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "alignItems": "center",
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
-                          "color": "rgb(0, 0, 0)",
+                          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                           "display": "flex",
                           "flexBasis": "0%",
                           "flexGrow": "1",
@@ -1073,7 +1077,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "height": "24px",
                           "justifyItems": "center",
                           "lineHeight": "16px",
-                          "outlineColor": "rgb(230, 230, 230)",
+                          "outlineColor": "var(--ad-divider, rgb(230, 230, 230))",
                           "outlineOffset": "-1px",
                           "outlineStyle": "solid",
                           "outlineWidth": "1px",
@@ -1081,7 +1085,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "minWidth": "0px",
                           "borderRadius": "5px",
                           "padding": "0px"
-                        }} aria-label="Color Variable Black with value #000 at 100%" type="button">
+                        }} aria-label="Color Variable Black with value var(--ad-ink-strong, #000) at 100%" type="button">
     <div style={{
                             "alignItems": "center",
                             "display": "flex",
@@ -1092,7 +1096,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "margin": "4px 4px 4px 5px"
                           }}>
       <div style={{
-                              "backgroundColor": "rgb(0, 0, 0)",
+                              "backgroundColor": "var(--ad-ink-strong, rgb(0, 0, 0))",
                               "flexBasis": "14px",
                               "flexShrink": "0",
                               "height": "14px",
@@ -1119,7 +1123,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
     <div style={{
                             "alignContent": "center",
                             "boxSizing": "content-box",
-                            "color": "rgba(0, 0, 0, 0.898)",
+                            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                             "height": "24px",
                             "overflowX": "hidden",
                             "overflowY": "hidden",
@@ -1214,7 +1218,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "alignItems": "center",
                           "appearance": "auto",
                           "backgroundColor": "rgba(0, 0, 0, 0)",
-                          "color": "rgb(0, 0, 0)",
+                          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
                           "display": "flex",
                           "flexBasis": "0%",
                           "flexGrow": "1",
@@ -1224,7 +1228,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "height": "24px",
                           "justifyItems": "center",
                           "lineHeight": "16px",
-                          "outlineColor": "rgb(230, 230, 230)",
+                          "outlineColor": "var(--ad-divider, rgb(230, 230, 230))",
                           "outlineOffset": "-1px",
                           "outlineStyle": "solid",
                           "outlineWidth": "1px",
@@ -1232,7 +1236,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                           "minWidth": "0px",
                           "borderRadius": "5px",
                           "padding": "0px"
-                        }} aria-label="Color Variable White with value #FFF at 100%" type="button">
+                        }} aria-label="Color Variable White with value var(--ad-surface, #FFF) at 100%" type="button">
     <div style={{
                             "alignItems": "center",
                             "display": "flex",
@@ -1243,7 +1247,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                             "margin": "4px 4px 4px 5px"
                           }}>
       <div style={{
-                              "backgroundColor": "rgb(255, 255, 255)",
+                              "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
                               "flexBasis": "14px",
                               "flexShrink": "0",
                               "height": "14px",
@@ -1267,7 +1271,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
                               }}></div>
         <div style={{
                                 "bottom": "-7px",
-                                "boxShadow": "rgba(0, 0, 0, 0.1) 0px 0px 0px 2px inset",
+                                "boxShadow": "var(--ad-border, rgba(0, 0, 0, 0.1)) 0px 0px 0px 2px inset",
                                 "left": "-7px",
                                 "position": "absolute",
                                 "right": "-7px",
@@ -1281,7 +1285,7 @@ export function SlidePropertiesPanel({ style, className }: AirDesignComponentPro
     <div style={{
                             "alignContent": "center",
                             "boxSizing": "content-box",
-                            "color": "rgba(0, 0, 0, 0.898)",
+                            "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
                             "height": "24px",
                             "overflowX": "hidden",
                             "overflowY": "hidden",

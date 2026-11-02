@@ -1,13 +1,14 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function FileSlideButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "appearance": "auto",
-    "backgroundColor": "rgb(217, 217, 217)",
-    "color": "rgb(0, 0, 0)",
+    "backgroundColor": "var(--ad-divider-strong, rgb(217, 217, 217))",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "fontFamily": "Inter, sans-serif",
     "fontSize": "11px",
     "fontWeight": "400",
@@ -20,7 +21,7 @@ export function FileSlideButton({
     boxSizing: "border-box",
     flexShrink: 0,
     ...style
-  }} aria-label="Slide 1" aria-pressed="true" aria-selected="true" className={className}>
+  }} aria-label="Slide 1" aria-pressed="true" aria-selected="true" className={className} {...rest}>
       <div style={{
       "alignItems": "center",
       "boxSizing": "border-box",
@@ -42,7 +43,7 @@ export function FileSlideButton({
         "width": "12px"
       }}>
           <span style={{
-          "color": "rgba(0, 0, 0, 0.898)",
+          "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
           "display": "block",
           "fontSize": "13px"
         }}>
@@ -57,10 +58,10 @@ export function FileSlideButton({
           <div style={{
           "alignItems": "center",
           "aspectRatio": "16 / 9",
-          "backgroundColor": "rgb(242, 249, 255)",
+          "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
           "display": "flex",
           "justifyContent": "center",
-          "outlineColor": "rgba(0, 0, 0, 0.1)",
+          "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
           "outlineStyle": "solid",
           "outlineWidth": "1px",
           "overflowX": "hidden",

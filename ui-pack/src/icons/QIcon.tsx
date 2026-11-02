@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function QIcon({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"svg">) {
   return <svg style={{
     "display": "block",
     "height": "40px",
@@ -19,9 +20,9 @@ export function QIcon({
     flexShrink: 0,
     width: 24,
     ...style
-  }} viewBox="0 0 30 40" aria-hidden="true" className={className}>
+  }} viewBox="0 0 30 40" aria-hidden="true" className={className} {...rest}>
           <circle style={{
-      "stroke": "rgb(255, 92, 22)",
+      "stroke": "var(--ad-brand, rgb(255, 92, 22))",
       "strokeWidth": "2px",
       "strokeDasharray": "400px",
       "strokeDashoffset": "400px"

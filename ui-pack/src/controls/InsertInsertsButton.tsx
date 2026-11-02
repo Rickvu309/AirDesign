@@ -1,15 +1,16 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function InsertInsertsButton({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"button">) {
   return <button style={{
     "alignItems": "center",
     "appearance": "auto",
     "backgroundColor": "rgba(0, 0, 0, 0)",
     "boxSizing": "border-box",
-    "color": "rgb(0, 0, 0)",
+    "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
     "columnGap": "2px",
     "display": "flex",
     "flexDirection": "column",
@@ -26,10 +27,10 @@ export function InsertInsertsButton({
     position: "relative",
     flexShrink: 0,
     ...style
-  }} aria-expanded="true" aria-label="Inserts" type="button" className={className}>
+  }} aria-expanded="true" aria-label="Inserts" type="button" className={className} {...rest}>
         <div style={{
       "alignItems": "center",
-      "backgroundColor": "rgb(255, 223, 204)",
+      "backgroundColor": "var(--ad-brand-subtle, rgb(255, 223, 204))",
       "display": "flex",
       "height": "32px",
       "justifyContent": "center",
@@ -44,12 +45,12 @@ export function InsertInsertsButton({
         "width": "24px"
       }} width="24" height="24" fill="none" viewBox="0 0 24 24">
             <path style={{
-          "fill": "rgb(226, 76, 12)"
-        }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
+          "fill": "var(--ad-brand-strong, rgb(226, 76, 12))"
+        }} fillRule="evenodd" d="M18 12a6 6 0 1 1-12 0 6 6 0 0 1 12 0m1 0a7 7 0 1 1-14 0 7 7 0 0 1 14 0m-6.5-2.5a.5.5 0 0 0-1 0v2h-2a.5.5 0 0 0 0 1h2v2a.5.5 0 0 0 1 0v-2h2a.5.5 0 0 0 0-1h-2z" clipRule="evenodd"></path>
           </svg>
         </div>
         <span style={{
-      "color": "rgba(0, 0, 0, 0.898)",
+      "color": "var(--ad-ink, rgba(0, 0, 0, 0.898))",
       "display": "block",
       "fontFamily": "Inter, ui-sans-serif, system-ui, -apple-system, \"system-ui\", \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\", sans-serif, SFProLocalRange",
       "fontSize": "9px",

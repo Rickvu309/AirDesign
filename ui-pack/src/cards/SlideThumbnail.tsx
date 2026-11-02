@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function SlideThumbnail({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "display": "flex",
     position: "relative",
@@ -14,14 +15,14 @@ export function SlideThumbnail({
     flexShrink: 0,
     width: 240,
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
           <div style={{
       "alignItems": "center",
       "aspectRatio": "16 / 9",
-      "backgroundColor": "rgb(242, 249, 255)",
+      "backgroundColor": "var(--ad-selection-subtle, rgb(242, 249, 255))",
       "display": "flex",
       "justifyContent": "center",
-      "outlineColor": "rgba(0, 0, 0, 0.1)",
+      "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
       "outlineStyle": "solid",
       "outlineWidth": "1px",
       "overflowX": "hidden",

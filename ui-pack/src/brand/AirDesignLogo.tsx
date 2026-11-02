@@ -1,6 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
-export function AirDesignLogo({ style, className }: AirDesignComponentProps) {
+export function AirDesignLogo({
+  style,
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return (<div style={{
   "color": "rgb(26, 26, 26)",
   "direction": "ltr",
@@ -17,12 +21,12 @@ export function AirDesignLogo({ style, className }: AirDesignComponentProps) {
   "textTransform": "none",
   "wordBreak": "normal",
   "whiteSpace": "normal",
-  "backgroundColor": "rgb(255, 255, 255)",
+  "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
   position: "relative",
   boxSizing: "border-box",
   width: 28,
   ...style
-}} className={className}>
+}} className={className} {...rest}>
   <svg style={{
     "bottom": "0px",
     "display": "block",
@@ -37,7 +41,7 @@ export function AirDesignLogo({ style, className }: AirDesignComponentProps) {
     <path style={{
       "stroke": "rgb(26, 26, 26)",
       "strokeWidth": "3.063px"
-    }} d="M13 57l19-50 19 50" fill="none" stroke="#1A1A1A" strokeWidth="3.063" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
+    }} d="M13 57l19-50 19 50" fill="none" stroke="var(--ad-ink, #1A1A1A)" strokeWidth="3.063" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"></path>
   </svg>
   <svg style={{
     "bottom": "0px",
@@ -51,9 +55,9 @@ export function AirDesignLogo({ style, className }: AirDesignComponentProps) {
     "zIndex": "1"
   }} viewBox="0 0 64 64" preserveAspectRatio="none" aria-hidden="true">
     <path style={{
-      "stroke": "rgb(255, 88, 174)",
+      "stroke": "var(--ad-pink, rgb(255, 88, 174))",
       "strokeWidth": "2.188px"
-    }} d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth="2.188" strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
+    }} d="M6 44l52-14" fill="none" stroke="var(--ad-pink, #FF58AE)" strokeWidth="2.188" strokeLinecap="round" vectorEffect="non-scaling-stroke"></path>
   </svg>
 </div>);
 }

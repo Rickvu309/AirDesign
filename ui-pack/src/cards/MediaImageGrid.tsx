@@ -1,9 +1,10 @@
-import type { AirDesignComponentProps } from "../types.ts";
+import type { AirDesignProps } from "../types.ts";
 
 export function MediaImageGrid({
   style,
-  className
-}: AirDesignComponentProps) {
+  className,
+  ...rest
+}: AirDesignProps<"div">) {
   return <div style={{
     "columnGap": "8px",
     "display": "flex",
@@ -19,7 +20,7 @@ export function MediaImageGrid({
     height: 480,
     overflowY: "auto",
     ...style
-  }} className={className}>
+  }} className={className} {...rest}>
               <div style={{
       "aspectRatio": "0.666667 / 1",
       "display": "flex",
@@ -30,14 +31,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -57,7 +58,7 @@ export function MediaImageGrid({
                 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -75,7 +76,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -112,8 +113,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -129,14 +130,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -156,7 +157,7 @@ export function MediaImageGrid({
                 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -174,7 +175,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -211,8 +212,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -228,14 +229,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -255,7 +256,7 @@ export function MediaImageGrid({
                 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -273,7 +274,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -310,8 +311,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -327,14 +328,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -354,7 +355,7 @@ export function MediaImageGrid({
                 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -372,7 +373,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -409,8 +410,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
       <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
     </svg>
   </span>
 </button>
@@ -426,14 +427,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -453,7 +454,7 @@ export function MediaImageGrid({
                 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -471,7 +472,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -508,8 +509,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -525,14 +526,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -552,7 +553,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -570,7 +571,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -607,8 +608,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -624,14 +625,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -651,7 +652,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -669,7 +670,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -706,8 +707,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -723,14 +724,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -750,7 +751,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -768,7 +769,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -805,8 +806,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -822,14 +823,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -849,7 +850,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -867,7 +868,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -904,8 +905,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -921,14 +922,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -948,7 +949,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -966,7 +967,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -1003,8 +1004,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1020,14 +1021,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -1047,7 +1048,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -1065,7 +1066,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -1102,8 +1103,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1119,14 +1120,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -1146,7 +1147,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -1164,7 +1165,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -1201,8 +1202,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
@@ -1218,14 +1219,14 @@ export function MediaImageGrid({
         "alignItems": "center",
         "appearance": "auto",
         "backgroundColor": "rgba(0, 0, 0, 0)",
-        "color": "rgb(0, 0, 0)",
+        "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
         "display": "flex",
         "fontFamily": "Inter, sans-serif",
         "fontSize": "11px",
         "fontWeight": "400",
         "justifyItems": "center",
         "lineHeight": "16px",
-        "outlineColor": "rgba(0, 0, 0, 0.1)",
+        "outlineColor": "var(--ad-border, rgba(0, 0, 0, 0.1))",
         "outlineOffset": "-1px",
         "outlineStyle": "solid",
         "outlineWidth": "1px",
@@ -1245,7 +1246,7 @@ export function MediaImageGrid({
 </button>
                 <div style={{
         "alignItems": "center",
-        "backgroundColor": "rgb(255, 255, 255)",
+        "backgroundColor": "var(--ad-surface, rgb(255, 255, 255))",
         "display": "flex",
         "height": "24px",
         "justifyContent": "center",
@@ -1263,7 +1264,7 @@ export function MediaImageGrid({
           "alignItems": "center",
           "appearance": "auto",
           "backgroundColor": "rgba(0, 0, 0, 0)",
-          "color": "rgb(0, 0, 0)",
+          "color": "var(--ad-ink-strong, rgb(0, 0, 0))",
           "display": "grid",
           "fontFamily": "Inter, sans-serif",
           "fontSize": "11px",
@@ -1300,8 +1301,8 @@ export function MediaImageGrid({
               "width": "24px"
             }} width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path style={{
-                "fill": "rgba(0, 0, 0, 0.898)"
-              }} fill="var(--fpl-icon-color, var(--color-icon))" fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
+                "fill": "var(--ad-icon, var(--ad-ink, rgba(0, 0, 0, 0.898)))"
+              }} fillRule="evenodd" d="M7.5 12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m6 0a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m4.5 1.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3" clipRule="evenodd"></path>
       </svg>
     </span>
   </button>
