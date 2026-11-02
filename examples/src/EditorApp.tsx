@@ -27,7 +27,7 @@ export function Editor({ initial }: { initial: EditorState }) {
     <div className="ed" data-wide={panelWide || undefined}>
       <NavRail label="Editor" className="ed__rail">
         <AppMark />
-        <Divider style={{ width: 32 }} />
+        <Divider style={{ width: 16 }} />
         <NavRailItem icon="file" active={s.panel === "file"} onClick={() => set({ panel: "file" })}>File</NavRailItem>
         <NavRailItem icon="sparkle" active={s.panel === "agents"} onClick={() => set({ panel: "agents" })}>Agents</NavRailItem>
         <NavRailItem icon="add-circle" active={s.panel === "inserts" || s.panel === "media"} onClick={() => set({ panel: "inserts" })}>Inserts</NavRailItem>
@@ -75,12 +75,12 @@ export function Editor({ initial }: { initial: EditorState }) {
 
       {s.inspector !== "none" && (
         <aside className="ed__insp" data-floating={s.inspector === "floating" || undefined} aria-label="Inspector">
-          <InspectorHead zoom={s.zoom} floating={s.inspector === "floating"} />
+          <InspectorHead zoom={s.zoom} floating={s.inspector === "floating"} onShare={() => setShareOpen(true)} />
           {s.empty ? <div className="insp__empty"><span><Icon name="cursor" size={18} /></span><b>No element selected</b><p>Select an element on your slide to inspect and edit its properties</p></div> : <SlideInspector n={s.canvas === "overview" ? 3 : 1} withColors={s.canvas === "slide"} ai={s.canvas === "slide"} />}
         </aside>
       )}
 
-      <Dialog open={startOpen} onClose={() => setStartOpen(false)} title={<span className="start__title"><span className="start__app"><Icon name="present" size={16} /></span>Getting started</span>} className="start" initialFocus="dialog">
+      <Dialog open={startOpen} onClose={() => setStartOpen(false)} title={<span className="start__title"><AppMark />Getting started</span>} className="start" initialFocus="dialog">
         <div className="start__body">
           <h2>What would you like to present?</h2>
           <ChatComposer value="" onValueChange={() => {}} onSend={() => {}} placeholder="Add your thoughts, notes, or outline to start building your first draft" label="Describe your deck" tools={<><IconButton icon="plus" label="Add context" size="sm" /><Button size="sm" variant="secondary" iconStart="palette">Select deck template</Button></>} />
@@ -94,10 +94,12 @@ export function Editor({ initial }: { initial: EditorState }) {
       <Dialog open={shareOpen} onClose={() => setShareOpen(false)} title="Share these slides" className="share" initialFocus="dialog">
         <div className="share__card">
           <div className="share__head"><strong>Share these slides</strong><Button size="sm" variant="ghost" iconStart="link" iconEnd="chevron-down" className="orange">Copy link</Button><IconButton icon="close" label="Close" size="sm" onClick={() => setShareOpen(false)} /></div>
-          <div className="share__row"><Input label="Invite emails" placeholder="Add comma separated emails to invite" /><Button variant="primary" disabled>Invite</Button></div>
-          <div className="share__sub">Who has access</div>
-          <button className="share__access"><Icon name="globe" /><span>Anyone</span><em>can view <Icon name="chevron-right" size={12} /></em></button>
-          <div className="share__access"><Avatar name={NAME} size={24} /><span>{NAME} <small>(you)</small></span><em>owner</em></div>
+          <div className="share__body">
+            <div className="share__row"><Input label="Invite emails" placeholder="Add comma separated emails to invite" /><Button variant="primary" disabled>Invite</Button></div>
+            <div className="share__sub">Who has access</div>
+            <button className="share__access"><Icon name="globe" /><span>Anyone</span><em>can view <Icon name="chevron-right" size={12} /></em></button>
+            <div className="share__access"><Avatar name={NAME} size={24} /><span>{NAME} <small>(you)</small></span><em>owner</em></div>
+          </div>
         </div>
         <div className="share__card share__menu">
           <button><Icon name="layout" /><span>Publish template</span><Icon name="chevron-right" size={12} /></button>

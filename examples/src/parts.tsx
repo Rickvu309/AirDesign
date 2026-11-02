@@ -7,12 +7,14 @@ export function HelpButton() {
   return <IconButton className="help" icon="help" label="Help" variant="secondary" />;
 }
 
-export function AppMark({ size = 28 }: { size?: number }) {
+export function AppMark({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 28 28" role="img" aria-label="AirDesign">
-      <path d="M6 22 14 5l8 17" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 17.5 21 12" stroke="var(--ad-pink)" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
+    <div style={{ width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label="AirDesign">
+        <path d="M13 57l19-50 19 50" fill="none" stroke="currentColor" strokeWidth={3.063} vectorEffect="non-scaling-stroke" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={2.188} vectorEffect="non-scaling-stroke" strokeLinecap="round" />
+      </svg>
+    </div>
   );
 }
 
@@ -120,19 +122,19 @@ export function MediaPanel({ slideView }: { slideView?: boolean }) {
 }
 
 /* ---------- Inspector ---------- */
-export function InspectorHead({ zoom, floating }: { zoom: string; floating?: boolean }) {
+export function InspectorHead({ zoom, floating, onShare }: { zoom: string; floating?: boolean; onShare?: () => void }) {
   return (
     <div className="insp__head" data-floating={floating || undefined}>
       <div className="insp__row">
         <span className="insp__avatar"><Avatar name={NAME} size={24} /><Icon name="chevron-down-small" size={14} /></span>
         <span className="grow" />
-        <IconButton icon="play" label="Present" size="sm" />
-        <Button size="sm" variant="primary">Share</Button>
+        <IconButton icon="play" label="Present" size="sm" iconSize={18} />
+        <Button size="sm" variant="primary" className="insp__share" onClick={onShare}>Share</Button>
       </div>
       <div className="insp__row">
         <Tabs label="Panel" defaultValue="design" items={[{ id: "design", label: "Design" }, { id: "animate", label: "Animate" }]} />
         <span className="grow" />
-        <Button size="sm" variant="ghost" iconEnd="chevron-down">{zoom}</Button>
+        <Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down">{zoom}</Button>
       </div>
     </div>
   );
@@ -142,15 +144,33 @@ export function SlideInspector({ n, withColors, ai }: { n: number; withColors?: 
   const [mode, setMode] = useState("solid");
   return (
     <div className="insp__body">
-      <div className="insp__sec insp__sec--row"><strong>Slide {n}</strong>{ai && <IconButton icon="sparkle" label="Edit with AI" size="sm" />}</div>
-      <div className="insp__sec"><div className="insp__sec--row"><strong>Template style</strong>{ai && <IconButton icon="adjust" label="Template options" size="sm" />}</div>
-        <button className="style"><span className="style__sw"><i style={{ background: "#b5b5b5" }} /><i style={{ background: "#4f8a99" }} /><i style={{ background: "#3d38f5" }} /></span><span><b>Light slides</b><small>Inter</small></span></button></div>
-      <div className="insp__sec"><strong>Background</strong>
+      <div className="insp__sec insp__sec--slide">
+        <h2>Slide {n}</h2>{ai && <IconButton icon="sparkle" label="Edit with AI" size="sm" />}
+      </div>
+      <div className="insp__sec insp__sec--template">
+        <div className="insp__sec--row">
+          <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Template style</span></span>
+          {ai && <IconButton icon="adjust" label="Template options" size="sm" />}
+        </div>
+        <button className="style"><span className="style__sw"><i style={{ background: "#b5b5b5" }} /><i style={{ background: "#4f8a99" }} /><i style={{ background: "#3d38f5" }} /></span><span><b>Light slides</b><small>Inter</small></span></button>
+      </div>
+      <div className="insp__sec insp__sec--bg">
+        <div className="insp__sec--row">
+          <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Background</span></span>
+        </div>
         <div className="seg" role="group" aria-label="Background type">
           {([["solid", "frame"], ["texture", "palette"], ["image", "image"]] as const).map(([id, icon]) => <IconButton key={id} icon={icon} label={id} size="sm" variant="ghost" pressed={mode === id} onClick={() => setMode(id)} />)}
         </div>
-        <Button variant="secondary" size="sm" iconEnd="chevron-down" className="row"><i className="chip" />White</Button></div>
-      {withColors && <div className="insp__sec"><strong>Selection colors</strong><div className="colors"><span><i className="chip" style={{ background: "#000" }} />Black</span><span><i className="chip" />White</span></div></div>}
+        <Button variant="secondary" size="sm" iconEnd="chevron-down" className="row"><i className="chip" />White</Button>
+      </div>
+      {withColors && (
+        <div className="insp__sec insp__sec--colors">
+          <div className="insp__sec--row">
+            <span className="insp__sec-title"><Icon name="chevron-right" size={14} /><span>Selection colors</span></span>
+          </div>
+          <div className="colors"><span><i className="chip" style={{ background: "#000" }} />Black</span><span><i className="chip" />White</span></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,26 +180,26 @@ export function BottomToolbar({ shapes, onShapes, mediaActive }: { shapes?: bool
   return (
     <div className="bottom">
       {shapes && <ShapesTray />}
-      <Toolbar label="Tools">
+      <Toolbar label="Tools" className="ad-toolbar">
         <ToolbarGroup>
-          <IconButton iconSize={20} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} />
-          <IconButton iconSize={20} icon="text" label="Text" />
-          <IconButton iconSize={20} icon="image" label="Image and video" variant={mediaActive ? "primary" : "ghost"} />
-          <IconButton iconSize={20} icon="shapes" label="Shapes" variant={shapes ? "primary" : "ghost"} onClick={onShapes} />
-          <IconButton iconSize={20} icon="comment" label="Comment" />
-          <IconButton iconSize={20} icon="actions" label="Actions" />
+          <IconButton iconSize={18} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} className={shapes || mediaActive ? "" : "tool-active"} />
+          <IconButton iconSize={18} icon="text" label="Text" />
+          <IconButton iconSize={18} icon="image" label="Image and video" variant={mediaActive ? "primary" : "ghost"} className={mediaActive ? "tool-active" : ""} />
+          <IconButton iconSize={18} icon="shapes" label="Shapes" variant={shapes ? "primary" : "ghost"} className={shapes ? "tool-active" : ""} onClick={onShapes} />
+          <IconButton iconSize={18} icon="comment" label="Comment" />
+          <IconButton iconSize={18} icon="actions" label="Actions" />
         </ToolbarGroup>
         <ToolbarSeparator />
         <ToolbarGroup>
-          <IconButton iconSize={20} icon="present" label="Slides mode" pressed />
-          <IconButton iconSize={20} icon="layout" label="Prototype mode" />
+          <IconButton iconSize={18} icon="present" label="Slides mode" pressed className="mode-active" />
+          <IconButton iconSize={18} icon="layout" label="Prototype mode" />
         </ToolbarGroup>
       </Toolbar>
     </div>
   );
 }
 
-const shape = (d: string) => <svg width="22" height="22" viewBox="0 0 24 24"><path d={d} fill="var(--ad-accent)" stroke="var(--ad-accent-strong)" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
+const shape = (d: string) => <svg width="18" height="18" viewBox="0 0 24 24"><path d={d} fill="var(--ad-accent)" stroke="var(--ad-accent-strong)" strokeWidth="1.6" strokeLinejoin="round" /></svg>;
 export function ShapesTray() {
   const items: [string, string][] = [["Square", "M4 4h16v16H4z"], ["Circle", "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"], ["Diamond", "M12 2l10 10-10 10L2 12z"], ["Triangle", "M12 3l10 18H2z"], ["Star", "M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"], ["Plus", "M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"], ["Left arrow", "M3 12l8-8v5h10v6H11v5z"], ["Right arrow", "M21 12l-8-8v5H3v6h10v5z"], ["Speech bubble", "M4 4h16v12h-8l-5 5v-5H4z"]];
   return (

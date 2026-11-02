@@ -2,7 +2,17 @@ import { useState } from "react";
 import { Avatar, Badge, Button, Card, IconButton, Icon, SearchField, Sidebar, SidebarItem, SidebarSection } from "@airdesign/ui";
 import { HelpButton, NAME, SlideThumb } from "./parts";
 
-const starred = ["01. Personal Project", "02. Work Project", "03. Collab", "99. Archive", "Membership", "Project Consulting", "Professional Template", "Client Project", "Bot Slides"];
+const starred = [
+  "[Quan] 01. Personal Project",
+  "[Quan] 02. Work Project",
+  "[Quan] 03. Collab",
+  "[Quan] 99. Archive",
+  "Nova Membership",
+  "Project Consulting",
+  "Professional Template",
+  "Vietjet Project",
+  "Grok Bot Slide",
+];
 
 export function HomeDrafts() {
   const [view, setView] = useState<"grid" | "list">("grid");
@@ -19,7 +29,7 @@ export function HomeDrafts() {
           <SidebarItem href="#" icon="trash">Trash</SidebarItem><SidebarItem href="#" icon="settings" trailing={<Badge>2</Badge>}>Admin</SidebarItem>
         </SidebarSection>
         <hr className="home__rule" />
-        <SidebarSection title="Starred">{starred.map((f) => <SidebarItem key={f} href="#" icon="folder" className="fold">{f}</SidebarItem>)}</SidebarSection>
+        <SidebarSection title={<span className="starred-title"><Icon name="chevron-down-small" size={14} />Starred</span>}>{starred.map((f) => <SidebarItem key={f} href="#" icon="folder" className="fold">{f}</SidebarItem>)}</SidebarSection>
       </Sidebar>
       <main className="home__main">
         <header className="home__top"><h1>Drafts</h1><div className="home__new"><Button iconStart="present" className="soft">Slides</Button><Button iconEnd="chevron-down" className="soft">More</Button></div></header>
