@@ -75,3 +75,8 @@ test("dark theme overrides exist for every neutral token", async () => {
   const dark = css.slice(css.indexOf('[data-theme="dark"]'));
   for (const t of ["ink", "ink-strong", "ink-muted", "ink-subtle", "border", "border-strong", "divider", "divider-strong", "surface", "surface-subtle"]) assert.match(dark, new RegExp(`--ad-${t}:`), t);
 });
+
+test("Card accepts rich content as title", () => {
+  const out = r(h(k.Card, { title: h("b", null, "Brand deck"), meta: "Edited today" }));
+  assert.match(out, /<b>Brand deck<\/b>/);
+});

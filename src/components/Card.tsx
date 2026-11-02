@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cx } from "../lib/cx.js";
 
-export type CardProps = ComponentProps<"article"> & {
+export type CardProps = Omit<ComponentProps<"article">, "title"> & {
   /** Media area (image, thumbnail) above the text. */
   media?: ReactNode;
   title: ReactNode;

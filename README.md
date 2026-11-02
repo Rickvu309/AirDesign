@@ -46,6 +46,9 @@ Everything is a `--ad-*` variable. Dark mode: set `data-theme="dark"` on `<html>
 - Composite widgets with custom keys: `Tabs` and `Toolbar` have roving focus (Arrow, Home, End); `ChatComposer` sends on Enter and adds a line on Shift+Enter.
 - States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`), invalid (fields).
 
+## Examples
+`examples/` has two working mock screens (Home and Slide editor with inspector, AI agent chat and Share dialog) built only from this package. See `examples/README.md`.
+
 ## Layout
 ```
 src/
@@ -56,6 +59,7 @@ src/
   styles/             tokens.css, kit.css, base.css
   snapshots/          generated pieces by group (brand, cards, controls, dialogs, icons, navigation, panels)
 scripts/              build.mjs (tsc + css), build-catalog.mjs
+examples/             Vite app with mock screens
 test/                 kit and snapshot tests
 ```
 
