@@ -17,7 +17,7 @@ export function SidebarSection({ title, children }: { title?: ReactNode; childre
 }
 
 export type SidebarItemProps = ComponentProps<"a"> & {
-  icon?: IconName;
+  icon?: IconName | ReactNode;
   /** Marks the current page (aria-current). */
   active?: boolean;
   /** Trailing count or badge. */
@@ -27,7 +27,11 @@ export type SidebarItemProps = ComponentProps<"a"> & {
 export function SidebarItem({ icon, active, trailing, className, children, ...rest }: SidebarItemProps) {
   return (
     <a aria-current={active ? "page" : undefined} className={cx("ad-sidebar__item", className)} {...rest}>
-      {icon && <Icon name={icon} />}
+      {icon && (
+        <span className="ad-sidebar__icon">
+          {typeof icon === "string" ? <Icon name={icon as IconName} size={20} /> : icon}
+        </span>
+      )}
       <span className="ad-sidebar__label">{children}</span>
       {trailing && <span className="ad-sidebar__trailing">{trailing}</span>}
     </a>

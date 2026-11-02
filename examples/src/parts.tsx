@@ -84,7 +84,7 @@ export function InsertsPanel({ onOpen }: { onOpen?: (id: string) => void }) {
       <div className="lp__title2">Inserts</div>
       <Divider />
       <div className="inserts">
-        <div className="inserts__rows">{([ "table", "code", "slide-number"] as const).map((n) => <button key={n} className="inserts__row"><Icon name={n} size={18} />{{ table: "Table", code: "Code block", "slide-number": "Slide number" }[n]}</button>)}</div>
+        <div className="inserts__rows">{([ "table", "code", "slide-number"] as const).map((n) => <button key={n} className="inserts__row"><Icon name={n} size={20} />{{ table: "Table", code: "Code block", "slide-number": "Slide number" }[n]}</button>)}</div>
         <div className="inserts__tiles">
           {tiles.map((t) => (
             <button key={t.label} className="inserts__tile" onClick={() => onOpen?.(t.label.toLowerCase())}>
@@ -184,7 +184,10 @@ export function BottomToolbar({ shapes, onShapes, mediaActive }: { shapes?: bool
       {shapes && <ShapesTray />}
       <Toolbar label="Tools" className="ad-toolbar">
         <ToolbarGroup>
-          <IconButton iconSize={18} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} className={shapes || mediaActive ? "" : "tool-active"} />
+          <div className="tool-split">
+            <IconButton iconSize={18} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} className={shapes || mediaActive ? "" : "tool-active"} />
+            <button type="button" aria-label="Move tools" className="tool-chev"><Icon name="chevron-down-small" size={12} /></button>
+          </div>
           <IconButton iconSize={18} icon="text" label="Text" />
           <IconButton iconSize={18} icon="image" label="Image and video" variant={mediaActive ? "primary" : "ghost"} className={mediaActive ? "tool-active" : ""} />
           <IconButton iconSize={18} icon="shapes" label="Shapes" variant={shapes ? "primary" : "ghost"} className={shapes ? "tool-active" : ""} onClick={onShapes} />

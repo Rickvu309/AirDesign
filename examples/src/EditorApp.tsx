@@ -44,7 +44,7 @@ export function Editor({ initial }: { initial: EditorState }) {
 
       <main className="ed__main" data-overview={s.canvas === "overview" || undefined}>
         {s.header === "floating" && s.canvas === "overview" && s.panel === "file" && (
-          <div className="float float--head"><button className="lp__title">Untitled<Icon name="chevron-down-small" size={16} /></button><Button size="sm" iconStart="plus">New slide</Button><IconButton icon="slide-view" label="Slide view" size="sm" /><IconButton icon="present" label="Present" size="sm" /></div>
+          <div className="float float--head"><button className="lp__title">Untitled<Icon name="chevron-down-small" size={16} /></button><Button size="sm" iconStart="plus">New slide</Button><IconButton icon="slide-view" label="Slide view" size="sm" /></div>
         )}
         {s.inspector === "none" && (
           <div className="float float--top"><span className="insp__avatar"><Avatar name={NAME} size={24} /><Icon name="chevron-down-small" size={14} /></span><Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down">{s.zoom}</Button><IconButton icon="play" label="Present" size="sm" /><Button size="sm" variant="primary" onClick={() => setShareOpen(true)}>Share</Button></div>
@@ -70,7 +70,6 @@ export function Editor({ initial }: { initial: EditorState }) {
         )}
 
         <BottomToolbar shapes={s.shapes} onShapes={() => set({ shapes: !s.shapes })} mediaActive={s.panel === "media"} />
-        <HelpButton />
       </main>
 
       {s.inspector !== "none" && (
@@ -79,6 +78,8 @@ export function Editor({ initial }: { initial: EditorState }) {
           {s.empty ? <div className="insp__empty"><span><Icon name="cursor" size={18} /></span><b>No element selected</b><p>Select an element on your slide to inspect and edit its properties</p></div> : <SlideInspector n={s.canvas === "overview" ? 3 : 1} withColors={s.canvas === "slide"} ai={s.canvas === "slide"} />}
         </aside>
       )}
+
+      <HelpButton />
 
       <Dialog open={startOpen} onClose={() => setStartOpen(false)} title={<span className="start__title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path fill="#ff5c16" d="M0 5a5 5 0 0 1 5-5h14a5 5 0 0 1 5 5v14a5 5 0 0 1-5 5H5a5 5 0 0 1-5-5z" /><path fill="#fff" d="M17 6a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1.68l.661 2.365a.5.5 0 1 1-.962.27L14.28 16H9.72l-.738 2.635a.5.5 0 0 1-.962-.27L8.68 16H7l-.204-.01A2 2 0 0 1 5 14V8a2 2 0 0 1 2-2zM7 7a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zm1.5 4.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2m0-3a1 1 0 1 1 0 2 1 1 0 0 1 0-2" /></svg>Getting started</span>} className="start" initialFocus="dialog">
         <div className="start__body">
