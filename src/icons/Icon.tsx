@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { iconData, type IconName } from "./icon-data.js";
+import { iconData, type IconName, type IconShape } from "./icon-data.js";
 import { cx } from "../lib/cx.js";
 
 export type IconProps = Omit<ComponentProps<"svg">, "children"> & {
@@ -12,7 +12,7 @@ export type IconProps = Omit<ComponentProps<"svg">, "children"> & {
 
 /** Single-colour icon that follows the text colour (`currentColor`). */
 export function Icon({ name, size = 16, label, className, ...rest }: IconProps) {
-  const shape = iconData[name];
+  const shape: IconShape = iconData[name];
   return (
     <svg
       className={cx("ad-icon", className)}
@@ -23,6 +23,7 @@ export function Icon({ name, size = 16, label, className, ...rest }: IconProps) 
       aria-label={label}
       aria-hidden={label ? undefined : true}
       focusable="false"
+      {...(shape.stroke ? { fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const } : {})}
       {...rest}
     >
       {shape.paths.map((p, i) => (

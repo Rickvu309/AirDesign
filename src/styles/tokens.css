@@ -22,3 +22,47 @@
   --ad-folder: rgb(175, 188, 207); /* Folder icons */
   --ad-icon: var(--ad-ink); /* Default icon fill */
 }
+
+/* Force the light palette inside a dark page (snapshots are light-only). */
+[data-theme="light"] {
+  --ad-ink: rgba(0, 0, 0, 0.898); /* Primary text and icons */
+  --ad-ink-strong: rgb(0, 0, 0); /* Highest-contrast text */
+  --ad-ink-muted: rgba(0, 0, 0, 0.5); /* Secondary text and icons */
+  --ad-ink-subtle: rgba(0, 0, 0, 0.3); /* Disabled and placeholder */
+  --ad-border: rgba(0, 0, 0, 0.1); /* Default border */
+  --ad-border-strong: rgba(0, 0, 0, 0.15); /* Emphasised border */
+  --ad-divider: rgb(230, 230, 230); /* Dividers and raised neutral fills */
+  --ad-divider-strong: rgb(217, 217, 217); /* Strong neutral stroke */
+  --ad-surface: rgb(255, 255, 255); /* Panels and cards */
+  --ad-surface-subtle: rgb(245, 245, 245); /* Hover and secondary surfaces */
+  --ad-brand: rgb(255, 92, 22); /* Brand orange */
+  --ad-brand-strong: rgb(226, 76, 12); /* Brand orange, pressed and icons */
+  --ad-brand-subtle: rgb(255, 223, 204); /* Brand tint */
+  --ad-accent: rgb(61, 56, 245); /* Accent blue-violet (shapes, focus) */
+  --ad-accent-strong: rgb(43, 39, 172); /* Accent outline */
+  --ad-selection: rgb(13, 153, 255); /* Selection blue */
+  --ad-selection-strong: rgb(0, 123, 229); /* Selection blue, pressed */
+  --ad-selection-subtle: rgb(242, 249, 255); /* Selection tint */
+  --ad-pink: #FF58AE; /* Brand mark stroke */
+  --ad-folder: rgb(175, 188, 207); /* Folder icons */
+  --ad-icon: var(--ad-ink); /* Default icon fill */
+}
+
+/* Dark theme: set data-theme="dark" on any element (usually <html>). Brand and accent hues are shared. */
+:root[data-theme="dark"], [data-theme="dark"] {
+  --ad-ink: rgba(255, 255, 255, 0.9);
+  --ad-ink-strong: rgb(255, 255, 255);
+  --ad-ink-muted: rgba(255, 255, 255, 0.6);
+  --ad-ink-subtle: rgba(255, 255, 255, 0.35);
+  --ad-border: rgba(255, 255, 255, 0.12);
+  --ad-border-strong: rgba(255, 255, 255, 0.2);
+  --ad-divider: rgb(56, 56, 56);
+  --ad-divider-strong: rgb(84, 84, 84);
+  --ad-surface: rgb(30, 30, 30);
+  --ad-surface-subtle: rgb(44, 44, 44);
+  --ad-brand-subtle: rgba(255, 92, 22, 0.2);
+  --ad-selection-subtle: rgba(13, 153, 255, 0.16);
+  --ad-selection-strong: rgb(92, 184, 255);
+  --ad-brand-strong: rgb(255, 128, 74);
+  color-scheme: dark;
+}

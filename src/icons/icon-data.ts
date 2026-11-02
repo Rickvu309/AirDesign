@@ -1,6 +1,6 @@
 // Single-colour icon set (currentColor). Hand-maintained; add an icon by pasting its 24x24 or 16x16 path data.
-export interface IconShape { viewBox: string; paths: { d: string; evenodd?: boolean }[] }
-export const iconData = {
+export interface IconShape { viewBox: string; paths: { d: string; evenodd?: boolean }[]; /** Drawn as a 1.5px round stroke instead of a fill. */ stroke?: boolean }
+const traced = {
  "search": {
   "viewBox": "0 0 24 24",
   "paths": [
@@ -346,4 +346,24 @@ export const iconData = {
   ]
  }
 } as const satisfies Record<string, IconShape>;
-export type IconName = keyof typeof iconData;
+
+const stroked = {
+  "check": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M5 12.5l4.5 4.5L19 7.5" }] },
+  "minus": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M6 12h12" }] },
+  "chevron-up": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M7 14.5l5-5 5 5" }] },
+  "info": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" }, { d: "M12 11v5" }, { d: "M12 8h.01" }] },
+  "warning": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 4l9 16H3L12 4z" }, { d: "M12 10v4" }, { d: "M12 17h.01" }] },
+  "copy": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M9 9h10v11H9z" }, { d: "M5 15V4h10" }] },
+  "link": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" }, { d: "M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" }] },
+  "eye": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" }, { d: "M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" }] },
+  "lock": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M6 11h12v9H6z" }, { d: "M8.5 11V8a3.5 3.5 0 0 1 7 0v3" }] },
+  "download": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 4v11" }, { d: "M7.5 11l4.5 4.5 4.5-4.5" }, { d: "M5 19.5h14" }] },
+  "user": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" }, { d: "M4.5 20a7.5 7.5 0 0 1 15 0" }] },
+  "send": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M4 12l16-8-6 16-2.5-6.5L4 12z" }] },
+  "undo": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M9 7L4.5 11.5 9 16" }, { d: "M5 11.5h9a5 5 0 0 1 0 10h-3" }] },
+  "moon": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" }] },
+  "sun": { viewBox: "0 0 24 24", stroke: true, paths: [{ d: "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" }, { d: "M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4" }] },
+} as const satisfies Record<string, IconShape>;
+
+export const iconData: Record<keyof typeof traced | keyof typeof stroked, IconShape> = { ...traced, ...stroked };
+export type IconName = keyof typeof traced | keyof typeof stroked;

@@ -29,23 +29,28 @@ Verified: the packed tarball installs into a clean app, type-checks under `modul
 ## What is in it
 | Export | Contents |
 |---|---|
-| `@airdesign/ui` | `Button`, `IconButton`, `Input`, `SearchField`, `Avatar`, `Badge`, `Divider`, `Tabs`, `Menu`, `MenuItem`, `Card`, `Switch`, `Dialog`, `Tooltip`, `Icon` (+ `iconData`, `IconName`) |
+| `@airdesign/ui` | **Actions:** `Button`, `IconButton`, `Toolbar` (`ToolbarGroup`, `ToolbarSeparator`), `Tooltip`, `Popover`, `Menu`, `MenuItem`. **Forms:** `Input`, `SearchField`, `Textarea`, `Select`, `Checkbox`, `RadioGroup`, `Switch`, `Slider`, `NumberField`, `ColorSwatch`. **Display:** `Avatar`, `Badge`, `Card`, `Divider`, `Kbd`, `Icon`. **Navigation:** `Tabs`, `Sidebar` (`SidebarSection`, `SidebarItem`), `Breadcrumbs`, `Accordion`. **Feedback:** `Alert`, `Progress`, `Spinner`, `Skeleton`, `EmptyState`. **Overlay:** `Dialog`. **Editor:** `PropertySection`, `PropertyRow`. **AI chat:** `ChatThread`, `ChatMessage`, `Suggestion`, `ChatComposer`. Also `iconData` and the `IconName` type |
 | `@airdesign/ui/styles.css` | Tokens and kit styles (`tokens.css` and `kit.css` are also exported alone) |
 | `@airdesign/ui/base.css` | Zero-specificity reset the kit was designed against |
-| `@airdesign/ui/snapshots` | 409 static, pixel-faithful screen pieces (sidebars, toolbars, dialogs). Reference or prototyping only; they are not props-driven |
+| `@airdesign/ui/snapshots` | 409 static, pixel-faithful screen pieces (sidebars, toolbars, dialogs). Reference or prototyping only; they are not props-driven and are light-only (wrap in `data-theme="light"` inside a dark page) |
+
+56 icons: 41 filled shapes traced from the design plus 15 stroke icons (check, minus, info, warning, copy, link, eye, lock, download, user, send, undo, sun, moon, chevron-up). All follow `currentColor`.
+
+## Theming
+Everything is a `--ad-*` variable. Dark mode: set `data-theme="dark"` on `<html>` or any container; override single tokens the same way. Motion tokens: 150ms for micro-interactions, 280ms for panels; `prefers-reduced-motion` turns transitions and animations off.
 
 ## Rules the kit follows
 - Icon-only controls require `label`; every field requires `label`. Types enforce it.
 - Components take every native prop of their root element (`onClick`, `ref`, `aria-*`, `data-*`) plus `className` and `style`.
-- Colours, radii, spacing, shadow and motion are `--ad-*` variables. Re-theme by overriding them on `:root` or any parent. Motion is 150ms micro and 280ms panel; `prefers-reduced-motion` is honoured.
-- States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`).
-- `Dialog` uses the native `<dialog>` (focus trap, Escape, backdrop). `Tabs` has roving focus with Arrow, Home and End keys.
+- Native first: `Dialog` and `Popover` use `<dialog>` and the Popover API (focus trap, Escape, light dismiss), `Select`, `RadioGroup`, `Checkbox`, `Slider` and `Accordion` use native inputs and `<details>`. Keyboard and form behaviour come from the browser.
+- Composite widgets with custom keys: `Tabs` and `Toolbar` have roving focus (Arrow, Home, End); `ChatComposer` sends on Enter and adds a line on Shift+Enter.
+- States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`), invalid (fields).
 
 ## Layout
 ```
 src/
   index.ts            public API
-  components/         Button, Input, Tabs, ... one file each
+  components/         one file per component (related parts share a file: Feedback, Chat, Sidebar, Toolbar)
   icons/              Icon.tsx and icon-data.ts (add an icon by pasting its path data)
   lib/                cx helper
   styles/             tokens.css, kit.css, base.css
@@ -55,14 +60,15 @@ test/                 kit and snapshot tests
 ```
 
 ## Develop
-- `npm test`: build, then run 17 checks (all components render, ARIA and labels, token use, no stray colours in `kit.css`, prop pass-through).
-- `npm run catalog`: write `catalog.html`, a live page with every kit variant and state, then all snapshots (not committed).
+- `npm test`: build, then run 39 checks: markup and ARIA for every component, token use, dark-theme coverage, and 11 jsdom interaction tests (Tabs and Toolbar keys, Switch, Checkbox, RadioGroup, Slider, Select, ChatComposer, Dialog, loading and disabled buttons).
+- `npm run catalog`: write `catalog.html`, a live page with every kit variant and state, a dark-mode toggle, then all snapshots (not committed).
 - `npm run typecheck`, `npm run build`, `npm pack`.
 
 ## History
 The kit and snapshots were generated from a Lunagraph export of the AirDesign screens (removed from this repo; see commit `8fceb8c` and `99ab48c` to `ec59b20`). The design source (`AirDesign.pen`) lives in `quanvu309/airdesign-design-assets`.
 
 ## Known gaps
-- Snapshots are static copies; rebuild any you need from kit parts.
-- The notification bell, copy-link and main-menu icons are multi-colour and not in the kit icon set yet.
-- No Storybook or DOM-interaction tests yet; behaviour is covered by markup and ARIA assertions only.
+- Snapshots are static, light-only copies; rebuild any you need from kit parts.
+- The notification bell, copy-link and main-menu icons are multi-colour and not in the kit set.
+- No Storybook; the catalog page is the visual reference. Interaction tests run in jsdom, so real-browser behaviour of `Dialog`, `Popover` and the CSS (focus rings, animation) is checked by eye only.
+- No date picker, combobox, table, tree, toast or virtualised list yet. For toasts use Sonner.
