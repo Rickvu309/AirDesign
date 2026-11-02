@@ -47,7 +47,7 @@ export function Editor({ initial }: { initial: EditorState }) {
           <div className="float float--head"><button className="lp__title">Untitled<Icon name="chevron-down-small" size={16} /></button><Button size="sm" iconStart="plus">New slide</Button><IconButton icon="slide-view" label="Slide view" size="sm" /></div>
         )}
         {s.inspector === "none" && (
-          <div className="float float--top"><span className="insp__avatar"><Avatar name={NAME} size={24} /><Icon name="chevron-down-small" size={14} /></span><Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down">{s.zoom}</Button><IconButton icon="play" label="Present" size="sm" /><Button size="sm" variant="primary" onClick={() => setShareOpen(true)}>Share</Button></div>
+          <div className="float float--top"><span className="insp__avatar"><Avatar name={NAME} size={24} /><Icon name="chevron-down-small" size={14} /></span><Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down-small">{s.zoom}</Button><IconButton icon="play" label="Present" size="sm" iconSize={24} /><Button size="sm" variant="primary" onClick={() => setShareOpen(true)}>Share</Button></div>
         )}
 
         {s.canvas === "slide" ? (
@@ -94,7 +94,7 @@ export function Editor({ initial }: { initial: EditorState }) {
 
       <Dialog open={shareOpen} onClose={() => setShareOpen(false)} title="Share these slides" className="share" initialFocus="dialog">
         <div className="share__card">
-          <div className="share__head"><strong>Share these slides</strong><Button size="sm" variant="ghost" iconStart="link" iconEnd="chevron-down" className="orange">Copy link</Button><IconButton icon="close" label="Close" size="sm" onClick={() => setShareOpen(false)} /></div>
+          <div className="share__head"><strong>Share these slides</strong><Button size="sm" variant="ghost" iconStart="link" iconEnd="chevron-down-small" className="orange">Copy link</Button><IconButton icon="close" label="Close" size="sm" iconSize={24} onClick={() => setShareOpen(false)} /></div>
           <div className="share__body">
             <div className="share__row"><Input label="Invite emails" placeholder="Add comma separated emails to invite" /><Button variant="primary" disabled>Invite</Button></div>
             <div className="share__sub">Who has access</div>

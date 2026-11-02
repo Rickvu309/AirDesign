@@ -4,7 +4,7 @@ import { Avatar, Badge, Button, ChatComposer, Divider, Icon, IconButton, Input, 
 export const NAME = "Ada Lovelace";
 
 export function HelpButton() {
-  return <IconButton className="help" icon="help" label="Help" variant="secondary" />;
+  return <IconButton className="help" icon="help" label="Help" variant="secondary" iconSize={24} />;
 }
 
 export function AppMark({ size = 24 }: { size?: number }) {
@@ -130,13 +130,13 @@ export function InspectorHead({ zoom, floating, onShare }: { zoom: string; float
       <div className="insp__row">
         <span className="insp__avatar"><Avatar name={NAME} size={24} /><Icon name="chevron-down-small" size={14} /></span>
         <span className="grow" />
-        <IconButton icon="play" label="Present" size="sm" iconSize={18} />
+        <IconButton icon="play" label="Present" size="sm" iconSize={24} />
         <Button size="sm" variant="primary" className="insp__share" onClick={onShare}>Share</Button>
       </div>
       <div className="insp__row">
         <Tabs label="Panel" defaultValue="design" items={[{ id: "design", label: "Design" }, { id: "animate", label: "Animate" }]} />
         <span className="grow" />
-        <Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down">{zoom}</Button>
+        <Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down-small">{zoom}</Button>
       </div>
     </div>
   );
@@ -152,7 +152,7 @@ export function SlideInspector({ n, withColors, ai }: { n: number; withColors?: 
       <div className="insp__sec insp__sec--template">
         <div className="insp__sec--row">
           <span className="insp__sec-title">Template style</span>
-          {ai && <IconButton icon="adjust" label="Template options" size="sm" />}
+          <IconButton icon="adjust" label="Template options" size="sm" />
         </div>
         <button className="style"><span className="style__sw"><i style={{ background: "#d0d0d0" }} /><i style={{ background: "#4f8a99" }} /><i style={{ background: "#3d38f5" }} /></span><span><b>Light slides</b><small>Inter</small></span></button>
       </div>
@@ -185,19 +185,21 @@ export function BottomToolbar({ shapes, onShapes, mediaActive }: { shapes?: bool
       <Toolbar label="Tools" className="ad-toolbar">
         <ToolbarGroup>
           <div className="tool-split">
-            <IconButton iconSize={18} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} className={shapes || mediaActive ? "" : "tool-active"} />
-            <button type="button" aria-label="Move tools" className="tool-chev"><Icon name="chevron-down-small" size={12} /></button>
+            <IconButton iconSize={24} icon="cursor" label="Move" variant={shapes || mediaActive ? "ghost" : "primary"} className={shapes || mediaActive ? "" : "tool-active"} />
+            <button type="button" aria-label="Move tools" className="tool-chev"><Icon name="chevron-down-small" size={16} /></button>
           </div>
-          <IconButton iconSize={18} icon="text" label="Text" />
-          <IconButton iconSize={18} icon="image" label="Image and video" variant={mediaActive ? "primary" : "ghost"} className={mediaActive ? "tool-active" : ""} />
-          <IconButton iconSize={18} icon="shapes" label="Shapes" variant={shapes ? "primary" : "ghost"} className={shapes ? "tool-active" : ""} onClick={onShapes} />
-          <IconButton iconSize={18} icon="comment" label="Comment" />
-          <IconButton iconSize={18} icon="actions" label="Actions" />
+          <IconButton iconSize={24} icon="text" label="Text" />
+          <IconButton iconSize={24} icon="image" label="Image and video" variant={mediaActive ? "primary" : "ghost"} className={mediaActive ? "tool-active" : ""} />
+          <IconButton iconSize={24} icon="shapes" label="Shapes" variant={shapes ? "primary" : "ghost"} className={shapes ? "tool-active" : ""} onClick={onShapes} />
+          <IconButton iconSize={24} icon="comment" label="Comment" />
+          <IconButton iconSize={24} icon="actions" label="Actions" />
         </ToolbarGroup>
         <ToolbarSeparator />
         <ToolbarGroup>
-          <IconButton iconSize={18} icon="present" label="Slides mode" pressed className="mode-active" />
-          <IconButton iconSize={18} icon="layout" label="Prototype mode" />
+          <div className="ad-toolbar__modes" role="radiogroup" aria-label="Toolbelt Mode">
+            <IconButton iconSize={24} icon="present" label="Slides mode" pressed className="mode-active" />
+            <IconButton iconSize={24} icon="layout" label="Prototype mode" />
+          </div>
         </ToolbarGroup>
       </Toolbar>
     </div>
