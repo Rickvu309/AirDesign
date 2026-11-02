@@ -10,6 +10,6 @@ import { HomeSidebar, ShareDialog } from "@airdesign/ui";
 
 Each component takes `style` and `className`. Styles are inline, no CSS or extra dependencies; `react` is a peer.
 
-Rebuild after the Lunagraph export changes: `cd ui-pack && npm run build` (copies components into `src/`, writes the `src/index.ts` barrel, compiles to `dist/`).
+Layout: `src/<group>/<ComponentName>.tsx`, one file per component. Rebuild after the Lunagraph export changes: `cd ui-pack && npm run build`.
 
-Note: the export is auto-generated from screens, so many names are generic (`InterfaceIcon42`, `IconButton7`) and some labels carry demo data (for example the account name "Quan Vu (Richard)"). Rename in Lunagraph, then rebuild.
+Names were cleaned with `scripts/rename-components.mjs` (old to new map in `lunagraph/components/airdesign/rename-map.json`). Icons are named by shape; a screen prefix (`Home`, `GettingStarted`, `Agents`, ...) separates look-alike variants from different screens. Some labels inside the components still carry demo data (for example the account name "Quan Vu (Richard)").

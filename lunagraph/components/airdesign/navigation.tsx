@@ -4859,7 +4859,7 @@ export function HomeFileToolbar({
     </div>
   </div>;
 }
-export function EditorToolbar({
+export function GettingStartedEditorToolbar({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5759,7 +5759,7 @@ export function EditorToolbar({
       </div>
     </div>;
 }
-export function MoveToolGroup({
+export function GettingStartedMoveToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5839,7 +5839,7 @@ export function MoveToolGroup({
 </button>
                   </div>;
 }
-export function MoveToolGroup2({
+export function GettingStartedMoveToolGroup2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5919,7 +5919,7 @@ export function MoveToolGroup2({
   </button>
 </div>;
 }
-export function RectangleToolGroup({
+export function GettingStartedRectangleToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5999,7 +5999,7 @@ export function RectangleToolGroup({
   </button>
 </div>;
 }
-export function PenToolGroup({
+export function GettingStartedPenToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6079,7 +6079,7 @@ export function PenToolGroup({
   </button>
 </div>;
 }
-export function TextToolGroup({
+export function GettingStartedTextToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6999,7 +6999,7 @@ export function InspectorTabsAndZoom({
             </div>
           </div>;
 }
-export function EditorToolbar2({
+export function EditorEditorToolbar({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7899,7 +7899,7 @@ export function EditorToolbar2({
         </div>
       </div>;
 }
-export function MoveToolGroup3({
+export function EditorMoveToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9231,7 +9231,7 @@ export function ShapesEditorToolbar({
         </div>
       </div>;
 }
-export function MoveToolGroup4({
+export function ShapesMoveToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9311,7 +9311,7 @@ export function MoveToolGroup4({
     </button>
   </div>;
 }
-export function MoveToolGroup5({
+export function ShapesMoveToolGroup2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9391,7 +9391,7 @@ export function MoveToolGroup5({
     </button>
   </div>;
 }
-export function RectangleToolGroup2({
+export function ShapesRectangleToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9471,7 +9471,7 @@ export function RectangleToolGroup2({
     </button>
   </div>;
 }
-export function PenToolGroup2({
+export function ShapesPenToolGroup({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9551,7 +9551,7 @@ export function PenToolGroup2({
     </button>
   </div>;
 }
-export function TextToolGroup2({
+export function ShapesTextToolGroup({
   style,
   className
 }: AirDesignComponentProps) {

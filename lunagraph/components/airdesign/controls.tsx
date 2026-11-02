@@ -3,7 +3,7 @@ export interface AirDesignComponentProps {
   style?: CSSProperties;
   className?: string;
 }
-export function AccountDropdownForQuanVuRichardButton({
+export function AccountMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -131,7 +131,7 @@ export function AccountDropdownForQuanVuRichardButton({
     </svg>
   </button>;
 }
-export function ProfileAvatar({
+export function HomeProfileAvatar({
   style,
   className
 }: AirDesignComponentProps) {
@@ -195,7 +195,7 @@ export function ProfileAvatar({
     }}></span>
           </div>;
 }
-export function NotificationsNewNotificationReceivedButton({
+export function NotificationsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -360,7 +360,7 @@ export function RecentsButton({
               </div>
             </button>;
 }
-export function PlanQuanVuButton({
+export function PlanButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -481,7 +481,7 @@ export function PlanQuanVuButton({
                 </svg>
               </button>;
 }
-export function ProfileAvatar2({
+export function HomeProfileAvatar2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -516,7 +516,7 @@ export function ProfileAvatar2({
         </span>
       </div>;
 }
-export function ChangePlanQuanVuIsCurrentlyOnTheProfessionalPlanButton({
+export function ChangePlanButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -807,7 +807,7 @@ export function TrashButton({
               </div>
             </button>;
 }
-export function Admin2Button({
+export function AdminButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -944,7 +944,7 @@ export function Admin2Button({
               </div>
             </button>;
 }
-export function Value2AdminNotificationsBadge({
+export function AdminNotificationsBadge({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1050,7 +1050,7 @@ export function StarredButton({
   </span>
 </button>;
 }
-export function Quan01PersonalProjectButton({
+export function PersonalProjectButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1139,7 +1139,7 @@ export function Quan01PersonalProjectButton({
     </div>
   </button>;
 }
-export function Quan02WorkProjectButton({
+export function WorkProjectButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1228,7 +1228,7 @@ export function Quan02WorkProjectButton({
     </div>
   </button>;
 }
-export function Quan03CollabButton({
+export function CollabProjectButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1317,7 +1317,7 @@ export function Quan03CollabButton({
     </div>
   </button>;
 }
-export function Quan99ArchiveButton({
+export function ArchiveProjectButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1406,7 +1406,7 @@ export function Quan99ArchiveButton({
     </div>
   </button>;
 }
-export function NovaMembershipButton({
+export function RecentFileButtonNovaMembership({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1495,7 +1495,7 @@ export function NovaMembershipButton({
       </div>
     </button>;
 }
-export function ProjectConsultingButton({
+export function RecentFileButtonProjectConsulting({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1584,7 +1584,7 @@ export function ProjectConsultingButton({
       </div>
     </button>;
 }
-export function ProfessionalTemplateButton({
+export function RecentFileButtonProfessionalTemplate({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1673,7 +1673,7 @@ export function ProfessionalTemplateButton({
       </div>
     </button>;
 }
-export function VietjetProjectButton({
+export function RecentFileButtonVietjetProject({
   style,
   className
 }: AirDesignComponentProps) {
@@ -1762,7 +1762,7 @@ export function VietjetProjectButton({
       </div>
     </button>;
 }
-export function GrokBotSlideButton({
+export function RecentFileButtonGrokBotSlide({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2163,7 +2163,7 @@ export function MoreButton({
                 </div>
               </button>;
 }
-export function QuanVuRichardButton({
+export function AccountButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2258,7 +2258,7 @@ export function QuanVuRichardButton({
     }}></span>
                     </button>;
 }
-export function HelpButton({
+export function HomeHelpButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2299,7 +2299,7 @@ export function HelpButton({
       </svg>
     </button>;
 }
-export function MoveButton({
+export function GettingStartedMoveButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2335,7 +2335,7 @@ export function MoveButton({
   </svg>
 </button>;
 }
-export function MoveToolsButton({
+export function GettingStartedMoveToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2377,7 +2377,7 @@ export function MoveToolsButton({
   </span>
 </button>;
 }
-export function TextButton({
+export function GettingStartedTextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2413,7 +2413,7 @@ export function TextButton({
                   </svg>
                 </button>;
 }
-export function ImageVideoButton({
+export function GettingStartedImageVideoButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2449,7 +2449,7 @@ export function ImageVideoButton({
                   </svg>
                 </button>;
 }
-export function ShapesButton({
+export function GettingStartedShapesButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2485,7 +2485,7 @@ export function ShapesButton({
                   </svg>
                 </button>;
 }
-export function CommentButton({
+export function GettingStartedCommentButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2521,7 +2521,7 @@ export function CommentButton({
 </svg>
                 </button>;
 }
-export function ActionsButton({
+export function GettingStartedActionsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2557,7 +2557,7 @@ export function ActionsButton({
 </svg>
                 </button>;
 }
-export function MoveButton2({
+export function GettingStartedMoveButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2593,7 +2593,7 @@ export function MoveButton2({
     </svg>
   </button>;
 }
-export function MoveToolsButton2({
+export function GettingStartedMoveToolsButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2635,7 +2635,7 @@ export function MoveToolsButton2({
     </span>
   </button>;
 }
-export function FrameButton({
+export function GettingStartedFrameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2671,7 +2671,7 @@ export function FrameButton({
 </svg>
                 </button>;
 }
-export function RectangleButton({
+export function GettingStartedRectangleButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2707,7 +2707,7 @@ export function RectangleButton({
     </svg>
   </button>;
 }
-export function ShapeToolsButton({
+export function GettingStartedShapeToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2749,7 +2749,7 @@ export function ShapeToolsButton({
     </span>
   </button>;
 }
-export function PenButton({
+export function GettingStartedPenButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2785,7 +2785,7 @@ export function PenButton({
     </svg>
   </button>;
 }
-export function CreationToolsButton({
+export function GettingStartedCreationToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2827,7 +2827,7 @@ export function CreationToolsButton({
     </span>
   </button>;
 }
-export function TextButton2({
+export function GettingStartedTextButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2863,7 +2863,7 @@ export function TextButton2({
     </svg>
   </button>;
 }
-export function TypeToolsButton({
+export function GettingStartedTypeToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2905,7 +2905,7 @@ export function TypeToolsButton({
     </span>
   </button>;
 }
-export function CommentButton2({
+export function GettingStartedCommentButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2941,7 +2941,7 @@ export function CommentButton2({
 </svg>
                 </button>;
 }
-export function ActionsButton2({
+export function GettingStartedActionsButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -2977,7 +2977,7 @@ export function ActionsButton2({
 </svg>
                 </button>;
 }
-export function AssetsButton({
+export function GettingStartedAssetsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3018,7 +3018,7 @@ export function AssetsButton({
   </div>
 </button>;
 }
-export function MainMenuButton({
+export function GettingStartedMainMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3052,7 +3052,7 @@ export function MainMenuButton({
     </svg>
   </button>;
 }
-export function FileButton({
+export function GettingStartedFileButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3124,7 +3124,7 @@ export function FileButton({
     </span>
   </button>;
 }
-export function AgentsButton({
+export function GettingStartedAgentsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3206,7 +3206,7 @@ export function AgentsButton({
     </span>
   </button>;
 }
-export function InsertsButton({
+export function GettingStartedInsertsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3277,7 +3277,7 @@ export function InsertsButton({
     </span>
   </button>;
 }
-export function UntitledFileNameButton({
+export function FileNameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3310,7 +3310,7 @@ export function UntitledFileNameButton({
     }}>Untitled</span>
                       </button>;
 }
-export function EditFileMenuButton({
+export function GettingStartedEditFileMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3367,7 +3367,7 @@ export function EditFileMenuButton({
                             </span>
                           </button>;
 }
-export function GridViewButton({
+export function GettingStartedGridViewButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3422,7 +3422,7 @@ export function GridViewButton({
                 </span>
               </button>;
 }
-export function NewSlideButton({
+export function GettingStartedNewSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3484,7 +3484,7 @@ export function NewSlideButton({
                 </svg>
               </button>;
 }
-export function AddBlankSlideButton({
+export function GettingStartedAddBlankSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3522,7 +3522,7 @@ export function AddBlankSlideButton({
                 </svg>
               </button>;
 }
-export function CloseButton({
+export function GettingStartedCloseButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3577,7 +3577,7 @@ export function CloseButton({
             </span>
           </button>;
 }
-export function AddContextButton({
+export function GettingStartedAddContextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3632,7 +3632,7 @@ export function AddContextButton({
   </span>
 </button>;
 }
-export function SelectDeckTemplateButton({
+export function GettingStartedSelectDeckTemplateButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -3935,7 +3935,7 @@ export function MultiplayerToolsButton({
                             </div>
                           </button>;
 }
-export function ProfileAvatar3({
+export function GettingStartedProfileAvatar({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4102,7 +4102,7 @@ export function ShareButton({
                         </span>
                       </button>;
 }
-export function DesignDesignButton({
+export function DesignTabButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4151,7 +4151,7 @@ export function DesignDesignButton({
                   </span>
                 </button>;
 }
-export function AnimateAnimateButton({
+export function AnimateTabButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4201,7 +4201,7 @@ export function AnimateAnimateButton({
                   </span>
                 </button>;
 }
-export function Value100ZoomAndViewOptionsButton({
+export function ZoomAndViewOptionsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4242,7 +4242,7 @@ export function Value100ZoomAndViewOptionsButton({
                   </svg>
                 </button>;
 }
-export function HelpButton2({
+export function GettingStartedHelpButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4283,7 +4283,7 @@ export function HelpButton2({
     </svg>
   </button>;
 }
-export function MainMenuButton2({
+export function AgentsMainMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4317,7 +4317,7 @@ export function MainMenuButton2({
         </svg>
       </button>;
 }
-export function FileButton2({
+export function AgentsFileButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4388,7 +4388,7 @@ export function FileButton2({
         </span>
       </button>;
 }
-export function AgentsButton2({
+export function AgentsAgentsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4471,7 +4471,7 @@ export function AgentsButton2({
         </span>
       </button>;
 }
-export function InsertsButton2({
+export function AgentsInsertsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4542,7 +4542,7 @@ export function InsertsButton2({
         </span>
       </button>;
 }
-export function UntitledFileNameButton2({
+export function AgentsUntitledFileNameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4575,7 +4575,7 @@ export function UntitledFileNameButton2({
     }}>Untitled</span>
       </button>;
 }
-export function EditFileMenuButton2({
+export function AgentsEditFileMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -4632,7 +4632,7 @@ export function EditFileMenuButton2({
             </span>
           </button>;
 }
-export function GridViewButton2({
+export function AgentsGridViewButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5058,7 +5058,7 @@ export function UnderstandTheDeckButton({
 </span>
                           </button>;
 }
-export function AddContextButton2({
+export function AgentsAddContextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5113,7 +5113,7 @@ export function AddContextButton2({
     </span>
   </button>;
 }
-export function SelectDeckTemplateButton2({
+export function AgentsSelectDeckTemplateButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5277,7 +5277,7 @@ export function SendButton({
       </div>
     </button>;
 }
-export function NewChatJustNowNotStartedButton({
+export function NewChatButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5415,7 +5415,7 @@ export function NewChatJustNowNotStartedButton({
           </div>
         </button>;
 }
-export function NewSlideButton2({
+export function AgentsNewSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5455,7 +5455,7 @@ export function NewSlideButton2({
   </svg>
 </button>;
 }
-export function Slide1Button({
+export function AgentsSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5537,7 +5537,7 @@ export function Slide1Button({
         </div>
       </button>;
 }
-export function TextButton3({
+export function EditorTextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5573,7 +5573,7 @@ export function TextButton3({
                     </svg>
                   </button>;
 }
-export function ImageVideoButton2({
+export function EditorImageVideoButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5609,7 +5609,7 @@ export function ImageVideoButton2({
                     </svg>
                   </button>;
 }
-export function ShapesButton2({
+export function EditorShapesButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5645,7 +5645,7 @@ export function ShapesButton2({
                     </svg>
                   </button>;
 }
-export function CommentButton3({
+export function EditorCommentButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5681,7 +5681,7 @@ export function CommentButton3({
 </svg>
                   </button>;
 }
-export function ActionsButton3({
+export function EditorActionsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5717,7 +5717,7 @@ export function ActionsButton3({
 </svg>
                   </button>;
 }
-export function FrameButton2({
+export function EditorFrameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5753,7 +5753,7 @@ export function FrameButton2({
 </svg>
                   </button>;
 }
-export function CommentButton4({
+export function EditorCommentButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5789,7 +5789,7 @@ export function CommentButton4({
 </svg>
                   </button>;
 }
-export function ActionsButton4({
+export function EditorActionsButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5825,7 +5825,7 @@ export function ActionsButton4({
 </svg>
                   </button>;
 }
-export function FileButton3({
+export function FileFileButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5897,7 +5897,7 @@ export function FileButton3({
         </span>
       </button>;
 }
-export function AgentsButton3({
+export function FileAgentsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -5979,7 +5979,7 @@ export function AgentsButton3({
         </span>
       </button>;
 }
-export function GridViewButton3({
+export function FileGridViewButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6034,7 +6034,7 @@ export function GridViewButton3({
 </span>
                   </button>;
 }
-export function NewSlideButton3({
+export function FileNewSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6096,7 +6096,7 @@ export function NewSlideButton3({
 </svg>
                   </button>;
 }
-export function AddBlankSlideButton2({
+export function FileAddBlankSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6134,7 +6134,7 @@ export function AddBlankSlideButton2({
 </svg>
                   </button>;
 }
-export function Slide1Button2({
+export function FileSlideButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6233,7 +6233,7 @@ export function Slide1Button2({
       </div>
     </button>;
 }
-export function InsertsButton3({
+export function InsertInsertsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6518,7 +6518,7 @@ export function SlideNumberButton({
   </span>
 </button>;
 }
-export function TextButton4({
+export function InsertTextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6624,7 +6624,7 @@ export function MediaButton({
   </div>
 </button>;
 }
-export function ShapesButton3({
+export function InsertShapesButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6836,7 +6836,7 @@ export function LibrariesButton({
   </div>
 </button>;
 }
-export function UntitledFileNameButton3({
+export function MediaUntitledFileNameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6869,7 +6869,7 @@ export function UntitledFileNameButton3({
     }}>Untitled</span>
     </button>;
 }
-export function EditFileMenuButton3({
+export function MediaEditFileMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6926,7 +6926,7 @@ export function EditFileMenuButton3({
           </span>
         </button>;
 }
-export function SlideViewButton({
+export function MediaSlideViewButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -6981,7 +6981,7 @@ export function SlideViewButton({
 </span>
                 </button>;
 }
-export function BackButton({
+export function MediaBackButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7112,7 +7112,7 @@ export function SearchStockPhotosInput({
     ...style
   }} aria-label="Search stock photos" placeholder="Search images" type="text" value="" className={className}></input>;
 }
-export function IconButton({
+export function MediaThumbnail01({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7150,7 +7150,7 @@ export function IconButton({
     }} alt="A woman in a white patterned dress standing against a stone wall covered in ivy" src="https://images.unsplash.com/photo-1793291275774-23ae799f2ac8?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyfHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
                 </button>;
 }
-export function IconButton2({
+export function MediaThumbnail02({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7188,7 +7188,7 @@ export function IconButton2({
     }} alt="Neuschwanstein Castle nestled in a forested mountain landscape with snow-capped peaks in the distance" src="https://images.unsplash.com/photo-1793463986813-7e1b6370ca4a?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHw0fHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
                 </button>;
 }
-export function IconButton3({
+export function MediaThumbnail03({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7226,7 +7226,7 @@ export function IconButton3({
     }} alt="A short-eared owl in flight over a field of dry golden grass" src="https://images.unsplash.com/photo-1793449162784-fa77abd22ef2?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHw3fHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
                 </button>;
 }
-export function IconButton4({
+export function MediaThumbnail04({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7264,7 +7264,7 @@ export function IconButton4({
     }} alt="A sharp triangular patch of sunlight on a tiled floor and textured wall" src="https://images.unsplash.com/photo-1793531110179-6af052479cc5?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHw5fHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
                 </button>;
 }
-export function IconButton5({
+export function MediaThumbnail05({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7302,7 +7302,7 @@ export function IconButton5({
     }} alt="An ornate stone colonnade under a clear blue sky, framed by green leaves in golden light" src="https://images.unsplash.com/photo-1793559141324-6e65850719b0?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxMXx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
                 </button>;
 }
-export function IconButton6({
+export function MediaThumbnail06({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7340,7 +7340,7 @@ export function IconButton6({
     }} alt="A bright kitchen with cream cabinets, a stainless steel range, and a marble countertop" src="https://images.unsplash.com/photo-1792980205896-4bc34b91b040?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxM3x8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton7({
+export function MediaThumbnail07({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7378,7 +7378,7 @@ export function IconButton7({
     }} alt="A smooth white stone on a textured rock beside a dropper bottle and dried lavender" src="https://images.unsplash.com/photo-1793100123531-4924ea242f5f?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxNnx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton8({
+export function MediaThumbnail08({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7416,7 +7416,7 @@ export function IconButton8({
     }} alt="A wooden dining table with chairs and a bowl of apples in a sunlit room" src="https://images.unsplash.com/photo-1793143765092-dd507da9bffe?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxOHx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton9({
+export function MediaThumbnail09({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7454,7 +7454,7 @@ export function IconButton9({
     }} alt="A person petting a happy corgi with its mouth open in front of white flowers" src="https://images.unsplash.com/photo-1793243894460-cc1ad3446e33?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyMHx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton10({
+export function MediaThumbnail10({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7492,7 +7492,7 @@ export function IconButton10({
     }} alt="A sunlit living room with a grey sofa, a television on a tripod, and large windows" src="https://images.unsplash.com/photo-1793362584700-57e1bb2d8bbe?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyM3x8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton11({
+export function MediaThumbnail11({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7530,7 +7530,7 @@ export function IconButton11({
     }} alt="Coniferous forest with yellowing autumn trees below a rocky mountain peak shrouded in thick fog" src="https://images.unsplash.com/photo-1793296268316-4279a8f9bbc9?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyNHx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton12({
+export function MediaThumbnail12({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7568,7 +7568,7 @@ export function IconButton12({
     }} alt="A stack of dark ribbed steel rebar rods viewed from the end" src="https://images.unsplash.com/photo-1793280251985-79ebf452b285?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyNnx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton13({
+export function MediaThumbnail13({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7606,7 +7606,7 @@ export function IconButton13({
     }} alt="A large ocean wave breaking with sea spray in the warm golden hour light" src="https://images.unsplash.com/photo-1793296640109-4f7e6e99fa58?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyOXx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton14({
+export function MediaThumbnail14({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7644,7 +7644,7 @@ export function IconButton14({
     }} alt="Evergreen trees against a steep rocky mountainside shrouded in thick grey mist" src="https://images.unsplash.com/photo-1793296225976-dd92eeb74bab?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwzfHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton15({
+export function MediaThumbnail15({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7682,7 +7682,7 @@ export function IconButton15({
     }} alt="Green palm fronds silhouetted against a bright sky with soft white clouds" src="https://images.unsplash.com/photo-1793457984081-2fa841fac172?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHw1fHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton16({
+export function MediaThumbnail16({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7720,7 +7720,7 @@ export function IconButton16({
     }} alt="Blurred clouds in shades of brown and grey with a hint of blue light" src="https://images.unsplash.com/photo-1793531381574-242097e252f7?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHw2fHx8fHx8fHwxNzkzNjE5MDI5fA&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton17({
+export function MediaThumbnail17({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7758,7 +7758,7 @@ export function IconButton17({
     }} alt="Low sun over a misty green field with distant trees under a pale sky" src="https://images.unsplash.com/photo-1793531376973-07525fe23962?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxMHx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton18({
+export function MediaThumbnail18({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7796,7 +7796,7 @@ export function IconButton18({
     }} alt="A bluethroat bird with a bright blue throat patch singing among tall green reeds" src="https://images.unsplash.com/photo-1793451551758-dc59e0b817b7?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxMnx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton19({
+export function MediaThumbnail19({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7834,7 +7834,7 @@ export function IconButton19({
     }} alt="A baby in a plastic seat resting feet on an adult lying on a sandy beach" src="https://images.unsplash.com/photo-1793004196263-c41e5e44fabc?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxNXx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton20({
+export function MediaThumbnail20({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7872,7 +7872,7 @@ export function IconButton20({
     }} alt="A woman in a white headscarf and t-shirt watching colorful koi fish in a pond" src="https://images.unsplash.com/photo-1793067321405-31bad6764f8d?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxN3x8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton21({
+export function MediaThumbnail21({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7910,7 +7910,7 @@ export function IconButton21({
     }} alt="Two people using smartphones in front of a blue and white tiled wall in Porto" src="https://images.unsplash.com/photo-1793363605725-f4dc80e33a34?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwxOXx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton22({
+export function MediaThumbnail22({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7948,7 +7948,7 @@ export function IconButton22({
     }} alt="A gold necklace, ring, and stud earrings with diamond accents on a white fabric background" src="https://images.unsplash.com/photo-1793054733110-b22c822e97b6?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyMnx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton23({
+export function MediaThumbnail23({
   style,
   className
 }: AirDesignComponentProps) {
@@ -7986,7 +7986,7 @@ export function IconButton23({
     }} alt="A 3D render of a modern bedroom with wooden wall panels and a grey bed" src="https://images.unsplash.com/photo-1793378854126-658c2399d99a?crop=entropy&amp;cs=tinysrgb&amp;fit=max&amp;fm=jpg&amp;ixid=M3w3Nzg4Nzd8MHwxfGFsbHwyNXx8fHx8fHx8MTc5MzYxOTAyOXw&amp;ixlib=rb-4.1.0&amp;q=80&amp;w=200&amp;utm_source=figma&amp;utm_medium=referral"></img>
 </button>;
 }
-export function IconButton24({
+export function MediaThumbnail24({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8342,7 +8342,7 @@ export function EditTemplateStyleButton({
 </span>
                       </button>;
 }
-export function StyleLightSlidesFontsInterButton({
+export function StyleOptionsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8623,7 +8623,7 @@ export function ColorPickerButton({
     </div>
   </button>;
 }
-export function ColorVariableBlackWithValue000At100Button({
+export function ColorSwatchBlackButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8711,7 +8711,7 @@ export function ColorVariableBlackWithValue000At100Button({
     </div>
   </button>;
 }
-export function ColorVariableWhiteWithValueFFFAt100Button({
+export function ColorSwatchWhiteButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8810,7 +8810,7 @@ export function ColorVariableWhiteWithValueFFFAt100Button({
     </div>
   </button>;
 }
-export function MoveButton3({
+export function ShapesMoveButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8846,7 +8846,7 @@ export function MoveButton3({
       </svg>
     </button>;
 }
-export function MoveToolsButton3({
+export function ShapesMoveToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8888,7 +8888,7 @@ export function MoveToolsButton3({
       </span>
     </button>;
 }
-export function TextButton5({
+export function ShapesTextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8924,7 +8924,7 @@ export function TextButton5({
   </svg>
 </button>;
 }
-export function ImageVideoButton3({
+export function ShapesImageVideoButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8960,7 +8960,7 @@ export function ImageVideoButton3({
   </svg>
 </button>;
 }
-export function ShapesButton4({
+export function ShapesShapesButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -8996,7 +8996,7 @@ export function ShapesButton4({
   </svg>
 </button>;
 }
-export function CommentButton5({
+export function ShapesCommentButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9032,7 +9032,7 @@ export function CommentButton5({
   </svg>
 </button>;
 }
-export function ActionsButton5({
+export function ShapesActionsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9068,7 +9068,7 @@ export function ActionsButton5({
   </svg>
 </button>;
 }
-export function MoveButton4({
+export function ShapesMoveButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9104,7 +9104,7 @@ export function MoveButton4({
       </svg>
     </button>;
 }
-export function MoveToolsButton4({
+export function ShapesMoveToolsButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9146,7 +9146,7 @@ export function MoveToolsButton4({
       </span>
     </button>;
 }
-export function FrameButton3({
+export function ShapesFrameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9182,7 +9182,7 @@ export function FrameButton3({
   </svg>
 </button>;
 }
-export function RectangleButton2({
+export function ShapesRectangleButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9218,7 +9218,7 @@ export function RectangleButton2({
       </svg>
     </button>;
 }
-export function ShapeToolsButton2({
+export function ShapesShapeToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9260,7 +9260,7 @@ export function ShapeToolsButton2({
       </span>
     </button>;
 }
-export function PenButton2({
+export function ShapesPenButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9296,7 +9296,7 @@ export function PenButton2({
       </svg>
     </button>;
 }
-export function CreationToolsButton2({
+export function ShapesCreationToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9338,7 +9338,7 @@ export function CreationToolsButton2({
       </span>
     </button>;
 }
-export function TextButton6({
+export function ShapesTextButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9374,7 +9374,7 @@ export function TextButton6({
       </svg>
     </button>;
 }
-export function TypeToolsButton2({
+export function ShapesTypeToolsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9416,7 +9416,7 @@ export function TypeToolsButton2({
       </span>
     </button>;
 }
-export function CommentButton6({
+export function ShapesCommentButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9452,7 +9452,7 @@ export function CommentButton6({
   </svg>
 </button>;
 }
-export function ActionsButton6({
+export function ShapesActionsButton2({
   style,
   className
 }: AirDesignComponentProps) {
@@ -9488,7 +9488,7 @@ export function ActionsButton6({
   </svg>
 </button>;
 }
-export function AssetsButton2({
+export function ShapesAssetsButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10248,7 +10248,7 @@ export function InviteEmailFieldButton({
     }} aria-expanded="false" aria-label="Add comma separated emails to invite" placeholder="Add comma separated emails to invite" role="combobox" value=""></input>
     </div>;
 }
-export function AddCommaSeparatedEmailsToInviteInput({
+export function InviteEmailsInput({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10416,7 +10416,7 @@ export function AnyoneCanViewButton({
   </div>
 </button>;
 }
-export function MoveToFolderButton({
+export function ShareMoveToFolderButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10445,7 +10445,7 @@ export function MoveToFolderButton({
     }}>Move to folder</span>
   </button>;
 }
-export function CloseButton2({
+export function ShareCloseButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10500,7 +10500,7 @@ export function CloseButton2({
         </span>
       </button>;
 }
-export function MoveToFolderButton2({
+export function ShareMoreMoveToFolderButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10529,7 +10529,7 @@ export function MoveToFolderButton2({
     }}>Move to folder</span>
                 </button>;
 }
-export function UntitledFileNameButton4({
+export function TextUntitledFileNameButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10562,7 +10562,7 @@ export function UntitledFileNameButton4({
     }}>Untitled</span>
               </button>;
 }
-export function EditFileMenuButton4({
+export function TextEditFileMenuButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10619,7 +10619,7 @@ export function EditFileMenuButton4({
   </span>
 </button>;
 }
-export function SlideViewButton2({
+export function TextSlideViewButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10674,7 +10674,7 @@ export function SlideViewButton2({
         </span>
       </button>;
 }
-export function BackButton2({
+export function TextBackButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10810,7 +10810,7 @@ export function AddTextBoxButton({
         </span>
       </button>;
 }
-export function TextButton7({
+export function TextTextButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10866,7 +10866,7 @@ export function TextButton7({
 </span>
                 </button>;
 }
-export function IconButton25({
+export function TextStyleTitleButton({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10903,7 +10903,7 @@ export function IconButton25({
     }}>Title</span>
   </button>;
 }
-export function IconButton26({
+export function TextStyleHeader1Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10940,7 +10940,7 @@ export function IconButton26({
     }}>Header 1</span>
   </button>;
 }
-export function IconButton27({
+export function TextStyleHeader2Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -10977,7 +10977,7 @@ export function IconButton27({
     }}>Header 2</span>
   </button>;
 }
-export function IconButton28({
+export function TextStyleHeader3Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -11014,7 +11014,7 @@ export function IconButton28({
     }}>Header 3</span>
   </button>;
 }
-export function IconButton29({
+export function TextStyleBody1Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -11051,7 +11051,7 @@ export function IconButton29({
     }}>Body 1</span>
   </button>;
 }
-export function IconButton30({
+export function TextStyleBody2Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -11088,7 +11088,7 @@ export function IconButton30({
     }}>Body 2</span>
   </button>;
 }
-export function IconButton31({
+export function TextStyleBody3Button({
   style,
   className
 }: AirDesignComponentProps) {
@@ -11125,7 +11125,7 @@ export function IconButton31({
     }}>Body 3</span>
   </button>;
 }
-export function IconButton32({
+export function TextStyleNoteButton({
   style,
   className
 }: AirDesignComponentProps) {
