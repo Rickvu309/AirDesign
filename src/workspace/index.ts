@@ -1,0 +1,18 @@
+export { AppMark, type AppMarkProps } from "./AppMark.js";
+export { HelpButton, type HelpButtonProps } from "./HelpButton.js";
+export { SlideThumb, type SlideThumbProps } from "./SlideThumb.js";
+export { PanelHeader, type PanelHeaderProps } from "./PanelHeader.js";
+export { FilePanel, type FilePanelProps } from "./FilePanel.js";
+export { AgentsPanel, type AgentsPanelProps } from "./AgentsPanel.js";
+export { InsertsPanel, type InsertsPanelProps } from "./InsertsPanel.js";
+export { MediaPanel, type MediaPanelProps } from "./MediaPanel.js";
+export { InspectorHead, type InspectorHeadProps } from "./InspectorHead.js";
+export { SlideInspector, type SlideInspectorProps } from "./SlideInspector.js";
+export { BottomToolbar, type BottomToolbarProps } from "./BottomToolbar.js";
+export { ShapesTray, type ShapesTrayProps } from "./ShapesTray.js";
+export { PresenterNotes, type PresenterNotesProps } from "./PresenterNotes.js";
+export { GettingStartedDialog, type GettingStartedDialogProps } from "./GettingStartedDialog.js";
+export { ShareDialog, type ShareDialogProps } from "./ShareDialog.js";
+export { HomeSidebar, type HomeSidebarProps, defaultStarredFolders } from "./HomeSidebar.js";
+export { HomeFileToolbar, type HomeFileToolbarProps } from "./HomeFileToolbar.js";
+export { EditorWorkspace, type EditorWorkspaceProps } from "./EditorWorkspace.js";

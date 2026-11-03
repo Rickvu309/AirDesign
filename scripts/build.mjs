@@ -10,6 +10,6 @@ execFileSync("npx", ["tsc", "-p", "tsconfig.json"], { cwd: root, stdio: "inherit
 mkdirSync(join(root, "dist/styles"), { recursive: true });
 cpSync(join(root, "src/styles"), join(root, "dist/styles"), { recursive: true });
 const css = (f) => readFileSync(join(root, "src/styles", f), "utf8");
-// styles.css = tokens + kit. base.css (a minimal reset) stays separate: apps with their own preflight skip it.
-writeFileSync(join(root, "dist/styles.css"), `${css("tokens.css")}\n${css("kit.css")}`);
+// styles.css = tokens + kit + workspace. base.css (a minimal reset) stays separate: apps with their own preflight skip it.
+writeFileSync(join(root, "dist/styles.css"), `${css("tokens.css")}\n${css("kit.css")}\n${css("workspace.css")}`);
 console.log("built dist/");

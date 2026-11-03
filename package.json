@@ -20,6 +20,7 @@
     "./styles.css": "./dist/styles.css",
     "./tokens.css": "./dist/styles/tokens.css",
     "./kit.css": "./dist/styles/kit.css",
+    "./workspace.css": "./dist/styles/workspace.css",
     "./base.css": "./dist/styles/base.css",
     "./package.json": "./package.json"
   },

@@ -29,3 +29,58 @@ export { Kbd } from "./components/Kbd.js";
 export { PropertySection, PropertyRow } from "./components/PropertyPanel.js";
 export { ChatThread, ChatMessage, Suggestion, ChatComposer, type ChatMessageProps, type ChatComposerProps } from "./components/Chat.js";
 export { NavRail, NavRailItem, type NavRailItemProps } from "./components/NavRail.js";
+export { createMachine, useMachine } from "./machine/createMachine.js";
+export type { Machine, MachineConfig, MachineEvent, RegionConfig, Snapshot, StateConfig, Transition } from "./machine/createMachine.js";
+export { editorMachine } from "./machine/editorMachine.js";
+export type { EditorContext, EditorEvent, EditorPanel, EditorSnapshot } from "./machine/editorMachine.js";
+export { useEditorMachine } from "./machine/useEditorMachine.js";
+export {
+  selectLayout,
+  selectPanel,
+  selectCanvas,
+  selectOverlay,
+  selectTray,
+  selectDeck,
+  selectZoom,
+  selectSlides,
+  selectSelected,
+  type EditorLayout,
+} from "./machine/editorSelectors.js";
+export {
+  AppMark,
+  type AppMarkProps,
+  HelpButton,
+  type HelpButtonProps,
+  SlideThumb,
+  type SlideThumbProps,
+  PanelHeader,
+  type PanelHeaderProps,
+  FilePanel,
+  type FilePanelProps,
+  AgentsPanel,
+  type AgentsPanelProps,
+  InsertsPanel,
+  type InsertsPanelProps,
+  MediaPanel,
+  type MediaPanelProps,
+  InspectorHead,
+  type InspectorHeadProps,
+  SlideInspector,
+  type SlideInspectorProps,
+  BottomToolbar,
+  type BottomToolbarProps,
+  ShapesTray,
+  type ShapesTrayProps,
+  PresenterNotes,
+  type PresenterNotesProps,
+  GettingStartedDialog,
+  type GettingStartedDialogProps,
+  ShareDialog,
+  type ShareDialogProps,
+  HomeSidebar,
+  type HomeSidebarProps,
+  HomeFileToolbar,
+  type HomeFileToolbarProps,
+  EditorWorkspace,
+  type EditorWorkspaceProps,
+} from "./workspace/index.js";
