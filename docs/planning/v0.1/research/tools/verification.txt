@@ -1,0 +1,7 @@
+
+> verify
+> mkdir -p .tmp && tsc --noEmit && TSX_DISABLE_CACHE=1 TMPDIR="$PWD/.tmp" tsx verify.ts
+
+CATALOG tools=18 utf8_bytes=17840 approximate_tokens=4460 model_fields_bytes=8092 model_approximate_tokens=2023 method=ceil(UTF8_bytes/4) includes=names,descriptions,inputSchema,outputSchema,annotations
+RESULT full_bytes=573891 bounded_envelope_bytes=19240 omitted=["986 items omitted; continue with nextCursor."] recovered=1000 pages=72 oversized_item=actionable_error
+MCP tools=3 initialize/list/read/write/rollback/replay/stale/image=PASS protocol=2025-11-25

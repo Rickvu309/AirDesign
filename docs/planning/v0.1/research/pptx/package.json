@@ -1,0 +1,21 @@
+{
+  "name": "airdesign-pptx-fidelity-probe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "tsc --noEmit && tsx prototype.ts"
+  },
+  "dependencies": {
+    "jszip": "3.10.1",
+    "pptxgenjs": "4.0.1",
+    "saxes": "6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "tsx": "4.20.3",
+    "typescript": "5.8.3"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
+  }
+}

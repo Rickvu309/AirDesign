@@ -1,0 +1,288 @@
+{
+  "elapsedSeconds": 2.886,
+  "separationPass": true,
+  "results": [
+    {
+      "id": "good-editorial",
+      "expectedHardPass": true,
+      "overflow": 0,
+      "outside": 0,
+      "contrastFailures": 0,
+      "overlapPairs": 0,
+      "minContrast": 13.262,
+      "gridAlignedPercent": 100,
+      "hardPass": true,
+      "elements": [
+        {
+          "id": "eyebrow",
+          "x": 64,
+          "y": 64,
+          "w": 800,
+          "h": 32,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "title",
+          "x": 64,
+          "y": 144,
+          "w": 1120,
+          "h": 96,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "body",
+          "x": 64,
+          "y": 304,
+          "w": 800,
+          "h": 112,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "footer",
+          "x": 64,
+          "y": 600,
+          "w": 1000,
+          "h": 48,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        }
+      ],
+      "overlaps": []
+    },
+    {
+      "id": "good-data",
+      "expectedHardPass": true,
+      "overflow": 0,
+      "outside": 0,
+      "contrastFailures": 0,
+      "overlapPairs": 0,
+      "minContrast": 11.422,
+      "gridAlignedPercent": 100,
+      "hardPass": true,
+      "elements": [
+        {
+          "id": "title",
+          "x": 64,
+          "y": 64,
+          "w": 1120,
+          "h": 80,
+          "overflow": false,
+          "outside": false,
+          "contrast": 14.549,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "metric",
+          "x": 64,
+          "y": 216,
+          "w": 480,
+          "h": 160,
+          "overflow": false,
+          "outside": false,
+          "contrast": 11.422,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "label",
+          "x": 64,
+          "y": 400,
+          "w": 480,
+          "h": 64,
+          "overflow": false,
+          "outside": false,
+          "contrast": 14.549,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "explanation",
+          "x": 640,
+          "y": 240,
+          "w": 560,
+          "h": 200,
+          "overflow": false,
+          "outside": false,
+          "contrast": 14.549,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "source",
+          "x": 64,
+          "y": 624,
+          "w": 1000,
+          "h": 40,
+          "overflow": false,
+          "outside": false,
+          "contrast": 14.549,
+          "contrastFail": false,
+          "gridResidual": 0
+        }
+      ],
+      "overlaps": []
+    },
+    {
+      "id": "bad-overflow",
+      "expectedHardPass": false,
+      "overflow": 1,
+      "outside": 1,
+      "contrastFailures": 0,
+      "overlapPairs": 0,
+      "minContrast": 13.262,
+      "gridAlignedPercent": 100,
+      "hardPass": false,
+      "elements": [
+        {
+          "id": "title",
+          "x": 64,
+          "y": 64,
+          "w": 1000,
+          "h": 80,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "body",
+          "x": 64,
+          "y": 216,
+          "w": 480,
+          "h": 64,
+          "overflow": true,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        },
+        {
+          "id": "outside",
+          "x": 1160,
+          "y": 600,
+          "w": 400,
+          "h": 64,
+          "overflow": false,
+          "outside": true,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 0
+        }
+      ],
+      "overlaps": []
+    },
+    {
+      "id": "bad-contrast",
+      "expectedHardPass": false,
+      "overflow": 0,
+      "outside": 0,
+      "contrastFailures": 2,
+      "overlapPairs": 0,
+      "minContrast": 1.358,
+      "gridAlignedPercent": 100,
+      "hardPass": false,
+      "elements": [
+        {
+          "id": "title",
+          "x": 64,
+          "y": 64,
+          "w": 1120,
+          "h": 96,
+          "overflow": false,
+          "outside": false,
+          "contrast": 1.358,
+          "contrastFail": true,
+          "gridResidual": 0
+        },
+        {
+          "id": "body",
+          "x": 64,
+          "y": 240,
+          "w": 1000,
+          "h": 64,
+          "overflow": false,
+          "outside": false,
+          "contrast": 2.323,
+          "contrastFail": true,
+          "gridResidual": 0
+        }
+      ],
+      "overlaps": []
+    },
+    {
+      "id": "bad-overlap-grid",
+      "expectedHardPass": false,
+      "overflow": 0,
+      "outside": 0,
+      "contrastFailures": 0,
+      "overlapPairs": 1,
+      "minContrast": 13.262,
+      "gridAlignedPercent": 0,
+      "hardPass": false,
+      "elements": [
+        {
+          "id": "title",
+          "x": 67,
+          "y": 67,
+          "w": 1000,
+          "h": 96,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 6
+        },
+        {
+          "id": "first",
+          "x": 67,
+          "y": 243,
+          "w": 640,
+          "h": 96,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 6
+        },
+        {
+          "id": "second",
+          "x": 251,
+          "y": 267,
+          "w": 800,
+          "h": 96,
+          "overflow": false,
+          "outside": false,
+          "contrast": 13.262,
+          "contrastFail": false,
+          "gridResidual": 6
+        }
+      ],
+      "overlaps": [
+        {
+          "ids": [
+            "first",
+            "second"
+          ],
+          "area": 32832
+        }
+      ]
+    }
+  ]
+}

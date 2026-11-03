@@ -1,0 +1,158 @@
+[
+  {
+    "name": "[Content_Types].xml",
+    "before": "ff698080996b57c1861acca6f14c9d6228848ba5d9eddcf5d704d9582508c85e",
+    "after": "ff698080996b57c1861acca6f14c9d6228848ba5d9eddcf5d704d9582508c85e",
+    "identical": true
+  },
+  {
+    "name": "_rels/.rels",
+    "before": "a73dc65f1cb1959ca09044852c3697385e6124853bf5a0fa3f0215f608e86b47",
+    "after": "a73dc65f1cb1959ca09044852c3697385e6124853bf5a0fa3f0215f608e86b47",
+    "identical": true
+  },
+  {
+    "name": "docProps/app.xml",
+    "before": "dd3cc6b0071136f97df2952ffffcb83ccf7509972e3e8c8fa18e7602763b1797",
+    "after": "dd3cc6b0071136f97df2952ffffcb83ccf7509972e3e8c8fa18e7602763b1797",
+    "identical": true
+  },
+  {
+    "name": "docProps/core.xml",
+    "before": "0a3d237b4a291f31a8f26347ad69f3abfe92bd81a0907be5a7f8b64f0ca4b9c9",
+    "after": "0a3d237b4a291f31a8f26347ad69f3abfe92bd81a0907be5a7f8b64f0ca4b9c9",
+    "identical": true
+  },
+  {
+    "name": "ppt/_rels/presentation.xml.rels",
+    "before": "806396049cc0fc2ffe1b4ccad167239b1c23bd31e6b671a5718919dfbaec1ef9",
+    "after": "806396049cc0fc2ffe1b4ccad167239b1c23bd31e6b671a5718919dfbaec1ef9",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesMasters/_rels/notesMaster1.xml.rels",
+    "before": "92eb9005ae03705d1db0f1da37f89e4c77f61b2026efa66bdbf610d01116f2b9",
+    "after": "92eb9005ae03705d1db0f1da37f89e4c77f61b2026efa66bdbf610d01116f2b9",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesMasters/notesMaster1.xml",
+    "before": "c2c0255a24d45ef3ad633078fd8a2dca43fc6db1b3eb36244a934eb0b9d97c57",
+    "after": "c2c0255a24d45ef3ad633078fd8a2dca43fc6db1b3eb36244a934eb0b9d97c57",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesSlides/_rels/notesSlide1.xml.rels",
+    "before": "4e7f04378558285258df490583e9ed0e8039b27df83bcdc2e5b4992cf47090f2",
+    "after": "4e7f04378558285258df490583e9ed0e8039b27df83bcdc2e5b4992cf47090f2",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesSlides/_rels/notesSlide2.xml.rels",
+    "before": "d9b0b8b9c1791837bed1ec75969ec1d34486b5e1606a0d739d3c35eeba590d06",
+    "after": "d9b0b8b9c1791837bed1ec75969ec1d34486b5e1606a0d739d3c35eeba590d06",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesSlides/notesSlide1.xml",
+    "before": "a559bf003438191a2723e887544acb00d550c7a9d8a4fd36a41bd877d46e2be6",
+    "after": "a559bf003438191a2723e887544acb00d550c7a9d8a4fd36a41bd877d46e2be6",
+    "identical": true
+  },
+  {
+    "name": "ppt/notesSlides/notesSlide2.xml",
+    "before": "bae0245bfeb4194074a5dfde0aa08b36a6fa527ddcaccca0bdbc37eee8b3a57c",
+    "after": "bae0245bfeb4194074a5dfde0aa08b36a6fa527ddcaccca0bdbc37eee8b3a57c",
+    "identical": true
+  },
+  {
+    "name": "ppt/presProps.xml",
+    "before": "4446069208ff4cd22879cccdfb0a2a302cb7e572e2c48d00b64066d25f026df1",
+    "after": "4446069208ff4cd22879cccdfb0a2a302cb7e572e2c48d00b64066d25f026df1",
+    "identical": true
+  },
+  {
+    "name": "ppt/presentation.xml",
+    "before": "4d3ddde77830d5fbe935fadbd609b70fee475a2f573de889df95ad69375b630f",
+    "after": "4d3ddde77830d5fbe935fadbd609b70fee475a2f573de889df95ad69375b630f",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideLayouts/_rels/slideLayout1.xml.rels",
+    "before": "8246d333bf3764cd35563e3df1828c26bbc28890815a2987caf3e592791ba60d",
+    "after": "8246d333bf3764cd35563e3df1828c26bbc28890815a2987caf3e592791ba60d",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideLayouts/_rels/slideLayout2.xml.rels",
+    "before": "8246d333bf3764cd35563e3df1828c26bbc28890815a2987caf3e592791ba60d",
+    "after": "8246d333bf3764cd35563e3df1828c26bbc28890815a2987caf3e592791ba60d",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideLayouts/slideLayout1.xml",
+    "before": "5015c0989d7672a610fc41c3f7f4a468fc0da42198f06e6c5f20a0921090e1c9",
+    "after": "5015c0989d7672a610fc41c3f7f4a468fc0da42198f06e6c5f20a0921090e1c9",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideLayouts/slideLayout2.xml",
+    "before": "8a305e600f83dcc3a2f61f1ab12598eb7ac405da74ec035d1d8eef9440053081",
+    "after": "8a305e600f83dcc3a2f61f1ab12598eb7ac405da74ec035d1d8eef9440053081",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideMasters/_rels/slideMaster1.xml.rels",
+    "before": "4e8157c37c46e6df0d1092116f99d60b776b0650fee77ee8b563b30d55c671c1",
+    "after": "4e8157c37c46e6df0d1092116f99d60b776b0650fee77ee8b563b30d55c671c1",
+    "identical": true
+  },
+  {
+    "name": "ppt/slideMasters/slideMaster1.xml",
+    "before": "87c2bb7870252889423021bf34e655f79eb46c486a1b40d171b361d2416b3655",
+    "after": "87c2bb7870252889423021bf34e655f79eb46c486a1b40d171b361d2416b3655",
+    "identical": true
+  },
+  {
+    "name": "ppt/slides/_rels/slide1.xml.rels",
+    "before": "bed6a3d44a11e206d50600b0b2551aba4d614d125a66189894b00e643ecd08df",
+    "after": "bed6a3d44a11e206d50600b0b2551aba4d614d125a66189894b00e643ecd08df",
+    "identical": true
+  },
+  {
+    "name": "ppt/slides/_rels/slide2.xml.rels",
+    "before": "7c89f56d7e3874e05c3f8c94adba0c385adca6fb1aa5d4526674d13189c0753f",
+    "after": "7c89f56d7e3874e05c3f8c94adba0c385adca6fb1aa5d4526674d13189c0753f",
+    "identical": true
+  },
+  {
+    "name": "ppt/slides/slide1.xml",
+    "before": "e269c6bdd9c1b8db6656f8365c678b511d2c561ad9af90bb0138483f01e111a4",
+    "after": "08a623785d5493f73d9f50f8cad8d1ebfc8a83af6db1747fb6a50a0e6cc91f4e",
+    "identical": false
+  },
+  {
+    "name": "ppt/slides/slide2.xml",
+    "before": "786af7c8d15df9136e3ea6edec9e1466bf374ca55a43652dbadfc17bea7161b2",
+    "after": "786af7c8d15df9136e3ea6edec9e1466bf374ca55a43652dbadfc17bea7161b2",
+    "identical": true
+  },
+  {
+    "name": "ppt/tableStyles.xml",
+    "before": "0e7ac03251337ecbaf6c8ca13619db1caeda5c90c4e3210d45d6c3f5df4de103",
+    "after": "0e7ac03251337ecbaf6c8ca13619db1caeda5c90c4e3210d45d6c3f5df4de103",
+    "identical": true
+  },
+  {
+    "name": "ppt/theme/theme1.xml",
+    "before": "4c4d228fe0ed2577e90bcda2a7ebdd9c0227d8f84c9777419f2d6b8ccc137dd3",
+    "after": "4c4d228fe0ed2577e90bcda2a7ebdd9c0227d8f84c9777419f2d6b8ccc137dd3",
+    "identical": true
+  },
+  {
+    "name": "ppt/viewProps.xml",
+    "before": "4cc12863620049069daeb39b14b4aba98a5e3048318be16a5af5879f6e4b2ac8",
+    "after": "4cc12863620049069daeb39b14b4aba98a5e3048318be16a5af5879f6e4b2ac8",
+    "identical": true
+  }
+]

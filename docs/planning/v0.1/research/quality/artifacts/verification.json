@@ -1,0 +1,41 @@
+{
+  "command": "bash run.sh",
+  "cleanDependencyAndBrowserInstall": true,
+  "node": "v22.16.0",
+  "playwright": "1.56.0",
+  "probeElapsedSeconds": 2.886,
+  "installTimeIncluded": false,
+  "paidApiCalls": 0,
+  "images": [
+    {
+      "id": "good-editorial",
+      "width": 1280,
+      "height": 720,
+      "bytes": 44099
+    },
+    {
+      "id": "good-data",
+      "width": 1280,
+      "height": 720,
+      "bytes": 45792
+    },
+    {
+      "id": "bad-overflow",
+      "width": 1280,
+      "height": 720,
+      "bytes": 26539
+    },
+    {
+      "id": "bad-contrast",
+      "width": 1280,
+      "height": 720,
+      "bytes": 15783
+    },
+    {
+      "id": "bad-overlap-grid",
+      "width": 1280,
+      "height": 720,
+      "bytes": 30203
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "airdesign-tools-research",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "mkdir -p .tmp && tsc --noEmit && TSX_DISABLE_CACHE=1 TMPDIR=\"$PWD/.tmp\" tsx verify.ts",
+    "server": "mkdir -p .tmp && TSX_DISABLE_CACHE=1 TMPDIR=\"$PWD/.tmp\" tsx server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.26.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "@types/node": "22.19.3"
+  }
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "kind": "text",
+    "id": "2",
+    "name": "Text 0",
+    "runs": [
+      {
+        "text": "Before 🧪 & fidelity",
+        "start": 1203,
+        "end": 1227
+      },
+      {
+        "text": " | second run stays exact",
+        "start": 1569,
+        "end": 1594
+      }
+    ]
+  },
+  {
+    "kind": "text",
+    "id": "3",
+    "name": "Text 1",
+    "runs": [
+      {
+        "text": "Untouched sibling shape",
+        "start": 2195,
+        "end": 2218
+      }
+    ]
+  }
+]

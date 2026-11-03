@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { z } from 'zod';
+import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
+import { catalog } from './catalog.ts';
+import { boundedItems, bytes, MAX_BYTES } from './bounded.ts';
+
+const advertised = JSON.stringify({ tools: catalog });
+const modelBytes = bytes(catalog.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })));
+const schemaBytes = Buffer.byteLength(advertised, 'utf8');
+const approximateTokens = Math.ceil(schemaBytes / 4);
+assert(catalog.length <= 20);
+assert(approximateTokens <= 8000);
+process.stdout.write(`CATALOG tools=${catalog.length} utf8_bytes=${schemaBytes} approximate_tokens=${approximateTokens} model_fields_bytes=${modelBytes} model_approximate_tokens=${Math.ceil(modelBytes / 4)} method=ceil(UTF8_bytes/4) includes=names,descriptions,inputSchema,outputSchema,annotations\n`);
+const oversized = Array.from({ length: 1000 }, (_, i) => ({ id: `e${i}`, text: '界😀\\"'.repeat(50) }));
+const bounded = boundedItems(oversized);
+assert(bytes(bounded) < MAX_BYTES);
+assert(bounded.structuredContent.omitted?.length);
+const pageSchema = z.object({ data: z.object({ items: z.array(z.unknown()), nextCursor: z.string().nullable() }) });
+let cursor = 0;
+let total = 0;
+let pages = 0;
+const recovered: unknown[] = [];
+while (true) {
+  const next = boundedItems(oversized, cursor);
+  assert(bytes(next) < MAX_BYTES);
+  const value = pageSchema.parse(next.structuredContent);
+  total += value.data.items.length;
+  recovered.push(...value.data.items);
+  pages += 1;
+  if (value.data.nextCursor === null) break;
+  assert(Number(value.data.nextCursor) > cursor);
+  cursor = Number(value.data.nextCursor);
+}
+assert.equal(total, oversized.length);
+assert.deepEqual(recovered, oversized);
+const large = boundedItems(['界'.repeat(30000)]);
+assert.equal(large.isError, true);
+process.stdout.write(`RESULT full_bytes=${bytes(oversized)} bounded_envelope_bytes=${bytes(bounded)} omitted=${JSON.stringify(bounded.structuredContent.omitted)} recovered=${total} pages=${pages} oversized_item=actionable_error\n`);
+const client = new Client({ name: 'research-verifier', version: '1' });
+const transport = new StdioClientTransport({ command: process.execPath, args: ['--import', 'tsx', 'server.ts'], cwd: process.cwd() });
+await client.connect(transport);
+try {
+  const listed = await client.listTools();
+  assert.deepEqual(listed.tools.map(t => t.name), ['get_slide', 'apply_changes', 'capture_slide']);
+  const call = (name: string, args: Record<string, unknown>) => client.callTool({ name, arguments: args });
+  const versioned = z.object({ data: z.object({ version: z.number(), content: z.unknown().optional() }) });
+  const error = z.object({ error: z.object({ code: z.string() }) });
+  const read = () => call('get_slide', { deckId: 'd1', slideId: 's1', format: 'json' });
+  const op = { kind: 'set', id: 't1', properties: { text: 'Updated' } };
+  const request = { deckId: 'd1', baseVersion: 1, requestId: 'r1', changes: [op] };
+  const initial = await read();
+  assert.equal(versioned.parse(initial.structuredContent).data.version, 1);
+  const bad = await call('apply_changes', { ...request, requestId: 'bad', changes: [op, { ...op, id: 'missing' }] });
+  assert.equal(bad.isError, true);
+  assert.deepEqual((await read()).structuredContent, initial.structuredContent);
+  const changed = await call('apply_changes', request);
+  assert.equal(changed.isError, false);
+  assert.equal(versioned.parse(changed.structuredContent).data.version, 2);
+  assert.deepEqual(versioned.parse((await read()).structuredContent).data.content, { id: 't1', kind: 'text', text: 'Updated' });
+  const reused = await call('apply_changes', { ...request, changes: [{ ...op, properties: { text: 'Different' } }] });
+  assert.equal(reused.isError, true);
+  assert.equal(error.parse(reused.structuredContent).error.code, 'REQUEST_ID_REUSED');
+  assert.deepEqual((await call('apply_changes', request)).structuredContent, changed.structuredContent);
+  const stale = await call('apply_changes', { ...request, requestId: 'r2' });
+  assert.equal(stale.isError, true);
+  assert.equal(error.parse(stale.structuredContent).error.code, 'STALE_VERSION');
+  const image = await call('capture_slide', { deckId: 'd1', slideId: 's1', version: 2 });
+  assert(Array.isArray(image.content) && image.content.some(c => c.type === 'image'));
+  process.stdout.write(`MCP tools=${listed.tools.length} initialize/list/read/write/rollback/replay/stale/image=PASS protocol=${LATEST_PROTOCOL_VERSION}\n`);
+} finally {
+  await client.close();
+}

@@ -1,0 +1,33 @@
+
+> verify
+> npm ci --cache .npm-cache --ignore-scripts --no-audit --no-fund && npm run check
+
+
+added 56 packages in 916ms
+
+> check
+> tsc --noEmit && npm test
+
+
+> test
+> vitest run --reporter=verbose
+
+
+ RUN  v3.2.4 /Users/quanvu/Design Stuff/airdesign-research/sync
+
+ ✓ log.test.ts > 5000 seeded cases per property > Undo run preserves every later person edit and all other retained contributions 481ms
+ ✓ log.test.ts > 5000 seeded cases per property > replaying each accepted/refused commit and undo twice changes nothing 1824ms
+ ✓ log.test.ts > 5000 seeded cases per property > every generated interleaving preserves latest person values, including fresh-read agents 856ms
+ ✓ log.test.ts > 5000 seeded cases per property > offline replay with lost ACK and queue reconstruction equals uninterrupted delivery 965ms
+ ✓ log.test.ts > property conflicts refuse the entire batch; unrelated properties remain writable 0ms
+ ✓ log.test.ts > person wins in both arrival orders; own tabs use server arrival order 0ms
+ ✓ log.test.ts > undo never resurrects an already undone run and closes its late writes 0ms
+ ✓ log.test.ts > undo advances versions even when restoring an equal value (ABA) 0ms
+ ✓ log.test.ts > same id with different payload is refused; caller mutation cannot alter receipts/history 0ms
+ ✓ log.test.ts > offline person edits beat intervening agents; stale queued agents remain refused after retry 0ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  18:41:20
+   Duration  4.85s (transform 438ms, setup 0ms, collect 476ms, tests 4.13s, environment 0ms, prepare 75ms)
+
