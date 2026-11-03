@@ -22,7 +22,16 @@ export type EditorEvent =
   | { type: "CLOSE_OVERLAY" }
   | { type: "ADD_SLIDE" }
   | { type: "SELECT_SLIDES"; slides: number[] }
-  | { type: "SET_ZOOM"; zoom: string };
+  | { type: "SET_ZOOM"; zoom: string }
+  | { type: "PICK_TEMPLATE" }
+  | { type: "USE_TEMPLATE" }
+  | { type: "DESCRIBE_DECK"; prompt?: string }
+  | { type: "DRAFT_READY" }
+  | { type: "BACK_TO_START" }
+  | { type: "PRESENT" }
+  | { type: "EXIT_PRESENT" }
+  | { type: "INVITE"; emails?: string }
+  | { type: "INVITE_DONE" };
 
 const PANELS = ["file", "agents", "inserts", "media"] as const;
 const panelState = (self: EditorPanel) => ({
@@ -41,8 +50,8 @@ const panelState = (self: EditorPanel) => ({
  *
  *  panel     file | agents | inserts | media        left panel opened from the rail
  *  canvas    slide | overview                       what the middle shows
- *  layout    docked | floating | focus              inspector and header placement
- *  overlay   none | start | share                   modal dialogs
+ *  layout    docked | floating | focus | present    inspector, header placement and present mode
+ *  overlay   none | start | share | templates | drafting | invited    modal dialogs
  *  tray      closed | shapes                        shapes tray above the bottom toolbar
  *  deck      empty | filled                         slide count, selection and zoom live in the context
  */
@@ -64,17 +73,67 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
     layout: {
       initial: "docked",
       states: {
-        docked: { on: { SHOW_OVERVIEW: "floating", TOGGLE_FOCUS: "focus" } },
-        floating: { on: { SHOW_SLIDE: "docked" } },
+        docked: {
+          on: {
+            SHOW_OVERVIEW: "floating",
+            TOGGLE_FOCUS: "focus",
+            PRESENT: {
+              target: "present",
+              guard: (c: EditorContext) => c.slides > 0,
+            },
+          },
+        },
+        floating: {
+          on: {
+            SHOW_SLIDE: "docked",
+            PRESENT: {
+              target: "present",
+              guard: (c: EditorContext) => c.slides > 0,
+            },
+          },
+        },
         focus: { on: { TOGGLE_FOCUS: "docked" } },
+        present: { on: { EXIT_PRESENT: "docked" } },
       },
     },
     overlay: {
       initial: "none",
       states: {
         none: { on: { OPEN_SHARE: "share", OPEN_START: "start" } },
-        start: { on: { CLOSE_OVERLAY: "none", ADD_SLIDE: "none" } },
-        share: { on: { CLOSE_OVERLAY: "none" } },
+        start: {
+          on: {
+            CLOSE_OVERLAY: "none",
+            ADD_SLIDE: "none",
+            PICK_TEMPLATE: "templates",
+            DESCRIBE_DECK: "drafting",
+          },
+        },
+        templates: {
+          on: {
+            CLOSE_OVERLAY: "none",
+            BACK_TO_START: "start",
+            USE_TEMPLATE: "none",
+          },
+        },
+        drafting: {
+          on: {
+            CLOSE_OVERLAY: "none",
+            BACK_TO_START: "start",
+            DRAFT_READY: "none",
+          },
+        },
+        share: {
+          on: {
+            CLOSE_OVERLAY: "none",
+            INVITE: "invited",
+          },
+        },
+        invited: {
+          on: {
+            CLOSE_OVERLAY: "none",
+            INVITE_DONE: "share",
+          },
+        },
       },
     },
     tray: {
@@ -90,12 +149,16 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
         empty: {
           on: {
             ADD_SLIDE: { target: "filled", action: () => ({ slides: 1 }) },
+            USE_TEMPLATE: { target: "filled", action: () => ({ slides: 1 }) },
+            DRAFT_READY: { target: "filled", action: () => ({ slides: 1 }) },
             SET_ZOOM: { action: (_, e) => ({ zoom: (e as { zoom: string }).zoom }) },
           },
         },
         filled: {
           on: {
             ADD_SLIDE: { action: (c) => ({ slides: c.slides + 1 }) },
+            USE_TEMPLATE: { action: () => ({ slides: 1 }) },
+            DRAFT_READY: { action: (c) => ({ slides: c.slides > 0 ? c.slides : 1 }) },
             SELECT_SLIDES: { action: (_, e) => ({ selected: (e as { slides: number[] }).slides }) },
             SET_ZOOM: { action: (_, e) => ({ zoom: (e as { zoom: string }).zoom }) },
           },

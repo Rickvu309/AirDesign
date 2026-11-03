@@ -11,16 +11,20 @@ import { selectLayout } from "../machine/editorSelectors.js";
 import { AgentsPanel } from "./AgentsPanel.js";
 import { AppMark } from "./AppMark.js";
 import { BottomToolbar } from "./BottomToolbar.js";
+import { DraftingState } from "./DraftingState.js";
+import { EmptyDeck } from "./EmptyDeck.js";
 import { FilePanel } from "./FilePanel.js";
 import { GettingStartedDialog } from "./GettingStartedDialog.js";
 import { HelpButton } from "./HelpButton.js";
 import { InsertsPanel } from "./InsertsPanel.js";
 import { InspectorHead } from "./InspectorHead.js";
 import { MediaPanel } from "./MediaPanel.js";
+import { PresentView } from "./PresentView.js";
 import { PresenterNotes } from "./PresenterNotes.js";
 import { ShareDialog } from "./ShareDialog.js";
 import { SlideInspector } from "./SlideInspector.js";
 import { SlideThumb } from "./SlideThumb.js";
+import { TemplateGallery } from "./TemplateGallery.js";
 
 export type EditorWorkspaceProps = ComponentProps<"div"> & {
   snapshot: EditorSnapshot;
@@ -44,6 +48,7 @@ export function EditorWorkspace({
     floatingTop,
     shapes,
     empty,
+    present,
   } = selectLayout(snapshot);
 
   const panel = snapshot.value.panel as EditorPanel;
@@ -52,6 +57,17 @@ export function EditorWorkspace({
   const zoom = snapshot.context.zoom;
   const slides = snapshot.context.slides;
   const selected = snapshot.context.selected;
+
+  if (present) {
+    return (
+      <PresentView
+        slides={slides}
+        onExit={() => send({ type: "EXIT_PRESENT" })}
+        className={className}
+        {...rest}
+      />
+    );
+  }
 
   return (
     <div className={cx("ed", className)} data-wide={panelWide || undefined} {...rest}>
@@ -138,7 +154,13 @@ export function EditorWorkspace({
             <Button size="sm" variant="ghost" className="zoomtag" iconEnd="chevron-down-small">
               {zoom}
             </Button>
-            <IconButton icon="play" label="Present" size="sm" iconSize={24} />
+            <IconButton
+              icon="play"
+              label="Present"
+              size="sm"
+              iconSize={24}
+              onClick={() => send({ type: "PRESENT" })}
+            />
             <Button size="sm" variant="primary" onClick={() => send({ type: "OPEN_SHARE" })}>
               Share
             </Button>
@@ -153,6 +175,12 @@ export function EditorWorkspace({
                   <h1>Slide Deck Title</h1>
                   <p>This is just the beginning of something big.</p>
                 </div>
+              )}
+              {empty && overlay === "none" && (
+                <EmptyDeck
+                  onCreateSlide={() => send({ type: "OPEN_START" })}
+                  onBrowseTemplates={() => send({ type: "OPEN_START" })}
+                />
               )}
             </div>
             {!empty && inspector === "docked" && <PresenterNotes />}
@@ -190,6 +218,7 @@ export function EditorWorkspace({
             zoom={zoom}
             floating={inspector === "floating"}
             onShare={() => send({ type: "OPEN_SHARE" })}
+            onPresent={() => send({ type: "PRESENT" })}
             user={user}
           />
           {empty ? (
@@ -216,11 +245,29 @@ export function EditorWorkspace({
         open={overlay === "start"}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
         onStartFromScratch={() => send({ type: "ADD_SLIDE" })}
+        onUseTemplate={() => send({ type: "PICK_TEMPLATE" })}
+        onComposerSend={() => send({ type: "DESCRIBE_DECK" })}
+      />
+
+      <TemplateGallery
+        open={overlay === "templates"}
+        onClose={() => send({ type: "CLOSE_OVERLAY" })}
+        onSelect={() => send({ type: "USE_TEMPLATE" })}
+        onBack={() => send({ type: "BACK_TO_START" })}
+      />
+
+      <DraftingState
+        open={overlay === "drafting"}
+        onClose={() => send({ type: "CLOSE_OVERLAY" })}
+        onCancel={() => send({ type: "CLOSE_OVERLAY" })}
       />
 
       <ShareDialog
-        open={overlay === "share"}
+        open={overlay === "share" || overlay === "invited"}
+        invited={overlay === "invited"}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
+        onInvite={() => send({ type: "INVITE" })}
+        onDone={() => send({ type: "INVITE_DONE" })}
         user={user}
       />
     </div>

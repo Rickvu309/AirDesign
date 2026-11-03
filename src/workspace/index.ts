@@ -15,4 +15,9 @@ export { GettingStartedDialog, type GettingStartedDialogProps } from "./GettingS
 export { ShareDialog, type ShareDialogProps } from "./ShareDialog.js";
 export { HomeSidebar, type HomeSidebarProps, defaultStarredFolders } from "./HomeSidebar.js";
 export { HomeFileToolbar, type HomeFileToolbarProps } from "./HomeFileToolbar.js";
+export { HomeFileList, type HomeFileListProps, type HomeFileItem, defaultHomeFiles } from "./HomeFileList.js";
 export { EditorWorkspace, type EditorWorkspaceProps } from "./EditorWorkspace.js";
+export { EmptyDeck, type EmptyDeckProps } from "./EmptyDeck.js";
+export { TemplateGallery, type TemplateGalleryProps, type TemplateCardItem, defaultTemplates } from "./TemplateGallery.js";
+export { DraftingState, type DraftingStateProps } from "./DraftingState.js";
+export { PresentView, type PresentViewProps } from "./PresentView.js";

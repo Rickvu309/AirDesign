@@ -28,7 +28,10 @@ export function Dialog({ open, onClose, title, actions, initialFocus = "first", 
       aria-labelledby={titleId}
       tabIndex={initialFocus === "dialog" ? -1 : undefined}
       className={cx("ad ad-dialog", className)}
-      onClose={onClose}
+      onClose={() => {
+        if (!open) return;
+        onClose();
+      }}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
       {...rest}
     >

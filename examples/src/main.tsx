@@ -102,6 +102,76 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
       />
     ),
   },
+  {
+    id: "templates",
+    label: "12. Template gallery",
+    render: () => (
+      <Editor
+        initial={editorMachine.restore(
+          { deck: "empty", overlay: "templates" },
+          { zoom: "100%", slides: 0 },
+        )}
+      />
+    ),
+  },
+  {
+    id: "drafting",
+    label: "13. Drafting with AI",
+    render: () => (
+      <Editor
+        initial={editorMachine.restore(
+          { deck: "empty", overlay: "drafting" },
+          { zoom: "100%", slides: 0 },
+        )}
+      />
+    ),
+  },
+  {
+    id: "present",
+    label: "14. Present",
+    render: () => (
+      <Editor
+        initial={editorMachine.restore(
+          { layout: "present" },
+          { zoom: "100%", slides: 3 },
+        )}
+      />
+    ),
+  },
+  {
+    id: "invited",
+    label: "15. Invite sent",
+    render: () => (
+      <Editor
+        initial={editorMachine.restore(
+          { panel: "media", layout: "focus", overlay: "invited" },
+          { zoom: "48%" },
+        )}
+      />
+    ),
+  },
+  {
+    id: "empty-editor",
+    label: "16. Empty editor",
+    render: () => (
+      <Editor
+        initial={editorMachine.restore(
+          { deck: "empty", overlay: "none" },
+          { zoom: "100%", slides: 0 },
+        )}
+      />
+    ),
+  },
+  {
+    id: "home-list",
+    label: "17. Home, List view",
+    render: () => <HomeDrafts initialView="list" />,
+  },
+  {
+    id: "home-empty",
+    label: "18. Home, No drafts",
+    render: () => <HomeDrafts empty />,
+  },
 ];
 
 const read = () => screens.find((x) => x.id === location.hash.slice(1))?.id ?? "home";

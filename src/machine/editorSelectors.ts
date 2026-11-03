@@ -9,6 +9,7 @@ export interface EditorLayout {
   floatingTop: boolean;
   shapes: boolean;
   empty: boolean;
+  present: boolean;
 }
 
 export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
@@ -18,17 +19,18 @@ export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
   const tray = snapshot.value.tray;
   const deck = snapshot.value.deck;
 
+  const isPresent = layout === "present";
   const panelWide = panel !== "file";
   const floatingHeader = canvas === "overview" && layout === "floating" && panel === "file";
-  const showLeftPanel = !floatingHeader;
+  const showLeftPanel = !floatingHeader && !isPresent;
 
   const inspector: "docked" | "floating" | "none" =
-    layout === "focus" ? "none" : layout === "floating" ? "floating" : "docked";
+    layout === "focus" || isPresent ? "none" : layout === "floating" ? "floating" : "docked";
 
   const header: "docked" | "floating" | "none" =
-    layout === "focus" ? "none" : layout === "floating" ? "floating" : "docked";
+    layout === "focus" || isPresent ? "none" : layout === "floating" ? "floating" : "docked";
 
-  const floatingTop = inspector === "none";
+  const floatingTop = inspector === "none" && !isPresent;
   const shapes = tray === "shapes";
   const empty = deck === "empty" || snapshot.context.slides === 0;
 
@@ -41,12 +43,15 @@ export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
     floatingTop,
     shapes,
     empty,
+    present: isPresent,
   };
 }
 
+export type OverlayState = "none" | "start" | "share" | "templates" | "drafting" | "invited";
+
 export const selectPanel = (snapshot: EditorSnapshot): EditorPanel => snapshot.value.panel as EditorPanel;
 export const selectCanvas = (snapshot: EditorSnapshot): "slide" | "overview" => snapshot.value.canvas as "slide" | "overview";
-export const selectOverlay = (snapshot: EditorSnapshot): "none" | "start" | "share" => snapshot.value.overlay as "none" | "start" | "share";
+export const selectOverlay = (snapshot: EditorSnapshot): OverlayState => snapshot.value.overlay as OverlayState;
 export const selectTray = (snapshot: EditorSnapshot): "closed" | "shapes" => snapshot.value.tray as "closed" | "shapes";
 export const selectDeck = (snapshot: EditorSnapshot): "empty" | "filled" => snapshot.value.deck as "empty" | "filled";
 export const selectZoom = (snapshot: EditorSnapshot): string => snapshot.context.zoom;

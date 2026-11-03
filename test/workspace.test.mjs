@@ -212,10 +212,159 @@ test("accessible names for workspace components", () => {
     h(k.BottomToolbar, { shapes: true }),
     h(k.ShapesTray),
     h(k.HomeSidebar),
-    h(k.HomeFileToolbar)
+    h(k.HomeFileToolbar),
+    h(k.EmptyDeck),
+    h(k.PresentView, { slides: 3 }),
+    h(k.HomeFileList)
   ));
 
   const buttons = container.querySelectorAll("button");
+  for (const btn of buttons) {
+    const ariaLabel = btn.getAttribute("aria-label");
+    const title = btn.getAttribute("title");
+    const text = btn.textContent.trim();
+    const hasName = Boolean(ariaLabel || title || text);
+    assert.ok(hasName, `Button missing accessible name: ${btn.outerHTML.slice(0, 80)}`);
+  }
+});
+
+test("exact bug path: closing gallery leaves empty deck CTA and OPEN_START reopens dialog", async () => {
+  const user = userEvent.setup();
+
+  function InteractiveEditor() {
+    const [snapshot, send] = k.useEditorMachine(
+      k.editorMachine.restore({ deck: "empty", overlay: "start" }, { slides: 0 })
+    );
+    return h(k.EditorWorkspace, { snapshot, send });
+  }
+
+  render(h(InteractiveEditor));
+
+  // 1. Getting started dialog is open and has close button
+  const startDialog = document.querySelector("dialog.start");
+  assert.equal(startDialog?.hasAttribute("open"), true);
+  const startCloseBtn = startDialog?.querySelector(".ad-dialog__header .ad-btn--icon");
+  assert.equal(startCloseBtn?.getAttribute("aria-label"), "Close");
+
+  // 2. Click "Use a template" card -> moves to templates gallery
+  const useTemplateBtn = screen.getByRole("button", { name: /Use a template/ });
+  await user.click(useTemplateBtn);
+
+  // Template gallery dialog is open
+  const templatesDialog = document.querySelector("dialog.templates-dialog");
+  assert.equal(templatesDialog?.hasAttribute("open"), true);
+
+  // 3. Close the gallery dialog via Close icon button
+  const galleryCloseBtn = templatesDialog?.querySelector(".ad-dialog__header button[aria-label='Close']");
+  assert.ok(galleryCloseBtn);
+  await user.click(galleryCloseBtn);
+
+  // Gallery dialog closed
+  assert.equal(templatesDialog?.hasAttribute("open"), false);
+  assert.equal(startDialog?.hasAttribute("open"), false);
+
+  // 4. User is NOT stranded! Stage area renders EmptyDeck CTA with accessible buttons
+  const createSlideBtn = screen.getByRole("button", { name: "Create your first slide" });
+  const browseTemplatesBtn = screen.getByRole("button", { name: "Browse templates" });
+  assert.ok(createSlideBtn);
+  assert.ok(browseTemplatesBtn);
+
+  // 5. Clicking "Create your first slide" sends OPEN_START and reopens the dialog
+  await user.click(createSlideBtn);
+  assert.equal(startDialog?.hasAttribute("open"), true);
+});
+
+test("each of the 7 new screen configurations renders cleanly", () => {
+  const newScreens = [
+    {
+      name: "templates",
+      snapshot: k.editorMachine.restore(
+        { deck: "empty", overlay: "templates" },
+        { zoom: "100%", slides: 0 }
+      ),
+    },
+    {
+      name: "drafting",
+      snapshot: k.editorMachine.restore(
+        { deck: "empty", overlay: "drafting" },
+        { zoom: "100%", slides: 0 }
+      ),
+    },
+    {
+      name: "present",
+      snapshot: k.editorMachine.restore(
+        { layout: "present" },
+        { zoom: "100%", slides: 3 }
+      ),
+    },
+    {
+      name: "invited",
+      snapshot: k.editorMachine.restore(
+        { panel: "media", layout: "focus", overlay: "invited" },
+        { zoom: "48%" }
+      ),
+    },
+    {
+      name: "empty-editor",
+      snapshot: k.editorMachine.restore(
+        { deck: "empty", overlay: "none" },
+        { zoom: "100%", slides: 0 }
+      ),
+    },
+    {
+      name: "home-list",
+      render: () =>
+        h("div", null, h(k.HomeSidebar), h(k.HomeFileToolbar), h(k.HomeFileList)),
+    },
+    {
+      name: "home-empty",
+      render: () =>
+        h("div", null,
+          h(k.HomeSidebar),
+          h(k.HomeFileToolbar),
+          h(k.EmptyState, {
+            icon: "file",
+            title: "No drafts yet",
+            action: h(k.Button, { variant: "primary" }, "New slides"),
+          })
+        ),
+    },
+  ];
+
+  for (const s of newScreens) {
+    cleanup();
+    if (s.render) {
+      const { container } = render(s.render());
+      assert.ok(container.innerHTML.length > 0, `${s.name} rendered`);
+    } else {
+      const { container } = render(h(k.EditorWorkspace, { snapshot: s.snapshot, send: () => {} }));
+      assert.ok(container.innerHTML.length > 0, `${s.name} rendered`);
+    }
+  }
+});
+
+test("dialogs and components have accessible names", () => {
+  cleanup();
+  render(h("div", null,
+    h(k.TemplateGallery, { open: true, onClose: () => {}, onBack: () => {} }),
+    h(k.DraftingState, { open: true, onClose: () => {} }),
+    h(k.ShareDialog, { open: true, invited: true, onClose: () => {} }),
+    h(k.EmptyDeck),
+    h(k.PresentView, { slides: 3 })
+  ));
+
+  const dialogs = document.querySelectorAll("dialog");
+  for (const d of dialogs) {
+    const labelledBy = d.getAttribute("aria-labelledby");
+    const label = d.getAttribute("aria-label");
+    assert.ok(Boolean(labelledBy || label), `Dialog missing accessible name`);
+    if (labelledBy) {
+      const titleEl = document.getElementById(labelledBy);
+      assert.ok(titleEl && titleEl.textContent.trim().length > 0, "Dialog title element has text");
+    }
+  }
+
+  const buttons = document.querySelectorAll("button");
   for (const btn of buttons) {
     const ariaLabel = btn.getAttribute("aria-label");
     const title = btn.getAttribute("title");

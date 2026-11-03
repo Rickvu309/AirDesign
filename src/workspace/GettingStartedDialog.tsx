@@ -66,7 +66,7 @@ export function GettingStartedDialog({
           tools={
             <>
               <IconButton icon="plus" label="Add context" size="sm" />
-              <Button size="sm" variant="secondary" iconStart="palette">
+              <Button size="sm" variant="secondary" iconStart="palette" onClick={onUseTemplate}>
                 Select deck template
               </Button>
             </>

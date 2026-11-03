@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Avatar } from "../components/Avatar.js";
 import { Button } from "../components/Button.js";
 import { Dialog, type DialogProps } from "../components/Dialog.js";
+import { Alert } from "../components/Feedback.js";
 import { IconButton } from "../components/IconButton.js";
 import { Input } from "../components/Input.js";
 import { Icon } from "../icons/Icon.js";
@@ -10,6 +11,8 @@ import { cx } from "../lib/cx.js";
 export type ShareDialogProps = Omit<DialogProps, "title" | "children"> & {
   title?: string;
   user?: { name: string; email?: string } | string;
+  invited?: boolean;
+  onDone?: () => void;
   onCopyLink?: () => void;
   onInvite?: (emails: string) => void;
   onPublishTemplate?: () => void;
@@ -21,8 +24,10 @@ export type ShareDialogProps = Omit<DialogProps, "title" | "children"> & {
 export function ShareDialog({
   title = "Share these slides",
   user = "Ada Lovelace",
+  invited = false,
   open,
   onClose,
+  onDone,
   onCopyLink,
   onInvite,
   onPublishTemplate,
@@ -41,10 +46,11 @@ export function ShareDialog({
       onClose={onClose}
       title={title}
       className={cx("share", className)}
+      data-invited={invited || undefined}
       initialFocus="dialog"
       {...rest}
     >
-      <div className="share__card">
+      <div className={cx("share__card", invited && "share__card--invited")}>
         <div className="share__head">
           <strong>{title}</strong>
           <Button
@@ -60,6 +66,11 @@ export function ShareDialog({
           <IconButton icon="close" label="Close" size="sm" iconSize={24} onClick={onClose} />
         </div>
         <div className="share__body">
+          {invited && (
+            <Alert tone="info" className="share__alert">
+              Invitation sent to 2 people
+            </Alert>
+          )}
           <div className="share__row">
             <Input
               label="Invite emails"
@@ -70,12 +81,33 @@ export function ShareDialog({
             <Button
               variant="primary"
               disabled={!inviteText.trim()}
-              onClick={() => onInvite?.(inviteText)}
+              onClick={() => {
+                onInvite?.(inviteText);
+                setInviteText("");
+              }}
             >
               Invite
             </Button>
           </div>
           <div className="share__sub">Who has access</div>
+          {invited && (
+            <>
+              <div className="share__access">
+                <Avatar name="Grace Hopper" size={24} />
+                <span>
+                  Grace Hopper <small>(grace@example.com)</small>
+                </span>
+                <em>can view</em>
+              </div>
+              <div className="share__access">
+                <Avatar name="Alan Turing" size={24} />
+                <span>
+                  Alan Turing <small>(alan@example.com)</small>
+                </span>
+                <em>can edit</em>
+              </div>
+            </>
+          )}
           <button type="button" className="share__access" aria-label="Anyone can view">
             <Icon name="globe" />
             <span>Anyone</span>
@@ -90,6 +122,13 @@ export function ShareDialog({
             </span>
             <em>owner</em>
           </div>
+          {invited && onDone && (
+            <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+              <Button size="sm" variant="secondary" onClick={onDone}>
+                Done
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       <div className="share__card share__menu">
