@@ -10,6 +10,7 @@ export interface EditorLayout {
   shapes: boolean;
   empty: boolean;
   present: boolean;
+  presenting: boolean;
 }
 
 export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
@@ -17,9 +18,8 @@ export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
   const canvas = snapshot.value.canvas;
   const layout = snapshot.value.layout;
   const tray = snapshot.value.tray;
-  const deck = snapshot.value.deck;
 
-  const isPresent = layout === "present";
+  const isPresent = Boolean(snapshot.context.presenting || layout === "present");
   const panelWide = panel !== "file";
   const floatingHeader = canvas === "overview" && layout === "floating" && panel === "file";
   const showLeftPanel = !floatingHeader && !isPresent;
@@ -32,7 +32,7 @@ export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
 
   const floatingTop = inspector === "none" && !isPresent;
   const shapes = tray === "shapes";
-  const empty = deck === "empty" || snapshot.context.slides === 0;
+  const empty = snapshot.context.slides === 0;
 
   return {
     panelWide,
@@ -44,6 +44,7 @@ export function selectLayout(snapshot: EditorSnapshot): EditorLayout {
     shapes,
     empty,
     present: isPresent,
+    presenting: isPresent,
   };
 }
 
@@ -57,3 +58,4 @@ export const selectDeck = (snapshot: EditorSnapshot): "empty" | "filled" => snap
 export const selectZoom = (snapshot: EditorSnapshot): string => snapshot.context.zoom;
 export const selectSlides = (snapshot: EditorSnapshot): number => snapshot.context.slides;
 export const selectSelected = (snapshot: EditorSnapshot): number[] => snapshot.context.selected;
+export const selectPresenting = (snapshot: EditorSnapshot): boolean => Boolean(snapshot.context.presenting);

@@ -1,4 +1,4 @@
-import { useState, type ComponentProps } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import { Button } from "../components/Button.js";
 import { Divider } from "../components/Divider.js";
 import { IconButton } from "../components/IconButton.js";
@@ -21,10 +21,21 @@ export function PresentView({
 }: PresentViewProps) {
   const [internalSlide, setInternalSlide] = useState(1);
   const current = controlledSlide ?? internalSlide;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    prevFocusedRef.current = document.activeElement as HTMLElement | null;
+    containerRef.current?.focus();
+    return () => {
+      prevFocusedRef.current?.focus();
+    };
+  }, []);
 
   const setSlide = (n: number) => {
-    if (controlledSlide === undefined) setInternalSlide(n);
-    onSlideChange?.(n);
+    const clamped = Math.max(1, Math.min(slides, n));
+    if (controlledSlide === undefined) setInternalSlide(clamped);
+    onSlideChange?.(clamped);
   };
 
   const handlePrev = () => {
@@ -35,8 +46,39 @@ export function PresentView({
     if (current < slides) setSlide(current + 1);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    switch (e.key) {
+      case "ArrowLeft":
+      case "PageUp":
+        e.preventDefault();
+        handlePrev();
+        break;
+      case "ArrowRight":
+      case "PageDown":
+      case " ":
+        e.preventDefault();
+        handleNext();
+        break;
+      case "Home":
+        e.preventDefault();
+        setSlide(1);
+        break;
+      case "End":
+        e.preventDefault();
+        setSlide(slides);
+        break;
+      case "Escape":
+        e.preventDefault();
+        onExit?.();
+        break;
+    }
+  };
+
   return (
     <div
+      ref={containerRef}
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
       className={cx("present-view", className)}
       role="region"
       aria-label="Presentation"
@@ -54,16 +96,18 @@ export function PresentView({
           icon="chevron-left"
           label="Previous slide"
           size="sm"
+          iconSize={16}
           disabled={current <= 1}
           onClick={handlePrev}
         />
-        <span className="present-view__counter">
+        <span className="present-view__counter" aria-live="polite">
           {current} / {slides}
         </span>
         <IconButton
           icon="chevron-right"
           label="Next slide"
           size="sm"
+          iconSize={16}
           disabled={current >= slides}
           onClick={handleNext}
         />

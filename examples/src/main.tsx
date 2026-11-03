@@ -4,9 +4,34 @@ import "@fontsource-variable/inter";
 import "@airdesign/ui/styles.css";
 import "@airdesign/ui/base.css";
 import "./app.css";
-import { IconButton, Select, editorMachine } from "@airdesign/ui";
+import { IconButton, Select, restoreEditor } from "@airdesign/ui";
 import { Editor } from "./EditorApp.js";
 import { HomeDrafts } from "./HomeDrafts.js";
+
+function DraftingDemo() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    const duration = 3000;
+    const interval = setInterval(() => {
+      const elapsed = performance.now() - start;
+      const p = Math.min(100, Math.round((elapsed / duration) * 100));
+      setProgress(p);
+      if (p >= 100) clearInterval(interval);
+    }, 50);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Editor
+      initial={restoreEditor(
+        { deck: "empty", overlay: "drafting" },
+        { zoom: "100%", slides: 0, draftPrompt: "Pitch deck for an AI design tool" },
+      )}
+      draftProgress={progress}
+    />
+  );
+}
 
 const screens: { id: string; label: string; render: () => React.ReactNode }[] = [
   { id: "home", label: "1. Home, Drafts", render: () => <HomeDrafts /> },
@@ -15,20 +40,20 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "2. Getting started",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { deck: "empty", overlay: "start" },
           { zoom: "100%", slides: 0 },
         )}
       />
     ),
   },
-  { id: "slide", label: "3. Slide editor", render: () => <Editor initial={editorMachine.restore()} /> },
+  { id: "slide", label: "3. Slide editor", render: () => <Editor initial={restoreEditor()} /> },
   {
     id: "overview",
     label: "4. Slides overview",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { canvas: "overview", layout: "floating" },
           { zoom: "12%", slides: 3, selected: [3] },
         )}
@@ -38,19 +63,19 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
   {
     id: "agents",
     label: "5. Agents panel",
-    render: () => <Editor initial={editorMachine.restore({ panel: "agents" }, { zoom: "38%" })} />,
+    render: () => <Editor initial={restoreEditor({ panel: "agents" }, { zoom: "38%" })} />,
   },
   {
     id: "inserts",
     label: "6. Inserts panel",
-    render: () => <Editor initial={editorMachine.restore({ panel: "inserts" }, { zoom: "38%" })} />,
+    render: () => <Editor initial={restoreEditor({ panel: "inserts" }, { zoom: "38%" })} />,
   },
   {
     id: "inserts-overview",
     label: "7. Inserts and overview",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { panel: "inserts", canvas: "overview", layout: "floating" },
           { zoom: "12%", slides: 3, selected: [3] },
         )}
@@ -62,7 +87,7 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "8. Media and overview",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { panel: "media", canvas: "overview", layout: "floating" },
           { zoom: "12%", slides: 3, selected: [2, 3] },
         )}
@@ -74,7 +99,7 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "9. Media, slide view",
     render: () => (
       <Editor
-        initial={editorMachine.restore({ panel: "media", layout: "focus" }, { zoom: "48%" })}
+        initial={restoreEditor({ panel: "media", layout: "focus" }, { zoom: "48%" })}
       />
     ),
   },
@@ -83,7 +108,7 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "10. Shapes tray",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { panel: "inserts", canvas: "overview", layout: "floating", tray: "shapes" },
           { zoom: "12%", slides: 3, selected: [3] },
         )}
@@ -95,7 +120,7 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "11. Share",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { panel: "media", layout: "focus", overlay: "share" },
           { zoom: "48%" },
         )}
@@ -107,7 +132,7 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "12. Template gallery",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { deck: "empty", overlay: "templates" },
           { zoom: "100%", slides: 0 },
         )}
@@ -117,23 +142,16 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
   {
     id: "drafting",
     label: "13. Drafting with AI",
-    render: () => (
-      <Editor
-        initial={editorMachine.restore(
-          { deck: "empty", overlay: "drafting" },
-          { zoom: "100%", slides: 0 },
-        )}
-      />
-    ),
+    render: () => <DraftingDemo />,
   },
   {
     id: "present",
     label: "14. Present",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
-          { layout: "present" },
-          { zoom: "100%", slides: 3 },
+        initial={restoreEditor(
+          {},
+          { zoom: "100%", slides: 3, presenting: true },
         )}
       />
     ),
@@ -143,9 +161,9 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "15. Invite sent",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { panel: "media", layout: "focus", overlay: "invited" },
-          { zoom: "48%" },
+          { zoom: "48%", slides: 1, invitees: ["grace@example.com", "alan@example.com"] },
         )}
       />
     ),
@@ -155,9 +173,9 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
     label: "16. Empty editor",
     render: () => (
       <Editor
-        initial={editorMachine.restore(
+        initial={restoreEditor(
           { deck: "empty", overlay: "none" },
-          { zoom: "100%", slides: 0 },
+          { zoom: "100%" },
         )}
       />
     ),
@@ -219,8 +237,11 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}

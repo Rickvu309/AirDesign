@@ -6,7 +6,9 @@ import { cx } from "../lib/cx.js";
 
 export type DraftingStateProps = Omit<DialogProps, "title" | "children"> & {
   title?: ReactNode;
+  prompt?: string;
   onCancel?: () => void;
+  onOpenDeck?: () => void;
   progress?: number;
 };
 
@@ -25,14 +27,17 @@ const defaultTitle = (
 
 export function DraftingState({
   title = defaultTitle,
+  prompt,
   open,
   onClose,
   onCancel,
+  onOpenDeck,
   progress = 42,
   className,
   ...rest
 }: DraftingStateProps) {
   const handleCancel = onCancel ?? onClose;
+  const isComplete = progress >= 100;
 
   return (
     <Dialog
@@ -48,16 +53,29 @@ export function DraftingState({
           <Spinner label="Drafting deck" />
         </div>
         <h2>Drafting your deck...</h2>
-        <p className="drafting__desc">
-          AI is analyzing your notes, generating slide structure, and designing layouts.
-        </p>
+        {prompt ? (
+          <p className="drafting__prompt">“{prompt}”</p>
+        ) : (
+          <p className="drafting__desc">
+            AI is analyzing your notes, generating slide structure, and designing layouts.
+          </p>
+        )}
         <div className="drafting__progress-wrap">
+          <div role="status" aria-live="polite" className="ad-sr-only">
+            Drafting your deck, {Math.round(progress)} percent
+          </div>
           <Progress label="Drafting progress" value={progress} />
         </div>
         <div className="drafting__actions">
-          <Button variant="secondary" onClick={handleCancel}>
-            Cancel
-          </Button>
+          {isComplete ? (
+            <Button variant="primary" onClick={onOpenDeck}>
+              Open deck
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+          )}
         </div>
       </div>
     </Dialog>

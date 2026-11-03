@@ -11,6 +11,7 @@ export type InspectorHeadProps = ComponentProps<"div"> & {
   floating?: boolean;
   onShare?: () => void;
   onPresent?: () => void;
+  presentDisabled?: boolean;
   onZoomClick?: () => void;
   user?: { name: string; avatar?: string } | string;
 };
@@ -20,6 +21,7 @@ export function InspectorHead({
   floating,
   onShare,
   onPresent,
+  presentDisabled,
   onZoomClick,
   user = "Ada Lovelace",
   className,
@@ -35,7 +37,14 @@ export function InspectorHead({
           <Icon name="chevron-down-small" size={14} />
         </span>
         <span className="grow" />
-        <IconButton icon="play" label="Present" size="sm" iconSize={24} onClick={onPresent} />
+        <IconButton
+          icon="play"
+          label="Present"
+          size="sm"
+          iconSize={24}
+          disabled={presentDisabled}
+          onClick={onPresent}
+        />
         <Button size="sm" variant="primary" className="insp__share" onClick={onShare}>
           Share
         </Button>

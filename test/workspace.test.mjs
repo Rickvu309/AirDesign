@@ -26,7 +26,7 @@ dom.window.HTMLDialogElement.prototype.close = function () {
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { createElement as h, useState } from "react";
-const { render, cleanup, screen } = await import("@testing-library/react");
+const { render, cleanup, screen, fireEvent } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 const k = await import("../dist/index.js");
 const origErr = console.error;
@@ -228,12 +228,12 @@ test("accessible names for workspace components", () => {
   }
 });
 
-test("exact bug path: closing gallery leaves empty deck CTA and OPEN_START reopens dialog", async () => {
+test("exact bug path: closing gallery leaves empty deck CTA, ADD_SLIDE fills deck and OPEN_TEMPLATES reopens gallery", async () => {
   const user = userEvent.setup();
 
   function InteractiveEditor() {
     const [snapshot, send] = k.useEditorMachine(
-      k.editorMachine.restore({ deck: "empty", overlay: "start" }, { slides: 0 })
+      k.restoreEditor({ deck: "empty", overlay: "start" }, { slides: 0 })
     );
     return h(k.EditorWorkspace, { snapshot, send });
   }
@@ -269,44 +269,44 @@ test("exact bug path: closing gallery leaves empty deck CTA and OPEN_START reope
   assert.ok(createSlideBtn);
   assert.ok(browseTemplatesBtn);
 
-  // 5. Clicking "Create your first slide" sends OPEN_START and reopens the dialog
-  await user.click(createSlideBtn);
-  assert.equal(startDialog?.hasAttribute("open"), true);
+  // 5. Clicking "Browse templates" sends OPEN_TEMPLATES and reopens the templates gallery
+  await user.click(browseTemplatesBtn);
+  assert.equal(templatesDialog?.hasAttribute("open"), true);
 });
 
 test("each of the 7 new screen configurations renders cleanly", () => {
   const newScreens = [
     {
       name: "templates",
-      snapshot: k.editorMachine.restore(
+      snapshot: k.restoreEditor(
         { deck: "empty", overlay: "templates" },
         { zoom: "100%", slides: 0 }
       ),
     },
     {
       name: "drafting",
-      snapshot: k.editorMachine.restore(
+      snapshot: k.restoreEditor(
         { deck: "empty", overlay: "drafting" },
         { zoom: "100%", slides: 0 }
       ),
     },
     {
       name: "present",
-      snapshot: k.editorMachine.restore(
-        { layout: "present" },
-        { zoom: "100%", slides: 3 }
+      snapshot: k.restoreEditor(
+        {},
+        { zoom: "100%", slides: 3, presenting: true }
       ),
     },
     {
       name: "invited",
-      snapshot: k.editorMachine.restore(
+      snapshot: k.restoreEditor(
         { panel: "media", layout: "focus", overlay: "invited" },
-        { zoom: "48%" }
+        { zoom: "48%", slides: 1, invitees: ["grace@example.com", "alan@example.com"] }
       ),
     },
     {
       name: "empty-editor",
-      snapshot: k.editorMachine.restore(
+      snapshot: k.restoreEditor(
         { deck: "empty", overlay: "none" },
         { zoom: "100%", slides: 0 }
       ),
@@ -371,5 +371,76 @@ test("dialogs and components have accessible names", () => {
     const text = btn.textContent.trim();
     const hasName = Boolean(ariaLabel || title || text);
     assert.ok(hasName, `Button missing accessible name: ${btn.outerHTML.slice(0, 80)}`);
+  }
+});
+
+test("keyboard ArrowRight and Escape in PresentView", async () => {
+  cleanup();
+  const user = userEvent.setup();
+  let exitCalled = false;
+  let currentSlide = 1;
+
+  const { container } = render(h(k.PresentView, {
+    slides: 3,
+    currentSlide,
+    onSlideChange: (n) => { currentSlide = n; },
+    onExit: () => { exitCalled = true; },
+  }));
+
+  const region = container.querySelector(".present-view");
+  assert.ok(region);
+
+  // ArrowRight advances slide
+  fireEvent.keyDown(region, { key: "ArrowRight", code: "ArrowRight" });
+  assert.equal(currentSlide, 2);
+
+  // Escape triggers onExit
+  fireEvent.keyDown(region, { key: "Escape", code: "Escape" });
+  assert.equal(exitCalled, true);
+});
+
+test("template card Enter selects", async () => {
+  cleanup();
+  let selected = "";
+  render(h(k.TemplateGallery, {
+    open: true,
+    onSelect: (id) => { selected = id; },
+    onClose: () => {},
+  }));
+
+  const pitchCard = screen.getByRole("button", { name: /Startup Pitch/ });
+  assert.ok(pitchCard);
+  fireEvent.click(pitchCard);
+  assert.equal(selected, "pitch");
+});
+
+test("drafting reaches a deck via the Open deck button", async () => {
+  cleanup();
+  let readyCalled = false;
+  render(h(k.DraftingState, {
+    open: true,
+    progress: 100,
+    prompt: "Design AI presentation",
+    onOpenDeck: () => { readyCalled = true; },
+  }));
+
+  const openBtn = screen.getByRole("button", { name: "Open deck" });
+  assert.ok(openBtn);
+  fireEvent.click(openBtn);
+  assert.equal(readyCalled, true);
+});
+
+test("empty deck disables Present buttons", () => {
+  cleanup();
+  const emptySnapshot = k.restoreEditor({ deck: "empty" }, { slides: 0 });
+  const { container } = render(h(k.EditorWorkspace, {
+    snapshot: emptySnapshot,
+    send: () => {},
+  }));
+
+  const presentBtns = container.querySelectorAll("button[aria-label='Present']");
+  assert.ok(presentBtns.length > 0);
+  for (const btn of presentBtns) {
+    assert.equal(btn.hasAttribute("disabled"), true);
   }
 });

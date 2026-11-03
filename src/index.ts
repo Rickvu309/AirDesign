@@ -31,7 +31,7 @@ export { ChatThread, ChatMessage, Suggestion, ChatComposer, type ChatMessageProp
 export { NavRail, NavRailItem, type NavRailItemProps } from "./components/NavRail.js";
 export { createMachine, useMachine } from "./machine/createMachine.js";
 export type { Machine, MachineConfig, MachineEvent, RegionConfig, Snapshot, StateConfig, Transition } from "./machine/createMachine.js";
-export { editorMachine } from "./machine/editorMachine.js";
+export { editorMachine, restoreEditor } from "./machine/editorMachine.js";
 export type { EditorContext, EditorEvent, EditorPanel, EditorSnapshot } from "./machine/editorMachine.js";
 export { useEditorMachine } from "./machine/useEditorMachine.js";
 export {
@@ -44,6 +44,7 @@ export {
   selectZoom,
   selectSlides,
   selectSelected,
+  selectPresenting,
   type EditorLayout,
 } from "./machine/editorSelectors.js";
 export {

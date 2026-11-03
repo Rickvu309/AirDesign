@@ -1,11 +1,9 @@
 import { useState, type ReactNode } from "react";
-import { Card } from "../components/Card.js";
 import { Dialog, type DialogProps } from "../components/Dialog.js";
 import { IconButton } from "../components/IconButton.js";
 import { SearchField } from "../components/Input.js";
 import { Tabs, type TabItem } from "../components/Tabs.js";
 import { cx } from "../lib/cx.js";
-import { SlideThumb } from "./SlideThumb.js";
 
 export interface TemplateCardItem {
   id: string;
@@ -31,12 +29,75 @@ const categoryTabs: TabItem[] = [
   { id: "minimal", label: "Minimal" },
 ];
 
-export type TemplateGalleryProps = Omit<DialogProps, "title" | "children"> & {
+export type TemplateGalleryProps = Omit<DialogProps, "title" | "children" | "onSelect"> & {
   title?: ReactNode;
   templates?: TemplateCardItem[];
   onSelect?: (templateId: string) => void;
   onBack?: () => void;
 };
+
+function TemplateThumbPreview({ id }: { id: string }) {
+  switch (id) {
+    case "pitch":
+      return (
+        <div className="thumb-preview thumb-preview--pitch">
+          <div className="thumb-preview__bar thumb-preview__bar--wide" />
+          <div className="thumb-preview__split">
+            <div className="thumb-preview__box" />
+            <div className="thumb-preview__box" />
+          </div>
+        </div>
+      );
+    case "all-hands":
+      return (
+        <div className="thumb-preview thumb-preview--allhands">
+          <div className="thumb-preview__bar" />
+          <div className="thumb-preview__rows">
+            <div className="thumb-preview__row" />
+            <div className="thumb-preview__row" />
+            <div className="thumb-preview__row" />
+          </div>
+        </div>
+      );
+    case "product":
+      return (
+        <div className="thumb-preview thumb-preview--product">
+          <div className="thumb-preview__hero" />
+          <div className="thumb-preview__bar" />
+        </div>
+      );
+    case "quarterly":
+      return (
+        <div className="thumb-preview thumb-preview--chart">
+          <div className="thumb-preview__bars">
+            <span style={{ height: "40%" }} />
+            <span style={{ height: "70%" }} />
+            <span style={{ height: "55%" }} />
+            <span style={{ height: "90%" }} />
+          </div>
+          <div className="thumb-preview__line" />
+        </div>
+      );
+    case "portfolio":
+      return (
+        <div className="thumb-preview thumb-preview--grid">
+          <div className="thumb-preview__tile" />
+          <div className="thumb-preview__tile" />
+          <div className="thumb-preview__tile" />
+          <div className="thumb-preview__tile" />
+        </div>
+      );
+    case "executive":
+    default:
+      return (
+        <div className="thumb-preview thumb-preview--exec">
+          <div className="thumb-preview__center-title" />
+          <div className="thumb-preview__bar thumb-preview__bar--short" />
+          <div className="thumb-preview__bar thumb-preview__bar--short" />
+        </div>
+      );
+  }
+}
 
 export function TemplateGallery({
   title,
@@ -57,31 +118,25 @@ export function TemplateGallery({
     return matchCat && matchQuery;
   });
 
-  const headerTitle = title ?? (
-    <span className="templates__title">
-      {onBack && (
-        <IconButton
-          icon="chevron-left"
-          label="Back"
-          size="sm"
-          onClick={onBack}
-        />
-      )}
-      <span>Template gallery</span>
-    </span>
-  );
-
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title={headerTitle}
+      title={title ?? "Template gallery"}
       className={cx("start templates-dialog", className)}
       initialFocus="dialog"
       {...rest}
     >
       <div className="templates__body">
         <div className="templates__filter-bar">
+          {onBack && (
+            <IconButton
+              icon="chevron-left"
+              label="Back"
+              size="sm"
+              onClick={onBack}
+            />
+          )}
           <Tabs
             label="Template categories"
             items={categoryTabs}
@@ -100,18 +155,20 @@ export function TemplateGallery({
 
         <div className="templates__grid" role="region" aria-label="Available templates">
           {filtered.map((item) => (
-            <Card
+            <button
               key={item.id}
-              interactive
-              media={
-                <div className="templates__thumb">
-                  <SlideThumb title={item.title} />
-                </div>
-              }
-              title={item.title}
-              meta={`${item.slides} slides`}
+              type="button"
+              className="template-card ad ad-card ad-card--interactive"
               onClick={() => onSelect?.(item.id)}
-            />
+            >
+              <div className="templates__thumb">
+                <TemplateThumbPreview id={item.id} />
+              </div>
+              <div className="ad-card__body">
+                <div className="ad-card__title">{item.title}</div>
+                <div className="ad-card__meta">{item.slides} slides</div>
+              </div>
+            </button>
           ))}
         </div>
       </div>

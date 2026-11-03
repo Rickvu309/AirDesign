@@ -12,6 +12,7 @@ export type ShareDialogProps = Omit<DialogProps, "title" | "children"> & {
   title?: string;
   user?: { name: string; email?: string } | string;
   invited?: boolean;
+  invitees?: string[];
   onDone?: () => void;
   onCopyLink?: () => void;
   onInvite?: (emails: string) => void;
@@ -25,6 +26,7 @@ export function ShareDialog({
   title = "Share these slides",
   user = "Ada Lovelace",
   invited = false,
+  invitees,
   open,
   onClose,
   onDone,
@@ -39,6 +41,7 @@ export function ShareDialog({
 }: ShareDialogProps) {
   const [inviteText, setInviteText] = useState("");
   const name = typeof user === "string" ? user : user.name;
+  const actualInvitees = invitees && invitees.length > 0 ? invitees : ["grace@example.com", "alan@example.com"];
 
   return (
     <Dialog
@@ -68,7 +71,7 @@ export function ShareDialog({
         <div className="share__body">
           {invited && (
             <Alert tone="info" className="share__alert">
-              Invitation sent to 2 people
+              {`Invitation sent to ${actualInvitees.length} ${actualInvitees.length === 1 ? "person" : "people"}`}
             </Alert>
           )}
           <div className="share__row">
@@ -92,20 +95,19 @@ export function ShareDialog({
           <div className="share__sub">Who has access</div>
           {invited && (
             <>
-              <div className="share__access">
-                <Avatar name="Grace Hopper" size={24} />
-                <span>
-                  Grace Hopper <small>(grace@example.com)</small>
-                </span>
-                <em>can view</em>
-              </div>
-              <div className="share__access">
-                <Avatar name="Alan Turing" size={24} />
-                <span>
-                  Alan Turing <small>(alan@example.com)</small>
-                </span>
-                <em>can edit</em>
-              </div>
+              {actualInvitees.map((email, idx) => {
+                const namePart = email.includes("@") ? email.split("@")[0] : email;
+                const capitalized = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+                return (
+                  <div key={email + idx} className="share__access">
+                    <Avatar name={capitalized} size={24} />
+                    <span>
+                      {capitalized} <small>({email})</small>
+                    </span>
+                    <em>can view</em>
+                  </div>
+                );
+              })}
             </>
           )}
           <button type="button" className="share__access" aria-label="Anyone can view">

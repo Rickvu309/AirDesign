@@ -40,7 +40,13 @@ export function FilePanel({
         <Button className="grow" size="sm" iconEnd="chevron-down" onClick={onNewSlide}>
           New slide
         </Button>
-        <IconButton icon="plus" label="Add blank slide" size="sm" variant="secondary" onClick={onAddBlank} />
+        <IconButton
+          icon="plus"
+          label="Add blank slide"
+          size="sm"
+          variant="secondary"
+          onClick={onAddBlank ?? onNewSlide}
+        />
       </div>
       <ol className="lp__slides">
         {Array.from({ length: slides }, (_, i) => (

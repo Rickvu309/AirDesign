@@ -30,12 +30,16 @@ export type EditorWorkspaceProps = ComponentProps<"div"> & {
   snapshot: EditorSnapshot;
   send: (event: EditorEvent) => void;
   user?: { name: string; avatar?: string } | string;
+  onDraft?: (prompt: string) => void;
+  draftProgress?: number;
 };
 
 export function EditorWorkspace({
   snapshot,
   send,
   user = "Ada Lovelace",
+  onDraft,
+  draftProgress,
   className,
   ...rest
 }: EditorWorkspaceProps) {
@@ -104,6 +108,7 @@ export function EditorWorkspace({
               slides={empty ? 0 : 1}
               onOverview={() => send({ type: "SHOW_OVERVIEW" })}
               onNewSlide={() => send({ type: "ADD_SLIDE" })}
+              onAddBlank={() => send({ type: "ADD_SLIDE" })}
             />
           )}
           {panel === "agents" && (
@@ -159,6 +164,7 @@ export function EditorWorkspace({
               label="Present"
               size="sm"
               iconSize={24}
+              disabled={slides === 0}
               onClick={() => send({ type: "PRESENT" })}
             />
             <Button size="sm" variant="primary" onClick={() => send({ type: "OPEN_SHARE" })}>
@@ -178,21 +184,21 @@ export function EditorWorkspace({
               )}
               {empty && overlay === "none" && (
                 <EmptyDeck
-                  onCreateSlide={() => send({ type: "OPEN_START" })}
-                  onBrowseTemplates={() => send({ type: "OPEN_START" })}
+                  onCreateSlide={() => send({ type: "ADD_SLIDE" })}
+                  onBrowseTemplates={() => send({ type: "OPEN_TEMPLATES" })}
                 />
               )}
             </div>
             {!empty && inspector === "docked" && <PresenterNotes />}
             {inspector === "none" && (
               <div className="slide-view__single">
-                <span className="slide-view__n">3</span>
+                <span className="slide-view__n">{slides === 1 ? 1 : (selected[0] ?? 3)}</span>
               </div>
             )}
           </div>
         ) : (
           <div className="overview" aria-label="Slides overview">
-            {[1, 2, 3].slice(0, slides).map((n) => (
+            {Array.from({ length: slides }, (_, i) => i + 1).map((n) => (
               <div key={n} className="ov" data-selected={selected?.includes(n) || undefined}>
                 <span className="ov__n">{n}</span>
                 <SlideThumb n={undefined} empty={n !== 1} />
@@ -219,6 +225,7 @@ export function EditorWorkspace({
             floating={inspector === "floating"}
             onShare={() => send({ type: "OPEN_SHARE" })}
             onPresent={() => send({ type: "PRESENT" })}
+            presentDisabled={slides === 0}
             user={user}
           />
           {empty ? (
@@ -245,28 +252,36 @@ export function EditorWorkspace({
         open={overlay === "start"}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
         onStartFromScratch={() => send({ type: "ADD_SLIDE" })}
+        onAddContext={() => send({ type: "ADD_SLIDE" })}
         onUseTemplate={() => send({ type: "PICK_TEMPLATE" })}
-        onComposerSend={() => send({ type: "DESCRIBE_DECK" })}
+        onComposerSend={(prompt) => {
+          send({ type: "DESCRIBE_DECK", prompt });
+          onDraft?.(prompt);
+        }}
       />
 
       <TemplateGallery
         open={overlay === "templates"}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
-        onSelect={() => send({ type: "USE_TEMPLATE" })}
+        onSelect={(templateId) => send({ type: "USE_TEMPLATE", templateId })}
         onBack={() => send({ type: "BACK_TO_START" })}
       />
 
       <DraftingState
         open={overlay === "drafting"}
+        prompt={snapshot.context.draftPrompt}
+        progress={draftProgress}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
         onCancel={() => send({ type: "CLOSE_OVERLAY" })}
+        onOpenDeck={() => send({ type: "DRAFT_READY" })}
       />
 
       <ShareDialog
         open={overlay === "share" || overlay === "invited"}
         invited={overlay === "invited"}
+        invitees={snapshot.context.invitees}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
-        onInvite={() => send({ type: "INVITE" })}
+        onInvite={(emails) => send({ type: "INVITE", emails })}
         onDone={() => send({ type: "INVITE_DONE" })}
         user={user}
       />

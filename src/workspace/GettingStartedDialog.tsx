@@ -9,6 +9,7 @@ export type GettingStartedDialogProps = Omit<DialogProps, "title" | "children"> 
   title?: ReactNode;
   onStartFromScratch?: () => void;
   onUseTemplate?: () => void;
+  onAddContext?: () => void;
   composerValue?: string;
   onComposerChange?: (value: string) => void;
   onComposerSend?: (text: string) => void;
@@ -33,6 +34,7 @@ export function GettingStartedDialog({
   onClose,
   onStartFromScratch,
   onUseTemplate,
+  onAddContext,
   composerValue,
   onComposerChange,
   onComposerSend,
@@ -65,7 +67,12 @@ export function GettingStartedDialog({
           label="Describe your deck"
           tools={
             <>
-              <IconButton icon="plus" label="Add context" size="sm" />
+              <IconButton
+                icon="plus"
+                label="Add context"
+                size="sm"
+                onClick={onAddContext ?? onStartFromScratch}
+              />
               <Button size="sm" variant="secondary" iconStart="palette" onClick={onUseTemplate}>
                 Select deck template
               </Button>
