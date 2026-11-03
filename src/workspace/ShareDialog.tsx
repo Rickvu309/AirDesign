@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "../components/Avatar.js";
 import { Button } from "../components/Button.js";
 import { Dialog, type DialogProps } from "../components/Dialog.js";
@@ -43,6 +43,20 @@ export function ShareDialog({
 }: ShareDialogProps) {
   const [inviteText, setInviteText] = useState("");
   const name = typeof user === "string" ? user : user.name;
+  const doneBtnRef = useRef<HTMLButtonElement>(null);
+  const alertRef = useRef<HTMLDivElement>(null);
+  const prevInvitedRef = useRef(invited);
+
+  useEffect(() => {
+    if (!prevInvitedRef.current && invited) {
+      if (doneBtnRef.current) {
+        doneBtnRef.current.focus();
+      } else if (alertRef.current) {
+        alertRef.current.focus();
+      }
+    }
+    prevInvitedRef.current = invited;
+  }, [invited]);
   const parsedEmails = inviteText
     .split(/[,;\s]+/)
     .map((s) => s.trim())
@@ -78,7 +92,7 @@ export function ShareDialog({
         </div>
         <div className="share__body">
           {invited && (
-            <Alert tone="info" className="share__alert">
+            <Alert ref={alertRef} tabIndex={-1} tone="info" className="share__alert">
               {`Invitation sent to ${actualInvitees.length} ${actualInvitees.length === 1 ? "person" : "people"}`}
             </Alert>
           )}
@@ -142,7 +156,7 @@ export function ShareDialog({
           </div>
           {invited && onDone && (
             <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
-              <Button size="sm" variant="secondary" onClick={onDone}>
+              <Button ref={doneBtnRef} size="sm" variant="secondary" onClick={onDone}>
                 Done
               </Button>
             </div>

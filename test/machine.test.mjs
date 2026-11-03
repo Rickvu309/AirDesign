@@ -145,7 +145,7 @@ test("bug 3 (ShareNeedsSlides): Share then REMOVE_SLIDES closes the dialog", () 
   assert.equal(s.value.deck, "empty");
 
   // Also test when in invited overlay
-  s = send(editorMachine, editorMachine.initial, { type: "OPEN_SHARE" }, { type: "INVITE" });
+  s = send(editorMachine, editorMachine.initial, { type: "OPEN_SHARE" }, { type: "INVITE", emails: "user@example.com" });
   assert.equal(s.value.overlay, "invited");
   s = send(editorMachine, s, { type: "REMOVE_SLIDES" });
   assert.equal(s.value.overlay, "none");

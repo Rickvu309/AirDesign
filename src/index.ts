@@ -98,4 +98,5 @@ export {
   type DraftingStateProps,
   PresentView,
   type PresentViewProps,
+  type PresentSlideItem,
 } from "./workspace/index.js";

@@ -8,30 +8,7 @@ import { IconButton, Select, restoreEditor } from "@airdesign/ui";
 import { Editor } from "./EditorApp.js";
 import { HomeDrafts } from "./HomeDrafts.js";
 
-function DraftingDemo() {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    const duration = 3000;
-    const interval = setInterval(() => {
-      const elapsed = performance.now() - start;
-      const p = Math.min(100, Math.round((elapsed / duration) * 100));
-      setProgress(p);
-      if (p >= 100) clearInterval(interval);
-    }, 50);
-    return () => clearInterval(interval);
-  }, []);
 
-  return (
-    <Editor
-      initial={restoreEditor(
-        { deck: "empty", overlay: "drafting" },
-        { zoom: "100%", slides: 0, draftPrompt: "Pitch deck for an AI design tool" },
-      )}
-      draftProgress={progress}
-    />
-  );
-}
 
 const screens: { id: string; label: string; render: () => React.ReactNode }[] = [
   { id: "home", label: "1. Home, Drafts", render: () => <HomeDrafts /> },
@@ -142,7 +119,14 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
   {
     id: "drafting",
     label: "13. Drafting with AI",
-    render: () => <DraftingDemo />,
+    render: () => (
+      <Editor
+        initial={restoreEditor(
+          { deck: "empty", overlay: "drafting" },
+          { zoom: "100%", slides: 0, draftPrompt: "Pitch deck for an AI design tool" },
+        )}
+      />
+    ),
   },
   {
     id: "present",
@@ -151,7 +135,16 @@ const screens: { id: string; label: string; render: () => React.ReactNode }[] = 
       <Editor
         initial={restoreEditor(
           {},
-          { zoom: "100%", slides: 3, presenting: true },
+          {
+            zoom: "100%",
+            slides: 3,
+            presenting: true,
+            slideItems: [
+              { title: "Slide 1", body: "Content for slide 1" },
+              { title: "Slide 2", body: "Content for slide 2" },
+              { title: "Slide 3", body: "Content for slide 3" },
+            ],
+          },
         )}
       />
     ),

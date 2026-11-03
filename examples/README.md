@@ -52,3 +52,15 @@ ssim is structural similarity (mean 97.1). ink-F1 is stricter: text, icons and e
 ![Media](screenshots/media.png)
 ![Shapes](screenshots/shapes.png)
 ![Share](screenshots/share.png)
+
+## Flow screens (added from the user-flow statechart, see `../docs/user-flow.md`)
+
+These seven steps were missing from the first 11 screens. They are built from the pack, driven by `editorMachine`, and have no original to compare against.
+
+![Template gallery](screenshots/templates.png)
+![Drafting with AI](screenshots/drafting.png)
+![Present](screenshots/present.png)
+![Invite sent](screenshots/invited.png)
+![Empty editor](screenshots/empty-editor.png)
+![Home, list view](screenshots/home-list.png)
+![Home, no drafts](screenshots/home-empty.png)

@@ -20,4 +20,4 @@ export { EditorWorkspace, type EditorWorkspaceProps } from "./EditorWorkspace.js
 export { EmptyDeck, type EmptyDeckProps } from "./EmptyDeck.js";
 export { TemplateGallery, type TemplateGalleryProps, type TemplateCardItem, defaultTemplates } from "./TemplateGallery.js";
 export { DraftingState, type DraftingStateProps } from "./DraftingState.js";
-export { PresentView, type PresentViewProps } from "./PresentView.js";
+export { PresentView, type PresentViewProps, type PresentSlideItem } from "./PresentView.js";

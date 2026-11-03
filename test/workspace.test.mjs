@@ -26,7 +26,7 @@ dom.window.HTMLDialogElement.prototype.close = function () {
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { createElement as h, useState } from "react";
-const { render, cleanup, screen, fireEvent } = await import("@testing-library/react");
+const { render, cleanup, screen, fireEvent, act } = await import("@testing-library/react");
 const { default: userEvent } = await import("@testing-library/user-event");
 const k = await import("../dist/index.js");
 const origErr = console.error;
@@ -443,4 +443,146 @@ test("empty deck disables Present buttons", () => {
   for (const btn of presentBtns) {
     assert.equal(btn.hasAttribute("disabled"), true);
   }
+});
+
+test("N1: built-in simulated draft advances with fake timers and reaches Open deck", (t) => {
+  cleanup();
+  t.mock.timers.enable({ apis: ["setInterval", "Date"] });
+  try {
+    const snap = k.restoreEditor({ deck: "empty", overlay: "drafting" }, { slides: 0, draftPrompt: "Pitch deck" });
+    function Harness() {
+      const [s, setS] = useState(snap);
+      return h(k.EditorWorkspace, {
+        snapshot: s,
+        send: (ev) => setS(k.editorMachine.transition(s, ev)),
+      });
+    }
+
+    render(h(Harness));
+
+    // Initially progress is 0, no Open deck button
+    assert.equal(screen.queryByRole("button", { name: "Open deck" }), null);
+
+    // Advance timers by 2600ms
+    act(() => {
+      t.mock.timers.tick(2600);
+    });
+
+    // Now Open deck button is reached!
+    const openBtn = screen.getByRole("button", { name: "Open deck" });
+    assert.ok(openBtn);
+  } finally {
+    t.mock.timers.reset();
+  }
+});
+
+test("N2: after dialog closes into editor, focus moves to slide stage or EmptyDeck button", () => {
+  cleanup();
+  // 1. Deck exists: stage receives focus with tabIndex=-1 and aria-label "Slide N"
+  function HarnessWithDeck() {
+    const [snap, setSnap] = useState(() => k.restoreEditor({ overlay: "templates" }, { slides: 2 }));
+    return h(k.EditorWorkspace, {
+      snapshot: snap,
+      send: (ev) => setSnap(k.editorMachine.transition(snap, ev)),
+    });
+  }
+  const { container } = render(h(HarnessWithDeck));
+  act(() => {
+    const closeBtn = screen.getByRole("button", { name: "Close" });
+    fireEvent.click(closeBtn);
+  });
+  const stage = container.querySelector(".slide-view__stage");
+  assert.ok(stage);
+  assert.equal(stage.getAttribute("tabindex"), "-1");
+  assert.equal(stage.getAttribute("aria-label"), "Slide 1");
+  assert.equal(document.activeElement, stage);
+
+  cleanup();
+
+  // 2. Deck empty: EmptyDeck primary button receives focus
+  function HarnessEmpty() {
+    const [snap, setSnap] = useState(() => k.restoreEditor({ deck: "empty", overlay: "templates" }, { slides: 0 }));
+    return h(k.EditorWorkspace, {
+      snapshot: snap,
+      send: (ev) => setSnap(k.editorMachine.transition(snap, ev)),
+    });
+  }
+  render(h(HarnessEmpty));
+  act(() => {
+    const closeBtn = screen.getByRole("button", { name: "Close" });
+    fireEvent.click(closeBtn);
+  });
+  const primaryBtn = screen.getByRole("button", { name: "Create your first slide" });
+  assert.equal(document.activeElement, primaryBtn);
+});
+
+test("N3: editor stage renders selected slide title/body matching slideItems", () => {
+  cleanup();
+  // Slide 1 default keeps "Slide Deck Title"
+  const snap1 = k.restoreEditor({}, { slides: 3, selected: [1] });
+  const { container, rerender } = render(h(k.EditorWorkspace, { snapshot: snap1, send: () => {} }));
+  const h1 = container.querySelector(".bigslide h1");
+  assert.equal(h1?.textContent, "Slide Deck Title");
+
+  // Slide 3 renders "Slide 3" / "Content for slide 3"
+  const snap3 = k.restoreEditor({}, { slides: 3, selected: [3] });
+  rerender(h(k.EditorWorkspace, { snapshot: snap3, send: () => {} }));
+  const h1Slide3 = container.querySelector(".bigslide h1");
+  const pSlide3 = container.querySelector(".bigslide p");
+  assert.equal(h1Slide3?.textContent, "Slide 3");
+  assert.equal(pSlide3?.textContent, "Content for slide 3");
+
+  // Custom slideItems in context
+  const snapCustom = k.restoreEditor({}, {
+    slides: 2,
+    selected: [2],
+    slideItems: [
+      { title: "Intro Title", body: "Intro Body" },
+      { title: "Second Title", body: "Second Body" },
+    ],
+  });
+  rerender(h(k.EditorWorkspace, { snapshot: snapCustom, send: () => {} }));
+  assert.equal(container.querySelector(".bigslide h1")?.textContent, "Second Title");
+  assert.equal(container.querySelector(".bigslide p")?.textContent, "Second Body");
+});
+
+test("N5: PresentView starts at currentSlide passed from EditorWorkspace", () => {
+  cleanup();
+  const snap = k.restoreEditor({ layout: "present" }, { slides: 5, selected: [4], presenting: true });
+  const { container } = render(h(k.EditorWorkspace, { snapshot: snap, send: () => {} }));
+  const counter = container.querySelector(".present-view__counter");
+  assert.equal(counter?.textContent?.trim(), "4 / 5");
+  const h1 = container.querySelector(".present-view__stage h1");
+  assert.equal(h1?.textContent, "Slide 4");
+});
+
+test("N6: ShareDialog moves focus to Done button upon invite", () => {
+  cleanup();
+  function Harness() {
+    const [invited, setInvited] = useState(false);
+    return h(k.ShareDialog, {
+      open: true,
+      invited,
+      invitees: ["a@x.com"],
+      onInvite: () => setInvited(true),
+      onDone: () => {},
+      onClose: () => {},
+    });
+  }
+  render(h(Harness));
+  const input = screen.getByLabelText("Invite emails");
+  fireEvent.change(input, { target: { value: "a@x.com" } });
+  const inviteBtn = screen.getByRole("button", { name: "Invite" });
+  fireEvent.click(inviteBtn);
+  const doneBtn = screen.getByRole("button", { name: "Done" });
+  assert.equal(document.activeElement, doneBtn);
+});
+
+test("N7: DraftingState default title is Drafting", () => {
+  cleanup();
+  render(h(k.DraftingState, { open: true, onClose: () => {} }));
+  const dialog = document.querySelector("dialog.drafting-dialog");
+  assert.ok(dialog);
+  assert.ok(dialog.textContent.includes("Drafting"));
+  assert.ok(!dialog.textContent.includes("Getting started"));
 });

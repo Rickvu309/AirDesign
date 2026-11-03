@@ -130,6 +130,7 @@ test("seeded random walk (3000 sequences x 12 events) satisfies all machine inva
     const initialFails = check(s);
     assert.deepEqual(initialFails, [], `Initial state ${startName} violates invariants`);
 
+    let prevEdited = s.context.edited;
     for (let k = 0; k < 12; k++) {
       const ev = payload(pick(EVENTS));
       s = editorMachine.transition(s, ev);
@@ -140,10 +141,53 @@ test("seeded random walk (3000 sequences x 12 events) satisfies all machine inva
         [],
         `Invariant failure at seq ${i}, step ${k} (${ev.type}) from ${startName}: ${JSON.stringify(s)}`
       );
+      if (prevEdited) {
+        assert.equal(s.context.edited, true, `edited monotonic violation at seq ${i}, step ${k}`);
+      }
+      prevEdited = s.context.edited;
     }
   }
 
   assert.equal(checkedTransitions, 36000);
+});
+
+test("N4: USE_TEMPLATE appends slides except when deck is untouched single slide", () => {
+  // 1. Untouched single slide: slides === 1 && edited === false => replaces
+  const untouched = restoreEditor({}, { slides: 1 });
+  assert.equal(untouched.context.edited, false);
+  const replaced = editorMachine.transition(untouched, { type: "USE_TEMPLATE", templateId: "executive" });
+  assert.equal(replaced.context.slides, 6);
+  assert.equal(replaced.context.edited, true);
+
+  // 2. Touched single slide: real edit (e.g. SELECT_SLIDES) sets edited true => appends
+  let touched = restoreEditor({}, { slides: 1 });
+  touched = editorMachine.transition(touched, { type: "SELECT_SLIDES", slides: [1] });
+  assert.equal(touched.context.edited, true);
+  const appended1 = editorMachine.transition(touched, { type: "USE_TEMPLATE", templateId: "executive" });
+  assert.equal(appended1.context.slides, 7); // 1 + 6 = 7
+
+  // 3. Multi-slide deck: always appends
+  const multi = restoreEditor({}, { slides: 2 });
+  const appended2 = editorMachine.transition(multi, { type: "USE_TEMPLATE", templateId: "pitch" });
+  assert.equal(appended2.context.slides, 14); // 2 + 12 = 14
+});
+
+test("N8: INVITE with no valid emails is rejected", () => {
+  const s = restoreEditor({ overlay: "share" }, { slides: 2 });
+  const s1 = editorMachine.transition(s, { type: "INVITE" });
+  assert.equal(s1.value.overlay, "share");
+  const s2 = editorMachine.transition(s, { type: "INVITE", emails: "   " });
+  assert.equal(s2.value.overlay, "share");
+  const s3 = editorMachine.transition(s, { type: "INVITE", emails: "test@example.com" });
+  assert.equal(s3.value.overlay, "invited");
+});
+
+test("N9: USE_TEMPLATE without slides resolves slide count from templateId", () => {
+  const s = restoreEditor({ deck: "empty" }, { slides: 0 });
+  const s1 = editorMachine.transition(s, { type: "USE_TEMPLATE", templateId: "pitch" });
+  assert.equal(s1.context.slides, 12);
+  const s2 = editorMachine.transition(s, { type: "USE_TEMPLATE", templateId: "executive" });
+  assert.equal(s2.context.slides, 6);
 });
 
 // Focused unit tests per items 1-6

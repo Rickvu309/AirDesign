@@ -6,11 +6,13 @@ import { cx } from "../lib/cx.js";
 export type EmptyDeckProps = ComponentProps<"div"> & {
   onCreateSlide?: () => void;
   onBrowseTemplates?: () => void;
+  primaryButtonRef?: React.Ref<HTMLButtonElement>;
 };
 
 export function EmptyDeck({
   onCreateSlide,
   onBrowseTemplates,
+  primaryButtonRef,
   className,
   ...rest
 }: EmptyDeckProps) {
@@ -24,7 +26,7 @@ export function EmptyDeck({
         Start building your presentation or choose from a template.
       </p>
       <div className="empty-deck__actions">
-        <Button variant="primary" iconStart="plus" onClick={onCreateSlide}>
+        <Button ref={primaryButtonRef} variant="primary" iconStart="plus" onClick={onCreateSlide}>
           Create your first slide
         </Button>
         <Button variant="ghost" iconStart="layout" onClick={onBrowseTemplates}>

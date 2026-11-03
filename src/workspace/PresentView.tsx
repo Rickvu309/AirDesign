@@ -34,13 +34,19 @@ export function PresentView({
       }));
 
   const totalSlides = slideItems.length;
-  const [internalSlide, setInternalSlide] = useState(1);
-  const current = controlledSlide ?? internalSlide;
+  const [internalSlide, setInternalSlide] = useState(controlledSlide ?? 1);
+  const current = controlledSlide !== undefined && onSlideChange ? controlledSlide : internalSlide;
   const currentItem = slideItems[current - 1] ?? slideItems[0] ?? { title: `Slide ${current}` };
 
   const containerRef = useRef<HTMLDivElement>(null);
   const fallbackFocusRef = useRef<HTMLElement | null>(null);
   const capturedRef = useRef(false);
+
+  useEffect(() => {
+    if (controlledSlide !== undefined) {
+      setInternalSlide(controlledSlide);
+    }
+  }, [controlledSlide]);
 
   useEffect(() => {
     // StrictMode-safe: only capture once if returnFocusRef was not supplied
@@ -57,7 +63,7 @@ export function PresentView({
 
   const setSlide = (n: number) => {
     const clamped = Math.max(1, Math.min(totalSlides, n));
-    if (controlledSlide === undefined) setInternalSlide(clamped);
+    setInternalSlide(clamped);
     onSlideChange?.(clamped);
   };
 

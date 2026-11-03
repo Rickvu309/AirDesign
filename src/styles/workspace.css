@@ -310,6 +310,7 @@ dialog:focus { outline: none; }
 dialog.templates-dialog {
   position: fixed;
   top: 92px;
+  bottom: auto !important;
   margin: 0 auto;
   width: 840px;
   max-width: 95vw;
@@ -567,8 +568,8 @@ dialog.templates-dialog .templates__body {
   min-width: 32px;
 }
 .present-view__bar .ad-btn--icon:disabled {
-  opacity: 0.65;
-  color: var(--ad-ink-muted);
+  opacity: 1 !important;
+  color: var(--ad-ink-muted) !important;
 }
 .present-view__counter {
   font-size: 12px;
@@ -659,8 +660,12 @@ dialog.templates-dialog .templates__body {
   color: var(--ad-ink-muted);
   border-bottom: 1px solid var(--ad-divider);
 }
+.home-list__header-title {
+  padding-left: 24px;
+}
 .home-list__header-owner {
-  text-align: right;
+  display: flex;
+  justify-content: center;
 }
 .home-list__rows {
   display: flex;
@@ -718,14 +723,16 @@ dialog.templates-dialog .templates__body {
 }
 .home-list__owner {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 .home__empty-state {
   padding: 80px 24px;
   margin: auto;
 }
-.home__empty-state .ad-empty__title {
+.home__empty-state .ad-empty__title,
+.home__empty-state .ad-empty__desc {
   text-wrap: balance;
+  max-width: 320px;
 }
 .home__empty-actions {
   display: flex;

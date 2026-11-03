@@ -46,8 +46,82 @@ Everything is a `--ad-*` variable. Dark mode: set `data-theme="dark"` on `<html>
 - Composite widgets with custom keys: `Tabs` and `Toolbar` have roving focus (Arrow, Home, End); `ChatComposer` sends on Enter and adds a line on Shift+Enter.
 - States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`), invalid (fields).
 
-## Examples
-`examples/` rebuilds the 11 AirDesign screens (Home, Getting started, slide editor, overview, Agents, Inserts, Media, Shapes, Share) from this package. See `examples/README.md`.
+## Workspace and state machine
+
+The editor workspace is coordinated by `editorMachine`, a parallel-region state machine. State is managed via `useEditorMachine` and rendered through `EditorWorkspace`.
+
+### Regions and events
+
+| Region | States | Description |
+|---|---|---|
+| `panel` | `file`, `agents`, `inserts`, `media` | Active left drawer selected from the navigation rail |
+| `canvas` | `slide`, `overview` | Main editor canvas (single slide stage vs multi-slide grid) |
+| `layout` | `docked`, `floating`, `focus` | Header & inspector placement (`present` mode tracked in context) |
+| `overlay` | `none`, `start`, `templates`, `drafting`, `share`, `invited` | Modal dialog overlays |
+| `tray` | `closed`, `shapes` | Shapes tray docked above the bottom toolbar |
+| `deck` | `empty`, `filled` | Deck status derived from slide count (`slides === 0` iff `empty`) |
+
+**Core events:**
+- Panel & Canvas: `OPEN_PANEL`, `OPEN_MEDIA`, `SHOW_OVERVIEW`, `SHOW_SLIDE`
+- Layout & Presentation: `TOGGLE_FOCUS`, `PRESENT`, `EXIT_PRESENT`, `TOGGLE_SHAPES`
+- Overlays & Dialogs: `OPEN_START`, `OPEN_TEMPLATES`, `OPEN_SHARE`, `CLOSE_OVERLAY`, `BACK_TO_START`, `PICK_TEMPLATE`, `DESCRIBE_DECK`, `DRAFT_READY`, `INVITE`, `INVITE_DONE`
+- Deck edits: `ADD_SLIDE`, `REMOVE_SLIDES`, `EMPTY_DECK`, `USE_TEMPLATE`, `SELECT_SLIDES`, `SET_ZOOM`
+
+### Usage
+
+```tsx
+import { EditorWorkspace, useEditorMachine, restoreEditor } from "@airdesign/ui";
+
+function SlideEditor() {
+  const [snapshot, send] = useEditorMachine(
+    restoreEditor({ panel: "file", canvas: "slide" }, { slides: 3 })
+  );
+
+  return (
+    <EditorWorkspace
+      snapshot={snapshot}
+      send={send}
+      onDraft={(prompt, api) => {
+        api.setProgress(50);
+        setTimeout(() => api.done(), 1000);
+      }}
+    />
+  );
+}
+```
+
+### Workspace components
+
+All 23 workspace modules are exported directly:
+- **Panels & Headers:** `FilePanel`, `AgentsPanel`, `InsertsPanel`, `MediaPanel`, `PanelHeader`, `InspectorHead`, `SlideInspector`
+- **Navigation & Toolbars:** `AppMark`, `HelpButton`, `BottomToolbar`, `ShapesTray`, `PresenterNotes`
+- **Canvas & Slides:** `SlideThumb`, `EmptyDeck`, `PresentView`
+- **Dialogs & Overlays:** `GettingStartedDialog`, `TemplateGallery`, `DraftingState`, `ShareDialog`
+- **Home views:** `HomeSidebar`, `HomeFileToolbar`, `HomeFileList`
+- **Root Container:** `EditorWorkspace`
+
+### Example screens (18 screens)
+
+`examples/` rebuilds the 18 AirDesign screens (`?bare#<id>`):
+1. `home` — Home, Drafts grid
+2. `start` — Getting started modal
+3. `slide` — Slide editor (slide 1)
+4. `overview` — Slides overview grid
+5. `agents` — Agents sidebar panel
+6. `inserts` — Inserts panel
+7. `inserts-overview` — Inserts with overview canvas
+8. `media-overview` — Media panel with overview canvas
+9. `media` — Media panel in focus mode
+10. `shapes` — Shapes tray open
+11. `share` — Share slides dialog
+12. `templates` — Template gallery modal
+13. `drafting` — AI drafting progress modal
+14. `present` — Full-screen presentation mode
+15. `invited` — Share invitation confirmation
+16. `empty-editor` — Empty editor canvas CTA
+17. `home-list` — Home files in list view
+18. `home-empty` — Home files empty state
+See `examples/README.md`.
 
 ## Layout
 ```

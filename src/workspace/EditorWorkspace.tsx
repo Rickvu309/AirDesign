@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ComponentProps } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentProps } from "react";
 import { Avatar } from "../components/Avatar.js";
 import { Button } from "../components/Button.js";
 import { Divider } from "../components/Divider.js";
@@ -25,18 +25,28 @@ import { ShareDialog } from "./ShareDialog.js";
 import { SlideInspector } from "./SlideInspector.js";
 import { SlideThumb } from "./SlideThumb.js";
 import { TemplateGallery } from "./TemplateGallery.js";
+import type { PresentSlideItem } from "./PresentView.js";
+
+export type { PresentSlideItem };
 
 export type EditorWorkspaceProps = ComponentProps<"div"> & {
   snapshot: EditorSnapshot;
   send: (event: EditorEvent) => void;
   user?: { name: string; avatar?: string } | string;
-  onDraft?: (prompt: string) => void;
+  onDraft?: (prompt: string, api: { setProgress(n: number): void; done(): void }) => void;
   /**
    * Current drafting progress (0-100).
-   * When omitted, drafting stays in an indeterminate progress state and the consumer
-   * is responsible for calling send({ type: "DRAFT_READY" }) when drafting is complete.
+   * When omitted, EditorWorkspace runs a built-in simulated draft (0->100 over ~2.5s)
+   * or invokes onDraft with an api { setProgress, done }.
    */
   draftProgress?: number;
+  slideItems?: PresentSlideItem[];
+  onCopyLink?: () => void;
+  onPublishTemplate?: () => void;
+  onCopyPresentationLink?: () => void;
+  onGetEmbedCode?: () => void;
+  onMoveToFolder?: () => void;
+  onAnyoneAccess?: () => void;
 };
 
 export function EditorWorkspace({
@@ -45,12 +55,21 @@ export function EditorWorkspace({
   user = "Ada Lovelace",
   onDraft,
   draftProgress,
+  slideItems: propSlideItems,
+  onCopyLink,
+  onPublishTemplate,
+  onCopyPresentationLink,
+  onGetEmbedCode,
+  onMoveToFolder,
+  onAnyoneAccess,
   className,
   ...rest
 }: EditorWorkspaceProps) {
   const name = typeof user === "string" ? user : user.name;
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const wasPresentRef = useRef(false);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const emptyDeckBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const {
     panelWide,
@@ -69,6 +88,96 @@ export function EditorWorkspace({
   const zoom = snapshot.context.zoom;
   const slides = snapshot.context.slides;
   const selected = snapshot.context.selected;
+
+  const prevOverlayRef = useRef<string>(overlay);
+
+  // N2: After any dialog closes into the editor, move focus to slide stage or EmptyDeck button
+  useEffect(() => {
+    if (prevOverlayRef.current !== "none" && overlay === "none") {
+      if (!empty && stageRef.current) {
+        stageRef.current.focus();
+      } else if (empty && emptyDeckBtnRef.current) {
+        emptyDeckBtnRef.current.focus();
+      }
+    }
+    prevOverlayRef.current = overlay;
+  }, [overlay, empty]);
+
+  // N1: Built-in simulated draft or onDraft handler
+  const [internalDraftProgress, setInternalDraftProgress] = useState<number | undefined>(undefined);
+  const effectiveDraftProgress = draftProgress !== undefined ? draftProgress : internalDraftProgress;
+
+  useEffect(() => {
+    if (overlay !== "drafting") {
+      setInternalDraftProgress(undefined);
+      return;
+    }
+    if (draftProgress !== undefined) {
+      return;
+    }
+    let active = true;
+    const prompt = snapshot.context.draftPrompt ?? "";
+    const api = {
+      setProgress: (n: number) => {
+        if (active) setInternalDraftProgress(n);
+      },
+      done: () => {
+        if (active) setInternalDraftProgress(100);
+      },
+    };
+
+    if (onDraft) {
+      onDraft(prompt, api);
+      return () => {
+        active = false;
+      };
+    }
+
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setInternalDraftProgress(100);
+      return;
+    }
+
+    setInternalDraftProgress(0);
+    const start = Date.now();
+    const duration = 2500;
+    const interval = setInterval(() => {
+      if (!active) return;
+      const elapsed = Date.now() - start;
+      const p = Math.min(100, Math.round((elapsed / duration) * 100));
+      setInternalDraftProgress(p);
+      if (p >= 100) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [overlay, draftProgress, onDraft, snapshot.context.draftPrompt]);
+
+  // UI keyboard shortcut for TOGGLE_FOCUS
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      ) {
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        send({ type: "TOGGLE_FOCUS" });
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [send]);
 
   const handlePresent = () => {
     returnFocusRef.current = (document.activeElement as HTMLElement) ?? null;
@@ -92,19 +201,31 @@ export function EditorWorkspace({
     wasPresentRef.current = present;
   }, [present]);
 
-  const slideItems = useMemo(
+  const currentSlide = selected[selected.length - 1] ?? selected[0] ?? 1;
+
+  const defaultSlideItems: PresentSlideItem[] = useMemo(
     () =>
       Array.from({ length: Math.max(1, slides) }, (_, i) => ({
-        title: `Slide ${i + 1}`,
-        body: `Content for slide ${i + 1}`,
+        title: i === 0 ? "Slide Deck Title" : `Slide ${i + 1}`,
+        body: i === 0 ? "This is just the beginning of something big." : `Content for slide ${i + 1}`,
       })),
     [slides]
   );
 
+  const effectiveSlideItems =
+    propSlideItems ?? snapshot.context.slideItems ?? defaultSlideItems;
+  const currentItem =
+    effectiveSlideItems[currentSlide - 1] ??
+    effectiveSlideItems[0] ?? {
+      title: `Slide ${currentSlide}`,
+      body: `Content for slide ${currentSlide}`,
+    };
+
   if (present) {
     return (
       <PresentView
-        slides={slideItems}
+        slides={effectiveSlideItems}
+        currentSlide={currentSlide}
         returnFocusRef={returnFocusRef}
         onExit={handleExitPresent}
         className={className}
@@ -215,15 +336,21 @@ export function EditorWorkspace({
 
         {canvas === "slide" ? (
           <div className="slide-view">
-            <div className="slide-view__stage">
+            <div
+              ref={stageRef}
+              className="slide-view__stage"
+              tabIndex={-1}
+              aria-label={`Slide ${currentSlide}`}
+            >
               {!empty && inspector !== "none" && (
                 <div className="bigslide">
-                  <h1>Slide Deck Title</h1>
-                  <p>This is just the beginning of something big.</p>
+                  <h1>{currentItem.title}</h1>
+                  {currentItem.body && <p>{currentItem.body}</p>}
                 </div>
               )}
               {empty && (
                 <EmptyDeck
+                  primaryButtonRef={emptyDeckBtnRef}
                   onCreateSlide={() => send({ type: "ADD_SLIDE" })}
                   onBrowseTemplates={() => send({ type: "OPEN_TEMPLATES" })}
                   inert={overlay !== "none" ? true : undefined}
@@ -298,7 +425,6 @@ export function EditorWorkspace({
         onUseTemplate={() => send({ type: "PICK_TEMPLATE" })}
         onComposerSend={(prompt) => {
           send({ type: "DESCRIBE_DECK", prompt });
-          onDraft?.(prompt);
         }}
       />
 
@@ -318,7 +444,7 @@ export function EditorWorkspace({
       <DraftingState
         open={overlay === "drafting"}
         prompt={snapshot.context.draftPrompt}
-        progress={draftProgress}
+        progress={effectiveDraftProgress}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
         onCancel={() => send({ type: "CLOSE_OVERLAY" })}
         onOpenDeck={() => send({ type: "DRAFT_READY" })}
@@ -331,6 +457,43 @@ export function EditorWorkspace({
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
         onInvite={(emails) => send({ type: "INVITE", emails })}
         onDone={() => send({ type: "INVITE_DONE" })}
+        onCopyLink={
+          onCopyLink ??
+          (() => {
+            if (typeof navigator !== "undefined" && navigator.clipboard) {
+              navigator.clipboard
+                .writeText(typeof window !== "undefined" ? window.location.href : "")
+                .catch(() => {});
+            }
+          })
+        }
+        onCopyPresentationLink={
+          onCopyPresentationLink ??
+          (() => {
+            if (typeof navigator !== "undefined" && navigator.clipboard) {
+              navigator.clipboard
+                .writeText(
+                  typeof window !== "undefined"
+                    ? `${window.location.origin}${window.location.pathname}?present=1`
+                    : ""
+                )
+                .catch(() => {});
+            }
+          })
+        }
+        onGetEmbedCode={
+          onGetEmbedCode ??
+          (() => {
+            if (typeof navigator !== "undefined" && navigator.clipboard) {
+              navigator.clipboard
+                .writeText('<iframe src="..." width="800" height="450"></iframe>')
+                .catch(() => {});
+            }
+          })
+        }
+        onPublishTemplate={onPublishTemplate ?? (() => {})}
+        onMoveToFolder={onMoveToFolder ?? (() => {})}
+        onAnyoneAccess={onAnyoneAccess ?? (() => {})}
         user={user}
       />
     </div>

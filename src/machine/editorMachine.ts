@@ -12,6 +12,10 @@ export interface EditorContext {
   presenting: boolean;
   /** True when any overlay dialog is open. */
   dialogOpen: boolean;
+  /** True when the deck has undergone any edit. */
+  edited: boolean;
+  /** Optional custom slide titles and bodies. */
+  slideItems?: { title: string; body?: string }[];
   /** Mirrored overlay state for guards that check overlay status. */
   overlay?: string;
   /** Prompt text for drafting flow. */
@@ -72,10 +76,22 @@ const panelState = (self: EditorPanel) => ({
 
 const canAddSlide = (c: EditorContext) => !c.presenting && (!c.dialogOpen || c.overlay === "start");
 
+const TEMPLATE_SLIDES: Record<string, number> = {
+  pitch: 12,
+  "all-hands": 8,
+  product: 10,
+  quarterly: 14,
+  portfolio: 16,
+  executive: 6,
+};
+
 function parseTemplateSlides(e: EditorEvent): number {
-  const raw = (e as { slides?: number }).slides;
-  if (typeof raw === "number" && !Number.isNaN(raw)) {
-    return Math.max(1, Math.floor(raw));
+  const ev = e as { slides?: number; templateId?: string };
+  if (typeof ev.slides === "number" && !Number.isNaN(ev.slides)) {
+    return Math.max(1, Math.floor(ev.slides));
+  }
+  if (typeof ev.templateId === "string" && TEMPLATE_SLIDES[ev.templateId]) {
+    return TEMPLATE_SLIDES[ev.templateId];
   }
   return 1;
 }
@@ -106,6 +122,7 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
     selected: [],
     presenting: false,
     dialogOpen: false,
+    edited: false,
     overlay: "none",
     draftPrompt: "",
     invitees: [],
@@ -315,9 +332,9 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
                 const emailStr = (e as { emails?: string }).emails;
                 if (emailStr !== undefined) {
                   const parsed = emailStr.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
-                  if (parsed.length === 0) return false;
+                  return parsed.length > 0;
                 }
-                return true;
+                return Boolean(c.invitees && c.invitees.length > 0);
               },
               action: (c: EditorContext, e: EditorEvent) => {
                 const emailStr = (e as { emails?: string }).emails;
@@ -400,30 +417,30 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
             ADD_SLIDE: {
               target: "filled",
               guard: canAddSlide,
-              action: () => ({ slides: 1, selected: [] }),
+              action: () => ({ slides: 1, selected: [], edited: true }),
             },
             USE_TEMPLATE: {
               target: "filled",
               action: (_, e) => {
                 const added = parseTemplateSlides(e);
-                return { slides: added, selected: [] };
+                return { slides: added, selected: [], edited: true };
               },
             },
             DRAFT_READY: {
               target: "filled",
-              action: () => ({ slides: 1, selected: [] }),
+              action: () => ({ slides: 1, selected: [], edited: true }),
             },
             SET_ZOOM: {
               action: (_, e) => ({ zoom: (e as { zoom: string }).zoom }),
             },
             REMOVE_SLIDES: {
-              action: () => ({ slides: 0, selected: [], presenting: false }),
+              action: () => ({ slides: 0, selected: [], presenting: false, edited: true }),
             },
             EMPTY_DECK: {
-              action: () => ({ slides: 0, selected: [], presenting: false }),
+              action: () => ({ slides: 0, selected: [], presenting: false, edited: true }),
             },
             SELECT_SLIDES: {
-              action: () => ({ selected: [] }),
+              action: () => ({ selected: [], edited: true }),
             },
           },
         },
@@ -431,31 +448,36 @@ export const editorMachine: Machine<EditorContext, EditorEvent> = createMachine<
           on: {
             ADD_SLIDE: {
               guard: canAddSlide,
-              action: (c: EditorContext) => ({ slides: Math.max(1, c.slides + 1) }),
+              action: (c: EditorContext) => ({ slides: Math.max(1, c.slides + 1), edited: true }),
             },
             USE_TEMPLATE: {
               target: "filled",
               action: (c: EditorContext, e: EditorEvent) => {
                 const added = parseTemplateSlides(e);
+                const untouched = c.slides === 1 && !c.edited;
                 const base = Math.max(0, c.slides);
-                const next = base <= 1 ? added : base + added;
-                return { slides: Math.max(1, next) };
+                const next = untouched ? added : (base === 0 ? added : base + added);
+                return { slides: Math.max(1, next), edited: true };
               },
             },
             DRAFT_READY: {
-              action: (c: EditorContext) => ({ slides: Math.max(1, c.slides > 0 ? c.slides : 1) }),
+              action: (c: EditorContext) => ({
+                slides: Math.max(1, c.slides > 0 ? c.slides : 1),
+                edited: true,
+              }),
             },
             REMOVE_SLIDES: {
               target: "empty",
-              action: () => ({ slides: 0, selected: [], presenting: false }),
+              action: () => ({ slides: 0, selected: [], presenting: false, edited: true }),
             },
             EMPTY_DECK: {
               target: "empty",
-              action: () => ({ slides: 0, selected: [], presenting: false }),
+              action: () => ({ slides: 0, selected: [], presenting: false, edited: true }),
             },
             SELECT_SLIDES: {
               action: (c: EditorContext, e: EditorEvent) => ({
                 selected: clampSelected(c.slides, (e as { slides?: number[] }).slides),
+                edited: true,
               }),
             },
             SET_ZOOM: {
@@ -543,6 +565,11 @@ export function restoreEditor(
   // 9. templatesFrom
   if (normContext.templatesFrom === undefined) {
     normContext.templatesFrom = normContext.slides === 0 ? "empty" : "start";
+  }
+
+  // 10. edited flag defaults to false if not provided
+  if (normContext.edited === undefined) {
+    normContext.edited = false;
   }
 
   return editorMachine.restore(normValue, normContext);
