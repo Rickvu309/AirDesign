@@ -9,6 +9,11 @@ export type DraftingStateProps = Omit<DialogProps, "title" | "children"> & {
   prompt?: string;
   onCancel?: () => void;
   onOpenDeck?: () => void;
+  /**
+   * Current drafting progress (0-100).
+   * When omitted (undefined), drafting stays in an indeterminate progress state.
+   * Consumers can update progress and call send DRAFT_READY themselves.
+   */
   progress?: number;
 };
 
@@ -32,18 +37,19 @@ export function DraftingState({
   onClose,
   onCancel,
   onOpenDeck,
-  progress = 42,
+  progress,
   className,
   ...rest
 }: DraftingStateProps) {
   const handleCancel = onCancel ?? onClose;
-  const isComplete = progress >= 100;
+  const isComplete = typeof progress === "number" && progress >= 100;
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       title={title}
+      closeOnBackdrop={false}
       className={cx("start drafting-dialog", className)}
       initialFocus="dialog"
       {...rest}
@@ -62,7 +68,9 @@ export function DraftingState({
         )}
         <div className="drafting__progress-wrap">
           <div role="status" aria-live="polite" className="ad-sr-only">
-            Drafting your deck, {Math.round(progress)} percent
+            {typeof progress === "number"
+              ? `Drafting your deck, ${Math.round(progress)} percent`
+              : "Drafting your deck..."}
           </div>
           <Progress label="Drafting progress" value={progress} />
         </div>

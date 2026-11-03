@@ -1,4 +1,4 @@
-import type { ComponentProps } from "react";
+import { useEffect, useMemo, useRef, type ComponentProps } from "react";
 import { Avatar } from "../components/Avatar.js";
 import { Button } from "../components/Button.js";
 import { Divider } from "../components/Divider.js";
@@ -31,6 +31,11 @@ export type EditorWorkspaceProps = ComponentProps<"div"> & {
   send: (event: EditorEvent) => void;
   user?: { name: string; avatar?: string } | string;
   onDraft?: (prompt: string) => void;
+  /**
+   * Current drafting progress (0-100).
+   * When omitted, drafting stays in an indeterminate progress state and the consumer
+   * is responsible for calling send({ type: "DRAFT_READY" }) when drafting is complete.
+   */
   draftProgress?: number;
 };
 
@@ -44,6 +49,9 @@ export function EditorWorkspace({
   ...rest
 }: EditorWorkspaceProps) {
   const name = typeof user === "string" ? user : user.name;
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const wasPresentRef = useRef(false);
+
   const {
     panelWide,
     showLeftPanel,
@@ -62,11 +70,43 @@ export function EditorWorkspace({
   const slides = snapshot.context.slides;
   const selected = snapshot.context.selected;
 
+  const handlePresent = () => {
+    returnFocusRef.current = (document.activeElement as HTMLElement) ?? null;
+    send({ type: "PRESENT" });
+  };
+
+  const handleExitPresent = () => {
+    send({ type: "EXIT_PRESENT" });
+  };
+
+  useEffect(() => {
+    if (wasPresentRef.current && !present) {
+      if (returnFocusRef.current?.isConnected) {
+        returnFocusRef.current.focus();
+      } else {
+        const btn = document.querySelector<HTMLElement>("button[aria-label='Present']");
+        btn?.focus();
+      }
+      returnFocusRef.current = null;
+    }
+    wasPresentRef.current = present;
+  }, [present]);
+
+  const slideItems = useMemo(
+    () =>
+      Array.from({ length: Math.max(1, slides) }, (_, i) => ({
+        title: `Slide ${i + 1}`,
+        body: `Content for slide ${i + 1}`,
+      })),
+    [slides]
+  );
+
   if (present) {
     return (
       <PresentView
-        slides={slides}
-        onExit={() => send({ type: "EXIT_PRESENT" })}
+        slides={slideItems}
+        returnFocusRef={returnFocusRef}
+        onExit={handleExitPresent}
         className={className}
         {...rest}
       />
@@ -165,7 +205,7 @@ export function EditorWorkspace({
               size="sm"
               iconSize={24}
               disabled={slides === 0}
-              onClick={() => send({ type: "PRESENT" })}
+              onClick={handlePresent}
             />
             <Button size="sm" variant="primary" onClick={() => send({ type: "OPEN_SHARE" })}>
               Share
@@ -182,17 +222,19 @@ export function EditorWorkspace({
                   <p>This is just the beginning of something big.</p>
                 </div>
               )}
-              {empty && overlay === "none" && (
+              {empty && (
                 <EmptyDeck
                   onCreateSlide={() => send({ type: "ADD_SLIDE" })}
                   onBrowseTemplates={() => send({ type: "OPEN_TEMPLATES" })}
+                  inert={overlay !== "none" ? true : undefined}
+                  aria-hidden={overlay !== "none" ? true : undefined}
                 />
               )}
             </div>
             {!empty && inspector === "docked" && <PresenterNotes />}
             {inspector === "none" && (
               <div className="slide-view__single">
-                <span className="slide-view__n">{slides === 1 ? 1 : (selected[0] ?? 3)}</span>
+                <span className="slide-view__n">{slides === 1 ? 1 : (selected[0] ?? 1)}</span>
               </div>
             )}
           </div>
@@ -224,7 +266,7 @@ export function EditorWorkspace({
             zoom={zoom}
             floating={inspector === "floating"}
             onShare={() => send({ type: "OPEN_SHARE" })}
-            onPresent={() => send({ type: "PRESENT" })}
+            onPresent={handlePresent}
             presentDisabled={slides === 0}
             user={user}
           />
@@ -238,7 +280,7 @@ export function EditorWorkspace({
             </div>
           ) : (
             <SlideInspector
-              n={canvas === "overview" ? 3 : 1}
+              n={selected[selected.length - 1] ?? selected[0] ?? 1}
               withColors={canvas === "slide"}
               ai={canvas === "slide"}
             />
@@ -263,8 +305,14 @@ export function EditorWorkspace({
       <TemplateGallery
         open={overlay === "templates"}
         onClose={() => send({ type: "CLOSE_OVERLAY" })}
-        onSelect={(templateId) => send({ type: "USE_TEMPLATE", templateId })}
-        onBack={() => send({ type: "BACK_TO_START" })}
+        onSelect={(templateId, templateSlides) =>
+          send({ type: "USE_TEMPLATE", templateId, slides: templateSlides })
+        }
+        onBack={
+          snapshot.context.templatesFrom === "start"
+            ? () => send({ type: "BACK_TO_START" })
+            : undefined
+        }
       />
 
       <DraftingState

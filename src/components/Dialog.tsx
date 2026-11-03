@@ -10,10 +10,22 @@ export type DialogProps = Omit<ComponentProps<"dialog">, "title" | "open" | "onC
   actions?: ReactNode;
   /** Where focus lands on open: the first control (default) or the dialog itself, which avoids a focus ring on an arbitrary button. */
   initialFocus?: "first" | "dialog";
+  /** Whether clicking the backdrop closes the dialog. Defaults to true. */
+  closeOnBackdrop?: boolean;
 };
 
 /** Modal built on the native dialog element: focus trap, Escape and backdrop are handled by the browser. */
-export function Dialog({ open, onClose, title, actions, initialFocus = "first", className, children, ...rest }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  actions,
+  initialFocus = "first",
+  closeOnBackdrop = true,
+  className,
+  children,
+  ...rest
+}: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -32,7 +44,7 @@ export function Dialog({ open, onClose, title, actions, initialFocus = "first", 
         if (!open) return;
         onClose();
       }}
-      onClick={(e) => { if (e.target === ref.current) onClose(); }}
+      onClick={(e) => { if (closeOnBackdrop && e.target === ref.current) onClose(); }}
       {...rest}
     >
       <div className="ad-dialog__header">

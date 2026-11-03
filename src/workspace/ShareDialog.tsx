@@ -20,6 +20,7 @@ export type ShareDialogProps = Omit<DialogProps, "title" | "children"> & {
   onCopyPresentationLink?: () => void;
   onGetEmbedCode?: () => void;
   onMoveToFolder?: () => void;
+  onAnyoneAccess?: () => void;
 };
 
 export function ShareDialog({
@@ -36,12 +37,18 @@ export function ShareDialog({
   onCopyPresentationLink,
   onGetEmbedCode,
   onMoveToFolder,
+  onAnyoneAccess,
   className,
   ...rest
 }: ShareDialogProps) {
   const [inviteText, setInviteText] = useState("");
   const name = typeof user === "string" ? user : user.name;
-  const actualInvitees = invitees && invitees.length > 0 ? invitees : ["grace@example.com", "alan@example.com"];
+  const parsedEmails = inviteText
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const canInvite = !invited && parsedEmails.length > 0;
+  const actualInvitees = invitees && invitees.length > 0 ? invitees : [];
 
   return (
     <Dialog
@@ -62,6 +69,7 @@ export function ShareDialog({
             iconStart="link"
             iconEnd="chevron-down-small"
             className="orange"
+            disabled={!onCopyLink}
             onClick={onCopyLink}
           >
             Copy link
@@ -83,10 +91,12 @@ export function ShareDialog({
             />
             <Button
               variant="primary"
-              disabled={!inviteText.trim()}
+              disabled={!canInvite}
               onClick={() => {
-                onInvite?.(inviteText);
-                setInviteText("");
+                if (canInvite) {
+                  onInvite?.(inviteText);
+                  setInviteText("");
+                }
               }}
             >
               Invite
@@ -110,7 +120,13 @@ export function ShareDialog({
               })}
             </>
           )}
-          <button type="button" className="share__access" aria-label="Anyone can view">
+          <button
+            type="button"
+            className="share__access"
+            aria-label="Anyone"
+            disabled={!onAnyoneAccess}
+            onClick={onAnyoneAccess}
+          >
             <Icon name="globe" />
             <span>Anyone</span>
             <em>
@@ -134,21 +150,21 @@ export function ShareDialog({
         </div>
       </div>
       <div className="share__card share__menu">
-        <button type="button" onClick={onPublishTemplate}>
+        <button type="button" onClick={onPublishTemplate} disabled={!onPublishTemplate}>
           <Icon name="layout" />
           <span>Publish template</span>
           <Icon name="chevron-right" size={12} />
         </button>
-        <button type="button" onClick={onCopyPresentationLink}>
+        <button type="button" onClick={onCopyPresentationLink} disabled={!onCopyPresentationLink}>
           <Icon name="play" />
           <span>Copy presentation link</span>
         </button>
-        <button type="button" onClick={onGetEmbedCode}>
+        <button type="button" onClick={onGetEmbedCode} disabled={!onGetEmbedCode}>
           <Icon name="code" />
           <span>Get embed code</span>
           <Icon name="chevron-right" size={12} />
         </button>
-        <button type="button" className="share__cta" onClick={onMoveToFolder}>
+        <button type="button" className="share__cta" onClick={onMoveToFolder} disabled={!onMoveToFolder}>
           <Icon name="upload" />
           <span>Ready to share with your team?</span>
           <b>Move to folder</b>

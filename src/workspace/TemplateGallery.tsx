@@ -32,7 +32,7 @@ const categoryTabs: TabItem[] = [
 export type TemplateGalleryProps = Omit<DialogProps, "title" | "children" | "onSelect"> & {
   title?: ReactNode;
   templates?: TemplateCardItem[];
-  onSelect?: (templateId: string) => void;
+  onSelect?: (templateId: string, slides?: number) => void;
   onBack?: () => void;
 };
 
@@ -123,7 +123,7 @@ export function TemplateGallery({
       open={open}
       onClose={onClose}
       title={title ?? "Template gallery"}
-      className={cx("start templates-dialog", className)}
+      className={cx("templates-dialog", className)}
       initialFocus="dialog"
       {...rest}
     >
@@ -159,7 +159,7 @@ export function TemplateGallery({
               key={item.id}
               type="button"
               className="template-card ad ad-card ad-card--interactive"
-              onClick={() => onSelect?.(item.id)}
+              onClick={() => onSelect?.(item.id, item.slides)}
             >
               <div className="templates__thumb">
                 <TemplateThumbPreview id={item.id} />

@@ -29,6 +29,7 @@ export interface HomeDraftsProps {
   initialView?: "grid" | "list";
   empty?: boolean;
   onNewSlides?: () => void;
+  onBrowseTemplates?: () => void;
 }
 
 export function HomeDrafts({
@@ -36,6 +37,7 @@ export function HomeDrafts({
   initialView = "grid",
   empty = false,
   onNewSlides,
+  onBrowseTemplates,
 }: HomeDraftsProps) {
   const [view, setView] = useState<"grid" | "list">(initialView);
   return (
@@ -49,9 +51,14 @@ export function HomeDrafts({
             title="No drafts yet"
             description="Create your first presentation to get started"
             action={
-              <Button variant="primary" iconStart="plus" onClick={onNewSlides}>
-                New slides
-              </Button>
+              <div className="home__empty-actions">
+                <Button variant="primary" iconStart="plus" onClick={onNewSlides}>
+                  New slides
+                </Button>
+                <Button variant="secondary" onClick={onBrowseTemplates}>
+                  Browse templates
+                </Button>
+              </div>
             }
             className="home__empty-state"
           />

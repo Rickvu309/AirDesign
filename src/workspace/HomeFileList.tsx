@@ -33,39 +33,41 @@ export function HomeFileList({
   return (
     <div className={cx("home-file-list", className)} role="region" aria-label="Drafts list" {...rest}>
       <div className="home-list__header" aria-hidden="true">
+        <span className="home-list__header-thumb" />
         <span className="home-list__header-title">Name</span>
         <span className="home-list__header-date">Edited</span>
         <span className="home-list__header-owner">Owner</span>
       </div>
       <div className="home-list__rows" role="list">
         {items.map((item) => (
-          <a
-            key={item.id}
-            href="#"
-            className="home-list__row"
-            role="link"
-            aria-label={`${item.title}, ${item.edited}`}
-            onClick={(e) => {
-              e.preventDefault();
-              onOpen?.(item.id);
-            }}
-          >
-            <div className="home-list__thumb" aria-hidden="true">
-              {item.hasThumb ? (
-                <SlideThumb />
-              ) : (
-                <div className="home-list__thumb--blank" />
-              )}
-            </div>
-            <div className="home-list__title">
-              <Icon name="file" className="orange" />
-              <span>{item.title}</span>
-            </div>
-            <div className="home-list__date">{item.edited}</div>
-            <div className="home-list__owner">
-              <Avatar name={item.owner} size={24} />
-            </div>
-          </a>
+          <div key={item.id} role="listitem">
+            <a
+              href="#"
+              className="home-list__row"
+              role="link"
+              aria-label={`${item.title}, ${item.edited}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpen?.(item.id);
+              }}
+            >
+              <div className="home-list__thumb" aria-hidden="true">
+                {item.hasThumb ? (
+                  <SlideThumb />
+                ) : (
+                  <div className="home-list__thumb--blank" />
+                )}
+              </div>
+              <div className="home-list__title">
+                <Icon name="file" className="orange" />
+                <span>{item.title}</span>
+              </div>
+              <div className="home-list__date">{item.edited}</div>
+              <div className="home-list__owner">
+                <Avatar name={item.owner} size={24} />
+              </div>
+            </a>
+          </div>
         ))}
       </div>
     </div>

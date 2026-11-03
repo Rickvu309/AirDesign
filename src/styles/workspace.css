@@ -258,6 +258,7 @@ dialog.share::backdrop { background: rgba(0,0,0,.5); }
 .share__head { display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--ad-divider); box-sizing: border-box; }
 .share__head strong { font-size: 11px; font-weight: 550; color: var(--ad-ink); }
 .share__head .orange { color: var(--ad-brand); font-size: 11px; font-weight: 450; padding: 0 4px; height: 32px; }
+.share__head .orange:disabled { color: var(--ad-brand); opacity: 0.6; }
 .share__body { padding: 14px 16px 12px; display: flex; flex-direction: column; box-sizing: border-box; }
 .share__row { display: grid; grid-template-columns: 1fr auto; gap: 8px; height: 34px; align-items: center; margin-bottom: 19px; }
 .share__row .ad-field { height: 34px; background: var(--ad-surface-subtle); border-radius: 5px; }
@@ -307,16 +308,32 @@ dialog:focus { outline: none; }
 
 /* Template gallery */
 dialog.templates-dialog {
+  position: fixed;
+  top: 92px;
+  margin: 0 auto;
+  width: 840px;
+  max-width: 95vw;
   height: auto !important;
-  max-height: 85vh;
+  border-radius: 13px;
+  border: 0;
+  box-shadow: rgba(0, 0, 0, 0.15) 0px 2px 5px 0px, rgba(0, 0, 0, 0.18) 0px 10px 24px 0px, rgba(0, 0, 0, 0.08) 0px 0px 0.5px 0px;
+}
+dialog.templates-dialog .ad-dialog__header {
+  border: 0;
+  padding: 12px;
+  height: 49px;
+  box-sizing: border-box;
+}
+dialog.templates-dialog .ad-dialog__body {
+  padding: 0;
+  height: auto !important;
 }
 dialog.templates-dialog .templates__body {
-  padding: 20px 24px;
+  padding: 16px 24px 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
-  overflow: auto;
 }
 .templates__title {
   display: inline-flex;
@@ -550,7 +567,8 @@ dialog.templates-dialog .templates__body {
   min-width: 32px;
 }
 .present-view__bar .ad-btn--icon:disabled {
-  opacity: 0.45;
+  opacity: 0.65;
+  color: var(--ad-ink-muted);
 }
 .present-view__counter {
   font-size: 12px;
@@ -705,4 +723,14 @@ dialog.templates-dialog .templates__body {
 .home__empty-state {
   padding: 80px 24px;
   margin: auto;
+}
+.home__empty-state .ad-empty__title {
+  text-wrap: balance;
+}
+.home__empty-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
 }

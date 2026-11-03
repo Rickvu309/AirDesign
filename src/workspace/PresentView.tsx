@@ -4,11 +4,17 @@ import { Divider } from "../components/Divider.js";
 import { IconButton } from "../components/IconButton.js";
 import { cx } from "../lib/cx.js";
 
+export interface PresentSlideItem {
+  title: string;
+  body?: string;
+}
+
 export type PresentViewProps = ComponentProps<"div"> & {
-  slides?: number;
+  slides?: number | PresentSlideItem[];
   currentSlide?: number;
   onSlideChange?: (slide: number) => void;
   onExit?: () => void;
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
 };
 
 export function PresentView({
@@ -16,24 +22,41 @@ export function PresentView({
   currentSlide: controlledSlide,
   onSlideChange,
   onExit,
+  returnFocusRef,
   className,
   ...rest
 }: PresentViewProps) {
+  const slideItems: PresentSlideItem[] = Array.isArray(slides)
+    ? slides
+    : Array.from({ length: typeof slides === "number" && slides > 0 ? slides : 1 }, (_, i) => ({
+        title: `Slide ${i + 1}`,
+        body: `Content for slide ${i + 1}`,
+      }));
+
+  const totalSlides = slideItems.length;
   const [internalSlide, setInternalSlide] = useState(1);
   const current = controlledSlide ?? internalSlide;
+  const currentItem = slideItems[current - 1] ?? slideItems[0] ?? { title: `Slide ${current}` };
+
   const containerRef = useRef<HTMLDivElement>(null);
-  const prevFocusedRef = useRef<HTMLElement | null>(null);
+  const fallbackFocusRef = useRef<HTMLElement | null>(null);
+  const capturedRef = useRef(false);
 
   useEffect(() => {
-    prevFocusedRef.current = document.activeElement as HTMLElement | null;
+    // StrictMode-safe: only capture once if returnFocusRef was not supplied
+    if (!returnFocusRef && !capturedRef.current) {
+      fallbackFocusRef.current = document.activeElement as HTMLElement | null;
+      capturedRef.current = true;
+    }
     containerRef.current?.focus();
     return () => {
-      prevFocusedRef.current?.focus();
+      const target = returnFocusRef?.current ?? fallbackFocusRef.current;
+      target?.focus();
     };
-  }, []);
+  }, [returnFocusRef]);
 
   const setSlide = (n: number) => {
-    const clamped = Math.max(1, Math.min(slides, n));
+    const clamped = Math.max(1, Math.min(totalSlides, n));
     if (controlledSlide === undefined) setInternalSlide(clamped);
     onSlideChange?.(clamped);
   };
@@ -43,7 +66,7 @@ export function PresentView({
   };
 
   const handleNext = () => {
-    if (current < slides) setSlide(current + 1);
+    if (current < totalSlides) setSlide(current + 1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -65,7 +88,7 @@ export function PresentView({
         break;
       case "End":
         e.preventDefault();
-        setSlide(slides);
+        setSlide(totalSlides);
         break;
       case "Escape":
         e.preventDefault();
@@ -86,8 +109,8 @@ export function PresentView({
     >
       <div className="present-view__stage">
         <div className="bigslide bigslide--present">
-          <h1>Slide Deck Title</h1>
-          <p>This is just the beginning of something big.</p>
+          <h1>{currentItem.title}</h1>
+          {currentItem.body && <p>{currentItem.body}</p>}
         </div>
       </div>
 
@@ -101,14 +124,14 @@ export function PresentView({
           onClick={handlePrev}
         />
         <span className="present-view__counter" aria-live="polite">
-          {current} / {slides}
+          {current} / {totalSlides}
         </span>
         <IconButton
           icon="chevron-right"
           label="Next slide"
           size="sm"
           iconSize={16}
-          disabled={current >= slides}
+          disabled={current >= totalSlides}
           onClick={handleNext}
         />
         <Divider style={{ width: 1, height: 16, margin: "0 4px" }} />
