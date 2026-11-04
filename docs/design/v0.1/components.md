@@ -135,12 +135,13 @@ In the editor toolbar: Agent and Design, height 28, inside a 32 high group. The 
 
 ## Landing page parts (S11.01)
 
-Built from the same tokens and parts as the product. Research and concept notes are in [research/](research/).
+The landing page always takes the bolder visual option: it is for high-paid experts whose decks must win buy-in or a deal. It uses the same tokens and parts as the product. Research and concept notes are in [research/](research/).
 
-- **Product frame:** the real editor in a 1200 wide window (radius 16): deck bar with Export, a slide with the working glow and a Figma-style title selection, a "Was" tag showing the old title struck through, and Aira's panel with the request, activity steps (done in gray, current with the spark) and the composer.
-- **Compare pair:** two slides at the same scale with labels "In PowerPoint" and "In AirDesign", an arrow between them, and a row of kept items (blue check tiles).
-- **Review pins:** dark numbered circles placed on the slide edge, matched to numbered notes on the right.
-- **Story spine:** numbered action titles; the selected one is a white card and its slide shows beside it.
-- **Agent cards:** logo tile, name and one line for Aira, Claude and Codex, then the MCP address row with Copy address.
-- **Section header:** blue eyebrow, 44 semibold title, one lead line.
-- Buttons are 44 high on the page, 38 in the nav. Sample companies are Halden and Brightwater, always labeled as sample data.
+- **Hero collage:** editorial headline on the left ("Win the room before you walk in.", 88 semibold, -3.4 tracking). On the right a layered stack: two faded back slides, the front slide with the working glow, a Figma-style title selection and a "Was" tag with the old title struck through, floating review chips (blue check tiles: Answer first, One point per slide, Every number sourced) and a floating Aira card with activity steps.
+- **Pyramid:** governing thought slide on top, three argument slides below joined by gray connector lines with a blue node, an evidence pill under each.
+- **Storyline wall:** full-bleed navy (#0F2433) section, eight mini slides in two rows with action titles; the slide being rebuilt carries the working glow; one Aira status line below.
+- **Red pen:** "Your draft" slide with red pen marks (ellipse, arrow, underline) and red notes ("So what? State the answer.", "Source?", "Which bar matters?"), an Aira tile in the middle, then "After Aira". Red marks are the only red outside errors.
+- **Compare pair:** the same slide in PowerPoint and in AirDesign, then kept items with blue check tiles.
+- **Agent cards and MCP row:** Aira, Claude, Codex with real marks, then the MCP address with Copy address.
+- **Closing:** navy with a radial blue light, one glowing slide, "Your next deck has to win.", primary and ghost buttons; navy footer.
+- Mini slides: 16:9, number in teal, title in navy, one simple exhibit. Sample companies Halden and Brightwater, always labeled as sample data.
