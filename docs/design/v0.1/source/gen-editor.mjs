@@ -806,14 +806,14 @@ const tileG = (inner, sz = 40, r = 12) => `<div data-node-label="Icon Tile" clas
 const lEyebrow = (t) => T('Section Eyebrow', t, '[color:var(--paper-blue-link)] text-[13px] font-semibold tracking-[0.2px]');
 const lH2 = (t) => T('Section Title', t, `${ink} text-[44px] font-semibold leading-[1.1] tracking-[-1.2px]`);
 const lLead = (t, w = 560) => `<span data-node-label="Section Lead" className="${F} block w-[${w}px] ${mut} text-[17px] leading-[1.55]">${t}</span>`;
-const lSlide = ({ w = 640, kicker = 'REVENUE', title, body = '', source, glow = false, selTitle = false, was = '', annot = false }) => {
+const lSlide = ({ w = 640, kicker = 'REVENUE', title, body = '', source, glow = false, selTitle = false, was = '', annot = false, selChart = false, srcPx = 0, kPx = 0 }) => {
   const s = w / 640;
   const bars = BARS.map(([q, v], j) => `<div data-node-label="Bar Column" className="flex flex-1 flex-col justify-end items-center gap-1">${T('Bar Value', '$' + v + 'M', `[color:var(--deck-navy)] text-[${Math.round(11 * s)}px] font-semibold`)}<div data-node-label="Bar" className="w-[${Math.round(44 * s)}px] block" style={{height:'${Math.round(v / 5.7 * 120 * s)}px',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>${T('Bar Label', q, `${mut} text-[${Math.round(10 * s)}px]`)}</div>`).join('');
   const titleEl = `<div data-node-label="Slide Title Wrap" className="flex flex-col relative ${selTitle ? 'shadow-[0px_0px_0px_1px_#4D94FB]' : ''}">${was ? `<div data-node-label="Was Tag" className="flex absolute left-0 top-[-30px] h-6 items-center rounded-[6px] bg-white shadow-[0px_0px_0px_1px_#EAEAE7,0px_2px_6px_#0000000f] px-2 gap-1.5">${T('Was Label', 'Was', `${sub} text-[11px] font-medium`)}<div data-node-label="Was Struck" className="flex relative">${T('Was Text', was, `${mut} text-[11px]`)}<div data-node-label="Strike" className="flex absolute left-0 top-[7px] w-full h-px [background-color:var(--paper-gray-500)]"></div></div></div>` : ''}${T('Slide Headline', title, `[color:var(--deck-navy)] text-[${Math.round(24 * s)}px] font-semibold leading-[1.15] tracking-[-0.4px]`)}</div>`;
   const slideEl = `<div data-node-label="Landing Slide" className="flex w-[${w}px] h-[${Math.round(w * 9 / 16)}px] shrink-0 flex-col bg-white rounded-[${glow ? 4 : 3}px] ${glow ? '' : 'shadow-[0px_0px_0px_1px_#0000000f,0px_8px_24px_#0000000d]'} gap-[${Math.round(8 * s)}px]" style={{padding:'${Math.round(30 * s)}px ${Math.round(36 * s)}px'}}>
-      ${T('Slide Kicker', kicker, `[color:var(--deck-teal)] text-[${Math.round(9 * s)}px] font-semibold tracking-[1px]`)}${titleEl}
-      ${body ? body : `<div data-node-label="Chart" className="flex flex-1 items-end gap-[${Math.round(18 * s)}px] pt-2">${bars}</div>`}
-      ${T('Slide Source', source, `${sub} text-[${Math.round(8 * s)}px]`)}</div>`;
+      ${T('Slide Kicker', kicker, `[color:var(--deck-teal)] text-[${kPx || Math.round(9 * s)}px] font-semibold tracking-[1px]`)}${titleEl}
+      ${body ? body : `<div data-node-label="Chart" className="flex flex-1 items-end gap-[${Math.round(18 * s)}px] pt-2 ${selChart ? 'relative border border-[#4D94FB] rounded-none px-2' : ''}">${bars}${selChart ? handlesAbs : ''}</div>`}
+      ${T('Slide Source', source, `${sub} text-[${srcPx || Math.round(8 * s)}px]`)}</div>`;
   return glow ? `<div data-node-label="Working Glow" className="flex shrink-0 p-[2px] rounded-[6px] [background-image:linear-gradient(135deg,#4D94FB_0%,#A9C8FF_35%,#B9A8FF_65%,#4D94FB_100%)] shadow-[0px_0px_32px_#4d94fb59,-20px_-14px_64px_#93b8ef47,20px_16px_64px_#b39dff47]">${slideEl}</div>` : slideEl;
 };
 const rowsBody = (rows, s = 1) => `<div data-node-label="Workstreams" className="flex flex-1 flex-col justify-center gap-[${Math.round(8 * s)}px]">${rows.map(([a, b]) => `<div data-node-label="Workstream" className="flex items-center rounded-[3px] [background-color:#EEF3F8] gap-3" style={{padding:'${Math.round(9 * s)}px ${Math.round(12 * s)}px'}}>${T('Row Label', a, `[color:var(--deck-navy)] text-[${Math.round(11 * s)}px] font-semibold w-[${Math.round(90 * s)}px]`)}${T('Row Text', b, `[color:var(--deck-navy)] text-[${Math.round(11 * s)}px]`)}</div>`).join('')}</div>`;
@@ -902,10 +902,23 @@ const landing = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Lan
 
 // ---------- Landing v2: bold ----------
 const NAVY = '#0F2433';
-const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false, dim = false }) => {
+const harvey = (q, sz = 12) => {
+  const r = sz / 2 - 1, c = sz / 2, a = q / 4 * 2 * Math.PI, x = c + r * Math.sin(a), y = c - r * Math.cos(a);
+  const path = q >= 4 ? `<circle cx="${c}" cy="${c}" r="${r}" fill="#0F2433"></circle>` : q <= 0 ? '' : `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${q > 2 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z" fill="#0F2433"></path>`;
+  return `<svg viewBox="0 0 ${sz} ${sz}" width="${sz}" height="${sz}"><circle cx="${c}" cy="${c}" r="${r}" fill="white" stroke="#0F2433" strokeWidth="1"></circle>${path}</svg>`;
+};
+const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false, dim = false, big = '66%', rows = [], cols = [] }) => {
   const h = Math.round(w * 9 / 16), s = w / 264;
-  const vis = kind === 'bars' ? `<div data-node-label="Mini Chart" className="flex flex-1 items-end gap-[${Math.round(7 * s)}px]">${[34, 44, 52, 60, 72].map((v, j) => `<div data-node-label="Mini Bar" className="flex-1 block" style={{height:'${Math.round(v * s * 0.8)}px',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`
-    : kind === 'big' ? `<div data-node-label="Mini Big" className="flex flex-1 items-end">${T('Mini Big Number', '66%', `[color:var(--deck-teal)] text-[${Math.round(38 * s)}px] font-semibold leading-[1] tracking-[-1px]`)}</div>`
+  const mf = Math.max(8, Math.round(8 * s));
+  const vis = kind === 'segl' ? `<div data-node-label="Mini Seg Labeled" className="flex flex-1 flex-col justify-end gap-[${Math.round(4 * s)}px]">${[['Enterprise', 66, '#1B6B8F'], ['Mid-market', 22, '#A9BFCF'], ['Self-serve', 12, '#A9BFCF']].map(([a, v, c]) => `<div data-node-label="Mini Seg Row" className="flex items-center gap-[${Math.round(5 * s)}px]"><div data-node-label="Mini Seg Name" className="flex w-[${Math.round(58 * s)}px] shrink-0">${T('Mini Cell', a, `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px]`)}</div><div data-node-label="Mini Seg Bar" className="block h-[${Math.round(9 * s)}px]" style={{width:'${Math.round(v * 1.4 * s)}px',backgroundColor:'${c}'}}></div>${T('Mini Cell', v + '% of growth', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div>`).join('')}</div>`
+    : kind === 'downl' ? `<div data-node-label="Mini Line Labeled" className="flex flex-1 flex-col justify-end gap-1"><div data-node-label="Line Values" className="flex justify-between">${T('Mini Cell', '6.2%', `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}${T('Mini Cell', '4.0%', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div><svg viewBox="0 0 200 40" preserveAspectRatio="none" width="${Math.round(232 * s)}" height="${Math.round(36 * s)}"><path d="M4 6 L54 14 L104 22 L154 28 L196 34" fill="none" stroke="#1B6B8F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></path><circle cx="196" cy="34" r="4.5" fill="#1B6B8F"></circle></svg><div data-node-label="Line Labels" className="flex justify-between">${['Q3 24', 'Q1 25', 'Q3 25'].map(q => T('Mini Cell', q, `[color:#909090] text-[${Math.max(10, mf - 1)}px]`)).join('')}</div></div>`
+    : kind === 'capbars' ? `<div data-node-label="Mini Cap" className="flex flex-1 flex-col justify-end gap-[${Math.round(4 * s)}px]"><div data-node-label="Cap Head" className="flex justify-end">${T('Mini Cell', 'Cap 85%', `[color:var(--deck-navy)] text-[${Math.max(10, mf - 1)}px] font-semibold`)}</div>${rows.map(([a, v]) => `<div data-node-label="Cap Row" className="flex items-center gap-[${Math.round(6 * s)}px]"><div data-node-label="Cap Name" className="flex w-[${Math.round(52 * s)}px] shrink-0">${T('Mini Cell', a, `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}</div><div data-node-label="Cap Track" className="flex relative h-[${Math.round(9 * s)}px] [background-color:#EEF1F4]" style={{width:'${Math.round(170 * s)}px'}}><div data-node-label="Cap Fill" className="block h-full" style={{width:'${v}%',backgroundColor:'#A9BFCF'}}></div><div data-node-label="Cap Tick" className="flex absolute top-[-3px] w-px [background-color:#0F2433]" style={{left:'85%',height:'${Math.round(9 * s) + 6}px'}}></div></div>${T('Mini Cell', v + '%', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div>`).join('')}</div>`
+    : kind === 'harvey' ? `<div data-node-label="Mini Harvey" className="flex flex-1 flex-col justify-end gap-[${Math.round(3 * s)}px]">${rows.map(([a, q, b]) => `<div data-node-label="Mini Harvey Row" className="flex items-center justify-between border-b border-[#E4E9EE] pb-[${Math.round(2 * s)}px]">${T('Mini Cell', a, `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}<div data-node-label="Harvey Right" className="flex items-center gap-2">${T('Mini Cell', b, `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}<div data-node-label="Harvey Ball" className="size-[13px] block">${harvey(q, 13)}</div></div></div>`).join('')}</div>`
+    : kind === 'down' ? `<div data-node-label="Mini Line" className="flex flex-1 items-end"><svg viewBox="0 0 200 60" width="${Math.round(220 * s)}" height="${Math.round(60 * s)}"><path d="M4 12 L54 20 L104 32 L154 42 L196 50" fill="none" stroke="#1B6B8F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></path><circle cx="196" cy="50" r="5" fill="#1B6B8F"></circle></svg></div>`
+    : kind === 'table' ? `<div data-node-label="Mini Table" className="flex flex-1 flex-col justify-end gap-[${Math.round(3 * s)}px]">${rows.map(([a, b]) => `<div data-node-label="Mini Table Row" className="flex justify-between border-b border-[#E4E9EE] pb-[${Math.round(2 * s)}px]">${T('Mini Cell', a, `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}${T('Mini Cell', b, `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div>`).join('')}</div>`
+    : kind === 'decide' ? `<div data-node-label="Mini Decide" className="flex flex-1 items-stretch gap-[${Math.round(6 * s)}px]">${cols.map(([a, b]) => `<div data-node-label="Mini Col" className="flex flex-1 flex-col rounded-[2px] [background-color:#EEF3F8] gap-[${Math.round(2 * s)}px]" style={{padding:'${Math.round(6 * s)}px'}}>${T('Mini Col Kicker', a, `[color:var(--deck-teal)] text-[${Math.max(7, Math.round(6 * s))}px] font-semibold tracking-[0.5px]`)}${T('Mini Col Text', b, `[color:var(--deck-navy)] text-[${mf}px] font-medium leading-[1.25]`)}</div>`).join('')}</div>`
+    : kind === 'bars' ? `<div data-node-label="Mini Chart" className="flex flex-1 items-end gap-[${Math.round(7 * s)}px]">${[34, 44, 52, 60, 72].map((v, j) => `<div data-node-label="Mini Bar" className="flex-1 block" style={{height:'${Math.round(v * s * 0.8)}px',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`
+    : kind === 'big' ? `<div data-node-label="Mini Big" className="flex flex-1 items-end">${T('Mini Big Number', big, `[color:var(--deck-teal)] text-[${Math.round(38 * s)}px] font-semibold leading-[1] tracking-[-1px]`)}</div>`
     : kind === 'rows' ? `<div data-node-label="Mini Rows" className="flex flex-1 flex-col justify-end gap-[${Math.round(4 * s)}px]">${[90, 70, 80].map(v => `<div data-node-label="Mini Row" className="block h-[${Math.round(10 * s)}px] rounded-[2px] [background-color:#EEF3F8]" style={{width:'${v}%'}}></div>`).join('')}</div>`
     : kind === 'cols' ? `<div data-node-label="Mini Cols" className="flex flex-1 items-stretch gap-[${Math.round(6 * s)}px]">${[0, 1].map(() => `<div data-node-label="Mini Col" className="flex-1 block rounded-[2px] [background-color:#EEF3F8]"></div>`).join('')}</div>`
     : `<div data-node-label="Mini Seg" className="flex flex-1 flex-col justify-end gap-[${Math.round(5 * s)}px]">${[78, 30, 18].map((v, j) => `<div data-node-label="Mini Seg Bar" className="block h-[${Math.round(9 * s)}px]" style={{width:'${v}%',backgroundColor:'${j === 0 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`;
@@ -1102,4 +1115,250 @@ const landing3 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / La
     <div data-node-label="Footer Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Footer Link', x, 'text-[#A9B8C6] text-[13px]')).join('')}</div>
   </div>
 </div>`;
-fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing3));
+
+// ---------- Landing v4: council round 1 ----------
+const exCap = (t, darkCap = false) => T('Exhibit Caption', t, `${darkCap ? 'text-[#7F93A6]' : sub} text-[12px] font-medium`);
+const segBig = (s = 1) => `<div data-node-label="Segments" className="flex flex-1 flex-col justify-center gap-[${Math.round(14 * s)}px]">${[['Enterprise', 66, '#0F2433'], ['Mid-market', 22, '#A9BFCF'], ['Self-serve', 12, '#A9BFCF']].map(([a, v, c]) => `<div data-node-label="Segment" className="flex items-center gap-[${Math.round(12 * s)}px]">${`<div data-node-label="Segment Name" className="flex w-[${Math.round(96 * s)}px] shrink-0">${T('Segment Label', a, `[color:var(--deck-navy)] text-[${Math.round(12 * s)}px] ${v > 50 ? 'font-semibold' : ''}`)}</div>`}<div data-node-label="Segment Bar" className="block h-[${Math.round(22 * s)}px]" style={{width:'${Math.round(v * 4.2 * s)}px',backgroundColor:'${c}'}}></div>${T('Segment Value', v + '% of growth', `[color:var(--deck-navy)] text-[${Math.round(12 * s)}px] ${v > 50 ? 'font-semibold' : ''}`)}</div>`).join('')}</div>`;
+const heroSlide = `<div data-node-label="Hero Exhibit" className="flex relative w-[700px] h-[520px] shrink-0">
+    <div data-node-label="Hero Slide" className="flex absolute left-[10px] top-[56px]">${lSlide({ w: 680, kicker: 'GROWTH', title: 'Enterprise carried the quarter', body: segBig(680 / 640), source: 'Source: Q3 pipeline report. Halden, sample data.', glow: true, selTitle: true, was: 'Q3 revenue by segment', srcPx: 11 })}</div>
+    <div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">${exCap('Sample deck: Halden, Q3 board review')}</div>
+    <div data-node-label="Aira Card" className="flex absolute left-[420px] top-[436px] w-[260px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000d,0px_20px_48px_#00000024] p-4 gap-2.5">
+      <div data-node-label="Card Head" className="flex items-center gap-2"><div data-node-label="Spark" className="size-[14px] block [color:var(--ad-brand)]">${SPARK}</div>${T('Card Title', 'Aira', `${ink} text-[13px] font-semibold`)}${T('Card State', 'Slide 3', `${sub} text-[12px]`)}</div>
+      <div data-node-label="Activity" className="flex flex-col gap-2">${step('done', 'Found the point in the data')}${step('now', 'Writing the title as the answer')}</div>
+    </div>
+  </div>`;
+const tldr4 = `<div data-node-label="TLDR" className="flex w-full items-stretch rounded-[18px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_8px_24px_#0000000a]">
+    <div data-node-label="TLDR Label" className="flex w-[160px] shrink-0 items-center border-r [border-right-color:var(--paper-gray-200)] px-7 py-4">${T('TLDR Kicker', 'In short', '[color:var(--paper-blue-link)] text-[14px] font-semibold')}</div>
+    ${[['Every title states the answer.', 'The title'], ['Every number shows where it came from.', 'The review'], ['It leaves as a PowerPoint you can edit.', 'PowerPoint in and out']].map(([t, ref], j) => `<div data-node-label="TLDR Item" className="flex flex-1 items-start px-7 py-4 gap-3 ${j ? 'border-l [border-left-color:var(--paper-gray-200)]' : ''}">${T('TLDR Number', String(j + 1), '[color:var(--ad-brand)] text-[22px] font-semibold leading-[1] tracking-[-0.5px]')}<div data-node-label="TLDR Body" className="flex flex-col gap-0.5"><span data-node-label="TLDR Text" className="${F} block w-[250px] ${ink} text-[15px] leading-[1.45] font-medium">${t}</span>${T('TLDR Ref', 'See ' + ref, `${sub} text-[12px]`)}</div></div>`).join('')}
+  </div>`;
+const REWRITES4 = [
+  ['Q3 revenue by segment', 'Enterprise carried the quarter', true],
+  ['Retention update', 'Mid-market churn is down to 4%', false],
+  ['Hiring update', 'Hiring can wait one quarter', false],
+  ['Recommendation', 'Keep the growth plan. Review hiring in Q1.', false],
+];
+const rewriteRows4 = REWRITES4.map(([a, b, on], j) => `<div data-node-label="Rewrite Row" className="flex w-full items-center py-7 ${j ? 'border-t border-[#ffffff14]' : ''}">
+    <div data-node-label="Label Side" className="flex w-[420px] shrink-0 flex-col gap-2">${T('Row Tag', 'Label', 'text-[#5B7080] text-[12px] font-medium tracking-[0.5px]')}${struck(a, 'text-[#5B7080] text-[30px] font-medium leading-[1.15] tracking-[-0.6px]', 19)}</div>
+    <div data-node-label="Row Arrow" className="flex w-[90px] shrink-0 [color:#4D94FB]">${ic('arrowr', 22)}</div>
+    <div data-node-label="Answer Side" className="flex flex-1 flex-col gap-2">${T('Row Tag', on ? 'Answer, written by Aira' : 'Answer', `${on ? 'text-[#93B8EF]' : 'text-[#7F93A6]'} text-[12px] font-medium tracking-[0.5px]`)}<div data-node-label="Answer Wrap" className="flex self-start relative ${on ? 'border border-[#4D94FB] rounded-none' : ''}">${T('Answer Text', b, 'text-white text-[44px] font-semibold leading-[1.1] tracking-[-1.3px]')}${on ? handlesAbs : ''}</div></div>
+  </div>`).join('');
+const pyramid4 = (() => {
+  const top = `<div data-node-label="Governing" className="flex absolute left-[420px] top-[0px] flex-col items-center gap-3">${T('Tier Label', 'The answer', `[color:var(--paper-blue-link)] text-[12px] font-semibold tracking-[0.3px]`)}${mini({ w: 360, n: 1, title: 'Keep the growth plan. Review hiring in Q1.', kind: 'decide', cols: [['DECISION', 'Keep the growth plan'], ['NEXT', 'Review hiring in Q1']] })}</div>`;
+  const args = [
+    ['Growth', 'Enterprise carried the quarter', { kind: 'segl' }, 'Pipeline report, p. 4'],
+    ['Quality', 'Mid-market churn is down to 4%', { kind: 'downl' }, 'Retention data, p. 9'],
+    ['Capacity', 'Hiring can wait one quarter', { kind: 'capbars', rows: [['Sales', 78], ['Success', 54], ['Product', 71]] }, 'Capacity model, p. 2'],
+  ];
+  const kids = args.map(([tier, t, k, ev], j) => `<div data-node-label="Argument" className="flex absolute top-[320px] flex-col items-center gap-3" style={{left:'${j * 410}px'}}>${T('Tier Label', 'Reason ' + (j + 1) + ': ' + tier, `${sub} text-[12px] font-semibold tracking-[0.3px]`)}${mini({ w: 380, n: [3, 5, 6][j], title: t, ...k })}<div data-node-label="Evidence" className="flex h-8 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] px-3 gap-2">${ic('doc', 13, mut)}${T('Evidence Text', ev, `${mut} text-[12px]`)}</div></div>`).join('');
+  const lines = `<div data-node-label="Pyramid Lines" className="flex absolute left-0 top-0 w-[1200px] h-[340px]"><svg viewBox="0 0 1200 340" width="1200" height="340"><path d="M600 245 V285 H190 V325 M600 285 V325 M600 285 H1010 V325" fill="none" stroke="#C1C1C0" strokeWidth="1.5"></path><circle cx="600" cy="285" r="4" fill="#4D94FB"></circle></svg></div>`;
+  return `<div data-node-label="Pyramid" className="flex relative w-[1200px] h-[640px]">${lines}${top}${kids}</div>`;
+})();
+const STORY = ['Keep the growth plan. Review hiring in Q1', 'Revenue grew 39% year over year', 'Enterprise carried the quarter', 'Enterprise is 66% of the growth', 'Mid-market churn is down to 4%', 'Hiring can wait one quarter', 'Pricing is the one risk to watch', 'Keep the growth plan. Review hiring in Q1'];
+const STORY_TEXT = STORY.map((x, j) => String(j + 1).padStart(2, '0') + ' ' + x + '.').join('  ');
+const storyPara = `<span data-node-label="Story Paragraph Text" className="${F} block w-[1200px] text-[#8FA4B3] text-[38px] font-semibold leading-[1.4] tracking-[-0.9px]">${STORY_TEXT}</span>`;
+const dumpBody4 = (s) => {
+  const rows = [['South', '$48M', '+6%'], ['North', '$42M', '+31%'], ['East', '$35M', '+27%'], ['West', '$30M', '+4%'], ['Central', '$18M', '+3%']];
+  const W = [130, 100, 90].map(x => Math.round(x * s));
+  const f = 11;
+  return `<div data-node-label="Dump Table" className="flex flex-1 flex-col pt-1">
+    <div data-node-label="Table Head" className="flex border-b-[1.5px] border-[#0F2433] pb-1">${['Region', 'Revenue', 'Growth'].map((h, i) => tCell(h, `[color:var(--deck-navy)] text-[${f}px] font-semibold`, W[i])).join('')}</div>
+    ${rows.map(r => `<div data-node-label="Table Row" className="flex border-b border-[#E4E9EE] py-[2px]">${r.map((c, i) => tCell(c, `[color:#3B4B57] text-[${f}px]`, W[i])).join('')}</div>`).join('')}
+  </div>`;
+};
+const insightBody4 = (s) => {
+  const W = [86, 76, 66, 110].map(x => Math.round(x * s));
+  const f = Math.max(12, Math.round(10 * s));
+  const g = Math.round(40 * s);
+  return `<div data-node-label="Insight" className="flex flex-1 items-stretch gap-[${Math.round(14 * s)}px] pt-1">
+    <div data-node-label="Insight Table" className="flex flex-col">
+      <div data-node-label="Table Head" className="flex border-b-[1.5px] border-[#0F2433] pb-1.5 pl-[${g}px]">${['Region', 'Revenue', 'Growth', 'Projected increase'].map((h, i) => tCell(h, `[color:var(--deck-navy)] text-[${f - 1}px] font-semibold`, W[i])).join('')}</div>
+      ${REG.map((r, j) => `<div data-node-label="Table Row" className="flex items-center border-b border-[#E4E9EE] py-[${Math.round(5 * s)}px] ${j < 2 ? '[background-color:#EEF4FE]' : ''}"><div data-node-label="Group" className="flex shrink-0 w-[${g}px]">${j === 0 ? T('Group Text', 'Grow', `[color:var(--paper-blue-link)] text-[${f - 2}px] font-semibold pl-1`) : j === 2 ? T('Group Text', 'Hold', `[color:#909090] text-[${f - 2}px] font-semibold pl-1`) : ''}</div>${r.map((c, i) => i === 3 && j < 2
+        ? `<div data-node-label="Cell" className="flex shrink-0 w-[${W[i]}px]"><div data-node-label="Circled" className="flex rounded-full border-[1.5px] border-[#4D94FB] px-1.5">${T('Cell Text', c, `[color:var(--deck-navy)] text-[${f}px] font-semibold`)}</div>${T('Ref Mark', '1', '[color:var(--paper-blue-link)] text-[10px] font-semibold pl-1')}</div>`
+        : tCell(c, `${j < 2 ? '[color:var(--deck-navy)] font-medium' : '[color:#3B4B57]'} text-[${f}px]`, W[i])).join('')}</div>`).join('')}
+      <div data-node-label="Ref Note" className="flex items-start gap-1.5 pt-2 pl-[${g}px]">${T('Ref Mark', '1', '[color:var(--paper-blue-link)] text-[11px] font-semibold')}${T('Ref Text', 'Revenue × current growth rate. Brightwater FY plan, p. 4.', `[color:#666666] text-[12px]`)}</div>
+    </div>
+    <div data-node-label="Callout" className="flex flex-1 flex-col justify-center rounded-[3px] [background-color:#0F2433] gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(14 * s)}px'}}>${T('Callout Kicker', 'SO WHAT', `text-[#93B8EF] text-[${f - 2}px] font-semibold tracking-[1px]`)}${T('Callout Text', 'Fund North and East first', `text-white text-[18px] font-semibold leading-[1.25]`)}${T('Callout Context', '$22.5M of the $27.1M projected increase.', `text-[#A9B8C6] text-[12px] leading-[1.4]`)}</div>
+  </div>`;
+};
+const soWhat4 = (() => {
+  const k = 420 / 540;
+  const note = (t, x, y) => `<div data-node-label="Pen Note" className="flex absolute px-1 py-1" style={{left:'${Math.round(x * k)}px',top:'${Math.round(y * k)}px'}}>${T('Pen Text', t, 'text-[#C23434] text-[14px] font-semibold italic')}</div>`;
+  return `<div data-node-label="So What" className="flex w-full items-start justify-between">
+    <div data-node-label="Draft Side" className="flex w-[420px] flex-col gap-4">${exCap('Your draft')}
+      <div data-node-label="Draft" className="flex relative">${lSlide({ w: 420, kicker: 'SECTION 2', title: 'Regional results', body: dumpBody4(420 / 640), source: 'FY plan, p. 4', srcPx: 11, kPx: 10 })}
+        <div data-node-label="Pen Marks" className="flex absolute left-0 top-0 w-[420px] h-[236px]"><svg viewBox="0 0 540 304" width="420" height="236"><ellipse cx="128" cy="62" rx="98" ry="26" fill="none" stroke="#D93F3F" strokeWidth="3" transform="rotate(-3 128 62)"></ellipse><path d="M300 110 C 340 150, 340 210, 300 250" fill="none" stroke="#D93F3F" strokeWidth="3" strokeLinecap="round"></path></svg></div>
+        ${note('So what?', 250, 44)}${note('Which rows matter?', 350, 160)}
+      </div></div>
+    <div data-node-label="Pen Arrow" className="flex w-[80px] flex-col items-center gap-2 pt-[150px]">${tileG(`<div data-node-label="Spark" className="size-[18px] block">${SPARK}</div>`, 44, 13)}${T('Pen Arrow Text', 'Aira', `${mut} text-[12px] font-medium`)}</div>
+    <div data-node-label="Fixed Side" className="flex w-[700px] flex-col gap-4">${exCap('After Aira: Brightwater, sample data')}${lSlide({ w: 700, kicker: 'GROWTH', title: 'North and East bring 83% of next year’s growth', body: insightBody4(700 / 640), source: 'Source: Brightwater FY plan, p. 4. Sample data.', srcPx: 12 })}</div>
+  </div>`;
+})();
+const pptExhibit = `<div data-node-label="PPT Exhibit" className="flex w-full items-start gap-14">
+    <div data-node-label="PPT Wrap" className="flex relative">
+      <div data-node-label="PPT Window" className="flex w-[820px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_24px_56px_#00000017] overflow-clip">
+        <div data-node-label="PPT Bar" className="flex h-10 items-center [background-color:#2B2B2B] px-4 gap-2"><div data-node-label="PPT Icon" className="flex size-5 justify-center items-center rounded-[4px] bg-[#C43E1C]">${T('PPT Letter', 'P', 'text-white text-[12px] font-bold')}</div>${T('PPT Name', 'Halden Q3 board review.pptx', 'text-white text-[13px] font-medium')}</div>
+        <div data-node-label="PPT Ribbon" className="flex flex-col border-b [border-bottom-color:var(--paper-gray-200)] bg-white">
+          <div data-node-label="Ribbon Tabs" className="flex items-center px-4 pt-2 gap-5">${['Home', 'Insert', 'Design', 'Transitions', 'Slide Show', 'Chart Design'].map((x, i) => `<div data-node-label="Ribbon Tab" className="flex pb-1.5 ${i === 5 ? 'border-b-2 border-[#222222]' : ''}">${T('Tab Text', x, `${i === 5 ? `${ink} font-semibold` : mut} text-[12px]`)}</div>`).join('')}</div>
+          <div data-node-label="Ribbon Tools" className="flex items-center px-4 py-2 gap-2 border-t [border-top-color:var(--paper-gray-100)]">${['Layout: Title and chart', 'Font: Geist', 'Edit data', 'Chart type'].map((x, i) => `<div data-node-label="Ribbon Tool" className="flex h-7 items-center rounded-[5px] px-2.5 ${i < 2 ? 'shadow-[0px_0px_0px_1px_var(--paper-gray-300)]' : '[background-color:var(--paper-gray-100)]'}">${T('Tool Text', x, `${ink} text-[12px]`)}</div>`).join('')}</div>
+        </div>
+        <div data-node-label="PPT Canvas" className="flex justify-center [background-color:var(--paper-gray-100)] px-8 pt-8 pb-6">${lSlide({ w: 620, kicker: 'REVENUE', title: 'Revenue grew 39% year over year', source: 'Source: Q3 board notes, unaudited. Halden, sample data.', selChart: true, srcPx: 10 })}</div>
+        <div data-node-label="PPT Notes" className="flex flex-col border-t [border-top-color:var(--paper-gray-200)] px-6 py-4 gap-1">${T('Notes Label', 'Notes', `${sub} text-[11px] font-semibold`)}${T('Notes Text', 'Open with the answer: Keep the growth plan. Review hiring in Q1.', `${mut} text-[13px]`)}</div>
+      </div>
+      <div data-node-label="Pin 1" className="flex absolute left-[86px] top-[168px]">${annotDot(1)}</div>
+      <div data-node-label="Pin 2" className="flex absolute left-[706px] top-[300px]">${annotDot(2)}</div>
+      <div data-node-label="Pin 3" className="flex absolute left-[-14px] top-[92px]">${annotDot(3)}</div>
+      <div data-node-label="Pin 4" className="flex absolute left-[-14px] top-[560px]">${annotDot(4)}</div>
+    </div>
+    <div data-node-label="PPT Notes List" className="flex flex-1 flex-col">${noteRow(1, 'Titles stay text', 'Edit the words in PowerPoint. Nothing is an image.')}${noteRow(2, 'Charts stay charts', 'Change a number and the bar moves.')}${noteRow(3, 'Your master and fonts', 'Layouts, colors and fonts come from your template.')}${noteRow(4, 'Speaker notes kept', 'What you plan to say travels with the slide.')}</div>
+  </div>`;
+const monoTile = (logo, name) => `<div data-node-label="${name} Tile" className="flex size-10 justify-center items-center rounded-[11px] [background-color:#222222] text-white"><div data-node-label="${name} Logo" className="size-[20px] block">${logo}</div></div>`;
+const agentItem = (tile, name, line) => `<div data-node-label="Agent Item" className="flex flex-1 items-center gap-4 px-6 py-6">${tile}<div data-node-label="Agent Text" className="flex flex-col gap-1">${T('Agent Name', name, `${ink} text-[16px] font-semibold`)}${T('Agent Line', line, `${mut} text-[14px]`)}</div></div>`;
+const agentsRow = `<div data-node-label="Agents Row" className="flex w-full flex-col rounded-[18px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_8px_24px_#0000000a]">
+    <div data-node-label="Agents Items" className="flex w-full items-stretch">${agentItem(airaTile.replace('size-11', 'size-10'), 'Aira', 'Built in. Ready when you sign in.')}<div data-node-label="Divider" className="w-px block [background-color:var(--paper-gray-200)]"></div>${agentItem(monoTile(CLAUDE, 'Claude'), 'Claude', 'Connect once from claude.ai.')}<div data-node-label="Divider" className="w-px block [background-color:var(--paper-gray-200)]"></div>${agentItem(monoTile(OPENAI, 'Codex'), 'Codex', 'Connect from Codex on this computer.')}</div>
+    <div data-node-label="Agents Foot" className="flex w-full items-center justify-between border-t [border-top-color:var(--paper-gray-200)] px-6 py-4">${T('Agents Foot Text', 'Same editor, same rules, whichever agent does the work.', `${mut} text-[14px]`)}${T('Guide Link', 'Read the setup guides', '[color:var(--paper-blue-link)] text-[14px] font-medium')}</div>
+  </div>`;
+const caretField = `<div data-node-label="Answer Field" className="flex w-[640px] items-center justify-between rounded-[10px] bg-white shadow-[0px_0px_0px_1px_#ffffff26,0px_24px_64px_#00000066] pl-9 pr-4 py-6 gap-6">
+    <div data-node-label="Field Text" className="flex flex-col gap-2">${T('Field Kicker', 'NEXT STEP', '[color:var(--deck-teal)] text-[11px] font-semibold tracking-[1px]')}<div data-node-label="Field Line" className="flex items-center gap-1">${T('Field Placeholder', 'Your answer goes here', 'text-[#A9B3BC] text-[30px] font-semibold tracking-[-0.6px]')}<div data-node-label="Caret" className="block w-[2px] h-[34px] [background-color:#4D94FB]"></div></div></div>
+    ${lBtn('Start free')}
+  </div>`;
+const landing4 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Landing / Default" className="flex w-[${LW}px] flex-col bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Nav" className="flex h-[76px] items-center justify-between px-[120px]">
+    <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[24px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[17px] font-semibold tracking-[-0.3px]`)}</div>
+    <div data-node-label="Nav Links" className="flex items-center gap-8">${['The method', 'PowerPoint', 'Agents', 'Pricing'].map(x => T('Nav Link', x, `${mut} text-[14px]`)).join('')}</div>
+    <div data-node-label="Nav Actions" className="flex items-center gap-5">${T('Nav Sign In', 'Sign in', `${ink} text-[14px] font-medium`)}${lBtn('Start free', 'primary', false, 38)}</div>
+  </div>
+  <div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[30px] pt-[56px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_76%_42%,#E6EFFD_0%,#FFFFFF_55%)]">
+    <div data-node-label="Hero Row" className="flex w-full items-center justify-between">
+      <div data-node-label="Hero Text" className="flex w-[560px] flex-col gap-7">
+        <div data-node-label="Hero Headline" className="flex flex-col">${['Win the room', 'before you', 'walk in.'].map(l => T('Headline Line', l, `${ink} text-[88px] font-semibold leading-[0.98] tracking-[-3.4px]`)).join('')}</div>
+        <span data-node-label="Hero Sub" className="${F} block w-[500px] ${mut} text-[19px] leading-[1.5]">Aira writes every title as the answer, keeps one point per slide and sources every number. You make the call.</span>
+        <div data-node-label="Hero Actions" className="flex items-center gap-3 pt-1">${lBtn('Start free')}${lBtn('Import a PowerPoint', 'secondary')}</div>
+        <div data-node-label="Hero Notes" className="flex items-center gap-5">${T('Hero Note', 'Free with weekly usage', `${sub} text-[13px]`)}<div data-node-label="Divider" className="w-px h-3.5 block [background-color:var(--paper-gray-300)]"></div>${T('Own Agent Text', 'Works with Claude and Codex', `${ink} text-[13px] font-medium`)}</div>
+      </div>
+      ${heroSlide}
+    </div>
+    <div data-node-label="TLDR Wrap" className="flex w-[1200px]">${tldr4}</div>
+  </div>
+  ${dark('Rewrite Section', `${head(2, 'The title', ['Nobody reads a label.', 'Everyone reads an answer.'], 'Executives read the title, then decide whether to keep listening. Aira writes every title as the point, so the first ten seconds carry the case.', { dark: true, leadW: 400 })}<div data-node-label="Rewrites" className="flex w-full flex-col">${rewriteRows4}</div><div data-node-label="Rewrite Note" className="flex w-full pt-6">${exCap('From the Halden Q3 board review. Sample data.', true)}</div>`)}
+  ${section('Pyramid Section', `${head(3, 'The method', ['Answer first. Three reasons.', 'Then the proof.'], 'You work from the evidence up. The board hears it from the answer down. Aira builds the deck in that order, and cuts what does not hold the argument.')}${pyramid4}`, '[background-color:#F5F5F2]')}
+  ${dark('Story Section', `${head(4, 'The storyline', ['Read only the titles.', 'The case still holds.'], 'Hide every chart and every bullet. If the titles alone make the argument, the deck is ready. Aira checks this on every deck it builds.', { dark: true, leadW: 400 })}${storyPara}<div data-node-label="Story Note" className="flex w-full pt-10">${exCap('Halden, Q3 board review, eight slides. Sample data.', true)}</div>`)}
+  ${section('So What Section', `${head(5, 'The review', 'Data in. A decision out.', 'A table is not a point of view. Aira finds the rows that matter, puts the numbers in context and says what to do.')}${soWhat4}`, 'bg-white')}
+  ${section('PowerPoint Section', `${head(6, 'PowerPoint in and out', ['Your deck stays', 'a real PowerPoint.'], 'Import a .pptx and keep its layouts, fonts and notes. Export it back and edit anything in PowerPoint.')}${pptExhibit}`, '[background-color:#F5F5F2]')}
+  ${section('Agents Section', `${head(7, 'Agents', 'Aira is built in. Or bring your own.', 'Connect Claude or Codex over MCP. Their edits land in the same editor, under the same rules.')}${agentsRow}`, 'bg-white')}
+  <div data-node-label="Final Section" className="flex w-full flex-col items-center relative" style={{backgroundColor:'${NAVY}'}}>
+    <div data-node-label="Dither Band" className="flex absolute left-0 top-0 w-full h-[440px] [background-image:radial-gradient(circle_at_50%_0%,#1D4A7A_0%,${NAVY}_70%)]"></div>
+    <div data-node-label="Final Body" className="flex w-full flex-col items-center px-[120px] pt-[190px] pb-[140px] gap-7">
+      ${caretField}
+      ${T('Final Title', 'Your next deck has to win.', 'text-white text-[64px] font-semibold leading-[1.05] tracking-[-2px] pt-8')}
+      <span data-node-label="Final Lead" className="${F} block w-[560px] text-center text-[#A9B8C6] text-[18px] leading-[1.55]">Free with weekly usage. A reset is $5 when you need more. Your decks stay private to you.</span>
+      <div data-node-label="Final Actions" className="flex items-center gap-3 pt-2"><div data-node-label="Ghost Button" className="flex h-[44px] items-center rounded-[10px] border border-[#ffffff40] px-5">${T('Ghost Label', 'Import a PowerPoint', 'text-white text-[15px] font-medium')}</div></div>
+    </div>
+  </div>
+  <div data-node-label="Footer" className="flex w-full items-center justify-between px-[120px] py-10 border-t border-[#ffffff14]" style={{backgroundColor:'${NAVY}'}}>
+    <div data-node-label="Footer Brand" className="flex items-center gap-2.5">${T('Footer Name', 'AirDesign', 'text-white text-[14px] font-semibold')}${T('Footer Line', 'Slides for decisions.', 'text-[#7F93A6] text-[14px]')}</div>
+    <div data-node-label="Footer Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Footer Link', x, 'text-[#A9B8C6] text-[13px]')).join('')}</div>
+  </div>
+</div>`;
+
+// ---------- Landing v5: MBB-grade sample slides ----------
+const NV = '#0F2433', TEAL = '#1B6B8F', MIST = '#A9BFCF', INK2 = '#3B4B57';
+const mbb = ({ wasBig = '', titlePx = 0, w = 680, tracker = ['Context', 'Growth', 'Quality', 'Capacity', 'Decision'], active = 1, title, unit, body, foot = '', source, page = 3, sticker = 'Sample data', glow = false, selTitle = false, was = '' }) => {
+  const s = w / 680, px = (n, min = 9) => Math.max(min, Math.round(n * s));
+  const trk = `<div data-node-label="Tracker" className="flex items-center gap-[${px(4, 3)}px]">${tracker.map((x, i) => `<div data-node-label="Tracker Item" className="flex items-center px-[${px(6, 4)}px] h-[${px(16, 12)}px] ${i === active ? `[background-color:${NV}]` : '[background-color:#EEF1F4]'}">${T('Tracker Text', x, `${i === active ? 'text-white' : `[color:#7B8A96]`} text-[${px(8, 7)}px] font-semibold tracking-[0.4px]`)}</div>`).join('')}</div>`;
+  const stk = `<div data-node-label="Sticker" className="flex items-center border border-[#9AA7B2] px-[${px(6, 4)}px] h-[${px(16, 12)}px]">${T('Sticker Text', sticker.toUpperCase(), `[color:#5B6B77] text-[${px(8, 7)}px] font-semibold tracking-[0.6px]`)}</div>`;
+  const titleEl = `<div data-node-label="Slide Title Wrap" className="flex flex-col relative ${selTitle ? 'shadow-[0px_0px_0px_1px_#4D94FB]' : ''}">${was ? `<div data-node-label="Was Tag" className="flex absolute right-[6px] top-[4px] h-6 items-center rounded-[6px] bg-white shadow-[0px_0px_0px_1px_#EAEAE7,0px_2px_6px_#0000000f] px-2 gap-1.5">${T('Was Label', 'Was', `${sub} text-[11px] font-medium`)}<div data-node-label="Was Struck" className="flex relative">${T('Was Text', was, `${mut} text-[11px]`)}<div data-node-label="Strike" className="flex absolute left-0 top-[7px] w-full h-px [background-color:var(--paper-gray-500)]"></div></div></div>` : ''}${T('Slide Headline', title, `[color:${NV}] text-[${titlePx || px(23, 10)}px] font-semibold leading-[1.15] tracking-[-0.4px]`)}</div>`;
+  const wasEl = wasBig ? struck(wasBig, 'text-[#9AA5B1] text-[20px] font-medium tracking-[-0.3px]', 13) : '';
+  const el = `<div data-node-label="MBB Slide" className="flex w-[${w}px] h-[${Math.round(w * 9 / 16)}px] shrink-0 flex-col bg-white rounded-[${glow ? 4 : 3}px] ${glow ? '' : 'shadow-[0px_0px_0px_1px_#0000000f,0px_8px_24px_#0000000d]'}" style={{padding:'${px(20, 8)}px ${px(30, 12)}px ${px(14, 6)}px'}}>
+      <div data-node-label="Slide Top" className="flex w-full items-center justify-between pb-[${px(14, 6)}px]">${trk}${stk}</div>
+      ${wasEl}${titleEl}
+      ${T('Unit Line', unit, `[color:#6B7A86] text-[${px(11, 8)}px] pt-[${px(4, 2)}px]`)}
+      <div data-node-label="Exhibit" className="flex flex-1 flex-col pt-[${px(10, 4)}px]">${body}</div>
+      <div data-node-label="Slide Foot" className="flex w-full items-end justify-between border-t border-[#E1E6EA] pt-[${px(6, 3)}px] gap-4"><div data-node-label="Foot Text" className="flex flex-col gap-[1px]">${foot ? T('Footnote', foot, `[color:#7B8A96] text-[${px(8.5, 7)}px]`) : ''}${T('Source', source, `[color:#7B8A96] text-[${px(8.5, 7)}px]`)}</div>${T('Page Number', String(page), `[color:#7B8A96] text-[${px(8.5, 7)}px] font-medium`)}</div>
+    </div>`;
+  return glow ? `<div data-node-label="Working Glow" className="flex shrink-0 p-[2px] rounded-[6px] [background-image:linear-gradient(135deg,#4D94FB_0%,#A9C8FF_35%,#B9A8FF_65%,#4D94FB_100%)] shadow-[0px_0px_32px_#4d94fb59,-20px_-14px_64px_#93b8ef47,20px_16px_64px_#b39dff47]">${el}</div>` : el;
+};
+// waterfall bridge Q3 24 -> Q3 25
+const waterfall = (s = 1) => {
+  const px = (n, min = 9) => Math.max(min, Math.round(n * s));
+  const H = Math.round(150 * s), k = H / 5.7;
+  const cols = [['Q3 24', 0, 4.1, 'total', '$4.1M'], ['Enterprise', 4.1, 1.06, 'accent', '+$1.06M'], ['Mid-market', 5.16, 0.35, 'ctx', '+$0.35M'], ['Self-serve', 5.51, 0.19, 'ctx', '+$0.19M'], ['Q3 25', 0, 5.7, 'total', '$5.7M']];
+  const col = ([lab, base, v, kind, txt], i) => `<div data-node-label="WF Column" className="flex flex-1 flex-col items-center">
+      <div data-node-label="WF Plot" className="flex w-full flex-col items-center justify-end relative" style={{height:'${H + px(40)}px'}}>
+        ${kind === 'accent' ? `<div data-node-label="WF Callout" className="flex flex-col items-center pb-[${px(4, 2)}px]"><div data-node-label="Callout Bubble" className="flex items-center rounded-full border border-[${TEAL}] bg-white px-[${px(6, 4)}px] h-[${px(16, 12)}px]">${T('Callout Text', '66% of growth', `[color:${TEAL}] text-[${px(9, 8)}px] font-semibold`)}</div><div data-node-label="Callout Stem" className="block w-px h-[${px(8, 4)}px] [background-color:${TEAL}]"></div></div>` : ''}
+        ${T('WF Value', txt, `[color:${NV}] text-[${px(10.5, 8)}px] ${kind !== 'ctx' ? 'font-semibold' : ''} pb-[${px(3, 2)}px]`)}
+        <div data-node-label="WF Bar" className="flex relative w-[${px(58, 14)}px]" style={{height:'${Math.max(2, Math.round(v * k))}px',backgroundColor:'${kind === 'total' ? NV : kind === 'accent' ? TEAL : MIST}'}}>${i < 4 ? `<div data-node-label="WF Connector" className="flex absolute left-full top-0 h-0 border-t border-dashed border-[#9AA7B2]" style={{width:'${Math.round((620 * s / 0.92 - 4 * px(10, 3)) / 5 - px(58, 14) + px(10, 3))}px'}}></div>` : ''}</div>
+        <div data-node-label="WF Base" className="block w-[${px(58, 14)}px]" style={{height:'${Math.round(base * k)}px'}}></div>
+
+      </div>
+      <div data-node-label="WF Axis" className="flex w-full justify-center border-t border-[#C9D1D8] pt-[${px(5, 2)}px]">${T('WF Label', i === 1 ? lab + '¹' : lab, `[color:${i === 1 ? NV : INK2}] text-[${px(10, 8)}px] ${i === 1 ? 'font-semibold' : ''}`)}</div>
+    </div>`;
+  return `<div data-node-label="Waterfall" className="flex flex-1 flex-col"><div data-node-label="WF Row" className="flex w-full items-end gap-[${px(10, 3)}px] relative">${cols.map(col).join('')}</div></div>`;
+};
+const heroSlide5 = `<div data-node-label="Hero Exhibit" className="flex relative w-[700px] h-[520px] shrink-0">
+    <div data-node-label="Hero Slide" className="flex absolute left-[10px] top-[56px]">${mbb({ w: 680, active: 1, title: 'Enterprise carried the quarter', titlePx: 32, wasBig: 'Q3 revenue by segment', unit: 'Revenue bridge by segment, Q3 24 to Q3 25, $M', body: waterfall(0.92), foot: '1. Recognized revenue, split by account segment.', source: 'Source: Halden CRM, Q3 pipeline report; Halden analysis. Sample data.', page: 3, glow: true, selTitle: true })}</div>
+    <div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">${exCap('Sample deck: Halden, Q3 board review')}</div>
+    <div data-node-label="Aira Card" className="flex absolute left-[440px] top-[452px] w-[250px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000d,0px_20px_48px_#00000024] p-4 gap-2.5">
+      <div data-node-label="Card Head" className="flex items-center gap-2"><div data-node-label="Spark" className="size-[14px] block [color:var(--ad-brand)]">${SPARK}</div>${T('Card Title', 'Aira', `${ink} text-[13px] font-semibold`)}${T('Card State', 'Slide 3', `${sub} text-[12px]`)}</div>
+      <div data-node-label="Activity" className="flex flex-col gap-2">${step('done', 'Found the point in the data')}${step('now', 'Writing the title as the answer')}</div>
+    </div>
+  </div>`;
+// bar-in-table result slide
+const insight5 = (s = 1) => {
+  const px = (n, min = 11) => Math.max(min, Math.round(n * s));
+  const max = 13;
+  const W = [72, 62, 54].map(x => Math.round(x * s)), bw = Math.round(150 * s);
+  return `<div data-node-label="Insight" className="flex flex-1 items-stretch gap-[${Math.round(16 * s)}px]">
+    <div data-node-label="Insight Table" className="flex flex-col">
+      <div data-node-label="Table Head" className="flex items-end border-b-[1.5px] border-[${NV}] pb-1">${['Region', 'Revenue', 'Growth'].map((h, i) => tCell(h, `[color:${NV}] text-[${px(9)}px] font-semibold`, W[i])).join('')}<div data-node-label="Cell" className="flex shrink-0 w-[${bw + 48}px]">${T('Cell Text', 'Projected increase¹, $M', `[color:${NV}] text-[${px(9)}px] font-semibold`)}</div></div>
+      ${REG.map((r, j) => `<div data-node-label="Table Row" className="flex items-center border-b border-[#E4E9EE] py-[${Math.round(5 * s)}px]">${tCell(r[0], `[color:${NV}] text-[${px(10)}px] ${j < 2 ? 'font-semibold' : ''}`, W[0])}${tCell(r[1], `[color:${INK2}] text-[${px(10)}px]`, W[1])}${tCell(r[2], `[color:${INK2}] text-[${px(10)}px]`, W[2])}<div data-node-label="Bar Cell" className="flex items-center shrink-0 w-[${bw + 48}px] gap-1.5"><div data-node-label="Cell Bar" className="block h-[${px(10, 8)}px]" style={{width:'${Math.max(3, Math.round(parseFloat(r[3].slice(1)) / max * bw))}px',backgroundColor:'${j < 2 ? TEAL : MIST}'}}></div>${T('Cell Text', r[3].replace('M', ''), `[color:${NV}] text-[${px(10)}px] ${j < 2 ? 'font-semibold' : ''}`)}</div></div>`).join('')}
+      <div data-node-label="Group Bracket" className="flex items-center gap-2 pt-2">${T('Bracket Text', 'North and East: $22.5M of $27.1M', `[color:${TEAL}] text-[${px(10)}px] font-semibold`)}</div>
+    </div>
+    <div data-node-label="Takeaway" className="flex flex-1 flex-col justify-center [background-color:${NV}] gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(14 * s)}px'}}>${T('Takeaway Kicker', 'SO WHAT', `text-[#93B8EF] text-[12px] font-semibold tracking-[1px]`)}${T('Takeaway Number', '$22.5M', 'text-white text-[38px] font-semibold leading-[1] tracking-[-1px]')}${T('Takeaway Context', 'of the $27.1M projected increase', 'text-[#A9B8C6] text-[13px] leading-[1.4]')}${T('Takeaway Text', 'Fund North and East first', 'text-white text-[15px] font-semibold leading-[1.25] pt-2')}</div>
+  </div>`;
+};
+// column chart with growth arrow
+const growthCols = (s = 1) => {
+  const px = (n, min = 9) => Math.max(min, Math.round(n * s));
+  const H = Math.round(96 * s), k = H / 5.7;
+  return `<div data-node-label="Growth Chart" className="flex flex-col relative border border-[#4D94FB] rounded-none px-3 pt-2">${handlesAbs}
+    <div data-node-label="Arrow Row" className="flex w-full items-center justify-center pb-1"><div data-node-label="Growth Pill" className="flex items-center rounded-full [background-color:${NV}] px-[${px(8, 4)}px] h-[${px(18, 12)}px]">${T('Pill Text', '+39%', `text-white text-[${px(9.5, 8)}px] font-semibold`)}</div></div>
+    <div data-node-label="Arrow Line" className="flex w-full pl-[${Math.round(50 * s)}px] pb-1"><svg viewBox="0 0 400 14" preserveAspectRatio="none" width="${Math.round(494 * s)}" height="${px(14, 8)}"><path d="M4 12 V4 H396 V12" fill="none" stroke="${NV}" strokeWidth="1.2"></path><path d="M392 8 L396 13 L400 8" fill="none" stroke="${NV}" strokeWidth="1.2"></path></svg></div>
+    <div data-node-label="Cols" className="flex items-end gap-[${px(22, 6)}px]">${BARS.map(([q, v], j) => `<div data-node-label="Col" className="flex flex-1 flex-col items-center gap-[${px(3, 2)}px]">${T('Col Value', '$' + v + 'M', `[color:${NV}] text-[${px(10.5, 8)}px] ${j === 4 ? 'font-semibold' : ''}`)}<div data-node-label="Col Bar" className="block w-full" style={{height:'${Math.round(v * k)}px',backgroundColor:'${j === 4 ? NV : MIST}'}}></div>${T('Col Label', q, `[color:${INK2}] text-[${px(9.5, 8)}px]`)}</div>`).join('')}</div>
+  </div>`;
+};
+const s5 = landing4;
+let landing5 = s5.replace(heroSlide, heroSlide5);
+landing5 = landing5.replace(lSlide({ w: 700, kicker: 'GROWTH', title: 'North and East bring 83% of next year’s growth', body: insightBody4(700 / 640), source: 'Source: Brightwater FY plan, p. 4. Sample data.', srcPx: 12 }),
+  mbb({ w: 700, tracker: ['Context', 'Regions', 'Plan', 'Risks'], active: 1, title: 'North and East bring 83% of next year’s growth', unit: 'Revenue, growth and projected increase by region, FY plan', body: insight5(700 / 680), foot: '1. Revenue × current growth rate.', source: 'Source: Brightwater FY plan, p. 4; Brightwater analysis. Sample data.', page: 12 }));
+landing5 = landing5.replace(lSlide({ w: 620, kicker: 'REVENUE', title: 'Revenue grew 39% year over year', source: 'Source: Q3 board notes, unaudited. Halden, sample data.', selChart: true, srcPx: 10 }),
+  mbb({ w: 620, active: 1, title: 'Revenue grew 39% year over year', unit: 'Quarterly revenue, Q3 24 to Q3 25, $M', body: growthCols(620 / 680), source: 'Source: Q3 board notes, unaudited; Halden analysis. Sample data.', page: 2 }));
+if (landing5 === s5) throw new Error('no replacement');
+
+// ---------- Landing v6: elite elements ----------
+const cursorFlag = (label = 'Aira') => `<div data-node-label="Aira Cursor" className="flex items-start">
+    <div data-node-label="Cursor Arrow" className="size-[18px] block"><svg viewBox="0 0 18 18" width="18" height="18"><path d="M2 1.5 L15.5 8.2 L9.2 9.6 L6.4 15.8 Z" fill="#4D94FB" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round"></path></svg></div>
+    <div data-node-label="Cursor Tag" className="flex h-[22px] items-center rounded-[7px] [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_#2D6FCD,0px_6px_16px_#4d94fb59] mt-[12px] ml-[-2px] pl-1.5 pr-2 gap-1"><div data-node-label="Tag Spark" className="size-[10px] block text-white">${SPARK}</div>${T('Cursor Name', label, 'text-white text-[11px] font-semibold')}</div>
+  </div>`;
+const navPill = `<div data-node-label="Nav Wrap" className="flex w-full justify-center pt-4 px-[120px]">
+    <div data-node-label="Nav Pill" className="flex w-full h-[60px] items-center justify-between rounded-[18px] bg-[#FFFFFFB8] shadow-[0px_0px_0px_1px_#0000000d,0px_10px_30px_#0f24330f,inset_0px_1px_0px_#ffffff] pl-5 pr-2.5">
+      <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[24px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[17px] font-semibold tracking-[-0.3px]`)}</div>
+      <div data-node-label="Nav Links" className="flex items-center gap-8">${['The method', 'PowerPoint', 'Agents', 'Pricing'].map(x => T('Nav Link', x, `${mut} text-[14px]`)).join('')}</div>
+      <div data-node-label="Nav Actions" className="flex items-center gap-4">${T('Nav Sign In', 'Sign in', `${ink} text-[14px] font-medium`)}${lBtn('Start free', 'primary', false, 40)}</div>
+    </div>
+  </div>`;
+const wordmark = `<div data-node-label="Wordmark Band" className="flex w-full h-[230px] justify-center overflow-clip relative" style={{backgroundColor:'${NAVY}'}}>
+    <div data-node-label="Wordmark" className="flex absolute left-[60px] top-[-10px]">${T('Wordmark Text', 'AirDesign', 'text-[#ffffff0f] text-[300px] font-semibold leading-[1] tracking-[-14px]')}</div>
+  </div>`;
+let landing6 = landing5;
+const navStart = landing6.indexOf('<div data-node-label="Nav" className="flex h-[76px]');
+const navEnd = landing6.indexOf('<div data-node-label="Hero"');
+landing6 = landing6.slice(0, navStart) + navPill + '\n  ' + landing6.slice(navEnd);
+landing6 = landing6.replace('<div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[30px] pt-[56px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_76%_42%,#E6EFFD_0%,#FFFFFF_55%)]">', '<div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[30px] pt-[48px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_76%_42%,#E6EFFD_0%,#FFFFFF_55%)]">');
+// cursor flags
+landing6 = landing6.replace('<div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">', `<div data-node-label="Hero Cursor" className="flex absolute left-[612px] top-[150px]">${cursorFlag('Aira')}</div><div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">`);
+landing6 = landing6.replace(/(<div data-node-label="Answer Wrap" className="flex self-start relative border border-\[#4D94FB\] rounded-none">)/, `$1<div data-node-label="Rewrite Cursor" className="flex absolute right-[-58px] top-[30px]">${cursorFlag('Aira')}</div>`);
+// footer wordmark
+const footStart = landing6.indexOf('<div data-node-label="Footer"');
+landing6 = landing6.slice(0, footStart) + landing6.slice(footStart).replace(/<\/div>\n<\/div>$/, `</div>\n  ${wordmark}\n</div>`);
+if (!landing6.includes('Wordmark Band') || !landing6.includes('Hero Cursor') || !landing6.includes('Rewrite Cursor')) throw new Error('v6 replace failed');
+fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing6));
