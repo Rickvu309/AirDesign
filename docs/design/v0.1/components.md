@@ -111,7 +111,7 @@ Shown while any agent (Aira, Claude, Codex) changes a slide.
 - At the limit: placeholder `usage.resets`, no chip.
 - Offline: grayed, placeholder "Waits for connection".
 - Long message (S42.04): grows into a card: selection chips on top, paragraph up to 168 high with a fade, attach at bottom left, round primary send button at bottom right.
-- Selection chips: slide chip in gray ("Slide 3"); element chip in blue tint with its icon ("Bar chart"). Each has a remove x. The selected element shows a 1.5px blue outline on the slide.
+- Selection chips: slide chip in gray ("Slide 3"); element chip in blue tint with its icon ("Bar chart"). Each has a remove x. The selected element shows a light selection, like Figma: a 1px `brand` outline with square corners and four 7px white handles with a 1px `brand` edge.
 
 ## Deck card and deck row
 

@@ -147,7 +147,7 @@ function slide(mode, W = 800) {
     ${T('Slide Kicker', 'REVENUE', '[color:var(--deck-teal)] text-[11px] font-semibold tracking-[1.2px]')}
     ${T('Slide Headline', 'Revenue grew 39% year over year', '[color:var(--deck-navy)] text-[30px] font-semibold tracking-[-0.6px]')}
     <div data-node-label="Chart Space" className="flex-1 block"></div>
-    <div data-node-label="Chart" className="flex flex-col rounded-[6px] p-1 gap-0 relative ${work ? 'shadow-[0px_0px_0px_1px_#4d94fb59]' : selChart ? 'shadow-[0px_0px_0px_1.5px_#4D94FB]' : ''}">
+    <div data-node-label="Chart" className="flex flex-col rounded-[6px] p-1 gap-0 relative ${work ? 'shadow-[0px_0px_0px_1px_#4d94fb59]' : selChart ? 'border border-[#4D94FB] rounded-none' : ''}">
       <div data-node-label="Bars" className="flex h-[${ch + 26}px] gap-6 border-b [border-bottom-color:var(--paper-gray-200)]">${bars}</div>
       <div data-node-label="Bar Labels" className="flex gap-6 pt-2">${labels}</div>
       ${work ? '<div data-node-label="Working Sweep" className="flex absolute left-0 top-0 w-full h-full rounded-[6px] [background-image:linear-gradient(100deg,#4d94fb00_25%,#4d94fb26_50%,#8b7bff1a_62%,#4d94fb00_80%)]"></div>' : ''}
