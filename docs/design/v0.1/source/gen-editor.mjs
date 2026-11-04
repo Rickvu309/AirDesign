@@ -1498,4 +1498,92 @@ for (const lab of ['Rewrite Section', 'Story Section', 'Final Section', 'Footer'
 }
 landing12 = landing12.replace('<div data-node-label="Rewrite Section" className="flex w-full flex-col items-center px-[120px] py-[120px] "', '<div data-node-label="Rewrite Section" className="flex w-full flex-col items-center px-[120px] py-[120px] border-t [border-top-color:var(--paper-gray-200)]"');
 if (!landing12.includes('Real Hero Slot') || !landing12.includes('Real Agents Slot') || !landing12.includes('Real Export Slot')) throw new Error('v12 slots missing');
-fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing12));
+
+// ---------- Landing v13: editorial boardroom, from scratch ----------
+const SERIF = '[font-family:Newsreader]';
+const SV = (label, text, cls) => `<span data-node-label="${label}" className="${SERIF} block ${cls}">${text}</span>`;
+const PAPER = '#F5F5F2';
+const ruleEd = (label = 'Rule', extra = '') => `<div data-node-label="${label}" className="block w-full h-px [background-color:#D7D7D6] ${extra}"></div>`;
+const figSlot = (label, w, h, extra = '') => `<div data-node-label="${label}" className="flex w-[${w}px] h-[${h}px] shrink-0 relative overflow-clip bg-white ${extra}"></div>`;
+const figCap = (n, t) => `<div data-node-label="Caption" className="flex items-start gap-3 pt-3">${T('Fig Number', 'Fig. ' + n, `${ink} text-[12px] font-semibold whitespace-nowrap`)}${T('Fig Text', t, `${mut} text-[12px] leading-[1.45]`)}</div>`;
+const shadowFig = 'shadow-[0px_0px_0px_1px_#0000000f,0px_24px_60px_#0f24331a,0px_3px_8px_#0f24330d]';
+const mastheadEd = `<div data-node-label="Masthead" className="flex w-full flex-col px-[120px] pt-6">
+    <div data-node-label="Mast Row" className="flex w-full items-center justify-between pb-5">
+      <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[24px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[18px] font-semibold tracking-[-0.3px]`)}</div>
+      <div data-node-label="Nav Links" className="flex items-center gap-8">${['The standard', 'PowerPoint', 'Agents', 'Pricing'].map(x => T('Nav Link', x, `${mut} text-[14px]`)).join('')}</div>
+      <div data-node-label="Nav Actions" className="flex items-center gap-5">${T('Nav Sign In', 'Sign in', `${ink} text-[14px] font-medium`)}${lBtn('Start free', 'primary', false, 38)}</div>
+    </div>
+    ${ruleEd('Mast Rule')}
+    <div data-node-label="Date Line" className="flex w-full items-center justify-between py-2.5">${T('Date Left', 'For consultants and strategy teams', `${sub} text-[12px] font-medium tracking-[0.3px]`)}${T('Date Mid', 'The board-ready deck, built with Aira', `${sub} text-[12px] font-medium tracking-[0.3px]`)}${T('Date Right', 'Free every week', `${sub} text-[12px] font-medium tracking-[0.3px]`)}</div>
+    ${ruleEd('Mast Rule 2')}
+  </div>`;
+const heroEd = `<div data-node-label="Hero" className="flex w-full flex-col relative">
+    <div data-node-label="Hero Plate" className="flex absolute left-[880px] top-[40px] w-[560px] h-[600px]"></div>
+    <div data-node-label="Hero Top" className="flex w-full items-start px-[120px] pt-[72px] pb-[72px]">
+      <div data-node-label="Hero Left" className="flex w-[760px] shrink-0 flex-col gap-10">
+        <div data-node-label="Hero Headline" className="flex flex-col">${SV('Headline Line', 'Win the room', `${ink} text-[128px] font-medium leading-[0.92] tracking-[-4.6px]`)}${SV('Headline Line', 'before you', `${ink} text-[128px] font-medium leading-[0.92] tracking-[-4.6px]`)}${SV('Headline Italic', 'walk in.', `[color:#2D6FCD] text-[128px] font-medium italic leading-[0.92] tracking-[-4.6px]`)}</div>
+        <div data-node-label="Standfirst" className="flex w-[520px] flex-col gap-6">
+          <span data-node-label="Standfirst Text" className="${F} block w-[520px] ${ink} text-[20px] leading-[1.5]">Aira builds the deck the way a partner would: the answer first, one point per slide, a source under every number. It opens in PowerPoint when you are done.</span>
+          <div data-node-label="Hero Actions" className="flex items-center gap-4">${lBtn('Start free')}${T('Hero Note', 'Free every week. A reset is $5.', `${mut} text-[13px]`)}</div>
+        </div>
+      </div>
+    </div>
+    <div data-node-label="Fig One" className="flex w-full flex-col pl-[120px]">
+      ${figSlot('Real Hero Slot', 1320, 700, `rounded-tl-[14px] ${shadowFig}`)}
+      <div data-node-label="Fig One Cap" className="flex w-[1200px]">${figCap(1, 'Aira building an eight-slide investor update from a page of notes. Real AirDesign screen, sample data.')}</div>
+    </div>
+  </div>`;
+const ruleRow = (n, title, body, fig, cap, reverse = false, sat = '') => `<div data-node-label="Standard Row" className="flex w-full items-start justify-between py-16 ${n > 1 ? 'border-t [border-top-color:#D7D7D6]' : ''}">
+    <div data-node-label="Row Text" className="flex w-[440px] flex-col gap-5">${SV('Row Numeral', String(n), `[color:#2D6FCD] text-[96px] font-medium italic leading-[0.9]`)}${SV('Row Title', title, `${ink} text-[40px] font-medium leading-[1.1] tracking-[-1px]`)}<span data-node-label="Row Body" className="${F} block w-[400px] ${mut} text-[17px] leading-[1.55]">${body}</span></div>
+    <div data-node-label="Row Figure" className="flex flex-col relative">${fig}${cap}${sat}</div>
+  </div>`;
+const standardEd = `<div data-node-label="Standard Section" className="flex w-full flex-col px-[120px] pt-[120px] pb-[60px] bg-white">
+    <div data-node-label="Section Head" className="flex w-full items-end justify-between pb-10">${SV('Section Title', 'Three rules every board deck follows.', `${ink} text-[56px] font-medium leading-[1.05] tracking-[-1.6px] w-[720px]`)}<span data-node-label="Section Lead" className="${F} block w-[380px] ${mut} text-[17px] leading-[1.55]">Partners check the same three things on every slide. Aira applies them while it builds, so the review starts at the answer.</span></div>
+    ${ruleRow(1, 'The title states the answer.', 'Read the titles alone and the argument holds. Labels like “Q3 revenue” become claims like “Revenue grew 39% year over year.”', figSlot('Real Title Slot', 640, 300, `rounded-[12px] ${shadowFig}`), figCap(2, 'A slide Aira wrote. The title is the point, not the topic.'))}
+    ${ruleRow(2, 'One point per slide.', 'One exhibit, one accent on the number that proves the title. Select anything and tell Aira what it should prove.', figSlot('Real Chart Slot', 640, 300, `rounded-[12px] ${shadowFig}`), figCap(3, 'A chart selected, with the request that reshapes it.'), false, `<div data-node-label="Composer Satellite" className="flex absolute left-[330px] top-[112px]">${figSlot('Real Composer Slot', 348, 250, `rounded-[14px] shadow-[0px_0px_0px_1px_#0000000f,0px_16px_40px_#0f24332e]`)}</div>`)}
+    ${ruleRow(3, 'Every number has a source.', 'Aira reads your files first and says what it used. Every chart carries its source line, ready for the partner who asks.', figSlot('Real Source Slot', 380, 330, `rounded-[12px] ${shadowFig}`), figCap(4, 'Aira’s working notes: the file it read and what it built from it.'))}
+  </div>`;
+const spreadEd = (label, kicker, title, body, fig, cap, bg = '', facts = []) => `<div data-node-label="${label}" className="flex w-full items-start justify-between px-[120px] py-[120px] ${bg}">
+    <div data-node-label="Spread Text" className="flex w-[400px] flex-col gap-5 pt-2">${T('Spread Kicker', kicker, '[color:#2D6FCD] text-[13px] font-semibold tracking-[0.3px]')}${SV('Spread Title', title, `${ink} text-[48px] font-medium leading-[1.06] tracking-[-1.3px]`)}<span data-node-label="Spread Body" className="${F} block w-[380px] ${mut} text-[17px] leading-[1.55]">${body}</span>${facts.length ? `<div data-node-label="Facts" className="flex flex-col pt-2">${facts.map((f, i) => `<div data-node-label="Fact" className="flex items-baseline gap-3 py-3 ${i ? 'border-t [border-top-color:#D7D7D6]' : 'border-t [border-top-color:#D7D7D6]'}">${SV('Fact Num', String(i + 1), '[color:#2D6FCD] text-[18px] italic')}${T('Fact Text', f, `${ink} text-[15px]`)}</div>`).join('')}</div>` : ''}</div>
+    <div data-node-label="Spread Figure" className="flex flex-col">${fig}${cap}</div>
+  </div>`;
+const pptEd = spreadEd('PowerPoint Section', 'PowerPoint in and out', 'Leaves as a PowerPoint you can edit.', 'Start from your own deck or from notes. Export when you are done; your firm’s template, fonts and notes come with it.', figSlot('Real Export Slot', 680, 400, `rounded-[12px] ${shadowFig}`), figCap(5, 'Export, as it appears in AirDesign.'), '', ['Titles stay text', 'Charts stay native charts', 'Speaker notes stay with the slide']);
+const agentsEd0 = 0;
+const agentsEd = spreadEd('Agents Section', 'Agents', 'Aira is built in. Bring Claude or Codex.', 'Connect your own agent over MCP. It works in the same editor, under the same rules, and you can switch it off any time.', figSlot('Real Agents Slot', 860, 312, `rounded-[12px] ${shadowFig}`), figCap(6, 'Settings, Agents. Aira on, Claude connected, Codex ready to connect.'), 'border-t [border-top-color:#D7D7D6]').replace('flex w-[400px] flex-col gap-5 pt-2', 'flex w-[280px] flex-col gap-5 pt-2').replace('block w-[380px] ${mut}'.replace('${mut}', mut), 'block w-[280px] ' + mut).replace("text-[48px] font-medium leading-[1.06]", "text-[40px] font-medium leading-[1.08]");
+const priceCol = (big, unit, title, lines) => `<div data-node-label="Price Col" className="flex flex-1 flex-col gap-3 pr-10">${`<div data-node-label="Price Big" className="flex items-baseline gap-2">${SV('Price Value', big, `${ink} text-[88px] font-medium leading-[0.95] tracking-[-3px]`)}${T('Price Unit', unit, `${mut} text-[15px]`)}</div>`}${T('Price Title', title, `${ink} text-[17px] font-semibold pt-2`)}${lines.map(l => T('Price Line', l, `${mut} text-[15px] leading-[1.5]`)).join('')}</div>`;
+const pricingEd = `<div data-node-label="Pricing Section" className="flex w-full flex-col px-[120px] py-[120px] bg-white">
+    <div data-node-label="Section Head" className="flex w-full items-end justify-between pb-12">${SV('Section Title', 'Free every week. Five dollars when you need more.', `${ink} text-[56px] font-medium leading-[1.05] tracking-[-1.6px] w-[760px]`)}${lBtn('Start free')}</div>
+    ${ruleEd()}
+    <div data-node-label="Price Body" className="flex w-full items-start justify-between pt-12">
+      <div data-node-label="Price Cols" className="flex w-[300px] flex-col gap-12">
+        ${priceCol('Free', 'every week', 'Weekly usage', ['Resets every Monday at 8:00 AM.', 'Your request is saved if you run out.'])}
+        ${priceCol('$5', 'per reset', 'Reset when you need more', ['Pay from credits, added from $10.', 'Credits never expire. Auto reset is optional.'])}
+      </div>
+      <div data-node-label="Price Figure" className="flex flex-col">${figSlot('Real Usage Slot', 860, 330, `rounded-[12px] ${shadowFig}`)}${figCap(7, 'Settings, Usage. What you have used this week and your credits.')}</div>
+    </div>
+  </div>`;
+const closeEd = `<div data-node-label="Close Section" className="flex w-full flex-col relative px-[120px] pt-[140px] pb-[120px]">
+    <div data-node-label="Close Plate" className="flex absolute left-[900px] top-[40px] w-[540px] h-[520px]"></div>
+    ${SV('Close Title', 'Your next deck', `${ink} text-[128px] font-medium leading-[0.92] tracking-[-4.6px]`)}${SV('Close Italic', 'has to win.', `[color:#2D6FCD] text-[128px] font-medium italic leading-[0.92] tracking-[-4.6px]`)}
+    <div data-node-label="Close Actions" className="flex items-center gap-4 pt-12">${lBtn('Start free')}<div data-node-label="Secondary Button" className="flex h-[44px] items-center rounded-[10px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-300)] px-5">${T('Secondary Label', 'Import a PowerPoint', `${ink} text-[15px] font-medium`)}</div></div>
+  </div>`;
+const colophonEd = `<div data-node-label="Colophon" className="flex w-full flex-col px-[120px] pb-12">
+    ${ruleEd()}
+    <div data-node-label="Colophon Row" className="flex w-full items-start justify-between pt-6">
+      <div data-node-label="Colophon Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[20px] block">${MARK}</div>${T('Footer Name', 'AirDesign', `${ink} text-[14px] font-semibold`)}${T('Footer Line', 'Slides for decisions.', `${sub} text-[14px]`)}</div>
+      <div data-node-label="Colophon Note" className="flex flex-col gap-1">${T('Colophon Title', 'Colophon', `${ink} text-[12px] font-semibold`)}${T('Colophon Text', 'Set in Newsreader and Geist. Shaders by Paper. Product screens are real; their data is sample data.', `${sub} text-[12px] w-[360px] leading-[1.5]`)}</div>
+      <div data-node-label="Footer Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Footer Link', x, `${mut} text-[13px]`)).join('')}</div>
+    </div>
+  </div>`;
+const landing13 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Landing / Default" className="flex w-[${LW}px] flex-col [background-color:${PAPER}] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  ${mastheadEd}
+  ${heroEd}
+  <div data-node-label="Hero Gap" className="block h-[120px]"></div>
+  ${standardEd}
+  ${pptEd}
+  ${agentsEd}
+  ${pricingEd}
+  ${closeEd}
+  ${colophonEd}
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing13));
