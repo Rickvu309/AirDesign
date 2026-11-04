@@ -902,7 +902,7 @@ const landing = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Lan
 
 // ---------- Landing v2: bold ----------
 const NAVY = '#0F2433';
-const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false }) => {
+const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false, dim = false }) => {
   const h = Math.round(w * 9 / 16), s = w / 264;
   const vis = kind === 'bars' ? `<div data-node-label="Mini Chart" className="flex flex-1 items-end gap-[${Math.round(7 * s)}px]">${[34, 44, 52, 60, 72].map((v, j) => `<div data-node-label="Mini Bar" className="flex-1 block" style={{height:'${Math.round(v * s * 0.8)}px',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`
     : kind === 'big' ? `<div data-node-label="Mini Big" className="flex flex-1 items-end">${T('Mini Big Number', '66%', `[color:var(--deck-teal)] text-[${Math.round(38 * s)}px] font-semibold leading-[1] tracking-[-1px]`)}</div>`
@@ -911,7 +911,7 @@ const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false }) 
     : `<div data-node-label="Mini Seg" className="flex flex-1 flex-col justify-end gap-[${Math.round(5 * s)}px]">${[78, 30, 18].map((v, j) => `<div data-node-label="Mini Seg Bar" className="block h-[${Math.round(9 * s)}px]" style={{width:'${v}%',backgroundColor:'${j === 0 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`;
   const el = `<div data-node-label="Mini Slide" className="flex w-[${w}px] h-[${h}px] shrink-0 flex-col bg-white rounded-[3px] ${glow ? '' : dark ? 'shadow-[0px_10px_30px_#00000040]' : 'shadow-[0px_0px_0px_1px_#0000000f,0px_6px_18px_#0000000f]'} gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(14 * s)}px ${Math.round(16 * s)}px'}}>
       <div data-node-label="Mini Head" className="flex items-center gap-[${Math.round(6 * s)}px]">${T('Mini Number', String(n).padStart(2, '0'), `[color:var(--deck-teal)] text-[${Math.round(8 * s)}px] font-semibold tracking-[1px]`)}</div>
-      ${T('Mini Title', title, `[color:var(--deck-navy)] text-[${Math.round(13 * s)}px] font-semibold leading-[1.2] tracking-[-0.2px]`)}${vis}</div>`;
+      ${T('Mini Title', title, `[color:var(--deck-navy)] text-[${Math.round(13 * s)}px] font-semibold leading-[1.2] tracking-[-0.2px]`)}${dim ? `<div data-node-label="Dimmed Body" className="flex flex-1 flex-col opacity-[0.12]">${vis}</div>` : vis}</div>`;
   return glow ? `<div data-node-label="Working Glow" className="flex shrink-0 p-[2px] rounded-[5px] [background-image:linear-gradient(135deg,#4D94FB_0%,#A9C8FF_35%,#B9A8FF_65%,#4D94FB_100%)] shadow-[0px_0px_28px_#4d94fb80,-16px_-10px_48px_#93b8ef66,16px_12px_48px_#b39dff66]">${el}</div>` : el;
 };
 const chip = (t) => `<div data-node-label="Review Chip" className="flex h-9 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#0000000d,0px_8px_24px_#0000001a] pl-1.5 pr-3.5 gap-2">${tileG(ic('check', 12), 24, 12)}${T('Chip Text', t, `${ink} text-[13px] font-medium`)}</div>`;
@@ -990,4 +990,116 @@ const landing2 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / La
     <div data-node-label="Footer Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Footer Link', x, 'text-[#A9B8C6] text-[13px]')).join('')}</div>
   </div>
 </div>`;
-fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing2));
+
+// ---------- Landing v3: the page is a board deck ----------
+const TOTAL = 7;
+const signpost = (n, dark = false) => `<div data-node-label="Signpost" className="flex items-center gap-3">${T('Signpost Number', String(n).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0'), `${dark ? 'text-[#7F93A6]' : sub} text-[12px] font-medium tracking-[0.5px]`)}<div data-node-label="Signpost Bars" className="flex items-center gap-1">${Array.from({ length: TOTAL }, (_, j) => `<div data-node-label="Signpost Bar" className="block w-5 h-[3px] rounded-full" style={{backgroundColor:'${j + 1 === n ? '#4D94FB' : dark ? '#ffffff26' : '#D7D7D6'}'}}></div>`).join('')}</div></div>`;
+const head = (n, eyebrow, title, lead, { dark = false, center = false, leadW = 440 } = {}) => {
+  const eb = T('Section Eyebrow', eyebrow, `${dark ? 'text-[#93B8EF]' : '[color:var(--paper-blue-link)]'} text-[13px] font-semibold tracking-[0.2px]`);
+  const h = `<div data-node-label="Section Title" className="flex flex-col ${center ? 'items-center' : ''}">${[].concat(title).map(l => T('Title Line', l, `${dark ? 'text-white' : ink} text-[48px] font-semibold leading-[1.08] tracking-[-1.4px]`)).join('')}</div>`;
+  const ld = `<span data-node-label="Section Lead" className="${F} block ${dark ? 'text-[#A9B8C6]' : mut} text-[17px] leading-[1.55] ${center ? 'text-center' : ''}" style={{width:'${leadW}px'}}>${lead}</span>`;
+  return center
+    ? `<div data-node-label="Section Head" className="flex w-full flex-col items-center gap-5 pb-16">${signpost(n, dark)}${eb}${h}${ld}</div>`
+    : `<div data-node-label="Section Head" className="flex w-full flex-col gap-6 pb-16"><div data-node-label="Head Top" className="flex w-full items-center justify-between">${eb}${signpost(n, dark)}</div><div data-node-label="Head Row" className="flex w-full items-end justify-between">${h}${ld}</div></div>`;
+};
+const struck = (t, cls, top) => `<div data-node-label="Struck" className="flex self-start relative">${T('Struck Text', t, cls)}<div data-node-label="Strike" className="flex absolute left-0 w-full h-[2px] [background-color:#5B7080]" style={{top:'${top}px'}}></div></div>`;
+const handlesAbs = ['left-[-4px] top-[-4px]', 'right-[-4px] top-[-4px]', 'left-[-4px] bottom-[-4px]', 'right-[-4px] bottom-[-4px]'].map(pos => `<div data-node-label="Handle" className="flex absolute ${pos} size-[7px] bg-white border border-[#4D94FB] rounded-none"></div>`).join('');
+const REWRITES = [
+  ['Q3 revenue by segment', 'Enterprise carried the quarter', true],
+  ['Customer survey results', 'Onboarding, not price, stalls trials', false],
+  ['Market overview', 'Two rivals hold 70% of the market', false],
+  ['Hiring update', 'Hiring can wait one quarter', false],
+];
+const rewriteRows = REWRITES.map(([a, b, on], j) => `<div data-node-label="Rewrite Row" className="flex w-full items-center py-7 ${j ? 'border-t border-[#ffffff14]' : ''}">
+    <div data-node-label="Label Side" className="flex w-[420px] shrink-0 flex-col gap-2">${T('Row Tag', 'Label', 'text-[#5B7080] text-[12px] font-medium tracking-[0.5px]')}${struck(a, 'text-[#5B7080] text-[30px] font-medium leading-[1.15] tracking-[-0.6px]', 19)}</div>
+    <div data-node-label="Row Arrow" className="flex w-[90px] shrink-0 [color:#4D94FB]">${ic('arrowr', 22)}</div>
+    <div data-node-label="Answer Side" className="flex flex-1 flex-col gap-2">${T('Row Tag', on ? 'Answer, written by Aira' : 'Answer', `${on ? 'text-[#93B8EF]' : 'text-[#7F93A6]'} text-[12px] font-medium tracking-[0.5px]`)}<div data-node-label="Answer Wrap" className="flex self-start relative ${on ? 'border border-[#4D94FB] rounded-none' : ''}">${T('Answer Text', b, 'text-white text-[44px] font-semibold leading-[1.1] tracking-[-1.3px]')}${on ? handlesAbs : ''}</div></div>
+  </div>`).join('');
+const REG = [['North', '$42M', '+31%', '$13M'], ['East', '$35M', '+27%', '$9.5M'], ['South', '$48M', '+6%', '$2.9M'], ['West', '$30M', '+4%', '$1.2M'], ['Central', '$18M', '+3%', '$0.5M']];
+const tCell = (t, cls, w) => `<div data-node-label="Cell" className="flex shrink-0 w-[${w}px]">${T('Cell Text', t, cls)}</div>`;
+const dumpBody = (s) => {
+  const rows = [['South', '$48M', '+6%'], ['North', '$42M', '+31%'], ['East', '$35M', '+27%'], ['West', '$30M', '+4%'], ['Central', '$18M', '+3%']];
+  const W = [150, 120, 120].map(x => Math.round(x * s));
+  const f = Math.round(10 * s);
+  return `<div data-node-label="Dump Table" className="flex flex-1 flex-col pt-1">
+    <div data-node-label="Table Head" className="flex border-b-[1.5px] border-[#0F2433] pb-1.5">${['Region', 'Revenue', 'Growth'].map((h, i) => tCell(h, `[color:var(--deck-navy)] text-[${f}px] font-semibold`, W[i])).join('')}</div>
+    ${rows.map(r => `<div data-node-label="Table Row" className="flex border-b border-[#E4E9EE] py-[${Math.round(5 * s)}px]">${r.map((c, i) => tCell(c, `[color:#3B4B57] text-[${f}px]`, W[i])).join('')}</div>`).join('')}
+  </div>`;
+};
+const insightBody = (s) => {
+  const W = [96, 80, 72, 96].map(x => Math.round(x * s));
+  const f = Math.round(10 * s);
+  return `<div data-node-label="Insight" className="flex flex-1 items-stretch gap-[${Math.round(14 * s)}px] pt-1">
+    <div data-node-label="Insight Table" className="flex flex-col">
+      <div data-node-label="Table Head" className="flex border-b-[1.5px] border-[#0F2433] pb-1.5 pl-[${Math.round(40 * s)}px]">${['Region', 'Revenue', 'Growth', 'Added next year'].map((h, i) => tCell(h, `[color:var(--deck-navy)] text-[${f}px] font-semibold`, W[i])).join('')}</div>
+      ${REG.map((r, j) => `<div data-node-label="Table Row" className="flex items-center border-b border-[#E4E9EE] py-[${Math.round(5 * s)}px] ${j < 2 ? '[background-color:#EEF4FE]' : ''}"><div data-node-label="Group" className="flex shrink-0 w-[${Math.round(40 * s)}px]">${j === 0 ? T('Group Text', 'Grow', `[color:var(--paper-blue-link)] text-[${Math.round(9 * s)}px] font-semibold pl-1`) : j === 2 ? T('Group Text', 'Hold', `[color:#909090] text-[${Math.round(9 * s)}px] font-semibold pl-1`) : ''}</div>${r.map((c, i) => i === 3 && j < 2
+        ? `<div data-node-label="Cell" className="flex shrink-0 w-[${W[i]}px]"><div data-node-label="Circled" className="flex rounded-full border-[1.5px] border-[#4D94FB] px-1.5">${T('Cell Text', c, `[color:var(--deck-navy)] text-[${f}px] font-semibold`)}</div></div>`
+        : tCell(c, `${j < 2 ? '[color:var(--deck-navy)] font-medium' : '[color:#3B4B57]'} text-[${f}px]`, W[i])).join('')}</div>`).join('')}
+    </div>
+    <div data-node-label="Callout" className="flex flex-1 flex-col justify-center rounded-[3px] [background-color:#0F2433] gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(12 * s)}px'}}>${T('Callout Kicker', 'SO WHAT', `text-[#93B8EF] text-[${Math.round(8 * s)}px] font-semibold tracking-[1px]`)}${T('Callout Text', 'Fund North and East first', `text-white text-[${Math.round(13 * s)}px] font-semibold leading-[1.25]`)}${T('Callout Context', 'Their $22.5M is more than the other three regions add together.', `text-[#A9B8C6] text-[${Math.round(9 * s)}px] leading-[1.4]`)}</div>
+  </div>`;
+};
+const soWhat = `<div data-node-label="So What" className="flex w-full items-center justify-between">
+    <div data-node-label="Draft Side" className="flex flex-col gap-4">${T('Compare Label', 'Your draft', `${sub} text-[13px] font-medium`)}
+      <div data-node-label="Draft" className="flex relative">${lSlide({ w: 540, kicker: 'SECTION 2', title: 'Regional results', body: dumpBody(540 / 640), source: 'Brightwater finance pack' })}
+        <div data-node-label="Pen Marks" className="flex absolute left-0 top-0 w-[540px] h-[304px]"><svg viewBox="0 0 540 304" width="540" height="304"><ellipse cx="108" cy="58" rx="86" ry="22" fill="none" stroke="#D93F3F" strokeWidth="2.2" transform="rotate(-3 108 58)"></ellipse><path d="M198 50 C 240 30, 290 30, 322 42" fill="none" stroke="#D93F3F" strokeWidth="2" strokeLinecap="round"></path><path d="M313 34 L323 42 L311 47" fill="none" stroke="#D93F3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M300 110 C 330 150, 330 210, 300 250" fill="none" stroke="#D93F3F" strokeWidth="2" strokeLinecap="round"></path></svg></div>
+        <div data-node-label="Pen Note" className="flex absolute left-[332px] top-[26px] rounded-[6px] bg-[#FDF0F0] px-2.5 py-1.5">${T('Pen Text', 'So what? Say the answer.', 'text-[#C23434] text-[13px] font-semibold')}</div>
+        <div data-node-label="Pen Note" className="flex absolute left-[340px] top-[166px] rounded-[6px] bg-[#FDF0F0] px-2.5 py-1.5">${T('Pen Text', 'Which rows matter?', 'text-[#C23434] text-[13px] font-semibold')}</div>
+      </div></div>
+    <div data-node-label="Pen Arrow" className="flex flex-col items-center gap-2 pt-8">${tileG(`<div data-node-label="Spark" className="size-[18px] block">${SPARK}</div>`, 44, 13)}${T('Pen Arrow Text', 'Aira', `${mut} text-[12px] font-medium`)}</div>
+    <div data-node-label="Fixed Side" className="flex flex-col gap-4">${T('Compare Label', 'After Aira', `[color:var(--paper-blue-link)] text-[13px] font-medium`)}${lSlide({ w: 540, kicker: 'GROWTH', title: 'North and East hold four fifths of next year’s growth', body: insightBody(540 / 640), source: 'Source: Brightwater finance pack, FY plan. Example, sample data.' })}</div>
+  </div>`;
+const WALLTEXT = WALL.map(([t]) => t);
+const tldr = `<div data-node-label="TLDR" className="flex w-full items-stretch rounded-[18px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_8px_24px_#0000000a]">
+    <div data-node-label="TLDR Label" className="flex w-[200px] shrink-0 flex-col justify-center border-r [border-right-color:var(--paper-gray-200)] px-7 py-6 gap-1">${T('TLDR Kicker', 'In short', '[color:var(--paper-blue-link)] text-[13px] font-semibold')}${T('TLDR Sub', 'Three things to know', `${sub} text-[13px]`)}</div>
+    ${[['Aira frames the answer before it designs a slide.'], ['You edit alongside it, on the same slides.'], ['You leave with a PowerPoint you can edit.']].map(([t], j) => `<div data-node-label="TLDR Item" className="flex flex-1 items-start px-7 py-6 gap-3 ${j ? 'border-l [border-left-color:var(--paper-gray-200)]' : ''}">${T('TLDR Number', String(j + 1), '[color:var(--ad-brand)] text-[22px] font-semibold leading-[1] tracking-[-0.5px]')}<span data-node-label="TLDR Text" className="${F} block w-[240px] ${ink} text-[15px] leading-[1.45] font-medium">${t}</span></div>`).join('')}
+  </div>`;
+const dark = (label, inner, extra = '') => `<div data-node-label="${label}" className="flex w-full flex-col items-center px-[120px] py-[120px] ${extra}" style={{backgroundColor:'${NAVY}'}}>${inner}</div>`;
+const landing3 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Landing / Default" className="flex w-[${LW}px] flex-col bg-[#FCFCF9] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Nav" className="flex h-[76px] items-center justify-between px-[120px]">
+    <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[24px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[17px] font-semibold tracking-[-0.3px]`)}</div>
+    <div data-node-label="Nav Links" className="flex items-center gap-8">${['The method', 'PowerPoint', 'Agents', 'Pricing'].map(x => T('Nav Link', x, `${mut} text-[14px]`)).join('')}</div>
+    <div data-node-label="Nav Actions" className="flex items-center gap-5">${T('Nav Sign In', 'Sign in', `${ink} text-[14px] font-medium`)}${lBtn('Start free', 'primary', false, 38)}</div>
+  </div>
+  <div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[40px] pt-[40px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_78%_36%,#E9F1FE_0%,#FCFCF9_55%)]">
+    <div data-node-label="Hero Row" className="flex w-full items-center justify-between">
+      <div data-node-label="Hero Text" className="flex w-[560px] flex-col gap-7">
+        <div data-node-label="Hero Badge" className="flex self-start h-8 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] pl-1.5 pr-3.5 gap-2"><div data-node-label="Badge Spark" className="flex size-5 justify-center items-center rounded-full bg-[#EEF4FE] [color:var(--ad-brand)]"><div data-node-label="Spark" className="size-[11px] block">${SPARK}</div></div>${T('Badge Text', 'For decks that have to win', `${mut} text-[13px]`)}</div>
+        <div data-node-label="Hero Headline" className="flex flex-col">${['Win the room', 'before you', 'walk in.'].map(l => T('Headline Line', l, `${ink} text-[88px] font-semibold leading-[0.98] tracking-[-3.4px]`)).join('')}</div>
+        <span data-node-label="Hero Sub" className="${F} block w-[500px] ${mut} text-[19px] leading-[1.5]">Board-ready decks, built the way top consultants build them. Aira frames the answer, writes the action titles and sources every number. You make the call.</span>
+        <div data-node-label="Hero Actions" className="flex items-center gap-3 pt-1">${lBtn('Start free')}${lBtn('Import a PowerPoint', 'secondary')}</div>
+        <div data-node-label="Hero Notes" className="flex items-center gap-5">${T('Hero Note', 'Free with weekly usage', `${sub} text-[13px]`)}<div data-node-label="Divider" className="w-px h-3.5 block [background-color:var(--paper-gray-300)]"></div><div data-node-label="Own Agent Link" className="flex items-center gap-2"><div data-node-label="Mini Claude" className="size-[14px] block text-[#d97757]">${CLAUDE}</div><div data-node-label="Mini OpenAI" className="size-[14px] block [color:var(--paper-gray-900)]">${OPENAI}</div>${T('Own Agent Text', 'Or use Claude or Codex', `${ink} text-[13px] font-medium`)}</div></div>
+      </div>
+      ${heroCollage}
+    </div>
+    <div data-node-label="TLDR Wrap" className="flex w-[1200px]">${tldr}</div>
+  </div>
+  ${dark('Rewrite Section', `${head(2, 'The title', ['Nobody reads a label.', 'Everyone reads an answer.'], 'Executives read the title, then decide whether to keep listening. Aira writes every title as the point, so the first ten seconds carry the case.', { dark: true, leadW: 400 })}<div data-node-label="Rewrites" className="flex w-full flex-col">${rewriteRows}</div>`)}
+  ${section('Pyramid Section', `${head(3, 'The method', ['Answer first. Three reasons.', 'Then the proof.'], 'You work from the evidence up. The board hears it from the answer down. Aira builds the deck in that order, and cuts what does not hold the argument.')}${pyramid}`, 'bg-white')}
+  ${dark('Wall Section', `${head(4, 'The storyline', ['Read only the titles.', 'The case still holds.'], 'Hide every chart and every bullet. If the titles alone make the argument, the deck is ready. Aira checks this on every deck it builds.', { dark: true, leadW: 400 })}
+    <div data-node-label="Wall" className="flex w-full flex-col gap-6">${[0, 4].map(k => `<div data-node-label="Wall Row" className="flex gap-6">${WALL.slice(k, k + 4).map(([t, kind], j) => mini({ w: 282, n: k + j + 1, title: t, kind, dark: true, glow: k + j === 2, dim: true })).join('')}</div>`).join('')}</div>
+    <div data-node-label="Read Aloud" className="flex w-full flex-col pt-14 gap-4">${T('Read Label', 'The titles, read as one paragraph', 'text-[#7F93A6] text-[13px] font-medium')}<div data-node-label="Read Text" className="flex w-[1100px] flex-wrap gap-x-[10px] gap-y-[6px]">${WALLTEXT.map((t, j) => T('Read Title', t + '.', `${j === 2 ? 'text-white font-semibold' : 'text-[#C9D4DE]'} text-[26px] leading-[1.45] tracking-[-0.4px]`)).join('')}</div></div>`)}
+  ${section('So What Section', `${head(5, 'The review', 'Data in. A decision out.', 'A table is not a point of view. Aira finds the rows that matter, puts the numbers in context and says what to do, like a partner with a red pen.')}${soWhat}`)}
+  ${section('Import Section', `${head(6, 'PowerPoint in and out', 'Your deck stays a real PowerPoint.', 'Import a .pptx and keep its layouts, fonts and notes. Export it back with titles as text and charts as charts.')}
+    <div data-node-label="Compare" className="flex w-full items-start gap-8">
+      <div data-node-label="Compare Side" className="flex flex-col gap-4">${T('Compare Label', 'In PowerPoint', `${sub} text-[13px] font-medium`)}${lSlide({ w: 560, kicker: 'BRIGHTWATER', title: 'Keep the launch on schedule', body: rowsBody(BW_ROWS, 560 / 640), source: 'Source: Brightwater launch plan. Example, sample data.' })}</div>
+      <div data-node-label="Compare Arrow" className="flex size-10 shrink-0 justify-center items-center self-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] mt-8 [color:var(--paper-gray-600)]">${ic('arrowr', 16)}</div>
+      <div data-node-label="Compare Side" className="flex flex-col gap-4">${T('Compare Label', 'In AirDesign', `[color:var(--paper-blue-link)] text-[13px] font-medium`)}${lSlide({ w: 560, kicker: 'BRIGHTWATER', title: 'Keep the launch on schedule', body: rowsBody(BW_ROWS, 560 / 640), source: 'Source: Brightwater launch plan. Example, sample data.' })}</div>
+    </div>
+    <div data-node-label="Kept List" className="flex w-full items-center gap-10 pt-10">${keptItem('Layouts and masters')}${keptItem('Fonts and colors')}${keptItem('Speaker notes')}${keptItem('Editable text and charts')}</div>`, 'bg-white')}
+  ${section('Agents Section', `${head(7, 'Agents', 'Aira is built in. Or bring your own.', 'Connect Claude or Codex over MCP. Their edits land in the same editor, under the same rules.', { center: true, leadW: 620 })}
+    <div data-node-label="Agent Cards" className="flex w-full gap-6">${agentCard(airaTile, 'Aira', 'Built in. Plans the story, writes the titles and builds every slide.')}${agentCard(claudeTile, 'Claude', 'Connect once, then ask Claude to build or edit your decks.')}${agentCard(codexTile, 'Codex', 'Work from Codex on this computer, with the same canvas.')}</div>
+    <div data-node-label="MCP Row" className="flex w-full items-center justify-between rounded-[14px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] mt-6 pl-6 pr-2 py-2"><div data-node-label="MCP Text" className="flex items-center gap-4">${T('MCP Label', 'MCP server', `${sub} text-[13px] font-medium`)}${T('MCP Address', 'https://mcp.airdesign.app/mcp', `${ink} text-[15px]`)}</div><div data-node-label="MCP Actions" className="flex items-center gap-4">${T('Guide Link', 'Read the setup guides', '[color:var(--paper-blue-link)] text-[14px] font-medium')}${lBtn('Copy address', 'secondary', false, 40)}</div></div>`)}
+  <div data-node-label="Final Section" className="flex w-full flex-col items-center px-[120px] py-[140px] gap-7 [background-image:radial-gradient(circle_at_50%_0%,#1D4A7A_0%,${NAVY}_60%)]">
+    ${T('Final Eyebrow', 'Next step', 'text-[#93B8EF] text-[13px] font-semibold tracking-[0.2px]')}
+    ${mini({ w: 340, n: 8, title: 'Approve the plan and review hiring in Q1', kind: 'cols', glow: true })}
+    ${T('Final Title', 'Your next deck has to win.', 'text-white text-[64px] font-semibold leading-[1.05] tracking-[-2px] pt-6')}
+    <span data-node-label="Final Lead" className="${F} block w-[520px] text-center text-[#A9B8C6] text-[18px] leading-[1.55]">Start free. Weekly usage resets every Monday. Your decks stay private to you.</span>
+    <div data-node-label="Final Actions" className="flex items-center gap-3 pt-2">${lBtn('Start free')}<div data-node-label="Ghost Button" className="flex h-[44px] items-center rounded-[10px] shadow-[0px_0px_0px_1px_#ffffff33] px-5">${T('Ghost Label', 'Import a PowerPoint', 'text-white text-[15px] font-medium')}</div></div>
+  </div>
+  <div data-node-label="Footer" className="flex w-full items-center justify-between px-[120px] py-10 border-t border-[#ffffff14]" style={{backgroundColor:'${NAVY}'}}>
+    <div data-node-label="Footer Brand" className="flex items-center gap-2.5">${T('Footer Name', 'AirDesign', 'text-white text-[14px] font-semibold')}${T('Footer Line', 'Slides for decisions.', 'text-[#7F93A6] text-[14px]')}</div>
+    <div data-node-label="Footer Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Footer Link', x, 'text-[#A9B8C6] text-[13px]')).join('')}</div>
+  </div>
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing3));

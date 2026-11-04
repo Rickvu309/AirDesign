@@ -135,13 +135,17 @@ In the editor toolbar: Agent and Design, height 28, inside a 32 high group. The 
 
 ## Landing page parts (S11.01)
 
-The landing page always takes the bolder visual option: it is for high-paid experts whose decks must win buy-in or a deal. It uses the same tokens and parts as the product. Research and concept notes are in [research/](research/).
+The landing page always takes the bolder visual option: it is for high-paid experts whose decks must win buy-in or a deal. The page is built like a board deck: answer first, three reasons, then proof, with a signpost on every section. It uses the same tokens and parts as the product. Research and concept notes are in [research/](research/).
 
-- **Hero collage:** editorial headline on the left ("Win the room before you walk in.", 88 semibold, -3.4 tracking). On the right a layered stack: two faded back slides, the front slide with the working glow, a Figma-style title selection and a "Was" tag with the old title struck through, floating review chips (blue check tiles: Answer first, One point per slide, Every number sourced) and a floating Aira card with activity steps.
-- **Pyramid:** governing thought slide on top, three argument slides below joined by gray connector lines with a blue node, an evidence pill under each.
-- **Storyline wall:** full-bleed navy (#0F2433) section, eight mini slides in two rows with action titles; the slide being rebuilt carries the working glow; one Aira status line below.
-- **Red pen:** "Your draft" slide with red pen marks (ellipse, arrow, underline) and red notes ("So what? State the answer.", "Source?", "Which bar matters?"), an Aira tile in the middle, then "After Aira". Red marks are the only red outside errors.
-- **Compare pair:** the same slide in PowerPoint and in AirDesign, then kept items with blue check tiles.
-- **Agent cards and MCP row:** Aira, Claude, Codex with real marks, then the MCP address with Copy address.
-- **Closing:** navy with a radial blue light, one glowing slide, "Your next deck has to win.", primary and ghost buttons; navy footer.
-- Mini slides: 16:9, number in teal, title in navy, one simple exhibit. Sample companies Halden and Brightwater, always labeled as sample data.
+- **Signpost:** "02 / 07" plus seven short bars, the current one blue. Top right of every section head after the hero.
+- **Section head:** blue eyebrow and signpost on one row; title 48 semibold, broken into lines by hand; one lead line on the right.
+- **Hero collage:** "Win the room before you walk in." (88 semibold) left; layered slides right with the working glow, Figma-style title selection, a struck "Was" tag, review chips and a floating Aira card.
+- **In short strip:** the executive summary under the hero: label cell, then three numbered points.
+- **Title rewrites:** navy section; each row shows the label struck through in gray, a blue arrow, and the answer in 44 white. The active row carries the light selection with four handles.
+- **Pyramid:** governing thought slide, three argument slides joined by connector lines, an evidence pill under each.
+- **Titles only wall:** navy; eight mini slides with bodies dimmed to 12% so only titles read; below, the same titles set as one paragraph with the current one in white.
+- **Draft to decision:** "Your draft" table dump with red pen marks, an Aira tile, then "After Aira": the table sorted with Grow and Hold groups, two circled values, a navy "So what" callout with one line of context.
+- **Compare pair, agent cards, MCP row:** as in the product.
+- **Closing:** navy with radial blue light, eyebrow "Next step", one glowing slide, "Your next deck has to win."
+- Sample companies Halden and Brightwater, always labeled as sample data. Red marks only on the draft.
+- After any repush of the landing, run `source/fixsel.py` steps: the canvas drops spread-shadow selections, so the title selection is redrawn as a stroke with handles.
