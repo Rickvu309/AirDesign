@@ -135,17 +135,14 @@ In the editor toolbar: Agent and Design, height 28, inside a 32 high group. The 
 
 ## Landing page parts (S11.01)
 
-The landing page always takes the bolder visual option: it is for high-paid experts whose decks must win buy-in or a deal. The page is built like a board deck: answer first, three reasons, then proof, with a signpost on every section. It uses the same tokens and parts as the product. Research and concept notes are in [research/](research/).
+Editorial boardroom, rebuilt from scratch on 2026-11-05. Light page on paper #F5F5F2 with white sections, Newsreader for headlines and Geist for everything else, one blue (#2D6FCD, #4D94FB). For consultants and strategy teams; the one action is Start free.
 
-- **Signpost:** "02 / 07" plus seven short bars, the current one blue. Top right of every section head after the hero.
-- **Section head:** blue eyebrow and signpost on one row; title 48 semibold, broken into lines by hand; one lead line on the right.
-- **Hero collage:** "Win the room before you walk in." (88 semibold) left; layered slides right with the working glow, Figma-style title selection, a struck "Was" tag, review chips and a floating Aira card.
-- **In short strip:** the executive summary under the hero: label cell, then three numbered points.
-- **Title rewrites:** navy section; each row shows the label struck through in gray, a blue arrow, and the answer in 44 white. The active row carries the light selection with four handles.
-- **Pyramid:** governing thought slide, three argument slides joined by connector lines, an evidence pill under each.
-- **Titles only wall:** navy; eight mini slides with bodies dimmed to 12% so only titles read; below, the same titles set as one paragraph with the current one in white.
-- **Draft to decision:** "Your draft" table dump with red pen marks, an Aira tile, then "After Aira": the table sorted with Grow and Hold groups, two circled values, a navy "So what" callout with one line of context.
-- **Compare pair, agent cards, MCP row:** as in the product.
-- **Closing:** navy with radial blue light, eyebrow "Next step", one glowing slide, "Your next deck has to win."
-- Sample companies Halden and Brightwater, always labeled as sample data. Red marks only on the draft.
-- After any repush of the landing, run `source/fixsel.py` steps: the canvas drops spread-shadow selections, so the title selection is redrawn as a stroke with handles.
+- **Masthead:** brand, nav, Start free; a hairline, a date line, a second hairline.
+- **Hero:** "Win the room / before you walk in." in Newsreader 112px, "walk in." italic blue. Standfirst left, note and Start free right. A static dithered plate (Paper dithering, simplex, 8x8) with crop marks runs off the right edge.
+- **Figures:** every product image is a live clone of a real AirDesign screen inside a clip slot, numbered "Fig. N" with a caption. Fig. 1 editor (S42.01), Fig. 2 slide title, Fig. 3 selected chart (S42.04) with Fig. 3a composer beside it, Fig. 4 source line, Fig. 5 Export dialog (S61.01), Fig. 6 Agents settings (S81.02), Fig. 7 Usage settings (S81.01). Crops cut only filler.
+- **Running heads:** a 1px #222 rule with "01 The standard / Figs. 2 to 4" style labels open each section.
+- **Three rules:** italic blue numerals, serif row titles, body in Geist, figure on the right.
+- **Pricing on the page:** Free every week and $5 per reset as large serif figures, with the real Usage figure.
+- **Close:** "Your next deck has to win.", one Start free, then a full-bleed dithered wave band (Plate 2).
+- **Colophon:** "Set in Newsreader and Geist. Shaders by Paper." Paper Shaders stay on the marketing page only, never inside the product.
+- **Buttons on the landing:** solid #2D6FCD, white 15px semibold, radius 6, 48px (36px in the nav).
