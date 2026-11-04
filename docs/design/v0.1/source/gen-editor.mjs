@@ -1,0 +1,798 @@
+import fs from 'node:fs';
+const I = {
+  play: '<path d="M7 4.5v15l12-7.5z"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  slide: '<rect x="2.5" y="4" width="19" height="16" rx="1.2"/><rect x="6.5" y="8" width="11" height="8" rx="0.4"/>',
+  grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
+  cursor: '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.12 1.58a2 2 0 0 0-1.44 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
+  text: '<path d="M5 6V4.5h14V6M12 4.5v15M9 19.5h6"/>',
+  shape: '<rect x="3.5" y="3.5" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
+  chart: '<path d="M4 20h16M7 16v-5M12 16V7M17 16v-8"/>',
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M10 4v16"/>',
+  clip: '<path d="m20 11.5-8.2 8.2a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  chevr: '<path d="m9 6 6 6-6 6"/>',
+  hand: '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  mic: '<rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/>',
+  arrowr: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  sliders: '<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  history: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+  pen: '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  upload: '<path d="M12 15V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  image2: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
+  font: '<path d="M4 20 10 4h1l6 16M6.5 14h8"/>',
+  chevl: '<path d="m15 6-6 6 6 6"/>',
+  actions: '<path d="m7 3 4 4-4 4-4-4z"/><circle cx="17" cy="7" r="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M17 14v7M13.5 17.5h7"/>',
+  rmbg: '<rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="2.5 2.5"/><circle cx="12" cy="10" r="2.5"/><path d="M7.5 18c.8-2.5 2.5-3.5 4.5-3.5s3.7 1 4.5 3.5"/>',
+  hd: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/>',
+  icon: '<circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M8.5 14.5c1 1.2 2.2 1.8 3.5 1.8s2.5-.6 3.5-1.8"/>',
+  sidebar: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>',
+  alert: '<path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>',
+};
+const ic = (k, sz = 16, cls = '') => `<div data-node-label="Icon" className="size-[${sz}px] shrink-0 block ${cls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" width="100%" height="100%">${I[k]}</svg></div>`;
+const MARK = '<svg viewBox="0 0 64 64" width="100%" height="100%"><path d="M13 57l19-50 19 50" fill="none" stroke="#111111" strokeWidth="3.063" strokeLinecap="round" strokeLinejoin="round"></path><path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth="2.188" strokeLinecap="round"></path></svg>';
+const SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="100%" height="100%"><path d="M4.5 20.5 9.4 10.2M19.5 20.5 14.6 10.2"></path><path fill="currentColor" stroke="none" d="M12 1.6c.43 2.37 1.63 3.57 4 4-2.37.43-3.57 1.63-4 4-.43-2.37-1.63-3.57-4-4 2.37-.43 3.57-1.63 4-4z"></path></svg>';
+const F = '[font-family:var(--ad-font)]';
+const T = (label, text, cls) => `<span data-node-label="${label}" className="${F} block ${cls}">${text}</span>`;
+const ink = '[color:var(--ad-ink)]', mut = '[color:var(--paper-gray-600)]', sub = '[color:var(--paper-gray-500)]';
+const card = 'shadow-[0px_0px_0px_1px_#00000012,0px_2px_8px_#0000000a]';
+const ring = 'shadow-[0px_0px_0px_1px_var(--paper-gray-200)]';
+const btn = 'shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_1px_2px_#0000000a] [background-color:var(--ad-surface)]';
+
+const BARS = [['Q3 24', 4.1], ['Q4 24', 4.6], ['Q1 25', 5.0], ['Q2 25', 5.4], ['Q3 25', 5.7]];
+const K = JSON.parse(fs.readFileSync('/tmp/strat/review2/copy_kit.json', 'utf8'));
+const tileIcon = (top, bot, edge, glyph) => `<div data-node-label="Notice Tile" className="flex size-5 justify-center items-center rounded-[6px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_${edge},0px_1px_2px_#0000001f]" style="background-image:linear-gradient(180deg,${top} 0%,${bot} 100%)">${glyph}</div>`;
+const NOTICE_ICON = {
+  ok: tileIcon('#93B8EF', '#4D94FB', '#2D6FCD', '<svg viewBox="0 0 12 12" width="11" height="11"><path d="M2.5 6.2l2.2 2.2L9.5 3.6" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"></path></svg>'),
+  error: tileIcon('#F29A9A', '#D93F3F', '#B92F2F', '<svg viewBox="0 0 12 12" width="11" height="11"><path d="M6 2.6v4.2" stroke="#fff" strokeWidth="1.9" strokeLinecap="round"></path><circle cx="6" cy="9.2" r="1" fill="#fff"></circle></svg>'),
+  limit: tileIcon('#F29A9A', '#D93F3F', '#B92F2F', '<svg viewBox="0 0 12 12" width="11" height="11"><circle cx="6" cy="6" r="3.6" fill="none" stroke="#fff" strokeWidth="1.8"></circle></svg>'),
+};
+function toast({ kind = 'info', text, action }) {
+  const icon = kind === 'success' ? `<div data-node-label="Toast Icon" className="flex size-4 justify-center items-center text-white">${ic('check', 15)}</div>` : kind === 'error' ? `<div data-node-label="Toast Icon" className="size-4 block"><svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="7" fill="#D93F3F"></circle><path d="M8 4.5v4.2" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"></path><circle cx="8" cy="11.3" r="1" fill="#fff"></circle></svg></div>` : '';
+  return `<div data-node-label="Toast Wrap" className="flex absolute left-0 right-0 top-[12px] justify-center"><div data-node-label="Toast" className="flex h-10 items-center rounded-[10px] [background-color:var(--paper-gray-900)] shadow-[0px_8px_24px_#00000033] pl-3.5 ${action ? 'pr-1.5' : 'pr-4'} gap-2.5">${icon}${T('Toast Text', text, 'text-white text-[13px]')}${action ? `<div data-node-label="Toast Action" className="flex h-7 items-center rounded-[7px] px-2.5">${T('Toast Action Label', action, 'text-white text-[13px] font-medium')}</div>` : ''}</div></div>`;
+}
+function noticeCard({ kind, title, body, actions = [] }) {
+  const b = (a) => a.primary ? `<div data-node-label="Reply Button" className="flex h-8 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Reply Button Label', a.label, 'text-white text-[13px] font-medium')}</div>` : `<div data-node-label="Reply Button" className="flex h-8 items-center rounded-[8px] ${btn} px-3">${T('Reply Button Label', a.label, `${ink} text-[13px] font-medium`)}</div>`;
+  return `<div data-node-label="Notice Card" className="flex flex-col rounded-[12px] bg-white shadow-[0px_0px_0px_1px_#EAEAE7,0px_1px_2px_#0000000d] p-3.5 gap-3">
+        <div data-node-label="Notice Head" className="flex items-center gap-2">${NOTICE_ICON[kind]}${T('Notice Title', title, `${ink} text-[13px] font-semibold`)}</div>
+        ${T('Notice Body', body, `${mut} text-[12.5px] leading-[1.5]`)}
+        ${actions.length ? `<div data-node-label="Notice Actions" className="flex items-center gap-2">${actions.map(b).join('')}</div>` : ''}
+      </div>`;
+}
+function thumb(i, w, state) {
+  const k = w / 160, px = v => `${Math.max(1, Math.round(v * k * 10) / 10)}px`, h = Math.round(w * 9 / 16);
+  const box = (bg, inner, extra = '') => `<div data-node-label="Thumb ${i}" className="flex flex-col shrink-0 w-[${w}px] h-[${h}px] ${bg} rounded-[2px] overflow-hidden ${extra}" style={{padding:'${px(12)}',gap:'${px(5)}'}}>${inner}</div>`;
+  const line = (wd, c = 'var(--paper-gray-200)', hh = 3) => `<div data-node-label="Line" className="shrink-0 block rounded-full" style={{width:'${px(wd)}',height:'${px(hh)}',backgroundColor:'${c}'}}></div>`;
+  const title = (t, c = 'var(--paper-gray-900)') => `<span data-node-label="Thumb Title" className="${F} block font-semibold" style={{fontSize:'${px(10)}',color:'${c}',lineHeight:1.2}}>${t}</span>`;
+  const white = 'bg-white ' + ring;
+  if (state === 'queued') return `<div data-node-label="Thumb ${i} Queued" className="flex shrink-0 justify-center items-center w-[${w}px] h-[${h}px] rounded-[2px] [background-color:var(--paper-gray-50)] shadow-[inset_0px_0px_0px_1px_var(--paper-gray-200)]">${T('Queued', 'Queued', `${sub} text-[11px]`)}</div>`;
+  switch (i) {
+    case 1: return box('[background-color:var(--deck-navy)]', `<div data-node-label="Grow" className="flex-1 block"></div>${title('Q3 Investor Update', '#ffffff')}${line(50, '#ffffff55', 2.5)}`);
+    case 2: return box(white, `${title('Three things to know')}${line(110)}${line(96)}${line(104)}`);
+    case 3: return box(white, `${title('Revenue grew 39%')}<div data-node-label="Mini Bars" className="flex flex-1 items-end" style={{gap:'${px(8)}'}}>${BARS.map((b, j) => `<div data-node-label="Mini Bar" className="block" style={{width:'${px(16)}',height:'${px(b[1] * 7 - 14)}',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div>`).join('')}</div>`);
+    case 4: return box(white, `<span data-node-label="Big Number" className="${F} block font-semibold" style={{fontSize:'${px(26)}',color:'var(--deck-teal)',lineHeight:1}}>71%</span>${line(60)}`, 'justify-center');
+    case 5: return box(white, `${title('Customers')}<div data-node-label="Logo Grid" className="flex flex-wrap" style={{gap:'${px(5)}'}}>${[0,1,2,3,4,5].map(() => `<div data-node-label="Logo Cell" className="block" style={{width:'${px(40)}',height:'${px(13)}',backgroundColor:'var(--paper-gray-100)'}}></div>`).join('')}</div>`);
+    case 6: return box('[background-color:var(--deck-mist)]', `${title('Product', 'var(--deck-navy)')}`);
+    case 7: return box(white, `${title('Hiring plan')}<div data-node-label="Avatars" className="flex" style={{gap:'${px(5)}'}}>${[0,1,2,3].map(() => `<div data-node-label="Avatar Dot" className="block rounded-full" style={{width:'${px(16)}',height:'${px(16)}',backgroundColor:'var(--paper-gray-200)'}}></div>`).join('')}</div>`);
+    case 8: return box('[background-color:var(--deck-teal)]', `<div data-node-label="Grow" className="flex-1 block"></div>${title('Next quarter', '#ffffff')}${line(44, '#ffffff66', 2.5)}`);
+  }
+}
+
+function topBar(view) {
+  const seg = (k, on) => `<div data-node-label="View ${k}" className="flex justify-center items-center w-8 h-7 rounded-[6px] ${on ? 'bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_1px_2px_#0000000f] [color:var(--ad-ink)]' : '[color:var(--paper-gray-500)]'}">${ic(k, 16)}</div>`;
+  return `<div data-node-label="Top Bar" className="flex shrink-0 h-12 items-center justify-between [background-color:var(--ad-surface)] border-b [border-bottom-color:var(--paper-gray-100)] px-3">
+  <div data-node-label="Top Left" className="flex w-[360px] items-center gap-3">
+    <div data-node-label="App Mark" className="flex size-8 shrink-0 justify-center items-center rounded-[8px]"><div data-node-label="Mark" className="size-[22px] block">${MARK}</div></div>
+    <div data-node-label="Top Divider" className="w-px h-5 block [background-color:var(--paper-gray-200)]"></div>
+    <div data-node-label="Deck Title" className="flex min-w-0 items-center gap-1.5">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-sm font-medium`)}${ic('chev', 14, sub)}</div>
+  </div>
+  <div data-node-label="View Toggle" className="flex items-center [background-color:var(--paper-gray-100)] rounded-[8px] p-0.5 gap-0.5">${seg('slide', view === 'slide')}${seg('grid', view === 'grid')}</div>
+  <div data-node-label="Top Right" className="flex w-[360px] justify-end items-center gap-2">
+    <div data-node-label="Export Button" className="flex h-8 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Export Label', 'Export', 'text-white text-[13px] font-medium')}</div>
+  </div>
+</div>`;
+}
+
+const deckHead = (cls = '') => `<div data-node-label="Deck Head" className="flex h-12 shrink-0 items-center gap-2 ${cls}"><div data-node-label="Mark" className="size-[20px] shrink-0 block">${MARK}</div><div data-node-label="Deck Title" className="flex min-w-0 items-center gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium truncate`)}${ic('chev', 14, sub)}</div></div>`;
+const viewToggle = view => { const seg = (k, on) => `<div data-node-label="View ${k}" className="flex justify-center items-center size-8 rounded-[7px] ${on ? '[background-color:var(--paper-gray-100)] [color:var(--ad-ink)]' : '[color:var(--paper-gray-500)]'}">${ic(k, 16)}</div>`; return `${seg('slide', view === 'slide')}${seg('grid', view === 'grid')}`; };
+function strip(mode) {
+  const TW = 180;
+  const item = i => {
+    const queued = (mode === 'working' && i > 3) || ((mode === 'limit' || mode === 'resetdone') && i > 5), active = i === 3;
+    const flag = mode === 'done' && i === 6, working = (mode === 'working' || mode === 'own') && i === 3;
+    return `<div data-node-label="Strip Item ${i}" className="flex items-start rounded-[10px] ${active ? 'bg-[#e8f1fe]' : ''} p-2 gap-2">
+      <div data-node-label="Strip Meta" className="flex w-4 flex-col items-center gap-1.5 pt-0.5">${T('Strip Number', String(i), `${active ? '[color:var(--paper-blue-link)] font-medium' : sub} text-xs`)}${working ? `<div data-node-label="Working Dot" className="size-1.5 block rounded-full [background-color:var(--ad-brand)]"></div>` : ''}</div>
+      ${thumb(i, TW, queued ? 'queued' : '')}
+    </div>`;
+  };
+  const head = (name, open, range) => `<div data-node-label="Section Head" className="flex h-8 items-center px-2 gap-2">${ic(open ? 'chev' : 'chevr', 14, sub)}${T('Section Name', name, `${ink} text-[13px] font-semibold`)}${range ? `<div data-node-label="Range Badge" className="flex h-5 items-center rounded-[5px] ${ring} px-1.5">${T('Range Text', range, `${sub} text-[11px]`)}</div>` : ''}</div>`;
+  const stack = `<div data-node-label="Section Stack" className="flex pl-[34px] pt-1"><div data-node-label="Stack Inner" className="flex w-[180px] flex-col items-center">
+      ${thumb(6, TW, ['working', 'limit', 'resetdone'].includes(mode) ? 'queued' : '')}
+      <div data-node-label="Stack Layer" className="w-[166px] h-1.5 block rounded-b-[3px] bg-white ${ring}"></div>
+      <div data-node-label="Stack Layer" className="w-[150px] h-1.5 block rounded-b-[3px] bg-white ${ring}"></div>
+    </div></div>`;
+  const items = `${head('Opening', true)}${item(1)}${item(2)}
+    ${head('Performance', true)}${item(3)}${item(4)}${item(5)}
+    ${head('Outlook', false, '6 to 8')}${stack}`;
+  return `<div data-node-label="Slide Sidebar" className="flex w-[248px] h-full shrink-0 flex-col bg-white border-r [border-right-color:var(--paper-gray-100)]">
+    <div data-node-label="Sidebar Head" className="flex h-14 shrink-0 items-center justify-between pl-3 pr-2">
+      <div data-node-label="Deck Head" className="flex items-center gap-2"><div data-node-label="Mark" className="size-[20px] shrink-0 block">${MARK}</div><div data-node-label="Deck Title" className="flex items-center gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium`)}${ic('chev', 14, sub)}</div></div>
+      <div data-node-label="Grid Button" className="flex size-8 justify-center items-center rounded-[7px] [color:var(--paper-gray-600)]">${ic('grid', 16)}</div>
+    </div>
+    <div data-node-label="New Slide Row" className="flex px-3 pb-2">
+      <div data-node-label="New Slide Split" className="flex flex-1 h-8 items-center rounded-[8px] ${btn}">
+        <div data-node-label="New Slide Main" className="flex flex-1 justify-center items-center gap-1">${T('New Slide Label', 'New slide', `${ink} text-[13px] font-medium`)}${ic('chev', 13, sub)}</div>
+        <div data-node-label="Split Divider" className="w-px h-8 block [background-color:var(--paper-gray-200)]"></div>
+        <div data-node-label="New Slide Quick" className="flex w-8 justify-center items-center [color:var(--ad-ink)]">${ic('plus', 15)}</div>
+      </div>
+    </div>
+    <div data-node-label="Strip List" className="flex flex-col px-2 pb-2 gap-1 overflow-hidden">${items}</div>
+  </div>`;
+}
+
+function slide(mode, W = 800) {
+  const max = 5.7, ch = Math.round(210 * W / 800);
+  const bars = BARS.map(([q, v], j) => `<div data-node-label="Bar Column" className="flex flex-1 flex-col justify-end items-center gap-1.5">${T('Bar Value', '$' + v + 'M', `[color:var(--deck-navy)] text-[13px] font-semibold`)}<div data-node-label="Bar" className="w-[72px] block" style={{height:'${Math.round(v / max * ch)}px',backgroundColor:'${j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)'}'}}></div></div>`).join('');
+  const labels = BARS.map(([q]) => `<div data-node-label="Label Cell" className="flex flex-1 justify-center">${T('Bar Label', q, `${mut} text-xs`)}</div>`).join('');
+  const editing = mode === 'working'; const own = mode === 'own'; const selChart = mode === 'compose';
+  const work = editing || own;
+  const slideEl = `<div data-node-label="Slide" className="flex w-[${W}px] h-[${Math.round(W * 9 / 16)}px] shrink-0 flex-col bg-white rounded-[${work ? 4 : 2}px] ${work ? '' : 'shadow-[0px_0px_0px_1px_#0000000f,0px_2px_8px_#0000000d,0px_12px_32px_#00000008]'} pt-11 pb-7 px-14 gap-1.5 relative">
+    ${T('Slide Kicker', 'REVENUE', '[color:var(--deck-teal)] text-[11px] font-semibold tracking-[1.2px]')}
+    ${T('Slide Headline', 'Revenue grew 39% year over year', '[color:var(--deck-navy)] text-[30px] font-semibold tracking-[-0.6px]')}
+    <div data-node-label="Chart Space" className="flex-1 block"></div>
+    <div data-node-label="Chart" className="flex flex-col rounded-[6px] p-1 gap-0 relative ${work ? 'shadow-[0px_0px_0px_1px_#4d94fb59]' : selChart ? 'shadow-[0px_0px_0px_1.5px_#4D94FB]' : ''}">
+      <div data-node-label="Bars" className="flex h-[${ch + 26}px] gap-6 border-b [border-bottom-color:var(--paper-gray-200)]">${bars}</div>
+      <div data-node-label="Bar Labels" className="flex gap-6 pt-2">${labels}</div>
+      ${work ? '<div data-node-label="Working Sweep" className="flex absolute left-0 top-0 w-full h-full rounded-[6px] [background-image:linear-gradient(100deg,#4d94fb00_25%,#4d94fb26_50%,#8b7bff1a_62%,#4d94fb00_80%)]"></div>' : ''}
+    </div>
+    ${T('Slide Source', 'Source: Q3 board notes, unaudited', `${sub} text-[10px]`)}
+  </div>`;
+  if (!work) return slideEl;
+  return `<div data-node-label="Working Glow" className="flex shrink-0 p-[2px] rounded-[6px] [background-image:linear-gradient(135deg,#4D94FB_0%,#A9C8FF_35%,#B9A8FF_65%,#4D94FB_100%)] shadow-[0px_0px_28px_#4d94fb59,-18px_-12px_56px_#93b8ef47,18px_14px_56px_#b39dff47]">${slideEl}</div>`;
+}
+
+function toolbar(view, menu = false, imgOn = false, shapeOn = false, shapeSel = false, textOn = false, actOn = false, tab = 'agent') {
+  const tool = k => `<div data-node-label="Tool ${k}" className="flex justify-center items-center size-9 rounded-[8px] ${(imgOn && k === 'image') || ((shapeOn || shapeSel) && k === 'shape') || (textOn && k === 'text') || (actOn && k === 'actions') ? '[background-color:var(--ad-brand)] text-white' : '[color:var(--paper-gray-700)]'}">${ic(k, 18)}</div>`;
+  const row = (k, label, key, on) => `<div data-node-label="Menu Item" className="flex h-8 items-center rounded-[7px] ${on ? '' : ''} pl-2 pr-2.5 gap-2.5">
+      <div data-node-label="Check Slot" className="flex size-4 justify-center items-center text-white">${on ? ic('check', 14) : ''}</div>
+      ${ic(k, 16, 'text-white')}${T('Menu Label', label, 'text-white text-[13px] flex-1')}${T('Menu Key', key, 'text-[#8c8c8c] text-xs')}</div>`;
+  const pop = menu ? `<div data-node-label="Tool Menu" className="flex absolute left-[42px] bottom-[52px] w-[188px] flex-col rounded-[12px] [background-color:var(--paper-gray-900)] shadow-[0px_8px_24px_#00000033] p-1.5">${row('cursor', 'Move', 'V', true)}${row('hand', 'Hand tool', 'H', false)}</div>` : '';
+  return `<div data-node-label="Toolbar" className="flex items-center bg-white rounded-[12px] shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_4px_12px_#0000000f] p-1 gap-1 relative">
+    <div data-node-label="Move Group" className="flex items-center gap-0.5">
+      <div data-node-label="Tool Move" className="flex justify-center items-center size-9 rounded-[8px] ${imgOn || shapeOn || shapeSel || textOn || actOn ? '[color:var(--paper-gray-700)]' : '[background-color:var(--ad-brand)] text-white'}">${ic('cursor', 18)}</div>
+      <div data-node-label="Move Menu Button" className="flex justify-center items-center w-4 h-9 rounded-[6px] ${menu ? '[background-color:var(--paper-gray-100)]' : ''} [color:var(--paper-gray-600)]">${ic('chev', 12)}</div>
+    </div>
+    ${['text','shape','image','actions'].map(tool).join('')}
+    <div data-node-label="Tool Divider" className="w-px h-6 block [background-color:var(--paper-gray-200)] mx-1"></div>
+    ${panelSwitch(tab)}
+    ${pop}
+
+  </div>`;
+}
+const SHAPE_P = {
+    square: '<rect x="3" y="3" width="18" height="18" rx="2.5"/>',
+    circle: '<circle cx="12" cy="12" r="9.5"/>',
+    diamond: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/>',
+    triangle: '<path d="M12 3 21.5 20.5H2.5z"/>',
+    star: '<path d="m12 2.5 2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.3 1.3-6.6-4.9-4.6 6.6-.8z"/>',
+    plus: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/>',
+    arrowl: '<path d="M10 4 3 12l7 8v-5h11V9H10z"/>',
+    arrowr: '<path d="M14 4l7 8-7 8v-5H3V9h11z"/>',
+    bubble: '<path d="M3 4h18v12H10l-5 4v-4H3z"/>',
+    tridown: '<path d="M2.5 3.5h19L12 21z"/>',
+    pill: '<rect x="2.5" y="6" width="19" height="12" rx="6"/>',
+    pentagon: '<path d="m12 2.5 9.5 7-3.6 11.5H6.1L2.5 9.5z"/>',
+    octagon: '<path d="M8 2.5h8l5.5 5.5v8L16 21.5H8L2.5 16V8z"/>',
+    chevron: '<path d="M3 5h13l5 7-5 7H3l5-7z"/>',
+};
+function shapeTray() {
+  const P = SHAPE_P;
+  const sh = k => `<div data-node-label="Shape ${k}" className="flex size-9 justify-center items-center rounded-[7px]"><div data-node-label="Shape Art" className="size-[26px] block"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="#4D94FB" stroke="#2D6FCD" strokeWidth="1" strokeLinejoin="round">${P[k]}</svg></div></div>`;
+  return `<div data-node-label="Shape Tray" className="flex items-center bg-white rounded-[12px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] p-1.5 gap-0.5">
+    ${[false, true].map(a => `<div data-node-label="Shape ${a ? 'arrow line' : 'line'}" className="flex size-9 justify-center items-center rounded-[7px]"><div data-node-label="Line Art" className="size-[22px] block"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="#222222" strokeWidth="1.6" strokeLinecap="round"><path d="M5 19 19 5"/>${a ? '<path d="M11 5h8v8"/>' : ''}</svg></div></div>`).join('')}
+    <div data-node-label="Tray Divider" className="w-px h-6 block [background-color:var(--paper-gray-200)] mx-1"></div>
+    ${['square', 'circle', 'diamond', 'triangle', 'star', 'plus', 'arrowl', 'arrowr', 'bubble'].map(sh).join('')}
+    <div data-node-label="Tray Divider" className="w-px h-6 block [background-color:var(--paper-gray-200)] mx-1"></div><div data-node-label="More Shapes" className="flex h-8 shrink-0 items-center rounded-[8px] px-2.5">${T('More Shapes Label', 'More shapes', `${ink} text-xs font-medium`)}</div>
+  </div>`;
+}
+
+function notesBox(mode, W = 800) {
+  const notes = mode === 'working' ? '' : 'Lead with the trend, then the Q3 number. Mention the two enterprise deals.';
+  return `<div data-node-label="Notes" className="flex w-[${W}px] h-12 items-center rounded-[10px] [background-color:var(--paper-gray-100)] px-4">
+      ${T('Notes Text', notes || 'Add speaker notes', `${notes ? 'text-[color:var(--paper-gray-700)]' : sub} text-[13px] flex-1 truncate`)}
+    </div>`;
+}
+function canvas(mode, W = 800) {
+  const notes = mode === 'working' ? '' : 'Lead with the trend, then the Q3 number. Mention the two enterprise deals.';
+  return `<div data-node-label="Canvas" className="flex w-[${W}px] flex-col gap-3">
+    ${T('Slide Number', '3', `${sub} text-[13px]`)}
+    ${slide(mode, W)}
+  </div>`;
+}
+
+const SECTIONS = [['Opening', [1, 2]], ['Performance', [3, 4, 5]], ['Outlook', [6, 7, 8]]];
+const GW = 300, GH = 169, GG = 32, GL = 87, GT = 96, SEC = 241;
+function pasteThumb(it) {
+  const title = it === 'pa' ? 'Market share by region' : 'Churn is down to 4%';
+  const body = it === 'pa' ? `<div data-node-label="Mini Bars" className="flex flex-1 items-end gap-2.5">${[46, 34, 58, 26].map(v => `<div data-node-label="Mini Bar" className="w-[26px] block" style="height:${v}px;background-color:#8a8a8a"></div>`).join('')}</div>`
+    : `<div data-node-label="Lines" className="flex flex-col gap-2">${[180, 150, 164].map(v => `<div data-node-label="Line" className="h-[5px] block rounded-full" style="width:${v}px;background-color:#d7d7d6"></div>`).join('')}</div>`;
+  return `<div data-node-label="Pasted Slide" className="flex shrink-0 w-[${GW}px] h-[${GH}px] flex-col rounded-[2px] bg-white ${ring} p-[22px] gap-3"><span data-node-label="Pasted Title" className="${F} block text-[15px] font-semibold" style="color:#1f1f1f">${title}</span>${body}</div>`;
+}
+function grid(state = 'idle') {
+  const dark = it => it === 1 || it === 8;
+  const cell = (it, n, rowSel) => {
+    const isGhost = it === 'ghost', isNew = it === 'new', isPaste = typeof it === 'string' && it.startsWith('p');
+    const sel = state === 'pasted' ? isPaste : state === 'added' ? isNew : state === 'idle' || state === 'hover' ? it === 3 : false;
+    const numCls = isGhost || sel ? '[color:var(--paper-blue-link)] font-semibold' : dark(it) ? 'text-white/70' : '[color:var(--paper-gray-500)]';
+    const body = isGhost ? `<div data-node-label="Ghost Slide" className="flex shrink-0 w-[${GW}px] h-[${GH}px] rounded-[2px] [background-color:var(--paper-gray-100)] border-2 border-dashed [border-color:var(--paper-gray-400)]"></div>`
+      : isPaste ? pasteThumb(it) : isNew ? `<div data-node-label="New Slide Blank" className="flex shrink-0 w-[${GW}px] h-[${GH}px] rounded-[2px] bg-white ${ring}"></div>` : thumb(it, GW, '');
+    const frame = rowSel ? 'shadow-[0px_0px_0px_4px_#a7c5f2]' : sel ? 'shadow-[0px_0px_0px_2px_var(--ad-brand)]' : '';
+    return `<div data-node-label="Grid Item ${isGhost ? 'Ghost' : n}" className="flex rounded-[3px] ${frame} relative">${body}${n === '' ? '' : `<span data-node-label="Slide Number" className="${F} absolute left-[8px] top-[6px] block text-[11px] ${numCls}">${n}</span>`}</div>`;
+  };
+  let n = 0;
+  const secs = SECTIONS.map(([name, items], k) => {
+    let seq = items;
+    if (k === 1 && state === 'hold') seq = [3, 4, 5, 'ghost'];
+    if (k === 1 && state === 'added') seq = [3, 'new', 4, 5];
+    if (k === 0 && state === 'pasted') seq = [1, 2, 'pa', 'pb'];
+    const rowSel = state === 'section' && k === 2;
+    const cells = seq.map(it => cell(it, it === 'ghost' ? '' : ++n, rowSel)).join('');
+    return `<div data-node-label="Section ${name}" className="flex flex-col gap-4">
+      <div data-node-label="Section Head" className="flex h-5 items-center gap-3">${T('Section Name', name, `${rowSel ? '[color:var(--paper-blue-link)]' : ink} text-xs font-semibold`)}<div data-node-label="Section Rule" className="flex-1 h-px block [background-color:var(--paper-gray-100)]"></div></div>
+      <div data-node-label="Section Row" className="flex gap-8">${cells}</div>
+    </div>`;
+  }).join('');
+  return `<div data-node-label="Grid" className="flex w-[${4 * GW + 3 * GG}px] flex-col gap-9">${secs}</div>`;
+}
+const rowMid = k => GT + k * SEC + 36 + GH / 2;
+const gapX = (idx) => GL + (idx + 1) * GW + idx * GG + GG / 2;
+
+const CURSOR = '<svg viewBox="0 0 24 24" width="100%" height="100%"><path d="M5 3l14 7.2-6.3 1.8L9.9 18.6z" fill="#111111" stroke="#ffffff" strokeWidth="1.5" strokeLinejoin="round"></path></svg>';
+function quickPicker() {
+  const cell = n => `<div data-node-label="Layout Cell" className="flex flex-col gap-1.5">${layoutThumb(n, 112)}${T('Layout Name', n, `${ink} text-xs`)}</div>`;
+  const pick = ['Title','Executive summary','Chart and takeaway','Two columns','Table','Next steps'];
+  return `<div data-node-label="Quick Picker" className="flex w-[380px] flex-col bg-white rounded-[12px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] p-3 gap-3">
+    <div data-node-label="Describe Field" className="flex h-10 items-center rounded-[9px] ${btn} pl-2.5 pr-1.5 gap-2">
+      <div data-node-label="Describe Spark" className="flex size-5 shrink-0 justify-center items-center rounded-[6px] [background-color:var(--ad-brand)] text-white"><div data-node-label="Spark" className="size-3 block">${SPARK}</div></div>
+      ${T('Describe Placeholder', 'Describe slide 4', `${sub} text-[13px] flex-1`)}
+      <div data-node-label="Describe Send" className="flex size-7 justify-center items-center rounded-full [background-color:var(--paper-gray-200)] text-white">${ic('up', 14)}</div>
+    </div>
+    <div data-node-label="Quick Layouts" className="flex flex-col gap-3">
+      <div data-node-label="Layout Row" className="flex gap-2">${pick.slice(0, 3).map(cell).join('')}</div>
+      <div data-node-label="Layout Row" className="flex gap-2">${pick.slice(3).map(cell).join('')}</div>
+    </div>
+    <div data-node-label="Picker Foot" className="flex justify-between items-center">${T('All Layouts', 'All layouts', `[color:var(--paper-blue-link)] text-xs font-medium`)}${T('Blank Hint', 'Esc keeps it blank', `${sub} text-xs`)}</div>
+  </div>`;
+}
+
+const LAYOUTS = ['Title','Section','Executive summary','Chart and takeaway','Two columns','Table','Big number','Timeline','Team','Next steps'];
+function layoutThumb(n, w) {
+  const k = w / 236, px = v => `${Math.round(v * k * 10) / 10}px`, h = Math.round(w * 9 / 16);
+  const bar = (wd, hh = 4, c = 'var(--paper-gray-200)') => `<div data-node-label="Line" className="shrink-0 block rounded-full" style={{width:'${px(wd)}',height:'${px(hh)}',backgroundColor:'${c}'}}></div>`;
+  const blk = (wd, hh, c = 'var(--paper-gray-100)') => `<div data-node-label="Block" className="shrink-0 block rounded-[2px]" style={{width:'${px(wd)}',height:'${px(hh)}',backgroundColor:'${c}'}}></div>`;
+  const head = bar(110, 6, 'var(--deck-navy)');
+  const col = (inner, g = 5) => `<div data-node-label="Col" className="flex flex-col" style={{gap:'${px(g)}'}}>${inner}</div>`;
+  const rowx = (inner, g = 10, extra = '') => `<div data-node-label="Row" className="flex ${extra}" style={{gap:'${px(g)}'}}>${inner}</div>`;
+  const body = {
+    'Title': `<div data-node-label="Grow" className="flex-1 block"></div>${bar(130, 8, 'var(--deck-navy)')}${bar(80)}`,
+    'Section': `<div data-node-label="Grow" className="flex-1 block"></div>${bar(20, 4, 'var(--deck-teal)')}${bar(120, 8, 'var(--deck-navy)')}<div data-node-label="Grow" className="flex-1 block"></div>`,
+    'Executive summary': `${head}${col([0,1,2].map(() => rowx(blk(6, 6, 'var(--deck-teal)') + bar(150), 6, 'items-center')).join(''), 8)}`,
+    'Chart and takeaway': `${head}${rowx(`<div data-node-label="Bars" className="flex items-end" style={{gap:'${px(5)}'}}>${[22,30,36,44,52].map((v, j) => blk(14, v, j === 4 ? 'var(--deck-teal)' : 'var(--deck-mist)')).join('')}</div>` + col(bar(70) + bar(60) + bar(66)), 16, 'items-end')}`,
+    'Two columns': `${head}${rowx(col(bar(16, 4, 'var(--deck-teal)') + bar(80) + bar(70)) + col(bar(16, 4, 'var(--deck-teal)') + bar(80) + bar(70)), 22)}`,
+    'Table': `${head}${col([0,1,2,3].map(r => rowx([0,1,2,3].map(() => blk(36, 7, r === 0 ? 'var(--paper-gray-200)' : 'var(--paper-gray-100)')).join(''), 4)).join(''), 4)}`,
+    'Big number': `<div data-node-label="Grow" className="flex-1 block"></div><span data-node-label="Big" className="${F} block font-semibold" style={{fontSize:'${px(30)}',color:'var(--deck-teal)',lineHeight:1}}>71%</span>${bar(90)}<div data-node-label="Grow" className="flex-1 block"></div>`,
+    'Timeline': `${head}<div data-node-label="Grow" className="flex-1 block"></div>${rowx([0,1,2,3].map(() => col(blk(8, 8, 'var(--deck-teal)') + bar(36), 5)).join(''), 14)}<div data-node-label="Grow" className="flex-1 block"></div>`,
+    'Team': `${head}${rowx([0,1,2,3].map(() => col(`<div data-node-label="Face" className="block rounded-full" style={{width:'${px(26)}',height:'${px(26)}',backgroundColor:'var(--paper-gray-200)'}}></div>` + bar(30), 5)).join(''), 14)}`,
+    'Next steps': `${head}${col([0,1,2].map(j => rowx(`<span data-node-label="Step No" className="${F} block font-semibold" style={{fontSize:'${px(9)}',color:'var(--deck-teal)'}}>${j + 1}</span>` + bar(120), 7, 'items-center')).join(''), 8)}`,
+  }[n];
+  return `<div data-node-label="Layout ${n}" className="flex flex-col shrink-0 bg-white rounded-[2px] ${ring} overflow-hidden" style={{width:'${w}px',height:'${h}px',padding:'${px(16)}',gap:'${px(10)}'}}>${body}</div>`;
+}
+
+function picker() {
+  const tpl = (name, bg, titleColor, title, sub2) => `<div data-node-label="Template Cell" className="flex flex-col gap-2">
+      <div data-node-label="Template Thumb" className="flex w-[224px] h-[126px] flex-col justify-center rounded-[2px] ${bg} px-5 gap-1.5">
+        <span data-node-label="Thumb Title" className="${F} block text-[13px] font-semibold" style="color:${titleColor}">${title}</span>
+        <div data-node-label="Thumb Line" className="w-[90px] h-[3px] block rounded-full" style="background-color:${sub2}"></div>
+      </div>
+      ${T('Template Name', name, `${ink} text-[13px]`)}
+    </div>`;
+  const group = (label, cells) => `<div data-node-label="Template Group" className="flex flex-col gap-3">${T('Group Label', label, `${ink} text-[13px] font-semibold`)}<div data-node-label="Template Row" className="flex gap-4">${cells}</div></div>`;
+  return `<div data-node-label="New Slide Picker" className="flex w-[496px] flex-col pb-5 bg-white rounded-[14px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] overflow-hidden">
+    <div data-node-label="Picker Search Wrap" className="flex p-3 border-b [border-bottom-color:var(--paper-gray-100)]">
+      <div data-node-label="Picker Search" className="flex flex-1 h-10 items-center rounded-[10px] [background-color:var(--paper-gray-100)] px-3 gap-2">${ic('search', 15, sub)}${T('Search Placeholder', 'Search templates', `${sub} text-[13px]`)}</div>
+    </div>
+    <div data-node-label="Template Groups" className="flex flex-col px-4 pt-4 gap-6">
+      ${group('Your templates', tpl('Halden', '[background-color:var(--deck-navy)]', '#ffffff', 'Halden', '#ffffff55'))}
+      ${group('Basic', tpl('Light slides', 'bg-white ' + ring, 'var(--paper-gray-900)', 'Slide title', 'var(--paper-gray-200)') + tpl('Dark slides', '[background-color:var(--paper-gray-950)]', '#ffffff', 'Slide title', '#ffffff40'))}
+    </div>
+  </div>`;
+}
+
+const FLOW_P = [
+  ['<path d="M7.5 6h13.5l-4.5 12H3z"/>', ''],
+  ['<path d="M3 6h13.5l4.5 12H7.5z"/>', ''],
+  ['<path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3v12c0 1.7-3.6 3-8 3s-8-1.3-8-3z"/>', '<path d="M4 6c0 1.7 3.6 3 8 3s8-1.3 8-3"/>'],
+  ['<path d="M6 5h12c1.7 0 3 3.1 3 7s-1.3 7-3 7H6c-1.7 0-3-3.1-3-7s1.3-7 3-7z"/>', '<path d="M18 5c-1.7 0-3 3.1-3 7s1.3 7 3 7"/>'],
+  ['<path d="M4 4h11l5 5v11H4z"/>', '<path d="M15 4v5h5"/>'],
+  ['<path d="M3 5h6l2 2.5h10V19H3z"/>', '<path d="M3 9h18"/>'],
+  ['<path d="M4 5h16v11c-3 0-5-2-8 0s-5 1.5-8 0z"/>', ''],
+  ['<path d="M7 3h14v11c-3 0-5-2-7 0"/><path d="M3 7h14v11c-3 0-5-2-7 0s-4 1.5-7 0z"/>', ''],
+  ['<rect x="3" y="5" width="18" height="14" rx="1"/>', '<path d="M7 5v14M17 5v14"/>'],
+  ['<path d="M5 4h14v9l-7 6.5L5 13z"/>', ''],
+  ['<path d="M3 6h18l-3.5 12h-11z"/>', ''],
+  ['<path d="M4 7.5 20 4v16H4z"/>', ''],
+  ['<path d="M7.5 5h9l4.5 7-4.5 7h-9L3 12z"/>', ''],
+  ['<rect x="3" y="5" width="18" height="14" rx="1"/>', '<path d="M3 9.5h18M8 5v14"/>'],
+  ['<circle cx="12" cy="12" r="9"/>', '<path d="M12 3v18M3 12h18"/>'],
+  ['<circle cx="12" cy="12" r="9"/>', '<path d="m5.6 5.6 12.8 12.8M18.4 5.6 5.6 18.4"/>'],
+];
+function shapesPanel() {
+  const tile = k => `<div data-node-label="Shape Tile" className="flex size-[68px] justify-center items-center rounded-[8px] [background-color:var(--paper-gray-50)]"><div data-node-label="Shape Art" className="size-[30px] block"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="#4D94FB" stroke="#2D6FCD" strokeWidth="1" strokeLinejoin="round">${SHAPE_P[k]}</svg></div></div>`;
+  const line = arrow => `<div data-node-label="Shape Tile" className="flex size-[68px] justify-center items-center rounded-[8px] [background-color:var(--paper-gray-50)]"><div data-node-label="Line Art" className="size-[26px] block"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="#222222" strokeWidth="1.5" strokeLinecap="round"><path d="M5 19 19 5"/>${arrow ? '<path d="M11 5h8v8"/>' : ''}</svg></div></div>`;
+  const rows = arr => { const o = []; for (let k = 0; k < arr.length; k += 3) o.push(`<div data-node-label="Shape Row" className="flex gap-1.5">${arr.slice(k, k + 3).join('')}</div>`); return o.join(''); };
+  const head = (t, open) => `<div data-node-label="Group Head" className="flex h-7 items-center gap-1">${ic(open ? 'chev' : 'chevr', 12, sub)}${T('Group Name', t, `${ink} text-xs font-semibold`)}</div>`;
+  return `<div data-node-label="Slide Sidebar" className="flex w-[248px] h-full shrink-0 flex-col bg-white border-r [border-right-color:var(--paper-gray-100)]">
+    <div data-node-label="Sidebar Head" className="flex h-14 shrink-0 items-center justify-between pl-3 pr-2">
+      <div data-node-label="Deck Head" className="flex items-center gap-2"><div data-node-label="Mark" className="size-[20px] shrink-0 block">${MARK}</div><div data-node-label="Deck Title" className="flex items-center gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium`)}${ic('chev', 14, sub)}</div></div>
+      <div data-node-label="Grid Button" className="flex size-8 justify-center items-center rounded-[7px] [color:var(--paper-gray-600)]">${ic('grid', 16)}</div>
+    </div>
+    <div data-node-label="Media Head" className="flex h-10 shrink-0 items-center px-2 gap-1">${ic('chevl', 16, ink)}${T('Media Title', 'Shapes', `${ink} text-sm font-semibold`)}</div>
+    <div data-node-label="Media Search Wrap" className="flex px-3 pb-3 border-b [border-bottom-color:var(--paper-gray-100)]"><div data-node-label="Media Search" className="flex flex-1 h-8 items-center rounded-[8px] [background-color:var(--paper-gray-100)] px-2.5 gap-2">${ic('search', 14, sub)}${T('Media Search Text', 'Search shapes', `${sub} text-[13px]`)}</div></div>
+    <div data-node-label="Shapes Body" className="flex flex-1 min-h-0 flex-col px-3 pt-2 gap-2 overflow-hidden">
+      ${head('Lines', true)}${rows([line(false), line(true)])}
+      ${head('Basic', true)}${rows(['square', 'circle', 'diamond', 'triangle', 'tridown', 'pill', 'pentagon', 'octagon', 'plus', 'arrowl', 'arrowr', 'chevron', 'star', 'bubble'].map(tile))}
+      ${head('Flowchart', true)}${rows(FLOW_P.map(([f, o]) => `<div data-node-label="Shape Tile" className="flex size-[68px] shrink-0 justify-center items-center rounded-[8px] [background-color:var(--paper-gray-50)]"><div data-node-label="Shape Art" className="size-[30px] block"><svg viewBox="0 0 24 24" width="100%" height="100%" stroke="#2D6FCD" strokeWidth="1" strokeLinejoin="round"><g fill="#4D94FB">${f}</g><g fill="none">${o}</g></svg></div></div>`))}
+    </div>
+  </div>`;
+}
+function actionsPop() {
+  const item = (k, t) => `<div data-node-label="Action Item" className="flex h-9 items-center rounded-[8px] px-2 gap-2.5">${ic(k, 17, ink)}${T('Action Label', t, `${ink} text-[13px]`)}</div>`;
+  const head = t => T('Action Group', t, `${sub} text-xs pl-2 pt-1`);
+  return `<div data-node-label="Actions Pop" className="flex w-[320px] flex-col bg-white rounded-[12px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] p-2 gap-1">
+    <div data-node-label="Action Search" className="flex h-9 items-center rounded-[8px] [background-color:var(--paper-gray-100)] px-2.5 gap-2">${ic('search', 15, sub)}${T('Action Search Text', 'Search actions', `${sub} text-[13px]`)}</div>
+    ${head('Insert')}${item('chart', 'Chart')}${item('table', 'Table')}${item('icon', 'Icon')}
+    ${head('Image')}${item('rmbg', 'Remove background')}${item('hd', 'Boost resolution')}
+  </div>`;
+}
+function textPanel() {
+  const st = (label, cls) => `<div data-node-label="Text Style" className="flex items-center rounded-[8px] [background-color:var(--paper-gray-50)] px-3 py-2.5">${T('Style Sample', label, `${ink} ${cls}`)}</div>`;
+  return `<div data-node-label="Slide Sidebar" className="flex w-[248px] h-full shrink-0 flex-col bg-white border-r [border-right-color:var(--paper-gray-100)]">
+    <div data-node-label="Sidebar Head" className="flex h-14 shrink-0 items-center justify-between pl-3 pr-2">
+      <div data-node-label="Deck Head" className="flex items-center gap-2"><div data-node-label="Mark" className="size-[20px] shrink-0 block">${MARK}</div><div data-node-label="Deck Title" className="flex items-center gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium`)}${ic('chev', 14, sub)}</div></div>
+      <div data-node-label="Grid Button" className="flex size-8 justify-center items-center rounded-[7px] [color:var(--paper-gray-600)]">${ic('grid', 16)}</div>
+    </div>
+    <div data-node-label="Media Head" className="flex h-10 shrink-0 items-center px-2 gap-1">${ic('chevl', 16, ink)}${T('Media Title', 'Text', `${ink} text-sm font-semibold`)}</div>
+    <div data-node-label="Add Text Wrap" className="flex px-3 pb-3 border-b [border-bottom-color:var(--paper-gray-100)]"><div data-node-label="Add Text Button" className="flex flex-1 h-8 justify-center items-center rounded-[8px] ${btn} gap-1.5">${ic('text', 14, ink)}${T('Add Text Label', 'Add text box', `${ink} text-[13px] font-medium`)}</div></div>
+    <div data-node-label="Text Body" className="flex flex-1 min-h-0 flex-col px-3 pt-3 gap-2 overflow-hidden">
+      ${T('Text Group', 'Halden styles', `${mut} text-xs font-medium`)}
+      ${st('Title', 'text-[30px] font-semibold tracking-[-0.6px] leading-[1.1]')}${st('Header 1', 'text-[22px] font-semibold tracking-[-0.3px]')}${st('Header 2', 'text-lg font-semibold')}${st('Header 3', 'text-[15px] font-semibold')}${st('Body 1', 'text-[15px]')}${st('Body 2', 'text-sm')}${st('Body 3', 'text-[13px]')}${st('Note', 'text-xs [color:var(--paper-gray-600)]')}
+    </div>
+  </div>`;
+}
+function slideCol() {
+  const th = i => `<div data-node-label="Col Thumb ${i}" className="flex rounded-[4px] p-[2px] ${i === 3 ? 'shadow-[0px_0px_0px_2px_var(--ad-brand)]' : ''}">${thumb(i, 60, '')}</div>`;
+  const div = '<div data-node-label="Col Divider" className="w-8 h-px block [background-color:var(--paper-gray-200)] my-1"></div>';
+  return `<div data-node-label="Slide Column" className="flex w-[96px] h-full shrink-0 flex-col items-center bg-white border-r [border-right-color:var(--paper-gray-100)] pt-3 gap-2">
+    <div data-node-label="Col Add" className="flex w-[64px] h-8 shrink-0 justify-center items-center rounded-[8px] ${btn}">${ic('plus', 15, ink)}</div>
+    <div data-node-label="Col Sep" className="w-full h-px block [background-color:var(--paper-gray-100)] my-1"></div>
+    ${th(1)}${th(2)}${div}${th(3)}${th(4)}${th(5)}${div}${th(6)}${th(7)}${th(8)}
+  </div>`;
+}
+function mediaPanel() {
+  const col = arr => `<div data-node-label="Media Col" className="flex flex-1 flex-col gap-2">${arr.map(([h, c]) => `<div data-node-label="Media Tile" className="w-full block rounded-[6px]" style="height:${h}px;background-color:${c}"></div>`).join('')}</div>`;
+  return `<div data-node-label="Slide Sidebar" className="flex w-[248px] h-full shrink-0 flex-col bg-white border-r [border-right-color:var(--paper-gray-100)]">
+    <div data-node-label="Sidebar Head" className="flex h-14 shrink-0 items-center justify-between pl-3 pr-2">
+      <div data-node-label="Deck Head" className="flex items-center gap-2"><div data-node-label="Mark" className="size-[20px] shrink-0 block">${MARK}</div><div data-node-label="Deck Title" className="flex items-center gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium`)}${ic('chev', 14, sub)}</div></div>
+      <div data-node-label="Grid Button" className="flex size-8 justify-center items-center rounded-[7px] [color:var(--paper-gray-600)]">${ic('grid', 16)}</div>
+    </div>
+    <div data-node-label="Media Head" className="flex h-10 shrink-0 items-center px-2 gap-1">${ic('chevl', 16, ink)}${T('Media Title', 'Images', `${ink} text-sm font-semibold`)}</div>
+    <div data-node-label="Media Search Wrap" className="flex px-3 pb-3 border-b [border-bottom-color:var(--paper-gray-100)]"><div data-node-label="Media Search" className="flex flex-1 h-8 items-center rounded-[8px] [background-color:var(--paper-gray-100)] px-2.5 gap-2">${ic('search', 14, sub)}${T('Media Search Text', 'Search images', `${sub} text-[13px]`)}</div></div>
+    <div data-node-label="Media Body" className="flex flex-1 min-h-0 flex-col px-3 pt-3 gap-2.5 overflow-hidden">
+      ${T('Media Label', 'Stock photos', `${mut} text-xs font-medium`)}
+      <div data-node-label="Media Grid" className="flex gap-2">${col([[78, '#4f6b7d'], [130, '#a9c4d2'], [96, '#0f2433'], [120, '#c1c1c0'], [90, '#1d6b8f']])}${col([[120, '#d7d7d6'], [88, '#1d6b8f'], [140, '#a9c4d2'], [80, '#4f6b7d'], [110, '#eaeae7']])}</div>
+    </div>
+    <div data-node-label="Media Foot" className="flex shrink-0 flex-col border-t [border-top-color:var(--paper-gray-100)] p-3">
+      <div data-node-label="Upload Button" className="flex h-9 justify-center items-center rounded-[8px] ${btn} gap-2">${ic('upload', 15, ink)}${T('Upload Label', 'Upload image', `${ink} text-[13px] font-medium`)}</div>
+    </div>
+  </div>`;
+}
+function ownLimitDialog(low = false) {
+  return `<div data-node-label="Dialog Scrim" className="flex absolute left-0 top-0 w-[1470px] h-[923px] justify-center items-center [background-color:#00000040]">
+    <div data-node-label="Alert Dialog" className="flex w-[400px] flex-col bg-white rounded-[16px] shadow-[0px_0px_0px_1px_#00000014,0px_24px_48px_#00000029] p-6 gap-4">
+      <div data-node-label="Dialog Head" className="flex justify-between items-start"><div data-node-label="Alert Icon" className="flex size-9 justify-center items-center rounded-full bg-[#FDF0F0]"><svg viewBox="0 0 20 20" width="20" height="20"><circle cx="10" cy="10" r="7" fill="none" stroke="#D93F3F" strokeWidth="2.2"></circle></svg></div><div data-node-label="Close Button" className="flex size-7 justify-center items-center rounded-[6px] [color:var(--paper-gray-600)]">${ic('x', 14)}</div></div>
+      <div data-node-label="Alert Text" className="flex flex-col gap-1.5">${T('Alert Title', "You've hit this week's limit", `${ink} text-[17px] font-semibold`)}${T('Alert Body', 'It resets Monday at 8:00 AM, or you can reset now for $5.', `${mut} text-[13px] leading-[1.5]`)}</div>
+      <div data-node-label="Dialog Foot" className="flex justify-end gap-2 pt-1">
+        <div data-node-label="Secondary Button" className="flex h-9 items-center rounded-[8px] ${btn} px-4">${T('Secondary Label', 'Not now', `${ink} text-sm font-medium`)}</div>
+        <div data-node-label="Primary Button" className="flex h-9 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-4">${T('Primary Label', 'Reset', 'text-white text-sm font-medium')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function resetDialog(fail) {
+  const row = (a, b, strong) => `<div data-node-label="Reset Row" className="flex justify-between items-center">${T('Reset Key', a, `${mut} text-[13px]`)}${T('Reset Val', b, `${ink} text-[13px] ${strong ? 'font-semibold' : ''}`)}</div>`;
+  return `<div data-node-label="Dialog Scrim" className="flex absolute left-0 top-0 w-[1470px] h-[923px] justify-center items-center [background-color:#0000004d]">
+    <div data-node-label="Reset Dialog" className="flex w-[400px] flex-col bg-white rounded-[14px] shadow-[0px_24px_64px_#00000040]">
+      <div data-node-label="Dialog Head" className="flex h-14 items-center justify-between border-b [border-bottom-color:var(--paper-gray-100)] pl-5 pr-3">${T('Dialog Title', 'Reset weekly usage', `${ink} text-[15px] font-semibold`)}<div data-node-label="Close Button" className="flex size-8 justify-center items-center rounded-[8px] [color:var(--paper-gray-600)]">${ic('x', 16)}</div></div>
+      <div data-node-label="Dialog Body" className="flex flex-col px-5 py-5 gap-4">
+        ${T('Reset Lead', 'Your usage goes back to 100% right away.', `${ink} text-[13px]`)}
+        <div data-node-label="Reset Rows" className="flex flex-col rounded-[10px] [background-color:var(--paper-gray-50)] p-3.5 gap-2.5">${row('Credit balance', '$15.00')}${row('Reset', '$5.00')}${row('After reset', '$10.00', true)}</div>
+        ${fail ? `<div data-node-label="Pay Error" className="flex items-start rounded-[10px] bg-[#fdf0f0] px-3.5 py-3 gap-2.5">${ic('alert', 15, 'text-[#cf222e]')}${T('Pay Error Text', "Your card was declined. Nothing was charged. Try another card or bank QR.", 'text-[#8a1c24] text-[13px] leading-[1.45]')}</div>` : ''}
+      </div>
+      <div data-node-label="Dialog Foot" className="flex justify-end border-t [border-top-color:var(--paper-gray-100)] px-5 py-3 gap-2">
+        <div data-node-label="Cancel Button" className="flex h-9 items-center rounded-[8px] ${btn} px-4">${T('Cancel Label', fail ? 'Add credits' : 'Cancel', `${ink} text-[13px] font-medium`)}</div>
+        <div data-node-label="Reset Confirm" className="flex h-9 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-4">${T('Confirm Label', fail ? 'Try again' : 'Reset', 'text-white text-[13px] font-medium')}</div>
+      </div>
+    </div>
+  </div>`;
+}
+function imagePop() {
+  const tab = (t, on) => `<div data-node-label="Img Tab" className="flex h-7 items-center rounded-[6px] ${on ? 'bg-white shadow-[0px_1px_2px_#0000001a]' : ''} px-2.5">${T('Img Tab Label', t, `${on ? ink + ' font-medium' : mut} text-xs`)}</div>`;
+  const tiles = ['#a9c4d2', '#4f6b7d', '#d7d7d6', '#1d6b8f', '#c1c1c0', '#0f2433'];
+  return `<div data-node-label="Image Pop" className="flex w-[360px] flex-col bg-white rounded-[12px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] p-3 gap-3">
+    <div data-node-label="Img Top" className="flex items-center justify-between"><div data-node-label="Img Tabs" className="flex items-center rounded-[8px] [background-color:var(--paper-gray-100)] p-0.5">${tab('Your images', false)}${tab('Stock photos', true)}${tab('Icons', false)}</div>${T('Upload Link', 'Upload', '[color:var(--paper-blue-link)] text-xs font-medium')}</div>
+    <div data-node-label="Img Search" className="flex h-9 items-center rounded-[8px] [background-color:var(--paper-gray-50)] px-3 gap-2">${ic('search', 14, sub)}${T('Img Search Text', 'Office team meeting', `${ink} text-[13px]`)}</div>
+    <div data-node-label="Img Grid" className="flex flex-col gap-1.5">${[0, 3].map(k => `<div data-node-label="Img Row" className="flex gap-1.5">${tiles.slice(k, k + 3).map(c => `<div data-node-label="Img Tile" className="flex-1 h-[72px] block rounded-[6px]" style="background-color:${c}"></div>`).join('')}</div>`).join('')}</div>
+    ${T('Img Note', 'Free to use. Credit goes in the speaker notes when needed.', `${sub} text-[11px]`)}
+  </div>`;
+}
+function errPage(id, label, title, sub2, cta) {
+  return `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1470px] h-[923px] flex-col justify-center items-center bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Err Column" className="flex w-[360px] flex-col items-center gap-5">
+    <div data-node-label="Err Mark" className="size-[44px] block">${MARK}</div>
+    <div data-node-label="Err Text" className="flex flex-col items-center gap-1.5">${T('Err Title', title, `${ink} text-[15px] font-medium`)}${T('Err Sub', sub2, `${sub} text-[13px] text-center leading-[1.5]`)}</div>
+    ${primary(cta)}
+  </div>
+</div>`;
+}
+function exportDialog(kind) {
+  const row = (label, ctrl) => `<div data-node-label="Export Row" className="flex items-start gap-4"><div data-node-label="Row Label Box" className="flex w-[110px] h-9 shrink-0 items-center">${T('Row Label', label, `${mut} text-[13px]`)}</div><div data-node-label="Row Control" className="flex flex-1 flex-col gap-3">${ctrl}</div></div>`;
+  const sel = v => `<div data-node-label="Select" className="flex h-9 items-center justify-between rounded-[8px] bg-white ${ring} px-3">${T('Select Value', v, `${ink} text-[13px]`)}${ic('chev', 14, sub)}</div>`;
+  const radio = (label, sub2, on) => `<div data-node-label="Radio Row" className="flex items-start gap-2.5">
+      <div data-node-label="Radio Slot" className="flex h-5 items-center"><div data-node-label="Radio" className="flex size-4 shrink-0 justify-center items-center rounded-full ${on ? '[background-color:var(--ad-brand)]' : 'border-[1.5px] [border-color:var(--paper-gray-300)]'}">${on ? '<div data-node-label="Radio Dot" className="size-1.5 block rounded-full bg-white"></div>' : ''}</div></div>
+      <div data-node-label="Radio Text" className="flex flex-1 flex-col gap-0.5">${T('Radio Label', label, `${ink} text-[13px]`)}${T('Radio Sub', sub2, `${sub} text-xs leading-[1.45]`)}</div>
+    </div>`;
+  const body = kind === 'pptx'
+    ? row('File type', sel('PowerPoint')) + row('Slides', sel('All slides'))
+    : row('File type', sel('PDF')) + row('Slides', sel('All slides')) + row('Quality', sel('Standard'));
+  return `<div data-node-label="Dialog Scrim" className="flex absolute left-0 top-0 w-[1470px] h-[923px] justify-center items-center [background-color:#0000004d]">
+    <div data-node-label="Export Dialog" className="flex w-[480px] flex-col bg-white rounded-[14px] shadow-[0px_24px_64px_#00000040]">
+      <div data-node-label="Dialog Head" className="flex h-14 items-center justify-between border-b [border-bottom-color:var(--paper-gray-100)] pl-5 pr-3">${T('Dialog Title', 'Export', `${ink} text-[15px] font-semibold`)}<div data-node-label="Close Button" className="flex size-8 justify-center items-center rounded-[8px] [color:var(--paper-gray-600)]">${ic('x', 16)}</div></div>
+      <div data-node-label="Dialog Body" className="flex flex-col px-5 py-5 gap-3">${body}</div>
+      <div data-node-label="Dialog Foot" className="flex justify-end border-t [border-top-color:var(--paper-gray-100)] px-5 py-3"><div data-node-label="Export Confirm" className="flex h-9 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-4">${T('Confirm Label', 'Export', 'text-white text-[13px] font-medium')}</div></div>
+    </div>
+  </div>`;
+}
+function exportPop() {
+  const opt = (label, sub2, on) => `<div data-node-label="Export Option" className="flex items-center rounded-[8px] ${on ? '[background-color:var(--paper-gray-50)]' : ''} px-2.5 py-2 gap-2.5">
+      <div data-node-label="Radio" className="flex size-4 shrink-0 justify-center items-center rounded-full ${on ? '[background-color:var(--ad-brand)]' : 'border-[1.5px] [border-color:var(--paper-gray-300)]'}">${on ? '<div data-node-label="Radio Dot" className="size-1.5 block rounded-full bg-white"></div>' : ''}</div>
+      <div data-node-label="Option Text" className="flex flex-col gap-0.5">${T('Option Label', label, `${ink} text-[13px] font-medium`)}${T('Option Sub', sub2, `${sub} text-xs`)}</div>
+    </div>`;
+  return `<div data-node-label="Export Pop" className="flex w-[260px] flex-col bg-white rounded-[12px] shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f] p-1.5 gap-1">
+    ${opt('PowerPoint', 'Editable .pptx', true)}
+    ${opt('PDF', 'For reading and print', false)}
+    <div data-node-label="Pop Action" className="flex px-1 pt-1 pb-0.5"><div data-node-label="Download Button" className="flex flex-1 h-9 justify-center items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f]">${T('Download Label', 'Download', 'text-white text-[13px] font-medium')}</div></div>
+  </div>`;
+}
+function panelHead(tab, offline = false) {
+  const on = 'bg-white shadow-[0px_1px_2px_#0000001a]';
+  return `<div data-node-label="Panel Head" className="flex h-14 shrink-0 items-center justify-between border-b [border-bottom-color:var(--paper-gray-100)] pl-3 pr-2">
+      <div data-node-label="Zoom" className="flex h-8 items-center pr-1 gap-0.5">${T('Zoom Value', '64%', `${mut} text-[13px]`)}${ic('chev', 12, sub)}</div>
+      <div data-node-label="Export Button" className="flex h-8 items-center ${offline ? 'opacity-40' : ''} [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Export Label', 'Export', 'text-white text-[13px] font-medium')}</div>
+    </div>`;
+}
+function panelSwitch(tab) {
+  const on = 'bg-white shadow-[0px_1px_2px_#0000001a]';
+  return `<div data-node-label="Panel Switch" className="flex h-8 items-center rounded-[8px] [background-color:var(--paper-gray-100)] p-0.5 gap-0">
+        <div data-node-label="Switch Agent" className="flex h-7 items-center rounded-[6px] ${tab === 'agent' ? on : ''} px-2.5 gap-1.5"><div data-node-label="Spark" className="size-[14px] block ${tab === 'agent' ? '[color:var(--ad-brand)]' : '[color:var(--paper-gray-600)]'}">${SPARK}</div>${T('Switch Label', 'Agent', `${tab === 'agent' ? ink + ' font-medium' : mut} text-[13px]`)}</div>
+        <div data-node-label="Switch Design" className="flex h-7 items-center rounded-[6px] ${tab === 'design' ? on : ''} px-2.5 gap-1.5">${ic('sliders', 14, tab === 'design' ? ink : mut)}${T('Switch Label', 'Design', `${tab === 'design' ? ink + ' font-medium' : mut} text-[13px]`)}</div>
+      </div>`;
+}
+function designPanel() {
+  const sec = (title, inner, last) => `<div data-node-label="Design Section" className="flex flex-col ${last ? '' : 'border-b [border-bottom-color:var(--paper-gray-100)]'} px-4 py-4 gap-3">${T('Section Title', title, `${ink} text-[13px] font-semibold`)}${inner}</div>`;
+  const field = (label, inner) => `<div data-node-label="Field" className="flex h-9 items-center justify-between rounded-[8px] bg-white ${ring} px-3">${inner}</div>`;
+  const sw = (c, name, border) => `<div data-node-label="Color Row" className="flex h-9 items-center rounded-[8px] bg-white ${ring} px-3 gap-2.5"><div data-node-label="Swatch" className="size-4 block rounded-[4px] ${border ? ring : ''}" style="background-color:${c}"></div>${T('Color Name', name, `${ink} text-[13px]`)}</div>`;
+  const theme = `<div data-node-label="Theme Card" className="flex items-center rounded-[10px] bg-white ${ring} p-2 gap-3">
+      <div data-node-label="Theme Swatch" className="flex w-10 h-10 shrink-0 overflow-hidden rounded-[6px]"><div data-node-label="Sw1" className="flex-1 block" style="background-color:var(--deck-navy)"></div><div data-node-label="Sw2" className="flex-1 block" style="background-color:var(--deck-teal)"></div><div data-node-label="Sw3" className="flex-1 block" style="background-color:var(--deck-mist)"></div></div>
+      <div data-node-label="Theme Text" className="flex flex-1 flex-col gap-0.5">${T('Theme Name', 'Halden', `${ink} text-[13px] font-medium`)}${T('Theme Font', 'Geist', `${sub} text-xs`)}</div>
+      ${ic('chev', 14, sub)}
+    </div>`;
+  const bgSeg = `<div data-node-label="Background Type" className="flex h-8 items-center rounded-[8px] [background-color:var(--paper-gray-100)] p-0.5">
+      <div data-node-label="Type Color" className="flex flex-1 h-7 justify-center items-center rounded-[6px] bg-white shadow-[0px_1px_2px_#0000001a]">${T('Type Label', 'Color', `${ink} text-xs font-medium`)}</div>
+      <div data-node-label="Type Image" className="flex flex-1 h-7 justify-center items-center rounded-[6px]">${T('Type Label', 'Image', `${mut} text-xs`)}</div>
+    </div>`;
+  return `<div data-node-label="Agent Panel" className="flex w-[360px] h-full shrink-0 flex-col bg-white border-l [border-left-color:var(--paper-gray-100)]">
+    ${panelHead('design')}
+    <div data-node-label="Slide Title Row" className="flex h-12 shrink-0 items-center border-b [border-bottom-color:var(--paper-gray-100)] px-4">${T('Design Slide', 'Slide 3', `${ink} text-sm font-semibold`)}</div>
+    ${sec('Template', theme)}
+    ${sec('Background', bgSeg + sw('#ffffff', 'White', true))}
+    ${sec('Colors', `<div data-node-label="Colors" className="grid grid-cols-2 gap-2">${sw('var(--deck-navy)', 'Navy')}${sw('var(--deck-teal)', 'Teal')}${sw('var(--deck-mist)', 'Mist')}${sw('#ffffff', 'White', true)}</div>`, true)}
+  </div>`;
+}
+function panel(mode, usageOpen = false, offline = false) {
+  const working = mode === 'working';
+  if (mode === 'own') mode = 'done';
+  const badge = sz => `<div data-node-label="Agent Badge" className="flex size-[${sz}px] shrink-0 justify-center items-center rounded-[6px] [background-color:var(--ad-brand)] text-white"><div data-node-label="Spark" className="size-[${Math.round(sz * 0.6)}px] block">${SPARK}</div></div>`;
+  const step = (st, txt) => `<div data-node-label="Step" className="flex h-6 items-center gap-2">
+    ${st === 'done' ? `<div data-node-label="Step Done" className="flex size-3.5 shrink-0 justify-center items-center [color:var(--paper-gray-400)]">${ic('check', 13)}</div>` : st === 'now' ? '<div data-node-label="Step Now" className="flex size-3.5 shrink-0 justify-center items-center"><div data-node-label="Now Dot" className="size-[7px] block rounded-full [background-color:var(--ad-brand)]"></div></div>' : '<div data-node-label="Step Next" className="flex size-3.5 shrink-0 justify-center items-center"><div data-node-label="Next Ring" className="size-[7px] block rounded-full border-[1.5px] [border-color:var(--paper-gray-300)]"></div></div>'}
+    ${T('Step Text', txt, `${st === 'now' ? ink + ' font-medium' : st === 'done' ? mut : sub} text-[13px]`)}</div>`;
+  const ask = `<div data-node-label="Person Message" className="flex flex-col self-end max-w-[280px] items-end gap-1.5">
+      <div data-node-label="Person Bubble" className="flex [background-color:var(--paper-gray-100)] rounded-[14px] px-3.5 py-2.5">${T('Person Text', 'Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.', `${ink} text-[13px] leading-[1.5]`)}</div>
+      <div data-node-label="Attachment" className="flex h-7 items-center rounded-[8px] ${ring} px-2 gap-1.5">${ic('doc', 13, mut)}${T('Attachment Name', 'Q3 board notes.docx', `${mut} text-xs`)}</div>
+    </div>`;
+  const act = (txt, extra = '') => `<div data-node-label="Activity" className="flex items-center gap-1.5">${T('Activity Text', txt, `${sub} text-[13px]`)}${extra}<div data-node-label="Caret" className="size-2.5 block [color:var(--paper-gray-400)]"><svg viewBox="0 0 10 10" width="100%" height="100%"><path d="M3.5 2.5 7 5l-3.5 2.5z" fill="currentColor"></path></svg></div></div>`;
+  const btnSm = (t, primary) => primary ? `<div data-node-label="Reply Button" className="flex h-8 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Reply Button Label', t, 'text-white text-[13px] font-medium')}</div>` : `<div data-node-label="Reply Button" className="flex h-8 items-center rounded-[8px] ${btn} px-3">${T('Reply Button Label', t, `${ink} text-[13px] font-medium`)}</div>`;
+  if (mode === 'limit') var replyX = `
+      ${act('Read 1 file, built slides 1 to 5')}
+      ${noticeCard({ kind: 'limit', title: K['usage.limit_title'], body: K['usage.limit_body'], actions: [{ label: K['usage.reset_action'], primary: true }] })}`;
+  if (mode === 'resetdone') var replyX = `
+      ${act('Read 1 file, built slides 1 to 5')}
+      ${noticeCard({ kind: 'ok', title: K['history.reset'], body: K['agent.resume_line'], actions: [{ label: K['agent.resume'], primary: true }] })}`;
+  if (mode === 'runfail') var replyX = `
+      ${act('Read 1 file, built slides 1 to 3')}
+      ${noticeCard({ kind: 'error', title: K['agent.failed_title'], body: K['agent.failed_body'], actions: [{ label: K['agent.resume'], primary: true }, { label: K['common.undo'] }] })}`;
+  const reply = replyX ? replyX : working ? `
+      ${act('Read 1 file, applied Halden brand')}
+      ${T('Agent Text', 'Eight slides from your notes. Every chart uses your numbers.', `${ink} text-[13px] leading-[1.6]`)}
+      ${act('Built slides 1 and 2')}
+      <div data-node-label="Activity Now" className="flex items-center">${T('Now Text', 'Building slide 3 of 8', `${sub} text-[13px]`)}</div>` : `
+      ${act('Read 1 file, built 8 slides')}
+      ${T('Agent Text', 'Your deck is ready. Eight slides, every number from your notes.', `${ink} text-[13px] leading-[1.6]`)}
+      <div data-node-label="Run Undo" className="flex items-center gap-1.5">${ic('undo', 13, sub)}${T('Undo Label', 'Undo', `${sub} text-xs`)}</div>
+`;
+  return `<div data-node-label="Agent Panel" className="flex w-[360px] h-full shrink-0 flex-col bg-white border-l [border-left-color:var(--paper-gray-100)] relative">
+    ${panelHead('agent', offline)}
+    <div data-node-label="Chat Bar" className="flex h-11 shrink-0 items-center justify-between pl-3 pr-3">
+      <div data-node-label="Chat Session" className="flex h-6 items-center rounded-[6px] pl-1 pr-1.5 gap-1.5">${ic('history', 13, sub)}${T('Session Name', 'Q3 investor update', `${mut} text-xs`)}${ic('chev', 11, sub)}</div>
+      <div data-node-label="Chat Bar Right" className="flex items-center gap-0.5">
+        <div data-node-label="Usage Ring Button" className="flex size-6 justify-center items-center rounded-[6px] ${usageOpen ? '[background-color:var(--paper-gray-100)]' : ''}"><div data-node-label="Usage Ring" className="size-4 block"><svg viewBox="0 0 20 20" width="100%" height="100%"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#D7D7D6" strokeWidth="2.5"></circle><circle cx="10" cy="10" r="7.5" fill="none" stroke="${mode === 'limit' ? '#E5484D' : '#4D94FB'}" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="${(2 * Math.PI * 7.5 * (mode === 'limit' ? 1 : mode === 'resetdone' ? 0.02 : working ? 0.34 : 0.38)).toFixed(1)} 100" transform="rotate(-90 10 10)"></circle></svg></div></div>
+        <div data-node-label="New Chat Button" className="flex size-7 justify-center items-center rounded-[7px] [color:var(--paper-gray-600)]">${ic('pen', 15)}</div>
+      </div>
+    </div>
+    <div data-node-label="Conversation" className="flex flex-1 flex-col px-4 pt-3 gap-6">
+      ${ask}
+      <div data-node-label="Agent Turn" className="flex flex-col gap-3.5">${reply}</div>
+    </div>
+    ${mode === 'compose' ? `<div data-node-label="Composer Wrap" className="flex flex-col px-3 pb-3 gap-2">
+      <div data-node-label="Composer" className="flex flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_2px_8px_#0000000d] p-3 gap-2.5">
+        <div data-node-label="Context Chips" className="flex flex-wrap items-center gap-1.5">
+          <div data-node-label="Context Chip" className="flex h-6 shrink-0 items-center rounded-[6px] [background-color:var(--paper-gray-100)] pl-2 pr-1 gap-1">${T('Chip Label', 'Slide 3', `${mut} text-xs`)}${ic('x', 11, sub)}</div>
+          <div data-node-label="Context Chip" className="flex h-6 shrink-0 items-center rounded-[6px] bg-[#EEF4FE] pl-2 pr-1 gap-1">${ic('chart', 12, '[color:var(--paper-blue-link)]')}${T('Chip Label', 'Bar chart', '[color:var(--paper-blue-link)] text-xs')}${ic('x', 11, '[color:var(--paper-blue-link)]')}</div>
+        </div>
+        <div data-node-label="Message Field" className="flex flex-col max-h-[168px] overflow-clip relative">
+          ${T('Message Text', 'Make this chart tell the story faster. Lead with the Q3 number, then show the trend across all five quarters. Keep our Halden colors and label each bar with its value. Add one takeaway line under the title, revenue grew 39% year over year, and cut the source note down to a single line so the slide breathes.', `${ink} text-[13px] leading-[1.6]`)}
+          <div data-node-label="Message Fade" className="flex absolute left-0 bottom-0 w-full h-8 [background-image:linear-gradient(180deg,#ffffff00_0%,#ffffff_100%)]"></div>
+        </div>
+        <div data-node-label="Composer Foot" className="flex items-center justify-between">
+          <div data-node-label="Attach Button" className="flex size-7 shrink-0 justify-center items-center rounded-[7px] [color:var(--ad-ink)]">${ic('plus', 17)}</div>
+          <div data-node-label="Send Button" className="flex size-8 shrink-0 justify-center items-center rounded-full [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] text-white">${ic('up', 16)}</div>
+        </div>
+      </div>
+    </div>` : `<div data-node-label="Composer Wrap" className="flex flex-col px-3 pb-3 gap-2">
+      <div data-node-label="Composer" className="flex h-12 items-center rounded-[14px] ${offline ? '[background-color:var(--paper-gray-50)] opacity-60' : 'bg-white'} shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_2px_8px_#0000000d] pl-3 pr-2 gap-2.5">
+        <div data-node-label="Attach Button" className="flex size-7 shrink-0 justify-center items-center rounded-[7px] [color:var(--ad-ink)]">${ic('plus', 17)}</div>
+        ${mode === 'limit' || offline ? '' : `<div data-node-label="Context Chip" className="flex h-6 shrink-0 items-center rounded-[6px] [background-color:var(--paper-gray-100)] pl-2 pr-1 gap-1">${T('Chip Label', 'Slide 3', `${mut} text-xs`)}${ic('x', 11, sub)}</div>`}
+        ${T('Composer Placeholder', offline ? 'Waits for connection' : mode === 'limit' ? 'Resets Monday at 8:00 AM' : working ? 'Add to the request' : 'Ask Aira', `${sub} text-[13px] flex-1`)}
+        ${working ? '<div data-node-label="Stop Button" className="flex size-7 shrink-0 justify-center items-center rounded-full [background-color:var(--paper-gray-900)]"><div data-node-label="Stop Square" className="size-2.5 block rounded-[2px] bg-white"></div></div>' : `<div data-node-label="Mic Button" className="flex size-7 shrink-0 justify-center items-center rounded-[7px] [color:var(--ad-ink)]">${ic('mic', 17)}</div>`}
+      </div>
+    </div>`}
+      ${usageOpen ? `<div data-node-label="Usage Pop" className="flex absolute right-3 top-[100px] w-[220px] flex-col bg-white rounded-[10px] shadow-[0px_0px_0px_1px_#00000014,0px_8px_24px_#0000001a] p-3 gap-2">
+        <div data-node-label="Pop Head" className="flex justify-between items-center">${T('Pop Title', 'Weekly usage', `${ink} text-xs font-medium`)}${T('Pop Value', '38%', `${ink} text-xs font-medium`)}</div>
+        <div data-node-label="Pop Track" className="flex h-1 rounded-full [background-color:var(--paper-gray-100)]"><div data-node-label="Pop Fill" className="w-[38%] h-1 block rounded-full [background-color:var(--ad-brand)]"></div></div>
+        <div data-node-label="Pop Foot" className="flex justify-between items-center">${T('Pop Reset', 'Resets Mon 8:00 AM', `${sub} text-[11px]`)}<div data-node-label="See All" className="flex items-center gap-0.5">${T('See All Label', 'See all', `${ink} text-[11px] font-medium`)}${ic('arrowr', 11, ink)}</div></div>
+      </div>` : ''}
+  </div>`;
+}
+
+const island = inner => `<div data-node-label="Island" className="flex h-11 items-center bg-white rounded-[12px] ${card} px-1.5 gap-1">${inner}</div>`;
+const at = (label, x, y, inner, extra = '') => `<div data-node-label="${label}" className="flex absolute ${extra}" style="${typeof x === 'string' ? x : 'left:' + x + 'px'};top:${y}px">${inner}</div>`;
+const slideScreen = (id, label, mode, withPicker, tab = 'agent', exp = '') => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1470px] h-[923px] [background-color:var(--paper-gray-50)] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip relative">
+${exp === 'image' ? mediaPanel() + slideCol() : exp === 'shapes' ? shapesPanel() + slideCol() : exp === 'text' ? textPanel() + slideCol() : strip(mode)}
+<div data-node-label="Stage" className="flex flex-1 min-w-0 flex-col items-center pt-14 pb-4 gap-0 relative">
+  ${canvas(mode, ['image', 'shapes', 'text'].includes(exp) ? 720 : 800)}
+  <div data-node-label="Stage Space" className="flex-1 block"></div>
+  <div data-node-label="Notes Handle" className="w-12 h-1 block rounded-full [background-color:var(--paper-gray-300)]"></div>
+  <div data-node-label="Handle Gap" className="h-2 block"></div>
+  ${notesBox(mode, ['image', 'shapes', 'text'].includes(exp) ? 720 : 800)}
+  <div data-node-label="Notes Gap" className="h-3 block"></div>
+  ${exp ? '' : ''}${toolbar('slide', mode === 'done' && !withPicker && !exp, exp === 'image', exp === 'shape', exp === 'shapes', exp === 'text', exp === 'actions', tab)}
+  ${exp === 'shape' || exp === 'actions' ? `<div data-node-label="Tray Wrap" className="flex absolute left-0 right-0 bottom-[72px] justify-center">${exp === 'shape' ? shapeTray() : actionsPop()}</div>` : ''}
+  ${mode === 'resetdone' ? toast({ kind: 'success', text: K['usage.reset_done'] }) : ''}
+  ${exp === 'exportfail' ? toast({ kind: 'error', text: K['export.failed'], action: K['pay.try_again'] }) : ''}
+  ${exp === 'offline' ? toast({ kind: 'info', text: K['editor.offline'] }) : ''}
+  ${exp === 'done' ? toast({ kind: 'success', text: K['export.downloaded'].replace('{file}', 'Q3 Investor Update.pptx') }) : ''}
+</div>
+${tab === 'design' ? designPanel() : panel(mode, mode === 'done' && !withPicker && !exp, exp === 'offline')}
+${exp === 'menu' ? at('Export Pop Wrap', 'right:8px', 52, exportPop()) : ''}
+${exp === 'pptx' || exp === 'pdf' ? exportDialog(exp) : ''}
+${exp === 'reset' || exp === 'payfail' ? resetDialog(exp === 'payfail') : ''}
+${exp === 'ownlimit' || exp === 'lowbal' || exp === 'ownadded' ? ownLimitDialog(exp === 'lowbal') : ''}
+${withPicker ? at('Picker Wrap', 256, 12, picker()) : ''}
+</div>`;
+const gridScreen = (id, label, state = 'idle') => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1470px] h-[923px] [background-color:var(--paper-gray-50)] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip relative">
+${at('Grid Wrap', GL, GT, grid(state))}
+${state === 'pasted' ? toast({ kind: 'success', text: K['import.pasted'].replace('{n}', '2'), action: K['common.undo'] }) : ''}
+${state === 'hover' ? at('Row Handle Wrap', GL - 26, rowMid(1) - 18, `<div data-node-label="Row Handle" className="w-1.5 h-9 block rounded-full bg-[#a7c5f2]"></div>`) + at('Insert Dot Wrap', gapX(0) - 8, rowMid(1) - 8, `<div data-node-label="Insert Dot" className="flex size-4 justify-center items-center rounded-full [background-color:var(--ad-brand)] text-white"><div data-node-label="Plus" className="size-[10px] block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" width="100%" height="100%"><path d="M12 4v16M4 12h16"/></svg></div></div>`) : ''}
+${state === 'hold' ? at('Row Handle Wrap', GL - 26, rowMid(1) - 18, `<div data-node-label="Row Handle" className="w-1.5 h-9 block rounded-full bg-[#a7c5f2]"></div>`) + at('Insert Plus Wrap', gapX(2) - 14, rowMid(1) - 14, `<div data-node-label="Insert Plus" className="flex size-7 justify-center items-center rounded-full [background-color:var(--ad-brand)] text-white"><div data-node-label="Plus" className="size-[14px] block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" width="100%" height="100%"><path d="M12 4v16M4 12h16"/></svg></div></div>`) : ''}
+${state === 'added' ? at('Quick Picker Wrap', GL + GW + GG, GT + SEC + 36 + GH + 8, quickPicker()) : ''}
+${state === 'section' ? at('Row Handle Wrap', GL - 30, rowMid(2) - 20, `<div data-node-label="Row Grip" className="flex w-4 h-10 flex-col justify-center items-center rounded-full [background-color:var(--ad-brand)] gap-[3px]">${'<div data-node-label="Grip Line" className="w-2 h-[1.5px] block rounded-full bg-white"></div>'.repeat(3)}</div>`)
+  + at('End Dot Wrap', GL + 3 * GW + 2 * GG + 8, rowMid(2) - 8, `<div data-node-label="Insert Dot" className="flex size-4 justify-center items-center rounded-full [background-color:var(--ad-brand)] text-white"><div data-node-label="Plus" className="size-[10px] block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" width="100%" height="100%"><path d="M12 4v16M4 12h16"/></svg></div></div>`)
+  + at('Below Dot Wrap', GL + GW / 2 - 8, GT + 2 * SEC + 36 + GH + 10, `<div data-node-label="Insert Dot" className="flex size-4 justify-center items-center rounded-full [background-color:var(--ad-brand)] text-white"><div data-node-label="Plus" className="size-[10px] block"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" width="100%" height="100%"><path d="M12 4v16M4 12h16"/></svg></div></div>`)
+  + at('Section Bar Wrap', GL + 66, GT + 2 * SEC - 8, `<div data-node-label="Section Bar" className="flex h-9 items-center bg-white rounded-[10px] ${card} px-1 gap-0.5">${['Rename', 'Duplicate', 'Hide'].map(x => `<div data-node-label="Bar Item" className="flex h-7 items-center rounded-[7px] px-2.5">${T('Bar Label', x, `${ink} text-xs font-medium`)}</div>`).join('')}<div data-node-label="Bar Divider" className="w-px h-4 block [background-color:var(--paper-gray-200)] mx-0.5"></div><div data-node-label="Bar Agent" className="flex h-7 items-center rounded-[7px] px-2 gap-1.5"><div data-node-label="Agent Badge" className="flex size-4 justify-center items-center rounded-[5px] [background-color:var(--ad-brand)] text-white"><div data-node-label="Spark" className="size-2.5 block">${SPARK}</div></div>${T('Bar Label', 'Ask agent', `${ink} text-xs font-medium`)}</div></div>`) : ''}
+${at('Left Island', 12, 12, island(`<div data-node-label="Mark" className="flex size-8 justify-center items-center"><div data-node-label="Mark Art" className="size-[20px] block">${MARK}</div></div>
+  <div data-node-label="Deck Title" className="flex items-center pl-0.5 pr-2 gap-1">${T('Deck Title Text', 'Q3 Investor Update', `${ink} text-[13px] font-medium`)}${ic('chev', 14, sub)}</div>
+  <div data-node-label="New Slide Button" className="flex h-7 items-center rounded-[7px] ${btn} pl-1.5 pr-2 gap-1">${ic('plus', 13, ink)}${T('New Slide Label', 'New slide', `${ink} text-xs font-medium`)}</div>
+  <div data-node-label="Island Divider" className="w-px h-5 block [background-color:var(--paper-gray-200)] mx-1"></div>
+  ${viewToggle('grid')}`))}
+${at('Grid Toolbar Wrap', 'left:0px;width:1470px', 855, toolbar('slide'), 'justify-center')}
+${at('Right Island', 'right:12px', 12, island(`
+  <div data-node-label="Zoom" className="flex h-8 items-center px-2 gap-1">${T('Zoom Value', '36%', `${ink} text-[13px]`)}${ic('chev', 13, sub)}</div>
+  <div data-node-label="Export Button" className="flex h-8 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Export Label', 'Export', 'text-white text-[13px] font-medium')}</div>`))}
+</div>`;
+
+const impPage = (id, label, body) => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1470px] h-[923px] flex-col bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Import Top" className="flex h-14 shrink-0 items-center justify-between px-5">
+    <div data-node-label="Mark" className="size-[22px] block">${MARK}</div>
+    <div data-node-label="Close Button" className="flex size-8 justify-center items-center rounded-[8px] [color:var(--paper-gray-600)]">${ic('x', 18)}</div>
+  </div>
+  <div data-node-label="Import Body" className="flex flex-1 justify-center pt-[120px]">
+    <div data-node-label="Import Column" className="flex w-[520px] flex-col gap-6">${body}</div>
+  </div>
+</div>`;
+const impHead = (t, sub2) => `<div data-node-label="Import Head" className="flex flex-col gap-1.5">${T('Import Title', t, `${ink} text-[26px] font-semibold tracking-[-0.5px]`)}${T('Import Sub', sub2, `${mut} text-sm`)}</div>`;
+const fileRow = inner => `<div data-node-label="File Row" className="flex items-center rounded-[12px] bg-white ${ring} p-3 gap-3">
+    <div data-node-label="File Tile" className="flex w-10 h-10 shrink-0 justify-center items-center rounded-[8px] [background-color:var(--paper-gray-100)]">${T('File Ext', 'PPTX', `${mut} text-[10px] font-semibold`)}</div>
+    <div data-node-label="File Text" className="flex flex-1 flex-col gap-0.5">${T('File Name', 'Brightwater board review.pptx', `${ink} text-sm font-medium`)}${inner}</div>
+  </div>`;
+const primary = (t) => `<div data-node-label="Primary Button" className="flex h-9 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-4">${T('Primary Label', t, 'text-white text-sm font-medium')}</div>`;
+const secondary = (t) => `<div data-node-label="Secondary Button" className="flex h-9 items-center rounded-[8px] ${btn} px-4">${T('Secondary Label', t, `${ink} text-sm font-medium`)}</div>`;
+const imp1 = impPage('ed10', 'S07.02 Import, choose file', `${impHead('Import a deck', 'PowerPoint or PDF. Every slide stays editable.')}
+  <div data-node-label="Drop Zone" className="flex h-[240px] flex-col justify-center items-center rounded-[14px] [background-color:var(--paper-gray-50)] border-2 border-dashed [border-color:var(--paper-gray-300)] gap-4">
+    <div data-node-label="Upload Tile" className="flex size-11 justify-center items-center rounded-full bg-white ${ring} [color:var(--paper-gray-600)]">${ic('upload', 20)}</div>
+    <div data-node-label="Drop Text" className="flex flex-col items-center gap-1">${T('Drop Title', 'Drop a file here', `${ink} text-sm font-medium`)}${T('Drop Sub', 'PPTX or PDF, up to 200 MB', `${sub} text-[13px]`)}</div>
+    ${secondary('Choose file')}
+  </div>`);
+const imp2 = `<div data-node-id="ed11" data-node-label="S07.02 Import, loading" className="flex w-[1470px] h-[923px] flex-col justify-center items-center bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Loading Column" className="flex w-[360px] flex-col items-center gap-5">
+    <div data-node-label="File Tile" className="flex w-12 h-12 justify-center items-center rounded-[10px] [background-color:var(--paper-gray-100)]">${T('File Ext', 'PPTX', `${mut} text-[11px] font-semibold`)}</div>
+    <div data-node-label="Loading Text" className="flex flex-col items-center gap-1">${T('Loading Title', 'Importing Brightwater board review', `${ink} text-[15px] font-medium`)}${T('Loading Sub', 'Reading slide 14 of 24', `${sub} text-[13px]`)}</div>
+    <div data-node-label="Progress Track" className="flex w-full h-1 rounded-full [background-color:var(--paper-gray-100)]"><div data-node-label="Progress Fill" className="w-[58%] h-1 block rounded-full [background-color:var(--ad-brand)]"></div></div>
+  </div>
+</div>`;
+const note = (k, title, sub2, link) => `<div data-node-label="Note Row" className="flex items-start py-3 gap-3 border-b [border-bottom-color:var(--paper-gray-100)]">
+    <div data-node-label="Note Icon" className="flex size-5 shrink-0 justify-center items-center pt-0.5 [color:var(--paper-gray-500)]">${ic(k, 16)}</div>
+    <div data-node-label="Note Text" className="flex flex-1 flex-col gap-0.5">${T('Note Title', title, `${ink} text-sm`)}${T('Note Sub', sub2, `${sub} text-[13px]`)}</div>
+    ${link ? T('Note Link', link, '[color:var(--paper-blue-link)] text-[13px] font-medium') : ''}
+  </div>`;
+const imp3 = `<div data-node-id="ed12" data-node-label="S07.03 Import, ready" className="flex w-[1470px] h-[923px] flex-col justify-center items-center bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Ready Column" className="flex w-[320px] flex-col items-center gap-5">
+    <div data-node-label="Ready Mark" className="size-[44px] block">${MARK}</div>
+    <div data-node-label="Ready Text" className="flex flex-col items-center gap-1">${T('Ready Title', 'Deck is ready', `${ink} text-[15px] font-medium`)}</div>
+    ${primary('Open deck')}
+  </div>
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed10.jsx', imp1);
+fs.writeFileSync('/tmp/strat/ed/ed11.jsx', imp2);
+fs.writeFileSync('/tmp/strat/ed/ed12.jsx', imp3);
+const fix = x => x.replace(/style=\{\{(.*?)\}\}/g, (m, b) => 'style="' + b.split(/,(?=[a-zA-Z]+:)/).map(p => { const [k, ...v] = p.split(':'); return k.replace(/[A-Z]/g, c => '-' + c.toLowerCase()) + ':' + v.join(':').replace(/^'|'$/g, ''); }).join(';') + '"');
+fs.writeFileSync('/tmp/strat/ed/ed3.jsx', fix(gridScreen('ed3', 'S41.01 Editor / Grid / Default')));
+fs.writeFileSync('/tmp/strat/ed/ed5.jsx', fix(gridScreen('ed5', 'S41.02 Editor / Grid / Add slide, hover', 'hover')));
+fs.writeFileSync('/tmp/strat/ed/ed6.jsx', fix(gridScreen('ed6', 'S41.03 Editor / Grid / Add slide, hold', 'hold')));
+fs.writeFileSync('/tmp/strat/ed/ed1.jsx', fix(slideScreen('ed1', 'S42.01 Editor / Agent / Working', 'working', false)));
+fs.writeFileSync('/tmp/strat/ed/ed2.jsx', fix(slideScreen('ed2', 'S42.02 Editor / Agent / Run complete', 'done', false)));
+fs.writeFileSync('/tmp/strat/ed/ed9.jsx', fix(slideScreen('ed9', 'S43.02 Editor / Tools / Design panel', 'idle', false, 'design')));
+fs.writeFileSync('/tmp/strat/ed/ed4.jsx', fix(slideScreen('ed4', 'S43.01 Editor / Tools / Template picker', 'done', true)));
+fs.writeFileSync('/tmp/strat/ed/ed13.jsx', fix(gridScreen('ed13', 'S41.04 Editor / Grid / Slides pasted', 'pasted')));
+fs.writeFileSync('/tmp/strat/ed/ed14.jsx', fix(slideScreen('ed14', 'S61.01 Export / Export / PowerPoint options', 'done', false, 'agent', 'pptx')));
+fs.writeFileSync('/tmp/strat/ed/ed15.jsx', fix(slideScreen('ed15', 'S61.03 Export / Export / Downloaded, toast', 'done', false, 'agent', 'done')));
+fs.writeFileSync('/tmp/strat/ed/ed16.jsx', fix(slideScreen('ed16', 'S61.02 Export / Export / PDF options', 'done', false, 'agent', 'pdf')));
+const CLAUDE = "<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" width=\"100%\" height=\"100%\"><path d=\"m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z\"></path></svg>";
+const conPage = (id, label, body, tile = `<div data-node-label="Claude Tile" className="flex size-12 justify-center items-center rounded-[12px] bg-[#d97757] text-white"><div data-node-label="Claude Logo" className="size-[26px] block">${CLAUDE}</div></div>`) => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1470px] h-[923px] flex-col justify-center items-center bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Connect Column" className="flex w-[360px] flex-col items-center gap-6">
+    <div data-node-label="Logo Pair" className="flex items-center gap-3">
+      <div data-node-label="AirDesign Tile" className="flex size-12 justify-center items-center rounded-[12px] bg-white ${ring}"><div data-node-label="Mark" className="size-[28px] block">${MARK}</div></div>
+      <div data-node-label="Link Dots" className="flex items-center gap-1">${'<div data-node-label="Dot" className="size-1 block rounded-full [background-color:var(--paper-gray-300)]"></div>'.repeat(3)}</div>
+      ${tile}
+    </div>
+    ${body}
+  </div>
+</div>`;
+const perm = t => `<div data-node-label="Perm Row" className="flex items-center gap-2.5">${ic('check', 14, sub)}${T('Perm Text', t, `${ink} text-[13px]`)}</div>`;
+const consent = (id, label, who, back, tile) => conPage(id, label, `
+    <div data-node-label="Connect Text" className="flex flex-col items-center gap-1.5">${T('Connect Title', `${who} wants to use AirDesign`, `${ink} text-xl font-semibold tracking-[-0.3px]`)}${T('Connect Sub', 'It can work on your decks for you.', `${sub} text-[13px]`)}</div>
+    <div data-node-label="Account Row" className="flex w-full items-center rounded-[12px] ${ring} p-3 gap-3">
+      <div data-node-label="Avatar" className="flex size-8 shrink-0 justify-center items-center rounded-full [background-color:var(--deck-navy)]">${T('Avatar Initials', 'AL', 'text-white text-xs font-semibold')}</div>
+      <div data-node-label="Account Text" className="flex flex-1 min-w-0 flex-col">${T('Account Name', 'Ada Lovelace', `${ink} text-[13px] font-medium truncate`)}${T('Account Email', 'ada@halden.com', `${sub} text-xs truncate`)}</div>
+      ${T('Switch Link', 'Switch', `[color:var(--paper-blue-link)] text-[13px] font-medium`)}
+    </div>
+    <div data-node-label="Perm List" className="flex w-full flex-col px-1 gap-2.5">
+      ${T('Perm Head', `${who} will be able to`, `${mut} text-xs font-medium`)}
+      ${perm('Read and edit all your decks')}${perm('Use your brand and files')}${perm('Import and export PowerPoint')}
+    </div>
+    <div data-node-label="Connect Actions" className="flex w-full gap-2">
+      <div data-node-label="Cancel Button" className="flex flex-1 h-10 justify-center items-center rounded-[9px] ${btn}">${T('Cancel Label', 'Cancel', `${ink} text-sm font-medium`)}</div>
+      <div data-node-label="Allow Button" className="flex flex-1 h-10 justify-center items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[9px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f]">${T('Allow Label', 'Allow', 'text-white text-sm font-medium')}</div>
+    </div>
+    ${T('Fine Print', `${back} ${who} uses your weekly usage. Disconnect anytime in Settings.`, `${sub} text-xs text-center leading-[1.5]`)}`, tile);
+const con1 = consent('ed17', 'S71.01 Agents / Connect / Approve Claude', 'Claude', 'You will return to claude.ai.');
+const con2 = conPage('ed18', 'S71.02 Agents / Connect / Claude connected', `
+    <div data-node-label="Connect Text" className="flex flex-col items-center gap-1.5">${T('Connect Title', 'Connected', `${ink} text-xl font-semibold tracking-[-0.3px]`)}${T('Connect Sub', 'Taking you back to Claude', `${sub} text-[13px]`)}</div>`);
+fs.writeFileSync('/tmp/strat/ed/ed17.jsx', con1);
+fs.writeFileSync('/tmp/strat/ed/ed18.jsx', con2);
+const OPENAI = "<svg viewBox=\"0 0 24 24\" fill=\"currentColor\" width=\"100%\" height=\"100%\"><path d=\"M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z\"></path></svg>";
+const oTile = `<div data-node-label="OpenAI Tile" className="flex size-12 justify-center items-center rounded-[12px] [background-color:var(--paper-gray-950)] text-white"><div data-node-label="OpenAI Logo" className="size-[24px] block">${OPENAI}</div></div>`;
+fs.writeFileSync('/tmp/strat/ed/ed20.jsx', consent('ed20', 'S71.03 Agents / Connect / Approve Codex', 'Codex', 'You will return to Codex on this computer.', oTile));
+const prCard = (label, price, unit, lines, cta, primaryCta) => `<div data-node-label="Price Card" className="flex flex-1 flex-col rounded-[16px] bg-white ${ring} p-6 gap-5">
+    <div data-node-label="Card Head" className="flex flex-col gap-3">${T('Card Label', label, `${mut} text-[13px] font-medium`)}<div data-node-label="Price Row" className="flex items-baseline gap-1.5">${T('Price', price, `${ink} text-[40px] font-semibold tracking-[-1px]`)}${T('Price Unit', unit, `${sub} text-sm`)}</div></div>
+    <div data-node-label="Card Lines" className="flex flex-col gap-2.5">${lines.map(l => `<div data-node-label="Card Line" className="flex items-start gap-2.5"><div data-node-label="Line Icon" className="flex h-5 items-center">${ic('check', 14, sub)}</div>${T('Line Text', l, `${ink} text-[13px] leading-[1.5]`)}</div>`).join('')}</div>
+    <div data-node-label="Card Space" className="flex-1 block"></div>
+    ${primaryCta ? `<div data-node-label="Card Button" className="flex h-10 justify-center items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[9px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f]">${T('Card Button Label', cta, 'text-white text-sm font-medium')}</div>` : `<div data-node-label="Card Button" className="flex h-10 justify-center items-center rounded-[9px] ${btn}">${T('Card Button Label', cta, `${ink} text-sm font-medium`)}</div>`}
+  </div>`;
+const pricing = `<div data-node-id="ed21" data-node-label="S01.02 Pricing, free usage" className="flex w-[1470px] h-[923px] flex-col items-center bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
+  <div data-node-label="Site Nav" className="flex w-full h-16 shrink-0 items-center justify-between px-8">
+    <div data-node-label="Brand" className="flex items-center gap-2"><div data-node-label="Mark" className="size-[22px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[15px] font-semibold`)}</div>
+    <div data-node-label="Nav Right" className="flex items-center gap-6">${T('Nav Pricing', 'Pricing', `${ink} text-[13px] font-medium`)}${T('Nav Sign In', 'Sign in', `${mut} text-[13px]`)}<div data-node-label="Nav Start" className="flex h-8 items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[8px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f] px-3">${T('Nav Start Label', 'Start free', 'text-white text-[13px] font-medium')}</div></div>
+  </div>
+  <div data-node-label="Pricing Hero" className="flex flex-col items-center pt-[80px] gap-3">${T('Pricing Title', 'AirDesign is free', `${ink} text-[52px] font-semibold tracking-[-1.5px]`)}${T('Pricing Sub', 'Every feature, every week. No plan, no trial.', `${mut} text-lg`)}</div>
+  <div data-node-label="Free Card" className="flex w-[440px] flex-col rounded-[18px] bg-white ${ring} shadow-[0px_12px_40px_#0000000d] mt-12 p-7 gap-6">
+    <div data-node-label="Price Row" className="flex items-end gap-2">${T('Price', '$0', `${ink} text-[56px] font-semibold tracking-[-1.5px] leading-[1]`)}${T('Price Unit', 'forever', `${sub} text-base pb-1.5`)}</div>
+    <div data-node-label="Card Lines" className="flex flex-col gap-3">${['Unlimited decks', 'Aira built in', 'Bring Claude or Codex', 'PowerPoint import and export', 'Usage resets every week'].map(l => `<div data-node-label="Card Line" className="flex items-center gap-2.5">${ic('check', 15, '[color:var(--ad-brand)]')}${T('Line Text', l, `${ink} text-sm`)}</div>`).join('')}</div>
+    <div data-node-label="Card Button" className="flex h-11 justify-center items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[10px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f]">${T('Card Button Label', 'Start free', 'text-white text-[15px] font-medium')}</div>
+  </div>
+  <div data-node-label="Wait Note" className="flex items-center pt-8">${T('Wait Text', "Don't want to wait for the weekly reset? You can pay to reset.", `${sub} text-[13px]`)}</div>
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed21.jsx', pricing);
+fs.writeFileSync('/tmp/strat/ed/ed22.jsx', fix(slideScreen('ed22', 'S92.01 Credits / Out of usage / Limit reached', 'limit', false, 'agent', '')));
+fs.writeFileSync('/tmp/strat/ed/ed23.jsx', fix(slideScreen('ed23', 'S92.03 Credits / Out of usage / Add credits first', 'limit', false, 'agent', '')));
+fs.writeFileSync('/tmp/strat/ed/ed24.jsx', fix(slideScreen('ed24', 'S49.01 Editor / Errors / Agent run failed', 'runfail', false)));
+fs.writeFileSync('/tmp/strat/ed/ed26.jsx', fix(slideScreen('ed26', 'S69.01 Export / Errors / Export failed', 'done', false, 'agent', 'exportfail')));
+fs.writeFileSync('/tmp/strat/ed/ed27.jsx', fix(slideScreen('ed27', 'S49.02 Editor / Errors / Offline', 'done', false, 'agent', 'offline')));
+fs.writeFileSync('/tmp/strat/ed/ed28.jsx', errPage('ed28', 'S29.01 Access / Errors / Link expired', 'This link has expired', 'Sign-in links work once and last 15 minutes.', 'Send a new link'));
+fs.writeFileSync('/tmp/strat/ed/ed30.jsx', fix(slideScreen('ed30', 'S43.03 Editor / Tools / Images', 'done', false, 'agent', 'image')));
+fs.writeFileSync('/tmp/strat/ed/ed31.jsx', fix(slideScreen('ed31', 'S43.04 Editor / Tools / Shapes', 'done', false, 'agent', 'shape')));
+fs.writeFileSync('/tmp/strat/ed/ed32.jsx', fix(slideScreen('ed32', 'S43.05 Editor / Tools / Shapes, expanded', 'done', false, 'agent', 'shapes')));
+fs.writeFileSync('/tmp/strat/ed/ed33.jsx', fix(slideScreen('ed33', 'S43.06 Editor / Tools / Text', 'done', false, 'agent', 'text')));
+fs.writeFileSync('/tmp/strat/ed/ed34.jsx', fix(slideScreen('ed34', 'S43.07 Editor / Tools / Actions', 'done', false, 'agent', 'actions')));
+const qrSvg = (() => {
+  let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const N = 25, c = 6; let r = '';
+  const finder = (x, y) => `<rect x="${x*c}" y="${y*c}" width="${7*c}" height="${7*c}" fill="#111"/><rect x="${(x+1)*c}" y="${(y+1)*c}" width="${5*c}" height="${5*c}" fill="#fff"/><rect x="${(x+2)*c}" y="${(y+2)*c}" width="${3*c}" height="${3*c}" fill="#111"/>`;
+  const inF = (x, y) => (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (!inF(x, y) && rnd() > 0.52) r += `<rect x="${x*c}" y="${y*c}" width="${c}" height="${c}" fill="#111"/>`;
+  return `<svg viewBox="0 0 ${N*c} ${N*c}" width="100%" height="100%"><rect width="${N*c}" height="${N*c}" fill="#fff"/>${r}${finder(0,0)}${finder(N-7,0)}${finder(0,N-7)}</svg>`;
+})();
+const dlgHead = t => `<div data-node-label="Dialog Head" className="flex items-center justify-between">${T('Dialog Title', t, `${ink} text-lg font-semibold`)}<div data-node-label="Close Button" className="flex size-8 justify-center items-center rounded-[8px] [color:var(--paper-gray-600)]">${ic('x', 16)}</div></div>`;
+const detail = (k, v, copy) => `<div data-node-label="Detail Row" className="flex h-8 items-center justify-between">${T('Detail Key', k, `${mut} text-[13px]`)}<div data-node-label="Detail Val" className="flex items-center gap-2">${T('Detail Value', v, `${ink} text-[13px] font-medium`)}${copy ? T('Copy Link', 'Copy', '[color:var(--paper-blue-link)] text-xs font-medium') : ''}</div></div>`;
+const qrWait = `<div data-node-id="qr1" data-node-label="QR Dialog Waiting" className="flex w-[420px] flex-col bg-white rounded-[18px] shadow-[0px_24px_64px_#00000040] p-6 gap-5 [font-family:var(--ad-font)]">
+  ${dlgHead('Pay with bank QR')}
+  <div data-node-label="QR Block" className="flex items-center rounded-[14px] [background-color:var(--paper-gray-50)] p-4 gap-4">
+    <div data-node-label="QR Code" className="size-[132px] shrink-0 block rounded-[8px] bg-white p-1.5">${qrSvg}</div>
+    <div data-node-label="QR Amount" className="flex flex-col gap-1">${T('Pay VND', '625,000 VND', `${ink} text-[22px] font-semibold tracking-[-0.4px]`)}${T('Pay USD', 'for $25.00 in credits', `${mut} text-[13px]`)}${T('Pay Rate', '25,000 VND per $1', `${sub} text-xs`)}</div>
+  </div>
+  <div data-node-label="Details" className="flex flex-col">${detail('Bank', 'MB Bank')}${detail('Account name', 'AIRDESIGN JSC')}${detail('Account number', '9620 4471 8836', true)}${detail('Transfer content', 'AD7Q4K', true)}</div>
+  <div data-node-label="Status Row" className="flex items-center justify-between rounded-[10px] [background-color:#eef4fe] px-3.5 py-3">
+    <div data-node-label="Status Left" className="flex items-center gap-2.5"><div data-node-label="Spinner" className="size-4 block"><svg viewBox="0 0 20 20" width="100%" height="100%"><circle cx="10" cy="10" r="7.5" fill="none" stroke="#c9dcf9" strokeWidth="2.5"></circle><path d="M10 2.5a7.5 7.5 0 0 1 7.5 7.5" fill="none" stroke="#4D94FB" strokeWidth="2.5" strokeLinecap="round"></path></svg></div>${T('Status Text', 'Waiting for your bank', `[color:var(--paper-blue-link)] text-[13px] font-medium`)}</div>
+    ${T('Expires', 'Expires in 14:32', `${mut} text-xs`)}
+  </div>
+  ${T('QR Note', 'Scan with any banking app. Keep the amount and transfer content as they are. Credits land a few seconds after you pay.', `${sub} text-xs leading-[1.5]`)}
+</div>`;
+const center = (id, label, icon, iconCls, title, sub2, buttons) => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[420px] flex-col items-center bg-white rounded-[18px] shadow-[0px_24px_64px_#00000040] px-6 pt-8 pb-6 gap-5 [font-family:var(--ad-font)]">
+  <div data-node-label="Result Icon" className="flex size-12 justify-center items-center rounded-full ${iconCls}">${ic(icon, 24)}</div>
+  <div data-node-label="Result Text" className="flex flex-col items-center gap-1.5">${T('Result Title', title, `${ink} text-lg font-semibold`)}${T('Result Sub', sub2, `${mut} text-[13px] text-center leading-[1.5]`)}</div>
+  <div data-node-label="Result Actions" className="flex w-full gap-2">${buttons}</div>
+</div>`;
+const fullBtn = (t, p) => p ? `<div data-node-label="Primary Button" className="flex flex-1 h-10 justify-center items-center [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] rounded-[9px] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong),0px_1px_2px_#0000001f]">${T('Primary Label', t, 'text-white text-sm font-medium')}</div>` : `<div data-node-label="Secondary Button" className="flex flex-1 h-10 justify-center items-center rounded-[9px] ${btn}">${T('Secondary Label', t, `${ink} text-sm font-medium`)}</div>`;
+const qrPaid = center('qr2', 'QR Dialog Paid', 'check', 'bg-[#e6f4ea] text-[#1e7d3c]', 'Payment received', '$25.00 added. Credit balance is now $40.00.', fullBtn('Done', true));
+const qrExpired = center('qr3', 'QR Dialog Expired', 'alert', '[background-color:var(--paper-gray-100)] [color:var(--paper-gray-600)]', 'This QR has expired', 'Already paid? Your credits still land, usually within a few minutes.', fullBtn('Close', false) + fullBtn('New QR', true));
+fs.writeFileSync('/tmp/strat/ed/qr1.jsx', qrWait);
+fs.writeFileSync('/tmp/strat/ed/qr2.jsx', qrPaid);
+fs.writeFileSync('/tmp/strat/ed/qr3.jsx', qrExpired);
+fs.writeFileSync('/tmp/strat/ed/ed38.jsx', fix(slideScreen('ed38', 'S42.04 Editor / Agent / Long message', 'compose', false)));
+fs.writeFileSync('/tmp/strat/ed/ed35.jsx', fix(slideScreen('ed35', 'S42.03 Editor / Agent / Own agent editing', 'own', false)));
+fs.writeFileSync('/tmp/strat/ed/ed36.jsx', fix(slideScreen('ed36', 'S92.04 Credits / Out of usage / Reset complete', 'resetdone', false)));
