@@ -911,7 +911,7 @@ const mini = ({ w = 264, n, title, kind = 'bars', dark = false, glow = false, di
   const h = Math.round(w * 9 / 16), s = w / 264;
   const mf = Math.max(8, Math.round(8 * s));
   const vis = kind === 'segl' ? `<div data-node-label="Mini Seg Labeled" className="flex flex-1 flex-col justify-end gap-[${Math.round(4 * s)}px]">${[['Enterprise', 66, '#1B6B8F'], ['Mid-market', 22, '#A9BFCF'], ['Self-serve', 12, '#A9BFCF']].map(([a, v, c]) => `<div data-node-label="Mini Seg Row" className="flex items-center gap-[${Math.round(5 * s)}px]"><div data-node-label="Mini Seg Name" className="flex w-[${Math.round(58 * s)}px] shrink-0">${T('Mini Cell', a, `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px]`)}</div><div data-node-label="Mini Seg Bar" className="block h-[${Math.round(9 * s)}px]" style={{width:'${Math.round(v * 1.4 * s)}px',backgroundColor:'${c}'}}></div>${T('Mini Cell', v + '% of growth', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div>`).join('')}</div>`
-    : kind === 'downl' ? `<div data-node-label="Mini Line Labeled" className="flex flex-1 flex-col justify-end gap-1"><div data-node-label="Line Values" className="flex justify-between">${T('Mini Cell', '6.2%', `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}${T('Mini Cell', '4.0%', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div><svg viewBox="0 0 200 40" preserveAspectRatio="none" width="${Math.round(232 * s)}" height="${Math.round(36 * s)}"><path d="M4 6 L54 14 L104 22 L154 28 L196 34" fill="none" stroke="#1B6B8F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></path><circle cx="196" cy="34" r="4.5" fill="#1B6B8F"></circle></svg><div data-node-label="Line Labels" className="flex justify-between">${['Q3 24', 'Q1 25', 'Q3 25'].map(q => T('Mini Cell', q, `[color:#909090] text-[${Math.max(10, mf - 1)}px]`)).join('')}</div></div>`
+    : kind === 'downl' ? `<div data-node-label="Mini Line Labeled" className="flex flex-1 flex-col justify-end gap-1"><div data-node-label="Line Values" className="flex justify-between">${T('Mini Cell', '6.2%', `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}${T('Mini Cell', '4.0%', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div><svg viewBox="0 0 200 40" preserveAspectRatio="none" width="${Math.round(232 * s)}" height="${Math.round(36 * s)}"><path d="M2 39 H198" fill="none" stroke="#C9D1D8" strokeWidth="1"></path><path d="M4 9 L54 12 L104 15 L154 17.5 L196 20" fill="none" stroke="#1B6B8F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></path><circle cx="196" cy="20" r="4.5" fill="#1B6B8F"></circle></svg><div data-node-label="Line Labels" className="flex justify-between">${['Q3 24', 'Q1 25', 'Q3 25'].map(q => T('Mini Cell', q, `[color:#909090] text-[${Math.max(10, mf - 1)}px]`)).join('')}</div></div>`
     : kind === 'capbars' ? `<div data-node-label="Mini Cap" className="flex flex-1 flex-col justify-end gap-[${Math.round(4 * s)}px]"><div data-node-label="Cap Head" className="flex justify-end">${T('Mini Cell', 'Cap 85%', `[color:var(--deck-navy)] text-[${Math.max(10, mf - 1)}px] font-semibold`)}</div>${rows.map(([a, v]) => `<div data-node-label="Cap Row" className="flex items-center gap-[${Math.round(6 * s)}px]"><div data-node-label="Cap Name" className="flex w-[${Math.round(52 * s)}px] shrink-0">${T('Mini Cell', a, `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}</div><div data-node-label="Cap Track" className="flex relative h-[${Math.round(9 * s)}px] [background-color:#EEF1F4]" style={{width:'${Math.round(170 * s)}px'}}><div data-node-label="Cap Fill" className="block h-full" style={{width:'${v}%',backgroundColor:'#A9BFCF'}}></div><div data-node-label="Cap Tick" className="flex absolute top-[-3px] w-px [background-color:#0F2433]" style={{left:'85%',height:'${Math.round(9 * s) + 6}px'}}></div></div>${T('Mini Cell', v + '%', `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}</div>`).join('')}</div>`
     : kind === 'harvey' ? `<div data-node-label="Mini Harvey" className="flex flex-1 flex-col justify-end gap-[${Math.round(3 * s)}px]">${rows.map(([a, q, b]) => `<div data-node-label="Mini Harvey Row" className="flex items-center justify-between border-b border-[#E4E9EE] pb-[${Math.round(2 * s)}px]">${T('Mini Cell', a, `[color:#3B4B57] text-[${Math.max(11, mf)}px]`)}<div data-node-label="Harvey Right" className="flex items-center gap-2">${T('Mini Cell', b, `[color:var(--deck-navy)] text-[${Math.max(11, mf)}px] font-semibold`)}<div data-node-label="Harvey Ball" className="size-[13px] block">${harvey(q, 13)}</div></div></div>`).join('')}</div>`
     : kind === 'down' ? `<div data-node-label="Mini Line" className="flex flex-1 items-end"><svg viewBox="0 0 200 60" width="${Math.round(220 * s)}" height="${Math.round(60 * s)}"><path d="M4 12 L54 20 L104 32 L154 42 L196 50" fill="none" stroke="#1B6B8F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"></path><circle cx="196" cy="50" r="5" fill="#1B6B8F"></circle></svg></div>`
@@ -1143,19 +1143,19 @@ const rewriteRows4 = REWRITES4.map(([a, b, on], j) => `<div data-node-label="Rew
     <div data-node-label="Answer Side" className="flex flex-1 flex-col gap-2">${T('Row Tag', on ? 'Answer, written by Aira' : 'Answer', `${on ? 'text-[#93B8EF]' : 'text-[#7F93A6]'} text-[12px] font-medium tracking-[0.5px]`)}<div data-node-label="Answer Wrap" className="flex self-start relative ${on ? 'border border-[#4D94FB] rounded-none' : ''}">${T('Answer Text', b, 'text-white text-[44px] font-semibold leading-[1.1] tracking-[-1.3px]')}${on ? handlesAbs : ''}</div></div>
   </div>`).join('');
 const pyramid4 = (() => {
-  const top = `<div data-node-label="Governing" className="flex absolute left-[420px] top-[0px] flex-col items-center gap-3">${T('Tier Label', 'The answer', `[color:var(--paper-blue-link)] text-[12px] font-semibold tracking-[0.3px]`)}${mini({ w: 360, n: 1, title: 'Keep the growth plan. Review hiring in Q1.', kind: 'decide', cols: [['DECISION', 'Keep the growth plan'], ['NEXT', 'Review hiring in Q1']] })}</div>`;
+  const top = `<div data-node-label="Governing" className="flex absolute left-[420px] top-[0px] flex-col items-center gap-3">${T('Tier Label', 'The answer', `[color:var(--paper-blue-link)] text-[12px] font-semibold tracking-[0.3px]`)}${mini({ w: 360, n: 1, title: 'Keep the growth plan. Review hiring in Q1.', kind: 'table', rows: [['Revenue, year over year', '+39%'], ['Enterprise share of growth', '66%'], ['Mid-market churn', '4.0%']] })}</div>`;
   const args = [
     ['Growth', 'Enterprise carried the quarter', { kind: 'segl' }, 'Pipeline report, p. 4'],
     ['Quality', 'Mid-market churn is down to 4%', { kind: 'downl' }, 'Retention data, p. 9'],
-    ['Capacity', 'Hiring can wait one quarter', { kind: 'capbars', rows: [['Sales', 78], ['Success', 54], ['Product', 71]] }, 'Capacity model, p. 2'],
+    ['Capacity', 'Hiring can wait one quarter', { kind: 'capbars', rows: [['Sales', 82], ['Success', 61], ['Product', 79]] }, 'Capacity model, projected Q1 load, p. 2'],
   ];
   const kids = args.map(([tier, t, k, ev], j) => `<div data-node-label="Argument" className="flex absolute top-[320px] flex-col items-center gap-3" style={{left:'${j * 410}px'}}>${T('Tier Label', 'Reason ' + (j + 1) + ': ' + tier, `${sub} text-[12px] font-semibold tracking-[0.3px]`)}${mini({ w: 380, n: [3, 5, 6][j], title: t, ...k })}<div data-node-label="Evidence" className="flex h-8 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] px-3 gap-2">${ic('doc', 13, mut)}${T('Evidence Text', ev, `${mut} text-[12px]`)}</div></div>`).join('');
   const lines = `<div data-node-label="Pyramid Lines" className="flex absolute left-0 top-0 w-[1200px] h-[340px]"><svg viewBox="0 0 1200 340" width="1200" height="340"><path d="M600 245 V285 H190 V325 M600 285 V325 M600 285 H1010 V325" fill="none" stroke="#C1C1C0" strokeWidth="1.5"></path><circle cx="600" cy="285" r="4" fill="#4D94FB"></circle></svg></div>`;
   return `<div data-node-label="Pyramid" className="flex relative w-[1200px] h-[640px]">${lines}${top}${kids}</div>`;
 })();
-const STORY = ['Keep the growth plan. Review hiring in Q1', 'Revenue grew 39% year over year', 'Enterprise carried the quarter', 'Enterprise is 66% of the growth', 'Mid-market churn is down to 4%', 'Hiring can wait one quarter', 'Pricing is the one risk to watch', 'Keep the growth plan. Review hiring in Q1'];
-const STORY_TEXT = STORY.map((x, j) => String(j + 1).padStart(2, '0') + ' ' + x + '.').join('  ');
-const storyPara = `<span data-node-label="Story Paragraph Text" className="${F} block w-[1200px] text-[#8FA4B3] text-[38px] font-semibold leading-[1.4] tracking-[-0.9px]">${STORY_TEXT}</span>`;
+const STORY = ['Keep the growth plan. Review hiring in Q1', 'Revenue grew 39% year over year', 'Enterprise carried the quarter', 'Pipeline covers the Q4 plan 1.4 times', 'Mid-market churn is down to 4%', 'Hiring can wait one quarter', 'Pricing is the one risk to watch', 'Keep the growth plan. Review hiring in Q1'];
+const STORY_TEXT = STORY.map((x, j) => String(j + 1).padStart(2, '0') + ' ' + x + '.').join('   ');
+const storyPara = `<span data-node-label="Story Paragraph Text" className="${F} block w-[1200px] text-[#71879A] text-[38px] font-semibold leading-[1.4] tracking-[-0.9px]">${STORY_TEXT}</span>`;
 const dumpBody4 = (s) => {
   const rows = [['South', '$48M', '+6%'], ['North', '$42M', '+31%'], ['East', '$35M', '+27%'], ['West', '$30M', '+4%'], ['Central', '$18M', '+3%']];
   const W = [130, 100, 90].map(x => Math.round(x * s));
@@ -1186,7 +1186,7 @@ const soWhat4 = (() => {
   return `<div data-node-label="So What" className="flex w-full items-start justify-between">
     <div data-node-label="Draft Side" className="flex w-[420px] flex-col gap-4">${exCap('Your draft')}
       <div data-node-label="Draft" className="flex relative">${lSlide({ w: 420, kicker: 'SECTION 2', title: 'Regional results', body: dumpBody4(420 / 640), source: 'FY plan, p. 4', srcPx: 11, kPx: 10 })}
-        <div data-node-label="Pen Marks" className="flex absolute left-0 top-0 w-[420px] h-[236px]"><svg viewBox="0 0 540 304" width="420" height="236"><ellipse cx="128" cy="62" rx="98" ry="26" fill="none" stroke="#D93F3F" strokeWidth="3" transform="rotate(-3 128 62)"></ellipse><path d="M300 110 C 340 150, 340 210, 300 250" fill="none" stroke="#D93F3F" strokeWidth="3" strokeLinecap="round"></path></svg></div>
+        <div data-node-label="Pen Marks" className="flex absolute left-0 top-0 w-[420px] h-[236px]"><svg viewBox="0 0 540 304" width="420" height="236"><ellipse cx="122" cy="60" rx="112" ry="30" fill="none" stroke="#D93F3F" strokeWidth="3" transform="rotate(-3 128 62)"></ellipse><path d="M300 110 C 340 150, 340 210, 300 250" fill="none" stroke="#D93F3F" strokeWidth="3" strokeLinecap="round"></path></svg></div>
         ${note('So what?', 250, 44)}${note('Which rows matter?', 350, 160)}
       </div></div>
     <div data-node-label="Pen Arrow" className="flex w-[80px] flex-col items-center gap-2 pt-[150px]">${tileG(`<div data-node-label="Spark" className="size-[18px] block">${SPARK}</div>`, 44, 13)}${T('Pen Arrow Text', 'Aira', `${mut} text-[12px] font-medium`)}</div>
@@ -1196,7 +1196,7 @@ const soWhat4 = (() => {
 const pptExhibit = `<div data-node-label="PPT Exhibit" className="flex w-full items-start gap-14">
     <div data-node-label="PPT Wrap" className="flex relative">
       <div data-node-label="PPT Window" className="flex w-[820px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_24px_56px_#00000017] overflow-clip">
-        <div data-node-label="PPT Bar" className="flex h-10 items-center [background-color:#2B2B2B] px-4 gap-2"><div data-node-label="PPT Icon" className="flex size-5 justify-center items-center rounded-[4px] bg-[#C43E1C]">${T('PPT Letter', 'P', 'text-white text-[12px] font-bold')}</div>${T('PPT Name', 'Halden Q3 board review.pptx', 'text-white text-[13px] font-medium')}</div>
+        <div data-node-label="PPT Bar" className="flex h-10 items-center [background-color:#2B2B2B] px-4 gap-2"><div data-node-label="PPT Icon" className="flex size-5 justify-center items-center rounded-[4px] bg-[#0F2433]">${T('PPT Letter', 'P', 'text-white text-[12px] font-bold')}</div>${T('PPT Name', 'Halden Q3 board review.pptx', 'text-white text-[13px] font-medium')}</div>
         <div data-node-label="PPT Ribbon" className="flex flex-col border-b [border-bottom-color:var(--paper-gray-200)] bg-white">
           <div data-node-label="Ribbon Tabs" className="flex items-center px-4 pt-2 gap-5">${['Home', 'Insert', 'Design', 'Transitions', 'Slide Show', 'Chart Design'].map((x, i) => `<div data-node-label="Ribbon Tab" className="flex pb-1.5 ${i === 5 ? 'border-b-2 border-[#222222]' : ''}">${T('Tab Text', x, `${i === 5 ? `${ink} font-semibold` : mut} text-[12px]`)}</div>`).join('')}</div>
           <div data-node-label="Ribbon Tools" className="flex items-center px-4 py-2 gap-2 border-t [border-top-color:var(--paper-gray-100)]">${['Layout: Title and chart', 'Font: Geist', 'Edit data', 'Chart type'].map((x, i) => `<div data-node-label="Ribbon Tool" className="flex h-7 items-center rounded-[5px] px-2.5 ${i < 2 ? 'shadow-[0px_0px_0px_1px_var(--paper-gray-300)]' : '[background-color:var(--paper-gray-100)]'}">${T('Tool Text', x, `${ink} text-[12px]`)}</div>`).join('')}</div>
@@ -1219,7 +1219,6 @@ const agentsRow = `<div data-node-label="Agents Row" className="flex w-full flex
   </div>`;
 const caretField = `<div data-node-label="Answer Field" className="flex w-[640px] items-center justify-between rounded-[10px] bg-white shadow-[0px_0px_0px_1px_#ffffff26,0px_24px_64px_#00000066] pl-9 pr-4 py-6 gap-6">
     <div data-node-label="Field Text" className="flex flex-col gap-2">${T('Field Kicker', 'NEXT STEP', '[color:var(--deck-teal)] text-[11px] font-semibold tracking-[1px]')}<div data-node-label="Field Line" className="flex items-center gap-1">${T('Field Placeholder', 'Your answer goes here', 'text-[#A9B3BC] text-[30px] font-semibold tracking-[-0.6px]')}<div data-node-label="Caret" className="block w-[2px] h-[34px] [background-color:#4D94FB]"></div></div></div>
-    ${lBtn('Start free')}
   </div>`;
 const landing4 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / Landing / Default" className="flex w-[${LW}px] flex-col bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] overflow-clip">
   <div data-node-label="Nav" className="flex h-[76px] items-center justify-between px-[120px]">
@@ -1251,7 +1250,7 @@ const landing4 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / La
       ${caretField}
       ${T('Final Title', 'Your next deck has to win.', 'text-white text-[64px] font-semibold leading-[1.05] tracking-[-2px] pt-8')}
       <span data-node-label="Final Lead" className="${F} block w-[560px] text-center text-[#A9B8C6] text-[18px] leading-[1.55]">Free with weekly usage. A reset is $5 when you need more. Your decks stay private to you.</span>
-      <div data-node-label="Final Actions" className="flex items-center gap-3 pt-2"><div data-node-label="Ghost Button" className="flex h-[44px] items-center rounded-[10px] border border-[#ffffff40] px-5">${T('Ghost Label', 'Import a PowerPoint', 'text-white text-[15px] font-medium')}</div></div>
+      <div data-node-label="Final Actions" className="flex items-center gap-3 pt-2">${lBtn('Start free')}<div data-node-label="Ghost Button" className="flex h-[44px] items-center rounded-[10px] border border-[#ffffff40] px-5">${T('Ghost Label', 'Import a PowerPoint', 'text-white text-[15px] font-medium')}</div></div>
     </div>
   </div>
   <div data-node-label="Footer" className="flex w-full items-center justify-between px-[120px] py-10 border-t border-[#ffffff14]" style={{backgroundColor:'${NAVY}'}}>
@@ -1266,7 +1265,7 @@ const mbb = ({ wasBig = '', titlePx = 0, w = 680, tracker = ['Context', 'Growth'
   const s = w / 680, px = (n, min = 9) => Math.max(min, Math.round(n * s));
   const trk = `<div data-node-label="Tracker" className="flex items-center gap-[${px(4, 3)}px]">${tracker.map((x, i) => `<div data-node-label="Tracker Item" className="flex items-center px-[${px(6, 4)}px] h-[${px(16, 12)}px] ${i === active ? `[background-color:${NV}]` : '[background-color:#EEF1F4]'}">${T('Tracker Text', x, `${i === active ? 'text-white' : `[color:#7B8A96]`} text-[${px(8, 7)}px] font-semibold tracking-[0.4px]`)}</div>`).join('')}</div>`;
   const stk = `<div data-node-label="Sticker" className="flex items-center border border-[#9AA7B2] px-[${px(6, 4)}px] h-[${px(16, 12)}px]">${T('Sticker Text', sticker.toUpperCase(), `[color:#5B6B77] text-[${px(8, 7)}px] font-semibold tracking-[0.6px]`)}</div>`;
-  const titleEl = `<div data-node-label="Slide Title Wrap" className="flex flex-col relative ${selTitle ? 'shadow-[0px_0px_0px_1px_#4D94FB]' : ''}">${was ? `<div data-node-label="Was Tag" className="flex absolute right-[6px] top-[4px] h-6 items-center rounded-[6px] bg-white shadow-[0px_0px_0px_1px_#EAEAE7,0px_2px_6px_#0000000f] px-2 gap-1.5">${T('Was Label', 'Was', `${sub} text-[11px] font-medium`)}<div data-node-label="Was Struck" className="flex relative">${T('Was Text', was, `${mut} text-[11px]`)}<div data-node-label="Strike" className="flex absolute left-0 top-[7px] w-full h-px [background-color:var(--paper-gray-500)]"></div></div></div>` : ''}${T('Slide Headline', title, `[color:${NV}] text-[${titlePx || px(23, 10)}px] font-semibold leading-[1.15] tracking-[-0.4px]`)}</div>`;
+  const titleEl = `<div data-node-label="Slide Title Wrap" className="flex flex-col self-start relative ${selTitle ? 'shadow-[0px_0px_0px_1px_#4D94FB]' : ''}">${was ? `<div data-node-label="Was Tag" className="flex absolute right-[6px] top-[4px] h-6 items-center rounded-[6px] bg-white shadow-[0px_0px_0px_1px_#EAEAE7,0px_2px_6px_#0000000f] px-2 gap-1.5">${T('Was Label', 'Was', `${sub} text-[11px] font-medium`)}<div data-node-label="Was Struck" className="flex relative">${T('Was Text', was, `${mut} text-[11px]`)}<div data-node-label="Strike" className="flex absolute left-0 top-[7px] w-full h-px [background-color:var(--paper-gray-500)]"></div></div></div>` : ''}${T('Slide Headline', title, `[color:${NV}] text-[${titlePx || px(23, 10)}px] font-semibold leading-[1.15] tracking-[-0.4px]`)}</div>`;
   const wasEl = wasBig ? struck(wasBig, 'text-[#9AA5B1] text-[20px] font-medium tracking-[-0.3px]', 13) : '';
   const el = `<div data-node-label="MBB Slide" className="flex w-[${w}px] h-[${Math.round(w * 9 / 16)}px] shrink-0 flex-col bg-white rounded-[${glow ? 4 : 3}px] ${glow ? '' : 'shadow-[0px_0px_0px_1px_#0000000f,0px_8px_24px_#0000000d]'}" style={{padding:'${px(20, 8)}px ${px(30, 12)}px ${px(14, 6)}px'}}>
       <div data-node-label="Slide Top" className="flex w-full items-center justify-between pb-[${px(14, 6)}px]">${trk}${stk}</div>
@@ -1313,7 +1312,7 @@ const insight5 = (s = 1) => {
       ${REG.map((r, j) => `<div data-node-label="Table Row" className="flex items-center border-b border-[#E4E9EE] py-[${Math.round(5 * s)}px]">${tCell(r[0], `[color:${NV}] text-[${px(10)}px] ${j < 2 ? 'font-semibold' : ''}`, W[0])}${tCell(r[1], `[color:${INK2}] text-[${px(10)}px]`, W[1])}${tCell(r[2], `[color:${INK2}] text-[${px(10)}px]`, W[2])}<div data-node-label="Bar Cell" className="flex items-center shrink-0 w-[${bw + 48}px] gap-1.5"><div data-node-label="Cell Bar" className="block h-[${px(10, 8)}px]" style={{width:'${Math.max(3, Math.round(parseFloat(r[3].slice(1)) / max * bw))}px',backgroundColor:'${j < 2 ? TEAL : MIST}'}}></div>${T('Cell Text', r[3].replace('M', ''), `[color:${NV}] text-[${px(10)}px] ${j < 2 ? 'font-semibold' : ''}`)}</div></div>`).join('')}
       <div data-node-label="Group Bracket" className="flex items-center gap-2 pt-2">${T('Bracket Text', 'North and East: $22.5M of $27.1M', `[color:${TEAL}] text-[${px(10)}px] font-semibold`)}</div>
     </div>
-    <div data-node-label="Takeaway" className="flex flex-1 flex-col justify-center [background-color:${NV}] gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(14 * s)}px'}}>${T('Takeaway Kicker', 'SO WHAT', `text-[#93B8EF] text-[12px] font-semibold tracking-[1px]`)}${T('Takeaway Number', '$22.5M', 'text-white text-[38px] font-semibold leading-[1] tracking-[-1px]')}${T('Takeaway Context', 'of the $27.1M projected increase', 'text-[#A9B8C6] text-[13px] leading-[1.4]')}${T('Takeaway Text', 'Fund North and East first', 'text-white text-[15px] font-semibold leading-[1.25] pt-2')}</div>
+    <div data-node-label="Takeaway" className="flex flex-1 flex-col justify-center [background-color:${NV}] gap-[${Math.round(6 * s)}px]" style={{padding:'${Math.round(14 * s)}px'}}>${T('Takeaway Kicker', 'SO WHAT', `text-[#93B8EF] text-[12px] font-semibold tracking-[1px]`)}${T('Takeaway Number', '$22.5M', 'text-white text-[38px] font-semibold leading-[1] tracking-[-1px]')}${T('Takeaway Context', 'of the $27.1M projected increase', 'text-[#A9B8C6] text-[13px] leading-[1.4]')}${T('Takeaway Text', 'Prioritize North and East in planning', 'text-white text-[15px] font-semibold leading-[1.25] pt-2')}</div>
   </div>`;
 };
 // column chart with growth arrow
@@ -1356,9 +1355,147 @@ landing6 = landing6.slice(0, navStart) + navPill + '\n  ' + landing6.slice(navEn
 landing6 = landing6.replace('<div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[30px] pt-[56px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_76%_42%,#E6EFFD_0%,#FFFFFF_55%)]">', '<div data-node-label="Hero" className="flex w-full flex-col pl-[120px] pr-[30px] pt-[48px] pb-[88px] gap-16 [background-image:radial-gradient(circle_at_76%_42%,#E6EFFD_0%,#FFFFFF_55%)]">');
 // cursor flags
 landing6 = landing6.replace('<div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">', `<div data-node-label="Hero Cursor" className="flex absolute left-[612px] top-[150px]">${cursorFlag('Aira')}</div><div data-node-label="Hero Caption" className="flex absolute left-[10px] top-[0px]">`);
-landing6 = landing6.replace(/(<div data-node-label="Answer Wrap" className="flex self-start relative border border-\[#4D94FB\] rounded-none">)/, `$1<div data-node-label="Rewrite Cursor" className="flex absolute right-[-58px] top-[30px]">${cursorFlag('Aira')}</div>`);
+
 // footer wordmark
 const footStart = landing6.indexOf('<div data-node-label="Footer"');
 landing6 = landing6.slice(0, footStart) + landing6.slice(footStart).replace(/<\/div>\n<\/div>$/, `</div>\n  ${wordmark}\n</div>`);
-if (!landing6.includes('Wordmark Band') || !landing6.includes('Hero Cursor') || !landing6.includes('Rewrite Cursor')) throw new Error('v6 replace failed');
-fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing6));
+if (!landing6.includes('Wordmark Band') || !landing6.includes('Hero Cursor')) throw new Error('v6 replace failed');
+
+// ---------- Landing v10: elite hero, bento, shader seams ----------
+const DEEP = '#0A1824';
+const navDark = `<div data-node-label="Nav Wrap" className="flex w-full justify-center pt-4 px-[120px]">
+    <div data-node-label="Nav Pill" className="flex w-full h-[60px] items-center justify-between rounded-[18px] bg-[#ffffff0d] shadow-[0px_0px_0px_1px_#ffffff1f,inset_0px_1px_0px_#ffffff14] pl-5 pr-2.5">
+      <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[24px] block text-white">${MARK}</div>${T('Brand Name', 'AirDesign', 'text-white text-[17px] font-semibold tracking-[-0.3px]')}</div>
+      <div data-node-label="Nav Links" className="flex items-center gap-8">${['The method', 'PowerPoint', 'Agents', 'Pricing'].map(x => T('Nav Link', x, 'text-[#A9B8C6] text-[14px]')).join('')}</div>
+      <div data-node-label="Nav Actions" className="flex items-center gap-4">${T('Nav Sign In', 'Sign in', 'text-white text-[14px] font-medium')}${lBtn('Start free', 'primary', false, 40)}</div>
+    </div>
+  </div>`;
+const glassBtn = (t) => `<div data-node-label="Glass Button" className="flex h-[48px] items-center rounded-[12px] bg-[#ffffff12] shadow-[0px_0px_0px_1px_#ffffff2e,inset_0px_1px_0px_#ffffff1f] px-6">${T('Glass Label', t, 'text-white text-[15px] font-medium')}</div>`;
+const bigBtn = (t) => lBtn(t).replace('h-[44px]', 'h-[48px]');
+const announce = `<div data-node-label="Announce" className="flex h-9 items-center rounded-full bg-[#ffffff0f] shadow-[0px_0px_0px_1px_#ffffff26] pl-1.5 pr-4 gap-2.5"><div data-node-label="Announce Tag" className="flex h-6 items-center rounded-full [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] px-2.5 gap-1.5"><div data-node-label="Spark" className="size-[11px] block text-white">${SPARK}</div>${T('Tag Text', 'Aira', 'text-white text-[12px] font-semibold')}</div>${T('Announce Text', 'The agent that writes the answer before the slide', 'text-[#C9D4DE] text-[13px]')}${ic('arrowr', 13, 'text-[#93B8EF]')}</div>`;
+const frame10 = `<div data-node-label="Product Frame" className="flex w-[1120px] flex-col rounded-[18px] bg-white shadow-[0px_0px_0px_1px_#ffffff1f,0px_40px_120px_#00000080,0px_0px_80px_#4d94fb33] overflow-clip">
+    <div data-node-label="Frame Bar" className="flex h-11 items-center border-b [border-bottom-color:var(--paper-gray-100)] px-4 gap-3">
+      <div data-node-label="Mark" className="size-[18px] block">${MARK}</div>${T('Frame Deck', 'Halden Q3 board review', `${ink} text-[13px] font-medium`)}${T('Frame Saved', 'Saved', `${sub} text-[12px]`)}<div data-node-label="Grow" className="flex-1 block"></div>
+      <div data-node-label="Frame Export" className="flex h-7 items-center rounded-[7px] [background-image:linear-gradient(180deg,_var(--paper-button-top)_0%,_var(--ad-brand)_100%)] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--ad-brand-strong)] px-3">${T('Export Label', 'Export', 'text-white text-[12px] font-medium')}</div>
+    </div>
+    <div data-node-label="Frame Body" className="flex h-[540px]">
+      <div data-node-label="Frame Canvas" className="flex flex-1 justify-center items-center relative [background-color:var(--paper-gray-50)]">${mbb({ w: 720, active: 1, title: 'Enterprise carried the quarter', titlePx: 33, wasBig: 'Q3 revenue by segment', unit: 'Revenue bridge by segment, Q3 24 to Q3 25, $M', body: waterfall(0.98), foot: '1. Recognized revenue, split by account segment.', source: 'Source: Halden CRM, Q3 pipeline report; Halden analysis. Sample data.', page: 3, glow: true, selTitle: true })}
+        <div data-node-label="Frame Cursor" className="flex absolute left-[566px] top-[150px]">${cursorFlag('Aira')}</div>
+      </div>
+      <div data-node-label="Frame Panel" className="flex w-[300px] flex-col border-l [border-left-color:var(--paper-gray-100)] p-4 gap-4">
+        <div data-node-label="Panel Head" className="flex items-center gap-2"><div data-node-label="Spark" className="size-[14px] block [color:var(--ad-brand)]">${SPARK}</div>${T('Panel Title', 'Aira', `${ink} text-[13px] font-semibold`)}</div>
+        <div data-node-label="Person Bubble" className="flex self-end [background-color:var(--paper-gray-100)] rounded-[12px] px-3 py-2.5">${T('Person Text', 'Turn the Q3 notes into a board recommendation. Lead with the answer.', `${ink} text-[13px] leading-[1.5] w-[220px]`)}</div>
+        <div data-node-label="Activity" className="flex flex-col gap-2.5">${step('done', 'Read Q3 board notes and CRM export')}${step('done', 'Framed the answer and three reasons')}${step('done', 'Built 8 slides, every number sourced')}${step('now', 'Writing the title on slide 3')}</div>
+        <div data-node-label="Grow" className="flex-1 block"></div>
+        <div data-node-label="Composer" className="flex h-11 items-center rounded-[12px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] px-3 gap-2"><div data-node-label="Context Chip" className="flex h-6 items-center rounded-[6px] [background-color:var(--paper-gray-100)] px-2">${T('Chip Label', 'Slide 3', `${mut} text-[12px]`)}</div>${T('Composer Hint', 'Add to the request', `${sub} text-[13px]`)}</div>
+      </div>
+    </div>
+  </div>`;
+const hero10 = `<div data-node-label="Hero" className="flex w-full flex-col items-center relative">
+    <div data-node-label="Hero Light" className="flex absolute left-0 top-0 w-full h-[1060px]"></div>
+    <div data-node-label="Hero Horizon" className="flex absolute left-0 top-[700px] w-full h-[260px]"></div>
+    <div data-node-label="Hero Content" className="flex w-full flex-col items-center pt-[96px] gap-8">
+      ${announce}
+      <div data-node-label="Hero Headline" className="flex flex-col items-center">${T('Headline Line', 'Win the room', 'text-white text-[104px] font-semibold leading-[0.98] tracking-[-4.4px]')}${T('Headline Line Accent', 'before you walk in.', 'text-white text-[104px] font-semibold leading-[0.98] tracking-[-4.4px]')}</div>
+      <span data-node-label="Hero Sub" className="${F} block w-[620px] text-center text-[#A9B8C6] text-[20px] leading-[1.5]">Aira turns your notes into a board deck that leads with the answer, sources every number and opens in PowerPoint. You make the call.</span>
+      <div data-node-label="Hero Actions" className="flex items-center gap-3 pt-1">${bigBtn('Start free')}${glassBtn('Import a PowerPoint')}</div>
+      <div data-node-label="Hero Notes" className="flex items-center gap-5">${T('Hero Note', 'Free with weekly usage', 'text-[#7F93A6] text-[13px]')}<div data-node-label="Divider" className="w-px h-3.5 block bg-[#ffffff26]"></div><div data-node-label="Own Agent Link" className="flex items-center gap-2"><div data-node-label="Mini Claude" className="size-[14px] block text-[#C9D4DE]">${CLAUDE}</div><div data-node-label="Mini OpenAI" className="size-[14px] block text-[#C9D4DE]">${OPENAI}</div>${T('Own Agent Text', 'Works with Claude and Codex', 'text-[#C9D4DE] text-[13px] font-medium')}</div></div>
+      <div data-node-label="Frame Wrap" className="flex pt-14">${frame10}</div>
+    </div>
+  </div>`;
+const bentoTile = (label, inner, w, dark = false) => `<div data-node-label="${label}" className="flex flex-col justify-between rounded-[22px] ${dark ? `[background-color:${NAVY}] shadow-[0px_0px_0px_1px_#ffffff14]` : 'bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_10px_30px_#0f24330a]'} overflow-clip relative h-[320px] w-[${w}px] shrink-0">${inner}</div>`;
+const tileText = (n, t, b, dark = false) => `<div data-node-label="Tile Text" className="flex w-[330px] shrink-0 flex-col gap-2 p-7">${T('Tile Number', n, `${dark ? 'text-[#93B8EF]' : '[color:var(--paper-blue-link)]'} text-[13px] font-semibold`)}${T('Tile Title', t, `${dark ? 'text-white' : ink} text-[24px] font-semibold leading-[1.15] tracking-[-0.6px]`)}<span data-node-label="Tile Body" className="${F} block w-[276px] ${dark ? 'text-[#A9B8C6]' : mut} text-[15px] leading-[1.5]">${b}</span></div>`;
+const bento = `<div data-node-label="Bento" className="flex w-full flex-col gap-6">
+    <div data-node-label="Bento Row" className="flex w-full gap-6">
+      ${bentoTile('Tile Titles', `<div data-node-label="Tile Split" className="flex w-full h-full">${tileText('01', 'Every title states the answer.', 'Labels become claims. The deck reads as an argument from the titles alone.')}<div data-node-label="Tile Visual" className="flex flex-1 flex-col justify-center pr-16 gap-3">${struck('Q3 revenue by segment', 'text-[#9AA5B1] text-[19px] font-medium tracking-[-0.3px]', 12)}<div data-node-label="Answer Wrap" className="flex self-start relative border border-[#4D94FB] rounded-none">${T('Tile Answer', 'Enterprise carried the quarter', `[color:${NV}] text-[23px] font-semibold tracking-[-0.6px]`)}${handlesAbs}<div data-node-label="Tile Cursor" className="flex absolute right-[-52px] top-[22px]">${cursorFlag('Aira')}</div></div></div></div>`, 776)}
+      ${bentoTile('Tile Sources', `<div data-node-label="Tile Number Wrap" className="flex flex-col p-7 gap-1">${T('Tile Number', '02', '[color:var(--paper-blue-link)] text-[13px] font-semibold')}<div data-node-label="Big Num" className="flex items-start gap-1 pt-3">${T('Big Value', '$22.5M', `[color:${NV}] text-[64px] font-semibold leading-[1] tracking-[-2.4px]`)}${T('Big Ref', '1', '[color:var(--paper-blue-link)] text-[18px] font-semibold')}</div><div data-node-label="Ref Line" className="flex items-center gap-2 pt-2">${T('Ref Mark', '1', '[color:var(--paper-blue-link)] text-[12px] font-semibold')}${T('Ref Text', 'Brightwater FY plan, p. 4', `${mut} text-[13px]`)}</div></div>${`<div data-node-label="Tile Text" className="flex flex-col gap-2 px-7 pb-7">${T('Tile Title', 'Every number has a source.', `${ink} text-[24px] font-semibold leading-[1.15] tracking-[-0.6px]`)}</div>`}`, 400)}
+    </div>
+    <div data-node-label="Bento Row" className="flex w-full gap-6">
+      ${bentoTile('Tile Point', `<div data-node-label="Tile Spacer" className="block h-[150px]"></div>${tileText('03', 'One point per slide.', 'One exhibit, one accent color on the number that proves the title.', true)}<div data-node-label="Tile Dither" className="flex absolute left-0 top-0 w-full h-[190px]"></div>`, 400, true)}
+      ${bentoTile('Tile PowerPoint', `<div data-node-label="Tile Split" className="flex w-full h-full">${tileText('04', 'Opens in PowerPoint.', 'Titles stay text, charts stay charts, your master and fonts stay yours.')}<div data-node-label="Tile Visual" className="flex flex-1 items-center justify-center pr-9"><div data-node-label="File Card" className="flex w-[300px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_18px_40px_#0f24331a] p-5 gap-4"><div data-node-label="File Head" className="flex items-center gap-3"><div data-node-label="File Icon" className="flex size-10 justify-center items-center rounded-[10px] bg-[#0F2433]">${T('File Letter', 'P', 'text-white text-[18px] font-bold')}</div><div data-node-label="File Meta" className="flex flex-col gap-0.5">${T('File Name', 'Halden Q3 board review.pptx', `${ink} text-[13px] font-semibold`)}${T('File Info', '8 slides, editable', `${sub} text-[12px]`)}</div></div><div data-node-label="File Checks" className="flex flex-col gap-2">${['Titles are text', 'Charts are native', 'Notes kept'].map(x => `<div data-node-label="File Check" className="flex items-center gap-2">${tileG(ic('check', 10), 18, 6)}${T('Check Text', x, `${ink} text-[13px]`)}</div>`).join('')}</div></div></div></div>`, 776)}
+    </div>
+  </div>`;
+const bentoSection = `<div data-node-label="Bento Section" className="flex w-full flex-col items-center px-[120px] pt-[120px] pb-[120px] bg-white">
+    <div data-node-label="Section Head" className="flex w-full items-end justify-between pb-14"><div data-node-label="Head Text" className="flex flex-col gap-4">${lEyebrow('In short')}<div data-node-label="Section Title" className="flex flex-col">${['Everything a partner checks,', 'done before you present.'].map(l => T('Title Line', l, `${ink} text-[48px] font-semibold leading-[1.08] tracking-[-1.4px]`)).join('')}</div></div>${lLead('Four rules the best decks follow. Aira applies them to every slide it builds, and you see each one as it happens.', 400)}</div>
+    ${bento}
+  </div>`;
+const seam = (label) => `<div data-node-label="${label}" className="flex w-full h-[120px]"></div>`;
+let landing10 = landing6;
+{
+  const a = landing10.indexOf('<div data-node-label="Nav Wrap"');
+  const b = landing10.indexOf('${dark(') >= 0 ? -1 : landing10.indexOf('<div data-node-label="Rewrite Section"');
+  landing10 = landing10.slice(0, a) + `<div data-node-label="Dark Top" className="flex w-full flex-col items-center relative" style={{backgroundColor:'${DEEP}'}}>${navDark}${hero10}<div data-node-label="Hero Bottom" className="block h-[0px]"></div></div>\n  ${bentoSection}` + landing10.slice(b);
+}
+landing10 = landing10.replace(`<div data-node-label="Dark Top" className="flex w-full flex-col items-center relative" style={{backgroundColor:'${DEEP}'}}>`, `<div data-node-label="Dark Top" className="flex w-full flex-col items-center relative [background-image:linear-gradient(180deg,${DEEP}_0%,${DEEP}_80%,#FFFFFF_80%)]">`);
+landing10 = landing10.replace(/(<span data-node-label="Footer Link"[^>]*>Terms<\/span>)(?![\s\S]*Footer Link)/, '$1' + T('Footer Link', 'Shaders by Paper', 'text-[#7F93A6] text-[13px]'));
+if (!landing10.includes('Bento Section') || !landing10.includes('Rewrite Section')) throw new Error('v10 failed');
+landing10 = landing10.replace('className="flex w-[${LW}px] flex-col bg-white', 'className="flex w-[${LW}px] flex-col bg-white');
+
+// ---------- Landing v12: light, real product screens ----------
+const slot = (label, w, h, extra = '') => `<div data-node-label="${label}" className="flex w-[${w}px] h-[${h}px] shrink-0 relative overflow-clip ${extra}"></div>`;
+const navLight = navPill;
+const ghostLight = (t) => `<div data-node-label="Secondary Button" className="flex h-[48px] items-center rounded-[12px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-300),0px_1px_2px_#0000000d] px-6">${T('Secondary Label', t, `${ink} text-[15px] font-medium`)}</div>`;
+const announceLight = `<div data-node-label="Announce" className="flex h-9 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_4px_14px_#0f24330d] pl-1.5 pr-4 gap-2.5"><div data-node-label="Announce Tag" className="flex h-6 items-center rounded-full [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] px-2.5 gap-1.5"><div data-node-label="Spark" className="size-[11px] block text-white">${SPARK}</div>${T('Tag Text', 'Aira', 'text-white text-[12px] font-semibold')}</div>${T('Announce Text', 'The agent that writes the answer before the slide', `${mut} text-[13px]`)}${ic('arrowr', 13, '[color:var(--ad-brand)]')}</div>`;
+const fileSat = `<div data-node-label="File Satellite" className="flex w-[300px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_12px_32px_#0f24331f,0px_2px_6px_#0f24330f] p-4 gap-3">
+    <div data-node-label="File Head" className="flex items-center gap-3"><div data-node-label="File Icon" className="flex size-10 justify-center items-center rounded-[10px] bg-[#0F2433]">${T('File Letter', 'P', 'text-white text-[18px] font-bold')}</div><div data-node-label="File Meta" className="flex flex-col gap-0.5">${T('File Name', 'Q3 investor update.pptx', `${ink} text-[13px] font-semibold`)}${T('File Info', '8 slides, every chart editable', `${sub} text-[12px]`)}</div></div>
+  </div>`;
+const hero12 = `<div data-node-label="Hero" className="flex w-full flex-col items-center relative">
+    <div data-node-label="Hero Light" className="flex absolute left-0 top-0 w-full h-[900px]"></div>
+    <div data-node-label="Hero Horizon" className="flex absolute left-0 top-[600px] w-full h-[420px]"></div>
+    <div data-node-label="Hero Content" className="flex w-full flex-col items-center pt-[88px] gap-8">
+      ${announceLight}
+      <div data-node-label="Hero Headline" className="flex flex-col items-center">${T('Headline Line', 'Win the room', `${ink} text-[104px] font-semibold leading-[0.98] tracking-[-4.4px]`)}${T('Headline Line Accent', 'before you walk in.', `${ink} text-[104px] font-semibold leading-[0.98] tracking-[-4.4px]`)}</div>
+      <span data-node-label="Hero Sub" className="${F} block w-[620px] text-center ${mut} text-[20px] leading-[1.5]">Aira turns your notes into a board deck that leads with the answer, sources every number and opens in PowerPoint. You make the call.</span>
+      <div data-node-label="Hero Actions" className="flex items-center gap-3 pt-1">${bigBtn('Start free')}${ghostLight('Import a PowerPoint')}</div>
+      <div data-node-label="Hero Notes" className="flex items-center gap-5">${T('Hero Note', 'Free with weekly usage', `${sub} text-[13px]`)}<div data-node-label="Divider" className="w-px h-3.5 block [background-color:var(--paper-gray-300)]"></div>${T('Own Agent Text', 'Works with Claude and Codex', `${ink} text-[13px] font-medium`)}</div>
+      <div data-node-label="Shot Wrap" className="flex relative pt-12 pb-0">
+        ${slot('Real Hero Slot', 1200, 640, 'rounded-t-[18px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_30px_80px_#0f24331f,0px_4px_12px_#0f24330d]')}
+        <div data-node-label="Hero Satellite" className="flex absolute left-[-60px] top-[586px]">${fileSat}</div>
+      </div>
+    </div>
+  </div>`;
+const realTile = (label, w, h) => slot(label, w, h, 'rounded-[12px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_16px_40px_#0f24331a]');
+const bento12 = `<div data-node-label="Bento" className="flex w-full flex-col gap-6">
+    <div data-node-label="Bento Row" className="flex w-full gap-6">
+      ${bentoTile('Tile Ask', `<div data-node-label="Tile Split" className="flex w-full h-full items-end">${tileText('01', 'Point at it. Say what it should prove.', 'Select a chart or a slide, then ask in plain words. Aira keeps the selection as context.')}<div data-node-label="Tile Visual" className="flex flex-1 h-full items-start justify-end pt-7">${realTile('Real Composer Slot', 352, 252)}</div></div>`, 776)}
+      ${bentoTile('Tile Sources', `<div data-node-label="Tile Number Wrap" className="flex flex-col p-7 gap-1">${T('Tile Number', '02', '[color:var(--paper-blue-link)] text-[13px] font-semibold')}<div data-node-label="Big Num" className="flex items-start gap-1 pt-3">${T('Big Value', '$22.5M', `[color:${NV}] text-[64px] font-semibold leading-[1] tracking-[-2.4px]`)}${T('Big Ref', '1', '[color:var(--paper-blue-link)] text-[18px] font-semibold')}</div><div data-node-label="Ref Line" className="flex items-center gap-2 pt-2">${T('Ref Mark', '1', '[color:var(--paper-blue-link)] text-[12px] font-semibold')}${T('Ref Text', 'Brightwater FY plan, p. 4', `${mut} text-[13px]`)}</div></div><div data-node-label="Tile Text" className="flex flex-col gap-2 px-7 pb-7">${T('Tile Title', 'Every number has a source.', `${ink} text-[24px] font-semibold leading-[1.15] tracking-[-0.6px]`)}</div>`, 400)}
+    </div>
+    <div data-node-label="Bento Row" className="flex w-full gap-6">
+      ${bentoTile('Tile Point', `<div data-node-label="Tile Spacer" className="block h-[150px]"></div>${tileText('03', 'One point per slide.', 'One exhibit, one accent color on the number that proves the title.')}<div data-node-label="Tile Dither" className="flex absolute left-0 top-0 w-full h-[190px]"></div>`, 400).replace('bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200),0px_10px_30px_#0f24330a]', '[background-color:#EEF4FE] shadow-[0px_0px_0px_1px_#DCE8FB]')}
+      ${bentoTile('Tile PowerPoint', `<div data-node-label="Tile Split" className="flex w-full h-full items-end">${tileText('04', 'Opens in PowerPoint.', 'Titles stay text, charts stay charts, your master and fonts stay yours.').replace('w-[330px]', 'w-[290px]')}<div data-node-label="Tile Visual" className="flex flex-1 h-full items-center justify-end">${realTile('Real Export Slot', 478, 236).replace('rounded-[12px]', 'rounded-l-[12px]')}</div></div>`, 776)}
+    </div>
+  </div>`;
+const bentoSection12 = bentoSection.replace(bento, bento12);
+const agentsShot = `<div data-node-label="Agents Shot" className="flex w-full justify-center">${slot('Real Agents Slot', 860, 484, 'rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_24px_60px_#0f24331a]')}</div>`;
+const lighten = (chunk) => chunk
+  .replace(/style=\{\{backgroundColor:'#0F2433'\}\}/g, 'style={{backgroundColor:\'#FFFFFF\'}}')
+  .replace(/text-white/g, 'text-[#222222]')
+  .replace(/text-\[#93B8EF\]/g, '[color:var(--paper-blue-link)]')
+  .replace(/text-\[#A9B8C6\]/g, 'text-[#666666]')
+  .replace(/text-\[#C9D4DE\]/g, 'text-[#444444]')
+  .replace(/text-\[#7F93A6\]/g, 'text-[#909090]')
+  .replace(/text-\[#5B7080\]/g, 'text-[#A3A3A3]')
+  .replace(/\[background-color:#5B7080\]/g, '[background-color:#B5B5B5]')
+  .replace(/border-\[#ffffff14\]/g, 'border-[#EAEAE7]')
+  .replace(/#ffffff26/g, '#D7D7D6')
+  .replace(/text-\[#71879A\]/g, 'text-[#A8A8A8]')
+  .replace(/text-\[#ffffff0f\]/g, 'text-[#0000000a]')
+  .replace(/border-\[#ffffff40\]/g, 'border-[#D7D7D6]');
+let landing12 = landing10;
+{
+  const a = landing12.indexOf('<div data-node-label="Dark Top"');
+  const b = landing12.indexOf('<div data-node-label="Bento Section"');
+  landing12 = landing12.slice(0, a) + `<div data-node-label="Light Top" className="flex w-full flex-col items-center relative bg-white">${navLight}${hero12}</div>\n  ` + landing12.slice(b);
+}
+landing12 = landing12.replace(bentoSection, bentoSection12);
+landing12 = landing12.replace(agentsRow, agentsShot);
+for (const lab of ['Rewrite Section', 'Story Section', 'Final Section', 'Footer', 'Wordmark Band']) {
+  const a = landing12.indexOf(`<div data-node-label="${lab}"`);
+  if (a < 0) throw new Error('no ' + lab);
+  const nexts = ['Pyramid Section', 'So What Section', 'Footer', 'Wordmark Band'].map(n => landing12.indexOf(`<div data-node-label="${n}"`, a + 10)).filter(x => x > a);
+  const b = nexts.length ? Math.min(...nexts) : landing12.length;
+  landing12 = landing12.slice(0, a) + lighten(landing12.slice(a, b)) + landing12.slice(b);
+}
+landing12 = landing12.replace('<div data-node-label="Rewrite Section" className="flex w-full flex-col items-center px-[120px] py-[120px] "', '<div data-node-label="Rewrite Section" className="flex w-full flex-col items-center px-[120px] py-[120px] border-t [border-top-color:var(--paper-gray-200)]"');
+if (!landing12.includes('Real Hero Slot') || !landing12.includes('Real Agents Slot') || !landing12.includes('Real Export Slot')) throw new Error('v12 slots missing');
+fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing12));

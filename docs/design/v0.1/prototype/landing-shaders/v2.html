@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>AirDesign landing, live shaders v2</title>
+<style>
+*{box-sizing:border-box;margin:0}
+body{font-family:Geist,"Geist Sans",Inter,system-ui,sans-serif;background:#fff;width:1440px;color:#222}
+.top{position:relative;background:linear-gradient(180deg,#0A1824 0,#0A1824 1100px,#fff 1100px);overflow:hidden}
+.mesh,.sun{position:absolute;left:0;width:1440px}
+.mesh{top:0;height:1100px}
+.mesh-fade{position:absolute;left:0;top:0;width:1440px;height:1100px;background:linear-gradient(180deg,#0A1824b3 0%,#0A1824d9 45%,#0A1824 72%)}
+.sun{top:600px;height:480px}
+.sun-fade{position:absolute;left:0;top:600px;width:1440px;height:480px;background:linear-gradient(180deg,#0A182400 60%,#0A1824 100%)}
+.nav{position:relative;margin:16px 120px 0;height:60px;border-radius:18px;background:#ffffff0d;box-shadow:0 0 0 1px #ffffff1f,inset 0 1px 0 #ffffff14;display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 20px;color:#fff;font-size:14px;backdrop-filter:blur(16px)}
+.nav .links{display:flex;gap:32px;color:#A9B8C6}
+.btn{height:44px;padding:0 20px;border-radius:10px;font-size:15px;font-weight:500;display:inline-flex;align-items:center;color:#fff;background:linear-gradient(180deg,#93B8EF,#4D94FB);box-shadow:inset 0 1px 0 #ffffff59,0 0 0 1px #2D6FCD;transition:transform 160ms cubic-bezier(.23,1,.32,1)}
+.btn:active{transform:scale(.97)}
+.ghost{height:48px;padding:0 24px;border-radius:12px;background:#ffffff12;box-shadow:0 0 0 1px #ffffff2e,inset 0 1px 0 #ffffff1f;color:#fff;font-size:15px;font-weight:500;display:inline-flex;align-items:center}
+.hero{position:relative;display:flex;flex-direction:column;align-items:center;padding-top:96px;gap:32px;text-align:center}
+.pill{height:36px;border-radius:999px;background:#ffffff0f;box-shadow:0 0 0 1px #ffffff26;display:flex;align-items:center;gap:10px;padding:0 16px 0 6px;color:#C9D4DE;font-size:13px}
+.pill b{height:24px;border-radius:999px;background:linear-gradient(180deg,#93B8EF,#4D94FB);color:#fff;font-size:12px;padding:0 10px;display:flex;align-items:center}
+h1{font-size:104px;line-height:.98;letter-spacing:-4.4px;font-weight:600;color:#fff}
+h1 span{background:linear-gradient(180deg,#fff 0%,#93B8EF 55%,#4D94FB 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{width:620px;color:#A9B8C6;font-size:20px;line-height:1.5}
+.frame{position:relative;margin-top:24px;width:1120px;height:580px;border-radius:18px;background:#fff;box-shadow:0 0 0 1px #ffffff1f,0 40px 120px #00000080,0 0 80px #4d94fb33;overflow:hidden;display:flex}
+.canvas{flex:1;background:#F5F5F2;display:flex;align-items:center;justify-content:center;position:relative}
+.slide-wrap{position:relative;padding:2px}
+.pb{position:absolute;left:-26px;top:-26px;right:-26px;bottom:-26px;transition:opacity 600ms cubic-bezier(.23,1,.32,1)}
+.slide{position:relative;width:720px;height:405px;background:#fff;border-radius:4px;box-shadow:0 0 0 1px #4D94FB66;padding:20px 30px 14px;text-align:left;display:flex;flex-direction:column}
+.trk{display:flex;gap:4px;font-size:8px;font-weight:600;letter-spacing:.4px}.trk i{font-style:normal;padding:3px 6px;background:#EEF1F4;color:#7B8A96}.trk i.on{background:#0F2433;color:#fff}
+.was{margin-top:14px;font-size:20px;color:#9AA5B1;text-decoration:line-through;text-decoration-thickness:2px}
+.ttl{font-size:33px;font-weight:600;color:#0F2433;letter-spacing:-.4px;border:1px solid #4D94FB;align-self:flex-start;position:relative;padding-right:120px}
+.unit{font-size:11px;color:#6B7A86;margin-top:4px}
+.wf{flex:1;display:flex;align-items:flex-end;gap:10px;padding-top:10px}
+.wf div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;font-size:10.5px;color:#0F2433}
+.wf b{display:block;width:56px;margin-top:3px}
+.foot{border-top:1px solid #E1E6EA;margin-top:8px;padding-top:6px;font-size:8.5px;color:#7B8A96}
+.panel{width:300px;border-left:1px solid #EAEAE7;padding:16px;font-size:13px;text-align:left;display:flex;flex-direction:column;gap:12px}
+.bento{padding:120px;display:grid;grid-template-columns:776px 400px;gap:24px}
+.tile{position:relative;height:320px;border-radius:22px;background:#fff;box-shadow:0 0 0 1px #EAEAE7,0 10px 30px #0f24330a;padding:28px;overflow:hidden}
+.tile.dark{background:#0F2433;color:#fff}
+.tile .g{position:absolute;left:0;top:0;width:100%;height:200px}
+.tile h3{position:relative;font-size:24px;letter-spacing:-.6px;margin-top:8px}
+.tile small{position:relative;color:#4D94FB;font-weight:600;font-size:13px}
+.close{position:relative;background:#0F2433;height:600px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:96px;overflow:hidden}
+.dither{position:absolute;left:0;top:0;width:1440px;height:440px}
+.dfade{position:absolute;left:0;top:0;width:1440px;height:440px;background:linear-gradient(180deg,#0F243300 20%,#0F2433 78%)}
+.field{position:relative;width:640px;display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:10px;padding:24px 16px 24px 36px;box-shadow:0 24px 64px #00000066}
+.field .ph{font-size:30px;font-weight:600;color:#A9B3BC;letter-spacing:-.6px}
+.field .ph i{display:inline-block;width:2px;height:34px;background:#4D94FB;vertical-align:-6px;margin-left:3px;animation:blink 1.06s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.close h2{position:relative;margin-top:44px;color:#fff;font-size:64px;letter-spacing:-2px;font-weight:600}
+@media (prefers-reduced-motion:reduce){.field .ph i{animation:none}}
+</style></head><body>
+<section class="top">
+  <div class="mesh" id="mesh"></div><div class="mesh-fade"></div>
+  <div class="sun" id="sun"></div><div class="sun-fade"></div>
+  <nav class="nav"><b>AirDesign</b><span class="links"><span>The method</span><span>PowerPoint</span><span>Agents</span><span>Pricing</span></span><span>Sign in &nbsp; <span class="btn">Start free</span></span></nav>
+  <div class="hero">
+    <div class="pill"><b>Aira</b>The agent that writes the answer before the slide</div>
+    <h1>Win the room<br><span>before you walk in.</span></h1>
+    <p class="sub">Aira turns your notes into a board deck that leads with the answer, sources every number and opens in PowerPoint. You make the call.</p>
+    <div style="display:flex;gap:12px"><span class="btn" style="height:48px">Start free</span><span class="ghost">Import a PowerPoint</span></div>
+    <div class="frame">
+      <div class="canvas"><div class="slide-wrap"><div class="pb" id="pb"></div>
+        <div class="slide">
+          <div style="display:flex;justify-content:space-between"><div class="trk"><i>Context</i><i class="on">Growth</i><i>Quality</i><i>Capacity</i><i>Decision</i></div><span style="font-size:8px;border:1px solid #9AA7B2;padding:2px 6px;color:#5B6B77;font-weight:600">SAMPLE DATA</span></div>
+          <div class="was">Q3 revenue by segment</div>
+          <div class="ttl">Enterprise carried the quarter</div>
+          <div class="unit">Revenue bridge by segment, Q3 24 to Q3 25, $M</div>
+          <div class="wf">
+            <div><b>$4.1M</b><b style="height:108px;background:#0F2433"></b>Q3 24</div>
+            <div style="font-weight:600">+$1.06M<b style="height:28px;background:#1B6B8F;margin-bottom:108px"></b>Enterprise¹</div>
+            <div>+$0.35M<b style="height:9px;background:#A9BFCF;margin-bottom:136px"></b>Mid-market</div>
+            <div>+$0.19M<b style="height:5px;background:#A9BFCF;margin-bottom:145px"></b>Self-serve</div>
+            <div><b>$5.7M</b><b style="height:150px;background:#0F2433"></b>Q3 25</div>
+          </div>
+          <div class="foot">1. Recognized revenue, split by account segment.<br>Source: Halden CRM, Q3 pipeline report; Halden analysis. Sample data.</div>
+        </div></div></div>
+      <div class="panel"><b>Aira</b><span style="align-self:flex-end;background:#EAEAE7;border-radius:12px;padding:10px 12px;width:240px">Turn the Q3 notes into a board recommendation. Lead with the answer.</span><span style="color:#666">Read Q3 board notes and CRM export</span><span style="color:#666">Framed the answer and three reasons</span><span style="color:#666">Built 8 slides, every number sourced</span><b>Writing the title on slide 3</b></div>
+    </div>
+  </div>
+</section>
+<section class="bento">
+  <div class="tile"><small>01</small><h3>Every title states the answer.</h3></div>
+  <div class="tile"><small>02</small><h3 style="font-size:64px;letter-spacing:-2.4px;color:#0F2433">$22.5M</h3><h3>Every number has a source.</h3></div>
+  <div class="tile dark" style="grid-column:1"><div class="g" id="grain"></div><div style="height:150px"></div><small>03</small><h3>One point per slide.</h3></div>
+  <div class="tile"><small>04</small><h3>Opens in PowerPoint.</h3></div>
+</section>
+<section class="close"><div class="dither" id="dt"></div><div class="dfade"></div>
+  <div class="field"><div><div style="font-size:11px;color:#1B6B8F;font-weight:600;letter-spacing:1px">NEXT STEP</div><div class="ph">Your answer goes here<i></i></div></div><span class="btn">Start free</span></div>
+  <h2>Your next deck has to win.</h2>
+</section>
+<script type="module">
+import { ShaderMount, meshGradientFragmentShader, ditheringFragmentShader, pulsingBorderFragmentShader, grainGradientFragmentShader, getShaderColorFromString as c, getShaderNoiseTexture, ShaderFitOptions, PulsingBorderAspectRatios, DitheringShapes, DitheringTypes, GrainGradientShapes } from './node_modules/@paper-design/shaders/dist/index.js';
+window.__e=[];
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const noise = getShaderNoiseTexture(); if (noise && !noise.complete) await new Promise(r => noise.addEventListener('load', r, { once: true }));
+const S = (o = {}) => ({ u_fit: ShaderFitOptions.cover, u_rotation: 0, u_scale: 1, u_offsetX: 0, u_offsetY: 0, u_originX: .5, u_originY: .5, u_worldWidth: 0, u_worldHeight: 0, ...o });
+const mounts = [];
+const mount = (id, frag, uni, speed) => { try { const m = new ShaderMount(document.getElementById(id), frag, uni, undefined, reduce ? 0 : speed, 0); mounts.push([m, speed]); return m; } catch (e) { __e.push(id + ' ' + e.message); } };
+mount('mesh', meshGradientFragmentShader, { u_colors: ['#0A1824', '#123A63', '#2D6FCD', '#0F2433', '#4D94FB'].map(c), u_colorsCount: 5, u_distortion: .8, u_swirl: .35, u_grainMixer: .25, u_grainOverlay: .18, ...S() }, .12);
+mount('sun', ditheringFragmentShader, { u_colorBack: c('#0A182400'), u_colorFront: c('#4D94FB'), u_shape: DitheringShapes.sphere, u_type: DitheringTypes['4x4'], u_pxSize: 3, ...S({ u_fit: ShaderFitOptions.cover, u_scale: 1.25, u_offsetY: .35 }) }, .1);
+if (!reduce) { const pb = mount('pb', pulsingBorderFragmentShader, { u_colorBack: c('#00000000'), u_colors: ['#4D94FB', '#93B8EF', '#CFE0FA'].map(c), u_colorsCount: 3, u_roundness: .02, u_thickness: .03, u_marginLeft: .035, u_marginRight: .035, u_marginTop: .06, u_marginBottom: .06, u_aspectRatio: PulsingBorderAspectRatios.auto, u_softness: .5, u_intensity: .35, u_bloom: .22, u_spots: 2, u_spotSize: .35, u_pulse: .1, u_smoke: 0, u_smokeSize: .5, u_noiseTexture: noise, ...S({ u_fit: ShaderFitOptions.contain }) }, .4);
+  setTimeout(() => { if (pb) { pb.setSpeed(0); pb.parentElement.style.opacity = '0'; const i = mounts.findIndex(([m]) => m === pb); if (i >= 0) mounts[i][1] = 0; } }, 2400); }
+mount('grain', grainGradientFragmentShader, { u_colorBack: c('#0F2433'), u_colors: ['#4D94FB', '#93B8EF', '#1D4A7A'].map(c), u_colorsCount: 3, u_softness: .7, u_intensity: .25, u_noise: .35, u_shape: GrainGradientShapes.sphere, u_noiseTexture: noise, ...S({ u_scale: .8, u_offsetY: .3 }) }, .2);
+mount('dt', ditheringFragmentShader, { u_colorBack: c('#0F2433'), u_colorFront: c('#4D94FB'), u_shape: DitheringShapes.sphere, u_type: DitheringTypes['4x4'], u_pxSize: 3, ...S({ u_fit: ShaderFitOptions.cover, u_scale: .62, u_offsetY: .22 }) }, .15);
+const io = new IntersectionObserver(es => es.forEach(e => { const m = mounts.find(([sm]) => sm.parentElement === e.target); if (m && !reduce) m[0].setSpeed(e.isIntersecting ? m[1] : 0); }), { rootMargin: '100px' });
+mounts.forEach(([sm]) => io.observe(sm.parentElement));
+</script>
+</body></html>
