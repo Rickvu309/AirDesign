@@ -132,3 +132,15 @@ In the editor toolbar: Agent and Design, height 28, inside a 32 high group. The 
 - Code entry (S22.01): six boxes 44 x 48, radius 8; the active box has the focus ring.
 - Toggle: 36 x 20, `brand` when on.
 - Select: 120 x 32, radius 8, chevron.
+
+## Landing page parts (S11.01)
+
+Built from the same tokens and parts as the product. Research and concept notes are in [research/](research/).
+
+- **Product frame:** the real editor in a 1200 wide window (radius 16): deck bar with Export, a slide with the working glow and a Figma-style title selection, a "Was" tag showing the old title struck through, and Aira's panel with the request, activity steps (done in gray, current with the spark) and the composer.
+- **Compare pair:** two slides at the same scale with labels "In PowerPoint" and "In AirDesign", an arrow between them, and a row of kept items (blue check tiles).
+- **Review pins:** dark numbered circles placed on the slide edge, matched to numbered notes on the right.
+- **Story spine:** numbered action titles; the selected one is a white card and its slide shows beside it.
+- **Agent cards:** logo tile, name and one line for Aira, Claude and Codex, then the MCP address row with Copy address.
+- **Section header:** blue eyebrow, 44 semibold title, one lead line.
+- Buttons are 44 high on the page, 38 in the nav. Sample companies are Halden and Brightwater, always labeled as sample data.
