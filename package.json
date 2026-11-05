@@ -14,7 +14,12 @@
     "verify:pr-01": "node scripts/verify-pr-01.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint ."
+    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint .",
+    "build:deck": "node scripts/build-deck.mjs",
+    "probe:deck": "node scripts/probe-deck.mjs",
+    "verify:deck": "node scripts/verify-deck.mjs",
+    "verify:render": "node scripts/verify-render.mjs",
+    "verify:pr-02": "npm run verify:deck && npm run verify:render"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

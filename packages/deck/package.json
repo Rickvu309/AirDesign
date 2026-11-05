@@ -1,0 +1,12 @@
+{
+  "name": "@airdesign/deck",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./dist/index.js",
+    "./jsx": "./dist/jsx.js"
+  }
+}
