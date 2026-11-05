@@ -1,5 +1,7 @@
 import { boolean, integer, pgSchema, text, timestamp } from "drizzle-orm/pg-core"
 
+export const applicationSchemaName = "airdesign"
+
 export function accessTables(schemaName: string) {
   const namespace = pgSchema(schemaName)
   const user = namespace.table("user", {
@@ -71,11 +73,13 @@ export function accessTables(schemaName: string) {
   return { user, session, account, verification, challenge, sendWindow, tombstone }
 }
 
-export function accessSchemaSql(schemaName: string): string {
+export function accessSchemaSql(schemaName: string, mode: "disposable" | "stable"): string {
   const schema = `"${schemaName}"`
+  const createSchema = mode === "stable" ? `CREATE SCHEMA IF NOT EXISTS ${schema};` : `CREATE SCHEMA ${schema};`
+  const createTable = mode === "stable" ? "CREATE TABLE IF NOT EXISTS" : "CREATE TABLE"
   return `
-    CREATE SCHEMA ${schema};
-    CREATE TABLE ${schema}."user" (
+    ${createSchema}
+    ${createTable} ${schema}."user" (
       id text PRIMARY KEY,
       name text NOT NULL,
       email text NOT NULL UNIQUE,
@@ -86,7 +90,7 @@ export function accessSchemaSql(schemaName: string): string {
       "displayName" text,
       "freeUsageWeekStartedAt" timestamp
     );
-    CREATE TABLE ${schema}."session" (
+    ${createTable} ${schema}."session" (
       id text PRIMARY KEY,
       "expiresAt" timestamp NOT NULL,
       token text NOT NULL UNIQUE,
@@ -96,7 +100,7 @@ export function accessSchemaSql(schemaName: string): string {
       "userAgent" text,
       "userId" text NOT NULL REFERENCES ${schema}."user"(id) ON DELETE CASCADE
     );
-    CREATE TABLE ${schema}."account" (
+    ${createTable} ${schema}."account" (
       id text PRIMARY KEY,
       "accountId" text NOT NULL,
       "providerId" text NOT NULL,
@@ -111,7 +115,7 @@ export function accessSchemaSql(schemaName: string): string {
       "createdAt" timestamp NOT NULL,
       "updatedAt" timestamp NOT NULL
     );
-    CREATE TABLE ${schema}."verification" (
+    ${createTable} ${schema}."verification" (
       id text PRIMARY KEY,
       identifier text NOT NULL,
       value text NOT NULL,
@@ -119,7 +123,7 @@ export function accessSchemaSql(schemaName: string): string {
       "createdAt" timestamp NOT NULL,
       "updatedAt" timestamp NOT NULL
     );
-    CREATE TABLE ${schema}."challenge" (
+    ${createTable} ${schema}."challenge" (
       id text PRIMARY KEY,
       email text NOT NULL,
       "codeHash" text NOT NULL,
@@ -130,13 +134,13 @@ export function accessSchemaSql(schemaName: string): string {
       locked boolean NOT NULL,
       consumed boolean NOT NULL
     );
-    CREATE TABLE ${schema}."send_window" (
+    ${createTable} ${schema}."send_window" (
       email text PRIMARY KEY,
       "lastSentAt" timestamp NOT NULL,
       "hourStartedAt" timestamp NOT NULL,
       "hourCount" integer NOT NULL
     );
-    CREATE TABLE ${schema}."tombstone" (
+    ${createTable} ${schema}."tombstone" (
       "emailHash" text PRIMARY KEY,
       "freeUsageWeekStartedAt" timestamp NOT NULL,
       "deletedAt" timestamp NOT NULL

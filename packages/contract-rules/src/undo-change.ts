@@ -22,6 +22,10 @@ export function emptyChangeLog(values: Record<string, string> = {}): ChangeLog {
 }
 
 export function applyChange(log: ChangeLog, change: AppliedChange): ChangeLog {
+  const existing = log.applied.find((item) => item.id === change.id)
+  if (existing) {
+    return log
+  }
   if (change.status === "refused") {
     return { ...log, applied: [...log.applied, change] }
   }

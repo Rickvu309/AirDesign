@@ -58,11 +58,82 @@
           "notes": "agent note"
         }
       }
+    },
+    {
+      "id": "same-id-same-payload-is-idempotent",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "applied",
+        "values": {
+          "title": "person"
+        }
+      }
     }
   ],
   "counterexamples": [
     {
       "id": "same-id-new-payload-is-refused",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "replaced",
+              "prior": "person",
+              "status": "applied"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason": "duplicate-id",
+        "values": {
+          "title": "person"
+        }
+      }
+    },
+    {
+      "id": "undo-payload-mismatch-is-refused",
       "body": {
         "steps": [
           {

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto"
 import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { describe, it } from "vitest"
+import { budgetInventoryErrors, type BudgetMetric } from "../../packages/contract-rules/src/budget-inventory.ts"
 import { performanceBudgets } from "../../packages/contract-rules/src/budgets.ts"
 import { evaluateContractCase } from "../../packages/contract-rules/src/evaluate-case.ts"
 import { validateContractDocument } from "../../packages/contract-rules/src/contract-document.ts"
@@ -159,6 +160,25 @@ describe("feasibility inventories", () => {
     assert.equal(reader?.gate, "X02")
   })
 
+  it("inventories every phase-data metric and fails when one is omitted", async () => {
+    const phaseData = JSON.parse(await readFile(path.join(root, "docs/planning/v0.1/delivery/phase-data.json"), "utf8")) as unknown
+    const document = JSON.parse(await readFile(path.join(contractsDir, "c07-performance-budgets-and-measurement.json"), "utf8")) as {
+      budgets: Record<string, number>
+      metrics: BudgetMetric[]
+    }
+    assert.deepEqual(budgetInventoryErrors(phaseData, document.metrics), [])
+    assert.deepEqual(document.budgets, performanceBudgets)
+    for (const metric of document.metrics) {
+      for (const [name, limit] of Object.entries(metric.limits)) {
+        assert.equal(readLimit(document.budgets, name), limit, metric.id)
+        assert.equal(readLimit(performanceBudgets, name), limit, metric.id)
+      }
+    }
+    const omitted = document.metrics.slice(1)
+    const missing = budgetInventoryErrors(phaseData, omitted)
+    assert.ok(missing.includes(`missing:${document.metrics[0]?.id}`))
+  })
+
   it("keeps the PDF deadline distinct from import and tool budgets", () => {
     assert.notEqual(performanceBudgets.pdfDeadlineMs, performanceBudgets.importWallMs)
     assert.notEqual(performanceBudgets.toolReadWarmP95Ms, performanceBudgets.importWallMs)
@@ -181,3 +201,12 @@ describe("text span probe", () => {
     assert.ok(report.peakRssBytes < performanceBudgets.fixtureCliPeakRssBytes)
   })
 })
+
+function readLimit(table: object, name: string): unknown {
+  for (const [key, value] of Object.entries(table)) {
+    if (key === name) {
+      return value
+    }
+  }
+  return undefined
+}

@@ -2,6 +2,7 @@ export type MailMessage = {
   to: string
   code: string
   linkToken: string
+  linkPath: string
   sentAt: number
 }
 

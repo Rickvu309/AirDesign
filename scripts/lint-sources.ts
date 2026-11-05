@@ -3,6 +3,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { commentHits } from "./lint/comment-rule.ts"
 import { importBoundaryHits } from "./lint/import-boundary.ts"
+import { accessSafetyHits } from "./lint/access-safety.ts"
 import { responseHeaderHits } from "./lint/response-headers.ts"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -23,6 +24,9 @@ for (const file of files) {
     failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason} ${hit.specifier}`)
   }
   for (const hit of responseHeaderHits(source)) {
+    failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
+  }
+  for (const hit of accessSafetyHits(file, source)) {
     failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   }
 }

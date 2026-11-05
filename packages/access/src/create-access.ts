@@ -1,20 +1,21 @@
 import { createHash, randomBytes, randomInt } from "node:crypto"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, gt, sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres"
 import { PGlite } from "@electric-sql/pglite"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { serializeSignedCookie } from "better-call"
 import pg from "pg"
+import { accessLinkPath } from "./access-link.ts"
 import { accessPolicy } from "./access-policy.ts"
+import { decodePathSegment } from "./decode-path-segment.ts"
+import { dropDisposableSchemaSql } from "./disposable-schema.ts"
 import { issueIntent, readIntent, usableIntent, type SignedIntent } from "./intent-token.ts"
 import { isIntentKind, type IntentKind } from "./intent-kinds.ts"
 import type { MailAdapter } from "./memory-inbox.ts"
-import { accessSchemaSql, accessTables } from "./schema.ts"
-
-const sessionCookieName = "better-auth.session_token"
-const redirectKeys = new Set(["returnTo", "next", "url"])
+import { mutationRejection } from "./mutation-guard.ts"
+import { accessSchemaSql, accessTables, applicationSchemaName } from "./schema.ts"
+import { headerCookies, intentCookieName, intentSetCookie, readRequestCookie, sessionSetCookie } from "./session-cookie.ts"
 
 export type AccessDriver = { kind: "pglite" } | { kind: "postgres"; url: string }
 
@@ -29,15 +30,28 @@ export type CreateAccessOptions = {
   clock: () => number
   guard: AccessGuard
   exposeInbox: boolean
+  publicOrigin?: string
 }
 
 type AuthSchema = Pick<ReturnType<typeof accessTables>, "user" | "session" | "account" | "verification">
 
 type Database = ReturnType<typeof drizzle<ReturnType<typeof accessTables>>>
 
+type Tables = ReturnType<typeof accessTables>
+
+type SessionUser = {
+  id: string
+  email: string
+  name: string
+  displayName?: string | null
+  freeUsageWeekStartedAt?: Date | string | null
+}
+
+type SessionRecord = { user: SessionUser; session: { token: string } }
+
 type SessionApi = {
   api: {
-    getSession(input: { headers: Headers }): Promise<{ user: SessionUser; session: { token: string } } | null>
+    getSession(input: { headers: Headers; returnHeaders: true }): Promise<{ headers: Headers; response: SessionRecord | null } | null>
   }
   $context: Promise<{
     internalAdapter: {
@@ -58,19 +72,29 @@ type SessionApi = {
   }>
 }
 
+type LoadedSession = { user: SessionUser | null; cookies: string[] }
+
 export type Access = {
   handle(request: Request): Promise<Response>
   close(): Promise<void>
 }
 
+const redirectKeys = new Set(["returnTo", "next", "url"])
+
 export async function createAccess(options: CreateAccessOptions): Promise<Access> {
   if (options.driver.kind === "postgres" && options.driver.url.trim() === "") {
     throw new Error("postgres-url-missing")
   }
-  const schemaName = `ns_${randomBytes(8).toString("hex")}`
-  const tables = accessTables(schemaName)
-  const sql = accessSchemaSql(schemaName)
-  const opened = await openDatabase(options.driver, schemaName, tables, sql)
+  const publicOrigin = options.publicOrigin ?? "http://127.0.0.1:41732"
+  let origin: URL
+  try {
+    origin = new URL(publicOrigin)
+  } catch {
+    throw new Error("public-origin-invalid")
+  }
+  const secure = origin.protocol === "https:"
+  const opened = await openDatabase(options.driver)
+  const tables = opened.tables
   const authSchema: AuthSchema = {
     user: tables.user,
     session: tables.session,
@@ -79,7 +103,7 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
   }
   const auth = betterAuth({
     database: drizzleAdapter(opened.db, { provider: "pg", schema: authSchema, camelCase: true }),
-    baseURL: "http://127.0.0.1",
+    baseURL: origin.origin,
     secret: options.secret,
     emailAndPassword: { enabled: false },
     session: {
@@ -92,58 +116,24 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
         freeUsageWeekStartedAt: { type: "date", required: false, input: false },
       },
     },
-    advanced: { useSecureCookies: false },
+    advanced: { useSecureCookies: secure },
     rateLimit: { enabled: false },
     logger: { level: "error" },
   }) as unknown as SessionApi
 
   const handle = async (request: Request) => {
-    const url = new URL(request.url)
-    const body = await readBody(request)
-    if (url.pathname === "/api/access/intent" && request.method === "POST") {
-      return issueIntentResponse(options, body)
+    const rejected = mutationRejection(request, origin.origin)
+    if (rejected) {
+      return json(rejected.status, { status: rejected.code })
     }
-    if (url.pathname === "/api/access/email" && request.method === "POST") {
-      return sendEmail(options, opened.db, tables, body)
+    try {
+      return await route(options, auth, opened.db, tables, secure, request)
+    } catch (error) {
+      if (error instanceof URIError) {
+        return json(400, { status: "bad-request" })
+      }
+      throw error
     }
-    if (url.pathname === "/api/access/code" && request.method === "POST") {
-      return submitCode(options, auth, opened.db, tables, body)
-    }
-    if (url.pathname === "/api/access/consume-link" && request.method === "POST") {
-      return consumeLink(options, auth, opened.db, tables, body)
-    }
-    if (url.pathname === "/api/session" && request.method === "GET") {
-      return readSession(auth, request)
-    }
-    if (url.pathname === "/api/session/revoke" && request.method === "POST") {
-      return revokeSession(options.secret, auth, request)
-    }
-    if (url.pathname === "/api/account" && request.method === "GET") {
-      return readAccount(auth, request)
-    }
-    if (url.pathname === "/api/account/deletion" && request.method === "POST") {
-      return deleteAccount(options, auth, opened.db, tables, request, body)
-    }
-    if (url.pathname === "/api/account/provider-deletion" && request.method === "POST") {
-      return json(200, { status: "blocked", gate: "X06" })
-    }
-    const personMatch = new RegExp("^/api/people/([^/]+)$").exec(url.pathname)
-    const personId = personMatch?.[1] ? decodeURIComponent(personMatch[1]) : null
-    if (personId && request.method === "GET") {
-      return readPerson(auth, request, personId)
-    }
-    if (personId && url.pathname.endsWith("/profile") === false && request.method === "POST") {
-      return json(404, { status: "not-found" })
-    }
-    const profileMatch = new RegExp("^/api/people/([^/]+)/profile$").exec(url.pathname)
-    const profileId = profileMatch?.[1] ? decodeURIComponent(profileMatch[1]) : null
-    if (profileId && request.method === "POST") {
-      return updatePerson(auth, request, profileId, body)
-    }
-    if (url.pathname === "/api/dev/inbox" && request.method === "GET") {
-      return readInbox(options, url)
-    }
-    return json(404, { status: "not-found" })
   }
 
   return {
@@ -152,26 +142,106 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
   }
 }
 
-async function openDatabase(driver: AccessDriver, schemaName: string, tables: ReturnType<typeof accessTables>, sql: string): Promise<{ db: Database; close: () => Promise<void> }> {
+async function route(
+  options: CreateAccessOptions,
+  auth: SessionApi,
+  db: Database,
+  tables: Tables,
+  secure: boolean,
+  request: Request,
+): Promise<Response> {
+  const url = new URL(request.url)
+  const body = await readBody(request)
+  if (url.pathname === "/api/access/intent" && request.method === "POST") {
+    return issueIntentResponse(options, body)
+  }
+  if (url.pathname === "/api/access/email" && request.method === "POST") {
+    return sendEmail(options, db, tables, body)
+  }
+  if (url.pathname === "/api/access/code" && request.method === "POST") {
+    return submitCode(options, auth, db, tables, secure, body)
+  }
+  if (url.pathname === "/api/access/consume-link" && request.method === "POST") {
+    return consumeLink(options, auth, db, tables, secure, body)
+  }
+  if (url.pathname === "/api/session" && request.method === "GET") {
+    return readSession(options, auth, secure, request)
+  }
+  if (url.pathname === "/api/session/revoke" && request.method === "POST") {
+    return revokeSession(options, auth, secure, request)
+  }
+  if (url.pathname === "/api/account" && request.method === "GET") {
+    return readAccount(options, auth, secure, request)
+  }
+  if (url.pathname === "/api/account/deletion" && request.method === "POST") {
+    return deleteAccount(options, auth, db, tables, secure, request, body)
+  }
+  if (url.pathname === "/api/account/provider-deletion" && request.method === "POST") {
+    return json(200, { status: "blocked", gate: "X06" })
+  }
+  const personMatch = /^\/api\/people\/([^/]+)$/.exec(url.pathname)
+  if (personMatch?.[1]) {
+    const personId = decodePathSegment(personMatch[1])
+    if (personId === null) {
+      return json(400, { status: "bad-request" })
+    }
+    if (request.method === "GET") {
+      return readPerson(auth, request, personId)
+    }
+    if (request.method === "POST") {
+      return json(404, { status: "not-found" })
+    }
+  }
+  const profileMatch = /^\/api\/people\/([^/]+)\/profile$/.exec(url.pathname)
+  if (profileMatch?.[1]) {
+    const profileId = decodePathSegment(profileMatch[1])
+    if (profileId === null) {
+      return json(400, { status: "bad-request" })
+    }
+    if (request.method === "POST") {
+      return updatePerson(auth, request, profileId, body)
+    }
+  }
+  if (url.pathname === "/api/dev/inbox" && request.method === "GET") {
+    return readInbox(options, url)
+  }
+  return json(404, { status: "not-found" })
+}
+
+async function openDatabase(driver: AccessDriver): Promise<{ db: Database; tables: Tables; close: () => Promise<void> }> {
   if (driver.kind === "pglite") {
+    const schemaName = `ns_${randomBytes(8).toString("hex")}`
+    const tables = accessTables(schemaName)
     const client = await PGlite.create()
-    await client.exec(sql)
+    await client.exec(accessSchemaSql(schemaName, "disposable"))
     const db = drizzle(client, { schema: tables })
+    let closed = false
     return {
       db,
+      tables,
       async close() {
-        await client.exec(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`)
+        if (closed) {
+          return
+        }
+        closed = true
+        await client.exec(dropDisposableSchemaSql(schemaName))
         await client.close()
       },
     }
   }
+  const tables = accessTables(applicationSchemaName)
   const pool = new pg.Pool({ connectionString: driver.url })
-  await pool.query(sql)
+  await pool.query(accessSchemaSql(applicationSchemaName, "stable"))
   const db = drizzlePg(pool, { schema: tables }) as unknown as Database
+  let closed = false
   return {
     db,
+    tables,
     async close() {
-      await pool.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`)
+      if (closed) {
+        return
+      }
+      closed = true
       await pool.end()
     },
   }
@@ -191,7 +261,7 @@ function issueIntentResponse(options: CreateAccessOptions, body: Record<string, 
 async function sendEmail(
   options: CreateAccessOptions,
   db: Database,
-  tables: ReturnType<typeof accessTables>,
+  tables: Tables,
   body: Record<string, unknown>,
 ): Promise<Response> {
   if (typeof body.email !== "string" || !isEmail(body.email)) {
@@ -205,46 +275,69 @@ async function sendEmail(
   if (!options.guard.allow()) {
     return json(400, { status: "guard-rejected" })
   }
-  const now = options.clock()
-  const windows = await db.select().from(tables.sendWindow).where(eq(tables.sendWindow.email, email))
-  const window = windows[0]
-  if (window && now - window.lastSentAt.getTime() < accessPolicy.resendWaitMs) {
-    return json(200, { status: "check-email", resendAvailableAt: window.lastSentAt.getTime() + accessPolicy.resendWaitMs })
-  }
-  const hourStartedAt = !window || now - window.hourStartedAt.getTime() >= accessPolicy.sendWindowMs ? new Date(now) : window.hourStartedAt
-  const hourCount = hourStartedAt === window?.hourStartedAt ? window.hourCount : 0
-  if (hourCount >= accessPolicy.sendCapPerHour) {
-    return json(200, { status: "check-email", resendAvailableAt: now + accessPolicy.resendWaitMs })
-  }
-  await db.update(tables.challenge).set({ consumed: true }).where(eq(tables.challenge.email, email))
-  const code = randomInt(0, 1_000_000).toString().padStart(accessPolicy.codeLength, "0")
-  const linkToken = randomBytes(32).toString("base64url")
-  await db.insert(tables.challenge).values({
-    id: randomBytes(16).toString("hex"),
-    email,
-    codeHash: sha256(code),
-    linkHash: sha256(linkToken),
-    intentToken: intent.token,
-    expiresAt: new Date(now + accessPolicy.linkTtlMs),
-    attempts: 0,
-    locked: false,
-    consumed: false,
+  const decision = await db.transaction(async (tx) => {
+    const now = options.clock()
+    await tx.insert(tables.sendWindow).values({
+      email,
+      lastSentAt: new Date(0),
+      hourStartedAt: new Date(0),
+      hourCount: 0,
+    }).onConflictDoNothing()
+    const locked = await tx.select().from(tables.sendWindow).where(eq(tables.sendWindow.email, email)).for("update")
+    const window = locked[0]
+    if (!window) {
+      throw new Error("send-window-missing")
+    }
+    const cooling = window.hourCount > 0 && now - window.lastSentAt.getTime() < accessPolicy.resendWaitMs
+    if (cooling) {
+      return { kind: "wait" as const, resendAvailableAt: window.lastSentAt.getTime() + accessPolicy.resendWaitMs }
+    }
+    const windowExpired = now - window.hourStartedAt.getTime() >= accessPolicy.sendWindowMs
+    const hourStartedAt = windowExpired ? new Date(now) : window.hourStartedAt
+    const hourCount = windowExpired ? 0 : window.hourCount
+    if (hourCount >= accessPolicy.sendCapPerHour) {
+      return { kind: "capped" as const, resendAvailableAt: now + accessPolicy.resendWaitMs }
+    }
+    await tx.update(tables.challenge).set({ consumed: true }).where(and(eq(tables.challenge.email, email), eq(tables.challenge.consumed, false)))
+    const code = randomInt(0, 1_000_000).toString().padStart(accessPolicy.codeLength, "0")
+    const linkToken = randomBytes(32).toString("base64url")
+    await tx.insert(tables.challenge).values({
+      id: randomBytes(16).toString("hex"),
+      email,
+      codeHash: sha256(code),
+      linkHash: sha256(linkToken),
+      intentToken: intent.token,
+      expiresAt: new Date(now + accessPolicy.linkTtlMs),
+      attempts: 0,
+      locked: false,
+      consumed: false,
+    })
+    await tx.update(tables.sendWindow).set({
+      lastSentAt: new Date(now),
+      hourStartedAt,
+      hourCount: hourCount + 1,
+    }).where(eq(tables.sendWindow.email, email))
+    return { kind: "sent" as const, code, linkToken, resendAvailableAt: now + accessPolicy.resendWaitMs, sentAt: now }
   })
-  const lastSentAt = new Date(now)
-  if (window) {
-    await db.update(tables.sendWindow).set({ lastSentAt, hourStartedAt, hourCount: hourCount + 1 }).where(eq(tables.sendWindow.email, email))
-  } else {
-    await db.insert(tables.sendWindow).values({ email, lastSentAt, hourStartedAt, hourCount: 1 })
+  if (decision.kind !== "sent") {
+    return json(200, { status: "check-email", resendAvailableAt: decision.resendAvailableAt })
   }
-  await options.mail.send({ to: email, code, linkToken, sentAt: now })
-  return json(200, { status: "check-email", resendAvailableAt: now + accessPolicy.resendWaitMs })
+  await options.mail.send({
+    to: email,
+    code: decision.code,
+    linkToken: decision.linkToken,
+    linkPath: accessLinkPath(decision.linkToken),
+    sentAt: decision.sentAt,
+  })
+  return json(200, { status: "check-email", resendAvailableAt: decision.resendAvailableAt })
 }
 
 async function submitCode(
   options: CreateAccessOptions,
   auth: SessionApi,
   db: Database,
-  tables: ReturnType<typeof accessTables>,
+  tables: Tables,
+  secure: boolean,
   body: Record<string, unknown>,
 ): Promise<Response> {
   if (!options.guard.allow()) {
@@ -263,22 +356,29 @@ async function submitCode(
     return json(400, { status: "invalid-code", screen: "S22.01" })
   }
   if (body.code.length !== accessPolicy.codeLength || sha256(body.code) !== current.codeHash) {
-    const attempts = current.attempts + 1
     await db.update(tables.challenge).set({
-      attempts,
-      locked: attempts >= accessPolicy.attemptLimit,
-    }).where(eq(tables.challenge.id, current.id))
+      attempts: sql`${tables.challenge.attempts} + 1`,
+      locked: sql`${tables.challenge.attempts} + 1 >= ${accessPolicy.attemptLimit}`,
+    }).where(and(
+      eq(tables.challenge.id, current.id),
+      eq(tables.challenge.consumed, false),
+      eq(tables.challenge.locked, false),
+    ))
     return json(400, { status: "invalid-code", screen: "S22.01" })
   }
-  await db.update(tables.challenge).set({ consumed: true }).where(eq(tables.challenge.id, current.id))
-  return signInResponse(options, auth, db, tables, email, intent)
+  const claimed = await claimChallenge(db, tables, current.id, options.clock())
+  if (!claimed) {
+    return json(400, { status: "invalid-code", screen: "S22.01" })
+  }
+  return signInResponse(options, auth, db, tables, secure, email, intent)
 }
 
 async function consumeLink(
   options: CreateAccessOptions,
   auth: SessionApi,
   db: Database,
-  tables: ReturnType<typeof accessTables>,
+  tables: Tables,
+  secure: boolean,
   body: Record<string, unknown>,
 ): Promise<Response> {
   if (!options.guard.allow()) {
@@ -294,7 +394,7 @@ async function consumeLink(
     return json(400, { status: "link-used", screen: "S29.01", intentToken: kept?.token ?? null, kind: kept?.kind ?? null })
   }
   const kept = readIntent(options.secret, current.intentToken)
-  if (current.expiresAt.getTime() <= options.clock()) {
+  if (current.expiresAt.getTime() <= options.clock() || current.locked) {
     return json(400, {
       status: "link-expired",
       screen: "S29.01",
@@ -302,18 +402,32 @@ async function consumeLink(
       kind: kept?.kind ?? null,
     })
   }
-  await db.update(tables.challenge).set({ consumed: true }).where(eq(tables.challenge.id, current.id))
+  const claimed = await claimChallenge(db, tables, current.id, options.clock())
+  if (!claimed) {
+    return json(400, { status: "link-used", screen: "S29.01", intentToken: kept?.token ?? null, kind: kept?.kind ?? null })
+  }
   if (!kept || kept.exp <= options.clock()) {
     return json(400, { status: "intent-rejected" })
   }
-  return signInResponse(options, auth, db, tables, current.email, kept)
+  return signInResponse(options, auth, db, tables, secure, current.email, kept)
+}
+
+async function claimChallenge(db: Database, tables: Tables, id: string, now: number): Promise<boolean> {
+  const claimed = await db.update(tables.challenge).set({ consumed: true }).where(and(
+    eq(tables.challenge.id, id),
+    eq(tables.challenge.consumed, false),
+    eq(tables.challenge.locked, false),
+    gt(tables.challenge.expiresAt, new Date(now)),
+  )).returning({ id: tables.challenge.id })
+  return claimed.length === 1
 }
 
 async function signInResponse(
   options: CreateAccessOptions,
   auth: SessionApi,
   db: Database,
-  tables: ReturnType<typeof accessTables>,
+  tables: Tables,
+  secure: boolean,
   email: string,
   intent: SignedIntent,
 ): Promise<Response> {
@@ -335,68 +449,66 @@ async function signInResponse(
     personId = created.id
   }
   const session = await context.internalAdapter.createSession(personId)
-  const cookie = await serializeSignedCookie(sessionCookieName, session.token, options.secret, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: accessPolicy.sessionTtlSeconds,
-  })
+  const sessionCookie = await sessionSetCookie(options.secret, session.token, secure, accessPolicy.sessionTtlSeconds)
+  const intentMaxAge = Math.max(0, Math.floor((intent.exp - options.clock()) / 1000))
+  const intentCookie = intentSetCookie(intent.token, secure, intentMaxAge)
   return json(200, {
     status: "signed-in",
     personId,
     intentToken: intent.token,
     kind: intent.kind,
-  }, cookie)
+  }, [sessionCookie, intentCookie])
 }
 
-async function readSession(auth: SessionApi, request: Request): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) {
-    return json(200, { status: "signed-out" })
+async function readSession(options: CreateAccessOptions, auth: SessionApi, secure: boolean, request: Request): Promise<Response> {
+  const loaded = await loadSession(auth, request)
+  if (!loaded.user) {
+    return json(200, { status: "signed-out" }, loaded.cookies)
   }
-  const user = session.user as SessionUser
-  return json(200, accountBody(user))
+  return json(200, accountBody(loaded.user, intentFromRequest(options, secure, request)), loaded.cookies)
 }
 
-async function readAccount(auth: SessionApi, request: Request): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) {
-    return json(401, { status: "signed-out" })
+async function readAccount(options: CreateAccessOptions, auth: SessionApi, secure: boolean, request: Request): Promise<Response> {
+  const loaded = await loadSession(auth, request)
+  if (!loaded.user) {
+    return json(401, { status: "signed-out" }, loaded.cookies)
   }
-  return json(200, accountBody(session.user as SessionUser))
+  return json(200, accountBody(loaded.user, intentFromRequest(options, secure, request)), loaded.cookies)
 }
 
-async function revokeSession(secret: string, auth: SessionApi, request: Request): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (session) {
+async function revokeSession(options: CreateAccessOptions, auth: SessionApi, secure: boolean, request: Request): Promise<Response> {
+  const loaded = await loadSession(auth, request)
+  if (loaded.user) {
     const context = await auth.$context
-    await context.internalAdapter.deleteSession(session.session.token)
+    const token = await sessionToken(auth, request)
+    if (token) {
+      await context.internalAdapter.deleteSession(token)
+    }
   }
-  const cookie = await serializeSignedCookie(sessionCookieName, "", secret, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 0,
-  })
-  return json(200, { status: "signed-out" }, cookie)
+  const cleared = [
+    await sessionSetCookie(options.secret, "", secure, 0),
+    intentSetCookie("", secure, 0),
+  ]
+  return json(200, { status: "signed-out" }, cleared)
 }
 
 async function deleteAccount(
   options: CreateAccessOptions,
   auth: SessionApi,
   db: Database,
-  tables: ReturnType<typeof accessTables>,
+  tables: Tables,
+  secure: boolean,
   request: Request,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) {
-    return json(401, { status: "signed-out" })
+  const loaded = await loadSession(auth, request)
+  if (!loaded.user) {
+    return json(401, { status: "signed-out" }, loaded.cookies)
   }
   if (body.confirm !== "delete-account") {
-    return json(400, { status: "confirmation-required" })
+    return json(400, { status: "confirmation-required" }, loaded.cookies)
   }
-  const user = session.user as SessionUser
+  const user = loaded.user
   const started = user.freeUsageWeekStartedAt ? new Date(user.freeUsageWeekStartedAt) : new Date(options.clock())
   await db.insert(tables.tombstone).values({
     emailHash: sha256(normalizeEmail(user.email)),
@@ -406,22 +518,19 @@ async function deleteAccount(
   const context = await auth.$context
   await context.internalAdapter.deleteUserSessions(user.id)
   await context.internalAdapter.deleteUser(user.id)
-  const cookie = await serializeSignedCookie(sessionCookieName, "", options.secret, {
-    path: "/",
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 0,
-  })
-  return json(200, { status: "deleted" }, cookie)
+  const cleared = [
+    await sessionSetCookie(options.secret, "", secure, 0),
+    intentSetCookie("", secure, 0),
+  ]
+  return json(200, { status: "deleted" }, cleared)
 }
 
 async function readPerson(auth: SessionApi, request: Request, personId: string): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session || session.user.id !== personId) {
-    return json(404, { status: "not-found" })
+  const loaded = await loadSession(auth, request)
+  if (!loaded.user || loaded.user.id !== personId) {
+    return json(404, { status: "not-found" }, loaded.cookies)
   }
-  const user = session.user as SessionUser
-  return json(200, { status: "ok", personId: user.id, displayName: user.displayName ?? user.name })
+  return json(200, { status: "ok", personId: loaded.user.id, displayName: loaded.user.displayName ?? loaded.user.name }, loaded.cookies)
 }
 
 async function updatePerson(
@@ -430,16 +539,16 @@ async function updatePerson(
   personId: string,
   body: Record<string, unknown>,
 ): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers })
-  if (!session || session.user.id !== personId) {
-    return json(404, { status: "not-found" })
+  const loaded = await loadSession(auth, request)
+  if (!loaded.user || loaded.user.id !== personId) {
+    return json(404, { status: "not-found" }, loaded.cookies)
   }
   if (typeof body.displayName !== "string" || body.displayName.trim() === "") {
-    return json(400, { status: "invalid-name" })
+    return json(400, { status: "invalid-name" }, loaded.cookies)
   }
   const context = await auth.$context
   const updated = await context.internalAdapter.updateUser(personId, { displayName: body.displayName })
-  return json(200, { status: "ok", personId, displayName: (updated as SessionUser).displayName ?? body.displayName })
+  return json(200, { status: "ok", personId, displayName: (updated as SessionUser).displayName ?? body.displayName }, loaded.cookies)
 }
 
 function readInbox(options: CreateAccessOptions, url: URL): Response {
@@ -450,36 +559,59 @@ function readInbox(options: CreateAccessOptions, url: URL): Response {
   if (!to || !("read" in options.mail)) {
     return json(200, { messages: [] })
   }
-  const inbox = options.mail as MailAdapter & { read(to: string): { to: string; code: string; linkToken: string; sentAt: number }[] }
+  const inbox = options.mail as MailAdapter & { read(to: string): { to: string; code: string; linkToken: string; linkPath: string; sentAt: number }[] }
   return json(200, { messages: inbox.read(normalizeEmail(to)) })
 }
 
-async function currentChallenge(db: Database, tables: ReturnType<typeof accessTables>, email: string) {
+async function currentChallenge(db: Database, tables: Tables, email: string) {
   const rows = await db.select().from(tables.challenge).where(and(eq(tables.challenge.email, email), eq(tables.challenge.consumed, false))).orderBy(desc(tables.challenge.expiresAt))
   return rows[0] ?? null
 }
 
-function accountBody(user: SessionUser) {
+async function loadSession(auth: SessionApi, request: Request): Promise<LoadedSession> {
+  const result = await auth.api.getSession({ headers: request.headers, returnHeaders: true })
+  const cookies = result?.headers ? headerCookies(result.headers) : []
+  if (!result?.response?.user) {
+    return { user: null, cookies }
+  }
+  return { user: result.response.user, cookies }
+}
+
+async function sessionToken(auth: SessionApi, request: Request): Promise<string | null> {
+  const result = await auth.api.getSession({ headers: request.headers, returnHeaders: true })
+  return result?.response?.session.token ?? null
+}
+
+function intentFromRequest(options: CreateAccessOptions, secure: boolean, request: Request): SignedIntent | null {
+  const names = [intentCookieName(secure), intentCookieName(!secure)]
+  for (const name of names) {
+    const token = readRequestCookie(request, name)
+    if (!token) {
+      continue
+    }
+    const intent = usableIntent(options.secret, token, options.clock())
+    if (intent) {
+      return intent
+    }
+  }
+  return null
+}
+
+function accountBody(user: SessionUser, intent: SignedIntent | null) {
   return {
     status: "signed-in" as const,
     personId: user.id,
     email: user.email,
     displayName: user.displayName ?? user.name,
     freeUsageWeekStartedAt: user.freeUsageWeekStartedAt ? new Date(user.freeUsageWeekStartedAt).toISOString() : null,
+    intentToken: intent?.token ?? null,
+    kind: intent?.kind ?? null,
   }
 }
 
-type SessionUser = {
-  id: string
-  email: string
-  name: string
-  displayName?: string | null
-  freeUsageWeekStartedAt?: Date | string | null
-}
-
-function json(status: number, body: unknown, cookie?: string): Response {
+function json(status: number, body: unknown, cookies: string[] = []): Response {
   const headers = new Headers({ "content-type": "application/json" })
-  if (cookie) {
+  for (const cookie of cookies) {
     headers.append("set-cookie", cookie)
   }
   return new Response(JSON.stringify(body), { status, headers })

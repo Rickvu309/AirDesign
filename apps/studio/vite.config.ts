@@ -14,7 +14,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 41732,
     proxy: {
-      "/api": "http://127.0.0.1:41731",
+      "/api": process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731",
     },
   },
 })

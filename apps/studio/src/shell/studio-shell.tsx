@@ -25,7 +25,7 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, children }: St
     return () => document.removeEventListener("keydown", onKey)
   }, [])
   return (
-    <div className="ad-shell">
+    <div className="ad-shell" id="shell">
       <header className="ad-topbar">
         <span className="ad-brand">{copy("shell.brand")}</span>
         <Toolbar label={copy("shell.home")} items={[{ id: "home", label: copy("shell.home"), onSelect: () => undefined }]} />

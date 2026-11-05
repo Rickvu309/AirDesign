@@ -1,6 +1,7 @@
+import { accessLinkPath, readAccessLinkToken } from "../access-link.ts"
 import { isIntentKind, intentKinds, type IntentKind } from "../intent-kinds.ts"
 
-export { isIntentKind, intentKinds, type IntentKind }
+export { accessLinkPath, readAccessLinkToken, isIntentKind, intentKinds, type IntentKind }
 
 export type CheckEmailResult =
   | { status: "check-email"; resendAvailableAt: number }
@@ -13,7 +14,7 @@ export type VerifyResult =
   | { status: "intent-rejected" | "guard-rejected" }
 
 export type SessionResult =
-  | { status: "signed-in"; personId: string; email: string; displayName: string; freeUsageWeekStartedAt: string | null }
+  | { status: "signed-in"; personId: string; email: string; displayName: string; freeUsageWeekStartedAt: string | null; intentToken: string | null; kind: IntentKind | null }
   | { status: "signed-out" }
 
 export type PersonResult = { status: "ok"; personId: string; displayName: string } | { status: "not-found" }

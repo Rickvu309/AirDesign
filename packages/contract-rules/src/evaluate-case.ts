@@ -63,8 +63,20 @@ function playChangeStep(log: ChangeLog, step: unknown): { log: ChangeLog; actual
   }
   const record = step as Record<string, unknown>
   if (record.op === "apply") {
-    const next = applyChange(log, parseAppliedChange(record.change))
-    return { log: next, actual: { outcome: "applied", value: next.values } }
+    const change = parseAppliedChange(record.change)
+    const existing = log.applied.find((item) => item.id === change.id)
+    const next = applyChange(log, change)
+    const conflicting = existing !== undefined && (
+      existing.payload !== change.payload ||
+      existing.prior !== change.prior ||
+      existing.actor !== change.actor ||
+      existing.property !== change.property ||
+      existing.status !== change.status
+    )
+    if (conflicting) {
+      return { log: next, actual: { outcome: "refused", reason: "duplicate-id", values: next.values } }
+    }
+    return { log: next, actual: { outcome: "applied", values: next.values } }
   }
   if (record.op === "undo") {
     const result = undoChange(log, { id: String(record.id), payload: String(record.payload) })

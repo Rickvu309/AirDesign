@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "vitest"
 import { commentHits } from "../../scripts/lint/comment-rule.ts"
 import { importBoundaryHits } from "../../scripts/lint/import-boundary.ts"
+import { accessSafetyHits } from "../../scripts/lint/access-safety.ts"
 import { responseHeaderHits } from "../../scripts/lint/response-headers.ts"
 
 describe("comment rule", () => {
@@ -45,6 +46,38 @@ describe("import boundaries", () => {
   it("accepts studio importing the access client", () => {
     const hits = importBoundaryHits("/repo/apps/studio/src/main.tsx", 'import { createAccessClient } from "@airdesign/access/client"\n', "/repo")
     assert.equal(hits.length, 0)
+  })
+})
+
+describe("access safety", () => {
+  it("rejects a hardcoded insecure cookie and accepts a derived secure flag", () => {
+    const bad = "advanced: { " + "useSecureCookies:" + " false },\n"
+    const good = "advanced: { " + "useSecureCookies:" + " secure },\n"
+    assert.equal(accessSafetyHits("packages/access/src/create-access.ts", bad)[0]?.reason, "secure-cookies-hardcoded-off")
+    assert.deepEqual(accessSafetyHits("packages/access/src/create-access.ts", good), [])
+  })
+
+  it("rejects a bare path decode outside the safe helper and accepts the helper", () => {
+    const call = "decodeURI" + "Component(" + "segment)"
+    const bad = `const personId = ${call}\n`
+    const helper = `export function decodePathSegment(value: string): string | null {\n  try {\n    return ${call}\n  } catch {\n    return null\n  }\n}\n`
+    assert.equal(accessSafetyHits("packages/access/src/create-access.ts", bad)[0]?.reason, "unsafe-path-decode")
+    assert.deepEqual(accessSafetyHits("packages/access/src/decode-path-segment.ts", helper), [])
+  })
+
+  it("rejects dropping a schema outside the disposable helper", () => {
+    const statement = "DROP " + "SCHEMA"
+    const bad = `await pool.query(\`${statement} IF EXISTS "\${schemaName}" CASCADE\`)\n`
+    const helper = `return \`${statement} IF EXISTS "\${schemaName}" CASCADE\`\n`
+    assert.equal(accessSafetyHits("packages/access/src/create-access.ts", bad)[0]?.reason, "drop-schema-outside-disposable")
+    assert.deepEqual(accessSafetyHits("packages/access/src/disposable-schema.ts", helper), [])
+  })
+
+  it("rejects a discarded request promise and accepts a caught handler", () => {
+    const bad = "  void " + "serve(access, request, response)\n"
+    const good = "  serve(access, request, response).catch((error: unknown) => writeHandlerError(response, error))\n"
+    assert.equal(accessSafetyHits("apps/server/src/main.ts", bad)[0]?.reason, "discarded-request")
+    assert.deepEqual(accessSafetyHits("apps/server/src/main.ts", good), [])
   })
 })
 

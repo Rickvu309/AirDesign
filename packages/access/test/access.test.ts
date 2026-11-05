@@ -202,11 +202,13 @@ describe("access", () => {
     })
     const issued = await guarded.handle(new Request("http://127.0.0.1/api/access/intent", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ kind: "home" }),
     }))
     const token = (await issued.json() as { token: string }).token
     const email = await guarded.handle(new Request("http://127.0.0.1/api/access/email", {
       method: "POST",
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({ email: "guard@example.com", intent: token }),
     }))
     expect((await email.json() as { status: string }).status).toBe("guard-rejected")
@@ -224,14 +226,29 @@ function client() {
         init.body = JSON.stringify(body ?? {})
       }
       const response = await access.handle(new Request(`http://127.0.0.1${path}`, init))
-      const set = response.headers.getSetCookie()
-      const last = set.at(-1)
-      if (last) {
-        cookie = last.split(";")[0] ?? cookie
-      }
+      cookie = mergeCookies(cookie, response.headers.getSetCookie())
       return { status: response.status, json: await response.json() as Record<string, unknown> }
     },
   }
+}
+
+function mergeCookies(current: string, setCookies: string[]): string {
+  const jar = new Map<string, string>()
+  for (const part of current.split(";")) {
+    const trimmed = part.trim()
+    const splitAt = trimmed.indexOf("=")
+    if (splitAt > 0) {
+      jar.set(trimmed.slice(0, splitAt), trimmed.slice(splitAt + 1))
+    }
+  }
+  for (const cookie of setCookies) {
+    const pair = cookie.split(";")[0] ?? ""
+    const splitAt = pair.indexOf("=")
+    if (splitAt > 0) {
+      jar.set(pair.slice(0, splitAt).trim(), pair.slice(splitAt + 1))
+    }
+  }
+  return [...jar.entries()].map(([name, value]) => `${name}=${value}`).join("; ")
 }
 
 async function signIn(jar: ReturnType<typeof client>, email: string): Promise<string> {

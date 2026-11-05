@@ -3,7 +3,7 @@ import path from "node:path"
 import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
-import type { AccessClient, IntentKind } from "@airdesign/access/client"
+import type { AccessClient, IntentKind, VerifyResult } from "@airdesign/access/client"
 import { AccessApp } from "./access-app.tsx"
 
 let root: Root | null = null
@@ -99,6 +99,77 @@ describe("studio access", () => {
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
     expect(document.body.textContent).toContain("No decks yet")
   })
+
+  it("opens an email link into the saved intent", async () => {
+    const client = fakeClient({
+      link: { status: "signed-in", personId: "person", intentToken: "import-intent", kind: "import" },
+    })
+    await render(<AccessApp client={client} route={{ kind: "link", token: "link-token" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
+  })
+
+  it("keeps the intent when a link is used again and offers a new send", async () => {
+    const sent: string[] = []
+    const client = fakeClient({
+      link: { status: "link-used", screen: "S29.01", intentToken: "import-intent", kind: "import" },
+      onSend(intent) {
+        sent.push(intent)
+      },
+    })
+    await render(<AccessApp client={client} route={{ kind: "link", token: "used-token" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("[data-link-status]")?.getAttribute("data-link-status")).toBe("link-used")
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
+    await act(async () => {
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Send a new link")?.click()
+    })
+    const email = document.querySelector<HTMLInputElement>("input")
+    await act(async () => {
+      setValue(email, "ada@example.com")
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
+    expect(sent).toEqual(["import-intent"])
+  })
+
+  it("shows phone-width recovery for an expired link", async () => {
+    const client = fakeClient({
+      link: { status: "link-expired", screen: "S29.01", intentToken: "import-intent", kind: "import" },
+    })
+    document.documentElement.style.width = "320px"
+    await render(<AccessApp client={client} route={{ kind: "link", token: "expired-token" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector(".ad-sign-in")).not.toBeNull()
+  })
+
+  it("restores a signed-in import intent after a reload and returns to sign-in when the cookie is revoked", async () => {
+    const signedIn = fakeClient({ signedIn: true, kind: "import" })
+    await render(<AccessApp client={signedIn} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
+    root?.unmount()
+    document.body.innerHTML = ""
+    const revoked = fakeClient({ signedIn: false })
+    await render(<AccessApp client={revoked} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+  })
 })
 
 function setValue(input: HTMLInputElement | null | undefined, value: string) {
@@ -127,13 +198,14 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-function fakeClient(options: { signedIn?: boolean; kind?: IntentKind } = {}): AccessClient {
+function fakeClient(options: { signedIn?: boolean; kind?: IntentKind; link?: VerifyResult; onSend?: (intent: string) => void } = {}): AccessClient {
   const kind = options.kind ?? "home"
   return {
     async issueIntent(next) {
       return { status: "issued", token: "signed-intent", kind: next }
     },
-    async sendEmail(email) {
+    async sendEmail(email, intent) {
+      options.onSend?.(intent)
       if (!email.includes("@")) {
         return { status: "email-invalid" }
       }
@@ -143,13 +215,13 @@ function fakeClient(options: { signedIn?: boolean; kind?: IntentKind } = {}): Ac
       return { status: "invalid-code", screen: "S22.01" }
     },
     async consumeLink() {
-      return { status: "link-expired", screen: "S29.01", intentToken: "signed-intent", kind }
+      return options.link ?? { status: "link-expired", screen: "S29.01", intentToken: "signed-intent", kind }
     },
     async session() {
       if (!options.signedIn) {
         return { status: "signed-out" }
       }
-      return { status: "signed-in", personId: "person", email: "ada@example.com", displayName: "ada", freeUsageWeekStartedAt: null }
+      return { status: "signed-in", personId: "person", email: "ada@example.com", displayName: "ada", freeUsageWeekStartedAt: null, intentToken: "signed-intent", kind }
     },
     async revoke() {
       return { status: "signed-out" }
