@@ -58,7 +58,7 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
 
 function defaultDeck(template: import("../../../../packages/brand/src/index.ts").Template) {
   const deck={id:id("newDeck"),version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
-  const result=apply(deck,applyTemplate(deck,template,{kind:"apply-deck"},undefined,template.fontRight === "missing" ? "Geist" : undefined).changes)
+  const result=apply(deck,applyTemplate(deck,template,{kind:"apply-deck"},undefined).changes)
   if (!result.ok) throw new Error(result.error.code)
   return result.deck
 }

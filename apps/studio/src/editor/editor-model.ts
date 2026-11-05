@@ -1,7 +1,8 @@
 import { id,parseDeck,flatten,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
 export function nodeId() {return id(`n${crypto.randomUUID().replaceAll("-","").slice(0,30)}`)}
 export function newSlide(deck?:Deck):Slide {
-  return {id:nodeId(),version:0,size:deck?.slides[0]?.size ?? {width:960,height:540},elements:[{id:nodeId(),kind:"text",box:{x:64,y:64,width:832,height:100},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,runs:[{text:"Add your title",bold:true,font:"Geist",size:40,color:"#172333"}]}],notes:"",theme:null,source:{kind:"created"}}
+  const theme=deck?.themes.find(theme=>theme.id===deck.template?.id),link=theme?.id ?? null
+  return {...(deck?.template?.layout ? {layout:{template:deck.template.id,version:deck.template.version,family:deck.template.family,...deck.template.layout}} : {}),id:nodeId(),version:0,size:deck?.slides[0]?.size ?? {width:960,height:540},elements:[{id:nodeId(),kind:"text",box:{x:64,y:64,width:832,height:100},source:{kind:"created"},support:{kind:"native"},theme:link,placeholder:null,overlap:null,runs:[{text:"Add your title",bold:true,font:theme?.font ?? "Geist",size:40,color:theme?.foreground ?? "#172333"}]}],notes:"",theme:link,source:{kind:"created"}}
 }
 export function selectSlides(deck:Deck,selection:Id[],target:Id,anchor:Id|null,shift:boolean,toggle:boolean):Id[] {
   const ids=deck.slides.map(slide=>slide.id),start=ids.indexOf(anchor ?? target),end=ids.indexOf(target)

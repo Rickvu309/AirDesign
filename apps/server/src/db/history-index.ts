@@ -7,6 +7,8 @@ type Property = { node: string; key: string; payload: Contribution; seq: number;
 export async function initializeHistoryIndex(tx: Transaction) {
   await tx.query("CREATE TABLE IF NOT EXISTS editing_contribution (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, run text, payload jsonb NOT NULL, PRIMARY KEY(deck,id))")
   await tx.query("CREATE INDEX IF NOT EXISTS editing_contribution_run ON editing_contribution(deck,run)")
+  await tx.query("CREATE INDEX IF NOT EXISTS editing_contribution_seq ON editing_contribution(deck,((payload->>'seq')::integer))")
+  await tx.query("CREATE INDEX IF NOT EXISTS editing_contribution_toggled ON editing_contribution(deck,((payload->>'toggledAt')::integer))")
   await tx.query("CREATE TABLE IF NOT EXISTS editing_property (deck text NOT NULL REFERENCES editing_deck(id), event text NOT NULL, node text NOT NULL, key text NOT NULL, seq integer NOT NULL, active boolean NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(deck,event,node,key))")
   await tx.query("CREATE INDEX IF NOT EXISTS editing_property_active ON editing_property(deck,node,key,seq DESC) WHERE active")
   await tx.query("CREATE TABLE IF NOT EXISTS editing_key (deck text NOT NULL REFERENCES editing_deck(id), node text NOT NULL, key text NOT NULL, latest jsonb NOT NULL, person jsonb, PRIMARY KEY(deck,node,key))")

@@ -32,6 +32,7 @@ export class TemplateStore {
   }
   setDefault(principal: Principal, id: string, version: number): Template {
     const template = this.get(principal,id,version)
+    if(template.fontRight==="missing")throw new Error("choose-installed-font-before-default")
     this.db.prepare("INSERT INTO template_defaults(owner,id,version) VALUES(?,?,?) ON CONFLICT(owner) DO UPDATE SET id=excluded.id,version=excluded.version").run(principal.personId,id,version)
     return template
   }

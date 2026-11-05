@@ -13,8 +13,8 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       try {
         const principal = await access.principal(peer.request)
         if (!principal || principal.personId !== peer.personId) { socket.send(JSON.stringify({kind:"signed-out"})); socket.close(); return }
-        const current = snapshot ?? await store.read(principal,deck)
-        if (socket !== except && socket.readyState === WebSocket.OPEN && (peer.seq===null || current.seq>=peer.seq)) {socket.send(JSON.stringify({kind:"snapshot",...snapshotDelta(current,peer.seq)}));peer.seq=current.seq}
+        const current = snapshot ? snapshotDelta(snapshot,peer.seq) : peer.seq===null ? await store.read(principal,deck) : await store.delta(principal,deck,peer.seq)
+        if (socket !== except && socket.readyState === WebSocket.OPEN && (peer.seq===null || current.seq>=peer.seq)) {socket.send(JSON.stringify({kind:"snapshot",...current}));peer.seq=current.seq}
       } catch (error) {
         if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
       }

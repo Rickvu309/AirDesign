@@ -23,14 +23,17 @@ export type Support = { kind: "native" } | { kind: "kept"; preview: string | nul
 export type Box = { x: number; y: number; width: number; height: number }
 export type Run = { text: string; bold: boolean; font: string; size: number; color: string }
 type ElementBase = { styleLinks?: ("font" | "color" | "fill")[]; id: Id; box: Box; source: Source; support: Support; theme: ThemeId | null; placeholder: PlaceholderId | null; overlap: OverlapId | null }
+export type ImagePlacement = { asset: string; crop: { x: number; y: number; width: number; height: number }; focal: { x: number; y: number }; mask: "rectangle" | "ellipse"; alt: string }
 export type Element = ElementBase & (
   { kind: "text"; runs: [Run, ...Run[]] } |
   { kind: "shape"; geometry: "rectangle" | "ellipse" | "triangle"; fill: string } |
+  { kind: "image"; image: ImagePlacement } |
   { kind: "group"; children: Element[] }
 )
-export type Slide = { id: Id; version: number; size: { width: number; height: number }; elements: Element[]; notes: string; theme: ThemeId | null; source: Source }
-export type TemplatePin = { id: string; version: number; family: string }
-export type Deck = { template?: TemplatePin; id: Id; version: number; slides: Slide[]; placeholders?: PlaceholderId[]; overlaps?: OverlapId[]; themes: { id: ThemeId; font: string; background: string }[] }
+export type TemplateLayout = { template: string; version: number; family: string; master: string; part: string }
+export type Slide = { layout?: TemplateLayout; id: Id; version: number; size: { width: number; height: number }; elements: Element[]; notes: string; theme: ThemeId | null; source: Source }
+export type TemplatePin = { id: string; version: number; family: string; layout?: {master:string;part:string} }
+export type Deck = { template?: TemplatePin; id: Id; version: number; slides: Slide[]; placeholders?: PlaceholderId[]; overlaps?: OverlapId[]; themes: { id: ThemeId; font: string; background: string; foreground?: string }[] }
 export type Change =
   { kind: "insert"; parent: Id; index: number; value: Slide | Element } |
   { kind: "set"; target: Id; value: Slide | Element | Deck } |

@@ -22,25 +22,31 @@ export function applyTemplate(deck: Deck, template: Template, mode: TemplateMode
   if (!family) throw new Error("layout-family-not-found")
   if (template.fontRight === "missing" && !substitution) throw new Error("choose-font-substitution")
   const font = substitution ?? template.font
-  const theme = { id: themeId(template.id), font, background: template.background }
+  let chosenTheme=themeId(template.id)
+  if(mode.kind==="insert-slide" && deck.themes.some(theme=>theme.id===chosenTheme && (theme.font!==font || theme.background!==template.background || theme.foreground!==template.foreground))){let suffix=0;while(deck.themes.some(theme=>theme.id===`insert${suffix}`))suffix++;chosenTheme=themeId(`insert${suffix}`)}
+  const theme = { id: chosenTheme, font, background: template.background,foreground:template.foreground }
   const retained: string[] = []
   function element(value: Element): Element {
     if (value.theme === null || value.support.kind !== "native") { retained.push(value.id); return value }
     if (value.kind === "group") return { ...value, theme: theme.id, children: value.children.map(element) }
     const linked = (key: "font" | "color" | "fill") => { const yes = value.styleLinks === undefined || value.styleLinks.includes(key); if (!yes) retained.push(`${value.id}.${key}`); return yes }
     if (value.kind === "text") { const fontLinked = linked("font"), colorLinked = linked("color"); return { ...value, theme: theme.id, runs: value.runs.map(run => ({ ...run, font: fontLinked ? font : run.font, color: colorLinked ? template.foreground : run.color })) as typeof value.runs } }
+    if (value.kind === "image") return value
     return { ...value, theme: theme.id, fill: linked("fill") ? template.accent : value.fill }
   }
-  const pin = { id: template.id, version: template.version, family: family.id }
+  const layout=family.master ? {template:template.id,version:template.version,family:family.id,master:family.master,part:family.layouts[0]!} : undefined
+  const pin = { id: template.id, version: template.version, family: family.id,...(layout ? {layout:{master:layout.master,part:layout.part}} : {}) }
   const themes = [...deck.themes.filter(value => value.id !== theme.id), theme]
   if (mode.kind === "insert-slide") {
     const size = deck.slides[0]?.size ?? { width: 960, height: 540 }
-    const slide: Slide = { id: id(mode.slideId), version: 0, size, notes: "", theme: theme.id, source: { kind: "created" }, elements: [] }
+    const slide: Slide = { ...(layout ? {layout} : {}), id: id(mode.slideId), version: 0, size, notes: "", theme: theme.id, source: { kind: "created" }, elements: [] }
     return { changes: { changes: [{ kind: "set", target: deck.id, value: { ...deck, themes } }, { kind: "insert", parent: deck.id, index: deck.slides.length, value: slide }] }, retained, warnings: [] }
   }
   const slides = deck.slides.map(slide => {
     if (slide.theme === null) retained.push(slide.id)
-    return { ...slide, theme: slide.theme === null ? null : theme.id, elements: slide.elements.map(element) }
+    const {layout: previousLayout,...content}=slide
+    void previousLayout
+    return { ...content, ...(layout ? {layout} : {}), theme: slide.theme === null ? null : theme.id, elements: slide.elements.map(element) }
   })
   return { changes: { changes: [{ kind: "set", target: deck.id, value: { ...deck, template: pin, themes, slides } }] }, retained, warnings: template.fontRight === "no-embedding" ? [`${font} cannot be embedded; PowerPoint may substitute it.`] : [] }
 }

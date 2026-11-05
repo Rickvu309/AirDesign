@@ -3,6 +3,20 @@ import { createHistoryStore } from "../src/db/history-store.ts"
 import { fixtureDeck } from "../../../packages/deck/src/fixture.ts"
 import { commandId } from "../../../packages/change-log/src/index.ts"
 import { applyTemplate,basics } from "../../../packages/brand/src/index.ts"
+import { TemplateStore } from "../../../packages/brand/src/template-store.ts"
+import { templatesHandler } from "../src/templates/handle.ts"
+
+it("saves the deck's pinned look rather than its first historical theme",async()=>{
+  const history=await createHistoryStore({kind:"pglite"}),templates=new TemplateStore(":memory:"),owner={personId:"owner"},origin="http://localhost"
+  try{
+    const entry=await history.catalog.create(owner,"create","Dark look","",fixtureDeck(1))
+    await history.commit(owner,entry.id,{id:commandId("dark"),kind:"edit",base:0,run:null,changes:{changes:[]}},{kind:"person"},{key:"dark",changes:deck=>applyTemplate(deck,basics[1]!,{kind:"apply-deck"}).changes})
+    const handler=templatesHandler({principal:async()=>owner,handle:async()=>new Response(),close:async()=>undefined},templates,history,origin,async()=>undefined)
+    const response=await handler(new Request(origin+"/api/templates/from-deck",{method:"POST",headers:{origin,"content-type":"application/json"},body:JSON.stringify({deck:entry.id,id:"personal",name:"Personal dark"})}))
+    expect(response.status).toBe(201)
+    expect(await response.json()).toMatchObject({font:"Geist",background:basics[1]!.background,foreground:basics[1]!.foreground,accent:basics[1]!.accent,fontRight:"installed"})
+  }finally{templates.close();await history.close()}
+})
 
 it("serializes prepared template applications, deduplicates retries and preserves protected person edits",async()=>{
   const store=await createHistoryStore({kind:"pglite"}),owner={personId:"owner"},deck=fixtureDeck(1),dark=basics[1]!

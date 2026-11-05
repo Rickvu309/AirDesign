@@ -1,3 +1,5 @@
+import { initializeTemplateSources,templateSources,captureTemplateSources } from "../templates/source-store.ts"
+import { initializeAssets,imageStore,ownedDeckAssets } from "../images/store.ts"
 import { initializeExports,exportStore } from "../decks/export-store.ts"
 import { createCatalog, initializeCatalog } from "../../../../packages/catalog/src/index.ts"
 import { PGlite } from "@electric-sql/pglite"
@@ -41,7 +43,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-    await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx) })
+    await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
     const result = await tx.query<{ state: History; deleted: boolean }>("SELECT state, deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE", [deckId, principal.personId])
     const row = result.rows[0]
@@ -50,6 +52,8 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return row.state
   }
   return {
+    images:imageStore(transaction),
+    templateSources:templateSources(transaction),
     catalog:createCatalog(transaction,clock),
     exports:exportStore(transaction,clock),
     async issueRunToken(principal: Principal, deckId: string, run: string) {
@@ -73,6 +77,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     },
     async create(principal: Principal, deck: Deck) {
       return transaction(async tx => {
+        await ownedDeckAssets(tx,principal,deck);await captureTemplateSources(tx,principal,deck)
         await tx.query("INSERT INTO editing_deck(id,owner,state) VALUES ($1,$2,$3)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck))])
         return { deck, seq: 0 }
       })
@@ -86,6 +91,14 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       history.runs=runs.rows.map(row=>row.payload)
       return {deck:history.deck,seq:history.seq,contributions:{history,applied:receipts.rows.map(row=>commandId(row.id))}}
     }) },
+    async delta(principal:Principal,deckId:string,base:number){return transaction(async tx=>{
+      const history=await owned(tx,principal,deckId)
+      if(!Number.isSafeInteger(base)||base<0||base>history.seq)throw new Error("invalid-delta-base")
+      const events=await tx.query<{payload:Contribution}>("SELECT payload FROM editing_contribution WHERE deck=$1 AND ((payload->>'seq')::integer>$2 OR (payload->>'toggledAt')::integer>$2) ORDER BY (payload->>'seq')::integer",[deckId,base])
+      const runs=await tx.query<{payload:RunState}>("SELECT payload FROM editing_run WHERE deck=$1",[deckId])
+      const receipts=await tx.query<{id:string}>("SELECT id FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='applied'",[deckId])
+      return {deck:history.deck,seq:history.seq,contributions:{history:{base,seq:history.seq,events:events.rows.map(row=>row.payload),runs:runs.rows.map(row=>row.payload),usedIds:history.usedIds},applied:receipts.rows.map(row=>commandId(row.id))}}
+    })},
     async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}, preparation?: { key: string; changes: (deck: Deck) => ChangeSet }): Promise<Receipt> {
       return transaction(async tx => {
         const history = await owned(tx, principal, deckId)
@@ -97,10 +110,11 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
           return prior.rows[0].receipt
         }
         if (preparation) { if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required"); command = { ...command, base: history.seq, changes: preparation.changes(history.deck) } }
-        await loadHistoryIndex(tx,deckId,history,command)
+        if(!preparation)await loadHistoryIndex(tx,deckId,history,command)
         const result = execute(history, command, identity)
         await tx.query("INSERT INTO editing_receipt(deck,id,payload,receipt) VALUES ($1,$2,$3,$4)", [deckId, command.id, payload, JSON.stringify(result.receipt)])
         if (result.receipt.kind === "applied") {
+          await ownedDeckAssets(tx,principal,result.history.deck);await captureTemplateSources(tx,principal,result.history.deck)
           await saveHistoryIndex(tx,deckId,history,result.history)
           await tx.query("INSERT INTO editing_event(deck,seq,command,receipt) VALUES ($1,$2,$3,$4)", [deckId,result.history.seq,JSON.stringify(command),JSON.stringify(result.receipt)])
           await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])

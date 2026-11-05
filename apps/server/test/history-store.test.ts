@@ -108,3 +108,22 @@ it("returns authoritative contribution history for offline undo after restart",a
     await expect(store.read(stranger,deck.id)).rejects.toThrow("deck-not-found")
   }finally {await store.close();await rm(folder,{recursive:true,force:true})}
 })
+
+it("sends only changed contributions while preserving local undo across sync deltas",async()=>{
+  const store=await createHistoryStore({kind:"pglite"}),deck=fixtureDeck(1)
+  try{
+    await store.create(owner,deck)
+    await store.commit(owner,deck.id,edit("first",initialHistory(deck),"first"))
+    const previous=await store.read(owner,deck.id)
+    await store.commit(owner,deck.id,{id:cid("second"),kind:"patch",base:1,run:null,target:deck.slides[0]!.id,fields:{notes:"second"}})
+    const delta=await store.delta(owner,deck.id,1)
+    expect(delta.contributions.history.events.map(event=>event.id)).toEqual(["second"])
+    const merged=parseSnapshot(delta,previous)
+    expect(merged.contributions?.history.events).toHaveLength(2)
+    await store.commit(owner,deck.id,{id:cid("undo-second"),kind:"undo",target:cid("second")})
+    const undone=await store.delta(owner,deck.id,2)
+    expect(undone.contributions.history.events).toMatchObject([{id:"second",active:false,toggledAt:3}])
+    expect(parseSnapshot(undone,merged).deck.slides[0]?.notes).toBe("first")
+    await expect(store.delta(stranger,deck.id,2)).rejects.toThrow("deck-not-found")
+  }finally{await store.close()}
+})

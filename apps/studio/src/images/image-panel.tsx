@@ -1,0 +1,61 @@
+import { useEffect,useRef,useState } from "react"
+import { Button } from "@airdesign/ui"
+import type { AssetSummary,AssetProvenance } from "../../../../packages/files/src/assets/provenance.ts"
+import type { Operation } from "../../../../packages/operations/src/index.ts"
+import { flatten,type Deck,type Element,type ImagePlacement } from "../../../../packages/deck/src/index.ts"
+import { api } from "../decks/catalog-client.ts"
+import { focusedCrop,lowResolution } from "./image-placement.ts"
+import "./images.css"
+
+type Library={assets:AssetSummary[];quota:number;used:number}
+type SearchItem={id:string;name:string;provenance:AssetProvenance}
+function reason(failure:unknown):string {
+  const value=String(failure)
+  if(value.includes("image-storage-full"))return "Your image storage is full. Existing images still work. Choose an image from your library."
+  if(value.includes("size-limit"))return "Choose an image smaller than 20 MB. Your original is unchanged."
+  return "This image could not be added. Choose a PNG, JPEG, WebP or safe SVG. "+value.replace(/^Error: /,"")
+}
+function fileData(file:File):Promise<string>{return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=()=>reject(new Error("image-read-failed"));reader.onload=()=>{if(typeof reader.result!=="string")return reject(new Error("image-read-failed"));resolve(reader.result.split(",")[1] ?? "")};reader.readAsDataURL(file)})}
+export function ImagePanel({deck,slideId,disabled,close}:{deck:Deck;slideId:string|undefined;disabled:boolean;close:()=>void}) {
+  const [library,setLibrary]=useState<Library>({assets:[],quota:0,used:0}),[source,setSource]=useState("library"),[query,setQuery]=useState(""),[items,setItems]=useState<SearchItem[]>([]),[searched,setSearched]=useState(false),[job,setJob]=useState<Operation|null>(null),[error,setError]=useState(""),[status,setStatus]=useState(""),[busy,setBusy]=useState(false),[selected,setSelected]=useState(""),[asset,setAsset]=useState<AssetSummary|null>(null)
+  const input=useRef<HTMLInputElement>(null)
+  const slide=deck.slides.find(slide=>slide.id===slideId) ?? deck.slides[0],pictures=slide ? flatten(slide.elements).filter((element):element is Extract<Element,{kind:"image"}>=>element.kind==="image") : [],picture=pictures.find(element=>element.id===selected)
+  async function load(){setLibrary(await api<Library>("/api/assets"))}
+  useEffect(()=>{void load().catch(failure=>setError(reason(failure)))},[])
+  useEffect(()=>{if(!picture){setAsset(null);return}let stopped=false;void api<AssetSummary>(`/api/assets/${picture.image.asset}`).then(value=>{if(!stopped)setAsset(value)}).catch(failure=>{if(!stopped)setError(reason(failure))});return ()=>{stopped=true}},[picture?.image.asset])
+  async function upload(file:File){if(disabled||busy||job)return;setError("");setBusy(true);try{if(file.size>20*1024*1024)throw new Error("image-size-limit");setJob(await api<Operation>("/api/assets/ingest",{base64:await fileData(file),requestId:crypto.randomUUID()}));setStatus("Checking your image. You can keep editing your deck.")}catch(failure){setError(reason(failure))}finally{setBusy(false)}}
+  useEffect(()=>{const paste=(event:ClipboardEvent)=>{const file=Array.from(event.clipboardData?.files ?? []).find(file=>file.type.startsWith("image/"));if(file){event.preventDefault();void upload(file)}};document.addEventListener("paste",paste);return ()=>document.removeEventListener("paste",paste)},[disabled,busy,job])
+  useEffect(()=>{if(!job)return;let stopped=false,timer:ReturnType<typeof setTimeout>;const jobId=job.id;async function refresh(){try{const value=await api<Operation>(`/api/assets/jobs/${jobId}`);if(stopped)return;if(value.kind==="ready"){const image=await api<AssetSummary>(`/api/assets/jobs/${jobId}/adopt`,{});if(stopped)return;setJob(null);setStatus(`Image added · ${image.width} × ${image.height}. Your original is kept.`);await load()}else if(value.kind==="failed"||value.kind==="expired"||value.kind==="cancelled"){setJob(null);setError(reason(value.kind==="failed" ? value.reason : value.kind))}else timer=setTimeout(()=>void refresh(),500)}catch(failure){if(!stopped){setJob(null);setError(reason(failure))}}}void refresh();return ()=>{stopped=true;clearTimeout(timer)}},[job?.id])
+  async function search(){setBusy(true);setError("");try{const value=await api<{items:SearchItem[]}>(`/api/assets/search?provider=${encodeURIComponent(source)}&q=${encodeURIComponent(query)}`);setItems(value.items);setSearched(true)}catch(failure){setError(reason(failure))}finally{setBusy(false)}}
+  async function choose(item:SearchItem){setBusy(true);setError("");try{setJob(await api<Operation>("/api/assets/provider",{provider:source,item:item.id,requestId:crypto.randomUUID()}));setStatus("Checking your image before adding it.")}catch(failure){setError(reason(failure))}finally{setBusy(false)}}
+  async function place(image:AssetSummary){if(!slide)return;setBusy(true);setError("");try{const elementId=`img_${crypto.randomUUID().slice(0,20)}`;await api("/api/assets/place",{deck:deck.id,slide:slide.id,asset:image.id,elementId,requestId:crypto.randomUUID()});setSelected(elementId);setStatus("Image placed. Crop and alt text belong to this placement.")}catch(failure){setError(reason(failure))}finally{setBusy(false)}}
+  async function remove(image:AssetSummary){setError("");try{await api(`/api/assets/${image.id}`,undefined,"DELETE");await load();setStatus("Removed from your library. Decks using this image keep it.")}catch(failure){setError(reason(failure))}}
+  return <section className="image-panel" aria-label="Images"><header><h2>Images</h2><Button size="compact" variant="secondary" onClick={close}>Close images</Button></header>
+    <label>Image source<select value={source} onChange={event=>{setSource(event.target.value);setSearched(false);setItems([])}}><option value="library">Your library</option><option value="local-stock">Stock photos · free</option><option value="heroicons">Icons · MIT</option></select></label>
+    <label>Search images<input value={query} maxLength={200} onChange={event=>setQuery(event.target.value)} onKeyDown={event=>{if(event.key==="Enter"&&source!=="library")void search()}} placeholder="Search images"/></label>
+    {source!=="library" && <Button variant="secondary" size="compact" disabled={busy} onClick={()=>void search()}>Search</Button>}
+    <h3>{source==="library" ? "Your images" : source==="heroicons" ? "Free icons" : "Stock photos"}</h3>
+    {source==="library" ? <div className="image-grid">{library.assets.filter(image=>(image.provenance.kind+" "+image.provenance.source+" "+image.id).toLowerCase().includes(query.toLowerCase())).map(image=><article key={image.id}><button type="button" disabled={disabled||busy||!slide} onClick={()=>void place(image)} aria-label={`Place ${image.provenance.kind} image ${image.id.slice(0,8)}`}><img src={`/api/assets/${image.id}/thumbnail`} alt={image.provenance.kind+" image"}/><span>{image.width} × {image.height}</span></button><button type="button" disabled={disabled||busy} onClick={()=>void remove(image)}>Remove</button><details><summary>Source and license</summary><p>{image.provenance.source}</p><p>{image.provenance.license}</p></details></article>)}</div> : <div className="provider-results">{items.map(item=><article key={item.id}><Button variant="secondary" size="dialog" disabled={disabled||busy||Boolean(job)} onClick={()=>void choose(item)}>{item.name}</Button><p>{item.provenance.license}</p></article>)}</div>}
+    {source==="library" && library.assets.length===0 && <p>Upload or paste an image to start your personal library. Reuse it in any deck.</p>}
+    {searched&&items.length===0&&source!=="library" && <p role="status">No images found for “{query}”. Try other words or upload your own image.</p>}
+    {pictures.length>0 && <label>Adjust a placed image<select value={selected} onChange={event=>setSelected(event.target.value)}><option value="">Choose an image</option>{pictures.map((element,index)=><option key={element.id} value={element.id}>Image {index+1} · {element.image.alt||"No alt text"}</option>)}</select></label>}
+    {picture && <PlacementEditor key={picture.id+JSON.stringify(picture.image)} deck={deck.id} picture={picture} asset={asset} disabled={disabled||busy} saved={setStatus} failed={failure=>setError(reason(failure))}/>}
+    <footer><p className="image-quota">{(library.used/1024/1024).toFixed(1)} MB of {(library.quota/1024/1024).toFixed(0)} MB used</p><label className="image-upload">Upload image<input ref={input} type="file" aria-label="Upload image" accept="image/png,image/jpeg,image/webp,image/svg+xml" disabled={disabled||busy||Boolean(job)} onChange={event=>{const file=event.target.files?.[0];if(file)void upload(file);event.target.value=""}}/></label><p>Or paste an image · up to 20 MB</p></footer>
+    {(job||busy) && <p role="status">{job ? "Checking your image…" : "Working…"}</p>}{job && <Button size="compact" variant="secondary" onClick={()=>void api(`/api/assets/jobs/${job.id}/cancel`,{}).then(()=>{setJob(null);setStatus("Image upload cancelled.")}).catch(failure=>setError(reason(failure)))}>Cancel upload</Button>}
+    {status && <p role="status">{status}</p>}{error && <p role="alert">{error}</p>}
+  </section>
+}
+function PlacementEditor({deck,picture,asset,disabled,saved,failed}:{deck:string;picture:Extract<Element,{kind:"image"}>;asset:AssetSummary|null;disabled:boolean;saved:(message:string)=>void;failed:(failure:unknown)=>void}) {
+  const [image,setImage]=useState<ImagePlacement>(picture.image),[saving,setSaving]=useState(false)
+  const zoom=1/image.crop.width
+  function focus(axis:"x"|"y",value:number){const focal={...image.focal,[axis]:value};setImage({...image,focal,crop:focusedCrop(zoom,focal)})}
+  async function save(){setSaving(true);try{await api("/api/assets/update",{deck,elementId:picture.id,...image,requestId:crypto.randomUUID()});saved("Image settings saved. The original and other placements are unchanged.")}catch(failure){failed(failure)}finally{setSaving(false)}}
+  return <fieldset disabled={disabled||saving} className="image-adjust"><legend>Crop, focus and alt text</legend><div className="image-crop-preview" style={{borderRadius:image.mask==="ellipse" ? "50%" : 0,aspectRatio:`${picture.box.width}/${picture.box.height}`}}><img src={`/api/assets/${image.asset}/media`} alt={image.alt} style={{inlineSize:`${100/image.crop.width}%`,blockSize:`${100/image.crop.height}%`,insetInlineStart:`${-image.crop.x/image.crop.width*100}%`,insetBlockStart:`${-image.crop.y/image.crop.height*100}%`}}/></div>
+    <label>Crop zoom<input aria-label="Crop zoom" type="range" min="1" max="5" step="0.01" value={zoom} onChange={event=>setImage({...image,crop:focusedCrop(Number(event.target.value),image.focal)})}/></label>
+    <label>Focus horizontal<input aria-label="Focus horizontal" type="range" min="0" max="1" step="0.01" value={image.focal.x} onChange={event=>focus("x",Number(event.target.value))}/></label><label>Focus vertical<input aria-label="Focus vertical" type="range" min="0" max="1" step="0.01" value={image.focal.y} onChange={event=>focus("y",Number(event.target.value))}/></label>
+    <label>Mask<select value={image.mask} onChange={event=>setImage({...image,mask:event.target.value==="ellipse" ? "ellipse" : "rectangle"})}><option value="rectangle">Rectangle</option><option value="ellipse">Ellipse</option></select></label>
+    <label>Alt text<textarea value={image.alt} maxLength={2000} onChange={event=>setImage({...image,alt:event.target.value})} placeholder="Describe what this image conveys"/></label>
+    {asset && lowResolution(asset.width*image.crop.width,asset.height*image.crop.height,picture.box) && <p role="status">This image may look blurry at this size. You can still use it.</p>}
+    <Button size="dialog" variant="primary" disabled={disabled||saving} onClick={()=>void save()}>Save image settings</Button>
+  </fieldset>
+}

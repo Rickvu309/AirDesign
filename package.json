@@ -34,7 +34,9 @@
     "build:export-renderer": "vite build --ssr apps/worker/src/export/render.tsx --outDir apps/worker/dist",
     "verify:import-export": "node scripts/verify-import-export.mjs",
     "verify:pr-05": "npm run verify:studio && npm run verify:import-export",
-    "verify:brand": "node scripts/verify-brand.mjs"
+    "verify:brand": "node scripts/verify-brand.mjs",
+    "verify:assets": "node scripts/verify-assets.mjs",
+    "verify:pr-06": "npm run verify:brand && npm run verify:assets"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
