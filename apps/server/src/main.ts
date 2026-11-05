@@ -1,0 +1,87 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
+import path from "node:path"
+import { fileURLToPath } from "node:url"
+import { createAccess, createMemoryInbox } from "@airdesign/access"
+
+export type RunningServer = {
+  port: number
+  close: () => Promise<void>
+}
+
+export async function startServer(port = 0): Promise<RunningServer> {
+  const inbox = createMemoryInbox()
+  const secret = process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars"
+  const databaseUrl = process.env.AIRDESIGN_DATABASE_URL
+  const access = await createAccess({
+    driver: databaseUrl === undefined ? { kind: "pglite" } : { kind: "postgres", url: databaseUrl },
+    secret,
+    mail: inbox,
+    clock: () => Date.now(),
+    guard: { allow: () => true },
+    exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
+  })
+  const server = createServer((request, response) => {
+    void serve(access, request, response)
+  })
+  await new Promise<void>((resolve) => {
+    server.listen(port, "127.0.0.1", () => resolve())
+  })
+  const address = server.address()
+  const bound = typeof address === "object" && address ? address.port : port
+  return {
+    port: bound,
+    async close() {
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve())
+      })
+      await access.close()
+    },
+  }
+}
+
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+  const host = request.headers.host ?? "127.0.0.1"
+  const body = await readRaw(request)
+  const method = request.method ?? "GET"
+  const incoming = new Request(`http://${host}${request.url ?? "/"}`, {
+    method,
+    headers: new Headers(entries(request.headers)),
+    body: method === "GET" || method === "HEAD" ? undefined : new Uint8Array(body),
+  })
+  const outgoing = await access.handle(incoming)
+  const headers = Object.fromEntries(outgoing.headers.entries())
+  delete headers["set-cookie"]
+  response.writeHead(outgoing.status, headers)
+  for (const cookie of outgoing.headers.getSetCookie()) {
+    response.appendHeader("set-cookie", cookie)
+  }
+  response.end(Buffer.from(await outgoing.arrayBuffer()))
+}
+
+function entries(headers: IncomingMessage["headers"]): Array<[string, string]> {
+  const pairs: Array<[string, string]> = []
+  for (const [key, value] of Object.entries(headers)) {
+    if (typeof value === "string") {
+      pairs.push([key, value])
+    } else if (Array.isArray(value)) {
+      pairs.push([key, value.join(", ")])
+    }
+  }
+  return pairs
+}
+
+function readRaw(request: IncomingMessage): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = []
+    request.on("data", (chunk: Buffer) => chunks.push(chunk))
+    request.on("end", () => resolve(Buffer.concat(chunks)))
+    request.on("error", reject)
+  })
+}
+
+const entry = process.argv[1] ? path.resolve(process.argv[1]) : ""
+if (entry === fileURLToPath(import.meta.url)) {
+  const port = Number(process.env.PORT ?? "41731")
+  const running = await startServer(port)
+  process.stdout.write(`listening ${running.port}\n`)
+}
