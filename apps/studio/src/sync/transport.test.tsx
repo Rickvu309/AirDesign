@@ -8,6 +8,8 @@ it("yields a paint before receipt reconciliation and batches persisted snapshots
   const snapshot={deck:fixtureDeck(1),seq:0}
   const client=new SyncClient("owner",snapshot,{read:async()=>[],write:async()=>{}},()=>{})
   const receive=vi.spyOn(client,"receive"),write=vi.spyOn(Storage.prototype,"setItem"),errors:string[]=[]
+  let idle:(()=>void)|undefined
+  vi.stubGlobal("requestIdleCallback",(callback:()=>void)=>{idle=callback;return 1})
   let deliver:((event:{data:string})=>void)|undefined
   class Socket {
     static OPEN=1
@@ -25,7 +27,7 @@ it("yields a paint before receipt reconciliation and batches persisted snapshots
     for(let count=0;count<10;count++)await Promise.resolve()
     expect(deliver).toBeDefined()
     deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})})
-    deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})})
+    deliver!({data:JSON.stringify({kind:"snapshot",...snapshot,seq:1})})
     await Promise.resolve()
     expect(receive.mock.calls.length).toBe(0)
     expect(write).not.toHaveBeenCalled()
@@ -33,7 +35,11 @@ it("yields a paint before receipt reconciliation and batches persisted snapshots
     expect(receive).toHaveBeenCalledTimes(2)
     expect(write).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(100)
+    expect(write).not.toHaveBeenCalled()
+    expect(idle).toBeDefined()
+    idle!()
     expect(write).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(write.mock.calls[0]![1]).seq).toBe(1)
     expect(errors).toEqual([])
   }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks()}
 })

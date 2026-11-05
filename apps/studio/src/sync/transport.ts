@@ -26,9 +26,13 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     pending=snapshot
     if(persistence)return
     persistence=setTimeout(()=>{
-      persistence=undefined
-      const latest=pending;pending=undefined
-      if(latest)try{localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))}catch(failure){error(String(failure))}
+      const persist=()=>{
+        persistence=undefined
+        const latest=pending;pending=undefined
+        if(latest)try{localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))}catch(failure){error(String(failure))}
+      }
+      if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
+      else void afterPaint().then(persist)
     },100)
   }
   let received=Promise.resolve()
