@@ -2,7 +2,7 @@
   "id": "C18",
   "schemaVersion": 1,
   "title": "Offline person edits and account isolation",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P04",
   "acceptIn": "P04",
   "owner": "packages/change-log",
@@ -10,15 +10,36 @@
     "path": "docs/design/v0.1/logic.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Persist person commands with stable request ids in a principal-and-deck keyed browser outbox before sending. Apply in server arrival order even over intervening agent values. Only acknowledged edits are saved. Deleted targets retain the rejected command for explicit restore; deleted decks stop writes. Reauthentication retains same-principal work; sign-out and account switch isolate it and never transmit it as another principal.",
   "alternatives": [
-    "Decide in P04 before any consumer."
+    "Discard pending edits on disconnect.",
+    "Treat optimistic edits as server saved."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "offline-reload",
+      "body": {
+        "scenario": "offline reload"
+      },
+      "expect": {
+        "outcome": "same request id"
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "account-switch",
+      "body": {
+        "scenario": "account switch"
+      },
+      "expect": {
+        "outcome": "no cross-principal transmission"
+      }
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
-    "command": "npm run verify:contracts"
+    "kind": "behavior-tests",
+    "command": "npm run verify:pr-04"
   },
   "migration": {
     "policy": "additive-only",

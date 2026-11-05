@@ -1,3 +1,6 @@
+import { attachSync } from "./rpc/websocket.ts"
+import { createHistoryStore } from "./db/history-store.ts"
+import { commandsHandler } from "./commands/handle.ts"
 import { readRequestBody, RequestBodyLimit } from "../../../packages/files/src/request-body.ts"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import path from "node:path"
@@ -15,6 +18,7 @@ export type RunningServer = {
 export type StartServerOptions = {
   clock?: () => number
   operationsPath?: string
+  historyPath?: string
   accessPath?: string
   publicOrigin?: string
 }
@@ -34,12 +38,15 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
     publicOrigin,
   })
   const operations = new OperationStore(extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite"), extras.clock)
+  const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl })
+  const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {
-    serve(access, handleOperation, request, response).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, request, response).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
+  const sync = attachSync(server, access, history, publicOrigin)
   await new Promise<void>((resolve) => {
     server.listen(port, "127.0.0.1", () => resolve())
   })
@@ -48,16 +55,18 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   return {
     port: bound,
     async close() {
+      sync.close()
       await new Promise<void>((resolve, reject) => {
         server.close((error) => error ? reject(error) : resolve())
       })
+      await history.close()
       operations.close()
       await access.close()
     },
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const host = request.headers.host ?? "127.0.0.1"
     const body = await readRequestBody(request)
@@ -73,7 +82,7 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
       writeHandlerError(response, error)
       return
     }
-    const outgoing = new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : await access.handle(incoming)
+    const outgoing = new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {

@@ -1,0 +1,87 @@
+import { describe, it, expect } from "vitest"
+import { mkdtemp, rm } from "node:fs/promises"
+import path from "node:path"
+import os from "node:os"
+import { createHistoryStore } from "../src/db/history-store.ts"
+import { commandId, initialHistory, type Command, type History } from "../../../packages/change-log/src/index.ts"
+import { id } from "../../../packages/deck/src/index.ts"
+import { fixtureDeck, fixtureElement } from "../../../packages/deck/src/fixture.ts"
+const owner = { personId: "owner" }, stranger = { personId: "stranger" }
+const cid = commandId
+function edit(request: string, history: History, text: string): Extract<Command, { kind: "edit" }> {
+  const slide = history.deck.slides[0]
+  if (!slide) throw new Error("fixture-slide")
+  return { id: cid(request), kind: "edit", base: history.seq, run: null, changes: { changes: [{ kind: "set", target: slide.id, value: { ...slide, notes: text } }] } }
+}
+describe("transactional history adapter", () => {
+  it("serializes parallel database delivery, immutable retries and restart on disk", async () => {
+    const folder = await mkdtemp(path.join(os.homedir(),"tmp/p04-history-"))
+    let store = await createHistoryStore({kind:"pglite",path:folder})
+    try {
+      const deck = fixtureDeck(2)
+      await store.create(owner,deck)
+      const command = edit("once",initialHistory(deck),"durable")
+      const receipts = await Promise.all([store.commit(owner,deck.id,command),store.commit(owner,deck.id,command)])
+      expect(receipts[0]).toEqual(receipts[1])
+      expect((await store.replay(owner,deck.id,0)).events).toHaveLength(1)
+      await expect(store.commit(owner,deck.id,{...command,base:999})).rejects.toThrow("request-id-payload-mismatch")
+      for (const call of [()=>store.read(stranger,deck.id),()=>store.commit(stranger,deck.id,command),()=>store.replay(stranger,deck.id,0),()=>store.delete(stranger,deck.id)]) await expect(call()).rejects.toThrow("deck-not-found")
+      await store.close()
+      store = await createHistoryStore({kind:"pglite",path:folder})
+      expect(await store.commit(owner,deck.id,command)).toEqual(receipts[0])
+      expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("durable")
+      const undone = await Promise.all([store.commit(owner,deck.id,{id:cid("undo1"),kind:"undo",target:command.id}),store.commit(owner,deck.id,{id:cid("undo2"),kind:"undo",target:command.id})])
+      expect(undone.map(r=>r.kind).sort()).toEqual(["applied","refused"])
+    } finally { await store.close(); await rm(folder,{recursive:true,force:true}) }
+  })
+})
+
+it("refuses payload-selected authority and binds run credentials to their owner and deck",async()=>{
+ const store=await createHistoryStore({kind:"pglite"})
+ try {
+  const deck=fixtureDeck(2)
+  await store.create(owner,deck)
+  await store.commit(owner,deck.id,{id:cid("start_auth"),kind:"start-run",run:"owned"})
+  const command:Command={id:cid("agent_auth"),kind:"patch",run:"owned",base:1,target:deck.slides[0]!.id,fields:{notes:"agent"}}
+  expect(await store.commit(owner,deck.id,command)).toMatchObject({kind:"refused",code:"execution-identity-mismatch"})
+  const token=await store.issueRunToken(owner,deck.id,"owned")
+  const actor=await store.runIdentity(owner,deck.id,token)
+  expect(await store.commit(owner,deck.id,{...command,id:cid("null_run"),run:null},actor)).toMatchObject({kind:"refused",code:"execution-identity-mismatch"})
+  expect(await store.commit(owner,deck.id,{...command,id:cid("other_run"),run:"other"},actor)).toMatchObject({kind:"refused",code:"execution-identity-mismatch"})
+  await expect(store.runIdentity(stranger,deck.id,token)).rejects.toThrow("deck-not-found")
+  await store.create(owner,{...deck,id:id("otherdeck")})
+  await expect(store.runIdentity(owner,"otherdeck",token)).rejects.toThrow("invalid-run-credential")
+  expect(await store.commit(owner,deck.id,{...command,id:cid("bound_run")},actor)).toMatchObject({kind:"applied"})
+ }finally{await store.close()}
+})
+
+it("retains a nested adopted child and minimal ancestors after database restart",async()=>{
+ const folder=await mkdtemp(path.join(os.homedir(),"tmp/p04-nested-"))
+ let store=await createHistoryStore({kind:"pglite",path:folder})
+ const deck=fixtureDeck(2),slide=deck.slides[0]
+ if(!slide)throw new Error("fixture-slide")
+ try{
+  await store.create(owner,deck)
+  await store.commit(owner,deck.id,{id:cid("nested_start"),kind:"start-run",run:"nested"})
+  const actor={kind:"run" as const,run:"nested"}
+  const child={...fixtureElement(1),id:id("kept_child")}
+  const inner={...fixtureElement(1),id:id("inner"),kind:"group" as const,children:[child,{...fixtureElement(1),id:id("lost_child")}]}
+  const outer={...fixtureElement(1),id:id("outer"),kind:"group" as const,children:[inner,{...fixtureElement(1),id:id("lost_sibling")}]}
+  expect(await store.commit(owner,deck.id,{id:cid("nested_create"),kind:"edit",run:"nested",base:1,changes:{changes:[{kind:"insert",parent:deck.id,index:1,value:{...slide,id:id("kept_slide"),elements:[outer]}}]}},actor)).toMatchObject({kind:"applied"})
+  await store.commit(owner,deck.id,{id:cid("nested_touch"),kind:"patch",run:null,base:2,target:child.id,fields:{fill:"#ff0000"}})
+  await store.close()
+  store=await createHistoryStore({kind:"pglite",path:folder})
+  expect(await store.commit(owner,deck.id,{id:cid("nested_undo"),kind:"undo-run",run:"nested"})).toMatchObject({kind:"applied"})
+  const kept=(await store.read(owner,deck.id)).deck.slides.find(item=>item.id==="kept_slide")
+  expect(kept?.elements).toHaveLength(1)
+  const group=kept?.elements[0]
+  if(group?.kind!=="group")throw new Error("missing-outer")
+  expect(group.children).toHaveLength(1)
+  const nested=group.children[0]
+  if(nested?.kind!=="group")throw new Error("missing-inner")
+  expect(nested.children).toEqual([{...child,fill:"#ff0000"}])
+  await store.close()
+  store=await createHistoryStore({kind:"pglite",path:folder})
+  expect((await store.read(owner,deck.id)).deck.slides.find(item=>item.id==="kept_slide")).toEqual(kept)
+ }finally{await store.close();await rm(folder,{recursive:true,force:true})}
+})

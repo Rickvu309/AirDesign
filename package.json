@@ -25,7 +25,11 @@
     "verify:pr-03": "npm run verify:operations && npm run verify:pptx",
     "worker:once": "node apps/worker/src/main.ts",
     "pptx": "node packages/pptx/src/cli.ts",
-    "operations": "node apps/server/src/operations/cli.ts"
+    "operations": "node apps/server/src/operations/cli.ts",
+    "verify:change-log": "node scripts/verify-change-log.mjs",
+    "verify:history": "npm run verify:change-log",
+    "verify:pr-04": "npm run verify:change-log && npm run verify:sync",
+    "verify:sync": "node scripts/verify-sync.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

@@ -35,7 +35,7 @@ describe("accepted contract bundle", () => {
       }
     }
     for (const [id, entry] of Object.entries(program.contracts)) {
-      if (entry.freezeIn === "P01") {
+      if (entry.status === "accepted") {
         continue
       }
       assert.equal(entry.status, "deferred", id)

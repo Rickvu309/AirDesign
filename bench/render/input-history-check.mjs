@@ -63,6 +63,12 @@ try {
     await page.keyboard.press("ControlOrMeta+V")
     await history(observed)
   })
+  await check("programmatic-insertHTML-history", async observed => {
+    await selectBeta()
+    const inserted = await page.evaluate(() => document.execCommand("insertHTML", false, '<span style="color:green;font-size:70px">New</span>'))
+    assert.equal(inserted, true)
+    await history(observed)
+  })
   for (const inputType of ["insertFromPaste", "insertFromDrop", "insertReplacementText", "insertFromYank"]) await check(inputType, async observed => {
     await selectBeta()
     observed.cancelled = await field.evaluate((node, inputType) => {

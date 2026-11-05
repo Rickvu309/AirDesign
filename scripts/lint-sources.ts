@@ -1,3 +1,4 @@
+import { historyQuerySafetyHits } from "./lint/history-query-safety.ts"
 import { operationSafetyHits } from "./lint/operation-safety.ts"
 import { deckInvariantHits } from "./lint/deck-invariants.ts"
 import { readdir, readFile } from "node:fs/promises"
@@ -18,6 +19,7 @@ const files = await collect(repoRoot)
 const failures: string[] = []
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for (const hit of historyQuerySafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of operationSafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of deckInvariantHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of commentHits(file, source)) {
