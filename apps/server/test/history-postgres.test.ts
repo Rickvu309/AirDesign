@@ -57,7 +57,8 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     expect((await first.read(owner,bounded.id)).deck.slides[0]?.notes).toBe("value 118")
   } finally {
     await first.close(); await second.close()
-    await admin.query(`DROP DATABASE ${database} WITH (FORCE)`)
+    expect((await admin.query("SELECT count(*)::integer AS connections FROM pg_stat_activity WHERE datname=$1",[database])).rows[0]?.connections).toBe(0)
+    await admin.query(`DROP DATABASE ${database}`)
     await admin.end()
   }
 })

@@ -12,6 +12,12 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
   if (driver.kind === "pglite" && driver.path) await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
+  const connections = new Set<Promise<void>>()
+  pool?.on("connect", client => {
+    const ended = new Promise<void>(resolve => client.once("end", resolve))
+    connections.add(ended)
+    void ended.then(() => connections.delete(ended))
+  })
   let closed = false
   async function transaction<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
     if (closed) throw new Error("database-closed")
@@ -76,7 +82,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       })
     },
     async delete(principal: Principal, deckId: string) { return transaction(async tx => { await owned(tx, principal, deckId); await tx.query("UPDATE editing_deck SET deleted=true WHERE id=$1", [deckId]) }) },
-    async close() { if (closed) return;closed=true;await local?.close();await pool?.end() },
+    async close() { if (closed) return;closed=true;await local?.close();await pool?.end();await Promise.all(connections) },
   }
 }
 function canonical(value: unknown): string {
