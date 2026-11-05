@@ -41,8 +41,9 @@ export async function loadHistoryIndex(tx: Transaction, deck: string, history: H
   const reduced = merge([...active.rows.map(row => row.payload), ...heads.rows.flatMap(row => row.person ? [row.latest,row.person] : [row.latest])])
   const targetIds = new Set(excluded)
   history.events = [...reduced.filter(event => !targetIds.has(event.id)), ...targets.rows.map(row => row.payload)].sort((a,b) => a.seq-b.seq)
-  if ("run" in command && command.run !== null) {
-    const runs = await tx.query<{ payload: History["runs"][number] }>("SELECT payload FROM editing_run WHERE deck=$1 AND id=$2", [deck,command.run])
+  const targetRun = "run" in command ? command.run : targets.rows[0]?.payload.run
+  if (targetRun !== undefined && targetRun !== null) {
+    const runs = await tx.query<{ payload: History["runs"][number] }>("SELECT payload FROM editing_run WHERE deck=$1 AND id=$2", [deck,targetRun])
     history.runs = runs.rows.map(row => row.payload)
   }
 }

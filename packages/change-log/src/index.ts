@@ -157,6 +157,7 @@ export function execute(current: History, command: Command): { history: History;
     case "redo": {
       const event = history.events.find(e => e.id === command.target)
       if (!event || event.active === (command.kind === "redo")) return refuse("invalid-undo-target")
+      if (command.kind === "redo" && event.run !== null && history.runs.some(run => run.id === event.run && run.kind === "undone")) return refuse("run-closed")
       if (command.kind === "redo" && history.events.some(e => e.id !== event.id && Math.max(e.seq,e.toggledAt) > event.toggledAt && e.patches.some(p => event.patches.some(q => q.id === p.id && q.keys.some(k => p.keys.includes(k)))))) return refuse("redo-invalidated")
       event.active = command.kind === "redo"
       event.toggledAt = history.seq + 1

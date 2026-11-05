@@ -28,6 +28,8 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     expect(results.map(r=>r.kind).sort()).toEqual(["applied","refused"])
     expect((await second.read(owner,deck.id)).deck.slides[0]?.notes).toBe(slide.notes)
     expect((await second.replay(owner,deck.id,0)).events.map(e=>e.seq)).toEqual([1,2,3])
+    expect(await second.commit(owner,deck.id,{id:commandId("redo_undone_run"),kind:"redo",target:commandId("edit")})).toMatchObject({kind:"refused",code:"run-closed"})
+    expect((await first.read(owner,deck.id)).seq).toBe(3)
     const adoption={...fixtureDeck(5,2),id:id("adoption")}
     await first.create(owner,adoption)
     await first.commit(owner,adoption.id,{id:commandId("start_adoption"),kind:"start-run",run:"adoption"})
