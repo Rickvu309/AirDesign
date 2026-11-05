@@ -1,6 +1,6 @@
 # Build AirDesign v0.1 through verified vertical slices
 
-Turn main into an individual slide editor with live agent assistance and faithful PowerPoint exchange.
+Build an individual slide editor with live agent assistance and faithful PowerPoint exchange.
 Delivery branch: `main`. Published into the repository on 2026-11-05 after the planning-only cleanup. Pin its accepted head before P01. P01 creates the workspace and UI; no root application, package scripts or reusable product kit exists yet.
 This is an execution plan, not authorization to implement, spend, publish or merge.
 Run P01 through P09 by dependency, with fidelity and edit-history decisions settled before dependent implementation.
@@ -110,7 +110,7 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **You see.**
 
-- [ ] A person signs in on desktop or phone, reaches a real workspace shell and returns to the same validated intent. The UI consumer works from its packed artifact and every shared contract is accepted. Save the actual outcome in `~/tmp/airdesign-autopilot/P01/outcome.md`.
+- [ ] A person signs in on desktop or phone, reaches a real workspace shell and returns to the same validated intent. The UI consumer works from its packed artifact. Every contract whose freezeIn is P01 is accepted, and every later contract names an owner and its freeze PR. Save the actual outcome in `~/tmp/airdesign-autopilot/P01/outcome.md`.
 
 **Verify, unit.**
 

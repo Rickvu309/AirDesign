@@ -8,10 +8,44 @@ const contractIndexPath = join(deliveryDirectory, "contract-index.json");
 const phaseDataPath = join(deliveryDirectory, "phase-data.json");
 const lanePredicatesPath = join(deliveryDirectory, "lane-predicates.json");
 const pullRequestOrder = ["P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08", "P09"];
-const modelSlugPattern = /\b(grok|gpt|claude|gemini)-\d/gi;
+const modelSlugPattern = /\b(?:grok|gpt|claude|gemini)(?:-[a-z]+)*-\d[\w.-]*/gi;
+const modelSlugExamples = ["gpt-6.1-sol", "grok-4.7", "claude-opus-4-6", "grok-code-fast-1", "gemini-3.8-flash-high"];
+const modelProseExamples = ["Grok implements and Codex reviews", "Claude plus a second model", "Codex guide over authorized endpoint"];
+const blanketAcceptancePhrases = ["every shared contract is accepted", "resolves every forward reference"];
 const planningBranchPattern = /(?<![\w/.])planning\/v0\.1(?!\/)/g;
 const verificationSentence = "Tests alone are not sufficient verification";
 const failures = [];
+
+function checkModelSlugPatternExamples() {
+  for (const example of modelSlugExamples) {
+    if (!new RegExp(modelSlugPattern.source, "i").test(example)) {
+      failures.push(`c: model slug pattern misses ${example}`);
+    }
+  }
+  for (const example of modelProseExamples) {
+    if (new RegExp(modelSlugPattern.source, "i").test(example)) {
+      failures.push(`c: model slug pattern wrongly matches "${example}"`);
+    }
+  }
+}
+
+function checkDeferredAcceptanceWording(contractIndex) {
+  for (const [contractId, contract] of Object.entries(contractIndex.contracts ?? {})) {
+    for (const match of String(contract.requiredDecision ?? "").matchAll(/\b(P0[1-9]) must accept\b/g)) {
+      if (match[1] !== contract.freezeIn) {
+        failures.push(`g: ${contractId} says ${match[1]} must accept it but freezeIn is ${contract.freezeIn}`);
+      }
+    }
+  }
+}
+
+function checkBlanketAcceptance(label, text) {
+  for (const phrase of blanketAcceptancePhrases) {
+    if (text.includes(phrase)) {
+      failures.push(`h: ${label} still requires "${phrase}" although later contracts freeze in later PRs`);
+    }
+  }
+}
 
 function readDeliveryText(path) {
   return readFileSync(path, "utf8");
@@ -118,11 +152,15 @@ function checkVerificationSentence(planText) {
 const planText = readDeliveryText(planPath);
 const contractIndex = parseDeliveryJson(contractIndexPath, "contract-index.json");
 parseDeliveryJson(phaseDataPath, "phase-data.json");
+checkModelSlugPatternExamples();
+checkBlanketAcceptance("autopilot-plan.md", planText);
+checkBlanketAcceptance("phase-data.json", readDeliveryText(phaseDataPath));
 parseDeliveryJson(lanePredicatesPath, "lane-predicates.json");
 
 if (contractIndex) {
   checkFreezeAssignments(contractIndex);
   checkPlanReferences(planText, contractIndex);
+  checkDeferredAcceptanceWording(contractIndex);
 }
 checkModelSlugs(planText);
 checkPlanningBranch(planText);

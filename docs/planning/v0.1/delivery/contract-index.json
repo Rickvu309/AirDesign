@@ -68,15 +68,15 @@
     },
     "C09": {
       "title": "Email access and session policy",
-      "requiredDecision": "15-minute single use, 30-second resend; choose resend invalidation, finite attempt/rate limits, session lifetime and revocation.",
-      "source": "docs/design/v0.1/logic.md",
+      "requiredDecision": "15-minute single use, 30-second resend; choose resend invalidation, finite attempt/rate limits, session lifetime and revocation; choose wrong or expired code placement (inline on S22.01 per backlog.md versus page S29.01 per logic.md), its copy, retry and focus behavior.",
+      "source": "docs/design/v0.1/logic.md; docs/design/v0.1/backlog.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
       "status": "proposed"
     },
     "C10": {
       "title": "Home and first request design conflicts",
-      "requiredDecision": "Choose true-empty versus seeded Home, retire Starred, choose F02 entry point and wrong-code inline/page placement; pin copy and retained intent.",
+      "requiredDecision": "Choose true-empty versus seeded Home, retire Starred, choose F02 entry point; pin copy and retained intent.",
       "source": "docs/design/v0.1/backlog.md",
       "acceptIn": "P05",
       "freezeIn": "P05",
@@ -132,7 +132,7 @@
     },
     "C17": {
       "title": "User Agent usage and automatic spending conflict",
-      "requiredDecision": "Resolve no User Agent credit debit versus auto-reset promises. Proposed default: User Agent cannot trigger credit spending and returns waiting/reset link; person-enabled Aira auto reset has the three/week cap. P01 must accept or explicitly replace this source-backed rule.",
+      "requiredDecision": "Resolve no User Agent credit debit versus auto-reset promises. Proposed default: User Agent cannot trigger credit spending and returns waiting/reset link; person-enabled Aira auto reset has the three/week cap. P07 must accept or explicitly replace this source-backed rule.",
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
