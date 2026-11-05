@@ -11,6 +11,7 @@ function position(element: Element): CSSProperties {
 function Text({ element, commit, themeFont }: { themeFont: string | undefined; element: Extract<Element, { kind: "text" }>; commit: CommitText | undefined }) {
   const ref = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
+  const insertingPlainText = useRef(false)
   const caretStyle = useRef(element.runs[0])
   const localRuns = useRef<string | null>(null)
   const signature = JSON.stringify(element.runs)
@@ -31,18 +32,67 @@ function Text({ element, commit, themeFont }: { themeFont: string | undefined; e
       const run = element.runs.find(run => JSON.stringify({ ...run, text: "" }) === span.getAttribute("data-run-style"))
       if (run) caretStyle.current = run
     }
-    const cancelFormatting = (event: InputEvent) => { rememberStyle(); if (event.inputType.startsWith("format")) event.preventDefault() }
+    const interceptInput = (event: InputEvent) => {
+      rememberStyle()
+      if (event.inputType.startsWith("format")) { event.preventDefault(); return }
+      const transfer = event.dataTransfer
+      if (event.inputType === "insertFromPaste" || event.inputType === "insertFromDrop" || event.inputType === "insertReplacementText" || transfer?.types.includes("text/html")) {
+        event.preventDefault()
+        if (!composing.current) {
+          node.focus()
+          const selection = node.ownerDocument.getSelection()
+          const target = event.getTargetRanges()[0]
+          if (target && node.contains(target.startContainer) && node.contains(target.endContainer)) {
+            const range = node.ownerDocument.createRange()
+            range.setStart(target.startContainer, target.startOffset)
+            range.setEnd(target.endContainer, target.endOffset)
+            selection?.removeAllRanges()
+            selection?.addRange(range)
+          } else if (!selection?.anchorNode || !node.contains(selection.anchorNode) || !selection.focusNode || !node.contains(selection.focusNode)) {
+            const range = node.ownerDocument.createRange()
+            range.selectNodeContents(node)
+            range.collapse(false)
+            selection?.removeAllRanges()
+            selection?.addRange(range)
+          }
+          rememberStyle()
+          insertingPlainText.current = true
+          try { node.ownerDocument.execCommand("insertText", false, transfer?.getData("text/plain") ?? event.data ?? "") }
+          finally { insertingPlainText.current = false }
+        }
+      }
+    }
     node.ownerDocument.addEventListener("selectionchange", rememberStyle)
-    node.addEventListener("beforeinput", cancelFormatting)
-    return () => { node.removeEventListener("beforeinput", cancelFormatting); node.ownerDocument.removeEventListener("selectionchange", rememberStyle) }
+    node.addEventListener("beforeinput", interceptInput)
+    return () => { node.removeEventListener("beforeinput", interceptInput); node.ownerDocument.removeEventListener("selectionchange", rememberStyle) }
   }, [commit, element.runs])
   function save(node: HTMLDivElement) {
     const runs = editableRuns(node, element.runs, caretStyle.current)
-    normalizeEditable(node, runs)
+    if (!insertingPlainText.current) normalizeEditable(node, runs)
     localRuns.current = JSON.stringify(runs)
     commit?.(element.id, runs)
   }
-  return <div ref={ref} data-text={element.id} data-theme-font={themeFont} role={commit ? "textbox" : undefined} aria-label={commit ? `Text ${element.id}` : undefined} aria-multiline={commit ? true : undefined} contentEditable={Boolean(commit) && element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onPaste={event => { event.preventDefault(); if (!composing.current) event.currentTarget.ownerDocument.execCommand("insertText", false, event.clipboardData.getData("text/plain")) }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); if (!composing.current) event.currentTarget.ownerDocument.execCommand("insertText", false, event.dataTransfer.getData("text/plain")) }} onCompositionStart={() => { composing.current = true }} onCompositionEnd={event => { composing.current = false; save(event.currentTarget) }} onInput={event => { if (!composing.current) { save(event.currentTarget) } }} />
+  return <div ref={ref} data-text={element.id} data-theme-font={themeFont} role={commit ? "textbox" : undefined} aria-label={commit ? `Text ${element.id}` : undefined} aria-multiline={commit ? true : undefined} contentEditable={Boolean(commit) && element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
+    event.preventDefault()
+    if (composing.current) return
+    const node = event.currentTarget
+    const document = node.ownerDocument
+    node.focus()
+    const point = document.caretPositionFromPoint?.(event.clientX, event.clientY)
+    const range = document.createRange()
+    if (point && node.contains(point.offsetNode)) {
+      range.setStart(point.offsetNode, point.offset)
+    } else {
+      const fallback = document.caretRangeFromPoint(event.clientX, event.clientY)
+      if (fallback && node.contains(fallback.startContainer)) range.setStart(fallback.startContainer, fallback.startOffset)
+      else { range.selectNodeContents(node); range.collapse(false) }
+    }
+    range.collapse(true)
+    const selection = document.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    node.dispatchEvent(new InputEvent("beforeinput", { inputType: "insertFromDrop", dataTransfer: event.dataTransfer, bubbles: true, cancelable: true }))
+  }} onCompositionStart={() => { composing.current = true }} onCompositionEnd={event => { composing.current = false; save(event.currentTarget) }} onInput={event => { if (!composing.current) { save(event.currentTarget) } }} />
 }
 const Item = memo(function Item({ element, commit, pointerDown, themes, inheritedTheme }: { themes: Deck["themes"]; inheritedTheme: DeckSlide["theme"]; element: Element; commit: CommitText | undefined; pointerDown: PointerEventHandler<HTMLDivElement> | undefined }) {
   const theme = themes.find(t => t.id === (element.theme ?? inheritedTheme))

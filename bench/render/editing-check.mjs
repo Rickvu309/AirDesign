@@ -58,7 +58,7 @@ try {
         const data = new DataTransfer()
         data.setData("text/html", '<b style="color:red">Pasted</b>')
         data.setData("text/plain", "Pasted")
-        node.dispatchEvent(type === "paste" ? new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }) : new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }))
+        node.dispatchEvent(type === "paste" ? new InputEvent("beforeinput", { inputType: "insertFromPaste", bubbles: true, cancelable: true, dataTransfer: data }) : new InputEvent("beforeinput", { inputType: "insertFromDrop", bubbles: true, cancelable: true, dataTransfer: data }))
       }, action)
     }
     await parity(action, action === "bold-shortcut" ? "Toggle" : "Pasted")
@@ -82,7 +82,7 @@ try {
       const data = new DataTransfer()
       data.setData("text/html", '<b style="color:green">Pasted</b>')
       data.setData("text/plain", "Pasted")
-      node.dispatchEvent(type === "paste" ? new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }) : new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }))
+      node.dispatchEvent(type === "paste" ? new InputEvent("beforeinput", { inputType: "insertFromPaste", bubbles: true, cancelable: true, dataTransfer: data }) : new InputEvent("beforeinput", { inputType: "insertFromDrop", bubbles: true, cancelable: true, dataTransfer: data }))
     }, action)
     await page.keyboard.type("!")
     const changed = await parity(`caret-${action}`, "Alpha Pasted!")
