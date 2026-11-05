@@ -70,7 +70,7 @@ F01
 
 The chosen intent goes through sign-in and lands in F02, F05 or F06.
 
-Screens: S11.01 landing (hero with Aira at work and an action title rewrite, PowerPoint before and after, the standard, the storyline, agents, export, free start), S12.01 pricing. S13 Agent guides is not designed yet.
+Screens: S11.01 landing (hero with a finance chart and the Good Deck ticker, the real editor building a slide, bring any agent, free start), S12.01 pricing. S13 Agent guides is not designed yet.
 
 When something goes wrong
 
