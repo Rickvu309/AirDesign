@@ -132,12 +132,19 @@ export async function runLanes({browser,stack,output,capture=async()=>{},context
     {
     lane=4
     await create("lanefour");await start("lanefour","adopt")
-    const child={...fixtureElement(0),id:"adopted"}, untouched={...fixtureElement(1),id:"untouched"}
+    const childTemplate=fixtureElement(0)
+    const child={...childTemplate,id:"adopted",box:{...childTemplate.box,y:250}}, untouched={...fixtureElement(1),id:"untouched"}
     await command("lanefour",{id:cid("insert"),kind:"edit",run:"adopt",base:1,changes:{changes:[{kind:"insert",parent:"s0",index:0,value:child},{kind:"insert",parent:"s0",index:1,value:untouched},{kind:"remove",target:"s0e1"}]}})
     await patch("lanefour","person",{runs:[{...child.runs[0],text:"person adopted this child"}]},null,2,"adopted")
     await command("lanefour",{id:cid("move"),kind:"edit",base:3,run:null,changes:{changes:[{kind:"move",target:"adopted",parent:"s1",index:0}]}})
     await a.open("lanefour");await b.open("lanefour")
-    for(const client of [a,b]){await client.page.getByLabel("Slide",{exact:true}).selectOption("s1");await expect(client.page.getByRole("textbox",{name:"Text adopted"})).toHaveText("person adopted this child")}
+    for(const client of [a,b]) {
+      await client.page.getByLabel("Slide",{exact:true}).selectOption("s1")
+      const adoptedText=client.page.getByRole("textbox",{name:"Text adopted"})
+      await expect(adoptedText).toHaveText("person adopted this child")
+      const childBounds=await adoptedText.boundingBox(), titleBounds=await client.page.getByRole("textbox",{name:"Text s1e0"}).boundingBox()
+      assert(childBounds && titleBounds && childBounds.y>=titleBounds.y+titleBounds.height,"adopted child must remain readable below the slide title")
+    }
     await capture("adoption-before-undo",a,b)
     const undo=await command("lanefour",{id:cid("undo"),kind:"undo-run",run:"adopt"});assert.equal(undo.kind,"applied")
     const adopted=await snapshot("lanefour");assert.equal(adopted.deck.slides[1].elements[0].id,"adopted");assert.equal(adopted.deck.slides[1].elements[0].runs[0].text,"person adopted this child");assert(adopted.deck.slides[0].elements.some(element=>element.id==="s0e1"));assert(!JSON.stringify(adopted.deck).includes('"untouched"'))
