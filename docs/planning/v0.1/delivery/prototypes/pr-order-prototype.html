@@ -1,0 +1,315 @@
+<!doctype html><html><head><meta charset="utf-8"><title>PROTOTYPE: AirDesign PR order</title>
+<style>
+body{font:15px/1.5 system-ui,sans-serif;max-width:980px;margin:32px auto;padding:0 20px;color:#1a1a1a}
+h1{font-size:22px;margin:0 0 4px}.tag{background:#fde68a;padding:2px 8px;border-radius:4px;font-size:12px}
+.muted{color:#666}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:20px}
+.card{border:1px solid #e5e5e5;border-radius:10px;padding:16px}h2{font-size:15px;margin:0 0 10px}
+.row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f2f2f2}
+.row .n{width:22px;color:#999}.row .t{flex:1}.row.stuck .t{color:#b91c1c;font-weight:600}
+button{font:inherit;font-size:13px;border:1px solid #d4d4d4;background:#fff;border-radius:6px;padding:3px 8px;cursor:pointer}
+button:hover{border-color:#2563eb}.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.bad{color:#b91c1c}.good{color:#15803d}.changed{background:#fef9c3}
+.tabs button{margin:0 6px 6px 0}.tabs button.on{background:#2563eb;color:#fff}
+ol.steps li{margin:6px 0}ol.steps li.done{color:#999;text-decoration:line-through}
+</style></head><body>
+<h1>Which order should the nine PRs go in? <span class="tag">PROTOTYPE, throwaway</span></h1>
+<p class="muted">Question: can PowerPoint import (P03) move later so editing arrives sooner, and does that protect the rest of the plan if import gets stuck? The steps and what each one needs come straight from the plan's own data file (phase-data.json). Reorder the PRs, mark one as stuck, and watch what breaks.</p>
+<div class="tabs" id="tabs"></div><div class="card" id="guide"></div>
+<div class="grid"><div class="card"><h2>Build order (free play)</h2><div id="order"></div>
+<p><button onclick="go({type:'reset'})">Back to the plan's order</button></p></div>
+<div><div class="card"><h2>Does this order work?</h2><div id="broken"></div></div>
+<div class="card" style="margin-top:16px"><h2>When each thing first works</h2><div id="miles"></div></div>
+<div class="card" style="margin-top:16px"><h2>If the stuck PR stalls</h2><div id="impact"></div></div></div></div>
+<script>const GRAPH={
+ "workPackages": {
+  "W01": {
+   "pr": "P01",
+   "requires": []
+  },
+  "W02": {
+   "pr": "P01",
+   "requires": [
+    "W01"
+   ]
+  },
+  "W03": {
+   "pr": "P02",
+   "requires": [
+    "W01"
+   ]
+  },
+  "W04": {
+   "pr": "P02",
+   "requires": [
+    "W02",
+    "W03"
+   ]
+  },
+  "W05": {
+   "pr": "P03",
+   "requires": [
+    "W01",
+    "W08"
+   ]
+  },
+  "W06": {
+   "pr": "P03",
+   "requires": [
+    "W03",
+    "W05"
+   ]
+  },
+  "W07": {
+   "pr": "P04",
+   "requires": [
+    "W03",
+    "W08"
+   ]
+  },
+  "W08": {
+   "pr": "P01",
+   "requires": [
+    "W01",
+    "W02"
+   ]
+  },
+  "W09": {
+   "pr": "P04",
+   "requires": [
+    "W04",
+    "W07",
+    "W08"
+   ]
+  },
+  "W10": {
+   "pr": "P05",
+   "requires": [
+    "W02",
+    "W04",
+    "W09"
+   ]
+  },
+  "W11": {
+   "pr": "P05",
+   "requires": [
+    "W06",
+    "W10"
+   ]
+  },
+  "W12": {
+   "pr": "P06",
+   "requires": [
+    "W06",
+    "W10",
+    "W11"
+   ]
+  },
+  "W13": {
+   "pr": "P06",
+   "requires": [
+    "W05",
+    "W10",
+    "W11"
+   ]
+  },
+  "W14": {
+   "pr": "P07",
+   "requires": [
+    "W07",
+    "W08"
+   ]
+  },
+  "W15": {
+   "pr": "P07",
+   "requires": [
+    "W09",
+    "W11",
+    "W12",
+    "W13",
+    "W14"
+   ]
+  },
+  "W16": {
+   "pr": "P08",
+   "requires": [
+    "W15"
+   ]
+  },
+  "W17": {
+   "pr": "P08",
+   "requires": [
+    "W14",
+    "W15",
+    "W16"
+   ]
+  },
+  "W18": {
+   "pr": "P09",
+   "requires": [
+    "W11",
+    "W12",
+    "W13",
+    "W15",
+    "W16",
+    "W17"
+   ]
+  },
+  "W19": {
+   "pr": "P09",
+   "requires": [
+    "W18"
+   ]
+  }
+ },
+ "checkpointOrder": {
+  "P01": [
+   "W01",
+   "W02",
+   "W08"
+  ],
+  "P02": [
+   "W03",
+   "W04"
+  ],
+  "P03": [
+   "W05",
+   "W06"
+  ],
+  "P04": [
+   "W07",
+   "W09"
+  ],
+  "P05": [
+   "W10",
+   "W11"
+  ],
+  "P06": [
+   "W12",
+   "W13"
+  ],
+  "P07": [
+   "W14",
+   "W15"
+  ],
+  "P08": [
+   "W16",
+   "W17"
+  ],
+  "P09": [
+   "W18",
+   "W19"
+  ]
+ }
+};</script><script>const PrOrderModel = (graph) => {
+  const { workPackages, checkpointOrder } = graph;
+  const TODAY = Object.keys(checkpointOrder);
+
+  const MILESTONES = [
+    ["W08", "People can sign in"],
+    ["W04", "Slides draw on screen"],
+    ["W09", "Edits are saved and survive a lost connection"],
+    ["W10", "A person can edit a deck in the browser"],
+    ["W11", "PowerPoint import and export work in the app"],
+    ["W15", "Outside AI agents can edit decks"],
+    ["W16", "Aira, the built-in agent, works"],
+  ];
+
+  const initial = () => ({ order: [...TODAY], stuck: null });
+
+  const reduce = (state, action) => {
+    switch (action.type) {
+      case "reset":
+        return initial();
+      case "setOrder":
+        return { ...state, order: [...action.order] };
+      case "moveUp":
+      case "moveDown": {
+        const order = [...state.order];
+        const i = order.indexOf(action.pr);
+        const j = action.type === "moveUp" ? i - 1 : i + 1;
+        if (j < 0 || j >= order.length) return state;
+        [order[i], order[j]] = [order[j], order[i]];
+        return { ...state, order };
+      }
+      case "toggleStuck":
+        return { ...state, stuck: state.stuck === action.pr ? null : action.pr };
+      default:
+        throw new Error("unknown action " + action.type);
+    }
+  };
+
+  const position = (order, w) => {
+    const pr = workPackages[w].pr;
+    return [order.indexOf(pr), checkpointOrder[pr].indexOf(w)];
+  };
+
+  const brokenSteps = (order) => {
+    const broken = [];
+    for (const [w, { requires }] of Object.entries(workPackages)) {
+      const [p, i] = position(order, w);
+      for (const r of requires) {
+        const [rp, ri] = position(order, r);
+        if (rp > p || (rp === p && ri > i)) broken.push({ step: w, needs: r });
+      }
+    }
+    return broken;
+  };
+
+  const milestones = (order) =>
+    MILESTONES.map(([w, label]) => ({
+      label,
+      step: w,
+      afterPR: order.indexOf(workPackages[w].pr) + 1,
+    }));
+
+  const dependsOn = (w, target, seen = new Set()) => {
+    if (seen.has(w)) return false;
+    seen.add(w);
+    return workPackages[w].requires.some(
+      (r) => workPackages[r].pr === target || dependsOn(r, target, seen),
+    );
+  };
+
+  const stuckImpact = (order, stuck) => {
+    if (!stuck) return null;
+    const later = order.slice(order.indexOf(stuck) + 1);
+    const reallyNeeds = later.filter((pr) =>
+      checkpointOrder[pr].some((w) => dependsOn(w, stuck)),
+    );
+    const onlyWaitingInLine = later.filter((pr) => !reallyNeeds.includes(pr));
+    return { waiting: later, reallyNeeds, onlyWaitingInLine };
+  };
+
+  const view = (state) => ({
+    order: state.order,
+    broken: brokenSteps(state.order),
+    milestones: milestones(state.order),
+    stuck: state.stuck,
+    impact: stuckImpact(state.order, state.stuck),
+  });
+
+  return { initial, reduce, view, TODAY };
+};
+
+if (typeof module !== "undefined") module.exports = PrOrderModel;
+</script><script>
+const NAMES={P01:"Sign-in and workspace",P02:"Deck model and drawing slides",P03:"PowerPoint import engine",P04:"Saving edits, undo, reconnect",P05:"Editor screens, import and export",P06:"Templates and images",P07:"Outside AI agents and usage limits",P08:"Aira, credits and account",P09:"Release checks and website"};
+const STEP={W06:"PowerPoint reading and writing (in P03)",W11:"Import and export screens (in P05)"};
+const M=PrOrderModel(GRAPH);let state=M.initial(),prev=null;
+const nm=p=>p+" "+NAMES[p];
+const SCEN=[
+{t:"1. The plan as written",d:"The plan's order. Mark import as stuck and see who has to wait.",steps:[["Use the plan's order",{type:"reset"}],["Mark P03 (import) as stuck",{type:"toggleStuck",pr:"P03"}]],watch:"P04 waits even though it does not need import. Everything else really needs it."},
+{t:"2. My first suggestion",d:"Move P04 and P05 ahead of import so editing comes first.",steps:[["Use the plan's order",{type:"reset"}],["Move P04 up",{type:"moveUp",pr:"P04"}],["Move P05 up",{type:"moveUp",pr:"P05"}]],watch:"It breaks. P05's export screens need the PowerPoint writer that P03 builds."},
+{t:"3. Only P04 earlier",d:"Move just P04 ahead of import, then mark import stuck.",steps:[["Use the plan's order",{type:"reset"}],["Move P04 up",{type:"moveUp",pr:"P04"}],["Mark P03 (import) as stuck",{type:"toggleStuck",pr:"P03"}]],watch:"It works, but the editor still first appears after PR 5. Only saving and reconnect arrive one PR sooner."}];
+let tab=0,stepAt=0;
+function go(a,isStep){prev=M.view(state);state=M.reduce(state,a);if(!isStep)stepAt=-1;render();}
+function pick(i){tab=i;stepAt=0;prev=null;state=M.initial();render();}
+function step(i){if(i!==stepAt)return;go(SCEN[tab].steps[i][1],true);stepAt=i+1;render();}
+function render(){const v=M.view(state);
+document.getElementById("tabs").innerHTML=SCEN.map((s,i)=>`<button class="${i===tab?'on':''}" onclick="pick(${i})">${s.t}</button>`).join("");
+const s=SCEN[tab];document.getElementById("guide").innerHTML=`<b>${s.t}</b><p>${s.d}</p><ol class="steps">${s.steps.map((st,i)=>`<li class="${i<stepAt?'done':''}">${i===stepAt?`<button class="primary" onclick="step(${i})">${st[0]}</button>`:st[0]}</li>`).join("")}</ol>${stepAt>=s.steps.length?`<p><b>Watch for:</b> ${s.watch}</p>`:""}`;
+document.getElementById("order").innerHTML=v.order.map((p,i)=>`<div class="row ${v.stuck===p?'stuck':''} ${prev&&prev.order[i]!==p?'changed':''}"><span class="n">${i+1}</span><span class="t">${nm(p)}</span><button onclick="go({type:'moveUp',pr:'${p}'})">up</button><button onclick="go({type:'moveDown',pr:'${p}'})">down</button><button onclick="go({type:'toggleStuck',pr:'${p}'})">${v.stuck===p?'unstick':'stuck'}</button></div>`).join("");
+document.getElementById("broken").innerHTML=v.broken.length?v.broken.map(b=>`<p class="bad">Broken. ${STEP[b.step]||b.step} needs ${STEP[b.needs]||b.needs}, which now comes later.</p>`).join(""):`<p class="good">Works. Every step comes after the steps it needs.</p>`;
+document.getElementById("miles").innerHTML=v.milestones.map((m,i)=>{const ch=prev&&prev.milestones[i].afterPR!==m.afterPR;return `<div class="row ${ch?'changed':''}"><span class="t">${m.label}</span><b>after PR ${m.afterPR}</b></div>`}).join("");
+const im=v.impact;document.getElementById("impact").innerHTML=!im?`<p class="muted">Mark a PR as stuck to see who waits.</p>`:`<p><b>${nm(v.stuck)}</b> is stuck.</p><p>Really need it: ${im.reallyNeeds.map(nm).join(", ")||"none"}</p><p class="${im.onlyWaitingInLine.length?'bad':'good'}">Waiting only because of the queue: ${im.onlyWaitingInLine.map(nm).join(", ")||"none"}</p>`;}
+render();</script></body></html>
