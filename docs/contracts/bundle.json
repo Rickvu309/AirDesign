@@ -159,7 +159,7 @@
     {
       "id": "C23",
       "path": "docs/contracts/c23-templates-and-image-provenance.json",
-      "status": "deferred",
+      "status": "accepted",
       "freezeIn": "P06",
       "owner": "packages/brand"
     },
