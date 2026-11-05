@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { mkdir, writeFile } from "node:fs/promises"
-import { spawnSync } from "node:child_process"
+import { execFile, spawnSync } from "node:child_process"
+import { promisify } from "node:util"
 import { createHash } from "node:crypto"
 import { readFileSync } from "node:fs"
 import os from "node:os"
@@ -11,6 +12,7 @@ import pixelmatch from "pixelmatch"
 import { apply, id, flatten } from "../../packages/deck/src/index.ts"
 import { fixtureDeck, fixtureElement } from "../../packages/deck/src/fixture.ts"
 const root = `${os.homedir()}/tmp/airdesign-autopilot/P02`
+const runFile = promisify(execFile)
 const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim()
 const json = async (file, value) => { await mkdir(`${root}/${file.substring(0, file.lastIndexOf("/"))}`, { recursive: true }); await writeFile(`${root}/${file}`, JSON.stringify({ head, ...value }, null, 2)) }
 const server = await preview({ root: "apps/studio", configFile: false, preview: { host: "127.0.0.1", port: 0 } })
@@ -193,8 +195,7 @@ try {
         await load(deck)
         const clientBytes = await page.locator("[data-slide]").screenshot()
         await writeFile(`${root}/${path}/saved-deck.json`, JSON.stringify(deck))
-        const captured = spawnSync("node", ["scripts/snapshot-render.ts", `${root}/${path}/saved-deck.json`, `${root}/${path}/server.png`, origin], { encoding: "utf8" })
-        assert.equal(captured.status, 0, captured.stderr)
+        const captured = await runFile("node", ["scripts/snapshot-render.ts", `${root}/${path}/saved-deck.json`, `${root}/${path}/server.png`, origin], { encoding: "utf8", timeout: 45000 })
         await writeFile(`${root}/${path}/snapshot-cli.json`, captured.stdout)
         const serverBytes = readFileSync(`${root}/${path}/server.png`)
         await writeFile(`${root}/${path}/studio.png`, clientBytes)
