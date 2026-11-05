@@ -135,14 +135,13 @@ In the editor toolbar: Agent and Design, height 28, inside a 32 high group. The 
 
 ## Landing page parts (S11.01)
 
-Editorial boardroom, rebuilt from scratch on 2026-11-05. Light page on paper #F5F5F2 with white sections, Newsreader for headlines and Geist for everything else, one blue (#2D6FCD, #4D94FB). For consultants and strategy teams; the one action is Start free.
+Elite finance vibe, rebuilt on 2026-11-05. One white page, 1440 wide, five sections stacked in one frame. Newsreader regular for headlines, Geist for everything else, one blue (#2D6FCD, #4D94FB). Copy is short, human and a little playful. The agent is never named on the landing. Sample companies are Halden and Brightwater, marked as sample data.
 
-- **Masthead:** brand, nav, Start free; a hairline, a date line, a second hairline.
-- **Hero:** "Win the room / before you walk in." in Newsreader 112px, "walk in." italic blue. Standfirst left, note and Start free right. A static dithered plate (Paper dithering, simplex, 8x8) with crop marks runs off the right edge.
-- **Figures:** every product image is a live clone of a real AirDesign screen inside a clip slot, numbered "Fig. N" with a caption. Fig. 1 editor (S42.01), Fig. 2 slide title, Fig. 3 selected chart (S42.04) with Fig. 3a composer beside it, Fig. 4 source line, Fig. 5 Export dialog (S61.01), Fig. 6 Agents settings (S81.02), Fig. 7 Usage settings (S81.01). Crops cut only filler.
-- **Running heads:** a 1px #222 rule with "01 The standard / Figs. 2 to 4" style labels open each section.
-- **Three rules:** italic blue numerals, serif row titles, body in Geist, figure on the right.
-- **Pricing on the page:** Free every week and $5 per reset as large serif figures, with the real Usage figure.
-- **Close:** "Your next deck has to win.", one Start free, then a full-bleed dithered wave band (Plate 2).
-- **Colophon:** "Set in Newsreader and Geist. Shaders by Paper." Paper Shaders stay on the marketing page only, never inside the product.
-- **Buttons on the landing:** solid #2D6FCD, white 15px semibold, radius 6, 48px (36px in the nav).
+- **Nav:** a floating capsule on top: brand, Product, Agents, Pricing tabs, Sign in, Start free.
+- **Hero:** "Clarity is the edge." in Newsreader 104px, sub "So clear the CEO puts the phone down.", Start free and Import a PowerPoint. Copy is centred top to bottom with a finance line chart on the right; the pill "Zero follow-up questions." sits on the line with its leader at the pill centre.
+- **Good Deck ticker:** a finance-news strip under the chart with consulting and banker jargon (Action titles 8/8, MECE Pass, Ghost deck Final...), green up and red down arrows.
+- **Make slides like magic.:** the full S42.01 editor, left panel included, scaled to 1248 wide. Its slide is a McKinsey-style exhibit (stacked bars by segment, year-on-year growth row, +20% CAGR arrow, growth by segment table). Pill: "Building slide 3 of 8. Coffee optional." Storyboard frames Run 01 Draft to Run 05 Reset hold the five motion states.
+- **Bring any agent.:** "Claude, Codex or your own. Work however you like." A lean diagram, no setup details: Claude (real spark, #D97757), Codex and Your agent flow into AirDesign, which outputs one finished slide.
+- **Pricing:** follows S12.01. "AirDesign is free." with a clone of the real S12.01 card ($0 forever, five checks, Start free) and "Don't want to wait for the weekly reset? You can pay to reset." The reset price stays in Settings.
+- **Footer:** brand, "Clarity is the edge.", Pricing, Agent guides, Sign in, Privacy, Terms.
+- **Buttons on the landing:** the glossy blue button (gradient #93B8EF to #4D94FB, 1px #2D6FCD ring, inner top highlight), white semibold, fully rounded.

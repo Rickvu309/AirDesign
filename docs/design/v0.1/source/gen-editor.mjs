@@ -1591,3 +1591,604 @@ const landing13 = `<div data-node-id="ed39" data-node-label="S11.01 Discover / L
   ${colophonEd}
 </div>`;
 fs.writeFileSync('/tmp/strat/ed/ed39.jsx', fix(landing13));
+
+// ---------- Landing directions (from scratch, 3 quick heroes) ----------
+const dirFrame = (id, label, inner, bg = '#FFFFFF') => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1440px] h-[900px] flex-col relative overflow-clip [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]" style={{backgroundColor:'${bg}'}}>${inner}</div>`;
+const miniNav = (dark = false) => `<div data-node-label="Nav" className="flex w-full h-[72px] items-center justify-between px-[64px] relative">
+    <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[22px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[16px] font-semibold tracking-[-0.3px]`)}</div>
+    <div data-node-label="Nav Links" className="flex items-center gap-7">${['Product', 'Pricing', 'Agents'].map(x => T('Nav Link', x, `${mut} text-[14px]`)).join('')}${edBtn('Start free', 36)}</div>
+  </div>`;
+// A: Paper.design, art-led
+const dirA = dirFrame('ed40', 'D11.A Landing direction / Art-led', `
+  <div data-node-label="Art Field" className="flex absolute left-0 top-0 w-[1440px] h-[900px]"></div>
+  ${miniNav()}
+  <div data-node-label="A Copy" className="flex absolute left-[64px] bottom-[64px] flex-col gap-5">
+    ${SV('A Title', 'Decks that end the debate.', `${ink} text-[96px] font-medium leading-[0.95] tracking-[-3.6px] w-[760px]`)}
+    <div data-node-label="A Row" className="flex items-center gap-5">${edBtn('Start free')}${T('A Sub', 'Aira writes the answer first. You walk in with it.', `${mut} text-[16px]`)}</div>
+  </div>
+  <div data-node-label="A Slide" className="flex absolute left-[580px] top-[130px]">${figSlot('Real Slide Slot A', 800, 452, 'rounded-[6px] shadow-[0px_30px_80px_#0f24332e,0px_0px_0px_1px_#0000000f]')}</div>
+  <div data-node-label="A Cap" className="flex absolute left-[580px] top-[596px]">${T('A Caption', 'A real slide, written by Aira. Sample data.', `${sub} text-[12px]`)}</div>
+`, '#F5F5F2');
+// B: Apple, one cinematic product moment
+const dirB = dirFrame('ed41', 'D11.B Landing direction / Cinematic product', `
+  ${miniNav()}
+  <div data-node-label="B Copy" className="flex w-full flex-col items-center pt-[56px] gap-4">
+    ${T('B Kicker', 'Aira for AirDesign', `[color:#2D6FCD] text-[17px] font-semibold`)}
+    ${T('B Title', 'The answer goes first.', `${ink} text-[88px] font-semibold leading-[1] tracking-[-3.4px]`)}
+    ${T('B Sub', 'Board-ready decks from your notes. Every title a claim, every number sourced.', `${mut} text-[21px]`)}
+    <div data-node-label="B Row" className="flex items-center gap-6 pt-3">${edBtn('Start free')}${T('B Link', 'Watch Aira build a deck', '[color:#2D6FCD] text-[16px] font-medium')}</div>
+  </div>
+  <div data-node-label="B Shot" className="flex absolute left-[109px] top-[430px]">${figSlot('Real Hero Slot B', 1222, 700, 'rounded-[20px] shadow-[0px_40px_120px_#0f24332e,0px_0px_0px_1px_#0000000d]')}</div>
+`, '#FFFFFF');
+// C: Stripe, gradient band + cascading real UI
+const dirC = dirFrame('ed42', 'D11.C Landing direction / Gradient cascade', `
+  <div data-node-label="C Band" className="flex absolute left-[-200px] top-[-320px] w-[1900px] h-[760px] rotate-[-8deg]"></div>
+  ${miniNav()}
+  <div data-node-label="C Copy" className="flex absolute left-[64px] top-[200px] flex-col gap-6 w-[620px]">
+    ${T('C Title', 'Board decks that read like a partner wrote them.', `${ink} text-[72px] font-semibold leading-[1.02] tracking-[-2.6px] w-[620px]`)}
+    <span data-node-label="C Sub" className="${F} block w-[520px] ${mut} text-[19px] leading-[1.5]">Aira frames the answer, builds every slide with a source and hands you a PowerPoint your firm can edit.</span>
+    <div data-node-label="C Row" className="flex items-center gap-4">${edBtn('Start free')}${T('C Note', 'Free every week', `${mut} text-[14px]`)}</div>
+  </div>
+  <div data-node-label="C Stack" className="flex absolute left-[740px] top-[150px] w-[760px] h-[760px]">
+    <div data-node-label="C Editor" className="flex absolute left-0 top-0">${figSlot('Real Editor Slot C', 700, 440, 'rounded-[12px] shadow-[0px_30px_70px_#0f24332e,0px_0px_0px_1px_#0000000f]')}</div>
+    <div data-node-label="C Composer" className="flex absolute left-[-70px] top-[330px]">${figSlot('Real Composer Slot C', 348, 250, 'rounded-[14px] shadow-[0px_20px_50px_#0f243333,0px_0px_0px_1px_#0000000f]')}</div>
+    <div data-node-label="C Export" className="flex absolute left-[330px] top-[400px]">${figSlot('Real Export Slot C', 478, 236, 'rounded-[12px] shadow-[0px_24px_60px_#0f243333,0px_0px_0px_1px_#0000000f]')}</div>
+  </div>
+`, '#FFFFFF');
+fs.writeFileSync('/tmp/strat/ed/ed40.jsx', fix(dirA));
+fs.writeFileSync('/tmp/strat/ed/ed41.jsx', fix(dirB));
+fs.writeFileSync('/tmp/strat/ed/ed42.jsx', fix(dirC));
+
+// ---------- Direction A v2: line field, human Apple-style copy ----------
+const LINES = fs.readFileSync('/tmp/strat/ed/lines.svg.txt', 'utf8');
+const dirA2 = dirFrame('ed40', 'D11.A Landing direction / Art-led', `
+  <div data-node-label="Line Field" className="flex absolute left-0 top-0 w-[1440px] h-[900px]">${LINES}</div>
+  ${miniNav()}
+  <div data-node-label="A Slide" className="flex absolute left-[600px] top-[150px]">${figSlot('Real Slide Slot A', 800, 452, 'rounded-[6px] shadow-[0px_30px_80px_#0f243326,0px_0px_0px_1px_#0000000f]')}</div>
+  <div data-node-label="A Copy" className="flex absolute left-[64px] top-[250px] w-[500px] flex-col gap-6">
+    <div data-node-label="A Headline" className="flex flex-col">${['Every slide', 'as clear as your', 'best thinking.'].map(l => SV('A Title', l, `${ink} text-[64px] font-medium leading-[1.02] tracking-[-2px]`)).join('')}</div>
+    <span data-node-label="A Sub" className="${F} block w-[460px] ${mut} text-[18px] leading-[1.5]">AirDesign and Aira turn your notes into a deck that leads with the answer, keeps one point per slide and sources every number.</span>
+    <div data-node-label="A Row" className="flex items-center gap-5">${edBtn('Start free')}${T('A Note', 'Free every week', `${mut} text-[14px]`)}</div>
+  </div>
+`, '#F5F5F2');
+fs.writeFileSync('/tmp/strat/ed/ed40.jsx', fix(dirA2));
+
+// ---------- Brochure deck: cover ----------
+const LINES_COVER = fs.readFileSync('/tmp/strat/ed/lines_cover.svg.txt', 'utf8');
+const folio = (n, label) => `<div data-node-label="Folio" className="flex absolute left-[64px] right-[64px] bottom-[32px] items-center justify-between">${T('Folio Left', 'AirDesign', `${ink} text-[12px] font-semibold`)}${T('Folio Mid', label, `${sub} text-[12px]`)}${T('Folio Page', n, `${ink} text-[12px] font-medium`)}</div>`;
+const cover = `<div data-node-id="ed40" data-node-label="D11.A Landing direction / Brochure cover" className="flex w-[1440px] h-[810px] flex-col relative overflow-clip [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] [background-color:#F5F5F2]">
+  <div data-node-label="Line Field" className="flex absolute left-0 top-0 w-[1440px] h-[810px]">${LINES_COVER}</div>
+  ${miniNav()}
+  <div data-node-label="Cover Copy" className="flex absolute left-[64px] top-[220px] w-[540px] flex-col gap-7">
+    <div data-node-label="Cover Headline" className="flex flex-col">${['Every slide', 'as clear as your', 'best thinking.'].map(l => SV('Cover Title', l, `${ink} text-[72px] font-medium leading-[1.02] tracking-[-2.2px]`)).join('')}</div>
+    <span data-node-label="Cover Sub" className="${F} block w-[460px] ${mut} text-[18px] leading-[1.55]">AirDesign and Aira turn your notes into a deck that leads with the answer, keeps one point per slide and sources every number.</span>
+    <div data-node-label="Cover Row" className="flex items-center gap-5">${edBtn('Start free')}${T('Cover Note', 'Free every week', `${mut} text-[14px]`)}</div>
+  </div>
+  ${folio('01', 'The board-ready deck')}
+</div>`;
+
+// ---------- Brochure deck: full ----------
+const ART = (n) => fs.readFileSync(`/tmp/strat/ed/art/p${n}.txt`, 'utf8');
+const page = (n, label, title, body, art, side = 'left', extra = '') => `<div data-node-label="Page ${n}" className="flex w-[1440px] h-[810px] shrink-0 relative overflow-clip border-t [border-top-color:#E1E1DD]">
+    <div data-node-label="Art" className="flex absolute left-0 top-0 w-[1440px] h-[810px]">${art}</div>
+    <div data-node-label="Page Copy" className="flex absolute ${side === 'left' ? 'left-[64px]' : 'left-[820px]'} top-[230px] w-[540px] flex-col gap-6">
+      <div data-node-label="Page Headline" className="flex flex-col">${title.map(l => SV('Page Title', l, `${ink} text-[60px] font-medium leading-[1.04] tracking-[-1.8px]`)).join('')}</div>
+      <span data-node-label="Page Body" className="${F} block w-[460px] ${mut} text-[18px] leading-[1.55]">${body}</span>${extra}
+    </div>
+    ${folio(n, label)}
+  </div>`;
+const coverPage = cover.replace('data-node-id="ed40" data-node-label="D11.A Landing direction / Brochure cover" className="flex w-[1440px] h-[810px] flex-col relative overflow-clip [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] [background-color:#F5F5F2]"', 'data-node-label="Page 01" className="flex w-[1440px] h-[810px] shrink-0 relative overflow-clip"');
+const brochure = `<div data-node-id="ed40" data-node-label="D11.A Landing direction / Brochure" className="flex w-[1440px] flex-col [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal] [background-color:#F5F5F2]">
+  ${coverPage}
+  ${page('02', 'The problem', ['You know the answer.', 'The deck buries it.'], 'Most decks follow the order the work was done: evidence first, the point last. The board reads them the other way round, and stops listening before the answer arrives.', ART('02'))}
+  ${page('03', 'Structure', ['Every problem has', 'a structure.'], 'Before a single slide, Aira splits your question into parts that do not overlap and leave nothing out. Clean branches, no gaps, nothing counted twice.', ART('03'), 'right')}
+  ${page('04', 'Answer first', ['Lead with the answer.', 'Let the proof follow.'], 'The recommendation opens the deck. Three reasons hold it up. Every slide after that proves one of them, and nothing else.', ART('04'))}
+  ${page('05', 'Prove it', ['Every number', 'earns its place.'], 'One point per slide, one chart that makes it, and a source under every figure. Ready for the partner who asks where it came from.', ART('05'), 'right')}
+  ${page('06', 'Walk in ready', ['Walk in with', 'the answer.'], 'Export an editable PowerPoint and present it as your own work, because it is. Free every week. A reset is $5 when you need more.', ART('06'), 'left', `<div data-node-label="Page Row" className="flex items-center gap-5 pt-2">${edBtn('Start free')}${T('Page Note', 'No card needed', `${mut} text-[14px]`)}</div>`)}
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed40.jsx', fix(brochure));
+
+// ---------- New landing, session 1: hero ----------
+const heroS1 = `<div data-node-id="ed43" data-node-label="S11.01 Discover / Landing / Hero" className="flex w-[1440px] h-[900px] flex-col items-center relative overflow-clip bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  <div data-node-label="Nav Wrap" className="flex w-full justify-center pt-5">
+    <div data-node-label="Nav Capsule" className="flex h-[56px] items-center rounded-full bg-[#FFFFFFCC] shadow-[0px_0px_0px_1px_#0f243314,0px_10px_30px_#0f24331a,0px_2px_6px_#0f24330d,inset_0px_1px_0px_#ffffff] pl-5 pr-2 gap-6">
+      <div data-node-label="Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[22px] block">${MARK}</div>${T('Brand Name', 'AirDesign', `${ink} text-[15px] font-semibold tracking-[-0.3px]`)}</div>
+      <div data-node-label="Nav Divider" className="block w-px h-5 [background-color:#0f24331f]"></div>
+      <div data-node-label="Nav Track" className="flex h-[40px] items-center rounded-full [background-color:#0f24330a] shadow-[inset_0px_1px_2px_#0f24330f] p-1 gap-0.5">
+        <div data-node-label="Nav Tab Active" className="flex h-[32px] items-center rounded-full bg-white shadow-[0px_1px_3px_#0f24331f,0px_0px_0px_1px_#0f24330d] px-4">${T('Nav Link', 'Product', `${ink} text-[14px] font-medium`)}</div>
+        ${['Agents', 'Pricing'].map(x => `<div data-node-label="Nav Tab" className="flex h-[32px] items-center rounded-full px-4">${T('Nav Link', x, `${mut} text-[14px]`)}</div>`).join('')}
+      </div>
+      <div data-node-label="Nav Actions" className="flex items-center gap-4 pl-1">${T('Nav Sign In', 'Sign in', `${ink} text-[14px] font-medium`)}${lBtn('Start free', 'primary', false, 40).replace('rounded-[10px]', 'rounded-full')}</div>
+    </div>
+  </div>
+  <div data-node-label="Hero Copy" className="flex flex-col items-center pt-[80px] gap-6">
+    <div data-node-label="Hero Headline" className="flex flex-col items-center">${T('Headline Line', 'Your next deck could be', `${ink} text-[84px] font-semibold leading-[1.02] tracking-[-3.6px] whitespace-nowrap`)}${T('Headline Line', 'your best work yet.', `${ink} text-[84px] font-semibold leading-[1.02] tracking-[-3.6px] whitespace-nowrap`)}</div>
+    <span data-node-label="Hero Sub" className="${F} block w-[600px] text-center ${mut} text-[20px] leading-[1.5]">Aira builds board-ready decks the way top strategy teams do: the answer first, every number sourced, ready for PowerPoint.</span>
+    <div data-node-label="Hero Actions" className="flex items-center gap-3 pt-2">${lBtn('Start free').replace('h-[44px]', 'h-[50px]')}<div data-node-label="Secondary Button" className="flex h-[50px] items-center rounded-[10px] bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-300),0px_1px_2px_#0000000d] px-6">${T('Secondary Label', 'See how it works', `${ink} text-[15px] font-medium`)}</div></div>
+  </div>
+  <div data-node-label="Capsule Wrap" className="flex absolute left-[170px] top-[600px] w-[1100px] h-[420px]">
+    <div data-node-label="Capsule" className="flex w-[1100px] h-[420px] rounded-[210px]"></div>
+  </div>
+</div>`;
+
+// ---------- Session 1: two unique hero layouts ----------
+const navS1 = heroS1.slice(heroS1.indexOf('  <div data-node-label="Nav Wrap"'), heroS1.indexOf('  <div data-node-label="Hero Copy"'));
+const shell = (id, label, inner) => `<div data-node-id="${id}" data-node-label="${label}" className="flex w-[1440px] h-[900px] flex-col items-center relative overflow-clip bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">${navS1}${inner}</div>`;
+const heroL1 = shell('ed43', 'S11.01 Discover / Landing / Hero, layout 1', `
+  <div data-node-label="L1 Copy" className="flex flex-col items-center pt-[150px]">
+    ${T('L1 Line', 'Your next deck could be', `${ink} text-[88px] font-semibold leading-[1] tracking-[-3.8px] whitespace-nowrap`)}
+    <div data-node-label="Giant Button" className="flex relative items-center justify-center w-[1080px] h-[220px] rounded-full mt-8">
+      <div data-node-label="Giant Fill" className="flex absolute left-0 top-0 w-[1080px] h-[220px] rounded-full"></div>
+      <div data-node-label="Giant Label Row" className="flex relative items-center gap-6">${T('Giant Label', 'your best work yet.', 'text-white text-[92px] font-semibold leading-[1] tracking-[-3.8px] whitespace-nowrap')}<div data-node-label="Giant Arrow" className="flex size-[72px] justify-center items-center rounded-full bg-[#ffffff2e] shadow-[inset_0px_1px_0px_#ffffff66] text-white">${ic('arrowr', 30)}</div></div>
+    </div>
+    <div data-node-label="L1 Sub Wrap" className="flex w-[640px] pt-12"><span data-node-label="L1 Sub" className="${F} block w-[640px] text-center ${mut} text-[20px] leading-[1.5]">Aira builds board-ready decks the way top strategy teams do: the answer first, every number sourced, ready for PowerPoint. Free every week.</span></div>
+  </div>
+`);
+const heroL2 = shell('ed44', 'S11.01 Discover / Landing / Hero, layout 2', `
+  <div data-node-label="Monolith" className="flex absolute left-[1010px] top-[110px] w-[520px] h-[960px] rounded-[260px]"></div>
+  <div data-node-label="L2 Copy" className="flex absolute left-[64px] top-[190px] w-[900px] flex-col gap-8">
+    <div data-node-label="L2 Headline" className="flex flex-col">${['Your next deck', 'could be your', 'best work yet.'].map(l => T('L2 Line', l, `${ink} text-[112px] font-semibold leading-[0.96] tracking-[-5px] whitespace-nowrap`)).join('')}</div>
+    <div data-node-label="L2 Row" className="flex items-end gap-10">
+      <span data-node-label="L2 Sub" className="${F} block w-[420px] ${mut} text-[19px] leading-[1.5]">Aira builds board-ready decks the way top strategy teams do: the answer first, every number sourced, ready for PowerPoint.</span>
+      <div data-node-label="L2 Actions" className="flex items-center gap-3">${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}</div>
+    </div>
+  </div>
+`);
+
+// ---------- Session 1: crafted object hero (keycaps) ----------
+const keycap = (label, w, h, kind = 'white', inner = '') => {
+  const wall = 22, r = Math.round(Math.min(w, h) * 0.18);
+  const top = kind === 'blue'
+    ? '[background-image:linear-gradient(180deg,#B7D2F7_0%,#6FA6F5_38%,#4D94FB_70%,#3E86F2_100%)] shadow-[inset_0px_2px_0px_#ffffff99,inset_0px_-10px_24px_#1d4a7a33,inset_0px_0px_0px_1px_#2D6FCD]'
+    : '[background-image:linear-gradient(180deg,#FFFFFF_0%,#F7F7F4_60%,#EFEFEB_100%)] shadow-[inset_0px_2px_0px_#ffffff,inset_0px_-8px_18px_#0f24330d,inset_0px_0px_0px_1px_#0000000f]';
+  const side = kind === 'blue'
+    ? '[background-image:linear-gradient(180deg,#2D6FCD_0%,#1D4A7A_100%)] shadow-[0px_40px_70px_#1d4a7a40,0px_14px_24px_#0f243326]'
+    : '[background-image:linear-gradient(180deg,#DCDCD7_0%,#C9C9C3_100%)] shadow-[0px_30px_50px_#0f24331f,0px_10px_18px_#0f243314]';
+  return `<div data-node-label="Keycap ${label}" className="flex relative w-[${w}px] h-[${h + wall}px] shrink-0">
+    <div data-node-label="Key Side" className="flex absolute left-0 top-[${wall}px] w-[${w}px] h-[${h}px] rounded-[${r}px] ${side}"></div>
+    <div data-node-label="Key Top" className="flex absolute left-0 top-0 w-[${w}px] h-[${h}px] rounded-[${r}px] items-center justify-center ${top}">${inner}</div>
+  </div>`;
+};
+const keyLabel = (t, sub2 = '') => `<div data-node-label="Key Label" className="flex flex-col items-center gap-1">${T('Key Text', t, `${ink} text-[17px] font-semibold tracking-[-0.2px]`)}${sub2 ? T('Key Sub', sub2, `${sub} text-[12px]`) : ''}</div>`;
+const heroKeys = shell('ed43', 'S11.01 Discover / Landing / Hero, crafted object', `
+  <div data-node-label="Hero Grid" className="flex w-full flex-1 items-center justify-between pl-[80px] pr-[48px] pb-[40px]">
+    <div data-node-label="Hero Copy" className="flex w-[640px] shrink-0 flex-col gap-8">
+      <div data-node-label="Hero Headline" className="flex flex-col">${['Press start on', 'your best work.'].map(l => T('Headline Line', l, `${ink} text-[84px] font-semibold leading-[1] tracking-[-3.8px] whitespace-nowrap`)).join('')}</div>
+      <div data-node-label="Hero Sub Wrap" className="flex w-[480px]"><span data-node-label="Hero Sub" className="${F} block w-[480px] ${mut} text-[20px] leading-[1.5]">Aira turns your notes into a board-ready deck: the answer first, every number sourced, ready for PowerPoint.</span></div>
+      <div data-node-label="Hero Actions" className="flex items-center gap-4">${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}${T('Hero Note', 'Free every week', `${mut} text-[14px]`)}</div>
+    </div>
+    <div data-node-label="Key Cluster" className="flex relative w-[640px] h-[620px] shrink-0">
+      <div data-node-label="K1" className="flex absolute left-[150px] top-[120px]">${keycap('Aira', 340, 340, 'blue', `<div data-node-label="Key Spark" className="size-[150px] block text-white">${SPARK}</div>`)}</div>
+      <div data-node-label="K2" className="flex absolute left-[0px] top-[20px]">${keycap('Answer', 200, 120, 'white', keyLabel('Answer first', 'the title is the point'))}</div>
+      <div data-node-label="K3" className="flex absolute left-[470px] top-[60px]">${keycap('Source', 170, 170, 'white', keyLabel('Source', 'under every number'))}</div>
+      <div data-node-label="K4" className="flex absolute left-[30px] top-[470px]">${keycap('PowerPoint', 230, 110, 'white', keyLabel('PowerPoint', 'editable export'))}</div>
+      <div data-node-label="K5" className="flex absolute left-[500px] top-[440px]">${keycap('One', 140, 140, 'white', keyLabel('1', 'point per slide'))}</div>
+    </div>
+  </div>
+`);
+
+// ---------- Session 1: elite sketches ----------
+const MONO = '[font-family:Geist_Mono]';
+const micro = (t, extra = '') => `<span data-node-label="Micro" className="${MONO} block ${/color:|text-\[#/.test(extra) || extra.includes(ink) ? '' : sub} text-[11px] tracking-[0.6px] ${extra}">${t}</span>`;
+const sculpture = shell('ed43', 'S11.01 Discover / Landing / Hero, sculpture', `
+  <div data-node-label="Floor" className="flex absolute left-0 top-[640px] w-[1440px] h-[260px] [background-image:linear-gradient(180deg,#F1F1EE_0%,#E9E9E5_100%)]"></div>
+  <div data-node-label="Object Shadow" className="flex absolute left-[700px] top-[610px] w-[620px] h-[70px] rounded-full [background-image:radial-gradient(closest-side,#0f243340_0%,#0f243300_100%)]"></div>
+  <div data-node-label="Object" className="flex absolute left-[860px] top-[150px] w-[300px] h-[500px] rounded-[150px]"></div>
+  <div data-node-label="S Copy" className="flex absolute left-[80px] top-[230px] w-[600px] flex-col gap-7">
+    ${T('S Title', 'The answer,', `${ink} text-[76px] font-semibold leading-[1] tracking-[-3.2px]`)}${T('S Title', 'in its finest form.', `${ink} text-[76px] font-semibold leading-[1] tracking-[-3.2px]`)}
+    <div data-node-label="S Sub Wrap" className="flex w-[440px]"><span data-node-label="S Sub" className="${F} block w-[440px] ${mut} text-[18px] leading-[1.55]">AirDesign builds board decks to the standard of the best strategy firms. Aira does the work. You keep the judgment.</span></div>
+    <div data-node-label="S Row" className="flex items-center gap-4">${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}</div>
+  </div>
+  <div data-node-label="S Spec" className="flex absolute left-[1200px] top-[250px] flex-col gap-2">${micro('OBJECT 01')}${micro('THE ANSWER')}${micro('SOURCED, EDITABLE')}</div>
+  <div data-node-label="S Foot" className="flex absolute left-[80px] right-[64px] top-[836px] justify-between">${micro('AIRDESIGN / BOARD-READY DECKS')}${micro('FREE EVERY WEEK')}</div>
+`);
+const red = (w) => `<div data-node-label="Redaction" className="block h-[64px] [background-color:#141414]" style={{width:'${w}px'}}></div>`;
+const dossier = shell('ed44', 'S11.01 Discover / Landing / Hero, dossier', `
+  <div data-node-label="D Head" className="flex absolute left-[80px] right-[80px] top-[120px] items-center justify-between border-b [border-bottom-color:#222222] pb-3">${micro('BOARD MEMO / Q3 REVIEW', `${ink}`)}${micro('CONFIDENTIAL DRAFT')}${micro('PAGE 01 OF 08')}</div>
+  <div data-node-label="D Body" className="flex absolute left-[80px] top-[200px] w-[1280px] flex-col gap-4">
+    <div data-node-label="D Line" className="flex items-center gap-4">${T('D Text', 'After forty slides,', `${ink} text-[64px] font-semibold tracking-[-2.6px] leading-[1.1]`)}${red(420)}</div>
+    <div data-node-label="D Line" className="flex items-center gap-4">${red(260)}${T('D Text', 'the board still asks', `${ink} text-[64px] font-semibold tracking-[-2.6px] leading-[1.1]`)}${red(180)}</div>
+    <div data-node-label="D Line" className="flex items-center gap-4">${T('D Text', 'one question:', `${ink} text-[64px] font-semibold tracking-[-2.6px] leading-[1.1]`)}<div data-node-label="Reveal" className="flex items-center h-[72px] rounded-[6px] px-4">${T('Reveal Text', 'what is the answer?', 'text-white text-[64px] font-semibold tracking-[-2.6px] leading-[1.1]')}</div></div>
+  </div>
+  <div data-node-label="D Bottom" className="flex absolute left-[80px] right-[80px] top-[560px] items-end justify-between">
+    <div data-node-label="D Sub Wrap" className="flex w-[460px]"><span data-node-label="D Sub" className="${F} block w-[460px] ${mut} text-[18px] leading-[1.55]">Aira writes it on page one. Every slide after that proves it, with a source under every number.</span></div>
+    <div data-node-label="D Actions" className="flex items-center gap-4">${micro('FREE EVERY WEEK')}${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}</div>
+  </div>
+  <div data-node-label="D Stamp" className="flex absolute left-[1130px] top-[330px] items-center rounded-[4px] border-2 border-[#2D6FCD] px-3 py-1.5 rotate-[-6deg]">${T('Stamp Text', 'ANSWER FIRST', `${MONO} [color:#2D6FCD] text-[14px] font-semibold tracking-[1.5px]`)}</div>
+`);
+
+// ---------- Session 1: dossier v2 ----------
+const R = (w, h = 58) => `<div data-node-label="Redaction" className="block shrink-0 [background-color:#161616] rounded-[2px]" style={{width:'${w}px',height:'${h}px'}}></div>`;
+const W = (t) => T('Memo Word', t, `${ink} text-[60px] font-semibold tracking-[-2.4px] leading-[1.12] whitespace-nowrap`);
+const memoLine = (parts) => `<div data-node-label="Memo Line" className="flex items-center gap-[14px]">${parts.join('')}</div>`;
+const dossier2 = shell('ed44', 'S11.01 Discover / Landing / Hero, dossier v2', `
+  <div data-node-label="Doc Meta" className="flex absolute left-[80px] right-[80px] top-[112px] items-center justify-between border-b [border-bottom-color:#222222] pb-3">
+    <div data-node-label="Meta Left" className="flex items-center gap-6">${micro('MEMO AD-0001', ink + ' font-semibold')}${micro('TO: THE BOARD')}${micro('RE: Q3 RECOMMENDATION')}</div>
+    ${micro('STRICTLY CONFIDENTIAL')}
+  </div>
+  <div data-node-label="Memo" className="flex absolute left-[80px] top-[188px] flex-col gap-3">
+    ${memoLine([W('Forty slides of'), R(250), R(130)])}
+    ${memoLine([W('and'), R(190), R(300), W('later,')])}
+    ${memoLine([W('the board still asks'), R(160), W('one thing:')])}
+    <div data-node-label="Memo Line" className="flex items-center gap-[14px] relative">${W('What is')}<div data-node-label="Reveal" className="flex items-center h-[70px] rounded-[8px] px-4 relative">${T('Reveal Text', 'the answer?', 'text-white text-[60px] font-semibold tracking-[-2.4px] leading-[1.12] whitespace-nowrap')}</div>
+      <div data-node-label="Margin Note" className="flex absolute left-[700px] top-[6px] items-center gap-3"><div data-node-label="Note Rule" className="block w-[56px] h-px [background-color:#2D6FCD]"></div><div data-node-label="Note Body" className="flex flex-col gap-1">${micro('AIRA', '[color:#2D6FCD] font-semibold')}${micro('Lead with this. Prove it after.', '[color:#2D6FCD]')}</div></div>
+    </div>
+  </div>
+  <div data-node-label="Stamp" className="flex absolute left-[1086px] top-[214px] items-center rounded-[6px] border-[2.5px] border-[#2D6FCD] px-4 py-2"><span data-node-label="Stamp Text" className="${MONO} block [color:#2D6FCD] text-[16px] font-semibold tracking-[2px]">ANSWER FIRST</span></div>
+  <div data-node-label="Doc Foot" className="flex absolute left-[80px] right-[80px] top-[640px] items-end justify-between border-t [border-top-color:#D7D7D6] pt-6">
+    <div data-node-label="Foot Sub Wrap" className="flex w-[520px] flex-col gap-3"><span data-node-label="Foot Sub" className="${F} block w-[520px] ${ink} text-[19px] leading-[1.5]">AirDesign writes the answer on page one, then builds every slide to prove it, with a source under every number.</span>${micro('PREPARED WITH AIRDESIGN. DISTRIBUTION: BOARD ONLY.')}</div>
+    <div data-node-label="Foot Actions" className="flex items-center gap-5">${micro('FREE EVERY WEEK')}${lBtn('Start free').replace('h-[44px]', 'h-[52px]').replace('rounded-[10px]', 'rounded-full')}</div>
+  </div>
+  <div data-node-label="Page Count" className="flex absolute right-[80px] top-[856px]">${micro('01 / 08')}</div>
+`);
+
+// ---------- Session 1: dossier lean ----------
+const BIG = `${ink} text-[112px] font-semibold tracking-[-5px] leading-[1] whitespace-nowrap`;
+const dossierLean = shell('ed44', 'S11.01 Discover / Landing / Hero, dossier lean', `
+  <div data-node-label="Doc Meta" className="flex absolute left-[80px] right-[80px] top-[128px] items-center justify-between">${micro('MEMO TO THE BOARD', ink + ' font-semibold')}${micro('CONFIDENTIAL')}</div>
+  <div data-node-label="Statement" className="flex absolute left-[80px] top-[200px] flex-col gap-5">
+    ${T('Big Line', 'Forty slides.', BIG)}
+    <div data-node-label="Struck Line" className="flex items-center gap-8 py-2">${['Market overview', 'Context', 'Methodology', 'Appendix', 'Backup'].map(w => struck(w, 'text-[#B9B9B5] text-[44px] font-medium tracking-[-1.4px] whitespace-nowrap', 27).replace('[background-color:#5B7080]', '[background-color:#B9B9B5]')).join('')}</div>
+    <div data-node-label="Answer Line" className="flex items-center gap-5">${T('Big Line', 'One', BIG)}<div data-node-label="Reveal" className="flex items-center h-[112px] rounded-[14px] px-6">${T('Reveal Text', 'answer.', 'text-white text-[112px] font-semibold tracking-[-5px] leading-[1] whitespace-nowrap')}</div></div>
+  </div>
+  <div data-node-label="Bottom Row" className="flex absolute left-[80px] right-[80px] top-[760px] items-center justify-between">
+    <div data-node-label="Sub Wrap" className="flex w-[560px]"><span data-node-label="Sub" className="${F} block w-[560px] ${mut} text-[18px] leading-[1.5]">Aira puts the answer on page one. Every slide after it proves it.</span></div>
+    ${lBtn('Start free').replace('h-[44px]', 'h-[52px]').replace('rounded-[10px]', 'rounded-full')}
+  </div>
+`);
+
+// ---------- Session 1: the cut (playful) ----------
+const SCATTER = [
+  ['Market overview', 54, 70, 150], ['Context', 40, 1080, 130], ['Methodology', 46, 980, 690], ['Appendix', 36, 120, 640],
+  ['Backup slides', 30, 560, 140], ['Executive summary v7', 26, 1120, 300], ['Next steps TBD', 28, 140, 300], ['Agenda', 44, 640, 760],
+  ['Key takeaways (draft)', 24, 1060, 560], ['Thank you', 38, -40, 470], ['Questions?', 32, 1240, 610], ['Overview', 30, 360, 230],
+];
+const scatterEls = SCATTER.map(([w, sz, x, y], i) => `<div data-node-label="Scatter ${i}" className="flex absolute" style={{left:'${x}px',top:'${y}px'}}>${struck(w, `text-[#D2D2CD] text-[${sz}px] font-medium tracking-[-0.8px] whitespace-nowrap`, Math.round(sz * 0.58)).replace('[background-color:#5B7080]', '[background-color:#D2D2CD]').replace('h-[2px]', sz > 40 ? 'h-[3px]' : 'h-[2px]')}</div>`).join('');
+const heroCut = shell('ed44', 'S11.01 Discover / Landing / Hero, the cut', `
+  ${scatterEls}
+  <div data-node-label="Center" className="flex absolute left-0 top-[330px] w-[1440px] flex-col items-center gap-10">
+    <div data-node-label="Answer Line" className="flex items-center gap-6 relative">${T('Big Line', 'One', `${ink} text-[150px] font-semibold tracking-[-7px] leading-[1] whitespace-nowrap`)}<div data-node-label="Reveal" className="flex items-center h-[150px] rounded-[22px] px-8 relative">${T('Reveal Text', 'answer.', 'text-white text-[150px] font-semibold tracking-[-7px] leading-[1] whitespace-nowrap')}<div data-node-label="Reveal Cursor" className="flex absolute right-[-64px] bottom-[-34px]">${cursorFlag('Aira')}</div></div></div>
+    <div data-node-label="Cut Row" className="flex items-center gap-5">${T('Cut Sub', 'Aira cuts the deck to the point.', `${mut} text-[19px]`)}${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}</div>
+  </div>
+`);
+
+// ---------- Session 1: paper.design inspired, custom for slides ----------
+const cursorOf = (label, color) => `<div data-node-label="Cursor ${label}" className="flex items-start">
+    <div data-node-label="Cursor Arrow" className="size-[18px] block"><svg viewBox="0 0 18 18" width="18" height="18"><path d="M2 1.5 L15.5 8.2 L9.2 9.6 L6.4 15.8 Z" fill="${color}" stroke="#FFFFFF" strokeWidth="1.4" strokeLinejoin="round"></path></svg></div>
+    <div data-node-label="Cursor Tag" className="flex h-[22px] items-center rounded-[7px] mt-[12px] ml-[-2px] px-2" style={{backgroundColor:'${color}'}}>${T('Cursor Name', label, 'text-white text-[11px] font-semibold')}</div>
+  </div>`;
+const heroPaper = shell('ed43', 'S11.01 Discover / Landing / Hero, paper', `
+  <div data-node-label="Plate" className="flex absolute left-[930px] top-[150px] w-[460px] h-[460px] rounded-full"></div>
+  <div data-node-label="P Copy" className="flex absolute left-[120px] top-[150px] w-[760px] flex-col gap-7">
+    <div data-node-label="Announce" className="flex self-start h-8 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] px-3.5 gap-2">${T('Announce Text', 'meet Aira, the agent that writes the answer first', `${ink} text-[13px]`)}${ic('arrowr', 12, mut)}</div>
+    <div data-node-label="P Headline" className="flex flex-col">${T('P Line', 'decks that say something.', `${ink} text-[76px] font-semibold leading-[1.02] tracking-[-3px] whitespace-nowrap`)}${T('P Line Gray', 'the slide canvas for people', 'text-[#A3A3A0] text-[76px] font-semibold leading-[1.02] tracking-[-3px] whitespace-nowrap')}${T('P Line Gray', 'who present to boards.', 'text-[#A3A3A0] text-[76px] font-semibold leading-[1.02] tracking-[-3px] whitespace-nowrap')}</div>
+    <div data-node-label="P Sub Wrap" className="flex w-[520px]"><span data-node-label="P Sub" className="${F} block w-[520px] ${mut} text-[18px] leading-[1.55]">AirDesign puts your notes, your numbers and your agents on one deck. Every title states the answer. Every number has a source.</span></div>
+    <div data-node-label="P Actions" className="flex items-center gap-6">${lBtn('start free').replace('h-[44px]', 'h-[48px]').replace('rounded-[10px]', 'rounded-full')}<div data-node-label="P Link" className="flex items-center gap-1.5">${T('P Link Text', 'import a powerpoint', `${ink} text-[15px] font-medium`)}${ic('arrowr', 13, ink)}</div></div>
+  </div>
+`);
+
+const heroPaperFull = `<div data-node-id="ed43" data-node-label="S11.01 Discover / Landing / Hero, paper" className="flex w-[1440px] h-[1420px] flex-col relative overflow-clip bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  ${navS1}
+  <div data-node-label="Plate" className="flex absolute left-[1000px] top-[120px] w-[400px] h-[480px]"></div>
+  <div data-node-label="P Copy" className="flex absolute left-[120px] top-[150px] w-[960px] flex-col gap-7">
+    <div data-node-label="Announce" className="flex self-start h-8 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_var(--paper-gray-200)] px-3.5 gap-2">${T('Announce Text', 'meet Aira, the agent that writes the answer first', `${ink} text-[13px]`)}${ic('arrowr', 12, mut)}</div>
+    <div data-node-label="P Headline" className="flex w-[960px] flex-col">${T('P Line', 'decks that say something.', `${ink} text-[72px] font-semibold leading-[1.02] tracking-[-2.8px] whitespace-nowrap w-[960px]`)}${T('P Line Gray', 'the slide canvas for people', 'text-[#A3A3A0] text-[72px] font-semibold leading-[1.02] tracking-[-2.8px] whitespace-nowrap w-[960px]')}${T('P Line Gray', 'who present to boards.', 'text-[#A3A3A0] text-[72px] font-semibold leading-[1.02] tracking-[-2.8px] whitespace-nowrap w-[960px]')}</div>
+    <div data-node-label="P Sub Wrap" className="flex w-[520px]"><span data-node-label="P Sub" className="${F} block w-[520px] ${mut} text-[18px] leading-[1.55]">AirDesign puts your notes, your numbers and your agents on one deck. Every title states the answer. Every number has a source.</span></div>
+    <div data-node-label="P Actions" className="flex items-center gap-6">${lBtn('start free').replace('h-[44px]', 'h-[48px]').replace('rounded-[10px]', 'rounded-full')}<div data-node-label="P Link" className="flex items-center gap-1.5">${T('P Link Text', 'import a powerpoint', `${ink} text-[15px] font-medium`)}${ic('arrowr', 13, ink)}</div></div>
+  </div>
+  <div data-node-label="Mock Wrap" className="flex absolute left-[120px] top-[690px]">
+    ${figSlot('Real Editor Slot', 1200, 700, 'rounded-[16px] shadow-[0px_0px_0px_1px_#0000001a,0px_30px_80px_#0f24331f,0px_4px_12px_#0f24330d]')}
+    <div data-node-label="Cur Aira" className="flex absolute left-[812px] top-[160px]">${cursorOf('Aira', '#4D94FB')}</div>
+    <div data-node-label="Cur You" className="flex absolute left-[1010px] top-[380px]">${cursorOf('you', '#222222')}</div>
+    <div data-node-label="Tag Goodbye" className="flex absolute left-[-36px] top-[90px] rotate-[-5deg] h-9 items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#0000000f,0px_10px_24px_#0f24331f] px-4 gap-2">${T('Tag Text', 'goodbye, “Q3 overview”', `${ink} text-[14px] font-semibold`)}</div>
+  </div>
+</div>`;
+
+// ---------- Session 1: hero v3 (canvas ground, composed product) ----------
+const GRID = fs.readFileSync('/tmp/strat/ed/art/grid.txt', 'utf8');
+const guideLabel = (t) => `<div data-node-label="Guide Label" className="flex h-[18px] items-center rounded-[4px] [background-color:#4D94FB] px-1.5">${T('Guide Text', t, `${MONO} text-white text-[10px] font-medium`)}</div>`;
+const heroV3 = `<div data-node-id="ed43" data-node-label="S11.01 Discover / Landing / Hero, v3" className="flex w-[1440px] h-[1420px] flex-col relative overflow-clip bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  <div data-node-label="Grid" className="flex absolute left-0 top-0 w-[1440px] h-[1420px]">${GRID}</div>
+  <div data-node-label="Grid Fade" className="flex absolute left-0 top-0 w-[1440px] h-[1420px] [background-image:radial-gradient(ellipse_at_50%_30%,#FFFFFF00_0%,#FFFFFF00_35%,#FFFFFF_72%)]"></div>
+  <div data-node-label="Glow" className="flex absolute left-[120px] top-[620px] w-[1200px] h-[560px]"></div>
+  ${navS1}
+  <div data-node-label="Copy" className="flex absolute left-0 top-[176px] w-[1440px] flex-col items-center gap-7">
+    <div data-node-label="Headline" className="flex w-[1100px] flex-col items-center"><div data-node-label="Sel Wrap" className="flex relative border border-[#4D94FB] rounded-none px-3">${T('H Line', 'make the point.', `${ink} text-[108px] font-semibold leading-[1] tracking-[-4.8px] whitespace-nowrap`)}${handlesAbs}<div data-node-label="Sel Tag" className="flex absolute right-[-1px] top-[-26px]">${guideLabel('title: the answer')}</div></div>${T('H Line Gray', 'skip the filler.', 'text-[#B4B4B0] text-[108px] font-semibold leading-[1] tracking-[-4.8px] whitespace-nowrap')}</div>
+    <div data-node-label="Sub Wrap" className="flex w-[600px]"><span data-node-label="Sub" className="${F} block w-[600px] text-center ${mut} text-[19px] leading-[1.5]">AirDesign turns your notes and numbers into a board-ready deck. Answer-first titles, sourced charts, a PowerPoint you can edit.</span></div>
+    <div data-node-label="Actions" className="flex items-center gap-6">${lBtn('start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}<div data-node-label="Link" className="flex items-center gap-1.5">${T('Link Text', 'import a powerpoint', `${ink} text-[15px] font-medium`)}${ic('arrowr', 13, ink)}</div></div>
+  </div>
+  <div data-node-label="Shot" className="flex absolute left-[200px] top-[690px] w-[1040px] h-[760px]">
+    ${figSlot('Real Canvas Slot', 1040, 640, 'rounded-[18px] shadow-[0px_0px_0px_1px_#0000001a,0px_40px_100px_#2d6fcd2e,0px_6px_16px_#0f24331a]')}
+    <div data-node-label="Sat Composer" className="flex absolute left-[812px] top-[330px]">${figSlot('Real Composer Slot', 348, 250, 'rounded-[16px] shadow-[0px_0px_0px_1px_#0000000f,0px_24px_60px_#0f243333,0px_4px_10px_#0f24331a]')}</div>
+    <div data-node-label="Cur You" className="flex absolute left-[700px] top-[300px]">${cursorOf('you', '#222222')}</div>
+  </div>
+</div>`;
+
+// ---------- Session 1: elite finance hero ----------
+const FIN = fs.readFileSync('/tmp/strat/ed/art/fin.txt', 'utf8');
+const tick = (label, val, dir) => `<div data-node-label="Tick" className="flex shrink-0 items-center gap-2.5 px-6 border-r [border-right-color:#E6E6E3]">${micro(label.toUpperCase(), 'whitespace-nowrap')}${T('Tick Val', val, `${MONO} ${ink} text-[13px] font-medium whitespace-nowrap`)}${T('Tick Dir', dir === 'up' ? '▲' : '▼', `${dir === 'up' ? '[color:#16A34A]' : '[color:#DC2626]'} text-[9px]`)}</div>`;
+const TICKS = [['Action titles', '8/8', 'up'], ['MECE', 'Pass', 'up'], ['So what', 'Clear', 'up'], ['Ghost deck', 'Final', 'up'], ['Slides', '80 to 8', 'down'], ['Footnotes sourced', '100%', 'up'], ['EBITDA bridge', 'Tied out', 'up'], ['Comps', 'Refreshed', 'up'], ['Turn time', '2h', 'down'], ['Page flip', 'Done', 'up'], ['Board ask', 'Approve', 'up']];
+const heroFin = `<div data-node-id="ed43" data-node-label="S11.01 Discover / Landing / Hero, finance" className="flex w-[1440px] h-[900px] flex-col relative overflow-clip bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  <div data-node-label="Chart" className="flex absolute left-0 top-0 w-[1440px] h-[900px]">${FIN}</div>
+  ${navS1}
+  <div data-node-label="Ticker" className="flex absolute left-0 top-[860px] w-[1440px] h-[40px] items-center overflow-clip border-t [border-top-color:#D7DCE2] bg-white">
+    <div data-node-label="Ticker Label" className="flex shrink-0 h-full items-center px-6 [background-color:#0F2433]">${T('TL', 'GOOD DECK', `${MONO} text-white text-[11px] font-semibold tracking-[1px] whitespace-nowrap`)}</div>
+    <div data-node-label="Ticker Track" className="flex shrink-0 h-full items-center">${TICKS.map(([l, v, d]) => tick(l, v, d)).join('')}</div>
+  </div>
+  <div data-node-label="Copy" className="flex absolute left-[96px] top-[236px] w-[900px] flex-col">
+    ${SV('H Line', 'Clarity is the edge.', `${ink} text-[104px] font-normal leading-[1] tracking-[-3.4px] whitespace-nowrap`)}
+    ${T('Sub', 'So clear the CEO puts the phone down.', `[color:#666666] text-[24px] font-normal tracking-[-0.4px] leading-[1.3] whitespace-nowrap pt-5`)}
+    <div data-node-label="Actions" className="flex items-center gap-6 pt-9">${lBtn('Start free').replace('h-[44px]', 'h-[50px]').replace('rounded-[10px]', 'rounded-full')}<div data-node-label="Link" className="flex items-center gap-1.5">${T('Link Text', 'Import a PowerPoint', `${ink} text-[15px] font-medium`)}${ic('arrowr', 13, ink)}</div></div>
+  </div>
+  <div data-node-label="Decision Pill" className="flex absolute left-[1053px] top-[272px] h-[52px] items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_14px_34px_#2d6fcd2e,0px_2px_6px_#0f24330f] pl-1.5 pr-5 gap-3">
+    <div data-node-label="Yes Dot" className="flex size-[40px] justify-center items-center rounded-full [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] shadow-[inset_0px_1px_0px_#ffffff66,0px_0px_0px_1px_#2D6FCD] text-white">${ic('check', 18)}</div>
+    <div data-node-label="Yes Text" className="flex flex-col gap-0.5">${T('Yes Title', 'Zero follow-up questions.', `${ink} text-[15px] font-semibold tracking-[-0.2px] whitespace-nowrap`)}</div>
+  </div>
+  <div data-node-label="Axis" className="flex absolute left-[96px] right-[96px] top-[836px] justify-between">${['Q3 24', 'Q4 24', 'Q1 25', 'Q2 25', 'Q3 25'].map(q => micro(q)).join('')}</div>
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed43.jsx', fix(heroFin));
+
+// ---------- Session 2: product showcase ----------
+const dotN = (n) => `<div data-node-label="Ann Dot" className="flex size-[26px] shrink-0 justify-center items-center rounded-full [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] shadow-[inset_0px_1px_0px_#ffffff66,0px_0px_0px_1px_#2D6FCD]">${T('Ann N', String(n), `${MONO} text-white text-[12px] font-semibold`)}</div>`;
+const ann = (n, t, b) => `<div data-node-label="Annotation" className="flex items-start gap-3">${dotN(n)}<div data-node-label="Ann Text" className="flex flex-col gap-1 pt-[3px]">${T('Ann Title', t, `${ink} text-[15px] font-semibold tracking-[-0.2px] whitespace-nowrap`)}${T('Ann Body', b, `${mut} text-[13px] whitespace-nowrap`)}</div></div>`;
+const notesCard = `<div data-node-label="Notes Card" className="flex w-[290px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_20px_48px_#0f24331f] p-5 gap-3">
+    <div data-node-label="Notes Head" className="flex items-center gap-2.5"><div data-node-label="Doc Icon" className="flex size-8 justify-center items-center rounded-[8px] [background-color:#EEF4FE] [color:#2D6FCD]">${ic('doc', 15)}</div><div data-node-label="Notes Meta" className="flex flex-col gap-0.5">${T('Notes Name', 'Q3 board notes.docx', `${ink} text-[13px] font-semibold whitespace-nowrap`)}${micro('12 PAGES, 3 TABLES', 'whitespace-nowrap')}</div></div>
+    <div data-node-label="Notes Lines" className="flex flex-col gap-2 pt-1">
+      ${T('Note L', 'q3 rev 5.7m vs 4.1m last yr', `${MONO} ${mut} text-[12px] whitespace-nowrap`)}
+      <div data-node-label="Note Hi" className="flex self-start rounded-[4px] [background-color:#EEF4FE] px-1">${T('Note L', 'growth +39%, steady all yr', `${MONO} [color:#2D6FCD] text-[12px] font-medium whitespace-nowrap`)}</div>
+      ${T('Note L', 'ent deals = most of it?', `${MONO} ${mut} text-[12px] whitespace-nowrap`)}
+      ${T('Note L', 'hiring: wait til Q1', `${MONO} ${mut} text-[12px] whitespace-nowrap`)}
+    </div>
+  </div>`;
+const pptChip = `<div data-node-label="PPT Chip" className="flex h-[60px] items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_16px_40px_#0f24331f] pl-2 pr-5 gap-3">
+    <div data-node-label="PPT Icon" className="flex size-[44px] justify-center items-center rounded-full [background-color:#0F2433]">${T('P', 'P', 'text-white text-[18px] font-bold')}</div>
+    <div data-node-label="PPT Meta" className="flex flex-col">${T('PPT Name', 'Q3 board review.pptx', `${ink} text-[14px] font-semibold whitespace-nowrap`)}${micro('8 SLIDES, FULLY EDITABLE', 'whitespace-nowrap')}</div>
+    <div data-node-label="PPT Check" className="flex size-[24px] justify-center items-center rounded-full [background-color:#16A34A] text-white ml-2">${ic('check', 12)}</div>
+  </div>`;
+const showcase = `<div data-node-id="ed44" data-node-label="S11.01 Discover / Landing / Showcase" className="flex w-[1440px] h-[960px] flex-col px-[96px] pt-[96px] gap-[64px] overflow-clip [background-color:#F7F8FA] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  <div data-node-label="Sc Head" className="flex w-[1248px] items-end justify-between">
+    ${SV('Sc Title', 'Notes in. Board deck out.', `${ink} text-[64px] font-normal leading-[1.05] tracking-[-2px] whitespace-nowrap`)}
+    <div data-node-label="Sc Sub Wrap" className="flex w-[400px]"><span data-node-label="Sc Sub" className="${F} block w-[400px] ${mut} text-[17px] leading-[1.55]">Drop in your notes and numbers. Get slides where the title is the point and every figure has a source.</span></div>
+  </div>
+  <div data-node-label="Stage" className="flex relative w-[1248px] h-[600px] shrink-0">
+    <div data-node-label="Slide Shot" className="flex absolute left-[250px] top-[40px]">${figSlot('Real Slide Slot', 800, 452, 'rounded-[10px] shadow-[0px_0px_0px_1px_#0000001a,0px_40px_90px_#0f243326,0px_6px_16px_#0f24331a]')}</div>
+    <div data-node-label="Sat Notes" className="flex absolute left-[0px] top-[230px]">${notesCard}</div>
+    <div data-node-label="Leader 1" className="flex absolute left-[812px] top-[140px] w-[178px] h-px [background-color:#2D6FCD]"></div>
+    <div data-node-label="Leader 2" className="flex absolute left-[980px] top-[330px] w-[20px] h-px [background-color:#2D6FCD]"></div>
+    <div data-node-label="Anns" className="flex absolute left-[1000px] top-[110px] flex-col gap-[86px]">
+      ${ann(1, 'The title is the answer', 'Not a topic, a conclusion.')}
+      ${ann(2, 'One chart, one point', 'The bar that matters is the dark one.')}
+      ${ann(3, 'Every number sourced', 'Q3 board notes, footnoted.')}
+    </div>
+    <div data-node-label="Sat PPT" className="flex absolute left-[760px] top-[462px]">${pptChip}</div>
+  </div>
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed44.jsx', fix(showcase));
+
+// ---------- Session 2: exhibits as canvas JSX ----------
+const XC = { navy: '#0F2433', b1: '#1D4A7A', b2: '#2D6FCD', b3: '#7FAEEB', b4: '#C9DCF7', grid: '#E6E9ED', up: '#16A34A', down: '#DC2626', mut: '#6B7A86', ink: '#222222' };
+const mkEx = () => { const out = []; const svgs = [];
+  const R = (x, y, w, h, c, extra = '') => out.push(`<div data-node-label="Mark" className="flex absolute ${extra}" style={{left:'${Math.round(x)}px',top:'${Math.round(y)}px',width:'${Math.round(w)}px',height:'${Math.round(h)}px',backgroundColor:'${c}'}}></div>`);
+  const Tx = (x, y, t, o = {}) => { const s = o.s || 11, w = 240, top = Math.round(y - s * 0.95); const left = o.a === 'middle' ? x - w / 2 : o.a === 'end' ? x - w : x; out.push(`<div data-node-label="Label" className="flex absolute w-[${w}px] ${o.a === 'middle' ? 'justify-center' : o.a === 'end' ? 'justify-end' : ''}" style={{left:'${Math.round(left)}px',top:'${top}px'}}><span data-node-label="Label Text" className="${F} block whitespace-nowrap text-[${s}px] ${o.w ? 'font-semibold' : ''}" style={{color:'${o.f || XC.mut}'}}>${t}</span></div>`); };
+  const Ci = (cx, cy, r, c, stroke = '') => out.push(`<div data-node-label="Bubble" className="flex absolute rounded-full ${stroke ? 'border border-[#B8C2CB]' : ''}" style={{left:'${Math.round(cx - r)}px',top:'${Math.round(cy - r)}px',width:'${2 * r}px',height:'${2 * r}px'${stroke ? '' : `,backgroundColor:'${c}'`}}}></div>`);
+  const P = (d, stroke, w = 1, dash = '') => svgs.push(`<path d="${d}" fill="none" stroke="${stroke}" strokeWidth="${w}" ${dash ? `strokeDasharray="${dash}"` : ''}></path>`);
+  return { out, svgs, R, Tx, Ci, P }; };
+const exAJ = () => { const k = mkEx(); const { R, Tx, P } = k;
+  const yrs = ['FY21', 'FY22', 'FY23', 'FY24', 'FY25E'], seg = [[0.9, 1.3, 1.9, 2.6, 3.5], [1.2, 1.2, 1.3, 1.4, 1.6], [0.9, 0.9, 0.9, 1.0, 1.2]];
+  const g = ['-4%', '+13%', '+21%', '+22%', '+26%'], X0 = 180, BW = 86, GAP = 56, Y0 = 430, K = 44;
+  for (let gy = 0; gy <= 6; gy += 2) R(150, Y0 - gy * K, 690, 1, XC.grid);
+  Tx(40, 122, 'Year-on-year growth', { s: 10 });
+  yrs.forEach((y, i) => { const x = X0 + i * (BW + GAP); let base = Y0; [[0, XC.navy], [1, XC.b2], [2, XC.b4]].forEach(([s, c]) => { const h = seg[s][i] * K; R(x, base - h, BW, h, c); base -= h; });
+    const tot = seg[0][i] + seg[1][i] + seg[2][i]; Tx(x + BW / 2, base - 8, '$' + tot.toFixed(1) + 'M', { s: 12, f: XC.navy, w: 1, a: 'middle' });
+    Tx(x + BW / 2, 122, g[i], { s: 12, f: g[i][0] === '-' ? XC.down : XC.up, w: 1, a: 'middle' }); Tx(x + BW / 2, 450, y, { s: 11, f: '#3B4B57', a: 'middle' }); });
+  [['Enterprise', Y0 - 20], ['Mid-market', Y0 - 72], ['Self-serve', Y0 - 118]].forEach(([n, y]) => Tx(40, y, n, { s: 11, f: XC.ink }));
+  const ex = X0 + 4 * (BW + GAP) + BW / 2; P(`M${X0 + BW / 2} 282 L${ex - 10} 158`, XC.ink, 1.6); P(`M${ex - 22} 153 L${ex - 8} 158 L${ex - 19} 167`, XC.ink, 1.6);
+  Tx(420, 205, '+20% CAGR', { s: 12, f: XC.ink, w: 1, a: 'middle' });
+  k.out.push(`<div data-node-label="Callout" className="flex absolute rounded-[3px] border-[1.5px] border-[#4D94FB]" style={{left:'${X0 + 4 * (BW + GAP) - 6}px',top:'${Y0 - 3.5 * K - 4}px',width:'${BW + 12}px',height:'${3.5 * K + 8}px'}}></div>`);
+  return k; };
+const exBJ = () => { const k = mkEx(); const { R, Tx, Ci } = k; const L = 120, Rr = 640, T = 104, B = 416, sx = v => L + (Rr - L) * v, sy = v => B - (B - T) * v;
+  R(sx(.5), T, (Rr - L) / 2, (B - T) / 2, '#EEF4FE');
+  k.out.push(`<div data-node-label="Frame" className="flex absolute border border-[#C9D1D8]" style={{left:'${L}px',top:'${T}px',width:'${Rr - L}px',height:'${B - T}px'}}></div>`);
+  R(sx(.5), T, 1, B - T, '#D7DCE2'); R(L, sy(.5), Rr - L, 1, '#D7DCE2');
+  [0, .5, 1].forEach(v => { Tx(sx(v), B + 16, v.toFixed(1), { s: 10, a: 'middle' }); Tx(L - 8, sy(v) + 4, v.toFixed(1), { s: 10, a: 'end' }); });
+  Tx((L + Rr) / 2, B + 34, 'Market attractiveness, score', { s: 11, f: XC.ink, w: 1, a: 'middle' }); Tx(40, T - 6, 'Ability to win, score', { s: 11, f: XC.ink, w: 1 });
+  const D = [['Enterprise, US', .84, .8, 44, XC.navy], ['Enterprise, EU', .68, .63, 32, XC.b1], ['Mid-market, US', .42, .56, 26, XC.b2], ['Self-serve', .2, .38, 16, XC.b3], ['APAC', .3, .2, 20, XC.b4]];
+  D.forEach(([n, x, y, r, c]) => { Ci(sx(x), sy(y), r, c); const isEU = n === 'Enterprise, EU', left = n === 'Mid-market, US' || x > .6; Tx(isEU ? sx(x) : left ? sx(x) - r - 8 : sx(x) + r + 8, isEU ? sy(y) + r + 16 : sy(y) + 4, n, { s: 12, f: XC.ink, a: isEU ? 'middle' : left ? 'end' : 'start' }); });
+  Tx(Rr - 10, T + 18, 'Invest now', { s: 11, f: '#2D6FCD', w: 1, a: 'end' });
+  Tx(680, 128, 'Revenue pool, $M', { s: 11, f: XC.ink, w: 1 }); [[40, '40'], [20, '20'], [10, '10']].forEach(([r, l]) => { Ci(730, 200 - r, r, 'transparent', '#B8C2CB'); R(730, 200 - 2 * r, 60, 1, '#B8C2CB'); Tx(796, 204 - 2 * r, l, { s: 10 }); });
+  Tx(680, 260, 'Maturity', { s: 11, f: XC.ink, w: 1 }); [XC.b4, XC.b3, XC.b2, XC.b1, XC.navy].forEach((c, i) => { Ci(690 + i * 26, 282, 8, c); Tx(690 + i * 26, 306, String(i + 1), { s: 10, a: 'middle' }); });
+  return k; };
+const exCJ = (r5 = 6.3) => { const k = mkEx(); const { R, Tx, Ci, P } = k; const yrs = ['FY21', 'FY22', 'FY23', 'FY24', 'FY25E'], rev = [3.0, 3.4, 4.1, 5.0, r5], eb = [0.85, 0.98, 1.2, 1.45, 1.86], X0 = 110, GW = 140, Y0 = 420, K = 40;
+  for (let v = 0; v <= 6; v += 2) { R(90, Y0 - v * K, 700, 1, XC.grid); Tx(80, Y0 - v * K + 4, '$' + v + 'M', { s: 10, a: 'end' }); }
+  [0, 10, 20, 30, 40].forEach((p, i) => Tx(800, Y0 - i * 66 + 4, p + '%', { s: 10 }));
+  yrs.forEach((y, i) => { const x = X0 + i * GW; R(x, Y0 - rev[i] * K, 46, rev[i] * K, XC.b2); R(x + 48, Y0 - eb[i] * K, 46, eb[i] * K, XC.navy); Tx(x + 47, Y0 + 18, y, { s: 11, f: '#3B4B57', a: 'middle' }); });
+  const m = [28.3, 28.8, 29.3, 29.0, 29.5]; P('M' + m.map((v, i) => `${X0 + i * GW + 47} ${(Y0 - v / 10 * 66).toFixed(1)}`).join(' L'), '#16A34A', 2.2, '7 6');
+  Tx(X0 + 4 * GW + 100, Y0 - 29.5 / 10 * 66 + 4, '29.5%', { s: 11, f: '#16A34A', w: 1 });
+  [[2, 'Acquired', 'Brightwater'], [3, 'Series C', 'raised']].forEach(([i, a, b]) => { const x = X0 + i * GW + 120; R(x, 153, 1, Y0 - 153, '#2D6FCD'); Ci(x, 128, 25, '#2D6FCD'); Tx(x, 125, a, { s: 9, f: '#FFFFFF', w: 1, a: 'middle' }); Tx(x, 137, b, { s: 9, f: '#FFFFFF', w: 1, a: 'middle' }); });
+  [['Revenue', XC.b2], ['Adj. EBITDA', XC.navy]].forEach(([n, c], i) => { R(300 + i * 130, 452, 12, 8, c); Tx(318 + i * 130, 460, n, { s: 10, f: XC.ink }); });
+  P('M560 456 L584 456', '#16A34A', 2, '5 4'); Tx(590, 460, 'Margin, right axis', { s: 10, f: XC.ink });
+  return k; };
+const EXJ = [
+  { answer: 'Enterprise drove two thirds of growth since FY21', unit: 'Revenue by customer segment, FY21 to FY25E, $M', src: 'Source: Q3 board pack, tab 2; Halden analysis. Sample data.', fn: exAJ, pg: 3 },
+  { answer: 'Two markets clear the bar for investment now', unit: 'Attractiveness vs ability to win, bubble size = revenue pool', src: 'Source: Q3 board pack, tab 3; market scan of 5 regions. Sample data.', fn: exBJ, pg: 4 },
+  { answer: 'Margins held near 29% through two deals', unit: 'Revenue and adjusted EBITDA, FY21 to FY25E, $M; margin, %', src: 'Source: Q3 board pack, tab 4; audited to FY24. Sample data.', fn: exCJ, pg: 5 },
+];
+const exSlide = (e, extra = '') => { const k = e.fn(); return `<div data-node-label="Exhibit Slide" className="flex relative w-[880px] h-[495px] shrink-0 bg-white rounded-[10px] overflow-clip ${extra}">
+    ${k.svgs.length ? `<div data-node-label="Lines" className="flex absolute left-0 top-0 w-[880px] h-[495px]"><svg viewBox="0 0 880 495" width="880" height="495">${k.svgs.join('')}</svg></div>` : ''}
+    ${k.out.join('')}
+    <div data-node-label="Title" className="flex absolute left-[40px] top-[30px]">${T('Exhibit Title', e.answer, `[color:${XC.navy}] text-[24px] font-semibold tracking-[-0.4px] whitespace-nowrap`)}</div>
+    <div data-node-label="Unit" className="flex absolute left-[40px] top-[72px]">${T('Unit Text', e.unit, '[color:#6B7A86] text-[12px] whitespace-nowrap')}</div>
+    <div data-node-label="Source" className="flex absolute left-[40px] top-[468px]">${T('Source Text', e.src, `${MONO} [color:#909090] text-[10px] whitespace-nowrap`)}</div>
+    <div data-node-label="Page" className="flex absolute left-[830px] top-[468px] w-[10px] justify-end">${T('Page Text', String(e.pg), `${MONO} [color:#909090] text-[10px]`)}</div>
+  </div>`; };
+const exThumb = (e, i, on) => `<div data-node-label="Thumb" className="flex relative w-[158px] h-[89px] flex-col rounded-[6px] bg-white p-2 ${on ? 'shadow-[0px_0px_0px_2px_#4D94FB,0px_10px_24px_#2d6fcd2e] ml-[-6px]' : 'shadow-[0px_0px_0px_1px_#0f24331a]'}">${T('Thumb Title', e.answer, `[color:${XC.navy}] text-[8px] font-semibold leading-[1.25] w-[140px]`)}<div data-node-label="Mini" className="flex absolute left-[9px] right-[9px] bottom-[8px] h-[40px] items-end gap-1">${[3, 4, 5, 6, 8].map(h => `<div data-node-label="Mini Bar" className="flex-1 block [background-color:#C9DCF7]" style={{height:'${h * 5}px'}}></div>`).join('')}</div><div data-node-label="Thumb N" className="flex absolute left-[-24px] top-[2px]">${T('N', '0' + (i + 3), `${MONO} [color:#909090] text-[11px]`)}</div></div>`;
+const showcaseC = `<div data-node-id="ed44" data-node-label="S11.01 Discover / Landing / Showcase" className="flex w-[1440px] h-[1000px] flex-col px-[96px] pt-[96px] gap-[56px] overflow-clip [background-color:#F7F8FA] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  <div data-node-label="Sc Head" className="flex w-[1248px] items-end justify-between">
+    ${SV('Sc Title', 'Notes in. Board deck out.', `${ink} text-[64px] font-normal leading-[1.05] tracking-[-2px] whitespace-nowrap`)}
+    <div data-node-label="Sc Sub Wrap" className="flex w-[400px]"><span data-node-label="Sc Sub" className="${F} block w-[400px] ${mut} text-[17px] leading-[1.55]">Drop in your notes and numbers. Get exhibits a partner would sign off: the point in the title, the proof in the chart, the source underneath.</span></div>
+  </div>
+  <div data-node-label="Stage" className="flex relative w-[1248px] h-[660px] shrink-0">
+    <div data-node-label="Slide Pos" className="flex absolute left-[180px] top-[20px] rounded-[10px] shadow-[0px_0px_0px_1px_#0000001a,0px_40px_90px_#0f243326,0px_6px_16px_#0f24331a]">${exSlide(EXJ[0])}</div>
+    <div data-node-label="Export Pos" className="flex absolute left-[1000px] top-[-14px]">${lBtn('Export', 'primary', false, 30).replace('rounded-[10px]', 'rounded-[8px]')}</div>
+    <div data-node-label="Notes Pos" className="flex absolute left-[-36px] top-[330px] w-[208px] flex-col rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_20px_48px_#0f24331f] p-3.5 gap-2">
+      <div data-node-label="Notes Head" className="flex items-center gap-2.5"><div data-node-label="Doc Icon" className="flex size-[30px] justify-center items-center rounded-[8px] [background-color:#EEF4FE] [color:#2D6FCD]">${ic('doc', 14)}</div><div data-node-label="Notes Meta" className="flex flex-col gap-0.5">${T('Notes Name', 'Q3 board pack.xlsx', `${ink} text-[13px] font-semibold whitespace-nowrap`)}${micro('4 TABS, 212 ROWS', 'whitespace-nowrap')}</div></div>
+      ${['rev by segment FY21-25E', 'market scan: 5 regions', 'EBITDA + margin, 2 deals', 'hiring: wait til Q1'].map((t, i) => `<div data-node-label="Note Line" className="flex self-start rounded-[4px] px-1 ${i === 0 ? '[background-color:#EEF4FE]' : ''}">${T('Note L', t, `${MONO} ${i === 0 ? '[color:#2D6FCD] font-medium' : mut} text-[11px] whitespace-nowrap`)}</div>`).join('')}
+    </div>
+    <div data-node-label="Rail" className="flex absolute left-[1090px] top-[20px] flex-col gap-3">${EXJ.map((e, i) => exThumb(e, i, i === 0)).join('')}</div>
+    <div data-node-label="PPT Pos" className="flex absolute left-[760px] top-[490px]">${pptChip.replace('8 SLIDES, FULLY EDITABLE', '3 EXHIBITS, FULLY EDITABLE')}</div>
+  </div>
+</div>`;
+const exFrame = (id, i) => `<div data-node-id="${id}" data-node-label="S11.01 Discover / Landing / Exhibit 0${i + 3}" className="flex w-[880px] h-[495px] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">${exSlide(EXJ[i], 'shadow-[0px_0px_0px_1px_#0000001a]')}</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed44.jsx', fix(showcaseC));
+fs.writeFileSync('/tmp/strat/ed/ed45.jsx', fix(exFrame('ed45', 1)));
+fs.writeFileSync('/tmp/strat/ed/ed46.jsx', fix(exFrame('ed46', 2)));
+
+// ---------- Landing end to end: hero + showcase + quiet magic ----------
+const asSection = (jsx, id, label) => jsx.replace(`data-node-id="${id}" data-node-label="${label}"`, `data-node-label="${label.split(' / ').pop()}"`);
+const draftBullets = ['Revenue was $5.7M in Q3 vs $4.1M last year which is good', 'Enterprise deals were a big part of the growth this year (see appendix)', 'EBITDA also improved, margin around 29% roughly', 'We did the Brightwater acquisition in FY23', 'Series C closed in FY24, more details TBD', 'Mid-market churn is lower than before', 'Next steps: discuss hiring plan, maybe Q1?'];
+const draftSlide = `<div data-node-label="Draft Slide" className="flex relative w-[1000px] h-[562px] shrink-0 flex-col bg-white px-[46px] pt-[38px] gap-4">
+    <div data-node-label="Draft Title Wrap" className="flex self-start">${T('Draft Title', 'Q3 update', 'text-[#3B4B57] text-[28px] font-semibold')}</div>
+    <div data-node-label="Draft Bullets" className="flex flex-col gap-3 pt-2">${draftBullets.map(b => `<div data-node-label="Draft Bullet" className="flex items-start gap-3">${T('Dot', '•', 'text-[#9AA5B1] text-[16px]')}${T('Draft Line', b, 'text-[#3B4B57] text-[17px] whitespace-nowrap')}</div>`).join('')}</div>
+    <div data-node-label="Draft Foot" className="flex absolute left-[46px] top-[524px]">${T('DF', 'Confidential draft v7_FINAL', `${MONO} [color:#B0B0B0] text-[11px]`)}</div>
+  </div>`;
+const cleanSlide = (() => { const k = exCJ(6.5); return `<div data-node-label="Clean Slide" className="flex relative w-[880px] h-[495px] shrink-0 bg-white">
+    <div data-node-label="Lines" className="flex absolute left-0 top-0 w-[880px] h-[495px]"><svg viewBox="0 0 880 495" width="880" height="495">${k.svgs.join('')}</svg></div>${k.out.join('')}
+    <div data-node-label="Title" className="flex absolute left-[40px] top-[30px]">${T('Exhibit Title', EXJ[2].answer, `[color:${XC.navy}] text-[24px] font-semibold tracking-[-0.4px] whitespace-nowrap`)}</div>
+    <div data-node-label="Unit" className="flex absolute left-[40px] top-[72px]">${T('Unit Text', EXJ[2].unit, '[color:#6B7A86] text-[12px] whitespace-nowrap')}</div>
+    <div data-node-label="Source" className="flex absolute left-[40px] top-[468px]">${T('Source Text', EXJ[2].src, `${MONO} [color:#909090] text-[10px] whitespace-nowrap`)}</div>
+  </div>`; })();
+const changeLog = `<div data-node-label="Change Log" className="flex w-[300px] flex-col rounded-[16px] bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_24px_60px_#0f24331f] p-5 gap-3.5">
+    ${micro('WHAT CHANGED')}
+    ${[['Title rewritten as the answer', 'was “Q3 update”'], ['Seven bullets became one exhibit', 'nothing you wrote was lost'], ['Two deals marked on the chart', 'from your notes'], ['FY25E revenue updated', 'source note kept in sync']].map(([a, b]) => `<div data-node-label="Change" className="flex items-start gap-3"><div data-node-label="Tick" className="flex size-[20px] shrink-0 justify-center items-center rounded-full [background-color:#EEF4FE] [color:#2D6FCD] mt-[1px]">${ic('check', 11)}</div><div data-node-label="Change Text" className="flex flex-col gap-0.5">${T('Change Title', a, `${ink} text-[14px] font-medium whitespace-nowrap`)}${T('Change Sub', b, `${mut} text-[12px] whitespace-nowrap`)}</div></div>`).join('')}
+    <div data-node-label="Undo Row" className="flex items-center justify-between border-t [border-top-color:#EEEEEC] pt-3">${T('Undo Note', 'One undo puts it all back.', `${mut} text-[12px]`)}${T('Undo Key', 'Undo', `[color:#2D6FCD] text-[12px] font-semibold`)}</div>
+  </div>`;
+const magic = `<div data-node-label="Magic" className="flex w-[1440px] h-[1080px] shrink-0 flex-col items-center relative overflow-clip bg-white px-[96px] pt-[120px] gap-[64px]">
+  <div data-node-label="Mg Head" className="flex w-[1248px] items-end justify-between">
+    <div data-node-label="Mg Titles" className="flex flex-col">${SV('Mg Title', 'Your draft,', `${ink} text-[64px] font-normal leading-[1.05] tracking-[-2px] whitespace-nowrap`)}${SV('Mg Title 2', 'quietly made board-ready.', `${ink} text-[64px] font-normal leading-[1.05] tracking-[-2px] whitespace-nowrap`)}</div>
+    <div data-node-label="Mg Sub Wrap" className="flex w-[400px]"><span data-node-label="Mg Sub" className="${F} block w-[400px] ${mut} text-[17px] leading-[1.55]">Keep your thinking. AirDesign handles the rest: the title, the structure, the sources, the polish. You stay in charge of every change.</span></div>
+  </div>
+  <div data-node-label="Mg Stage" className="flex relative w-[1248px] h-[640px] shrink-0">
+    <div data-node-label="Split" className="flex absolute left-[0px] top-[20px] w-[1000px] h-[562px] rounded-[12px] overflow-clip bg-white shadow-[0px_0px_0px_1px_#0000001a,0px_40px_90px_#0f243326,0px_6px_16px_#0f24331a]">
+      <div data-node-label="Clean Layer" className="flex absolute left-0 top-0 w-[1000px] h-[562px] justify-center items-center">${cleanSlide.replace('w-[880px] h-[495px] shrink-0 bg-white', 'w-[880px] h-[495px] shrink-0 bg-white scale-[1.136] origin-center')}</div>
+      <div data-node-label="Draft Layer" className="flex absolute left-0 top-0 w-[430px] h-[562px] overflow-clip [background-color:#FBFBFA]">${draftSlide}</div>
+      <div data-node-label="Wipe Glow" className="flex absolute left-[402px] top-0 w-[56px] h-[562px]"></div>
+      <div data-node-label="Wipe Line" className="flex absolute left-[429px] top-0 w-[2px] h-[562px] [background-color:#4D94FB]"></div>
+      <div data-node-label="Wipe Knob" className="flex absolute left-[410px] top-[262px] size-[40px] justify-center items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#4D94FB,0px_8px_20px_#2d6fcd40] [color:#2D6FCD]">${ic('arrowr', 14)}</div>
+      <div data-node-label="Bar Sel" className="flex absolute left-[757px] top-[178px] w-[60px] h-[303px] border border-[#4D94FB] rounded-none">${handlesAbs}</div>
+      <div data-node-label="Edit Field" className="flex absolute left-[600px] top-[132px] h-[32px] items-center rounded-[8px] bg-white shadow-[0px_0px_0px_1px_#4D94FB,0px_10px_24px_#0f243326] px-3 gap-2">${T('EF Label', 'Revenue, FY25E', `${mut} text-[12px] whitespace-nowrap`)}${T('EF Val', '$6.5M', `${MONO} [color:#0F2433] text-[13px] font-semibold whitespace-nowrap`)}<div data-node-label="Caret" className="block w-[1.5px] h-[15px] [background-color:#4D94FB]"></div></div>
+      <div data-node-label="Edit Cursor" className="flex absolute left-[796px] top-[250px]">${cursorOf('you', '#222222')}</div>
+    </div>
+    <div data-node-label="Log Pos" className="flex absolute left-[948px] top-[300px]">${changeLog}</div>
+  </div>
+</div>`;
+const heroSec = asSection(heroFin, 'ed43', 'S11.01 Discover / Landing / Hero, finance');
+const showSec = asSection(showcaseC, 'ed44', 'S11.01 Discover / Landing / Showcase');
+const landingE2E = `<div data-node-id="ed47" data-node-label="S11.01 Discover / Landing / Default" className="flex w-[1440px] flex-col bg-white [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+  ${heroSec.replace('h-[900px] flex-col relative', 'h-[900px] shrink-0 flex-col relative')}
+  ${magic}
+</div>`;
+fs.writeFileSync('/tmp/strat/ed/ed47.jsx', fix(landingE2E));
+
+// ---------- Magic v2: hero vibe ----------
+const cleanBare = (() => { const k = exCJ(6.5); return `<div data-node-label="Clean Exhibit" className="flex relative w-[880px] h-[495px] shrink-0">
+    <div data-node-label="Lines" className="flex absolute left-0 top-0 w-[880px] h-[495px]"><svg viewBox="0 0 880 495" width="880" height="495">${k.svgs.join('')}</svg></div>${k.out.join('')}
+    <div data-node-label="Title" className="flex absolute left-[40px] top-[30px]">${T('Exhibit Title', EXJ[2].answer, `[color:${XC.navy}] text-[26px] font-semibold tracking-[-0.5px] whitespace-nowrap`)}</div>
+    <div data-node-label="Source" className="flex absolute left-[40px] top-[468px]">${T('Source Text', EXJ[2].src, `${MONO} [color:#909090] text-[10px] whitespace-nowrap`)}</div>
+  </div>`; })();
+const CHANGES = [['Slides', '3 of 8', 'up'], ['Notes read', '1 file', 'up'], ['Brand', 'Applied', 'up'], ['Titles', 'Answer first', 'up'], ['Numbers', 'Sourced', 'up'], ['You', 'In charge', 'up']];
+const magic2 = `<div data-node-label="Magic" className="flex w-[1440px] h-[1224px] shrink-0 relative overflow-clip bg-white border-t [border-top-color:#EEEEEC]">
+  <div data-node-label="Mg Copy" className="flex absolute left-[96px] top-[112px] w-[1248px] flex-col">
+    ${SV('Mg Title', 'Make slides like magic.', `${ink} text-[88px] font-normal leading-[1] tracking-[-3px] whitespace-nowrap`)}
+    ${T('Mg Sub', 'Drop in your notes. Watch the deck build itself.', `[color:#666666] text-[24px] font-normal tracking-[-0.4px] whitespace-nowrap pt-6`)}
+  </div>
+  <div data-node-label="Band" className="flex absolute left-[96px] top-[328px] w-[1248px] h-[784px]">
+    ${figSlot('Real Running Slot', 1248, 784, 'rounded-[16px] shadow-[0px_0px_0px_1px_#0000001a,0px_30px_80px_#2d6fcd26,0px_4px_12px_#0f24330d]')}
+  </div>
+  <div data-node-label="Run Pill" className="flex absolute left-[880px] top-[284px] h-[52px] items-center rounded-full bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_14px_34px_#2d6fcd2e,0px_2px_6px_#0f24330f] pl-1.5 pr-5 gap-3">
+    <div data-node-label="Yes Dot" className="flex size-[40px] justify-center items-center rounded-full [background-image:linear-gradient(180deg,#93B8EF_0%,#4D94FB_100%)] shadow-[inset_0px_1px_0px_#ffffff66,0px_0px_0px_1px_#2D6FCD] text-white">${ic('check', 18)}</div>
+    ${T('Pill Text', 'Building slide 3 of 8. Coffee optional.', `${ink} text-[15px] font-semibold tracking-[-0.2px] whitespace-nowrap`)}
+  </div>
+</div>`;
+const agentCap = (logo, name, dark, y) => `<div data-node-label="Agent Cap" className="flex absolute left-0 w-[248px] h-[64px] items-center gap-3.5 rounded-full bg-white shadow-[0px_0px_0px_1px_#0f243314,0px_8px_24px_#0f24330a] pl-2.5 pr-6" style={{top:'${y}px'}}>
+    <div data-node-label="Logo Tile" className="flex size-[44px] shrink-0 justify-center items-center rounded-full ${dark === 'claude' ? 'bg-white shadow-[inset_0px_0px_0px_1px_#E6E8EB] [color:#D97757]' : dark ? '[background-color:#222222] text-white' : '[background-color:#EEF1F5] [color:#222222]'}"><div data-node-label="Logo" className="${dark === 'claude' ? 'size-[26px]' : 'size-[22px]'} block">${logo}</div></div>
+    ${T('Agent Name', name, `${ink} text-[17px] font-semibold tracking-[-0.2px] whitespace-nowrap`)}
+  </div>`;
+const plugIcon = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"></path></svg>';
+const miniSlide = (() => { const seg = [[0.9, 1.3, 1.9, 2.6, 3.5], [1.2, 1.2, 1.3, 1.4, 1.6], [0.9, 0.9, 0.9, 1.0, 1.2]], K = 21, B = 232, out = [];
+  ['FY21', 'FY22', 'FY23', 'FY24', 'FY25E'].forEach((y, i) => { const x = 44 + i * 84; let base = B;
+    [[0, XC.navy], [1, XC.b2], [2, XC.b4]].forEach(([si, c]) => { const h = Math.round(seg[si][i] * K); out.push(`<div data-node-label="Bar" className="flex absolute w-[48px]" style={{left:'${x}px',top:'${base - h}px',height:'${h}px',backgroundColor:'${c}'}}></div>`); base -= h; });
+    out.push(`<div data-node-label="Year" className="flex absolute w-[48px] justify-center" style={{left:'${x}px',top:'${B + 6}px'}}>${T('Year Text', y, '[color:#3B4B57] text-[9px] whitespace-nowrap')}</div>`); });
+  return `<div data-node-label="Mini Slide" className="flex absolute left-[768px] top-[45px] w-[480px] h-[270px] rounded-[6px] bg-white overflow-clip shadow-[0px_0px_0px_1px_#0000001a,0px_30px_80px_#2d6fcd26,0px_4px_12px_#0f24330d]">
+    <div data-node-label="Ms Title" className="flex absolute left-[28px] top-[24px]">${T('Ms Title Text', 'Enterprise carried the quarter', `[color:${XC.navy}] text-[19px] font-semibold tracking-[-0.3px] whitespace-nowrap`)}</div>
+    <div data-node-label="Ms Unit" className="flex absolute left-[28px] top-[52px]">${T('Ms Unit Text', 'Revenue by customer segment, $M. Sample data.', '[color:#6B7A86] text-[10px] whitespace-nowrap')}</div>
+    ${out.join('')}
+  </div>`; })();
+const agentsSec = `<div data-node-label="Agents" className="flex w-[1440px] h-[840px] shrink-0 relative overflow-clip bg-white border-t [border-top-color:#EEEEEC]">
+  <div data-node-label="Ag Copy" className="flex absolute left-[96px] top-[120px] w-[1248px] flex-col">
+    ${SV('Ag Title', 'Bring any agent.', `${ink} text-[88px] font-normal leading-[1] tracking-[-3px] whitespace-nowrap`)}
+    ${T('Ag Sub', 'Claude, Codex or your own. Work however you like.', '[color:#666666] text-[24px] font-normal tracking-[-0.4px] whitespace-nowrap pt-6')}
+  </div>
+  <div data-node-label="Ag Visual" className="flex absolute left-[96px] top-[360px] w-[1248px] h-[360px]">
+    <div data-node-label="Ag Lines" className="flex absolute left-0 top-0 w-[1248px] h-[360px]"><svg viewBox="0 0 1248 360" width="1248" height="360" fill="none"><path d="M248 60 C 390 60, 380 180, 500 180" stroke="#4D94FB" strokeWidth="1.5"></path><path d="M248 180 L 500 180" stroke="#4D94FB" strokeWidth="1.5"></path><path d="M248 300 C 390 300, 380 180, 500 180" stroke="#4D94FB" strokeWidth="1.5"></path><path d="M700 180 L 768 180" stroke="#4D94FB" strokeWidth="1.5"></path><circle cx="768" cy="180" r="3.5" fill="#4D94FB"></circle></svg></div>
+    ${agentCap(CLAUDE, 'Claude', 'claude', 28)}
+    ${agentCap(OPENAI, 'Codex', true, 148)}
+    ${agentCap(plugIcon, 'Your agent', false, 268)}
+    <div data-node-label="Hub" className="flex absolute left-[500px] top-[144px] w-[200px] h-[72px] justify-center items-center gap-3 rounded-full bg-white shadow-[0px_0px_0px_1px_#2d6fcd40,0px_14px_34px_#2d6fcd2e,0px_2px_6px_#0f24330f]">
+      <div data-node-label="Mark" className="size-[28px] block">${MARK}</div>${T('Hub Name', 'AirDesign', `${ink} text-[19px] font-semibold tracking-[-0.3px] whitespace-nowrap`)}
+    </div>
+    ${miniSlide}
+  </div>
+</div>`;
+const priceSec = `<div data-node-label="Pricing" className="flex w-[1440px] h-[840px] shrink-0 relative overflow-clip bg-white border-t [border-top-color:#EEEEEC]">
+  <div data-node-label="Pr Copy" className="flex absolute left-0 top-[120px] w-[1440px] flex-col items-center">
+    ${SV('Pr Title', 'AirDesign is free.', `${ink} text-[88px] font-normal leading-[1] tracking-[-3px] whitespace-nowrap`)}
+    ${T('Pr Sub', 'Every feature, every week. No plan, no trial.', '[color:#666666] text-[24px] font-normal tracking-[-0.4px] whitespace-nowrap pt-6')}
+  </div>
+  <div data-node-label="Price Card Slot" className="flex absolute left-[500px] top-[344px] w-[440px] h-[353px]"></div>
+  <div data-node-label="Pr Note" className="flex absolute left-0 top-[729px] w-[1440px] justify-center">${T('Pr Note Text', "Don't want to wait for the weekly reset? You can pay to reset.", '[color:#909090] text-[15px] whitespace-nowrap')}</div>
+</div>`;
+const footSec = `<div data-node-label="Footer" className="flex w-[1440px] h-[120px] shrink-0 items-center justify-between px-[96px] border-t [border-top-color:#EEEEEC] bg-white">
+  <div data-node-label="Foot Brand" className="flex items-center gap-2.5"><div data-node-label="Mark" className="size-[20px] block">${MARK}</div>${T('Foot Name', 'AirDesign', `${ink} text-[14px] font-semibold`)}${T('Foot Line', 'Clarity is the edge.', `${sub} text-[14px]`)}</div>
+  <div data-node-label="Foot Links" className="flex items-center gap-7">${['Pricing', 'Agent guides', 'Sign in', 'Privacy', 'Terms'].map(x => T('Foot Link', x, `${mut} text-[13px]`)).join('')}</div>
+</div>`;
+const landingE2E2 = landingE2E.replace(magic, magic2 + agentsSec + priceSec + footSec);
+if (landingE2E2 === landingE2E) throw new Error('magic2 replace failed');
+fs.writeFileSync('/tmp/strat/ed/ed47.jsx', fix(landingE2E2));
+
+// ---------- Run film states (S42.01 with a McKinsey-grade exhibit) ----------
+const runState = (n) => { const S = 800 / 880, q = v => Math.round(v * S * 10) / 10; const out = [];
+  const box = (name, x, y, w, h, c, o = 1) => out.push(`<div data-node-label="${name}" className="flex absolute" style={{left:'${q(x)}px',top:'${q(y)}px',width:'${q(w)}px',height:'${q(h)}px',backgroundColor:'${c}',opacity:${o}}}></div>`);
+  const tx = (name, x, y, t, o = {}) => { const sz = Math.round((o.s || 11) * S * 10) / 10, w = 240, top = q(y - (o.s || 11) * 0.95); const left = o.a === 'middle' ? q(x) - w / 2 : o.a === 'end' ? q(x) - w : q(x);
+    out.push(`<div data-node-label="${name}" className="flex absolute w-[${w}px] ${o.a === 'middle' ? 'justify-center' : o.a === 'end' ? 'justify-end' : ''}" style={{left:'${left}px',top:'${top}px',opacity:${o.o ?? 1}}}><span data-node-label="${name}-t" className="${F} block whitespace-nowrap ${o.w ? 'font-semibold' : ''}" style={{fontSize:'${sz}px',color:'${o.f || XC.mut}'}}>${t}</span></div>`); };
+  const yrs = ['FY21', 'FY22', 'FY23', 'FY24', 'FY25E'], seg = [[0.9, 1.3, 1.9, 2.6, 3.5], [1.2, 1.2, 1.3, 1.4, 1.6], [0.9, 0.9, 0.9, 1.0, 1.2]];
+  const g = ['-4%', '+13%', '+21%', '+22%', '+26%'], X0 = 150, BW = 66, GAP = 36, Y0 = 430, K = 44;
+  const bars = n >= 3 && n <= 4, story = n === 4, titled = n >= 2 && n <= 4;
+  [0, 2, 4, 6].forEach((gy, k) => box(`grid-${k + 1}`, 130, Y0 - gy * K, 500, 1, XC.grid));
+  box('div-1', 652, 112, 1, 330, '#D7DCE2');
+  tx('rowlab-1', 40, 122, 'Year-on-year growth', { s: 10, o: bars ? 1 : 0 });
+  let b = 0;
+  yrs.forEach((y, i) => { const x = X0 + i * (BW + GAP); let base = Y0; [[0, XC.navy], [1, XC.b2], [2, XC.b4]].forEach(([si, c]) => { b++; const h = bars ? seg[si][i] * K : 0; box(`bar-${b}`, x, base - h, BW, Math.max(h, 0.5), c); base -= h; });
+    const tot = seg[0][i] + seg[1][i] + seg[2][i]; tx(`tot-${i + 1}`, x + BW / 2, (bars ? base : Y0) - 8, '$' + tot.toFixed(1) + 'M', { s: 12, f: XC.navy, w: 1, a: 'middle', o: bars ? 1 : 0 });
+    tx(`gr-${i + 1}`, x + BW / 2, 122, g[i], { s: 12, f: g[i][0] === '-' ? XC.down : XC.up, w: 1, a: 'middle', o: bars ? 1 : 0 }); tx(`yr-${i + 1}`, x + BW / 2, 450, y, { s: 11, f: '#3B4B57', a: 'middle' }); });
+  [['Enterprise', Y0 - 20], ['Mid-market', Y0 - 72], ['Self-serve', Y0 - 118]].forEach(([nm, y], k) => tx(`leg-${k + 1}`, 40, y, nm, { s: 11, f: XC.ink, o: bars ? 1 : 0 }));
+  const ex = X0 + 4 * (BW + GAP) + BW / 2;
+  const svg = story ? `<div data-node-label="cagr-1" className="flex absolute left-0 top-0 w-[800px] h-[450px]"><svg viewBox="0 0 880 495" width="800" height="450"><path d="M${X0 + BW / 2} 282 L${ex - 10} 158" fill="none" stroke="#222222" strokeWidth="1.6"></path></svg></div><div data-node-label="cagr-2" className="flex absolute left-0 top-0 w-[800px] h-[450px]"><svg viewBox="0 0 880 495" width="800" height="450"><path d="M${ex - 22} 153 L${ex - 8} 158 L${ex - 19} 167" fill="none" stroke="#222222" strokeWidth="1.6"></path></svg></div>` : '';
+  tx('cagr-3', 330, 214, '+20% CAGR', { s: 12, f: XC.ink, w: 1, a: 'middle', o: story ? 1 : 0 });
+  out.push(`<div data-node-label="call-1" className="flex absolute rounded-[3px] border-[1.5px] border-[#4D94FB]" style={{left:'${q(X0 + 4 * (BW + GAP) - 6)}px',top:'${q(Y0 - 3.5 * K - 4)}px',width:'${q(BW + 12)}px',height:'${q(3.5 * K + 8)}px',opacity:${story ? 1 : 0}}}></div>`);
+  const TB = [['Enterprise', XC.navy, ['+46%', '+37%', '+35%']], ['Mid-market', XC.b2, ['+8%', '+8%', '+14%']], ['Self-serve', XC.b4, ['0%', '+11%', '+20%']]];
+  tx('tbh-1', 672, 122, 'Growth by segment', { s: 10, f: XC.ink, w: 1, o: bars ? 1 : 0 });
+  ['FY23', 'FY24', 'FY25E'].forEach((h, j) => tx(`tbc-${j + 1}`, 712 + j * 56, 150, h, { s: 10, f: XC.mut, a: 'middle', o: bars ? 1 : 0 }));
+  TB.forEach(([nm, c, vals], r) => { const y = 200 + r * 80; box(`tbr-${r + 1}`, 672, y - 26, 3, 52, c, bars ? 1 : 0); vals.forEach((v, j) => tx(`tbv-${r * 3 + j + 1}`, 712 + j * 56, y + 4, v, { s: 12, f: XC.navy, w: j === 2 ? 1 : 0, a: 'middle', o: bars ? 1 : 0 })); if (r < 2) box(`tbl-${r + 1}`, 672, y + 40, 190, 1, '#E6E9ED', bars ? 1 : 0); });
+  const title = titled ? 'Enterprise drove two thirds of growth since FY21' : 'Q3 revenue by segment';
+  const overlay = `<div data-node-label="Ex Overlay" className="flex absolute left-[281px] top-[87px] w-[800px] h-[450px] bg-white rounded-[4px] overflow-clip">
+    ${svg}${out.join('')}
+    <div data-node-label="ttl" className="flex absolute left-[36px] top-[26px]">${T('ttl-t', title, `${titled ? `[color:${XC.navy}]` : '[color:#9AA5B1]'} text-[23px] font-semibold tracking-[-0.4px] whitespace-nowrap`)}</div>
+    <div data-node-label="unit" className="flex absolute left-[36px] top-[64px]" style={{opacity:${titled ? 1 : 0}}}>${T('unit-t', 'Revenue by customer segment, FY21 to FY25E, $M', '[color:#6B7A86] text-[11px] whitespace-nowrap')}</div>
+    <div data-node-label="src" className="flex absolute left-[36px] top-[424px]" style={{opacity:${story ? 1 : 0}}}>${T('src-t', 'Source: Q3 board pack, tab 2; Halden analysis. Sample data.', `${MONO} [color:#909090] text-[9px] whitespace-nowrap`)}</div>
+  </div>`;
+  const names = ['01 Draft', '02 Answer', '03 Exhibit', '04 Story', '05 Reset'];
+  return `<div data-node-id="ed5${n === 5 ? 5 : n}" data-node-label="Run ${names[n - 1]}" className="flex relative w-[1470px] h-[923px] overflow-clip [background-color:#F5F5F2] [color:var(--ad-ink)] [font-family:var(--ad-font)] [line-height:normal]">
+    <div data-node-label="Shot" className="flex absolute left-0 top-0 w-[1470px] h-[923px] overflow-clip"></div>
+    ${overlay}
+  </div>`; };
+for (let n = 1; n <= 5; n++) fs.writeFileSync(`/tmp/strat/ed/ed5${n}.jsx`, fix(runState(n === 5 ? 1 : n).replace('data-node-id="ed51" data-node-label="Run 01 Draft"', n === 5 ? 'data-node-id="ed55" data-node-label="Run 05 Reset"' : 'data-node-id="ed51" data-node-label="Run 01 Draft"')));
