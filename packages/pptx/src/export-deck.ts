@@ -96,6 +96,24 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
     }
     const targets=deck.slides.map((slide,index)=>({id:`ad${index+1}`,target:slide.source.kind==="original" ? path.posix.relative("ppt",slide.source.part) : `../${prefix}ppt/slides/slide${index+1}.xml`}))
     parts.set("ppt/_rels/presentation.xml.rels",replaceRelationships(parts.get("ppt/_rels/presentation.xml.rels") ?? Buffer.alloc(0),targets))
+    const nativeRels=parseXml(native.get("ppt/_rels/presentation.xml.rels") ?? Buffer.alloc(0))
+    const rels=parseXml(parts.get("ppt/_rels/presentation.xml.rels")!),relationships=rels.nodes.filter(node=>node.local==="Relationship")
+    const relationshipIds=new Set(relationships.map(node=>node.attributes.Id)),masterType="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster"
+    const masters=nativeRels.nodes.filter(node=>node.local==="Relationship"&&node.attributes.Type===masterType).map((node,index)=>{
+      const target=path.posix.normalize(prefix+"ppt/"+(node.attributes.Target ?? ""))
+      const existing=relationships.find(rel=>rel.attributes.Type===masterType&&path.posix.resolve("/ppt",rel.attributes.Target ?? "")===`/${target}`)
+      let id=existing?.attributes.Id ?? `adMaster${index}`
+      if(!existing)while(relationshipIds.has(id))id+="_"
+      relationshipIds.add(id)
+      return {id,target,existing:existing!==undefined}
+    })
+    parts.set("ppt/_rels/presentation.xml.rels",Buffer.from(rels.xml.replace("</Relationships>",masters.filter(master=>!master.existing).map(master=>`<Relationship Id="${master.id}" Type="${masterType}" Target="/${escapeXml(master.target)}"/>`).join("")+"</Relationships>")))
+    const presentation=parseXml(parts.get("ppt/presentation.xml")!),masterList=presentation.nodes.find(node=>node.local==="sldMasterIdLst")
+    const registered=presentation.nodes.filter(node=>node.local==="sldMasterId"),oldIds=registered.map(node=>Number(node.attributes.id))
+    const firstId=Math.max(2147483647,...oldIds)+1
+    const added=masters.filter(master=>!registered.some(node=>node.attributes["r:id"]===master.id)).map((master,index)=>`<p:sldMasterId id="${firstId+index}" r:id="${master.id}"/>`).join("")
+    const presentationXml=masterList ? presentation.xml.slice(0,masterList.closeStart)+added+presentation.xml.slice(masterList.closeStart) : presentation.xml.replace(/(<p:sldIdLst)/,`<p:sldMasterIdLst>${added}</p:sldMasterIdLst>$1`)
+    parts.set("ppt/presentation.xml",Buffer.from(presentationXml))
     const main=parseXml(parts.get("ppt/presentation.xml") ?? Buffer.alloc(0)),list=main.nodes.find(node=>node.local==="sldIdLst")
     if(!list)throw new Error("slide-list-required")
     parts.set("ppt/presentation.xml",Buffer.from(main.xml.slice(0,list.start)+`<p:sldIdLst>${targets.map((target,index)=>`<p:sldId id="${256+index}" r:id="${target.id}"/>`).join("")}</p:sldIdLst>`+main.xml.slice(list.end)))

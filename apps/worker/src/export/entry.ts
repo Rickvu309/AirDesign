@@ -17,7 +17,7 @@ try {
   const missingFonts=[...new Set(slides.flatMap(slide=>fontReport(slide,deck.themes).missing))]
   if((flags.length||missingFonts.length)&&!input.options.allowIssues)throw new Error("export-needs-review")
   const digest=createHash("sha256").update(JSON.stringify({deck:saved,seq})).digest("hex")
-  const report={deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
+  const report={provenance:input.snapshot.provenance ?? {},deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
   let output:Buffer
   if(input.options.format==="pptx")output=await writeSavedPptx(saved,seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report,input.snapshot.assets ?? {},input.snapshot.templates ?? {})
   else {

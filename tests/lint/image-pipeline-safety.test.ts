@@ -8,6 +8,21 @@ it("rejects full blob reads for thumbnails and metadata",()=>{
 })
 it("rejects the default PNG compression cost in the isolated validator",()=>{
   const file="packages/files/src/assets/validate.ts",source=readFileSync(file,"utf8")
-  expect(imagePipelineSafetyHits(file,source.replaceAll(".png({compressionLevel:1})",".png()"))).toHaveLength(2)
+  expect(imagePipelineSafetyHits(file,source.replace(/\.png\(\{compressionLevel:\d+\}\)/g,".png()"))).toHaveLength(3)
+  expect(imagePipelineSafetyHits(file,source)).toEqual([])
+})
+
+it("rejects decoding the normalized image again for a thumbnail",()=>{
+  expect(imagePipelineSafetyHits("packages/files/src/assets/validate.ts","sharp(data).resize(512)")).toMatchObject([{reason:"image-thumbnail-must-use-decoded-raster"}])
+  expect(imagePipelineSafetyHits("packages/files/src/assets/validate.ts","sharp(pixels,{raw:info}).resize(512)")).toEqual([])
+})
+it("keeps operation metadata queries off payload blobs",()=>{
+  expect(imagePipelineSafetyHits("packages/operations/src/index.ts",'db.prepare("SELECT * FROM operations WHERE id=?")')).toMatchObject([{reason:"image-query-must-select-only-needed-columns"}])
+  expect(imagePipelineSafetyHits("packages/operations/src/index.ts",readFileSync("packages/operations/src/index.ts","utf8"))).toEqual([])
+})
+
+it("indexes operation expiration without scanning image payloads",()=>{
+  const file="packages/operations/src/index.ts",source=readFileSync(file,"utf8")
+  expect(imagePipelineSafetyHits(file,source.replace(" CREATE INDEX IF NOT EXISTS operations_expiry ON operations(state,expires);",""))).toEqual([{line:1,reason:"operation-expiry-must-use-metadata-index"}])
   expect(imagePipelineSafetyHits(file,source)).toEqual([])
 })

@@ -1,7 +1,8 @@
+import { imageJob,readImageJob } from "../src/assets/image-job.ts"
 import { expect,it } from "vitest"
 import sharp from "sharp"
 import { createHash } from "node:crypto"
-import { validateImage,readValidatedImage } from "../src/assets/validate.ts"
+import { validateImage,readValidatedImage,readValidatedAsset,serializeValidatedImage } from "../src/assets/validate.ts"
 import { assetProviders } from "../src/assets/providers.ts"
 import { isImagePlacement } from "../../deck/src/index.ts"
 import { fixtureDeck } from "../../deck/src/fixture.ts"
@@ -64,4 +65,25 @@ it("adds a native picture to an imported slide while preserving original objects
   expect(xml).toContain("Preserved body")
   expect(xml).toContain('descr="Added image"')
   expect((await importPptx(output)).report.relationships.some(rel=>rel.part==="ppt/slides/slide1.xml" && rel.type.endsWith("/image"))).toBe(true)
+})
+
+it("stores shared validated representations once and bounds binary artifact references",async()=>{
+  const input=await sharp({create:{width:640,height:320,channels:3,background:"blue"}}).png().toBuffer(),image=await validateImage(input),provenance=assetProviders[0]!.search("")[0]!.provenance
+  const artifact=serializeValidatedImage(image,provenance)
+  expect(readValidatedAsset(artifact)).toEqual({image,provenance})
+  expect(readValidatedImage(artifact)).toEqual(image)
+  expect(artifact.length).toBeLessThan(Buffer.byteLength(JSON.stringify(image)))
+  expect(()=>readValidatedImage(artifact.subarray(0,artifact.length-1))).toThrow("invalid-image-validation-result")
+  const corrupt=Buffer.from(artifact);corrupt.writeUInt32BE(65537,4)
+  expect(()=>readValidatedImage(corrupt)).toThrow("invalid-image-validation-result")
+})
+
+it("passes binary image jobs without base64 expansion and validates their boundary",async()=>{
+  const bytes=await sharp({create:{width:20,height:10,channels:3,background:"red"}}).png().toBuffer(),provenance=assetProviders[0]!.search("")[0]!.provenance
+  const job=imageJob(bytes,provenance)
+  expect(readImageJob(job)).toEqual({bytes,provenance})
+  expect(job.length).toBe(bytes.length+Buffer.byteLength(JSON.stringify(provenance))+8)
+  expect(()=>readImageJob(job.subarray(0,7))).toThrow("invalid-image-job")
+  const invalid=Buffer.from(job);invalid.writeUInt32BE(65537,4)
+  expect(()=>readImageJob(invalid)).toThrow("invalid-image-job")
 })

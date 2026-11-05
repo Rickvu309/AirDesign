@@ -1,9 +1,10 @@
+import { imageJob } from "../../../../packages/files/src/assets/image-job.ts"
 import { mutationRejection,type Access } from "@airdesign/access"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
 import { commandId } from "../../../../packages/change-log/src/index.ts"
 import { flatten,id,isImagePlacement,type Element } from "../../../../packages/deck/src/index.ts"
-import { assetLimits,readValidatedImage } from "../../../../packages/files/src/assets/validate.ts"
-import { uploadProvenance,parseProvenance } from "../../../../packages/files/src/assets/provenance.ts"
+import { assetLimits,readValidatedAsset } from "../../../../packages/files/src/assets/validate.ts"
+import { uploadProvenance } from "../../../../packages/files/src/assets/provenance.ts"
 import { assetProviders } from "../../../../packages/files/src/assets/providers.ts"
 import type { HistoryStore } from "../db/history-store.ts"
 
@@ -35,14 +36,14 @@ export function imagesHandler(access:Access,queue:OperationStore,history:History
           bytes=Buffer.from(base64,"base64")
           if(!bytes.length || bytes.length>assetLimits.bytes)throw new Error("image-size-limit")
         }
-        return Response.json(queue.submit(principal,requestId,Buffer.from(JSON.stringify({base64:bytes.toString("base64"),provenance}))),{status:202})
+        return Response.json(queue.submit(principal,requestId,imageJob(bytes,provenance)),{status:202})
       }
       const job=/^\/api\/assets\/jobs\/([a-f0-9-]{36})(?:\/(adopt|cancel))?$/.exec(url.pathname)
       if(job?.[1]){
         const key=operationId(job[1])
         if(job[2]==="adopt" && request.method==="POST"){
-          const bytes=queue.artifact(principal,key),image=readValidatedImage(bytes),value=record(JSON.parse(bytes.toString()))
-          return Response.json(await store.adopt(principal,image,parseProvenance(value.provenance)))
+          const {image,provenance}=readValidatedAsset(queue.artifact(principal,key))
+          return Response.json(await store.adopt(principal,image,provenance))
         }
         if(job[2]==="cancel" && request.method==="POST")return Response.json(queue.cancel(principal,key))
         if(!job[2] && request.method==="GET")return Response.json(queue.status(principal,key))

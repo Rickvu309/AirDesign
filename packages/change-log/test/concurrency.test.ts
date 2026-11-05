@@ -91,3 +91,15 @@ it("preserves only required ancestor containers for a nested adopted child",()=>
   expect(container.children).toHaveLength(1)
   expect(container.children[0]).toMatchObject({id:"nested_child",fill:"#ff0000"})
 })
+
+it("keeps prior history unchanged through edits, run transitions and undo",()=>{
+  let history=initialHistory(fixtureDeck(2))
+  const commands:Command[]=[{id:cid("immutable_start"),kind:"start-run",run:"immutable"},edit("immutable_edit",history,"changed"),{id:cid("immutable_close"),kind:"close-run",run:"immutable"},{id:cid("immutable_undo"),kind:"undo",target:cid("immutable_edit")},{id:cid("immutable_redo"),kind:"redo",target:cid("immutable_edit")}]
+  for(const command of commands){
+    const before=structuredClone(history)
+    const result=execute(history,command)
+    expect(result.receipt.kind).toBe("applied")
+    expect(history).toEqual(before)
+    history=result.history
+  }
+})

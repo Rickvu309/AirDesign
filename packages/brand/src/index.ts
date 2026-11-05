@@ -27,8 +27,12 @@ export function applyTemplate(deck: Deck, template: Template, mode: TemplateMode
   const theme = { id: chosenTheme, font, background: template.background,foreground:template.foreground }
   const retained: string[] = []
   function element(value: Element): Element {
+    if (value.kind === "group") {
+      const linked=value.theme!==null && value.support.kind==="native"
+      if(!linked)retained.push(value.id)
+      return {...value,theme:linked ? theme.id : value.theme,children:value.children.map(element)}
+    }
     if (value.theme === null || value.support.kind !== "native") { retained.push(value.id); return value }
-    if (value.kind === "group") return { ...value, theme: theme.id, children: value.children.map(element) }
     const linked = (key: "font" | "color" | "fill") => { const yes = value.styleLinks === undefined || value.styleLinks.includes(key); if (!yes) retained.push(`${value.id}.${key}`); return yes }
     if (value.kind === "text") { const fontLinked = linked("font"), colorLinked = linked("color"); return { ...value, theme: theme.id, runs: value.runs.map(run => ({ ...run, font: fontLinked ? font : run.font, color: colorLinked ? template.foreground : run.color })) as typeof value.runs } }
     if (value.kind === "image") return value

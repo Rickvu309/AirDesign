@@ -3,6 +3,8 @@ import { startServer } from "../src/main.ts"
 import { expect,it } from "vitest"
 import sharp from "sharp"
 import { createHistoryStore } from "../src/db/history-store.ts"
+import { writeSavedPptx } from "../../../packages/pptx/src/export-deck.ts"
+import { readArchive } from "../../../packages/pptx/src/archive.ts"
 import { validateImage } from "../../../packages/files/src/assets/validate.ts"
 import { uploadProvenance } from "../../../packages/files/src/assets/provenance.ts"
 import { fixtureDeck } from "../../../packages/deck/src/fixture.ts"
@@ -39,4 +41,31 @@ it("deduplicates parallel owned originals, isolates owners, retains used origina
 it("keeps all in-memory job and template stores off the filesystem",async()=>{
   const server=await startServer(0,{operationsPath:":memory:",historyPath:"memory://",accessPath:"memory://"})
   try{expect(existsSync(":memory:.images")).toBe(false);expect(existsSync(":memory:.templates")).toBe(false)}finally{await server.close()}
+})
+
+it.each(["local-stock","heroicons"])("snapshots full resolution and immutable %s provenance for saved exports",async providerId=>{
+  const {assetProviders}=await import("../../../packages/files/src/assets/providers.ts")
+  const provider=assetProviders.find(provider=>provider.id===providerId)!
+  const item=provider.search("")[0]!,source=await provider.read(item.id)
+  const image=await validateImage(await sharp({create:{width:6000,height:1000,channels:3,background:"blue"}}).jpeg().withMetadata({orientation:6}).toBuffer())
+  const store=await createHistoryStore({kind:"pglite"}),owner={personId:"owner"}
+  try{
+    await store.images.adopt(owner,image,source.provenance)
+    const deck=fixtureDeck(1)
+    deck.slides[0]!.elements=[{...deck.slides[0]!.elements[0]!,kind:"image",image:{asset:image.hash,crop:{x:.1,y:0,width:.8,height:1},focal:{x:.5,y:.5},mask:"ellipse",alt:"Full size"}}]
+    await store.create(owner,deck)
+    const job=await store.exports.submit(owner,"export",deck.id,{format:"pptx",slides:[],timing:"now",expectedSeq:0,allowIssues:true})
+    const claimed=await store.exports.claim()
+    expect(claimed).not.toBeNull()
+    const snapshot=claimed!.snapshot
+    expect.soft(snapshot).toHaveProperty("provenance",{[image.hash]:source.provenance})
+    const bytes=Buffer.from(snapshot.assets![image.hash]!.split(",")[1]!,"base64")
+    expect.soft(await sharp(bytes).metadata()).toMatchObject({width:1000,height:6000})
+    const exported=await readArchive(await writeSavedPptx(snapshot.deck,snapshot.seq,null,{provenance:snapshot.provenance},snapshot.assets))
+    const media=[...exported].find(([name])=>name.startsWith("ppt/media/"))!
+    expect(await sharp(media[1]).metadata()).toMatchObject({width:1000,height:6000})
+    const manifest=JSON.parse(exported.get("airdesign/saved-version.json")!.toString())
+    expect(manifest.provenance).toEqual({[image.hash]:source.provenance})
+    expect(job.kind).toBe("queued")
+  }finally{await store.close()}
 })

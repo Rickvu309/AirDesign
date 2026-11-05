@@ -5,12 +5,13 @@ import path from "node:path"
 import { applyTemplate, basics, newerVersion, parseTemplate } from "../src/index.ts"
 import { TemplateStore } from "../src/template-store.ts"
 import { fixtureDeck } from "../../deck/src/fixture.ts"
-import { apply, parseDeck, themeId } from "../../deck/src/index.ts"
+import { apply, id, parseDeck, themeId } from "../../deck/src/index.ts"
 import { writeSavedPptx } from "../../pptx/src/export-deck.ts"
 import { importPptx } from "../../pptx/src/index.ts"
 import { layoutFamilies } from "../src/layout-families.ts"
 import { commandId, execute, initialHistory } from "../../change-log/src/index.ts"
 import { createNativePresentation } from "../../pptx/src/native.ts"
+import { parseXml } from "../../pptx/src/xml.ts"
 import { writeArchive,readArchive } from "../../pptx/src/archive.ts"
 
 describe("versioned templates", () => {
@@ -136,4 +137,33 @@ it("inserts a revised template without restyling slides already using the old ve
   if(!result.ok)throw new Error("insert-look")
   expect(result.deck.themes.find(theme=>theme.id===result.deck.slides[0]!.theme)).toEqual(oldTheme)
   expect(result.deck.themes.find(theme=>theme.id===result.deck.slides[1]!.theme)?.background).toBe("#123456")
+})
+
+it("restyles linked descendants of local groups independently",()=>{
+  const deck=fixtureDeck(2),slide=deck.slides[0]!,linked=slide.elements[0]!,local=slide.elements[1]!
+  linked.theme=themeId("default")
+  slide.elements=[{...local,id:id("localGroup"),kind:"group",children:[linked,local]}]
+  const result=apply(deck,applyTemplate(deck,basics[1]!,{kind:"apply-deck"}).changes)
+  if(!result.ok)throw new Error("apply-failed")
+  const group=result.deck.slides[0]!.elements[0]!
+  expect(group.theme).toBeNull()
+  if(group.kind!=="group")throw new Error("group-required")
+  expect(group.children[0]!.kind==="text"&&group.children[0]!.runs[0].color).toBe("#ffffff")
+  expect(group.children[1]).toEqual(local)
+})
+it("registers every used master when applying a template to an imported deck",async()=>{
+  const source=await writeSavedPptx(fixtureDeck(1),0,null,{})
+  const {importedDeck}=await import("../../pptx/src/import-deck.ts")
+  const deck=importedDeck(await importPptx(source)),result=apply(deck,applyTemplate(deck,basics[1]!,{kind:"apply-deck"}).changes)
+  if(!result.ok)throw new Error("apply-failed")
+  const output=await importPptx(await writeSavedPptx(result.deck,1,source,{}))
+  const registered=output.report.relationships.filter(rel=>rel.part==="ppt/presentation.xml"&&rel.type.endsWith("/slideMaster"))
+  const masterIds=parseXml(output.parts.get("ppt/presentation.xml")!).nodes.filter(node=>node.local==="sldMasterId").map(node=>node.attributes["r:id"])
+  for(const layout of output.report.relationships.filter(rel=>rel.type.endsWith("/slideLayout")&&rel.part.includes("/slides/"))){
+    const master=output.report.relationships.find(rel=>rel.part===layout.target&&rel.type.endsWith("/slideMaster"))!
+    const relationship=registered.find(rel=>rel.target===master.target)
+    expect(relationship).toBeDefined()
+    expect(masterIds).toContain(relationship?.id)
+  }
+  await expect(importPptx(await writeSavedPptx(result.deck,2,Buffer.from(await writeSavedPptx(result.deck,1,source,{})),{}))).resolves.toBeDefined()
 })

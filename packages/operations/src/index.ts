@@ -29,13 +29,13 @@ export class OperationStore {
     mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 })
     this.db = new DatabaseSync(filename)
     this.clock = clock
-    this.db.exec("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, owner TEXT NOT NULL, request TEXT NOT NULL, digest TEXT NOT NULL, input BLOB, state TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, lease TEXT, deadline INTEGER, result BLOB, sha TEXT, expires INTEGER, reason TEXT, report TEXT NOT NULL DEFAULT '{}', holder INTEGER, UNIQUE(owner,request));")
+    this.db.exec("PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000; CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, owner TEXT NOT NULL, request TEXT NOT NULL, digest TEXT NOT NULL, input BLOB, state TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, lease TEXT, deadline INTEGER, result BLOB, sha TEXT, expires INTEGER, reason TEXT, report TEXT NOT NULL DEFAULT '{}', holder INTEGER, UNIQUE(owner,request)); CREATE INDEX IF NOT EXISTS operations_expiry ON operations(state,expires);")
   }
   submit(principal: Principal, request: string, input: Buffer): Operation {
     if (!/^[A-Za-z0-9_-]{1,100}$/.test(request)) throw new Error("invalid-request-id")
     const digest = createHash("sha256").update(input).digest("hex")
     this.db.prepare("INSERT INTO operations(id,owner,request,digest,input,state) VALUES(?,?,?,?,?,'queued') ON CONFLICT(owner,request) DO NOTHING").run(randomUUID(), principal.personId, request, digest, input)
-    const row = record(this.db.prepare("SELECT * FROM operations WHERE owner=? AND request=?").get(principal.personId, request))
+    const row = record(this.db.prepare("SELECT id,digest FROM operations WHERE owner=? AND request=?").get(principal.personId, request))
     if (row.digest !== digest) throw new Error("request-id-payload-conflict")
     return this.status(principal, operationId(text(row.id)))
   }
@@ -58,13 +58,13 @@ export class OperationStore {
     return this.status(principal, id)
   }
   artifact(principal: Principal, id: OperationId): Buffer {
-    const row = this.owned(principal, id)
+    const row = this.owned(principal, id,true)
     if (row.state !== "ready" || !(row.result instanceof Uint8Array)) throw new Error(row.state === "expired" ? "artifact-expired-submit-again" : "artifact-unavailable")
     return Buffer.from(row.result)
   }
-  private owned(principal: Principal, id: OperationId): Record<string, unknown> {
+  private owned(principal: Principal, id: OperationId, artifact=false): Record<string, unknown> {
     this.expire()
-    const row = this.db.prepare("SELECT * FROM operations WHERE id=? AND owner=?").get(id, principal.personId)
+    const row = this.db.prepare(`SELECT id,owner,state,attempts,lease,reason,sha,expires,report${artifact ? ",result" : ""} FROM operations WHERE id=? AND owner=?`).get(id, principal.personId)
     if (!row) throw new Error("operation-not-found")
     return record(row)
   }

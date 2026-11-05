@@ -15,10 +15,12 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
   const insertingPlainText = useRef(false)
   const caretStyle = useRef(element.runs[0])
   const localRuns = useRef<string | null>(null)
+  const renderedRuns = useRef<{node:HTMLDivElement;signature:string} | null>(null)
   const signature = JSON.stringify(element.runs)
   useLayoutEffect(() => {
     const node = ref.current
-    if (!node || composing.current) return
+    if (!node || composing.current || renderedRuns.current?.node === node && renderedRuns.current.signature === signature) return
+    renderedRuns.current = {node,signature}
     if (localRuns.current === signature) { localRuns.current = null; return }
     caretStyle.current = element.runs[0]
     canonicalChildren(node, element.runs)
