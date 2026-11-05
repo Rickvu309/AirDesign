@@ -1,0 +1,315 @@
+{
+  "schemaVersion": 2,
+  "prs": [
+    [
+      "W01 requires every frozen-rule or in-P01 reference resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; and W02 requires all documented exports import from the installed tarball; and W08 requires one successful link consumption invalidates every replay",
+      "W01 requires the contract examples protect a person edit from an older run and permit a new explicit request under the frozen rule; and W02 requires a clean consumer compiles with skipLibCheck false; and W08 requires a link beyond the 15-minute lifetime refuses access and retains intent",
+      "W01 requires the adopted-child counterexample specifies surviving ids and parents without losing the person contribution; and W02 requires all semantic surfaces and focus states render with legible light tokens; and W08 requires a wrong code never creates a session and can be retried within rate policy",
+      "W01 requires every fixture feature has a support classification and an honest proven or unproven status; and W02 requires all documented Studio states remain legible in the specified light theme; no Studio dark-mode feature is introduced; and W08 requires resend becomes available only after 30 seconds and invalidation behavior matches the frozen contract",
+      "W01 requires each font has a hash and license state or an explicit unresolved entry; and W02 requires one tab stop enters each toolbar and arrows select the intended control; and W08 requires changing email returns to a clear entry state without exposing another account",
+      "W01 requires fixture expectations declare ZIP/XML, network-egress, CPU, memory, time and isolated-temp limits plus a hostile-font case for P03; and W02 requires focus enters the dialog, Escape closes it and focus returns to the trigger; and W08 requires authentication returns the same validated signed opaque fixture intent without open redirect; real MCP approval/restart is verified in P07",
+      "W01 requires the receipt inventories Windows and actual screen-reader drivers and marks missing P09 X01 or X02 evidence blocked without claiming a pass; and W02 requires the media preference removes nonessential movement while preserving feedback; and W08 requires revoked sessions fail subsequent protected calls and return to sign-in safely",
+      "W01 requires the receipt inventories a pinned Mac reference or marks P09 X01 blocked without claiming a reopen pass; and W02 requires every app color resolves through the documented shadcn semantic tokens; and W08 requires cross-owner protected account requests reveal no protected data and perform no write; protected job retrieval is checked when P03 introduces jobs, and deck isolation is checked in P04",
+      "W01 requires the contract schema validates stable ids and source provenance with a versioned migration policy; and W02 requires the production entry and bundle do not import design generators or research prototypes; and W08 requires code/link flow, full-code paste, autofill, visible focus and named errors work with keyboard at desktop and 320 CSS px; accessibility-tree records contain the correct names and status roles. P09 X02 owns actual screen-reader transcripts and announcement behavior"
+    ],
+    [
+      "W03 requires one new slide has a stable unique id and is inserted at the requested position; and W04 requires drag commits the intended position without losing selection or exceeding the frame budget",
+      "W03 requires children retain stable ids and the group owns exactly the requested children; and W04 requires pan and zoom preserve pointer-to-slide coordinates and keyboard focus",
+      "W03 requires the requested element has one parent and document order is correct; and W04 requires the first slide becomes editable before the frozen startup deadline",
+      "W03 requires the subtree is removed atomically and unrelated ids and content remain; and W04 requires composing text does not commit partial characters or lose the composition on render",
+      "W03 requires Unicode text and style runs change only at the requested target; and W04 requires the fallback is disclosed and measurement waits for the selected loaded font",
+      "W03 requires a cycle returns a typed error and the entire deck remains unchanged; and W04 requires the SVG edges and hit areas agree at the tested zoom levels",
+      "W03 requires a dangling reference is rejected without partial mutation; and W04 requires a true clipped item is reported with its id and actionable location",
+      "W03 requires mixed scripts and combining characters survive serialize and inverse; and W04 requires an approved intentional overlap is not marked as an accidental collision",
+      "W03 requires applying a valid change then its inverse restores semantic equality without mutating the input; and W04 requires the Studio fixture and server snapshot match within the frozen rendering tolerance using identical fonts; worker integration is deferred to P05"
+    ],
+    [
+      "W05 requires one immutable receipt and one output result exist for duplicate delivery; and W06 requires styled text edits preserve every untouched part and unrelated run",
+      "W05 requires restart resumes or safely retries the same operation without duplicate artifacts; and W06 requires imported objects preserve declared native/kept semantics and a newly created text/table/chart deck passes local serialization and LibreOffice fast checks; actual Windows/Mac editability is reserved to P09 X01",
+      "W05 requires cancel stops future writes and leaves a terminal readable operation status; and W06 requires groups, masters and theme references retain their relationships and visible placement",
+      "W05 requires an expired result is unavailable with an explicit recovery action; and W06 requires placeholder inheritance and relationship closure survive local reimport and fast rendering; real PowerPoint captures are mandatory in P09 X01",
+      "W05 requires another owner cannot read status or retrieve the artifact; and W06 requires speaker notes survive and remain associated with the correct slide",
+      "W05 requires expansion limits terminate the job without leaving extracted payloads; and W06 requires moving a preserved object changes only declared placement dependencies",
+      "W05 requires entity expansion and external XML resolution are disabled; and W06 requires unknown elements and namespace content retain their original payload bytes",
+      "W05 requires redirect chains cannot reach loopback, metadata or private-network destinations; and W06 requires security removals are listed explicitly and unsafe relationships are absent",
+      "W05 requires rendered content cannot fetch metadata/private/public URLs; hostile fonts are refused safely; an enforced OOM/CPU kill ends the job terminally, removes its isolated temporary payload and permits the next owner job; and W06 requires stable identifiers and provenance survive local reimport without duplicate elements; source hashes and missing-font/kept/flagged reports are complete, and every unproved Windows/Mac claim is explicitly queued in P03R for P09 X01"
+    ],
+    [
+      "W07 requires an older agent run cannot overwrite a protected human value and a new explicit run follows the frozen epoch rule; and W09 requires both tabs converge in server order; a queued offline person edit lands over the intervening agent value and becomes protected from that older run",
+      "W07 requires independent properties both commit in one server order; and W09 requires the outbox retry gets the same commit id and no duplicate operation",
+      "W07 requires undoing the inserting run applies the frozen adoption policy and preserves the later human contribution; and W09 requires reload retains queued commands and their stable request ids",
+      "W07 requires undo restores only run-owned structure and retains later person placement; and W09 requires reconnect replays only missing commits and a fresh snapshot matches the server",
+      "W07 requires a command to deleted structure is refused atomically with recoverable request details; browser restoration is deferred to P04; and W09 requires a stale agent command refuses the whole batch with recovery metadata",
+      "W07 requires retry returns the original immutable receipt without another committed command or version; usage debits are deferred to P07; and W09 requires the removed slide edit remains recoverable through a clear restore choice",
+      "W07 requires the reused request id with changed payload is rejected atomically; and W09 requires the client stops writes and presents an explicit deleted-deck recovery state",
+      "W07 requires durable receipt and replayed document agree after process restart; and W09 requires bounded retries preserve edits and show the promised message after 3 seconds; offline Ask and Export are disabled with honest recovery copy",
+      "W07 requires a closed run cannot append a late tool result or resurrect itself; and W09 requires re-authentication retains the same principal pending edits, while sign-out/account switch clears or isolates the principal-keyed queue and cannot transmit it as another person"
+    ],
+    [
+      "W10 requires no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the chosen P01 entry flow persists a pending request without pretending an agent has run; and W11 requires invalid packages produce an actionable import failure and no partial deck",
+      "W10 requires no-result copy preserves search input and offers a clear next action; and W11 requires substitution is visible and its export consequences can be inspected",
+      "W10 requires the persisted name updates the editor and Home consistently; and W11 requires the object is retained while the unavailable-preview state never pretends it is absent",
+      "W10 requires the copy has a new deck id and independent future history; and W11 requires Fix locates the flagged item and supports returning to the export choice",
+      "W10 requires restore retains the original content and history before expiry; the idempotent 30-day purge removes only expired owned decks and leaves a clear state in other tabs; and W11 requires the exported artifact includes declared kept content and records acknowledged flags",
+      "W10 requires selection order and shift selection match the resulting batch action; and W11 requires the artifact is pinned to the chosen saved version and never includes half a change",
+      "W10 requires manual editing and person undo/redo across fixture-agent commits match C03 with no silent overwrite; keyboard focus and accessibility-tree status/error semantics hold, and phone deck view is read-only with usable 320 CSS px controls; and W11 requires reopening shows the same operation and retrieves its one result",
+      "W10 requires the stale tab disables unavailable actions and preserves recoverable work; and W11 requires retry produces one valid artifact and retains the original diagnostics; progress and errors have correct programmatic semantics and do not steal focus, with real announcements verified in P09 X02",
+      "W10 requires the accepted subset and refused content are explained before the user loses the original paste; and W11 requires the PDF contains only the chosen slides in their requested order without missing text"
+    ],
+    [
+      "W12 requires only linked properties update and every local override is listed and retained; and W13 requires one original blob is reused with separate placements and ownership metadata",
+      "W12 requires the intended master/layout family is applied without merging unrelated masters; exported relationships and local reopen are correct, with real Windows/Mac evidence required in P09 X01; and W13 requires changing one crop does not alter the original or other placements",
+      "W12 requires the missing font is identified before apply and substitutions are deliberate; and W13 requires the exported mask and crop agree with the editor and source resolution is retained",
+      "W12 requires a disallowed font is never embedded and the consequence is shown; and W13 requires the saved alt text is associated with the placed image and survives supported export",
+      "W12 requires the saved template is immutable at its version and reusable by its owner; and W13 requires script and external resource execution are blocked on ingestion and render",
+      "W12 requires the next new deck uses the selected version without changing existing decks; and W13 requires orientation and size are normalized within limits without blocking the editor",
+      "W12 requires the newer version is offered explicitly and never silently applied; and W13 requires the search preserves the query and offers upload or another search",
+      "W12 requires insert adds slides while apply changes only the requested existing targets; and W13 requires removing a library listing does not break an already placed authorized asset",
+      "W12 requires one undo restores all application changes and retains unrelated later edits; and W13 requires upload refuses safely with a clear quota message and existing assets remain usable"
+    ],
+    [
+      "W14 requires one reset occurs at Monday 08:00 in the account timezone; and W15 requires refusal creates no connection and returns a clear result to the client",
+      "W14 requires the weekly boundary follows the frozen local-time DST rule; and W15 requires expired approval restarts without losing client/permission context and the real signed return intent from P01 cannot redirect outside the registered client",
+      "W14 requires changing timezone cannot grant duplicate weekly allowance; and W15 requires wrong/missing verifier and wrong-resource/audience tokens are refused; resource indicators and the pinned supported registration/client-ID metadata path work in the reference client",
+      "W14 requires concurrent reset requests produce one ledger event; and W15 requires refresh replay invalidates or refuses the replay according to the frozen rotation policy",
+      "W14 requires a trusted ledger-level fixture grant after Monday does not charge for a second reset; real verified late-provider integration is owned by P08; and W15 requires a revoked connection immediately loses access and cannot refresh",
+      "W14 requires a platform-caused failure produces one refund linked to its debit; and W15 requires another owner cannot read a deck, job, image or capture",
+      "W14 requires the next atomic change is refused while saved work and request remain; and W15 requires stale edit batches fail atomically; an exhausted allowance returns reset time, balance and reset link, preserves the waiting request and never invokes a billing action",
+      "W14 requires fixture-funded reset admission causes no debit while disabled; imports, exports, themes and stock images cause zero agent-usage debit; and W15 requires paging neither skips nor duplicates ids under the frozen snapshot/cursor contract",
+      "W14 requires trusted fixture credit permits at most three configured automatic resets; the fourth is refused and User Agent admission follows the accepted C17 spending rule without billing tools; and W15 requires capture returns the intended protocol image block plus bounded metadata"
+    ],
+    [
+      "W16 requires only the selected scope changes and the activity names that scope; and W17 requires one verified payment id grants once; verified refund/chargeback removes only its purchased credit, floors spendable balance at zero after partial spending and retains immutable audit history",
+      "W16 requires the explicit whole-deck request can inspect and edit the intended slides; and W17 requires an invalid signature creates no credit and returns the documented refusal",
+      "W16 requires manual edits stay responsive, older writes respect the epoch, a second-tab steer joins the existing run, and User Agent commits show the same truthful working activity; and W17 requires browser return shows pending until the authoritative verified event arrives",
+      "W16 requires Stop retains accepted changes and prevents later commits from the stopped run; and W17 requires expired links do not pretend pending credit is spendable; cancel losing to authoritative paid settlement credits exactly once and shows the real terminal state",
+      "W16 requires resume uses the saved request and current deck without duplicating accepted changes; and W17 requires credit arrives once and no redundant reset debit follows the weekly reset",
+      "W16 requires the current atomic change completes then the run stops with an explicit next action; and W17 requires concurrent Add credits actions reopen the same one pending payment; a terminal payment can be followed by a new id without double credit",
+      "W16 requires disabling Aira leaves manual editing and authorized User Agent access available; and W17 requires bonus/paid consumption follows C15; replayed provider/Anthropic usage reconciliation is idempotent and reports discrepancies without inventing usage or credit",
+      "W16 requires whole-run undo removes only run contributions, preserves later human work and lists the kept person-edited items with stable ids; and W17 requires revocation terminates the selected connection without affecting unrelated sessions",
+      "W16 requires duplicate events do not duplicate activity, changes or debits; status/error tree semantics are correct and updates retain focus, with actual announcements required in P09 X02; and W17 requires deletion obeys C16 and explicit confirmation; payment waiting/result/error roles are programmatically determinable without moving focus, with real transcripts required in P09 X02"
+    ],
+    [
+      "W18 requires hard layout and readability checks pass for the dense-content family and blinded quality meets its family floor; and W19 requires weekly usage, credit reset terms and supported export claims match the shipped ledger and capability matrix",
+      "W18 requires numbers, labels and chart relationships agree with the source data; and W19 requires the guide completes a real authorized Claude connection over the approved HTTPS endpoint/tunnel; absent endpoint or client is blocked evidence, not a pass or supported claim",
+      "W18 requires hierarchy and reading order meet the frozen rubric and human-calibrated preference floor; and W19 requires the guide completes a real authorized Codex connection using its supported transport; absent required endpoint or client is blocked evidence, not a pass or supported claim",
+      "W18 requires mixed scripts shape correctly without substituted missing glyphs or clipped lines; and W19 requires the plain-text instructions carry equivalent connection and revoke information",
+      "W18 requires images have permitted provenance and the layout passes the frozen quality rubric; and W19 requires all interactive links, menus and sign-in entries work with visible keyboard focus",
+      "W18 requires diagram labels and connectors express the source relationship without clipping; and W19 requires the text and navigation reflow on the pinned narrow viewport without page-wide overflow",
+      "W18 requires randomizing judge order does not create a statistically unexplained preference reversal; and W19 requires measured text and control states meet the adopted contrast requirements",
+      "W18 requires any hard correctness or accessibility defect fails regardless of aesthetic score; and W19 requires every quality and export example is produced by the release head and linked to its receipt",
+      "W18 requires route and UI scans expose no retired sharing entry or share-link promise; and W19 requires the generated site contains no broken internal links or unsupported routes"
+    ]
+  ],
+  "workPackages": {
+    "W01": [
+      "every frozen-rule or in-P01 reference resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced",
+      "the contract examples protect a person edit from an older run and permit a new explicit request under the frozen rule",
+      "the adopted-child counterexample specifies surviving ids and parents without losing the person contribution",
+      "every fixture feature has a support classification and an honest proven or unproven status",
+      "each font has a hash and license state or an explicit unresolved entry",
+      "fixture expectations declare ZIP/XML, network-egress, CPU, memory, time and isolated-temp limits plus a hostile-font case for P03",
+      "the receipt inventories Windows and actual screen-reader drivers and marks missing P09 X01 or X02 evidence blocked without claiming a pass",
+      "the receipt inventories a pinned Mac reference or marks P09 X01 blocked without claiming a reopen pass",
+      "the contract schema validates stable ids and source provenance with a versioned migration policy"
+    ],
+    "W02": [
+      "all documented exports import from the installed tarball",
+      "a clean consumer compiles with skipLibCheck false",
+      "all semantic surfaces and focus states render with legible light tokens",
+      "all documented Studio states remain legible in the specified light theme; no Studio dark-mode feature is introduced",
+      "one tab stop enters each toolbar and arrows select the intended control",
+      "focus enters the dialog, Escape closes it and focus returns to the trigger",
+      "the media preference removes nonessential movement while preserving feedback",
+      "every app color resolves through the documented shadcn semantic tokens",
+      "the production entry and bundle do not import design generators or research prototypes"
+    ],
+    "W03": [
+      "one new slide has a stable unique id and is inserted at the requested position",
+      "children retain stable ids and the group owns exactly the requested children",
+      "the requested element has one parent and document order is correct",
+      "the subtree is removed atomically and unrelated ids and content remain",
+      "Unicode text and style runs change only at the requested target",
+      "a cycle returns a typed error and the entire deck remains unchanged",
+      "a dangling reference is rejected without partial mutation",
+      "mixed scripts and combining characters survive serialize and inverse",
+      "applying a valid change then its inverse restores semantic equality without mutating the input"
+    ],
+    "W04": [
+      "drag commits the intended position without losing selection or exceeding the frame budget",
+      "pan and zoom preserve pointer-to-slide coordinates and keyboard focus",
+      "the first slide becomes editable before the frozen startup deadline",
+      "composing text does not commit partial characters or lose the composition on render",
+      "the fallback is disclosed and measurement waits for the selected loaded font",
+      "the SVG edges and hit areas agree at the tested zoom levels",
+      "a true clipped item is reported with its id and actionable location",
+      "an approved intentional overlap is not marked as an accidental collision",
+      "the Studio fixture and server snapshot match within the frozen rendering tolerance using identical fonts; worker integration is deferred to P05"
+    ],
+    "W05": [
+      "one immutable receipt and one output result exist for duplicate delivery",
+      "restart resumes or safely retries the same operation without duplicate artifacts",
+      "cancel stops future writes and leaves a terminal readable operation status",
+      "an expired result is unavailable with an explicit recovery action",
+      "another owner cannot read status or retrieve the artifact",
+      "expansion limits terminate the job without leaving extracted payloads",
+      "entity expansion and external XML resolution are disabled",
+      "redirect chains cannot reach loopback, metadata or private-network destinations",
+      "rendered content cannot fetch metadata/private/public URLs; hostile fonts are refused safely; an enforced OOM/CPU kill ends the job terminally, removes its isolated temporary payload and permits the next owner job"
+    ],
+    "W06": [
+      "styled text edits preserve every untouched part and unrelated run",
+      "imported objects preserve declared native/kept semantics and a newly created text/table/chart deck passes local serialization and LibreOffice fast checks; actual Windows/Mac editability is reserved to P09 X01",
+      "groups, masters and theme references retain their relationships and visible placement",
+      "placeholder inheritance and relationship closure survive local reimport and fast rendering; real PowerPoint captures are mandatory in P09 X01",
+      "speaker notes survive and remain associated with the correct slide",
+      "moving a preserved object changes only declared placement dependencies",
+      "unknown elements and namespace content retain their original payload bytes",
+      "security removals are listed explicitly and unsafe relationships are absent",
+      "stable identifiers and provenance survive local reimport without duplicate elements; source hashes and missing-font/kept/flagged reports are complete, and every unproved Windows/Mac claim is explicitly queued in P03R for P09 X01"
+    ],
+    "W07": [
+      "an older agent run cannot overwrite a protected human value and a new explicit run follows the frozen epoch rule",
+      "independent properties both commit in one server order",
+      "undoing the inserting run applies the frozen adoption policy and preserves the later human contribution",
+      "undo restores only run-owned structure and retains later person placement",
+      "a command to deleted structure is refused atomically with recoverable request details; browser restoration is deferred to P04",
+      "retry returns the original immutable receipt without another committed command or version; usage debits are deferred to P07",
+      "the reused request id with changed payload is rejected atomically",
+      "durable receipt and replayed document agree after process restart",
+      "a closed run cannot append a late tool result or resurrect itself"
+    ],
+    "W08": [
+      "one successful link consumption invalidates every replay",
+      "a link beyond the 15-minute lifetime refuses access and retains intent",
+      "a wrong code never creates a session and can be retried within rate policy",
+      "resend becomes available only after 30 seconds and invalidation behavior matches the frozen contract",
+      "changing email returns to a clear entry state without exposing another account",
+      "authentication returns the same validated signed opaque fixture intent without open redirect; real MCP approval/restart is verified in P07",
+      "revoked sessions fail subsequent protected calls and return to sign-in safely",
+      "cross-owner protected account requests reveal no protected data and perform no write; protected job retrieval is checked when P03 introduces jobs, and deck isolation is checked in P04",
+      "code/link flow, full-code paste, autofill, visible focus and named errors work with keyboard at desktop and 320 CSS px; accessibility-tree records contain the correct names and status roles. P09 X02 owns actual screen-reader transcripts and announcement behavior"
+    ],
+    "W09": [
+      "both tabs converge in server order; a queued offline person edit lands over the intervening agent value and becomes protected from that older run",
+      "the outbox retry gets the same commit id and no duplicate operation",
+      "reload retains queued commands and their stable request ids",
+      "reconnect replays only missing commits and a fresh snapshot matches the server",
+      "a stale agent command refuses the whole batch with recovery metadata",
+      "the removed slide edit remains recoverable through a clear restore choice",
+      "the client stops writes and presents an explicit deleted-deck recovery state",
+      "bounded retries preserve edits and show the promised message after 3 seconds; offline Ask and Export are disabled with honest recovery copy",
+      "re-authentication retains the same principal pending edits, while sign-out/account switch clears or isolates the principal-keyed queue and cannot transmit it as another person"
+    ],
+    "W10": [
+      "no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the chosen P01 entry flow persists a pending request without pretending an agent has run",
+      "no-result copy preserves search input and offers a clear next action",
+      "the persisted name updates the editor and Home consistently",
+      "the copy has a new deck id and independent future history",
+      "restore retains the original content and history before expiry; the idempotent 30-day purge removes only expired owned decks and leaves a clear state in other tabs",
+      "selection order and shift selection match the resulting batch action",
+      "manual editing and person undo/redo across fixture-agent commits match C03 with no silent overwrite; keyboard focus and accessibility-tree status/error semantics hold, and phone deck view is read-only with usable 320 CSS px controls",
+      "the stale tab disables unavailable actions and preserves recoverable work",
+      "the accepted subset and refused content are explained before the user loses the original paste"
+    ],
+    "W11": [
+      "invalid packages produce an actionable import failure and no partial deck",
+      "substitution is visible and its export consequences can be inspected",
+      "the object is retained while the unavailable-preview state never pretends it is absent",
+      "Fix locates the flagged item and supports returning to the export choice",
+      "the exported artifact includes declared kept content and records acknowledged flags",
+      "the artifact is pinned to the chosen saved version and never includes half a change",
+      "reopening shows the same operation and retrieves its one result",
+      "retry produces one valid artifact and retains the original diagnostics; progress and errors have correct programmatic semantics and do not steal focus, with real announcements verified in P09 X02",
+      "the PDF contains only the chosen slides in their requested order without missing text"
+    ],
+    "W12": [
+      "only linked properties update and every local override is listed and retained",
+      "the intended master/layout family is applied without merging unrelated masters; exported relationships and local reopen are correct, with real Windows/Mac evidence required in P09 X01",
+      "the missing font is identified before apply and substitutions are deliberate",
+      "a disallowed font is never embedded and the consequence is shown",
+      "the saved template is immutable at its version and reusable by its owner",
+      "the next new deck uses the selected version without changing existing decks",
+      "the newer version is offered explicitly and never silently applied",
+      "insert adds slides while apply changes only the requested existing targets",
+      "one undo restores all application changes and retains unrelated later edits"
+    ],
+    "W13": [
+      "one original blob is reused with separate placements and ownership metadata",
+      "changing one crop does not alter the original or other placements",
+      "the exported mask and crop agree with the editor and source resolution is retained",
+      "the saved alt text is associated with the placed image and survives supported export",
+      "script and external resource execution are blocked on ingestion and render",
+      "orientation and size are normalized within limits without blocking the editor",
+      "the search preserves the query and offers upload or another search",
+      "removing a library listing does not break an already placed authorized asset",
+      "upload refuses safely with a clear quota message and existing assets remain usable"
+    ],
+    "W14": [
+      "one reset occurs at Monday 08:00 in the account timezone",
+      "the weekly boundary follows the frozen local-time DST rule",
+      "changing timezone cannot grant duplicate weekly allowance",
+      "concurrent reset requests produce one ledger event",
+      "a trusted ledger-level fixture grant after Monday does not charge for a second reset; real verified late-provider integration is owned by P08",
+      "a platform-caused failure produces one refund linked to its debit",
+      "the next atomic change is refused while saved work and request remain",
+      "fixture-funded reset admission causes no debit while disabled; imports, exports, themes and stock images cause zero agent-usage debit",
+      "trusted fixture credit permits at most three configured automatic resets; the fourth is refused and User Agent admission follows the accepted C17 spending rule without billing tools"
+    ],
+    "W15": [
+      "refusal creates no connection and returns a clear result to the client",
+      "expired approval restarts without losing client/permission context and the real signed return intent from P01 cannot redirect outside the registered client",
+      "wrong/missing verifier and wrong-resource/audience tokens are refused; resource indicators and the pinned supported registration/client-ID metadata path work in the reference client",
+      "refresh replay invalidates or refuses the replay according to the frozen rotation policy",
+      "a revoked connection immediately loses access and cannot refresh",
+      "another owner cannot read a deck, job, image or capture",
+      "stale edit batches fail atomically; an exhausted allowance returns reset time, balance and reset link, preserves the waiting request and never invokes a billing action",
+      "paging neither skips nor duplicates ids under the frozen snapshot/cursor contract",
+      "capture returns the intended protocol image block plus bounded metadata"
+    ],
+    "W16": [
+      "only the selected scope changes and the activity names that scope",
+      "the explicit whole-deck request can inspect and edit the intended slides",
+      "manual edits stay responsive, older writes respect the epoch, a second-tab steer joins the existing run, and User Agent commits show the same truthful working activity",
+      "Stop retains accepted changes and prevents later commits from the stopped run",
+      "resume uses the saved request and current deck without duplicating accepted changes",
+      "the current atomic change completes then the run stops with an explicit next action",
+      "disabling Aira leaves manual editing and authorized User Agent access available",
+      "whole-run undo removes only run contributions, preserves later human work and lists the kept person-edited items with stable ids",
+      "duplicate events do not duplicate activity, changes or debits; status/error tree semantics are correct and updates retain focus, with actual announcements required in P09 X02"
+    ],
+    "W17": [
+      "one verified payment id grants once; verified refund/chargeback removes only its purchased credit, floors spendable balance at zero after partial spending and retains immutable audit history",
+      "an invalid signature creates no credit and returns the documented refusal",
+      "browser return shows pending until the authoritative verified event arrives",
+      "expired links do not pretend pending credit is spendable; cancel losing to authoritative paid settlement credits exactly once and shows the real terminal state",
+      "credit arrives once and no redundant reset debit follows the weekly reset",
+      "concurrent Add credits actions reopen the same one pending payment; a terminal payment can be followed by a new id without double credit",
+      "bonus/paid consumption follows C15; replayed provider/Anthropic usage reconciliation is idempotent and reports discrepancies without inventing usage or credit",
+      "revocation terminates the selected connection without affecting unrelated sessions",
+      "deletion obeys C16 and explicit confirmation; payment waiting/result/error roles are programmatically determinable without moving focus, with real transcripts required in P09 X02"
+    ],
+    "W18": [
+      "hard layout and readability checks pass for the dense-content family and blinded quality meets its family floor",
+      "numbers, labels and chart relationships agree with the source data",
+      "hierarchy and reading order meet the frozen rubric and human-calibrated preference floor",
+      "mixed scripts shape correctly without substituted missing glyphs or clipped lines",
+      "images have permitted provenance and the layout passes the frozen quality rubric",
+      "diagram labels and connectors express the source relationship without clipping",
+      "randomizing judge order does not create a statistically unexplained preference reversal",
+      "any hard correctness or accessibility defect fails regardless of aesthetic score",
+      "route and UI scans expose no retired sharing entry or share-link promise"
+    ],
+    "W19": [
+      "weekly usage, credit reset terms and supported export claims match the shipped ledger and capability matrix",
+      "the guide completes a real authorized Claude connection over the approved HTTPS endpoint/tunnel; absent endpoint or client is blocked evidence, not a pass or supported claim",
+      "the guide completes a real authorized Codex connection using its supported transport; absent required endpoint or client is blocked evidence, not a pass or supported claim",
+      "the plain-text instructions carry equivalent connection and revoke information",
+      "all interactive links, menus and sign-in entries work with visible keyboard focus",
+      "the text and navigation reflow on the pinned narrow viewport without page-wide overflow",
+      "measured text and control states meet the adopted contrast requirements",
+      "every quality and export example is produced by the release head and linked to its receipt",
+      "the generated site contains no broken internal links or unsupported routes"
+    ]
+  }
+}

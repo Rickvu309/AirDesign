@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed planning register; P01 must accept every referenced decision before its merge",
+  "contracts": {
+    "C01": {
+      "title": "Person protection and run epochs",
+      "requiredDecision": "Define old-run protection and explicit-new-run consent for scalar and structural conflicts.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C02": {
+      "title": "Structural run undo and adoption",
+      "requiredDecision": "Specify surviving ids, parents and placements for create/move/delete interleavings and list kept person items.",
+      "source": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C03": {
+      "title": "Individual undo/redo and undo_change",
+      "requiredDecision": "Choose targets across interleaved agent commits, redo invalidation and refusal/skip recovery; forbid silent overwrites.",
+      "source": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C04": {
+      "title": "Native kept flagged and source preservation",
+      "requiredDecision": "Classify features, absent kept preview, graph closure, uncompressed part identity, security removals, provenance and migration.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C05": {
+      "title": "Tool catalog and actor authority",
+      "requiredDecision": "Pin catalog and scope; no deck deletion, account or billing tools; separate trusted fixtures from public routes.",
+      "source": "docs/planning/v0.1/research/tools/README.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C06": {
+      "title": "Principal and ownership boundary",
+      "requiredDecision": "One trusted person/connection/run principal across access, files, history, assets and agent writes.",
+      "source": "docs/planning/v0.1/content/key-components.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C07": {
+      "title": "Performance budgets and measurement",
+      "requiredDecision": "Adopt or explicitly revise every metric/rule in phase-data.json, including startup, render tolerance, worker and a separate PDF deadline. Record workload/limiter; never borrow import latency for models.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C08": {
+      "title": "Rendering and font tolerance",
+      "requiredDecision": "Pin font files/licenses, glyph/line metrics, viewports, fallback and visual thresholds before consumers.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C09": {
+      "title": "Email access and session policy",
+      "requiredDecision": "15-minute single use, 30-second resend; choose resend invalidation, finite attempt/rate limits, session lifetime and revocation.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C10": {
+      "title": "Home and first request design conflicts",
+      "requiredDecision": "Choose true-empty versus seeded Home, retire Starred, choose F02 entry point and wrong-code inline/page placement; pin copy and retained intent.",
+      "source": "docs/design/v0.1/backlog.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C11": {
+      "title": "Export and operation behavior",
+      "requiredDecision": "One saved version during active runs; cancellation/result expiry, import/export failure and offline Ask/Export waiting.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C12": {
+      "title": "Snapshot paging and response limits",
+      "requiredDecision": "Cursor snapshot lifetime, edits during paging, stale/expired cursor recovery, bounded output and capture metadata.",
+      "source": "docs/planning/v0.1/research/tools/README.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C13": {
+      "title": "Remote authorization and registration",
+      "requiredDecision": "Pin SDK/spec, audience/resource, PKCE, client-ID metadata/registration, refresh rotation/replay, revocation and 30-day idle expiry.",
+      "source": "docs/planning/v0.1/research/tools/README.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C14": {
+      "title": "Week identity timezone and DST",
+      "requiredDecision": "Monday 08:00 in stored timezone; choose effective week for timezone changes and DST, with no duplicate allowance/reset.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C15": {
+      "title": "Credits refunds and payment races",
+      "requiredDecision": "Bonus/paid order, minimum add/reset prices, one open payment, verified credit, cancel/paid race, chargeback floor and platform-failure refund.",
+      "source": "docs/planning/v0.1/content/f07-usage-flow.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C16": {
+      "title": "Retention and deletion",
+      "requiredDecision": "Freeze owned-data retention, 30-day Trash purge, result expiry and account/audit retention consequences; obtain provider/legal facts before activation.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C17": {
+      "title": "User Agent usage and automatic spending conflict",
+      "requiredDecision": "Resolve no User Agent credit debit versus auto-reset promises. Proposed default: User Agent cannot trigger credit spending and returns waiting/reset link; person-enabled Aira auto reset has the three/week cap. P01 must accept or explicitly replace this source-backed rule.",
+      "source": "docs/planning/v0.1/research/tools/README.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C18": {
+      "title": "Offline person edits and account isolation",
+      "requiredDecision": "Person edits land in arrival order over intervening agent values; define deleted-target restore, saved labels and principal-keyed queue clearance/isolation.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C19": {
+      "title": "Worker resource and security limits",
+      "requiredDecision": "Freeze ZIP/XML/font limits, CPU/memory/wall time, no renderer egress, per-owner/job temp isolation and crash/cancel cleanup.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C20": {
+      "title": "Quality and tool evaluation",
+      "requiredDecision": "Adopt branch family/task/human/judge thresholds and denominator rules; rerun subsequent schema/description changes; assign monthly human recalibration owner.",
+      "source": "docs/planning/v0.1/research/quality/README.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C21": {
+      "title": "Evidence and external gate boundaries",
+      "requiredDecision": "Local engine/tree/reference-client proofs may merge without fidelity/AT/vendor claims. Mandatory P09 X01-X06 and P09 claim checks cannot pass by proxy.",
+      "source": "docs/planning/v0.1/content/engine-constraints.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C22": {
+      "title": "Tokens accessibility and phone scope",
+      "requiredDecision": "shadcn variables, corrected contrast, two motion tokens, keyboard/focus/status/error behavior, reduced motion and 320 CSS px access/read-only deck viewing.",
+      "source": "docs/design/v0.1/tokens.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C23": {
+      "title": "Templates and image provenance",
+      "requiredDecision": "Immutable versions/originals, linked/local overrides, embedding rights, applied masters, crop/mask/alt export, owned dedup and refusals.",
+      "source": "docs/design/v0.1/logic.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    },
+    "C24": {
+      "title": "Provider and public endpoint authorization",
+      "requiredDecision": "Pin sandbox/provider/FX and reconciliation; require endpoint/tunnel and paid-trial authorization. Missing services are X03/X05/X06 blockers, not fixture successes.",
+      "source": "docs/planning/v0.1/content/monorepo-map.md",
+      "acceptIn": "P01",
+      "status": "proposed"
+    }
+  },
+  "prReferences": {
+    "P01": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06",
+      "C07",
+      "C08",
+      "C09",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C17",
+      "C18",
+      "C19",
+      "C20",
+      "C21",
+      "C22",
+      "C23",
+      "C24"
+    ],
+    "P02": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C07",
+      "C08",
+      "C22"
+    ],
+    "P03": [
+      "C04",
+      "C06",
+      "C07",
+      "C08",
+      "C16",
+      "C19",
+      "C21"
+    ],
+    "P04": [
+      "C01",
+      "C02",
+      "C03",
+      "C06",
+      "C07",
+      "C11",
+      "C18"
+    ],
+    "P05": [
+      "C02",
+      "C03",
+      "C04",
+      "C07",
+      "C08",
+      "C10",
+      "C11",
+      "C16",
+      "C18",
+      "C21",
+      "C22"
+    ],
+    "P06": [
+      "C02",
+      "C06",
+      "C07",
+      "C08",
+      "C19",
+      "C21",
+      "C23"
+    ],
+    "P07": [
+      "C05",
+      "C06",
+      "C07",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C17",
+      "C20",
+      "C21",
+      "C24"
+    ],
+    "P08": [
+      "C01",
+      "C02",
+      "C03",
+      "C05",
+      "C06",
+      "C07",
+      "C14",
+      "C15",
+      "C16",
+      "C17",
+      "C22",
+      "C24"
+    ],
+    "P09": [
+      "C04",
+      "C05",
+      "C07",
+      "C08",
+      "C14",
+      "C15",
+      "C20",
+      "C21",
+      "C22",
+      "C24"
+    ]
+  },
+  "surfaces": {
+    "P01": "W01 probe:compat fixture CLI and contract-index validator; W02 packed UI consumer and real component fixtures; W08 real browser access and protected account/session API",
+    "P02": "W03 packed-consumer probe:deck CLI; W04 Studio render fixture and server snapshot CLI",
+    "P03": "W05 authenticated job CLI against server and worker; W06 PPTX CLI, local reimport and LibreOffice fast check",
+    "P04": "W07 two authenticated command clients with separate database connections; W09 two browser sync clients and command/WebSocket API",
+    "P05": "W10 browser Home/manual editor and persisted catalog API; W11 browser import/export and actual worker API",
+    "P06": "W12 browser templates and saved-version export; W13 browser assets and saved-version export",
+    "P07": "W14 ledger command API with trusted fixture credit grants; W15 MCP reference client and real consent UI",
+    "P08": "W16 browser Aira with genuine deterministic-adapter commits; W17 account UI and verified fixture/sandbox payment/reconciliation APIs",
+    "P09": "W18 release harness plus actual external reference applications/clients; W19 built site browser and authorized client guide walkthroughs"
+  },
+  "capabilityPrerequisites": {
+    "P02": [
+      "P01"
+    ],
+    "P03": [
+      "P02"
+    ],
+    "P04": [
+      "P03"
+    ],
+    "P05": [
+      "P04"
+    ],
+    "P06": [
+      "P05"
+    ],
+    "P07": [
+      "P06"
+    ],
+    "P08": [
+      "P07"
+    ],
+    "P09": [
+      "P08"
+    ]
+  },
+  "externalGates": {
+    "X01": {
+      "description": "P03R requires real Windows/Mac PowerPoint, licensed fonts, imported/native/applied-template reopen, editability and visual evidence",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    },
+    "X02": {
+      "description": "Real screen-reader transcripts for P01 access, P04 offline recovery, P05 manual/import/export states and P08 Aira/account/payment flows, including focus, errors and announcements",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    },
+    "X03": {
+      "description": "Authorized paid models for tool eval on Claude plus a second model and actual SDK-bound Aira smoke/quality runs",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    },
+    "X04": {
+      "description": "Independent human raters and judge calibration under the frozen quality protocol",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    },
+    "X05": {
+      "description": "Available claimed vendor clients and explicitly authorized public HTTPS test endpoint/tunnel where needed",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    },
+    "X06": {
+      "description": "Verified provider sandbox integration, eligibility/FX and usage reconciliation, with production scheduling/activation readiness; no live charges or activation",
+      "requiredIn": [
+        "P09"
+      ],
+      "claimConsumers": [
+        "P09"
+      ]
+    }
+  },
+  "allowedExternalAcceptancePRs": [
+    "P09"
+  ],
+  "localSeams": {
+    "P01": "signed opaque fixture return intent; real approval P07",
+    "P05": "persisted pending request; actual Aira P08",
+    "P07": "trusted ledger fixture grants; provider integration P08"
+  },
+  "baseStrategy": {
+    "stackRootBranch": "planning/v0.1",
+    "defaultBranchObserved": "main",
+    "defaultHeadObserved": "8089c12",
+    "prTarget": "stack root or declared parent",
+    "trunkComparison": "recorded stack root/parent head, never silently main",
+    "planningToMainMergeAuthorized": false,
+    "historicalResearchSha": "012c3dc74166fa036aa4e3b71b9d6f1042ae86e1",
+    "stackRootRecording": "Pin the accepted post-cleanup planning/v0.1 head before P01; it contains the delivery bundle and no root product implementation."
+  },
+  "deliveryConstraint": {
+    "maximumPRs": 9,
+    "scope": "all v0.1 implementation and release preparation",
+    "checkpointPolicy": "W01-W19 are internal development checkpoints, not PRs or extra review/merge rounds",
+    "sequentialStack": true,
+    "checkpointOrder": {
+      "P01": [
+        "W01",
+        "W02",
+        "W08"
+      ],
+      "P02": [
+        "W03",
+        "W04"
+      ],
+      "P03": [
+        "W05",
+        "W06"
+      ],
+      "P04": [
+        "W07",
+        "W09"
+      ],
+      "P05": [
+        "W10",
+        "W11"
+      ],
+      "P06": [
+        "W12",
+        "W13"
+      ],
+      "P07": [
+        "W14",
+        "W15"
+      ],
+      "P08": [
+        "W16",
+        "W17"
+      ],
+      "P09": [
+        "W18",
+        "W19"
+      ]
+    },
+    "historicalPRMap": {
+      "P01": "P01",
+      "P02": "P01",
+      "P08": "P01",
+      "P03": "P02",
+      "P04": "P02",
+      "P05": "P03",
+      "P06": "P03",
+      "P07": "P04",
+      "P09": "P04",
+      "P10": "P05",
+      "P11": "P05",
+      "P12": "P06",
+      "P13": "P06",
+      "P14": "P07",
+      "P15": "P07",
+      "P16": "P08",
+      "P17": "P08",
+      "P18": "P09",
+      "P19": "P09"
+    },
+    "bootstrapOwner": "P01",
+    "protectedJobsOwner": "P03"
+  }
+}

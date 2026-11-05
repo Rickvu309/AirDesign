@@ -1,0 +1,646 @@
+{
+  "schemaVersion": 2,
+  "prLimit": 9,
+  "prs": [
+    [
+      "Ship a signed-in workspace",
+      "None",
+      "bench/; fixtures/pptx/; docs/contracts/; scripts/verify-baseline.mjs; program/contract-index.json; package.json; packages/ui/; packages/ui/test/pack.test.mjs; apps/studio/; packages/access/src/; apps/server/src/main.ts; apps/studio/src/access/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "A person signs in on desktop or phone, reaches a real workspace shell and returns to the same validated intent. The UI consumer works from its packed artifact and every shared contract is accepted.",
+      "tests/contracts/compatibility.test.ts; packages/ui/test/pack.test.mjs; packages/access/test/access.test.ts",
+      "npm run verify:contracts then npm run verify:ui then npm run verify:access",
+      "W01 contract fixtures against the v0.1 authority; then W02 a freshly packed clean React 19 consumer; then W08 sign in with a local inbox",
+      "W01 authority and complete contract-index audit; then W02 package exports; then W08 single-use link|W01 old versus new run epoch contract; then W02 strict consumer typecheck; then W08 15-minute expiry|W01 adopted child undo contract; then W02 light theme; then W08 wrong code|W01 native kept flagged matrix; then W02 light-only Studio states; then W08 30-second resend|W01 font and license inventory; then W02 keyboard tabs; then W08 alternate email|W01 hostile file and font expectations; then W02 dialog focus; then W08 signed opaque return intent|W01 Windows and assistive-technology availability; then W02 reduced motion; then W08 session revoked|W01 Mac reference availability; then W02 canonical semantic tokens; then W08 cross-owner request|W01 versioned provenance schema; then W02 design-tooling import isolation; then W08 keyboard, accessibility tree and phone access",
+      "every owned checkpoint predicate passes independently",
+      "W01 fixture-run wall time and peak RSS; W02 consumer import size and shell startup time; W08 local authentication response latency",
+      "W01 the local fixture CLI terminates within 30 s on its declared small corpus; unavailable external references are inventories only and remain blocked at P09; W02 freeze initial packed-JS and startup budgets in W01, measure the clean v0.1 consumer against them, and record absence of a comparable trunk implementation; W08 provisional warm p95 at most 500 ms excluding external mail delivery; record inbox delivery separately",
+      true
+    ],
+    [
+      "Build the canonical deck and renderer",
+      "P01",
+      "packages/deck/src/; packages/deck/test/; scripts/probe-deck.mjs; packages/render/src/; bench/render/; packages/lint/src/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "A packed consumer creates and atomically changes a canonical deck, then the Studio fixture and server snapshot render the same saved deck with pinned fonts.",
+      "packages/deck/test/apply.test.ts; packages/render/test/parity.test.ts",
+      "npm run verify:deck then npm run verify:render",
+      "W03 serialize and reopen a fixture deck; then W04 render a reference slide",
+      "W03 insert slide; then W04 300-element drag|W03 insert group; then W04 zoom and pan|W03 move parent; then W04 100-slide open|W03 remove subtree; then W04 IME composition|W03 set text; then W04 font fallback|W03 invalid cycle; then W04 SVG geometry|W03 invalid reference; then W04 clipping report|W03 unicode text; then W04 intentional overlap|W03 inverse round trip; then W04 snapshot parity",
+      "every owned checkpoint predicate passes independently",
+      "W03 apply latency and touched-object allocation on 300-element deck; W04 frame time, edit-to-paint and first-editable time",
+      "W03 set a provisional p95 apply budget of 4 ms; record absolute result when trunk lacks apply; W04 60 fps target at 300 elements; edit drawn within 16 ms; first slide editable within 2 s for 100 slides on the pinned reference machine",
+      true
+    ],
+    [
+      "Import and preserve PowerPoint safely",
+      "P02",
+      "apps/worker/src/; packages/files/src/; packages/operations/src/; apps/server/src/operations/; packages/pptx/src/; packages/pptx/test/; fixtures/pptx/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "An authenticated person submits a PowerPoint job, survives interruption and receives a locally validated editable/preserved result with honest capability labels. Real PowerPoint evidence remains P09 X01.",
+      "apps/worker/test/operations.test.ts; packages/pptx/test/roundtrip.test.ts",
+      "npm run verify:operations then npm run verify:pptx",
+      "W05 submit and recover a fixture operation; then W06 unchanged imported presentation",
+      "W05 duplicate delivery; then W06 text-run patch|W05 worker crash; then W06 imported and natively created tables/charts|W05 cancel; then W06 groups and themes|W05 result expiry; then W06 master placeholders|W05 wrong owner; then W06 speaker notes|W05 ZIP expansion; then W06 kept object move|W05 DTD input; then W06 unknown XML|W05 redirect SSRF; then W06 unsafe content removal|W05 renderer egress, hostile font, OOM and temp cleanup; then W06 metadata local round trip and reference pack",
+      "every owned checkpoint predicate passes independently",
+      "W05 acknowledgment latency and worker RSS; W06 import/export time and visual difference",
+      "W05 operation id within 1 s; PPTX input at most 100 MB, expanded 500 MB, 10000 parts and 30 s; tune other job limits from fixtures; W06 local worker limit is 30 s; hash and graph invariants must pass. P09 X01 additionally requires at most 0.1 percent changed pixels per slide and 1 percent per item with unchanged text line counts on matched pinned references, as adopted or explicitly revised with evidence in P01",
+      true
+    ],
+    [
+      "Make editing durable across clients and reconnects",
+      "P03",
+      "packages/change-log/src/; apps/server/src/db/; packages/change-log/test/; apps/server/src/commands/; packages/rpc/src/; apps/server/src/rpc/; apps/studio/src/sync/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "Two signed-in clients converge on ordered edits, recover after offline work and undo an agent run while preserving later person changes.",
+      "packages/change-log/test/concurrency.test.ts; packages/rpc/test/reconnect.test.ts",
+      "npm run verify:change-log then npm run verify:sync",
+      "W07 two actors edit one deck; then W09 edit disconnect reload reconnect",
+      "W07 same property race; then W09 two tabs and offline person-versus-agent conflict|W07 independent property; then W09 lost acknowledgment|W07 insert then human edit; then W09 queue reload|W07 move then undo; then W09 server restart|W07 remove versus late command; then W09 stale agent base|W07 lost ACK; then W09 deleted slide|W07 payload mismatch; then W09 deleted deck|W07 database restart; then W09 retry after 3 seconds and offline actions|W07 closed run late write; then W09 expired session, sign-out and account switch",
+      "every owned checkpoint predicate passes independently",
+      "W07 commit latency and bounded history replay; W09 commit-to-paint trace and reconnect time",
+      "W07 provisional warm p95 commit at most 50 ms on the pinned local stack, leaving room for the 100 ms commit-to-paint budget; reject unbounded replay growth; W09 connected commit-to-paint p95 at most 100 ms; propose 2 s recovery for a 100-command local queue and measure before raising it",
+      true
+    ],
+    [
+      "Deliver the manual Studio and exports",
+      "P04",
+      "apps/studio/src/decks/; apps/studio/src/editor/; docs/design/v0.1/; packages/catalog/; apps/server/src/decks/; apps/worker/src/purge/; apps/studio/src/import/; apps/studio/src/export/; apps/server/src/operations/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "A person opens a deck from Home, edits slides and exports the saved version as PPTX, PDF or PNG. Phone viewing remains read-only.",
+      "apps/studio/test/manual-journey.test.ts; apps/studio/test/import-export.test.ts",
+      "npm run verify:studio then npm run verify:import-export",
+      "W10 create edit reopen deck; then W11 import edit export reopen",
+      "W10 true empty first visit and pending request; then W11 corrupt PPTX|W10 search no result; then W11 font substitution|W10 rename; then W11 kept preview missing|W10 duplicate; then W11 flagged Fix|W10 Trash restore and 30-day purge; then W11 export anyway|W10 multi-slide selection; then W11 export during run|W10 keyboard, interleaved person undo/redo and phone view; then W11 tab closed while exporting|W10 deleted in another tab; then W11 failed retry and accessible status|W10 partial paste refusal; then W11 PDF range",
+      "every owned checkpoint predicate passes independently",
+      "W10 input-to-paint and Home load; W11 operation ACK and export-ready time",
+      "W10 manual editing keeps the 16 ms render budget; propose Home usable within 2 s for 100 decks on the pinned local fixture; W11 id within 1 s; PPTX completes or fails within the 30 s worker deadline; record PDF absolute deadline in P01 for the fixture sizes",
+      true
+    ],
+    [
+      "Apply templates and owned images",
+      "P05",
+      "packages/brand/src/; apps/studio/src/templates/; docs/design/v0.1/templates/; packages/files/src/assets/; apps/studio/src/images/; docs/design/v0.1/images/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "A person applies a template and adds an owned image, then exports the same version with provenance, layout and preserved source relationships intact.",
+      "packages/brand/test/apply-template.test.ts; packages/files/test/assets.test.ts",
+      "npm run verify:brand then npm run verify:assets",
+      "W12 apply look and undo; then W13 reuse image in two decks",
+      "W12 local override; then W13 duplicate upload|W12 multiple masters and applied-template export; then W13 crop and focus|W12 font missing; then W13 mask export|W12 no embedding right; then W13 alt text|W12 save template; then W13 SVG scripts|W12 set default; then W13 huge phone photo|W12 new version offered; then W13 stock no results|W12 insert versus apply; then W13 library removal while used|W12 undo application; then W13 storage full",
+      "every owned checkpoint predicate passes independently",
+      "W12 template apply-to-paint; W13 thumbnail-ready time and crop-to-paint",
+      "W12 provisional p95 at most 100 ms for 100 slides excluding cold fonts; cold-font wait is visible and separately measured; W13 provisional local thumbnail p95 at most 2 s for a 10 MB fixture; crop keeps the 16 ms edit frame budget",
+      true
+    ],
+    [
+      "Expose metered tools through MCP",
+      "P06",
+      "packages/usage/src/; apps/server/src/usage/; apps/studio/src/usage/; apps/server/src/mcp/; packages/tools/src/; packages/access/src/oauth/; apps/studio/src/agents/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "An approved MCP client edits an owned deck through scoped tools and receives consistent usage, exhausted-budget, pagination and authorization results.",
+      "packages/usage/test/ledger.test.ts; packages/tools/test/conformance.test.ts",
+      "npm run verify:usage then npm run verify:mcp",
+      "W14 limit reached with saved request; then W15 connect get_context edit deck",
+      "W14 Monday boundary; then W15 deny approval|W14 DST; then W15 expired approval and authenticated return|W14 timezone change; then W15 PKCE, audience and registration|W14 two-tab reset; then W15 refresh replay|W14 fixture credit after Monday; then W15 revoked connection|W14 platform failure refund; then W15 wrong owner|W14 zero balance; then W15 stale base and out-of-usage MCP|W14 auto reset disabled and free operations; then W15 pagination under edits|W14 fixture-funded three-reset cap and actor policy; then W15 native capture image",
+      "every owned checkpoint predicate passes independently",
+      "W14 admission and ledger transaction latency; W15 warm p95 reads, edits, captures and full tools/list size",
+      "W14 provisional p95 at most 50 ms local admission and zero duplicate debits under concurrent retries; W15 at most 20 tools and 8000 declared estimator tokens; non-image results below 20000 UTF-8 bytes; reads 500 ms, edits 1 s, captures 2 s; slow ACK 1 s",
+      true
+    ],
+    [
+      "Run Aira and complete account controls",
+      "P07",
+      "packages/agent/src/; apps/server/src/agent/; apps/studio/src/chat/; apps/server/src/billing/; packages/usage/src/payments/; apps/studio/src/settings/; apps/server/src/account/; apps/worker/src/account-deletion/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "Aira makes real tool commits through the deterministic adapter, respects person edits and usage, and the account UI reconciles sandbox credits and deletion safely.",
+      "packages/agent/test/run-lifecycle.test.ts; packages/usage/test/payments.test.ts",
+      "npm run verify:agent then npm run verify:billing",
+      "W16 first-deck prompt to saved deck; then W17 sandbox payment and reset",
+      "W16 selection context; then W17 duplicate webhook, refund and chargeback|W16 whole-deck request; then W17 forged webhook|W16 edit alongside, second-tab steer and User Agent activity; then W17 browser return before webhook|W16 stop run; then W17 expired pending link and cancel-versus-paid|W16 resume failure; then W17 paid after Monday|W16 usage exhausted; then W17 two pending links|W16 Aira disabled; then W17 credit order and reconciliation|W16 run undo summary; then W17 revoke connection|W16 duplicate stream and accessible status; then W17 delete-account and accessible payment status",
+      "every owned checkpoint predicate passes independently",
+      "W16 first committed change and commit-to-paint; W17 webhook ACK and result propagation",
+      "W16 connected paint p95 at most 100 ms; measure harness dispatch and stream overhead separately with the deterministic adapter; record real-model first-change latency as not run until an approved P09 trial; W17 provisional webhook ACK at most 1 s after durable receipt and UI result within 2 s of verified credit commit; no live charges",
+      true
+    ],
+    [
+      "Accept the release and prepare truthful discovery",
+      "P08",
+      "bench/quality/; bench/release/; packages/lint/; docs/release/; apps/site/src/; apps/site/content/; docs/launch/",
+      "Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds.",
+      "The release dossier contains the mandatory actual-reference evidence and the built site makes only proven claims. Missing mandatory external evidence blocks this PR; publication remains separate.",
+      "bench/release/acceptance.test.ts; apps/site/test/discovery.test.ts",
+      "npm run verify:release then npm run verify:site",
+      "W18 first deck edit export reopen; then W19 landing to sign-in to deck",
+      "W18 dense content; then W19 pricing accuracy|W18 data chart accuracy; then W19 Claude guide over authorized HTTPS|W18 editorial layout; then W19 Codex guide over authorized endpoint|W18 non-Latin text; then W19 plain text guide|W18 image-led deck; then W19 keyboard navigation|W18 technical diagram; then W19 mobile reading|W18 judge-order reversal; then W19 contrast|W18 hard defect despite beauty; then W19 real export evidence|W18 retired sharing absent; then W19 broken-link scan",
+      "every owned checkpoint predicate passes independently",
+      "W18 end-to-end latency, memory and case-level quality statistics; W19 static-page load and build artifact size",
+      "W18 enforce all P02/P04/P07 latency limits and zero authorization/atomicity failures; quality thresholds are frozen policy and require calibrated human evidence; W19 provisional LCP at most 2.5 s under a pinned mobile network profile; record trunk comparison only for equivalent pages",
+      true
+    ]
+  ],
+  "workPackages": {
+    "W01": {
+      "title": "Freeze contracts and bound feasibility evidence",
+      "row": [
+        "Freeze contracts and bound feasibility evidence",
+        "None",
+        "bench/; fixtures/pptx/; docs/contracts/; scripts/verify-baseline.mjs; program/contract-index.json",
+        "Create a versioned decision bundle, compatibility matrix, licensed-fixture inventory and contract schemas. Adopt every entry and per-PR reference in the study contract-index.json into program/contract-index.json, replacing each proposed decision with an accepted rule, alternatives, source, owner, examples and evidence. Unresolved referenced contracts block P01. The index includes person undo/redo and undo_change, run adoption, access/recovery, product-entry conflicts, export and paging, worker limits, all performance budgets, usage and payments, retention and release gates. Introduce a stand-alone fixture CLI via npm run probe:compat with fixture and output arguments, reusing the narrow text-span preservation probe. Inventory Windows/Mac PowerPoint builds, licensed fonts and assistive-technology drivers. Unavailable external evidence is inventoried here and required by P09, not an unchecked merge requirement on foundation PRs. No production fidelity claim follows from this feasibility CLI.",
+        "The accepted contract index resolves every forward reference and design conflict, and the narrow probe report reproduces locally. Each unavailable external proof names its P09 gate without being marked passed.",
+        "tests/contracts/compatibility.test.ts",
+        "npm run verify:contracts",
+        "the existing root UI tests and a freshly packed clean React 19 consumer",
+        "authority and complete contract-index audit|old versus new run epoch contract|adopted child undo contract|native kept flagged matrix|font and license inventory|hostile file and font expectations|Windows and assistive-technology availability|Mac reference availability|versioned provenance schema",
+        "all unchanged part hashes match; no repair prompt; reference image and line-count rules are evaluated",
+        "fixture-run wall time and peak RSS",
+        "the local fixture CLI terminates within 30 s on its declared small corpus; unavailable external references are inventories only and remain blocked at P09",
+        false
+      ],
+      "requires": [],
+      "deliveryPR": "P01"
+    },
+    "W02": {
+      "title": "Build the v0.1 UI workspace",
+      "row": [
+        "Build the v0.1 UI workspace",
+        "W01",
+        "package.json; packages/ui/; packages/ui/test/pack.test.mjs; apps/studio/",
+        "Build the shared UI package and Studio shell from the v0.1 component, token and copy contracts. Use shadcn/ui CSS variables as canonical tokens and copy needed AI Elements patterns into components/ai-elements/. Use Sonner for toasts and cmdk for commands. Introduce workspace scripts, package exports and import-boundary checks. Apply the documented Geist, blue and paper palette with contrast corrections and the shared motion tokens. Keep Studio light-only; do not import design generators or research prototypes into product bundles. Diff the two copy kits and freeze one canonical keyed source.",
+        "The new packed UI package installs in a clean React 19 app and the Studio shell renders its v0.1 controls.",
+        "packages/ui/test/pack.test.mjs",
+        "npm run verify:ui",
+        "freshly packed v0.1 consumer",
+        "package exports|strict consumer typecheck|light theme|light-only Studio states|keyboard tabs|dialog focus|reduced motion|canonical semantic tokens|design-tooling import isolation",
+        "all v0.1 component behavior is usable and active app colors resolve through canonical tokens",
+        "consumer import size and shell startup time",
+        "freeze initial packed-JS and startup budgets in W01, measure the clean v0.1 consumer against them, and record absence of a comparable trunk implementation",
+        true
+      ],
+      "requires": [
+        "W01"
+      ],
+      "deliveryPR": "P01"
+    },
+    "W03": {
+      "title": "Implement the canonical deck and atomic changes",
+      "row": [
+        "Implement the canonical deck and atomic changes",
+        "W01",
+        "packages/deck/src/; packages/deck/test/; scripts/probe-deck.mjs",
+        "Define Deck, Slide, Element and ChangeSet with stable short ids and explicit original-source references. Implement dependency-free apply returning deck and inverse or a typed error. Support insert, set, move and remove, arbitrary slide sizes, group structure, theme references, notes, placeholders and native/kept/flagged variants. Keep JSX in a separate adapter-loaded entry. Introduce a packed-consumer probe:deck command that accepts fixture ChangeSets and emits the observed deck, inverse or typed error; it is the public verification surface for this library-only slice.",
+        "Valid changes apply atomically; invalid or cyclic structure leaves the original deck unchanged.",
+        "packages/deck/test/apply.test.ts",
+        "npm run verify:deck",
+        "serialize and reopen a fixture deck",
+        "insert slide|insert group|move parent|remove subtree|set text|invalid cycle|invalid reference|unicode text|inverse round trip",
+        "observed deck and inverse match the fixture and failures have zero partial writes",
+        "apply latency and touched-object allocation on 300-element deck",
+        "set a provisional p95 apply budget of 4 ms; record absolute result when trunk lacks apply",
+        false
+      ],
+      "requires": [
+        "W01"
+      ],
+      "deliveryPR": "P02"
+    },
+    "W04": {
+      "title": "Render and measure one deck consistently",
+      "row": [
+        "Render and measure one deck consistently",
+        "W02, W03",
+        "packages/render/src/; bench/render/; packages/lint/src/",
+        "Expose Slide, render/server.snapshot and render/measure.measure. Start with React DOM and SVG shape geometry. Preserve native text editing, IME and accessible text. Wait for pinned fonts, collect layout reads in one pass, cache thumbnails by slide version and patch only touched elements. Implement hard defect checks separately from preference judging.",
+        "A Studio fixture and server snapshot consume one render package with matching geometry and fonts; text stays editable and overflow reports identify element ids.",
+        "packages/render/test/parity.test.ts",
+        "npm run verify:render",
+        "render a reference slide",
+        "300-element drag|zoom and pan|100-slide open|IME composition|font fallback|SVG geometry|clipping report|intentional overlap|snapshot parity",
+        "correct pixels and selection persist; no unexpected redraws or text loss",
+        "frame time, edit-to-paint and first-editable time",
+        "60 fps target at 300 elements; edit drawn within 16 ms; first slide editable within 2 s for 100 slides on the pinned reference machine",
+        true
+      ],
+      "requires": [
+        "W02",
+        "W03"
+      ],
+      "deliveryPR": "P02"
+    },
+    "W05": {
+      "title": "Run durable isolated file operations",
+      "row": [
+        "Run durable isolated file operations",
+        "W01, W08",
+        "apps/worker/src/; packages/files/src/; packages/operations/src/; apps/server/src/operations/",
+        "Implement queued operations with durable ids, ownership, bounded retries, cancellation, input limits and artifact expiry. Keep Chromium and parsing outside the API process. Reject external file paths and private-network URLs, revalidate redirects, sanitize SVG, and make repeated job delivery converge to one result. Use the authenticated P01 principal for job submission, polling, cancellation and artifact retrieval. Add the operation adapter to the existing server bootstrap and reject cross-owner jobs on every path. Do not introduce a fixture authentication bypass. Deny renderer network egress, resolving authorized images and fonts into bounded local inputs before render. Enforce per-job CPU, memory and wall-clock limits in a killable process/container. Give each owner/job an isolated temporary directory and reclaim it on cancel, timeout or crash recovery. Parse embedded/uploaded fonts in the same isolation and reject hostile fonts. A killed job must not affect the next owner job.",
+        "A slow operation returns an id, survives API restart and exposes one owned result or a traceable failure.",
+        "apps/worker/test/operations.test.ts",
+        "npm run verify:operations",
+        "submit and recover a fixture operation",
+        "duplicate delivery|worker crash|cancel|result expiry|wrong owner|ZIP expansion|DTD input|redirect SSRF|renderer egress, hostile font, OOM and temp cleanup",
+        "one final result exists and the API remains responsive with no cross-owner artifacts",
+        "acknowledgment latency and worker RSS",
+        "operation id within 1 s; PPTX input at most 100 MB, expanded 500 MB, 10000 parts and 30 s; tune other job limits from fixtures",
+        false
+      ],
+      "requires": [
+        "W01",
+        "W08"
+      ],
+      "deliveryPR": "P03"
+    },
+    "W06": {
+      "title": "Preserve and selectively edit PowerPoint packages",
+      "row": [
+        "Preserve and selectively edit PowerPoint packages",
+        "W03, W05",
+        "packages/pptx/src/; packages/pptx/test/; fixtures/pptx/",
+        "Implement the local preservation engine. Retain original OPC payloads and relationship graphs, capability classifications, narrow native editors, copy-on-write dependencies, font provenance and explicit security exceptions. Export untouched imported parts exactly and generate native text, shapes, tables and charts through qualified selective writers. Validate local parse/reimport, part hashes, relationship closure, safety reports and LibreOffice fast checks; LibreOffice is only a fast check, never PowerPoint fidelity proof. Carry unverified application metadata and visual/editability support as unproven. Produce the P03R reference-evidence pack for P09 X01, covering pinned Windows and Mac applications, licensed fonts, no-repair reopening, native editing and frozen visual/line-count thresholds. P03R is an external evidence batch, not a twentieth implementation PR. Missing references block P09 release acceptance, while P03 can merge on its local engine evidence without a fidelity support claim.",
+        "An imported deck can be exported untouched or with one text change while unrelated content remains preserved.",
+        "packages/pptx/test/roundtrip.test.ts",
+        "npm run verify:pptx",
+        "unchanged imported presentation",
+        "text-run patch|imported and natively created tables/charts|groups and themes|master placeholders|speaker notes|kept object move|unknown XML|unsafe content removal|metadata local round trip and reference pack",
+        "unaffected part payload hashes match, affected dependencies remain valid, exported objects retain declared editability and PowerPoint opens without repair",
+        "import/export time and visual difference",
+        "local worker limit is 30 s; hash and graph invariants must pass. P09 X01 additionally requires at most 0.1 percent changed pixels per slide and 1 percent per item with unchanged text line counts on matched pinned references, as adopted or explicitly revised with evidence in P01",
+        true
+      ],
+      "requires": [
+        "W03",
+        "W05"
+      ],
+      "deliveryPR": "P03"
+    },
+    "W07": {
+      "title": "Persist ordered edits and selective run undo",
+      "row": [
+        "Persist ordered edits and selective run undo",
+        "W03, W08",
+        "packages/change-log/src/; apps/server/src/db/; packages/change-log/test/; apps/server/src/commands/",
+        "Commit commands, receipts, events and projections in one Postgres transaction per deck. Version scalar properties and structure. Derive actor identity from trusted access context. Protect person edits against older runs while permitting a later explicit request under the P01 contract. Replay history for undo, preserve later person edits and forbid id reuse with changed payloads. Test structural interleavings and restart recovery, beyond the scalar prototype. Use the shared P01 principal type through P01 access; keep persistence wiring in the server adapter instead of inventing a new shared db package. The slice is driven through its authenticated command API with two database connections, before Studio or a model exists. Expose the authenticated command API in apps/server/src/commands/ for the two-client probes, including individual undo/redo and undo_change counterexamples from the accepted contract index.",
+        "Two authenticated command clients interleave person and fixture-agent changes, undo a run and retain person contributions after database restart.",
+        "packages/change-log/test/concurrency.test.ts",
+        "npm run verify:change-log",
+        "two actors edit one deck",
+        "same property race|independent property|insert then human edit|move then undo|remove versus late command|lost ACK|payload mismatch|database restart|closed run late write",
+        "one durable order and receipt exist; no partial commit or lost person contribution occurs",
+        "commit latency and bounded history replay",
+        "provisional warm p95 commit at most 50 ms on the pinned local stack, leaving room for the 100 ms commit-to-paint budget; reject unbounded replay growth",
+        true
+      ],
+      "requires": [
+        "W03",
+        "W08"
+      ],
+      "deliveryPR": "P04"
+    },
+    "W08": {
+      "title": "Authenticate people and isolate their data",
+      "row": [
+        "Authenticate people and isolate their data",
+        "W01, W02",
+        "packages/access/src/; apps/server/src/main.ts; apps/studio/src/access/",
+        "Implement email link and code sign-in using Better Auth behind the access module. Preserve pending deck and agent intent. Enforce ownership on every resource boundary, session revocation and non-enumerating responses. Keep mail delivery behind an injected adapter with a local inbox in development. Create the minimal server bootstrap and authenticated principal boundary here. Expose only the account/session and signed-intent surfaces that exist. P03 adds protected job routes using this principal; P04 adds deck isolation when those resources exist. Carry a signed opaque return intent through access without implementing agent consent yet; real approval integration belongs to P07. Support phone sign-in and link/code recovery at 320 CSS px. Local merge evidence covers keyboard, autofill, focus, error text and the accessibility tree. Actual screen-reader transcripts for this flow are the P09 X02 release gate, not a required P01 merge artifact.",
+        "One email path creates or signs into an account and returns the person to the original intent.",
+        "packages/access/test/access.test.ts",
+        "npm run verify:access",
+        "sign in with a local inbox",
+        "single-use link|15-minute expiry|wrong code|30-second resend|alternate email|signed opaque return intent|session revoked|cross-owner request|keyboard, accessibility tree and phone access",
+        "access decisions and visible recovery match F01 without leaking another account",
+        "local authentication response latency",
+        "provisional warm p95 at most 500 ms excluding external mail delivery; record inbox delivery separately",
+        true
+      ],
+      "requires": [
+        "W01",
+        "W02"
+      ],
+      "deliveryPR": "P01"
+    },
+    "W09": {
+      "title": "Deliver optimistic edits with durable offline recovery",
+      "row": [
+        "Deliver optimistic edits with durable offline recovery",
+        "W04, W07, W08",
+        "packages/rpc/src/; apps/server/src/rpc/; apps/studio/src/sync/",
+        "Wire typed RPC and ordered WebSocket replay to change-log. Persist queued commands in IndexedDB before network transmission; distinguish local pending from server-saved state. Rebase reconnecting clients, separate selection and gesture presence from deck mutations, and retain rejected edits targeting deleted structure for explicit restore. Expose saved, offline and retrying states honestly. Queued person commands win over intervening older agent values after reconnect in server arrival order; stale-agent refusal must never be reused for person edits. Ask and Export wait offline with honest copy. Key outbox storage by principal and clear or isolate it on sign-out/account switch without applying one account edits under another.",
+        "An edit survives browser reload while offline and reconnects once, or offers restore when its slide was deleted.",
+        "packages/rpc/test/reconnect.test.ts",
+        "npm run verify:sync",
+        "edit disconnect reload reconnect",
+        "two tabs and offline person-versus-agent conflict|lost acknowledgment|queue reload|server restart|stale agent base|deleted slide|deleted deck|retry after 3 seconds and offline actions|expired session, sign-out and account switch",
+        "local work survives and clients converge to committed deck order without silent drops",
+        "commit-to-paint trace and reconnect time",
+        "connected commit-to-paint p95 at most 100 ms; propose 2 s recovery for a 100-command local queue and measure before raising it",
+        true
+      ],
+      "requires": [
+        "W04",
+        "W07",
+        "W08"
+      ],
+      "deliveryPR": "P04"
+    },
+    "W10": {
+      "title": "Build the manual deck workspace and recovery states",
+      "row": [
+        "Build the manual deck workspace and recovery states",
+        "W02, W04, W09",
+        "apps/studio/src/decks/; apps/studio/src/editor/; docs/design/v0.1/; packages/catalog/; apps/server/src/decks/; apps/worker/src/purge/",
+        "Implement Home, Trash and deck lifecycle, then selection, editable text, slide ordering and undo on the real deck. Replace old Share and fake drafting entry points with current F02/F03 intent. Design first-prompt, changes-by-slide, read-only deleted-deck and paste refusal states before wiring them. Track shell state separately from deck state. Own persisted deck lifecycle in packages/catalog and apps/server/src/decks; the worker purge owner implements the 30-day Trash purge with idempotent deletion. Store the first pending request without claiming Aira exists before P08. Add person undo/redo across fixture-agent commits and apply the P01 undo_change contract. Phone routes provide read-only deck viewing and a clear Edit on a laptop message; surrounding controls reflow at 320 CSS px. Include local accessibility-tree status/error and focus checks, with actual transcripts reserved to P09 X02.",
+        "A person creates a deck, edits, reloads, renames, duplicates and restores it through the current S30/S40 flows.",
+        "apps/studio/test/manual-journey.test.ts",
+        "npm run verify:studio",
+        "create edit reopen deck",
+        "true empty first visit and pending request|search no result|rename|duplicate|Trash restore and 30-day purge|multi-slide selection|keyboard, interleaved person undo/redo and phone view|deleted in another tab|partial paste refusal",
+        "saved content and focus survive navigation and every unsafe action has the designed recovery",
+        "input-to-paint and Home load",
+        "manual editing keeps the 16 ms render budget; propose Home usable within 2 s for 100 decks on the pinned local fixture",
+        true
+      ],
+      "requires": [
+        "W02",
+        "W04",
+        "W09"
+      ],
+      "deliveryPR": "P05"
+    },
+    "W11": {
+      "title": "Connect version-pinned import and export journeys",
+      "row": [
+        "Connect version-pinned import and export journeys",
+        "W06, W10",
+        "apps/studio/src/import/; apps/studio/src/export/; apps/server/src/operations/",
+        "Implement importing cards and explicit native/kept/flagged reports, without inventing previews for unsupported objects. Export one immutable saved deck version. Offer export now or after run, Fix or Export anyway, reattach pending results after tab close, and PDF download. Keep PNG captures internal. Prove Studio and worker render the same saved version with identical font hashes, and keep that version in both the artifact and fit report. Verify import/export live status and errors in the accessibility tree without moving focus, with actual announcement transcripts collected in P09 X02.",
+        "The person imports a presentation, edits it and downloads a version-pinned editable PPTX or PDF with all compromises listed.",
+        "apps/studio/test/import-export.test.ts",
+        "npm run verify:import-export",
+        "import edit export reopen",
+        "corrupt PPTX|font substitution|kept preview missing|flagged Fix|export anyway|export during run|tab closed while exporting|failed retry and accessible status|PDF range",
+        "the deck remains untouched by export and reports match the actual exported item tiers",
+        "operation ACK and export-ready time",
+        "id within 1 s; PPTX completes or fails within the 30 s worker deadline; record PDF absolute deadline in P01 for the fixture sizes",
+        true
+      ],
+      "requires": [
+        "W06",
+        "W10"
+      ],
+      "deliveryPR": "P05"
+    },
+    "W12": {
+      "title": "Apply versioned templates without overwriting overrides",
+      "row": [
+        "Apply versioned templates without overwriting overrides",
+        "W06, W10, W11",
+        "packages/brand/src/; apps/studio/src/templates/; docs/design/v0.1/templates/",
+        "Implement Light and Dark basics, template versions, layout families imported from masters, linked versus local properties, saved defaults and one-command application. Design insert-slide versus apply-deck modes, save and default states. A newer template version is offered, never pushed automatically. Export an applied-template deck and verify intended master/layout relationships locally. Include this exported fixture in P03R/P09 X01 for real Windows/Mac reopen and editability before any fidelity claim.",
+        "Applying a look changes linked items in one undo step and leaves explicit overrides listed and intact.",
+        "packages/brand/test/apply-template.test.ts",
+        "npm run verify:brand",
+        "apply look and undo",
+        "local override|multiple masters and applied-template export|font missing|no embedding right|save template|set default|new version offered|insert versus apply|undo application",
+        "the pinned template version and local overrides remain correct after reload and undo",
+        "template apply-to-paint",
+        "provisional p95 at most 100 ms for 100 slides excluding cold fonts; cold-font wait is visible and separately measured",
+        true
+      ],
+      "requires": [
+        "W06",
+        "W10",
+        "W11"
+      ],
+      "deliveryPR": "P06"
+    },
+    "W13": {
+      "title": "Reuse safe images with nondestructive placement",
+      "row": [
+        "Reuse safe images with nondestructive placement",
+        "W05, W10, W11",
+        "packages/files/src/assets/; apps/studio/src/images/; docs/design/v0.1/images/",
+        "Add personal library, upload/paste and free stock/icon lookup with provenance. Keep originals immutable and deduplicate by owner and content. Store crop, focal point, mask and alt text on each placement. Design quota, refusal, no-results and low-resolution states. Do not add generated images in v0.1.",
+        "One original can appear with different crops in two decks and each exported crop matches the editor.",
+        "packages/files/test/assets.test.ts",
+        "npm run verify:assets",
+        "reuse image in two decks",
+        "duplicate upload|crop and focus|mask export|alt text|SVG scripts|huge phone photo|stock no results|library removal while used|storage full",
+        "original hash never changes and used assets survive removal from library listings",
+        "thumbnail-ready time and crop-to-paint",
+        "provisional local thumbnail p95 at most 2 s for a 10 MB fixture; crop keeps the 16 ms edit frame budget",
+        true
+      ],
+      "requires": [
+        "W05",
+        "W10",
+        "W11"
+      ],
+      "deliveryPR": "P06"
+    },
+    "W14": {
+      "title": "Enforce weekly usage with an auditable ledger",
+      "row": [
+        "Enforce weekly usage with an auditable ledger",
+        "W07, W08",
+        "packages/usage/src/; apps/server/src/usage/; apps/studio/src/usage/",
+        "Define week identity from the stored time zone, immutable usage events, limit-hit ids, atomic reset receipts and reservations. Both agent paths use one admission contract, with Aira weighted higher by a versioned rate table. Finish the current atomic change at limit, retain the request and keep manual editing available. Refund only platform-caused failures. Resolve timezone changes and DST in P01 before implementing. Own the credit ledger and reset admission primitives here, but use trusted ledger-level fixture grants for paid-credit scenarios until P08. These are not provider webhooks or UI checkout. Imports, exports, themes and stock images consume no agent allowance. Freeze whether a User Agent may trigger automatic credit spending in C17 before implementing; a remote tool cannot perform billing actions.",
+        "The run stops at its limit and offers a retained request; another tab or late event cannot spend twice on one limit hit.",
+        "packages/usage/test/ledger.test.ts",
+        "npm run verify:usage",
+        "limit reached with saved request",
+        "Monday boundary|DST|timezone change|two-tab reset|fixture credit after Monday|platform failure refund|zero balance|auto reset disabled and free operations|fixture-funded three-reset cap and actor policy",
+        "the ledger balances and usage never goes negative; manual resume remains explicit unless valid auto reset applies",
+        "admission and ledger transaction latency",
+        "provisional p95 at most 50 ms local admission and zero duplicate debits under concurrent retries",
+        true
+      ],
+      "requires": [
+        "W07",
+        "W08"
+      ],
+      "deliveryPR": "P07"
+    },
+    "W15": {
+      "title": "Expose the same tools through authorized MCP",
+      "row": [
+        "Expose the same tools through authorized MCP",
+        "W09, W11, W12, W13, W14",
+        "apps/server/src/mcp/; packages/tools/src/; packages/access/src/oauth/; apps/studio/src/agents/",
+        "Register the documented catalog from shared domain handlers, with Effect MCP integration validated against the pinned SDK/spec. Add PKCE, per-connection rotating refresh, revocation and 30-day idle expiry. Bound responses and snapshot cursors. Keep deck deletion, billing and account actions unavailable. Design expired approval and failed app-return states. Load deck/jsx here only. This slice intentionally exposes the complete documented catalog after its file, template and image handlers exist. An earlier partial-catalog release requires a revised contract and dependency graph, not silently omitted tools. Validate resource indicators and exact token audience, and test supported client-ID metadata or registration paths against the pinned revision. Integrate the real signed approval-return flow from P01. An out-of-usage MCP result reports reset time, balance and the person-controlled reset link while retaining the request. Public vendor connections are P09 X05 and require an authorized HTTPS test endpoint/tunnel; a local reference client is sufficient for this PR, not a vendor-support claim. Record the paid two-model tool evaluation as pending P09 X03.",
+        "A reference MCP client completes authorization, edits an owned deck and observes the same result as Studio; revocation blocks its next call. Record actual Claude/Codex app smoke tests separately and leave unavailable vendor-app gates blocked for P09.",
+        "packages/tools/test/conformance.test.ts",
+        "npm run verify:mcp",
+        "connect get_context edit deck",
+        "deny approval|expired approval and authenticated return|PKCE, audience and registration|refresh replay|revoked connection|wrong owner|stale base and out-of-usage MCP|pagination under edits|native capture image",
+        "authorized calls share domain semantics and all negative authorization cases fail safely",
+        "warm p95 reads, edits, captures and full tools/list size",
+        "at most 20 tools and 8000 declared estimator tokens; non-image results below 20000 UTF-8 bytes; reads 500 ms, edits 1 s, captures 2 s; slow ACK 1 s",
+        true
+      ],
+      "requires": [
+        "W09",
+        "W11",
+        "W12",
+        "W13",
+        "W14"
+      ],
+      "deliveryPR": "P07"
+    },
+    "W16": {
+      "title": "Run Aira on the shared tool contract",
+      "row": [
+        "Run Aira on the shared tool contract",
+        "W15",
+        "packages/agent/src/; apps/server/src/agent/; apps/studio/src/chat/",
+        "Integrate Claude Agent SDK as the server harness without writing a second loop. Use the same authorized tools, attach selected elements or the whole deck, stream real activity, cancellation and run ids, and keep completed changes after failure. Design empty-deck prompt, changes-by-slide and quiet whole-run Undo. Turning Aira off stops it. For this PR, an injected deterministic local adapter emits genuine shared-tool commits and exercises stream, steer and cancel behavior without a paid model call. SDK binding and real-model smoke evidence are separate explicitly authorized P09 gates. A steer from a second authenticated tab joins the same active deck run. User Agent commits use the same visible working activity. Accessibility-tree status/error semantics never move focus; actual announcements are P09 X02.",
+        "A first prompt through the local adapter produces a saved editable fixture deck; the person edits during its run, stops it and selectively undoes its changes. This proves lifecycle behavior, not model quality.",
+        "packages/agent/test/run-lifecycle.test.ts",
+        "npm run verify:agent",
+        "first-deck prompt to saved deck",
+        "selection context|whole-deck request|edit alongside, second-tab steer and User Agent activity|stop run|resume failure|usage exhausted|Aira disabled|run undo summary|duplicate stream and accessible status",
+        "real changes and usage match the visible activity, without any timed fake progress",
+        "first committed change and commit-to-paint",
+        "connected paint p95 at most 100 ms; measure harness dispatch and stream overhead separately with the deterministic adapter; record real-model first-change latency as not run until an approved P09 trial",
+        true
+      ],
+      "requires": [
+        "W15"
+      ],
+      "deliveryPR": "P08"
+    },
+    "W17": {
+      "title": "Reconcile credits and account controls safely",
+      "row": [
+        "Reconcile credits and account controls safely",
+        "W14, W15, W16",
+        "apps/server/src/billing/; packages/usage/src/payments/; apps/studio/src/settings/; apps/server/src/account/; apps/worker/src/account-deletion/",
+        "Implement one-off provider checkout and verified durable payment receipts. Keep provider choice and FX rules explicit, use sandbox only, reconcile late/duplicate events, grant credits exactly once, and never charge for Reset itself. Complete usage/agents/account settings and owned-data deletion jobs. Reconfirm payOS personal-account suitability and card-provider choice before production activation. Enforce one open payment per person; concurrent Add credits reopens that payment. Preserve the fixed consent and account-deletion retention rules. Handle verified refunds/chargebacks by removing purchased credit and flooring the spendable balance at zero while retaining audit facts. Race cancel against paid settlement without losing credit. Add an idempotent usage-reconciliation command comparing local ledger records to recorded provider/Anthropic usage; test local/sandbox receipts here. Nightly production scheduling, actual provider eligibility/FX and live reconciliation remain P09 X06 activation gates. Local deterministic provider fixtures may prove state machines but cannot claim provider integration if its sandbox is unavailable. Verify payment waiting/result/error semantics in the accessibility tree without focus theft; P09 X02 owns real announcements.",
+        "A sandbox payment adds credits once; Reset consumes balance once for the same week and limit; deleting an account revokes access and schedules owned data removal.",
+        "packages/usage/test/payments.test.ts",
+        "npm run verify:billing",
+        "sandbox payment and reset",
+        "duplicate webhook, refund and chargeback|forged webhook|browser return before webhook|expired pending link and cancel-versus-paid|paid after Monday|two pending links|credit order and reconciliation|revoke connection|delete-account and accessible payment status",
+        "provider truth and the ledger agree with no automatic manual-resume bypass or cross-account effects",
+        "webhook ACK and result propagation",
+        "provisional webhook ACK at most 1 s after durable receipt and UI result within 2 s of verified credit commit; no live charges",
+        true
+      ],
+      "requires": [
+        "W14",
+        "W15",
+        "W16"
+      ],
+      "deliveryPR": "P08"
+    },
+    "W18": {
+      "title": "Calibrate slide quality and verify the full release",
+      "row": [
+        "Calibrate slide quality and verify the full release",
+        "W11, W12, W13, W15, W16, W17",
+        "bench/quality/; bench/release/; packages/lint/; docs/release/",
+        "Create the six-family 48-task release set with three samples per task, a human-vetted frozen baseline, blinded swapped-order judge results and editable-export checks. Keep failures in the denominator. Validate judge calibration with human raters before automation. Run end-to-end first deck, PowerPoint round trip, offline recovery, payment races and access isolation. Paid generation/judging is a separate approved budget gate; build local replay first. Run the separate tool capability eval on at least 40 frozen tasks, three trials per model and the branch-required Claude plus a second model, only after model availability and cost authorization. Require at least 90 percent completion, 100 percent authorization and atomicity cases and no newly failing baseline case. The requested Codex and Grok research roles do not waive this product conformance matrix. Include actual vendor-app smoke checks and SDK-bound reference-model runs when available and authorized; unresolved vendor support remains a release capability limitation. Record model first-change distributions and freeze any proposed latency target from measured user-facing trials, without borrowing the import budget. Smoke-test the branch-required Claude Code, Cursor and ChatGPT adapters, including native capture visibility, pagination and stale recovery. Verify any additional client named by published connection guides; an unavailable client cannot be advertised as supported. Close external gates X01-X06 from contract-index.json. X01 consumes P03R. Imported, natively created text/table/chart and applied-template decks must reopen without repair, retain native editability, correct masters/fonts and meet visual/line-count rules in pinned Windows and Mac PowerPoint. X02 records actual screen-reader transcripts for access, manual/offline states, import/export, Aira and account/payment flows; keyboard/tree evidence alone cannot pass it. X05 requires explicit authorization and a public HTTPS test endpoint or tunnel for the remote clients being claimed. X06 verifies supported provider sandbox integration, eligibility/FX, reconciliation and documented production-scheduling readiness without activating payments. Missing mandatory evidence leaves P09 blocked. Assign a post-release owner for monthly human judge recalibration and rerun tool evals after schema/description changes.",
+        "The release report names every failed case, source artifact and unresolved judge result without hiding defects behind visual preference.",
+        "bench/release/acceptance.test.ts",
+        "npm run verify:release",
+        "first deck edit export reopen",
+        "dense content|data chart accuracy|editorial layout|non-Latin text|image-led deck|technical diagram|judge-order reversal|hard defect despite beauty|retired sharing absent",
+        "at least 44 of 48 cases pass and 7 of 8 in every family, no formerly passing case regresses, text/charts remain editable and human calibration is valid",
+        "end-to-end latency, memory and case-level quality statistics",
+        "enforce all P02/P04/P07 latency limits and zero authorization/atomicity failures; quality thresholds are frozen policy and require calibrated human evidence",
+        true
+      ],
+      "requires": [
+        "W11",
+        "W12",
+        "W13",
+        "W15",
+        "W16",
+        "W17"
+      ],
+      "deliveryPR": "P09"
+    },
+    "W19": {
+      "title": "Publish truthful discovery and connection guidance",
+      "row": [
+        "Publish truthful discovery and connection guidance",
+        "W18",
+        "apps/site/src/; apps/site/content/; docs/launch/",
+        "Implement landing, pricing and agent guides from verified product evidence. Use actual product captures and real before/after PowerPoint files with provenance. Explain weekly usage, credits and export caveats accurately. Publish plain text agent instructions and operational status/recovery links. Remove unsupported claims and old share links. Prepare release and rollback instructions, stopping before deployment. Real Claude/Codex guide checks require P09 X05 endpoint/tunnel authorization. Missing endpoint/client evidence is recorded blocked and the corresponding connection guide or support claim cannot ship. Drafting the site does not authorize exposing an endpoint or deploying it.",
+        "A visitor can understand the promises, limits and agent setup, then sign in with intent preserved.",
+        "apps/site/test/discovery.test.ts",
+        "npm run verify:site",
+        "landing to sign-in to deck",
+        "pricing accuracy|Claude guide over authorized HTTPS|Codex guide over authorized endpoint|plain text guide|keyboard navigation|mobile reading|contrast|real export evidence|broken-link scan",
+        "all claims point to verified release evidence and all setup links lead to current routes",
+        "static-page load and build artifact size",
+        "provisional LCP at most 2.5 s under a pinned mobile network profile; record trunk comparison only for equivalent pages",
+        true
+      ],
+      "requires": [
+        "W18"
+      ],
+      "deliveryPR": "P09"
+    }
+  },
+  "checkpointOrder": {
+    "P01": [
+      "W01",
+      "W02",
+      "W08"
+    ],
+    "P02": [
+      "W03",
+      "W04"
+    ],
+    "P03": [
+      "W05",
+      "W06"
+    ],
+    "P04": [
+      "W07",
+      "W09"
+    ],
+    "P05": [
+      "W10",
+      "W11"
+    ],
+    "P06": [
+      "W12",
+      "W13"
+    ],
+    "P07": [
+      "W14",
+      "W15"
+    ],
+    "P08": [
+      "W16",
+      "W17"
+    ],
+    "P09": [
+      "W18",
+      "W19"
+    ]
+  },
+  "historicalPRMap": {
+    "P01": "P01",
+    "P02": "P01",
+    "P08": "P01",
+    "P03": "P02",
+    "P04": "P02",
+    "P05": "P03",
+    "P06": "P03",
+    "P07": "P04",
+    "P09": "P04",
+    "P10": "P05",
+    "P11": "P05",
+    "P12": "P06",
+    "P13": "P06",
+    "P14": "P07",
+    "P15": "P07",
+    "P16": "P08",
+    "P17": "P08",
+    "P18": "P09",
+    "P19": "P09"
+  },
+  "baseline": "Planning, design, research and tooling only. P01 creates the UI workspace from the v0.1 handoff."
+}

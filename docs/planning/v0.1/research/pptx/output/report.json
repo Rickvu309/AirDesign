@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "scope": "Self-generated fixture only; exact uncompressed package-part bytes, not ZIP headers or full archive; no PowerPoint open/save claim",
+  "inputBytes": 52589,
+  "outputBytes": 17655,
+  "totalParts": 26,
+  "identicalOtherParts": 25,
+  "changedParts": [
+    "ppt/slides/slide1.xml"
+  ],
+  "otherSlideXmlBytesIdentical": true,
+  "allBytesOutsideTargetTextInChangedSlideIdentical": true,
+  "securityRejectionCases": 4,
+  "timings": {
+    "generateFixtureMs": 21.704,
+    "unzipMs": 3.104,
+    "parseMs": 2.144,
+    "patchMs": 0.826,
+    "rezipMs": 18.912,
+    "verifyAllPartsMs": 20.655
+  },
+  "render": {
+    "status": "SKIPPED",
+    "reason": "/opt/homebrew/bin/soffice: line 2: /Applications/LibreOffice.app/Contents/MacOS/soffice: No such file or directory",
+    "pixelDiff": null
+  }
+}
