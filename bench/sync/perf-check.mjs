@@ -93,7 +93,10 @@ try {
       const set=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,"value").set
       for(let index=0;index<100;index++){set.call(field,`recovery ${trial} command ${index}`);field.dispatchEvent(new Event("input",{bubbles:true}))}
     },trial)
+    await expect.poll(async()=>(await queue(a,"browserperf")).length).toBe(100)
     const pending=await queue(a,"browserperf");assert.equal(pending.length,100)
+    assert.equal(new Set(pending.map(item=>item.command.id)).size,100)
+    assert.deepEqual(pending.map(item=>item.command.kind==="patch" ? item.command.fields.notes : null),Array.from({length:100},(_,index)=>`recovery ${trial} command ${index}`))
     const before=(await (await a.context.request.get(`${stack.origin}/api/decks/browserperf`)).json()).seq
     a.control.offline=false
     const start=performance.now()
