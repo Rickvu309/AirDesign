@@ -55,6 +55,7 @@ try {
     const path = `lane-${n}`
     await mkdir(`${root}/${path}`, { recursive: true })
     await page.context().tracing.start({ screenshots: true, snapshots: true })
+    let actual = {}
     try {
       const input = scenarios[n - 1]
       const raw = spawnSync("node", ["scripts/probe-deck.mjs"], { input: JSON.stringify(input), encoding: "utf8" })
@@ -74,7 +75,6 @@ try {
       }
       if (n === 7 || n === 8) { assert.equal(result.ok, false); assert.equal(result.error.code, n === 7 ? "cycle" : "invalid-reference"); assert.deepEqual(observed.deck, input.deck) }
       await load(deck)
-      let actual = {}
       if (n === 1) {
         const trunk = spawnSync("git", ["ls-tree", "-r", "--name-only", "ddad005", "packages/deck", "packages/render"], { encoding: "utf8" }).stdout
         assert.equal(trunk, "")
@@ -82,31 +82,54 @@ try {
         await json(`${path}/comparison.json`, actual)
       }
       if (n === 2) {
+        await page.context().tracing.stop({ path: `${root}/${path}/setup-trace.zip` })
+        const runs = []
+        for (let trial = 0; trial < 5; trial++) {
+          await load(deck)
+          const target = page.locator('[data-element="s0e1"]')
+          const start = await target.boundingBox()
+          await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+          await page.evaluate(() => {
+            window.frameSamples = []
+            window.frameRunning = true
+            let previous
+            function frame(now) { if (previous) window.frameSamples.push(now - previous); previous = now; if (window.frameRunning) requestAnimationFrame(frame) }
+            requestAnimationFrame(frame)
+          })
+          await page.mouse.move(start.x + 5, start.y + 5)
+          await page.mouse.down()
+          for (let i = 1; i <= 60; i++) { await page.mouse.move(start.x + 5 + i, start.y + 5 + i / 2); await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve))) }
+          await page.mouse.up()
+          await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)))
+          const frames = await page.evaluate(() => { window.frameRunning = false; return window.frameSamples })
+          const persisted = await saved()
+          assert.equal(persisted.slides[0].elements[1].box.x, slide.elements[1].box.x + 60)
+          assert.equal(persisted.slides[0].elements[1].box.y, slide.elements[1].box.y + 30)
+          assert.equal(await target.getAttribute("data-selected"), "true")
+          assert(frames.length >= 60 && frames.every(ms => Number.isFinite(ms) && ms > 0))
+          const sorted = frames.toSorted((a, b) => a - b)
+          const meanFrameMs = frames.reduce((a, b) => a + b, 0) / frames.length
+          runs.push({ framesMs: frames, meanFrameMs, p95FrameMs: sorted[Math.floor(sorted.length * 0.95)], measuredFps: 1000 / meanFrameMs, persistedX: persisted.slides[0].elements[1].box.x })
+        }
+        await load(deck)
+        await page.context().tracing.start({ screenshots: true, snapshots: true })
         const item = page.locator('[data-element="s0e1"]')
         const box = await item.boundingBox()
-        const samples = await page.evaluate(() => {
-          window.frameSamples = []
-          window.frameRunning = true
-          let previous
-          function frame(now) { if (previous) window.frameSamples.push(now - previous); previous = now; if (window.frameRunning) requestAnimationFrame(frame) }
-          requestAnimationFrame(frame)
-          return document.querySelectorAll("[data-element]").length
-        })
+        const samples = await page.locator("[data-element]").count()
         assert.equal(samples, 300)
         await page.mouse.move(box.x + 5, box.y + 5)
         await page.mouse.down()
         for (let i = 1; i <= 60; i++) { await page.mouse.move(box.x + 5 + i, box.y + 5 + i / 2); await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve))) }
         await page.mouse.up()
         const final = await saved()
-        const frames = await page.evaluate(() => { window.frameRunning = false; return window.frameSamples })
         assert.equal(final.slides[0].elements[1].box.x, slide.elements[1].box.x + 60)
         assert.equal(final.slides[0].elements[1].box.y, slide.elements[1].box.y + 30)
         assert.equal(await item.getAttribute("data-selected"), "true")
-        const sorted = [...frames].sort((a, b) => a - b)
-        actual = { elements: samples, frameCount: frames.length, framesMs: frames, meanFrameMs: frames.reduce((a, b) => a + b, 0) / frames.length, p95FrameMs: sorted[Math.floor(sorted.length * 0.95)], selection: "s0e1", position: final.slides[0].elements[1].box }
-        actual.measuredFps = 1000 / actual.meanFrameMs
+        const median = runs.toSorted((a, b) => a.measuredFps - b.measuredFps)[2]
+        actual = { elements: samples, runs, frameCount: runs.reduce((total, run) => total + run.framesMs.length, 0), meanFrameMs: median.meanFrameMs, p95FrameMs: median.p95FrameMs, measuredFps: median.measuredFps, selection: "s0e1", position: final.slides[0].elements[1].box, measurement: "Median of five untraced real drags; window ends after pointerup and next frame, before JSON serialization; separate traced replay" }
         actual.frameVerdict = Math.round(actual.measuredFps) >= 60 ? "pass" : "fail"
         actual.frameRule = "60 fps refresh target, rounded to nearest frame/second for Chrome rAF timestamp quantization"
+        await json("perf/frame.json", actual)
         assert.equal(actual.frameVerdict, "pass")
       }
       if (n === 3 || n === 7) {
@@ -208,7 +231,7 @@ try {
       await page.screenshot({ path: `${root}/${path}/browser.png` })
       await json(`${path}/receipt.json`, { verdict: "pass", w03: "pass", w04: "pass", actual })
       process.stdout.write(`Lane ${n}: PASS ${JSON.stringify(actual).slice(0, 250)}\n`)
-    } catch (error) { await json(`${path}/receipt.json`, { verdict: "fail", error: String(error) }); throw error }
+    } catch (error) { await json(`${path}/receipt.json`, { verdict: "fail", actual, error: String(error) }); throw error }
     finally { await page.context().tracing.stop({ path: `${root}/${path}/trace.zip` }) }
   }
   const runs = []
