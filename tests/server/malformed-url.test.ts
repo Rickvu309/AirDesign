@@ -8,7 +8,7 @@ describe("malformed url", () => {
   it("returns 400 and keeps answering", async () => {
     const child = spawn(process.execPath, ["--experimental-strip-types", "apps/server/src/main.ts"], {
       cwd: root,
-      env: { ...process.env, PORT: "0" },
+      env: { ...process.env, PORT: "0", AIRDESIGN_ACCESS_PATH: "memory://", AIRDESIGN_OPERATIONS_PATH: ":memory:" },
       stdio: ["ignore", "pipe", "pipe"],
     })
     try {

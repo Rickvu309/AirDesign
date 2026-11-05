@@ -30,13 +30,17 @@ export function commentHits(fileName: string, source: string): CommentHit[] {
       addRange(range)
     }
   }
+  const regexRanges: { start: number; end: number }[] = []
   const visit = (node: ts.Node) => {
+    if (ts.isRegularExpressionLiteral(node)) regexRanges.push({ start: node.getStart(sourceFile), end: node.end })
     addRanges(ts.getLeadingCommentRanges(text, node.pos))
     addRanges(ts.getTrailingCommentRanges(text, node.end))
     ts.forEachChild(node, visit)
   }
   visit(sourceFile)
-  const scan = scanCommentsOutsideStrings(source)
+  let masked = source
+  for (const range of regexRanges.sort((a,b) => b.start-a.start)) masked = masked.slice(0,range.start) + masked.slice(range.start,range.end).replace(/[^\n]/g, " ") + masked.slice(range.end)
+  const scan = scanCommentsOutsideStrings(masked)
   for (const hit of scan) {
     if (!hits.some((item) => item.line === hit.line && item.text === hit.text)) {
       hits.push(hit)

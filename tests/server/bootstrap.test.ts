@@ -5,7 +5,7 @@ let running: RunningServer | null = null
 
 beforeAll(async () => {
   process.env.AIRDESIGN_EXPOSE_INBOX = "1"
-  running = await startServer(0)
+  running = await startServer(0, { operationsPath: ":memory:", accessPath: "memory://" })
 })
 
 afterAll(async () => {

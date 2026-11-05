@@ -19,12 +19,20 @@
     "probe:deck": "node scripts/probe-deck.mjs",
     "verify:deck": "node scripts/verify-deck.mjs",
     "verify:render": "node scripts/verify-render.mjs",
-    "verify:pr-02": "npm run verify:deck && npm run verify:render"
+    "verify:pr-02": "npm run verify:deck && npm run verify:render",
+    "verify:operations": "node scripts/verify-operations.mjs",
+    "verify:pptx": "node scripts/verify-pptx.mjs",
+    "verify:pr-03": "npm run verify:operations && npm run verify:pptx",
+    "worker:once": "node apps/worker/src/main.ts",
+    "pptx": "node packages/pptx/src/cli.ts",
+    "operations": "node apps/server/src/operations/cli.ts"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
+    "@types/yauzl": "^3.4.0",
+    "@types/yazl": "^3.3.1",
     "happy-dom": "20.0.11",
     "oxlint": "1.91.0",
     "pixelmatch": "^8.0.0",
@@ -36,5 +44,8 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "overrides": {
+    "image-size": "2.0.4"
   }
 }
