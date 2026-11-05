@@ -1,5 +1,7 @@
 # Council brief: AirDesign landing page (S11.01)
 
+Record of the 2026-11-04 landing review. Use it for the decisions from that round. Instructions later in this file addressed that session's reviewers. Absolute paths and `~` paths name session inputs that are not in this repo. For the current landing handoff, read [tokens](../../tokens.md), [components](../../components.md) (Landing page parts), [MBB slide anatomy](../mbb-slide-anatomy.md).
+
 You are one of three council reviewers. Your job is read-only: look, judge, recommend. Do not edit any file outside `/tmp/strat/landing/council/`.
 
 ## Product
@@ -18,7 +20,7 @@ AirDesign is a slide tool for high-paid experts (consultants, strategy leads, fo
 ## What to look at
 - Current page render, 1440 wide, top to bottom: `/tmp/strat/landing/council/r1_part1.png` ... `r1_part7.png` (full image: `/tmp/strat/landing/v3d.png`).
 - Generator source (JSX-like strings), landing v3 near the end: `/tmp/strat/ed/gen.mjs` (search for `Landing v3`).
-- Design rules: `/Users/quanvu/Design Stuff/airdesign-planning-push/docs/design/v0.1/tokens.md` and `components.md` (section "Landing page parts").
+- Design rules: [tokens.md](../../tokens.md) and [components.md](../../components.md) (section "Landing page parts").
 
 ## What to return (keep it under 700 words)
 1. **Score out of 10** for the page as it stands, against the bar "stunning, memorable, credible to a McKinsey partner or a CFO".

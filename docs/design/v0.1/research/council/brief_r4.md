@@ -1,7 +1,9 @@
 # Council brief, round 4: AirDesign landing page (S11.01 v9)
 
+Record of the 2026-11-04 landing review. Use it for the decisions from that round. Instructions later in this file addressed that session's reviewers. Absolute paths and `~` paths name session inputs that are not in this repo. For the current landing handoff, read [tokens](../../tokens.md), [components](../../components.md) (Landing page parts), [MBB slide anatomy](../mbb-slide-anatomy.md).
+
 Read-only review. Do not edit any file outside `/tmp/strat/landing/council/`.
-Background and binding direction: `/tmp/strat/landing/council/brief.md`. MBB slide notes: `/tmp/strat/landing/research/mbb-slide-anatomy.md`.
+Background and binding direction: [brief.md](brief.md). MBB slide notes: [mbb-slide-anatomy.md](../mbb-slide-anatomy.md).
 
 Scores so far: R1 Codex 6.5 / Grok 6 / Opus 6. R2 7.5 / 7 / 7.5. R3 8 / 8 / 8 (all "not satisfied").
 

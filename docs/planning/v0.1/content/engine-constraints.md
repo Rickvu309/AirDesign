@@ -4,7 +4,7 @@ AirDesign / v0.1 / Engine
 
 Enabling constraints
 
-The fixed points for the four other hard parts. Numbers are starting values from the research, tuned on real data. Reports in airdesign-research/.
+The fixed points for the four other hard parts. Numbers are starting values from the research, tuned on real data. Reports: [PowerPoint](../research/pptx/README.md), [sync](../research/sync/README.md), [agent tools](../research/tools/README.md), [quality](../research/quality/README.md).
 
 PowerPoint import and export
 

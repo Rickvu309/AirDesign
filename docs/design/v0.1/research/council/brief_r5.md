@@ -1,5 +1,7 @@
 # Council brief, round 5: AirDesign landing page, full redesign (S11.01 v13)
 
+Record of the 2026-11-04 landing review. Use it for the decisions from that round. Instructions later in this file addressed that session's reviewers. Absolute paths and `~` paths name session inputs that are not in this repo. For the current landing handoff, read [tokens](../../tokens.md), [components](../../components.md) (Landing page parts), [MBB slide anatomy](../mbb-slide-anatomy.md).
+
 Read-only review. Do not edit any file outside `/tmp/strat/landing/council/`.
 
 ## Product and audience

@@ -1,13 +1,15 @@
 # Council brief, round 3: AirDesign landing page (S11.01 v7)
 
+Record of the 2026-11-04 landing review. Use it for the decisions from that round. Instructions later in this file addressed that session's reviewers. Absolute paths and `~` paths name session inputs that are not in this repo. For the current landing handoff, read [tokens](../../tokens.md), [components](../../components.md) (Landing page parts), [MBB slide anatomy](../mbb-slide-anatomy.md).
+
 Read-only review. Do not edit any file outside `/tmp/strat/landing/council/`.
-Background, audience and binding direction: `/tmp/strat/landing/council/brief.md`.
+Background, audience and binding direction: [brief.md](brief.md).
 
 ## Scores so far
 Round 1: Codex 6.5, Grok 6, Opus 6. Round 2: Codex 7.5, Grok 7, Opus 7.5.
 
 ## What changed since round 2
-- Owner asked that the sample slides look like real McKinsey, BCG and Bain slides. Notes: `/tmp/strat/landing/research/mbb-slide-anatomy.md`. Hero, review result and PowerPoint slides now use one frame: tracker (current section filled navy), "SAMPLE DATA" sticker, action title, gray unit line, one exhibit with direct labels, navy totals, teal accent on the series that proves the title, mist gray context, numbered footnote, "Source: ...; Halden analysis", page number.
+- Owner asked that the sample slides look like real McKinsey, BCG and Bain slides. Notes: [mbb-slide-anatomy.md](../mbb-slide-anatomy.md). Hero, review result and PowerPoint slides now use one frame: tracker (current section filled navy), "SAMPLE DATA" sticker, action title, gray unit line, one exhibit with direct labels, navy totals, teal accent on the series that proves the title, mist gray context, numbered footnote, "Source: ...; Halden analysis", page number.
   - Hero: revenue bridge waterfall Q3 24 $4.1M to Q3 25 $5.7M (Enterprise +$1.06M teal with "66% of growth" callout, Mid-market +$0.35M, Self-serve +$0.19M, "+39% YoY" pill). The struck label "Q3 revenue by segment" sits directly above the 32px answer.
   - Review result: bar-in-table for projected increase, "North and East: $22.5M of $27.1M" bracket, navy takeaway box led by "$22.5M" at 38px.
   - PowerPoint: column chart with a "+39%" growth arrow, chart selected; file renamed "Halden Q3 board review.pptx"; ribbon with Layout and Font controls; pin 3 on the layout and font controls.

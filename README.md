@@ -1,152 +1,79 @@
-# @airdesign/ui
+# AirDesign
 
-AirDesign UI kit: accessible React components, a single-colour icon set and design tokens. No runtime dependencies; `react` 19 is a peer.
+Create a slide deck from an idea or a PowerPoint, refine it by hand or with an agent, then export it for use in PowerPoint.
 
-## Add it to an app
+This walkthrough describes the **planned v0.1 experience**. This monorepo is where the app is built. Until v0.1 ships, these steps describe the intended experience, not a running app.
 
-Pick one:
+## 1. Sign in
 
-```sh
-# from this repo, as a git dependency
-npm i github:quanvu309/AirDesign
-# or build a tarball and install it
-npm pack && npm i ./airdesign-ui-0.1.0.tgz
-# or in a monorepo: copy this folder to packages/ui and use a workspace dependency
-```
+Enter your email, then follow the email link or enter its code. If you started by choosing to create a deck, import a PowerPoint or connect an agent, sign-in returns you to that task.
 
-```tsx
-import "@airdesign/ui/styles.css"; // tokens + kit styles, once, at the app root
-import "@airdesign/ui/base.css";   // minimal reset; skip if your app already has a preflight (Tailwind)
-import { Button, IconButton, Input, Tabs, Dialog } from "@airdesign/ui";
+[Sign-in walkthrough](docs/planning/v0.1/content/sign-in-flow.md)
 
-<Button variant="primary" iconStart="plus">New file</Button>
-<IconButton icon="trash" label="Delete" variant="danger" />
-<Input label="Name" labelHidden={false} hint="Shown in the file list" />
-```
+## 2. Start your first deck
 
-Verified: the packed tarball installs into a clean app, type-checks under `moduleResolution: Bundler` with `skipLibCheck: false`, and renders in Node.
+Choose the starting point that matches what you have.
 
-## What is in it
-| Export | Contents |
-|---|---|
-| `@airdesign/ui` | **Actions:** `Button`, `IconButton`, `Toolbar` (`ToolbarGroup`, `ToolbarSeparator`), `Tooltip`, `Popover`, `Menu`, `MenuItem`. **Forms:** `Input`, `SearchField`, `Textarea`, `Select`, `Checkbox`, `RadioGroup`, `Switch`, `Slider`, `NumberField`, `ColorSwatch`. **Display:** `Avatar`, `Badge`, `Card`, `Divider`, `Kbd`, `Icon`. **Navigation:** `Tabs`, `Sidebar` (`SidebarSection`, `SidebarItem`), `Breadcrumbs`, `Accordion`. **Feedback:** `Alert`, `Progress`, `Spinner`, `Skeleton`, `EmptyState`. **Overlay:** `Dialog`. **Editor:** `PropertySection`, `PropertyRow`. **AI chat:** `ChatThread`, `ChatMessage`, `Suggestion`, `ChatComposer`. Also `iconData` and the `IconName` type |
-| `@airdesign/ui/styles.css` | Tokens and kit styles (`tokens.css` and `kit.css` are also exported alone) |
-| `@airdesign/ui/base.css` | Zero-specificity reset the kit was designed against |
-| `@airdesign/ui/snapshots` | 409 static, pixel-faithful screen pieces (sidebars, toolbars, dialogs). Reference or prototyping only; they are not props-driven and are light-only (wrap in `data-theme="light"` inside a dark page) |
+### Start with an idea
 
-56 icons: 41 filled shapes traced from the design plus 15 stroke icons (check, minus, info, warning, copy, link, eye, lock, download, user, send, undo, sun, moon, chevron-up). All follow `currentColor`.
+Choose **New deck** and describe what you need to Aira, the built-in agent. Include the audience, purpose and any notes or documents you want it to use. For example:
 
-## Theming
-Everything is a `--ad-*` variable. Dark mode: set `data-theme="dark"` on `<html>` or any container; override single tokens the same way. Motion tokens: 150ms for micro-interactions, 280ms for panels; `prefers-reduced-motion` turns transitions and animations off.
+> Create a six-slide project update for our leadership team. Use these notes to explain progress, risks and the decisions we need this week.
 
-## Rules the kit follows
-- Icon-only controls require `label`; every field requires `label`. Types enforce it.
-- Components take every native prop of their root element (`onClick`, `ref`, `aria-*`, `data-*`) plus `className` and `style`.
-- Native first: `Dialog` and `Popover` use `<dialog>` and the Popover API (focus trap, Escape, light dismiss), `Select`, `RadioGroup`, `Checkbox`, `Slider` and `Accordion` use native inputs and `<details>`. Keyboard and form behaviour come from the browser.
-- Composite widgets with custom keys: `Tabs` and `Toolbar` have roving focus (Arrow, Home, End); `ChatComposer` sends on Enter and adds a line on Shift+Enter.
-- States: hover, `:focus-visible` ring, active press, disabled, loading (`Button`), invalid (fields).
+The editor shows changes as Aira works. You can edit alongside it or stop the run and keep the work so far.
 
-## Workspace and state machine
+[First-deck walkthrough](docs/planning/v0.1/content/f02-first-deck-flow.md)
 
-The editor workspace is coordinated by `editorMachine`, a parallel-region state machine. State is managed via `useEditorMachine` and rendered through `EditorWorkspace`.
+### Start with a PowerPoint
 
-### Regions and events
+Choose **New deck**, then **Import PowerPoint**, and select a `.pptx` file. Home shows an importing card with progress; the deck opens when ready. Imported decks keep their own look.
 
-| Region | States | Description |
-|---|---|---|
-| `panel` | `file`, `agents`, `inserts`, `media` | Active left drawer selected from the navigation rail |
-| `canvas` | `slide`, `overview` | Main editor canvas (single slide stage vs multi-slide grid) |
-| `layout` | `docked`, `floating`, `focus` | Header & inspector placement (`present` mode tracked in context) |
-| `overlay` | `none`, `start`, `templates`, `drafting`, `share`, `invited` | Modal dialog overlays |
-| `tray` | `closed`, `shapes` | Shapes tray docked above the bottom toolbar |
-| `deck` | `empty`, `filled` | Deck status derived from slide count (`slides === 0` iff `empty`) |
+Check the import report for anything that needs attention. For an old `.ppt` file or a Keynote presentation, save a `.pptx` first.
 
-**Core events:**
-- Panel & Canvas: `OPEN_PANEL`, `OPEN_MEDIA`, `SHOW_OVERVIEW`, `SHOW_SLIDE`
-- Layout & Presentation: `TOGGLE_FOCUS`, `PRESENT`, `EXIT_PRESENT`, `TOGGLE_SHAPES`
-- Overlays & Dialogs: `OPEN_START`, `OPEN_TEMPLATES`, `OPEN_SHARE`, `CLOSE_OVERLAY`, `BACK_TO_START`, `PICK_TEMPLATE`, `DESCRIBE_DECK`, `DRAFT_READY`, `INVITE`, `INVITE_DONE`
-- Deck edits: `ADD_SLIDE`, `REMOVE_SLIDES`, `EMPTY_DECK`, `USE_TEMPLATE`, `SELECT_SLIDES`, `SET_ZOOM`
+[Import walkthrough](docs/planning/v0.1/content/f05-import-flow.md)
 
-### Usage
+### Start with your own agent
 
-```tsx
-import { EditorWorkspace, useEditorMachine, restoreEditor } from "@airdesign/ui";
+Open **Settings → Agents** and follow the connection guide for Claude or Codex. Sign in and approve the agent's access, then ask it to create a deck. It returns an editor link you can open in Studio.
 
-function SlideEditor() {
-  const [snapshot, send] = useEditorMachine(
-    restoreEditor({ panel: "file", canvas: "slide" }, { slides: 3 })
-  );
+An approved agent can read and edit your decks and use your files. It cannot change billing or your account, or delete decks. End its connection from Settings whenever you need to.
 
-  return (
-    <EditorWorkspace
-      snapshot={snapshot}
-      send={send}
-      onDraft={(prompt, api) => {
-        api.setProgress(50);
-        setTimeout(() => api.done(), 1000);
-      }}
-    />
-  );
-}
-```
+[Agent connection walkthrough](docs/planning/v0.1/content/f06-connect-agent-flow.md)
 
-### Workspace components
+## 3. Refine the deck
 
-All 23 workspace modules are exported directly:
-- **Panels & Headers:** `FilePanel`, `AgentsPanel`, `InsertsPanel`, `MediaPanel`, `PanelHeader`, `InspectorHead`, `SlideInspector`
-- **Navigation & Toolbars:** `AppMark`, `HelpButton`, `BottomToolbar`, `ShapesTray`, `PresenterNotes`
-- **Canvas & Slides:** `SlideThumb`, `EmptyDeck`, `PresentView`
-- **Dialogs & Overlays:** `GettingStartedDialog`, `TemplateGallery`, `DraftingState`, `ShareDialog`
-- **Home views:** `HomeSidebar`, `HomeFileToolbar`, `HomeFileList`
-- **Root Container:** `EditorWorkspace`
+Select slides or elements and ask for a change, such as "Simplify this slide and make the recommendation clearer." Your selection goes with the request. With nothing selected, the request applies to the whole deck.
 
-### Example screens (18 screens)
+Edit by hand whenever you want. After an agent finishes, review its summary and the changes by slide. **Undo** for a run removes that run's changes while keeping your later manual edits.
 
-`examples/` rebuilds the 18 AirDesign screens (`?bare#<id>`):
-1. `home` — Home, Drafts grid
-2. `start` — Getting started modal
-3. `slide` — Slide editor (slide 1)
-4. `overview` — Slides overview grid
-5. `agents` — Agents sidebar panel
-6. `inserts` — Inserts panel
-7. `inserts-overview` — Inserts with overview canvas
-8. `media-overview` — Media panel with overview canvas
-9. `media` — Media panel in focus mode
-10. `shapes` — Shapes tray open
-11. `share` — Share slides dialog
-12. `templates` — Template gallery modal
-13. `drafting` — AI drafting progress modal
-14. `present` — Full-screen presentation mode
-15. `invited` — Share invitation confirmation
-16. `empty-editor` — Empty editor canvas CTA
-17. `home-list` — Home files in list view
-18. `home-empty` — Home files empty state
-See `examples/README.md`.
+Review warnings about overflow, contrast and PowerPoint fit. Use them to decide what to fix before exporting.
 
-## Layout
-```
-src/
-  index.ts            public API
-  components/         one file per component (related parts share a file: Feedback, Chat, Sidebar, Toolbar)
-  icons/              Icon.tsx and icon-data.ts (add an icon by pasting its path data)
-  lib/                cx helper
-  styles/             tokens.css, kit.css, base.css
-  snapshots/          generated pieces by group (brand, cards, controls, dialogs, icons, navigation, panels)
-scripts/              build.mjs (tsc + css), build-catalog.mjs
-examples/             Vite app with mock screens
-test/                 kit and snapshot tests
-```
+[Editing walkthrough](docs/planning/v0.1/content/f03-edit-and-refine-flow.md)
 
-## Develop
-- `npm test`: build, then run 39 checks: markup and ARIA for every component, token use, dark-theme coverage, and 11 jsdom interaction tests (Tabs and Toolbar keys, Switch, Checkbox, RadioGroup, Slider, Select, ChatComposer, Dialog, loading and disabled buttons).
-- `npm run catalog`: write `catalog.html`, a live page with every kit variant and state, a dark-mode toggle, then all snapshots (not committed).
-- `npm run typecheck`, `npm run build`, `npm pack`.
+## 4. Choose a look you can reuse
 
-## History
-The kit and snapshots were generated from a Lunagraph export of the AirDesign screens (removed from this repo; see commit `8fceb8c` and `99ab48c` to `ec59b20`). The design source (`AirDesign.pen`) lives in `quanvu309/airdesign-design-assets`.
+Pick a Basic template or one of your own. You can save colors, fonts, logos and layouts from a deck or an imported PowerPoint, then make that template your default for new decks.
 
-## Known gaps
-- Snapshots are static, light-only copies; rebuild any you need from kit parts.
-- The notification bell, copy-link and main-menu icons are multi-colour and not in the kit set.
-- No Storybook; the catalog page is the visual reference. Interaction tests run in jsdom, so real-browser behaviour of `Dialog`, `Popover` and the CSS (focus rings, animation) is checked by eye only.
-- No date picker, combobox, table, tree, toast or virtualised list yet. For toasts use Sonner.
+Applying a template changes linked items in one undoable step. Items with their own styling stay as they are.
+
+[Template walkthrough](docs/planning/v0.1/content/f11-templates-flow.md)
+
+## 5. Export your deck
+
+Choose **Export**, select PowerPoint or PDF, and choose all slides or a selection. If anything is flagged, review the affected slides and the proposed fallback. Fix those items or continue with the export.
+
+The file is built from one saved version while you keep working. Download it when ready. For PowerPoint, supported content remains editable; the report identifies elements that need an approximation or an image fallback.
+
+[Export walkthrough](docs/planning/v0.1/content/f04-export-flow.md)
+
+## 6. Return to your work
+
+Home lists your decks with the most recently edited first. Search, reopen, rename or duplicate a deck to continue. Deleted decks go to Trash, where you can restore them for 30 days unless you empty it first.
+
+Both Aira and connected agents use your weekly allowance. If a run reaches the limit, it finishes the current change and stops, keeping the work so far. You can keep editing manually, wait for the weekly reset or use credits to reset usage from **Settings → Usage**.
+
+[Manage decks](docs/planning/v0.1/content/f14-manage-decks-flow.md) · [Usage and resets](docs/planning/v0.1/content/f07-usage-flow.md)
+
+## Follow the build
+
+The [design index](docs/design/v0.1/README.md) shows the planned screens and identifies missing states. The [planning index](docs/planning/v0.1/README.md) covers scope, architecture and research. The [nine-PR delivery plan](docs/planning/v0.1/delivery/autopilot-plan.md) defines the implementation sequence and acceptance gates.

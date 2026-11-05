@@ -35,7 +35,7 @@ Start with **48 private cases, six families × eight**, requesting eight-slide d
 
 Within each family cross two audience contexts × two density levels × two brand styles. Include Vietnamese/long labels, dark backgrounds, image-heavy layouts, tables, and deliberate exceptions across the matrix. Use synthetic/public licensed inputs, required facts and visual claims, forbidden inventions, assets, and 10–15 binary acceptance items per case. Keep 12 cases evaluator-private; rotate quarterly. Add sourced real failures as regression cases.
 
-Run three independent generations per case with the same pinned agent/model, budget, assets and renderer. AirDesign remains the canvas/tool provider; the eval runner invokes an external agent. Follow [T3’s local eval pattern](/Users/quanvu/tmp/refs/t3code/evals/README.md): cases as data, current tools/skills from source, `--case`, `--baseline`, `--out`, blinded artifacts and actual usage costs. Run affected cases first, then all cases before tools/skills merge.
+Run three independent generations per case with the same pinned agent/model, budget, assets and renderer. AirDesign remains the canvas/tool provider; the eval runner invokes an external agent. Use this eval shape, taken from the T3 eval layout read for this note: cases as data, current tools and skills from source, `--case`, `--baseline`, `--out`, blinded artifacts and actual usage costs. Run affected cases first, then all cases before a tools or skills change merges.
 
 ## Scoring stack
 

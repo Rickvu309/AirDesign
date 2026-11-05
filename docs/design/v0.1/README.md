@@ -1,14 +1,18 @@
 # AirDesign v0.1 design
 
-Exported from the Brilliant project "airdesign", Screens canvas, on 2026-11-04. The canvas is the source of truth; these files are the handoff for development.
+How v0.1 looks and behaves. Read this index to choose a screen or a rule file. Images in `screens/` are the visual handoff. Behavior and values live in the files below.
 
-- [Components](components.md): every reusable part, its slots, variants, states and where it is used.
-- [Logic](logic.md): the state machine of each flow, with the rules developers must keep.
-- [Tokens](tokens.md): colors, type, radii, elevation and the signature button.
-- [Copy kit](copy-kit.md) ([json](copy-kit.json)): rules, message patterns and every string by key.
-- [Backlog](backlog.md): states the strategy promises that have no screen yet.
-- [Reviews](reviews/): the strategy and logic reviews these files were checked against.
-- [Source](source/): the generators used to build the canvas screens. Design tooling, not product code.
+Exported from the Brilliant project "airdesign", Screens canvas, on 2026-11-04.
+
+- [Components](components.md): slots, variants, states and where each part is used. Read when drawing or building a visual part.
+- [Logic](logic.md): the state machine of each flow and the rules to keep. Read when defining states, transitions or screen rules.
+- [Tokens](tokens.md): colors, type, radii, elevation and the signature button. Read when setting a visual value.
+- [Copy kit](copy-kit.md) ([json](copy-kit.json)): voice rules, message patterns and every string by key. Read when writing a user-facing string.
+- [Backlog](backlog.md): states the strategy promises that have no screen yet. Read before describing a promised state.
+- [Reviews](reviews/): the strategy and logic reviews these files were checked against. Read when a screen and a journey disagree.
+- [Source](source/README.md): generators that built the canvas screens. Design tooling, not product code. Read when matching a screen's exact structure or values.
+- [Landing research](research/2026-11-04-landing-research.md), [concepts](research/2026-11-04-landing-concepts.md) and [MBB slide anatomy](research/mbb-slide-anatomy.md). Read when changing the landing page. Briefs in [research/council](research/council/brief.md) record the review rounds.
+- [Strategy, analysis and presentation source guides](research/presentation-guides/README.md). Read when preparing agent playbooks or cookbooks from the supplied Herng Lee PDFs. Includes page references, original visuals and conversion limits.
 
 Strategy boards (journeys, rules, architecture) are in [docs/planning/v0.1](../../planning/v0.1/README.md).
 

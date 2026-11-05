@@ -11,3 +11,5 @@ Generators used to build the v0.1 screens on the Brilliant canvas. They are desi
 | `logos.json` | SVG path data for the Claude and OpenAI marks |
 
 Strings come from `../copy-kit.json` by key.
+
+`fixsel.py` and `landing-post.sh` are the landing review's one-off canvas edits. They call a local canvas checkout that is not in this repo. Read them as that session's edit record. The screens they changed are described in `../components.md` and the generators above.

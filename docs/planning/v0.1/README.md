@@ -1,15 +1,21 @@
 # AirDesign v0.1 planning
 
-Exported from the Brilliant project "airdesign", Strategy canvas, on 2026-11-04. The Brilliant canvas is the source of truth. Every board is here twice: as text in `content/` and as an image in `boards/`. Screens, components and logic live in [docs/design/v0.1](../../design/v0.1/README.md).
+What v0.1 promises and why. Read this index to pick a board. Open the text for the rules. Open the image to check the exported layout.
+
+Exported from the Brilliant project "airdesign", Strategy canvas, on 2026-11-04. Each board is text in `content/` and an image in `boards/`. Screens, components and logic are in [docs/design/v0.1](../../design/v0.1/README.md).
 
 ## Architecture
 
-- [Key Components](content/key-components.md) ([image](boards/key-components.png))
-- [Monorepo Map](content/monorepo-map.md) ([image](boards/monorepo-map.png))
-- [Rendering Approach](content/rendering-approach.md) ([image](boards/rendering-approach.png))
-- [Engine Constraints](content/engine-constraints.md) ([image](boards/engine-constraints.png))
+Read when placing a module, ordering build work, deciding how slides draw, or checking an engine limit.
+
+- [Key Components](content/key-components.md) ([image](boards/key-components.png)): modules, what to build first, and relative size.
+- [Monorepo Map](content/monorepo-map.md) ([image](boards/monorepo-map.png)): target apps and packages, where each runs, stores, tests and stack.
+- [Rendering Approach](content/rendering-approach.md) ([image](boards/rendering-approach.png)): how slides draw, capture and measure.
+- [Engine Constraints](content/engine-constraints.md) ([image](boards/engine-constraints.png)): numbered fixed points for import, export, sync, undo, agent tools and the quality gate.
 
 ## Journeys
+
+Read the flow for the journey you are changing. F13 is retired. Stage and status for every flow are on the journey board.
 
 - [Journey Flow](content/journey-flow.md) ([image](boards/journey-flow.png))
 - [Sign In Flow](content/sign-in-flow.md) ([image](boards/sign-in-flow.png))
@@ -29,16 +35,22 @@ Exported from the Brilliant project "airdesign", Strategy canvas, on 2026-11-04.
 
 ## Writing and backlog
 
+Board exports of the copy kit and the design backlog. Edit the keyed handoff in the design folder: [copy kit](../../design/v0.1/copy-kit.md) and [backlog](../../design/v0.1/backlog.md).
+
 - [Copy kit](content/copy-kit.md) ([image](boards/copy-kit.png))
 - [Design backlog](content/design-backlog.md) ([image](boards/design-backlog.png))
 
 ## Research
 
-Research and throwaway prototypes behind the engine constraints. Each folder has a README with sources, proposed constraints, risks and how to run its prototype. Prototypes are evidence, not product code.
+Read the matching README before changing a fixed point in Engine Constraints. Each folder has sources, proposed constraints, risks and the command that runs its prototype from that folder. Prototypes are evidence, not product code. Run one only from its own folder. The repo root has no install or test command.
 
 - [PowerPoint import and export](research/pptx/README.md)
 - [Live sync and undo](research/sync/README.md)
 - [Agent tools](research/tools/README.md)
 - [Measuring stunning slides](research/quality/README.md)
 
-The earlier Wonder export (old S01 to S16 codes, present mode, share links) was replaced on 2026-11-04; it is in git history at commit 5929f17.
+## Delivery
+
+Read when ordering the nine-PR build or checking what a PR must prove. The plan is the sequence and its checks. It does not authorize implementation, spending, publication or a merge.
+
+- [Autopilot plan](delivery/autopilot-plan.md)

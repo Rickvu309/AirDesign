@@ -28,7 +28,7 @@ Research date: 2026-11-03. **Preservation probe: PASS; visual fidelity: unverifi
 
 Use yauzl for bounded streaming reads, [yazl](https://github.com/thejoshwolfe/yazl) for output, a namespace-aware parser plus original source spans for surgical patches, Node crypto for SHA-256, and pixelmatch/pngjs for comparisons. JSZip is sufficient for this trusted fixture, not the hostile-file boundary. The probe uses [saxes](https://github.com/lddubeau/saxes), which does not resolve DTD entities but is archived; production adoption needs a maintenance decision. Vitest/fast-check should exercise edit/inverse, graph integrity, and malicious packages. The fixture pins an `image-size` override to 2.0.4; clean install audits zero known vulnerabilities.
 
-T3 reference inspected at `cefb544af3c98224874419198c0359b652ca3c94`: [Effect services](/Users/quanvu/tmp/refs/t3code/docs/internals/effect-services.md); its thin transports/service boundary and schema-derived contracts transfer well. Expose one PPTX service to studio and MCP; keep package I/O in the adapter and JSON changes pure. AirDesign needs no provider/harness machinery.
+T3 reference inspected at checkout [cefb544af3c98224874419198c0359b652ca3c94](https://github.com/pingdotgg/t3code/commit/cefb544af3c98224874419198c0359b652ca3c94): thin transports, a service boundary and schema-derived contracts transfer well. Expose one PPTX service to studio and MCP; keep package I/O in the adapter and JSON changes pure. AirDesign needs no provider/harness machinery.
 
 ## Reproduction and measured result
 
