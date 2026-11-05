@@ -36,7 +36,7 @@
 .ad-editor-shell .ad-main { max-inline-size:none;padding:0; }
 .studio-editor { box-sizing:border-box;max-inline-size:none;padding:80px clamp(16px,6vi,88px) 90px;min-block-size:100dvb; }
 .editor-bar,.editor-export,.editor-dock { position:fixed;z-index:20;display:flex;align-items:center;gap:8px;padding:6px;background:var(--card);border:1px solid var(--border);border-radius:13px;box-shadow:0 2px 6px color-mix(in srgb,var(--foreground) 6%,transparent); }
-.editor-bar { inset-block-start:12px;inset-inline-start:12px;flex-wrap:nowrap;max-inline-size:calc(100% - 200px); }
+.editor-bar { z-index:30;inset-block-start:12px;inset-inline-start:12px;flex-wrap:nowrap;max-inline-size:calc(100% - 200px); }
 .editor-logo { font-size:22px;text-decoration:none;padding:0 8px; }
 .deck-menu { position:relative;min-inline-size:0; }
 .deck-name { display:block;max-inline-size:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600; }
@@ -72,3 +72,22 @@
  .editor-export { inset-block-start:67px; }
  .editor-slides { grid-template-columns:minmax(0,1fr); }
 }
+
+.home-new-deck { position:relative; }
+.home-new-deck>summary { cursor:pointer;list-style:none;border-radius:8px;padding:12px 18px;background:var(--primary);color:var(--primary-foreground);font-size:14px;font-weight:600; }
+.home-new-deck>summary:focus-visible { outline:2px solid var(--ring);outline-offset:3px; }
+.home-new-menu { position:absolute;inset-block-start:calc(100% + 8px);inset-inline-end:0;z-index:30;display:grid;gap:4px;inline-size:210px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 24px color-mix(in oklch,var(--foreground) 12%,transparent); }
+.home-view { display:flex;justify-content:end;gap:4px;margin-block-end:16px; }
+.deck-list { display:grid;gap:12px; }
+.deck-list .deck-card { display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:12px; }
+.deck-list .deck-cover { flex:0 0 120px;padding:12px;box-sizing:border-box; }
+.deck-list .deck-cover strong { font-size:14px; }
+.deck-list .deck-card-details { flex:1;min-inline-size:min(100%,240px);padding:0; }
+.import-recovery { display:flex;flex-wrap:wrap;gap:12px; }
+.import-recovery>p,.import-recovery>details { flex-basis:100%; }
+.import-recovery pre { white-space:pre-wrap;overflow-wrap:anywhere; }
+
+.deck-grid>.import-card { margin:0;min-inline-size:0; }
+.workspace-file[hidden] { display:none; }
+.import-filename { font-weight:600;overflow-wrap:anywhere; }
+.import-recovery details { color:var(--muted-foreground);font-size:12px; }

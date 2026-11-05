@@ -1,4 +1,5 @@
 import { SyncClient, parseSnapshot, type Snapshot } from "../../../../packages/rpc/src/client.ts"
+import type { Receipt } from "../../../../packages/change-log/src/index.ts"
 import { parseMessage } from "../../../../packages/rpc/src/wire.ts"
 export async function currentPerson(): Promise<string | null> {
   const response = await fetch("/api/account")
@@ -22,14 +23,20 @@ export function transport(client: SyncClient, person: string, deck: string, erro
   let previous:Snapshot|undefined
   let pending:Snapshot|undefined
   let persistence:ReturnType<typeof setTimeout>|undefined
-  const cache = (snapshot:Snapshot)=>{
+  let acknowledgements:Receipt[]=[]
+  const cache = (snapshot:Snapshot,receipt?:Receipt)=>{
+    if(receipt)acknowledgements.push(receipt)
     pending=snapshot
     if(persistence)return
     persistence=setTimeout(()=>{
       const persist=()=>{
         persistence=undefined
         const latest=pending;pending=undefined
-        if(latest)try{localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))}catch(failure){error(String(failure))}
+        if(latest)try{
+          localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))
+          const durable=acknowledgements;acknowledgements=[]
+          for(const receipt of durable)void client.acknowledge(receipt).catch(failure=>error(String(failure)))
+        }catch(failure){error(String(failure))}
       }
       if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
       else void afterPaint().then(persist)
@@ -69,9 +76,9 @@ export function transport(client: SyncClient, person: string, deck: string, erro
           const message=parseMessage(JSON.parse(String(event.data)),previous)
           if (message.kind==="snapshot" || message.kind==="receipt") {
             if (message.deck.id!==deck) throw new Error("wrong-deck-snapshot")
-            if (message.seq>=client.seq) {previous=message;client.receive(message);cache(message)}
+            if (message.seq>=client.seq) {previous=message;client.receive(message)}
             if (!resumed) { resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=> { if (active.readyState===WebSocket.OPEN) active.send(JSON.stringify(command)) }) }
-            if (message.kind==="receipt") void client.acknowledge(message.receipt).catch(e=>error(String(e)))
+            if(previous)cache(previous,message.kind==="receipt" ? message.receipt : undefined)
           } else if (message.kind==="signed-out") { client.stop("signed-out");active.close() }
           else if (message.kind==="error") {
             if (message.code==="deck-deleted") { client.stop("deleted");active.close() }

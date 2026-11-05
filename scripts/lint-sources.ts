@@ -1,3 +1,4 @@
+import { editorStackingHits } from "./lint/editor-stacking.ts"
 import { historyQuerySafetyHits } from "./lint/history-query-safety.ts"
 import { operationSafetyHits } from "./lint/operation-safety.ts"
 import { deckInvariantHits } from "./lint/deck-invariants.ts"
@@ -25,6 +26,7 @@ for (const file of files) {
   for (const hit of commentHits(file, source)) {
     failures.push(`${path.relative(repoRoot, file)}:${hit.line} comment`)
   }
+  for (const hit of editorStackingHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   if (file.endsWith(".css")) {
     continue
   }

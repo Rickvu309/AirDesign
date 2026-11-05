@@ -12,6 +12,7 @@ try {
  await expect(page.getByRole("heading",{name:"No decks yet",exact:true})).toBeVisible()
  assert.equal(await page.locator(".deck-card").count(),0)
  await page.getByRole("button",{name:"+ New deck",exact:true}).click()
+ await page.getByRole("button",{name:"Blank deck",exact:true}).click()
  await page.locator('[data-sync-state="saved"]').waitFor()
  const deck=page.url().split("/").at(-1)
  await page.getByLabel("Your first request").fill("Explain our quarterly strategy")
@@ -73,6 +74,12 @@ try {
  await expect(phone.getByRole("status").filter({hasText:"Edit on a laptop"})).toBeVisible()
  assert.equal(await phone.locator('[contenteditable="true"]').count(),0)
  assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=320),true)
+ await phone.locator(".deck-name").click()
+ assert.equal(await phone.evaluate(()=>{
+  const menu=document.querySelector(".editor-menu"),bar=document.querySelector(".editor-export")
+  const a=menu.getBoundingClientRect(),b=bar.getBoundingClientRect(),x=Math.max(a.left,b.left)+1,y=Math.max(a.top,b.top)+1
+  return x>=Math.min(a.right,b.right)||y>=Math.min(a.bottom,b.bottom)||menu.contains(document.elementFromPoint(x,y))
+ }),true,"deck-menu-above-export-at-320")
  await phone.close()
  const stale=await context.newPage()
  await stale.goto(`${stack.origin}/deck/${deck}`)
