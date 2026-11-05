@@ -1,9 +1,10 @@
 import { createRoot } from "react-dom/client"
 import { createAccessClient } from "@airdesign/access/client"
 import { AccessApp, readAccessRoute } from "./access/access-app.tsx"
+import { RenderFixture } from "./render/render-fixture.tsx"
 import "../../../packages/ui/src/tokens/tokens.css"
 
 const root = document.getElementById("root")
 if (root) {
-  createRoot(root).render(<AccessApp client={createAccessClient("")} route={readAccessRoute(window.location)} initialScreen="checking" />)
+  createRoot(root).render(window.location.pathname === "/render-fixture" ? <RenderFixture /> : <AccessApp client={createAccessClient("")} route={readAccessRoute(window.location)} initialScreen="checking" />)
 }

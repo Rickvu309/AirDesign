@@ -14,7 +14,12 @@
     "verify:pr-01": "node scripts/verify-pr-01.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint ."
+    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint .",
+    "build:deck": "node scripts/build-deck.mjs",
+    "probe:deck": "node scripts/probe-deck.mjs",
+    "verify:deck": "node scripts/verify-deck.mjs",
+    "verify:render": "node scripts/verify-render.mjs",
+    "verify:pr-02": "npm run verify:deck && npm run verify:render"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
@@ -22,6 +27,9 @@
     "@types/react-dom": "19.2.3",
     "happy-dom": "20.0.11",
     "oxlint": "1.91.0",
+    "pixelmatch": "^8.0.0",
+    "playwright": "^1.64.1",
+    "pngjs": "^7.0.0",
     "typescript": "5.9.3",
     "vite": "8.3.6",
     "vitest": "5.1.0"
