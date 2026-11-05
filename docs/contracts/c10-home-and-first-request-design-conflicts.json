@@ -1,0 +1,27 @@
+{
+  "id": "C10",
+  "schemaVersion": 1,
+  "title": "Home and first request design conflicts",
+  "status": "deferred",
+  "freezeIn": "P05",
+  "acceptIn": "P05",
+  "owner": "apps/studio",
+  "source": {
+    "path": "docs/design/v0.1/backlog.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": null,
+  "alternatives": [
+    "Decide in P05 before any consumer."
+  ],
+  "examples": [],
+  "counterexamples": [],
+  "evidence": {
+    "kind": "deferred",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "C04",
+  "schemaVersion": 1,
+  "title": "Native kept flagged and source preservation",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/pptx",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Every fixture feature is native, kept, or flagged, and each row is proven or unproven. Native features are real editable objects. Kept features stay byte-for-byte with their stored preview and are not claimed editable. Flagged features are preserved except for the security removals listed in this contract: external relationships that fetch remote content, macros, and active embedded objects. A change carries the parts it depends on. Uncompressed part bytes stay identical aside from those removals. Provenance records the source part hash. Migration of stored provenance is additive-only.",
+  "alternatives": [
+    "Drop unknown parts on import.",
+    "Mark every unknown part editable.",
+    "Rewrite uncompressed parts to normalize XML."
+  ],
+  "examples": [
+    {
+      "id": "text-run-is-native",
+      "feature": "text-run-edit",
+      "support": "native",
+      "status": "proven",
+      "proof": "local text-span probe"
+    },
+    {
+      "id": "unknown-part-is-kept",
+      "feature": "unknown-drawingml",
+      "support": "kept",
+      "status": "unproven",
+      "gate": "X01"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "macro-is-flagged-not-executed",
+      "feature": "macro",
+      "support": "flagged",
+      "status": "unproven",
+      "removal": "active content"
+    }
+  ],
+  "evidence": {
+    "kind": "support-matrix",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  },
+  "securityRemovals": [
+    "remote-external-relationships",
+    "macros",
+    "active-embedded-objects"
+  ]
+}

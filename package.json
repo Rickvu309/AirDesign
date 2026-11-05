@@ -1,0 +1,32 @@
+{
+  "name": "airdesign",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "probe:compat": "node --experimental-strip-types scripts/probe-compat.ts",
+    "verify:contracts": "node scripts/verify-contracts.mjs",
+    "verify:ui": "node scripts/verify-ui.mjs",
+    "verify:access": "node scripts/verify-access.mjs",
+    "verify:pr-01": "node scripts/verify-pr-01.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint ."
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "happy-dom": "20.0.11",
+    "oxlint": "1.91.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.6",
+    "vitest": "5.1.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

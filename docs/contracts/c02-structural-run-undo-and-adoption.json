@@ -1,0 +1,138 @@
+{
+  "id": "C02",
+  "schemaVersion": 1,
+  "title": "Structural run undo and adoption",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/contract-rules",
+  "source": {
+    "path": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Undo of a run rebuilds from the pre-run tree. It does not apply a blind inverse. Nodes the run created and the person did not touch disappear. Nodes the run deleted return. A created node the person edited or reparented is adopted: it keeps its id, the person's parent, and the person's text. Later person edits on nodes that already existed stay.",
+  "alternatives": [
+    "Apply the inverse of every run change, including nodes the person edited later.",
+    "Drop every node the run created, including ones the person has since edited.",
+    "Mint new ids for kept person content."
+  ],
+  "examples": [
+    {
+      "id": "untouched-create-disappears-and-delete-returns",
+      "body": {
+        "before": [
+          {
+            "id": "root",
+            "parentId": null,
+            "text": ""
+          },
+          {
+            "id": "kept-k",
+            "parentId": "root",
+            "text": "kept"
+          }
+        ],
+        "created": [
+          {
+            "id": "temp",
+            "parentId": "root",
+            "text": "draft"
+          }
+        ],
+        "deletedIds": [
+          "kept-k"
+        ],
+        "moved": [],
+        "personTouched": []
+      },
+      "expect": {
+        "adopted": [],
+        "absentIds": [
+          "temp"
+        ],
+        "presentIds": [
+          "root",
+          "kept-k"
+        ]
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "adopted-child-keeps-id-parent-and-person-text",
+      "body": {
+        "before": [
+          {
+            "id": "parent-p",
+            "parentId": null,
+            "text": ""
+          },
+          {
+            "id": "parent-q",
+            "parentId": null,
+            "text": ""
+          },
+          {
+            "id": "kept-k",
+            "parentId": "parent-p",
+            "text": "kept"
+          }
+        ],
+        "created": [
+          {
+            "id": "child-c",
+            "parentId": "parent-p",
+            "text": "draft"
+          },
+          {
+            "id": "child-d",
+            "parentId": "parent-p",
+            "text": "other"
+          }
+        ],
+        "deletedIds": [
+          "kept-k"
+        ],
+        "moved": [
+          {
+            "id": "kept-k",
+            "parentId": "parent-q"
+          }
+        ],
+        "personTouched": [
+          {
+            "id": "child-c",
+            "parentId": "parent-q",
+            "text": "person note"
+          }
+        ]
+      },
+      "expect": {
+        "adopted": [
+          {
+            "id": "child-c",
+            "parentId": "parent-q",
+            "text": "person note"
+          }
+        ],
+        "absentIds": [
+          "child-d"
+        ],
+        "presentIds": [
+          "parent-p",
+          "parent-q",
+          "kept-k",
+          "child-c"
+        ]
+      }
+    }
+  ],
+  "evidence": {
+    "kind": "executable-examples",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

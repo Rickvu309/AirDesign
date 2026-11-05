@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "features": [
+    {
+      "feature": "text-run-edit",
+      "support": "native",
+      "status": "proven",
+      "proof": "fixtures/pptx/text-span-two-runs"
+    },
+    {
+      "feature": "speaker-notes",
+      "support": "native",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "theme-color",
+      "support": "native",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "unknown-drawingml",
+      "support": "kept",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "chart",
+      "support": "kept",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "custom-geometry",
+      "support": "kept",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "embedded-font",
+      "support": "kept",
+      "status": "unproven",
+      "gate": "X01"
+    },
+    {
+      "feature": "macro",
+      "support": "flagged",
+      "status": "unproven",
+      "gate": "X01",
+      "removal": "active content"
+    },
+    {
+      "feature": "remote-external-relationship",
+      "support": "flagged",
+      "status": "unproven",
+      "gate": "X01",
+      "removal": "remote fetch"
+    },
+    {
+      "feature": "active-embedded-object",
+      "support": "flagged",
+      "status": "unproven",
+      "gate": "X01",
+      "removal": "active content"
+    }
+  ]
+}

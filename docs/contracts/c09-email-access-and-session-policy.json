@@ -1,0 +1,58 @@
+{
+  "id": "C09",
+  "schemaVersion": 1,
+  "title": "Email access and session policy",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/access",
+  "source": {
+    "path": "docs/design/v0.1/logic.md; docs/design/v0.1/backlog.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Email is the only launch method. One message carries a link and a 6-digit code. The link lasts 15 minutes and works once. A resend is refused for 30 seconds and then replaces the previous link and code. Five wrong codes lock that challenge; a later resend starts a new one. Responses do not reveal whether an email already has an account. Sessions last 30 days and the expiry slides forward when the session is used. Revocation makes later protected calls fail. Wrong codes stay inline on S22.01 with the error in view and focus back on the code. An expired or consumed link opens S29.01, keeps the signed intent, and offers a new link. Turnstile is a guard seam; local and test runs use the injected allow adapter and do not call a paid verifier.",
+  "alternatives": [
+    "Send the person to S29.01 for a wrong code.",
+    "Keep the previous code valid after a resend.",
+    "Use a different error when the email is unknown.",
+    "Store the return target as an open URL."
+  ],
+  "examples": [
+    {
+      "id": "wrong-code-stays-on-check-email",
+      "screen": "S22.01",
+      "error": "access.wrong_code",
+      "navigation": "none"
+    },
+    {
+      "id": "expired-link-opens-recovery",
+      "screen": "S29.01",
+      "intent": "retained"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "replayed-link",
+      "result": "no-session"
+    },
+    {
+      "id": "resend-before-30-seconds",
+      "result": "no-new-code"
+    }
+  ],
+  "evidence": {
+    "kind": "access-behavior-tests",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  },
+  "linkTtlSeconds": 900,
+  "resendWaitSeconds": 30,
+  "codeLength": 6,
+  "attemptLimit": 5,
+  "sessionTtlSeconds": 2592000,
+  "wrongCodeScreen": "S22.01",
+  "expiredLinkScreen": "S29.01"
+}

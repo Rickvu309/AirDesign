@@ -1,0 +1,314 @@
+{
+  "id": "C07",
+  "schemaVersion": 1,
+  "title": "Performance budgets and measurement",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "bench",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Adopt every phase-data performance metric in metrics, each with an adopted or revised decision, its workload, and whether it is provisional. Adopt the absolute budgets in budgets. PDF has its own deadline and is not the import wall time. Model and tool latency are not borrowed from import or fixture-run time. While trunk has no comparable product code, measure the added operation against these absolute budgets and do not build a trunk comparison. Record workload, sample count, warm or cold state, and the limiter with every probe. Later features stay unmeasured until their freeze PR.",
+  "alternatives": [
+    "Use one shared latency number for import, PDF, and model calls.",
+    "Fail P01 on a relative p95 against trunk code that does not exist.",
+    "Leave PDF inside the import wall-time budget."
+  ],
+  "examples": [
+    {
+      "id": "pdf-deadline-is-separate",
+      "pdfDeadlineMs": 2000,
+      "importWallMs": 30000
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "tool-read-is-not-import-wall",
+      "toolReadWarmP95Ms": 500,
+      "importWallMs": 30000
+    }
+  ],
+  "evidence": {
+    "kind": "budget-table",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  },
+  "budgets": {
+    "fixtureCliWallMs": 30000,
+    "fixtureCliPeakRssBytes": 268435456,
+    "packedUiBytes": 200000,
+    "shellStartupMs": 3000,
+    "applyP95Ms": 4,
+    "authWarmP95Ms": 500,
+    "authColdMs": 2000,
+    "panZoomDragFps": 60,
+    "panZoomDragElements": 300,
+    "editPaintMs": 16,
+    "agentChangeVisibleMs": 100,
+    "hundredSlideEditableMs": 2000,
+    "homeHundredDecksMs": 2000,
+    "commitP95Ms": 50,
+    "commitToPaintMs": 100,
+    "queueRecoveryMs": 2000,
+    "admissionP95Ms": 50,
+    "templatePaintP95Ms": 100,
+    "thumbnailP95Ms": 2000,
+    "toolCount": 20,
+    "estimatorTokens": 8000,
+    "toolResultBytes": 20000,
+    "toolReadWarmP95Ms": 500,
+    "toolEditWarmP95Ms": 1000,
+    "toolCaptureWarmP95Ms": 2000,
+    "operationAckMs": 1000,
+    "creditResultMs": 2000,
+    "landingLcpMs": 2500,
+    "referencePixelSlideRatio": 0.001,
+    "referencePixelItemRatio": 0.01,
+    "workerWallMs": 30000,
+    "workerZipBytes": 104857600,
+    "workerUnpackedBytes": 524288000,
+    "workerParts": 10000,
+    "workerRssBytes": 536870912,
+    "pdfDeadlineMs": 2000,
+    "importWallMs": 30000
+  },
+  "metrics": [
+    {
+      "id": "W01",
+      "workload": "fixture-run wall time and peak RSS",
+      "rule": "the local fixture CLI terminates within 30 s on its declared small corpus; unavailable external references are inventories only and remain blocked at P09",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "p01",
+      "limits": {
+        "fixtureCliWallMs": 30000,
+        "fixtureCliPeakRssBytes": 268435456
+      }
+    },
+    {
+      "id": "W02",
+      "workload": "consumer import size and shell startup time",
+      "rule": "freeze initial packed-JS and startup budgets in W01, measure the clean v0.1 consumer against them, and record absence of a comparable trunk implementation",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "p01",
+      "limits": {
+        "packedUiBytes": 200000,
+        "shellStartupMs": 3000
+      }
+    },
+    {
+      "id": "W03",
+      "workload": "apply latency and touched-object allocation on 300-element deck",
+      "rule": "set a provisional p95 apply budget of 4 ms; record absolute result when trunk lacks apply",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "applyP95Ms": 4
+      }
+    },
+    {
+      "id": "W04",
+      "workload": "frame time, edit-to-paint and first-editable time",
+      "rule": "60 fps target at 300 elements; edit drawn within 16 ms; first slide editable within 2 s for 100 slides on the pinned reference machine",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "later-pr",
+      "limits": {
+        "panZoomDragFps": 60,
+        "panZoomDragElements": 300,
+        "editPaintMs": 16,
+        "hundredSlideEditableMs": 2000
+      }
+    },
+    {
+      "id": "W05",
+      "workload": "acknowledgment latency and worker RSS",
+      "rule": "operation id within 1 s; PPTX input at most 100 MB, expanded 500 MB, 10000 parts and 30 s; tune other job limits from fixtures",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "operationAckMs": 1000,
+        "workerZipBytes": 104857600,
+        "workerUnpackedBytes": 524288000,
+        "workerParts": 10000,
+        "workerWallMs": 30000
+      }
+    },
+    {
+      "id": "W06",
+      "workload": "import/export time and visual difference",
+      "rule": "local worker limit is 30 s; hash and graph invariants must pass. P09 X01 additionally requires at most 0.1 percent changed pixels per slide and 1 percent per item with unchanged text line counts on matched pinned references, as adopted or explicitly revised with evidence in P01",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "deferred-external",
+      "limits": {
+        "workerWallMs": 30000,
+        "referencePixelSlideRatio": 0.001,
+        "referencePixelItemRatio": 0.01
+      }
+    },
+    {
+      "id": "W07",
+      "workload": "commit latency and bounded history replay",
+      "rule": "provisional warm p95 commit at most 50 ms on the pinned local stack, leaving room for the 100 ms commit-to-paint budget; reject unbounded replay growth",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "commitP95Ms": 50,
+        "commitToPaintMs": 100
+      }
+    },
+    {
+      "id": "W08",
+      "workload": "local authentication response latency",
+      "rule": "provisional warm p95 at most 500 ms excluding external mail delivery; record inbox delivery separately",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "p01",
+      "limits": {
+        "authWarmP95Ms": 500,
+        "authColdMs": 2000
+      }
+    },
+    {
+      "id": "W09",
+      "workload": "commit-to-paint trace and reconnect time",
+      "rule": "connected commit-to-paint p95 at most 100 ms; propose 2 s recovery for a 100-command local queue and measure before raising it",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "commitToPaintMs": 100,
+        "queueRecoveryMs": 2000
+      }
+    },
+    {
+      "id": "W10",
+      "workload": "input-to-paint and Home load",
+      "rule": "manual editing keeps the 16 ms render budget; propose Home usable within 2 s for 100 decks on the pinned local fixture",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "editPaintMs": 16,
+        "homeHundredDecksMs": 2000
+      }
+    },
+    {
+      "id": "W11",
+      "workload": "operation ACK and export-ready time",
+      "rule": "id within 1 s; PPTX completes or fails within the 30 s worker deadline; record PDF absolute deadline in P01 for the fixture sizes",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "later-pr",
+      "limits": {
+        "operationAckMs": 1000,
+        "workerWallMs": 30000,
+        "pdfDeadlineMs": 2000
+      }
+    },
+    {
+      "id": "W12",
+      "workload": "template apply-to-paint",
+      "rule": "provisional p95 at most 100 ms for 100 slides excluding cold fonts; cold-font wait is visible and separately measured",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "templatePaintP95Ms": 100
+      }
+    },
+    {
+      "id": "W13",
+      "workload": "thumbnail-ready time and crop-to-paint",
+      "rule": "provisional local thumbnail p95 at most 2 s for a 10 MB fixture; crop keeps the 16 ms edit frame budget",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "thumbnailP95Ms": 2000,
+        "editPaintMs": 16
+      }
+    },
+    {
+      "id": "W14",
+      "workload": "admission and ledger transaction latency",
+      "rule": "provisional p95 at most 50 ms local admission and zero duplicate debits under concurrent retries",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "admissionP95Ms": 50
+      }
+    },
+    {
+      "id": "W15",
+      "workload": "warm p95 reads, edits, captures and full tools/list size",
+      "rule": "at most 20 tools and 8000 declared estimator tokens; non-image results below 20000 UTF-8 bytes; reads 500 ms, edits 1 s, captures 2 s; slow ACK 1 s",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "later-pr",
+      "limits": {
+        "toolCount": 20,
+        "estimatorTokens": 8000,
+        "toolResultBytes": 20000,
+        "toolReadWarmP95Ms": 500,
+        "toolEditWarmP95Ms": 1000,
+        "toolCaptureWarmP95Ms": 2000,
+        "operationAckMs": 1000
+      }
+    },
+    {
+      "id": "W16",
+      "workload": "first committed change and commit-to-paint",
+      "rule": "connected paint p95 at most 100 ms; measure harness dispatch and stream overhead separately with the deterministic adapter; record real-model first-change latency as not run until an approved P09 trial",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "deferred-until-p09",
+      "limits": {
+        "commitToPaintMs": 100
+      }
+    },
+    {
+      "id": "W17",
+      "workload": "webhook ACK and result propagation",
+      "rule": "provisional webhook ACK at most 1 s after durable receipt and UI result within 2 s of verified credit commit; no live charges",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "operationAckMs": 1000,
+        "creditResultMs": 2000
+      }
+    },
+    {
+      "id": "W18",
+      "workload": "end-to-end latency, memory and case-level quality statistics",
+      "rule": "enforce all P02/P04/P07 latency limits and zero authorization/atomicity failures; quality thresholds are frozen policy and require calibrated human evidence",
+      "decision": "adopted",
+      "provisional": false,
+      "measurement": "later-pr",
+      "limits": {}
+    },
+    {
+      "id": "W19",
+      "workload": "static-page load and build artifact size",
+      "rule": "provisional LCP at most 2.5 s under a pinned mobile network profile; record trunk comparison only for equivalent pages",
+      "decision": "adopted",
+      "provisional": true,
+      "measurement": "later-pr",
+      "limits": {
+        "landingLcpMs": 2500
+      }
+    }
+  ]
+}

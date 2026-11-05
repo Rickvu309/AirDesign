@@ -1,0 +1,46 @@
+{
+  "id": "C19",
+  "schemaVersion": 1,
+  "title": "Worker resource and security limits",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "apps/worker",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "A worker job accepts at most 100 MB compressed, 500 MB unpacked, and 10000 parts, and stops at 30 seconds or 512 MB RSS. The renderer makes no network calls. Each owner and job gets its own temp directory, which is removed on finish, crash, and cancel. Hostile font cases are declared for P03 and are not claimed as tested here.",
+  "alternatives": [
+    "Share one temp directory across jobs.",
+    "Let the renderer fetch remote images during import.",
+    "Raise the wall clock to the model-eval budget."
+  ],
+  "examples": [
+    {
+      "id": "limits",
+      "zipBytes": 104857600,
+      "unpackedBytes": 524288000,
+      "parts": 10000,
+      "wallMs": 30000,
+      "rssBytes": 536870912,
+      "networkEgress": "none"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "hostile-font-is-declared-not-passed",
+      "caseId": "font-zip-bomb",
+      "owner": "P03",
+      "status": "unproven"
+    }
+  ],
+  "evidence": {
+    "kind": "expectation-record",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

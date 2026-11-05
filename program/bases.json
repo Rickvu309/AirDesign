@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "defaultBranch": "main",
+  "stackRoot": "1ead9f54adee48bfefbe1057c24ed3fdd08af361",
+  "trunkMeans": "stackRoot",
+  "prs": {
+    "P01": {
+      "branch": "p01-signed-in-workspace",
+      "predecessor": "main",
+      "mergeBase": "1ead9f54adee48bfefbe1057c24ed3fdd08af361",
+      "parentHeads": ["1ead9f54adee48bfefbe1057c24ed3fdd08af361"]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "C18",
+  "schemaVersion": 1,
+  "title": "Offline person edits and account isolation",
+  "status": "deferred",
+  "freezeIn": "P04",
+  "acceptIn": "P04",
+  "owner": "packages/change-log",
+  "source": {
+    "path": "docs/design/v0.1/logic.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": null,
+  "alternatives": [
+    "Decide in P04 before any consumer."
+  ],
+  "examples": [],
+  "counterexamples": [],
+  "evidence": {
+    "kind": "deferred",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

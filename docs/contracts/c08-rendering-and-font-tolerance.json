@@ -1,0 +1,41 @@
+{
+  "id": "C08",
+  "schemaVersion": 1,
+  "title": "Rendering and font tolerance",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/render",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Reference checks use 0.1 percent of pixels per slide, 1 percent per item, and no line-count change. Missing fonts are reported and never silently substituted. A font row has a file hash and a license, or an explicit unresolved entry. Viewports are the 1470 by 923 studio frame and 320 CSS px for access and read-only deck viewing. Visual PowerPoint comparisons stay unproven until P09 X01.",
+  "alternatives": [
+    "Substitute a metric-compatible font without recording it.",
+    "Treat a local LibreOffice render as the PowerPoint pass.",
+    "Allow line-count changes inside the pixel budget."
+  ],
+  "examples": [
+    {
+      "id": "thresholds",
+      "pixelFractionPerSlide": 0.001,
+      "pixelFractionPerItem": 0.01,
+      "lineCountDelta": 0
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "silent-font-substitution",
+      "allowed": false
+    }
+  ],
+  "evidence": {
+    "kind": "font-inventory",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

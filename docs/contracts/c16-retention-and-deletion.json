@@ -1,0 +1,42 @@
+{
+  "id": "C16",
+  "schemaVersion": 1,
+  "title": "Retention and deletion",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/access",
+  "source": {
+    "path": "docs/design/v0.1/logic.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Trash purge is 30 days after the move. Account deletion requires an explicit confirmation, ends sessions, and removes local account rows within 30 days. A tombstone keeps the normalized email hash and the original free-week start so a new sign-in does not grant a second free week. Export and import results expire after 7 days once those jobs exist. Mail challenges expire with the 15-minute link. Provider and legal deletion are not activated; that activation waits for P09 evidence and is not claimed here.",
+  "alternatives": [
+    "Delete the email hash so the free week can be granted again.",
+    "Treat a local delete as proof of provider deletion.",
+    "Keep trash until a manual purge with no deadline."
+  ],
+  "examples": [
+    {
+      "id": "tombstone-keeps-free-week",
+      "secondGrant": false,
+      "trashDays": 30,
+      "accountRemovalDays": 30
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "provider-deletion-is-not-activated",
+      "providerDeletion": "blocked",
+      "gate": "X06"
+    }
+  ],
+  "evidence": {
+    "kind": "policy-record",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

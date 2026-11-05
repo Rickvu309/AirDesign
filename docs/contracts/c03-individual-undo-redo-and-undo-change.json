@@ -1,0 +1,248 @@
+{
+  "id": "C03",
+  "schemaVersion": 1,
+  "title": "Individual undo/redo and undo_change",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/contract-rules",
+  "source": {
+    "path": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "undo_change addresses one change id. A person change stays the undo target when an agent commit lands on another property. Redo is invalidated when a later change touches the same property. A refused agent change is not undone and does not change stored values. The same change id with a different payload is an error and must not write.",
+  "alternatives": [
+    "Undo always reverts the latest commit, whoever made it.",
+    "A reused change id with a new payload overwrites the stored change.",
+    "A refused agent write consumes the person's undo step."
+  ],
+  "examples": [
+    {
+      "id": "person-undo-keeps-a-later-agent-change-on-another-property",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_agent",
+              "actor": "agent",
+              "property": "notes",
+              "payload": "agent note",
+              "prior": "",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "undo",
+            "id": "chg_person",
+            "payload": "person"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "applied",
+        "restored": "original",
+        "values": {
+          "title": "original",
+          "notes": "agent note"
+        }
+      }
+    },
+    {
+      "id": "same-id-same-payload-is-idempotent",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "applied",
+        "values": {
+          "title": "person"
+        }
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "same-id-new-payload-is-refused",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "replaced",
+              "prior": "person",
+              "status": "applied"
+            }
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason": "duplicate-id",
+        "values": {
+          "title": "person"
+        }
+      }
+    },
+    {
+      "id": "undo-payload-mismatch-is-refused",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "undo",
+            "id": "chg_person",
+            "payload": "replaced"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason": "payload-mismatch",
+        "values": {
+          "title": "person"
+        }
+      }
+    },
+    {
+      "id": "redo-after-a-later-edit-of-the-same-property-is-invalid",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_person",
+              "actor": "person",
+              "property": "title",
+              "payload": "person",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "undo",
+            "id": "chg_person",
+            "payload": "person"
+          },
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_later",
+              "actor": "person",
+              "property": "title",
+              "payload": "later",
+              "prior": "original",
+              "status": "applied"
+            }
+          },
+          {
+            "op": "redo",
+            "id": "chg_person",
+            "payload": "person"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason": "redo-invalid",
+        "values": {
+          "title": "later"
+        }
+      }
+    },
+    {
+      "id": "refused-agent-change-is-skipped",
+      "body": {
+        "steps": [
+          {
+            "op": "apply",
+            "change": {
+              "id": "chg_refused",
+              "actor": "agent",
+              "property": "title",
+              "payload": "agent",
+              "prior": "original",
+              "status": "refused"
+            }
+          },
+          {
+            "op": "undo",
+            "id": "chg_refused",
+            "payload": "agent"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "reason": "skipped-refusal",
+        "values": {}
+      }
+    }
+  ],
+  "evidence": {
+    "kind": "executable-examples",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

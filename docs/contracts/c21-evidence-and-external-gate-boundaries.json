@@ -1,0 +1,41 @@
+{
+  "id": "C21",
+  "schemaVersion": 1,
+  "title": "Evidence and external gate boundaries",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "docs/contracts",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Local engine, tree, and reference-client proofs may merge without a fidelity, assistive-technology, model, vendor, or payment claim. P09 X01 through X06 and the published-claim checks cannot pass by proxy. The compat probe is a feasibility check. An unavailable external proof is inventoried, pointed at its P09 gate, and left unpassed.",
+  "alternatives": [
+    "Mark X01 passed because the local probe hashed parts.",
+    "Accept a screen-reader plan as the X02 transcript.",
+    "Let a fixture client stand in for a vendor client."
+  ],
+  "examples": [
+    {
+      "id": "probe-does-not-pass-x01",
+      "claim": "feasibility-only",
+      "x01": "blocked"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "proxy-cannot-close-x02",
+      "screenReaderTranscript": "absent",
+      "gate": "X02"
+    }
+  ],
+  "evidence": {
+    "kind": "external-inventory",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}
