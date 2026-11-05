@@ -7,6 +7,8 @@
     "start": "node --experimental-strip-types src/main.ts"
   },
   "dependencies": {
-    "@airdesign/access": "0.1.0"
+    "@airdesign/access": "0.1.0",
+    "@types/ws": "^8.18.2",
+    "ws": "^8.22.1"
   }
 }
