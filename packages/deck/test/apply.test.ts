@@ -14,7 +14,9 @@ function success(changeSet: ChangeSet, input = deck) {
 function semantic(value: Deck) { return { ...value, version: 0, slides: value.slides.map(s => ({ ...s, version: 0 })) } }
 describe("canonical atomic changes", () => {
   it("serializes and reopens without losing sources, themes, notes or arbitrary sizes", () => {
-    expect(parseDeck(JSON.parse(JSON.stringify(deck)))).toEqual(deck)
+    const original = { kind: "original", part: "ppt/slides/slide1.xml", sha256: "a".repeat(64), objectId: "42", dependencies: ["ppt/media/image1.png"] } as const
+    const value: Deck = { ...deck, slides: [{ ...slide, size: { width: 777, height: 888 }, elements: [{ ...first, source: { ...original, dependencies: [...original.dependencies] }, support: { kind: "kept", preview: "data:image/png;base64,AA==" }, placeholder: "title" }, { ...slide.elements[1]!, support: { kind: "flagged", reason: "Unsupported effect", preview: null } }] }] }
+    expect(parseDeck(JSON.parse(JSON.stringify(value)))).toEqual(value)
   })
   it("inserts a unique stable slide at the requested position", () => {
     const added = { ...slide, id: id("added"), elements: [], size: { width: 777, height: 888 } }
@@ -34,7 +36,7 @@ describe("canonical atomic changes", () => {
   it("preserves Unicode runs and inverses without mutating input or untouched elements", () => {
     if (first.kind !== "text") throw new Error("text fixture")
     const before = JSON.stringify(deck)
-    const value = { ...first, runs: [{ ...first.runs[0]!, text: "Tiếng Việt 日本語 é 👩🏽‍💻" }] }
+    const value = { ...first, runs: [{ ...first.runs[0]!, text: "Tiếng Việt 日本語 é 👩🏽‍💻" }, { ...first.runs[0]!, text: "Second style", bold: false, color: "#102030" }] }
     const changed = success({ changes: [{ kind: "set", target: first.id, value }] })
     expect(changed.deck.slides[0]!.elements[1]).toBe(slide.elements[1])
     expect(changed.deck.slides[0]!.elements[0]).toEqual(value)
@@ -48,6 +50,14 @@ describe("canonical atomic changes", () => {
     expect(result).toMatchObject({ ok: false, error: { code: "cycle" } })
     expect(JSON.stringify(inserted)).toBe(before)
     expect(apply(deck, { changes: [{ kind: "remove", target: id("missing") }] })).toMatchObject({ ok: false, error: { code: "invalid-reference" } })
+  })
+  it("never reuses a thumbnail revision when editing after an inverse", () => {
+    const changed = success({ changes: [{ kind: "set", target: first.id, value: { ...first, box: { ...first.box, x: 10 } } }] })
+    const restored = success(changed.inverse, changed.deck).deck
+    const edited = success({ changes: [{ kind: "set", target: first.id, value: { ...first, box: { ...first.box, x: 20 } } }] }, restored).deck
+    expect(restored.slides[0]!.version).toBeGreaterThan(changed.deck.slides[0]!.version)
+    expect(edited.slides[0]!.version).toBeGreaterThan(restored.slides[0]!.version)
+    expect(semantic(restored)).toEqual(semantic(deck))
   })
   it("rejects duplicate ids, invalid positions, mismatched replacements and malformed JSON", () => {
     expect(apply(deck, { changes: [{ kind: "insert", parent: slide.id, index: 1, value: first }] }).ok).toBe(false)

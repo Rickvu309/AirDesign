@@ -6,7 +6,13 @@
     "dist"
   ],
   "exports": {
-    ".": "./dist/index.js",
-    "./jsx": "./dist/jsx.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./jsx": {
+      "types": "./dist/jsx.d.ts",
+      "import": "./dist/jsx.js"
+    }
   }
 }

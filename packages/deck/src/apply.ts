@@ -2,7 +2,8 @@ import type { ApplyResult, Change, ChangeError, ChangeSet, Deck, Element, Id, Sl
 import { isDeck, isElement, isSlide } from "./parse.ts"
 
 class Rejected extends Error {
-  constructor(readonly code: ChangeError["code"], message: string) { super(message) }
+  readonly code: ChangeError["code"]
+  constructor(code: ChangeError["code"], message: string) { super(message); this.code = code }
 }
 function reject(code: ChangeError["code"], message: string): never { throw new Rejected(code, message) }
 export function flatten(elements: readonly Element[]): Element[] {
@@ -79,7 +80,9 @@ export function apply(deck: Deck, changes: ChangeSet): ApplyResult {
       next = change(next, op)
       validate(next)
     }
-    return { ok: true, deck: { ...next, version: deck.version + 1 }, inverse: { changes: [{ kind: "set", target: deck.id, value: deck }] } }
+    const version = Math.max(deck.version, next.version, ...deck.slides.map(slide => slide.version)) + 1
+    const slides = next.slides.map(slide => deck.slides.includes(slide) ? slide : { ...slide, version })
+    return { ok: true, deck: { ...next, slides, version }, inverse: { changes: [{ kind: "set", target: deck.id, value: deck }] } }
   } catch (error) {
     if (!(error instanceof Rejected)) throw error
     return { ok: false, error: { code: error.code, message: error.message, retryable: false, next: "Correct the target, parent or value and retry the entire ChangeSet." } }

@@ -1,0 +1,13 @@
+ .render-fixture { display: grid; gap: 16px; padding: 24px; }
+.render-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.render-viewport { overflow: auto; min-block-size: 600px; border: 1px solid var(--border); background: var(--muted); padding: 24px; }
+.render-fixture textarea { inline-size: min(100%, 900px); block-size: 100px; color: var(--foreground); background: var(--card); }
+.render-fixture [data-selected=true] { outline: 2px solid var(--ring); }
+.render-stage { transform-origin: 0 0; inline-size: fit-content; }
+.render-stage [data-kind=shape] { touch-action: none; }
+.render-fixture pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media print {
+  .render-fixture { padding: 0; display: block; }
+  .render-controls, .render-fixture h1, .render-fixture label, .render-fixture textarea, .render-fixture button, .render-fixture pre { display: none; }
+  .render-viewport { padding: 0; border: 0; min-block-size: 0; overflow: visible; }
+}

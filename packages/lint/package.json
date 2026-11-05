@@ -1,0 +1,11 @@
+{
+  "name": "@airdesign/lint",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/hard-defects.ts"
+  },
+  "dependencies": {
+    "@airdesign/deck": "0.1.0"
+  }
+}
