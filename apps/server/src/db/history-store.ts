@@ -11,12 +11,13 @@ export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
 export async function createHistoryStore(driver: { kind: "pglite"; path?: string } | { kind: "postgres"; url: string }) {
   if (driver.kind === "pglite" && driver.path) await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? new PGlite(driver.path) : null
-  const postgresUrl = driver.kind === "postgres" ? driver.url : null
+  const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
+  let closed = false
   async function transaction<T>(work: (tx: Transaction) => Promise<T>): Promise<T> {
+    if (closed) throw new Error("database-closed")
     if (local) return local.transaction(work)
-    if (!postgresUrl) throw new Error("database-closed")
-    const client = new pg.Client({ connectionString: postgresUrl })
-    await client.connect()
+    if (!pool) throw new Error("database-closed")
+    const client = await pool.connect()
     try {
       await client.query("BEGIN")
       const tx: Transaction = { query: async <R>(sql: string, params?: unknown[]) => {
@@ -26,7 +27,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       const result = await work(tx)
       await client.query("COMMIT")
       return result
-    } catch (error) { await client.query("ROLLBACK"); throw error } finally { await client.end() }
+    } catch (error) { await client.query("ROLLBACK"); throw error } finally { client.release() }
   }
   await transaction(async tx => { await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
@@ -75,7 +76,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       })
     },
     async delete(principal: Principal, deckId: string) { return transaction(async tx => { await owned(tx, principal, deckId); await tx.query("UPDATE editing_deck SET deleted=true WHERE id=$1", [deckId]) }) },
-    async close() { await local?.close();  },
+    async close() { if (closed) return;closed=true;await local?.close();await pool?.end() },
   }
 }
 function canonical(value: unknown): string {
