@@ -108,7 +108,7 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P04",
       "freezeIn": "P04",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/pptx",
       "decision": "docs/contracts/c11-export-and-operation-behavior.json"
     },
@@ -178,7 +178,7 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P04",
       "freezeIn": "P04",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/change-log",
       "decision": "docs/contracts/c18-offline-person-edits-and-account-isolation.json"
     },

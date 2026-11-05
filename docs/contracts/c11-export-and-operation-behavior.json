@@ -2,7 +2,7 @@
   "id": "C11",
   "schemaVersion": 1,
   "title": "Export and operation behavior",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P04",
   "acceptIn": "P04",
   "owner": "packages/pptx",
@@ -10,15 +10,36 @@
     "path": "docs/design/v0.1/logic.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Export captures a saved server revision. Starting returns an operation id; status distinguishes queued, running, succeeded, failed and cancelled. Cancellation cannot publish an artifact. Offline Ask and Export wait for reconnect and do not submit work.",
   "alternatives": [
-    "Decide in P04 before any consumer."
+    "Discard pending edits on disconnect.",
+    "Treat optimistic edits as server saved."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "offline-export",
+      "body": {
+        "scenario": "offline export"
+      },
+      "expect": {
+        "outcome": "wait-online"
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "cancelled-operation",
+      "body": {
+        "scenario": "cancelled operation"
+      },
+      "expect": {
+        "outcome": "no artifact"
+      }
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
-    "command": "npm run verify:contracts"
+    "kind": "behavior-tests",
+    "command": "npm run verify:pr-04"
   },
   "migration": {
     "policy": "additive-only",
