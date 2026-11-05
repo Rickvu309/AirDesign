@@ -29,7 +29,11 @@ export class SyncClient {
   get deck(): Deck {
     if (this.projected) return this.projected
     let history = initialHistory(this.snapshot.deck)
-    for (const item of this.pending) if (item.kind === "queued") history = execute(history,item.command).history
+    const retainEvents=this.pending.some(item=>item.kind==="queued" && item.command.kind!=="patch" && item.command.kind!=="edit")
+    for (const item of this.pending) if (item.kind === "queued") {
+      history = execute(history,item.command).history
+      if(!retainEvents)history.events=[]
+    }
     this.projected=history.deck
     return history.deck
   }

@@ -2,7 +2,7 @@ import { expect, it } from "vitest"
 import { SyncClient } from "../src/client.ts"
 import { outboxKey, type Outbox, type Pending } from "../src/outbox.ts"
 import { commandId, type Command } from "../../change-log/src/index.ts"
-import { fixtureDeck } from "../../deck/src/fixture.ts"
+import { fixtureDeck, fixtureElement } from "../../deck/src/fixture.ts"
 import { id } from "../../deck/src/index.ts"
 
 function patch(name: string, notes=name): Command { return {id:commandId(name),kind:"patch",base:0,run:null,target:id("s0"),fields:{notes}} }
@@ -77,4 +77,18 @@ it("projects offline edit undo redo across reload",async()=>{
   await client.enqueue({id:commandId("redo"),kind:"redo",target:commandId("offline")})
   const reload=new SyncClient("a",snapshot,outbox,()=>{});await reload.load()
   expect(reload.deck.slides[0]?.notes).toBe("mine")
+})
+
+it("preserves used node ids while projecting a mutation-only queue",async()=>{
+  const {outbox}=memory(), snapshot={deck:fixtureDeck(2),seq:0}
+  const client=new SyncClient("a",snapshot,outbox,()=>{})
+  const element={...fixtureElement(1),id:id("queued_child")}
+  await client.enqueue({id:commandId("create_child"),kind:"edit",base:0,run:null,changes:{changes:[{kind:"insert",parent:id("s0"),index:0,value:element}]}})
+  await client.enqueue({id:commandId("remove_child"),kind:"edit",base:0,run:null,changes:{changes:[{kind:"remove",target:element.id}]}})
+  await client.enqueue({id:commandId("reuse_child"),kind:"edit",base:0,run:null,changes:{changes:[{kind:"insert",parent:id("s0"),index:0,value:element}]}})
+  expect(client.deck.slides[0]?.elements.some(item=>item.id===element.id)).toBe(false)
+  await client.enqueue({id:commandId("undo_removal"),kind:"undo",target:commandId("remove_child")})
+  expect(client.deck.slides[0]?.elements.find(item=>item.id===element.id)).toEqual(element)
+  const reload=new SyncClient("a",snapshot,outbox,()=>{});await reload.load()
+  expect(reload.deck).toEqual(client.deck)
 })
