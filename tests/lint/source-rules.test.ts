@@ -1,3 +1,4 @@
+import { operationSafetyHits } from "../../scripts/lint/operation-safety.ts"
 import assert from "node:assert/strict"
 import { describe, it } from "vitest"
 import { commentHits } from "../../scripts/lint/comment-rule.ts"
@@ -7,6 +8,12 @@ import { gateRecordingHits } from "../../scripts/lint/gate-recording.ts"
 import { responseHeaderHits } from "../../scripts/lint/response-headers.ts"
 
 describe("comment rule", () => {
+  it("accepts escaped slashes in regex literals and still rejects the following comment", () => {
+    const expression = "const match = /" + "\\/" + "/.test(value)"
+    assert.deepEqual(commentHits("regex.ts", expression), [])
+    assert.equal(commentHits("regex.ts", expression + "\n" + "/".repeat(2) + " forbidden").length, 1)
+  })
+
   it("rejects a line comment and a suppression comment and accepts the same code without them", () => {
     const good = "export const value = 1\n"
     const lineComment = `${good}${"/".repeat(2)} kept by mistake\n`
@@ -106,4 +113,10 @@ describe("response headers", () => {
     assert.equal(responseHeaderHits(bad)[0]?.reason, "append-header-after-send")
     assert.deepEqual(responseHeaderHits(good), [])
   })
+})
+
+it("rejects the original unbounded API body collector and accepts the bounded adapter", () => {
+  const original = 'request.on("data", (chunk) => chunks.push(chunk))'
+  assert.equal(operationSafetyHits("apps/server/src/main.ts",original)[0]?.reason,"unbounded-request-stream-use-readRequestBody")
+  assert.deepEqual(operationSafetyHits("apps/server/src/main.ts","const body = await readRequestBody(request)"),[])
 })

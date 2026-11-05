@@ -1,4 +1,6 @@
 import { createHash, randomBytes, randomInt } from "node:crypto"
+import { mkdir } from "node:fs/promises"
+import path from "node:path"
 import { and, desc, eq, gt, sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres"
@@ -17,7 +19,7 @@ import { mutationRejection } from "./mutation-guard.ts"
 import { accessSchemaSql, accessTables, applicationSchemaName } from "./schema.ts"
 import { headerCookies, intentCookieName, intentSetCookie, readRequestCookie, sessionSetCookie } from "./session-cookie.ts"
 
-export type AccessDriver = { kind: "pglite" } | { kind: "postgres"; url: string }
+export type AccessDriver = { kind: "pglite"; dataDir?: string } | { kind: "postgres"; url: string }
 
 export type AccessGuard = {
   allow(): boolean
@@ -76,6 +78,7 @@ type LoadedSession = { user: SessionUser | null; cookies: string[] }
 
 export type Access = {
   handle(request: Request): Promise<Response>
+  principal(request: Request): Promise<{ personId: string } | null>
   close(): Promise<void>
 }
 
@@ -138,6 +141,10 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
 
   return {
     handle,
+    async principal(request) {
+      const loaded = await loadSession(auth, request)
+      return loaded.user ? { personId: loaded.user.id } : null
+    },
     close: opened.close,
   }
 }
@@ -210,10 +217,11 @@ async function route(
 
 async function openDatabase(driver: AccessDriver): Promise<{ db: Database; tables: Tables; close: () => Promise<void> }> {
   if (driver.kind === "pglite") {
-    const schemaName = `ns_${randomBytes(8).toString("hex")}`
+    if (driver.dataDir && driver.dataDir !== "memory://") await mkdir(path.dirname(driver.dataDir), { recursive: true, mode: 0o700 })
+    const schemaName = driver.dataDir ? applicationSchemaName : `ns_${randomBytes(8).toString("hex")}`
     const tables = accessTables(schemaName)
-    const client = await PGlite.create()
-    await client.exec(accessSchemaSql(schemaName, "disposable"))
+    const client = await PGlite.create(driver.dataDir)
+    await client.exec(accessSchemaSql(schemaName, driver.dataDir ? "stable" : "disposable"))
     const db = drizzle(client, { schema: tables })
     let closed = false
     return {
@@ -224,7 +232,7 @@ async function openDatabase(driver: AccessDriver): Promise<{ db: Database; table
           return
         }
         closed = true
-        await client.exec(dropDisposableSchemaSql(schemaName))
+        if (!driver.dataDir) await client.exec(dropDisposableSchemaSql(schemaName))
         await client.close()
       },
     }

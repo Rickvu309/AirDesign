@@ -1,0 +1,50 @@
+{
+  "license": "CC0-1.0",
+  "owner": "rickvu",
+  "source": "generate.ts; synthetic local content; no external assets or font files",
+  "dependencies": {
+    "pptxgenjs": "4.0.1",
+    "yazl": "3.3.1"
+  },
+  "fonts": [
+    {
+      "family": "Aptos",
+      "fileDistributed": false,
+      "license": null,
+      "status": "unresolved"
+    }
+  ],
+  "powerpoint": "unproven-P09-X01",
+  "fixtures": [
+    {
+      "name": "native.pptx",
+      "bytes": 113035,
+      "sha256": "e8bdd1417108f5b39b3ab6cd81a4f698d16df64af13fe906a576c46137c1d375"
+    },
+    {
+      "name": "preservation.pptx",
+      "bytes": 114507,
+      "sha256": "6a4b1720a6d2d143e5a671c032e9df955ea7a984671929a884dc0bf4ab1bba59"
+    },
+    {
+      "name": "unsafe.pptx",
+      "bytes": 114859,
+      "sha256": "c1363318db42ccfd52d9e7f47b4dc2786408e2959747ea1bc5078267fba039c5"
+    },
+    {
+      "name": "hostile-dtd.pptx",
+      "bytes": 114700,
+      "sha256": "9dc0b532b4bd470eea9e4287be550e3bf5769001bbff2ec1851600cb957d654f"
+    },
+    {
+      "name": "hostile-font.pptx",
+      "bytes": 114636,
+      "sha256": "20174b2e9e62b5ddb16c46cafdb0c190ca317f76d35d533be01e835616ab2ce0"
+    },
+    {
+      "name": "hostile-expansion.pptx",
+      "bytes": 2182,
+      "sha256": "a3b37b5b804265116dee0a25c580b0593c3e5ad9cf6c9f03bdf9680103e8b569"
+    }
+  ]
+}

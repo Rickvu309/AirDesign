@@ -29,7 +29,7 @@ describe("browser link route", () => {
   it("signs in from a link, reloads that url, and recovers a day-old intent on a phone", async () => {
     const studioPort = await freePort()
     process.env.AIRDESIGN_EXPOSE_INBOX = "1"
-    api = await startServer(0, { clock: () => now, publicOrigin: `http://127.0.0.1:${studioPort}` })
+    api = await startServer(0, { operationsPath: ":memory:", accessPath: "memory://", clock: () => now, publicOrigin: `http://127.0.0.1:${studioPort}` })
     vite = spawn("npx", ["vite", "--host", "127.0.0.1", "--port", String(studioPort), "--strictPort"], {
       cwd: path.join(root, "apps/studio"),
       env: { ...process.env, AIRDESIGN_API_ORIGIN: `http://127.0.0.1:${api.port}` },

@@ -1,5 +1,9 @@
+import { readRequestBody, RequestBodyLimit } from "../../../packages/files/src/request-body.ts"
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http"
 import path from "node:path"
+import os from "node:os"
+import { OperationStore } from "../../../packages/operations/src/index.ts"
+import { operationsHandler } from "./operations/handle.ts"
 import { fileURLToPath } from "node:url"
 import { createAccess, createMemoryInbox } from "@airdesign/access"
 
@@ -10,6 +14,8 @@ export type RunningServer = {
 
 export type StartServerOptions = {
   clock?: () => number
+  operationsPath?: string
+  accessPath?: string
   publicOrigin?: string
 }
 
@@ -19,7 +25,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const databaseUrl = process.env.AIRDESIGN_DATABASE_URL
   const publicOrigin = extras.publicOrigin ?? process.env.AIRDESIGN_PUBLIC_ORIGIN ?? "http://127.0.0.1:41732"
   const access = await createAccess({
-    driver: databaseUrl === undefined ? { kind: "pglite" } : { kind: "postgres", url: databaseUrl },
+    driver: databaseUrl === undefined ? { kind: "pglite", dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
     secret,
     mail: inbox,
     clock: extras.clock ?? (() => Date.now()),
@@ -27,8 +33,10 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
     exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
     publicOrigin,
   })
+  const operations = new OperationStore(extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite"), extras.clock)
+  const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {
-    serve(access, request, response).catch((error: unknown) => {
+    serve(access, handleOperation, request, response).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
@@ -43,15 +51,16 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
       await new Promise<void>((resolve, reject) => {
         server.close((error) => error ? reject(error) : resolve())
       })
+      operations.close()
       await access.close()
     },
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const host = request.headers.host ?? "127.0.0.1"
-    const body = await readRaw(request)
+    const body = await readRequestBody(request)
     const method = request.method ?? "GET"
     let incoming: Request
     try {
@@ -64,7 +73,7 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, request: 
       writeHandlerError(response, error)
       return
     }
-    const outgoing = await access.handle(incoming)
+    const outgoing = new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {
@@ -88,6 +97,11 @@ function writeHandlerError(response: ServerResponse, error: unknown): void {
     response.destroy()
     return
   }
+  if (error instanceof RequestBodyLimit) {
+    response.writeHead(413, { "content-type": "application/json" })
+    response.end(JSON.stringify({ code: "request-body-limit" }))
+    return
+  }
   const malformed = error instanceof URIError
   response.writeHead(malformed ? 400 : 500, { "content-type": "application/json" })
   response.end(JSON.stringify({ status: malformed ? "bad-request" : "error" }))
@@ -103,15 +117,6 @@ function entries(headers: IncomingMessage["headers"]): Array<[string, string]> {
     }
   }
   return pairs
-}
-
-function readRaw(request: IncomingMessage): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = []
-    request.on("data", (chunk: Buffer) => chunks.push(chunk))
-    request.on("end", () => resolve(Buffer.concat(chunks)))
-    request.on("error", reject)
-  })
 }
 
 const entry = process.argv[1] ? path.resolve(process.argv[1]) : ""
