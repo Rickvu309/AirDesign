@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "prs": [
     [
-      "W01 requires every frozen-rule or in-P01 reference resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; and W02 requires all documented exports import from the installed tarball; and W08 requires one successful link consumption invalidates every replay",
+      "W01 requires every contract whose freezeIn is P01 resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; deferred contracts are listed with an owner and freeze PR; and W02 requires all documented exports import from the installed tarball; and W08 requires one successful link consumption invalidates every replay",
       "W01 requires the contract examples protect a person edit from an older run and permit a new explicit request under the frozen rule; and W02 requires a clean consumer compiles with skipLibCheck false; and W08 requires a link beyond the 15-minute lifetime refuses access and retains intent",
       "W01 requires the adopted-child counterexample specifies surviving ids and parents without losing the person contribution; and W02 requires all semantic surfaces and focus states render with legible light tokens; and W08 requires a wrong code never creates a session and can be retried within rate policy",
       "W01 requires every fixture feature has a support classification and an honest proven or unproven status; and W02 requires all documented Studio states remain legible in the specified light theme; no Studio dark-mode feature is introduced; and W08 requires resend becomes available only after 30 seconds and invalidation behavior matches the frozen contract",
@@ -46,7 +46,7 @@
       "W07 requires a closed run cannot append a late tool result or resurrect itself; and W09 requires re-authentication retains the same principal pending edits, while sign-out/account switch clears or isolates the principal-keyed queue and cannot transmit it as another person"
     ],
     [
-      "W10 requires no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the chosen P01 entry flow persists a pending request without pretending an agent has run; and W11 requires invalid packages produce an actionable import failure and no partial deck",
+      "W10 requires no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the entry flow frozen in C10 at the start of P05 persists a pending request without pretending an agent has run; and W11 requires invalid packages produce an actionable import failure and no partial deck",
       "W10 requires no-result copy preserves search input and offers a clear next action; and W11 requires substitution is visible and its export consequences can be inspected",
       "W10 requires the persisted name updates the editor and Home consistently; and W11 requires the object is retained while the unavailable-preview state never pretends it is absent",
       "W10 requires the copy has a new deck id and independent future history; and W11 requires Fix locates the flagged item and supports returning to the export choice",
@@ -103,7 +103,7 @@
   ],
   "workPackages": {
     "W01": [
-      "every frozen-rule or in-P01 reference resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced",
+      "every contract whose freezeIn is P01 resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; deferred contracts are listed with an owner and freeze PR",
       "the contract examples protect a person edit from an older run and permit a new explicit request under the frozen rule",
       "the adopted-child counterexample specifies surviving ids and parents without losing the person contribution",
       "every fixture feature has a support classification and an honest proven or unproven status",
@@ -202,7 +202,7 @@
       "re-authentication retains the same principal pending edits, while sign-out/account switch clears or isolates the principal-keyed queue and cannot transmit it as another person"
     ],
     "W10": [
-      "no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the chosen P01 entry flow persists a pending request without pretending an agent has run",
+      "no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the entry flow frozen in C10 at the start of P05 persists a pending request without pretending an agent has run",
       "no-result copy preserves search input and offers a clear next action",
       "the persisted name updates the editor and Home consistently",
       "the copy has a new deck id and independent future history",

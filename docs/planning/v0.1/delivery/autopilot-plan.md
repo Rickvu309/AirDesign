@@ -1,7 +1,7 @@
 # Build AirDesign v0.1 through verified vertical slices
 
-Turn the planning branch into an individual slide editor with live agent assistance and faithful PowerPoint exchange.
-Delivery branch: `planning/v0.1`. Published into the repository on 2026-11-05 after the planning-only cleanup. Pin its accepted head before P01. P01 creates the workspace and UI; no root application, package scripts or reusable product kit exists yet.
+Turn main into an individual slide editor with live agent assistance and faithful PowerPoint exchange.
+Delivery branch: `main`. Published into the repository on 2026-11-05 after the planning-only cleanup. Pin its accepted head before P01. P01 creates the workspace and UI; no root application, package scripts or reusable product kit exists yet.
 This is an execution plan, not authorization to implement, spend, publish or merge.
 Run P01 through P09 by dependency, with fidelity and edit-history decisions settled before dependent implementation.
 
@@ -31,14 +31,14 @@ Execute exactly nine PRs in five phases. This is a hard delivery constraint. Int
 | P08 | Aira and account controls | W16 shared-tool agent, W17 credits/account/deletion |
 | P09 | Accepted release and truthful site | W18 actual acceptance, W19 verified site/guides |
 
-The stack is linear. Each PR targets its declared predecessor; P01 targets planning/v0.1. The critical editing path is visible by P05. Keep module interfaces small, but let closely related packages share one PR and end-to-end receipt. W01-W19 are ordered internal development checkpoints, not separate delivery or approval boundaries.
+The stack is linear. Each PR targets its declared predecessor; P01 targets main. The critical editing path is visible by P05. Keep module interfaces small, but let closely related packages share one PR and end-to-end receipt. W01-W19 are ordered internal development checkpoints, not separate delivery or approval boundaries.
 
 
 Use the ordered checkpoints and final PR gates below. On explicit go, owners may implement and prepare ready PRs. The operator lands them. No merge, production deployment or paid model/payment run is authorized by this plan. Product scope is desktop editing plus mobile reading, sign-in and viewing; no new mobile editor or Studio dark theme. Each PR with interaction changes has one operator review with screenshots and a short video in chat before merge. Use a local deterministic agent adapter until paid runs are explicitly authorized; adapter success never counts as the model-quality release gate.
 
 Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
 
-Read the [planning index](../README.md), [monorepo map](../content/monorepo-map.md), [design handoff](../../../design/v0.1/README.md) and research READMEs linked from the planning index. The [contract register](contract-index.json) lists all proposed P01 decisions and each PR's references and real verification surface. Freeze every referenced rule in W01 before the UI, access or other consumer checkpoint starts. If evidence changes a contract, amend its decision and affected dependency boxes before coding consumers. P01-P08 merge on their named local evidence, with no unproved fidelity, assistive-technology, model, vendor or payment-provider claim. P03 produces the local engine and prepares the P03R external reference pack; P03R is an evidence batch, not another PR. P09 must close X01-X06 with actual evidence before accepting the release, then prove every published guide/example on that accepted build. No proxy closes an unavailable gate.
+Read the [planning index](../README.md), [monorepo map](../content/monorepo-map.md), [design handoff](../../../design/v0.1/README.md) and research READMEs linked from the planning index. The [contract register](contract-index.json) lists every contract, the PR that freezes it, each PR's references and the real verification surface. Each PR accepts the contracts whose freezeIn names it in its first checkpoint before any consumer. Contracts frozen earlier are consumed as accepted. If evidence changes a contract, amend its decision and affected dependency boxes before coding consumers. P01-P08 merge on their named local evidence, with no unproved fidelity, assistive-technology, model, vendor or payment-provider claim. P03 produces the local engine and prepares the P03R external reference pack; P03R is an evidence batch, not another PR. P09 must close X01-X06 with actual evidence before accepting the release, then prove every published guide/example on that accepted build. No proxy closes an unavailable gate.
 
 Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI Elements patterns into `components/ai-elements/`; use Sonner and cmdk where needed. Keep one chat component system and free components only. Define the two project motion tokens once.
 
@@ -47,14 +47,14 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 ### Arm the program
 
 - [ ] Record explicit execution go and confirm the target repository from `git remote -v`. Save `~/tmp/airdesign-autopilot/program/authorization.md`. Record the accepted post-cleanup stack-root SHA before implementation.
-- [ ] Use `planning/v0.1` as the implementation stack root and ordinary P01 target. Pin the accepted post-cleanup head and inspect its actual files. Record the current default branch head, parent heads and merge bases in `program/bases.json`; do not infer current files from the historical research SHA. For every lane, trunk means the recorded stack root or explicit predecessor. Merging planning into main is outside this plan.
+- [ ] Use `main` as the implementation stack root and ordinary P01 target. Pin the accepted post-cleanup head and inspect its actual files. Record the current default branch head, parent heads and merge bases in `program/bases.json`; do not infer current files from the historical research SHA. For every lane, trunk means the recorded stack root or explicit predecessor.
 - [ ] Adopt an event-driven supervisor. The literal `/loop 1h` from the source playbook is unavailable here and must not become a polling loop. Use delegate completion events and native PR watches. Send a status message only for changed facts or a concrete blocker. Save the selected runtime and notification behavior in `program/runtime.md`.
-- [ ] Adopt all 24 decisions and the per-PR maps from `contract-index.json` into `program/contract-index.json`. Freeze P01 choices, budgets, fixture intake, fonts, reference and provider revisions; unresolved referenced choices block P01. Inventory unavailable external evidence now, but require its actual acceptance only at P09 X01-X06 and P09's published claims. Save an explicit owner and required evidence for every external gate.
+- [ ] Adopt all 24 decisions and the per-PR maps from `contract-index.json` into `program/contract-index.json`. Freeze the P01 choices. Unresolved P01 contracts block P01. Deferred contracts are listed with an owner and freeze PR. Inventory unavailable external evidence now, but require its actual acceptance only at P09 X01-X06 and P09's published claims. Save an explicit owner and required evidence for every external gate.
 - [ ] On hold, stop new writes and cancel active owners using their task ids. Save the last accepted head and pending work in `program/handoff.md`. On restart reconstruct from that file and task receipts, never launch duplicate writers.
 
 ### Spawn owners
 
-- [ ] Use Codex `gpt-6.1-sol` for implementation ownership and Grok `grok-4.7` for independent review and live verification. Rediscover exact provider capabilities before execution. Every brief includes the model, tool-call budget, owned paths, acceptance command, evidence path and report limit. Save dispatch receipts in `program/tasks.json`.
+- [ ] Implementation owners, reviewers and live-verification lanes use the models the operator assigns at execution. The current assignment is Grok implements and Codex reviews. Resolve each model from the operator's model settings and record it per task in `program/tasks.json`. Rediscover exact provider capabilities before execution. Every brief includes the model, tool-call budget, owned paths, acceptance command, evidence path and report limit. Save dispatch receipts in `program/tasks.json`.
 - [ ] Follow the linear P01-P09 dependency stack. One PR owner writes at a time. Each owner starts from its recorded predecessor head and completes the ordered internal checkpoints. Do not consume an uncommitted shared directory. Save base and head SHAs in each PR receipt.
 - [ ] Give the active owner an isolated checkout and database namespace. Read-only review lanes use isolated fixture contexts. One owner writes shared workspace configuration. Use the orchestration tool for checkout isolation. Save ownership in `program/owners.json`.
 - [ ] Keep exactly nine PRs, each with its stated outcome. Use verified commits and internal checkpoints to control review size. If an outcome needs scope reduction, record the proposal and get the operator decision before changing scope. Do not create child PRs, helper PRs or an additional delivery boundary beyond P01-P09.
@@ -62,10 +62,10 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 ### PR mechanics
 
-- [ ] Resolve the forge once. Prefer the available repository CLI and record it. Open ready PRs after explicit execution go. A stack child targets its declared parent; otherwise target `planning/v0.1`. For multiple prerequisites use the merged stack-root heads or a recorded integration parent; never silently stack on an undeclared feature. Link every created or pushed PR using the host linking tool. Save its URL and head.
+- [ ] Resolve the forge once. Prefer the available repository CLI and record it. Open ready PRs after explicit execution go. A stack child targets its declared parent; otherwise target `main`. For multiple prerequisites use the merged stack-root heads or a recorded integration parent; never silently stack on an undeclared feature. Link every created or pushed PR using the host linking tool. Save its URL and head.
 - [ ] Preserve global git authorship `rickvu <minhquanvu3902@gmail.com>`. Do not override identity, add AI attribution or bypass hooks. Run the repository checks through pstack-run and retain full logs under `~/tmp`.
 - [ ] Inspect the exact diff, remove dead scaffolding, and run deslop before commit. Run independent code review once at the final PR head; rerun the affected checks after accepted fixes. Save objections, accepted fixes and rerun evidence rather than relying on the PR description.
-- [ ] Keep contract changes, fixtures and migrations in the PR that needs them. Introduce only packages consumed by that slice. Leave retired Share and Present unwired in Studio and replace simulated drafting with real activity. Preserve published library exports until an explicit compatibility migration.
+- [ ] Keep contract changes, fixtures and migrations in the PR that needs them. Introduce only packages consumed by that slice. Do not build Share or Present. Replace simulated drafting with real activity.
 - [ ] Before code-ready, update to the appropriate trunk or parent once and record the merge base. Recheck changed behavior after fixes. Never silently reuse evidence from a different head. Save patch and evidence fingerprints.
 - [ ] Any tool schema or description change after the P09 evaluation baseline reruns the at-least-40-task, three-trial, Claude-plus-second-model evaluation. Before that baseline, P07-P08 handoffs name the pending P09 X03 gate; local reference-client success is not the model behavior pass. If authorized model access is missing, record blocked evidence and do not ship the changed capability.
 
@@ -78,12 +78,12 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 ### Boot recipe
 
-- [ ] P01 introduces `scripts/verify-baseline.mjs` and an evidence manifest. Each PR adds one aggregate verify:pr-XX command that runs its checkpoint verify:* commands and a reproducible seed. Checkpoints do not require separate full review rounds. Until then, existing root commands are only `npm ci`, `npm test`, `npm run typecheck` and `npm run build`. Save installed tool versions and lockfile hashes.
+- [ ] P01 introduces `scripts/verify-baseline.mjs` and an evidence manifest. Each PR adds one aggregate verify:pr-XX command that runs its checkpoint verify:* commands and a reproducible seed. Checkpoints do not require separate full review rounds. There is no root package yet. P01 introduces it. Save installed tool versions and lockfile hashes.
 - [ ] Start the minimum services the PR actually needs. Introduce Postgres, object-store substitute, worker and email/payment fakes with their first consumers, using unique ports and fixture accounts. Wait on a ready signal from the launched job, not a polling loop. Save startup logs and seed identifiers.
 - [ ] Use the public verification surface named in each PR and the contract register. P02 introduces a packed-consumer `probe:deck` CLI and a real render fixture. W08 in P01 creates the server bootstrap and authenticated principal boundary. W05 in P03 adds job routes using that real principal, without a fixture authentication bypass. P01 uses a signed opaque return fixture, P05 persists a pending request and W14 in P07 uses trusted ledger credit grants. W15 in P07 proves real consent, W16 in P08 proves Aira and W17 in P08 proves provider integration. Use actual supported browser controls when authorized; no `control-ui` or `control-cli` skill is installed here.
-- [ ] Capture UI screenshots from the real browser. For a CLI/API lane save its structured response and a terminal capture, without fabricating a UI. Keep all artifacts under `~/tmp/airdesign-autopilot/Pxx/lane-N/`. Resolve `~` to the actual home in recorded paths.
+- [ ] Capture UI screenshots from the real browser. For a CLI/API lane save its structured response and a terminal capture, without fabricating a UI. Keep all artifacts under `~/tmp/airdesign-autopilot/Pxx/lane-N/`. A lane that drives several checkpoints records a separate verdict and evidence per checkpoint; the lane fails if any fails, and the receipt names which. Resolve `~` to the actual home in recorded paths.
 - [ ] Pin head SHA, fixture, viewport, font hashes and rendering environment in `manifest.json`. Mask credentials. Read-only DB or deck diagnostics may support the result; they cannot replace driving the public surface.
-- [ ] For each perf probe record workload, sample count, warm/cold state and limiter. Measure comparable trunk first, then interleave trunk and head. If trunk lacks the feature, record missing and measure the added operation against its absolute budget; do not apply relative p95 rules to unlike work or noise. Documentation-only follow-ups may record perf N/A with a reason and proof of no runtime diff. P01 includes CLI/access/UI runtime and P09 includes a built site, so neither whole PR is automatically N/A. P01 must adopt or explicitly revise every budget in C07, including a separate PDF deadline.
+- [ ] For each perf probe record workload, sample count, warm/cold state and limiter. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Keep the relative rule for comparable operations: measure comparable trunk first, then interleave trunk and head. If trunk lacks the feature, record missing and measure the added operation against its absolute budget; do not apply relative p95 rules to unlike work or noise. Documentation-only follow-ups may record perf N/A with a reason and proof of no runtime diff. P01 includes CLI/access/UI runtime and P09 includes a built site, so neither whole PR is automatically N/A. P01 must adopt or explicitly revise every budget in C07, including a separate PDF deadline.
 
 
 ## Ship a signed-in workspace (P01)
@@ -92,29 +92,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `bench/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`: `bench/`, `fixtures/pptx/`, `docs/contracts/`, `scripts/verify-baseline.mjs`, `program/contract-index.json`, `package.json`, `packages/ui/`, `apps/studio/`, `packages/access/src/`, `apps/server/src/main.ts`, `apps/studio/src/access/`
 
-- [ ] Create or update `fixtures/pptx/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `docs/contracts/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `scripts/verify-baseline.mjs` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `program/contract-index.json` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `package.json` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `packages/ui/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `apps/studio/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `packages/access/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `apps/server/src/main.ts` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-- [ ] Create or update `apps/studio/src/access/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P01/files.txt`.
-
-**Contract references.** C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21, C22, C23, C24 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C01, C02, C03, C04, C06, C07, C08, C09, C16, C19, C21, C22 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W01 probe:compat fixture CLI and contract-index validator; W02 packed UI consumer and real component fixtures; W08 real browser access and protected account/session API.
 
@@ -122,7 +102,7 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds. Save the contract and implementation receipts in `~/tmp/airdesign-autopilot/P01/build.md`.
 
-- [ ] W01. Freeze contracts and bound feasibility evidence. Create a versioned decision bundle, compatibility matrix, licensed-fixture inventory and contract schemas. Adopt every entry and per-PR reference in the study contract-index.json into program/contract-index.json, replacing each proposed decision with an accepted rule, alternatives, source, owner, examples and evidence. Unresolved referenced contracts block P01. The index includes person undo/redo and undo_change, run adoption, access/recovery, product-entry conflicts, export and paging, worker limits, all performance budgets, usage and payments, retention and release gates. Introduce a stand-alone fixture CLI via npm run probe:compat with fixture and output arguments, reusing the narrow text-span preservation probe. Inventory Windows/Mac PowerPoint builds, licensed fonts and assistive-technology drivers. Unavailable external evidence is inventoried here and required by P09, not an unchecked merge requirement on foundation PRs. No production fidelity claim follows from this feasibility CLI. Verify its behavioral command `npm run verify:contracts` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P01/checkpoints/W01/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
+- [ ] W01. Freeze contracts and bound feasibility evidence. Create a versioned decision bundle, compatibility matrix, licensed-fixture inventory and contract schemas. Adopt every entry and per-PR reference in the study contract-index.json into program/contract-index.json. Replace each P01 decision with an accepted rule, alternatives, source, owner, examples and evidence. Unresolved P01 contracts block P01. Deferred contracts are listed with an owner and freeze PR. The contracts accepted in this checkpoint are person protection and run epochs, structural run undo and adoption, individual undo/redo and undo_change, native kept flagged and source preservation, the principal and ownership boundary, performance budgets, rendering and font tolerance, email access and session policy, retention and deletion, worker resource and security limits, evidence and external gate boundaries, and tokens, accessibility and phone scope. Introduce a stand-alone fixture CLI via npm run probe:compat with fixture and output arguments, reusing the narrow text-span preservation probe. Inventory Windows/Mac PowerPoint builds, licensed fonts and assistive-technology drivers. Unavailable external evidence is inventoried here and required by P09, not an unchecked merge requirement on foundation PRs. No production fidelity claim follows from this feasibility CLI. Verify its behavioral command `npm run verify:contracts` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P01/checkpoints/W01/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
 - [ ] W02. Build the v0.1 UI workspace. Build the shared UI package and Studio shell from the v0.1 component, token and copy contracts. Use shadcn/ui CSS variables as canonical tokens and copy needed AI Elements patterns into components/ai-elements/. Use Sonner for toasts and cmdk for commands. Introduce workspace scripts, package exports and import-boundary checks. Apply the documented Geist, blue and paper palette with contrast corrections and the shared motion tokens. Keep Studio light-only; do not import design generators or research prototypes into product bundles. Diff the two copy kits and freeze one canonical keyed source. Verify its behavioral command `npm run verify:ui` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P01/checkpoints/W02/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
@@ -132,15 +112,15 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] A person signs in on desktop or phone, reaches a real workspace shell and returns to the same validated intent. The UI consumer works from its packed artifact and every shared contract is accepted. Save the actual outcome in `~/tmp/airdesign-autopilot/P01/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-01` to run the owned commands in order, namely npm run verify:contracts then npm run verify:ui then npm run verify:access. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P01/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-01` to run the owned commands in order, namely npm run verify:contracts then npm run verify:ui then npm run verify:access. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P01/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W01 contract fixtures against the v0.1 authority; then W02 a freshly packed clean React 19 consumer; then W08 sign in with a local inbox at trunk and head. Save `~/tmp/airdesign-autopilot/P01/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
-- [ ] Lane 2. Drive W01 authority and complete contract-index audit; then W02 package exports; then W08 single-use link through the public surface. Save `~/tmp/airdesign-autopilot/P01/lane-2/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W01 requires every frozen-rule or in-P01 reference resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; and W02 requires all documented exports import from the installed tarball; and W08 requires one successful link consumption invalidates every replay. Record actual values in the lane receipt.
+- [ ] Lane 2. Drive W01 authority and complete contract-index audit; then W02 package exports; then W08 single-use link through the public surface. Save `~/tmp/airdesign-autopilot/P01/lane-2/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W01 requires every contract whose freezeIn is P01 resolves through the per-PR contract map to an accepted entry with pinned source SHA, decision and counterexamples; proposed defaults are explicitly accepted or replaced; deferred contracts are listed with an owner and freeze PR; and W02 requires all documented exports import from the installed tarball; and W08 requires one successful link consumption invalidates every replay. Record actual values in the lane receipt.
 
 - [ ] Lane 3. Drive W01 old versus new run epoch contract; then W02 strict consumer typecheck; then W08 15-minute expiry through the public surface. Save `~/tmp/airdesign-autopilot/P01/lane-3/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W01 requires the contract examples protect a person edit from an older run and permit a new explicit request under the frozen rule; and W02 requires a clean consumer compiles with skipLibCheck false; and W08 requires a link beyond the 15-minute lifetime refuses access and retains intent. Record actual values in the lane receipt.
 
@@ -158,13 +138,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W01 versioned provenance schema; then W02 design-tooling import isolation; then W08 keyboard, accessibility tree and phone access through the public surface. Save `~/tmp/airdesign-autopilot/P01/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W01 requires the contract schema validates stable ids and source provenance with a versioned migration policy; and W02 requires the production entry and bundle do not import design generators or research prototypes; and W08 requires code/link flow, full-code paste, autofill, visible focus and named errors work with keyboard at desktop and 320 CSS px; accessibility-tree records contain the correct names and status roles. P09 X02 owns actual screen-reader transcripts and announcement behavior. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W01 fixture-run wall time and peak RSS; W02 consumer import size and shell startup time; W08 local authentication response latency. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P01/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P01/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P01/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P01/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P01/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W01 the local fixture CLI terminates within 30 s on its declared small corpus; unavailable external references are inventories only and remain blocked at P09; W02 freeze initial packed-JS and startup budgets in W01, measure the clean v0.1 consumer against them, and record absence of a comparable trunk implementation; W08 provisional warm p95 at most 500 ms excluding external mail delivery; record inbox delivery separately. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P01/perf/verdict.json`.
 
@@ -182,19 +162,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `packages/deck/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`: `packages/deck/src/`, `packages/deck/test/`, `scripts/probe-deck.mjs`, `packages/render/src/`, `bench/render/`, `packages/lint/src/`
 
-- [ ] Create or update `packages/deck/test/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
-
-- [ ] Create or update `scripts/probe-deck.mjs` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
-
-- [ ] Create or update `packages/render/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
-
-- [ ] Create or update `bench/render/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
-
-- [ ] Create or update `packages/lint/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P02/files.txt`.
-
-**Contract references.** C01, C02, C03, C04, C07, C08, C22 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C01, C02, C03, C04, C07, C08, C22 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W03 packed-consumer probe:deck CLI; W04 Studio render fixture and server snapshot CLI.
 
@@ -210,11 +180,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] A packed consumer creates and atomically changes a canonical deck, then the Studio fixture and server snapshot render the same saved deck with pinned fonts. Save the actual outcome in `~/tmp/airdesign-autopilot/P02/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-02` to run the owned commands in order, namely npm run verify:deck then npm run verify:render. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P02/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-02` to run the owned commands in order, namely npm run verify:deck then npm run verify:render. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P02/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W03 serialize and reopen a fixture deck; then W04 render a reference slide at trunk and head. Save `~/tmp/airdesign-autopilot/P02/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -236,13 +206,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W03 inverse round trip; then W04 snapshot parity through the public surface. Save `~/tmp/airdesign-autopilot/P02/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W03 requires applying a valid change then its inverse restores semantic equality without mutating the input; and W04 requires the Studio fixture and server snapshot match within the frozen rendering tolerance using identical fonts; worker integration is deferred to P05. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W03 apply latency and touched-object allocation on 300-element deck; W04 frame time, edit-to-paint and first-editable time. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P02/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P02/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P02/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P02/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P02/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W03 set a provisional p95 apply budget of 4 ms; record absolute result when trunk lacks apply; W04 60 fps target at 300 elements; edit drawn within 16 ms; first slide editable within 2 s for 100 slides on the pinned reference machine. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P02/perf/verdict.json`.
 
@@ -260,21 +230,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `apps/worker/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`: `apps/worker/src/`, `packages/files/src/`, `packages/operations/src/`, `apps/server/src/operations/`, `packages/pptx/src/`, `packages/pptx/test/`, `fixtures/pptx/`
 
-- [ ] Create or update `packages/files/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-- [ ] Create or update `packages/operations/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-- [ ] Create or update `apps/server/src/operations/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-- [ ] Create or update `packages/pptx/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-- [ ] Create or update `packages/pptx/test/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-- [ ] Create or update `fixtures/pptx/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P03/files.txt`.
-
-**Contract references.** C04, C06, C07, C08, C16, C19, C21 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C04, C06, C07, C08, C16, C19, C21 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W05 authenticated job CLI against server and worker; W06 PPTX CLI, local reimport and LibreOffice fast check.
 
@@ -290,11 +248,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] An authenticated person submits a PowerPoint job, survives interruption and receives a locally validated editable/preserved result with honest capability labels. Real PowerPoint evidence remains P09 X01. Save the actual outcome in `~/tmp/airdesign-autopilot/P03/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-03` to run the owned commands in order, namely npm run verify:operations then npm run verify:pptx. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P03/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-03` to run the owned commands in order, namely npm run verify:operations then npm run verify:pptx. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P03/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W05 submit and recover a fixture operation; then W06 unchanged imported presentation at trunk and head. Save `~/tmp/airdesign-autopilot/P03/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -316,13 +274,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W05 renderer egress, hostile font, OOM and temp cleanup; then W06 metadata local round trip and reference pack through the public surface. Save `~/tmp/airdesign-autopilot/P03/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W05 requires rendered content cannot fetch metadata/private/public URLs; hostile fonts are refused safely; an enforced OOM/CPU kill ends the job terminally, removes its isolated temporary payload and permits the next owner job; and W06 requires stable identifiers and provenance survive local reimport without duplicate elements; source hashes and missing-font/kept/flagged reports are complete, and every unproved Windows/Mac claim is explicitly queued in P03R for P09 X01. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W05 acknowledgment latency and worker RSS; W06 import/export time and visual difference. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P03/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P03/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P03/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P03/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P03/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W05 operation id within 1 s; PPTX input at most 100 MB, expanded 500 MB, 10000 parts and 30 s; tune other job limits from fixtures; W06 local worker limit is 30 s; hash and graph invariants must pass. P09 X01 additionally requires at most 0.1 percent changed pixels per slide and 1 percent per item with unchanged text line counts on matched pinned references, as adopted or explicitly revised with evidence in P01. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P03/perf/verdict.json`.
 
@@ -340,21 +298,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `packages/change-log/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`: `packages/change-log/src/`, `apps/server/src/db/`, `packages/change-log/test/`, `apps/server/src/commands/`, `packages/rpc/src/`, `apps/server/src/rpc/`, `apps/studio/src/sync/`
 
-- [ ] Create or update `apps/server/src/db/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-- [ ] Create or update `packages/change-log/test/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-- [ ] Create or update `apps/server/src/commands/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-- [ ] Create or update `packages/rpc/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-- [ ] Create or update `apps/server/src/rpc/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-- [ ] Create or update `apps/studio/src/sync/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P04/files.txt`.
-
-**Contract references.** C01, C02, C03, C06, C07, C11, C18 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C01, C02, C03, C06, C07, C11, C18 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W07 two authenticated command clients with separate database connections; W09 two browser sync clients and command/WebSocket API.
 
@@ -370,11 +316,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Two signed-in clients converge on ordered edits, recover after offline work and undo an agent run while preserving later person changes. Save the actual outcome in `~/tmp/airdesign-autopilot/P04/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-04` to run the owned commands in order, namely npm run verify:change-log then npm run verify:sync. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P04/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-04` to run the owned commands in order, namely npm run verify:change-log then npm run verify:sync. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P04/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W07 two actors edit one deck; then W09 edit disconnect reload reconnect at trunk and head. Save `~/tmp/airdesign-autopilot/P04/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -396,13 +342,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W07 closed run late write; then W09 expired session, sign-out and account switch through the public surface. Save `~/tmp/airdesign-autopilot/P04/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W07 requires a closed run cannot append a late tool result or resurrect itself; and W09 requires re-authentication retains the same principal pending edits, while sign-out/account switch clears or isolates the principal-keyed queue and cannot transmit it as another person. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W07 commit latency and bounded history replay; W09 commit-to-paint trace and reconnect time. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P04/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P04/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P04/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P04/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P04/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W07 provisional warm p95 commit at most 50 ms on the pinned local stack, leaving room for the 100 ms commit-to-paint budget; reject unbounded replay growth; W09 connected commit-to-paint p95 at most 100 ms; propose 2 s recovery for a 100-command local queue and measure before raising it. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P04/perf/verdict.json`.
 
@@ -420,25 +366,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `apps/studio/src/decks/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`: `apps/studio/src/decks/`, `apps/studio/src/editor/`, `docs/design/v0.1/`, `packages/catalog/`, `apps/server/src/decks/`, `apps/worker/src/purge/`, `apps/studio/src/import/`, `apps/studio/src/export/`, `apps/server/src/operations/`
 
-- [ ] Create or update `apps/studio/src/editor/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `docs/design/v0.1/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `packages/catalog/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `apps/server/src/decks/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `apps/worker/src/purge/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `apps/studio/src/import/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `apps/studio/src/export/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-- [ ] Create or update `apps/server/src/operations/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P05/files.txt`.
-
-**Contract references.** C02, C03, C04, C07, C08, C10, C11, C16, C18, C21, C22 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C02, C03, C04, C07, C08, C10, C11, C16, C18, C21, C22 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W10 browser Home/manual editor and persisted catalog API; W11 browser import/export and actual worker API.
 
@@ -446,7 +376,7 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds. Save the contract and implementation receipts in `~/tmp/airdesign-autopilot/P05/build.md`.
 
-- [ ] W10. Build the manual deck workspace and recovery states. Implement Home, Trash and deck lifecycle, then selection, editable text, slide ordering and undo on the real deck. Replace old Share and fake drafting entry points with current F02/F03 intent. Design first-prompt, changes-by-slide, read-only deleted-deck and paste refusal states before wiring them. Track shell state separately from deck state. Own persisted deck lifecycle in packages/catalog and apps/server/src/decks; the worker purge owner implements the 30-day Trash purge with idempotent deletion. Store the first pending request without claiming Aira exists before P08. Add person undo/redo across fixture-agent commits and apply the P01 undo_change contract. Phone routes provide read-only deck viewing and a clear Edit on a laptop message; surrounding controls reflow at 320 CSS px. Include local accessibility-tree status/error and focus checks, with actual transcripts reserved to P09 X02. Verify its behavioral command `npm run verify:studio` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P05/checkpoints/W10/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
+- [ ] W10. Build the manual deck workspace and recovery states. Implement Home, Trash and deck lifecycle, then selection, editable text, slide ordering and undo on the real deck. Do not build Share or Present. Replace simulated drafting with real activity for the current F02/F03 intent. Design first-prompt, changes-by-slide, read-only deleted-deck and paste refusal states before wiring them. Track shell state separately from deck state. Own persisted deck lifecycle in packages/catalog and apps/server/src/decks; the worker purge owner implements the 30-day Trash purge with idempotent deletion. Store the first pending request without claiming Aira exists before P08. Add person undo/redo across fixture-agent commits and apply the P01 undo_change contract. Phone routes provide read-only deck viewing and a clear Edit on a laptop message; surrounding controls reflow at 320 CSS px. Include local accessibility-tree status/error and focus checks, with actual transcripts reserved to P09 X02. Verify its behavioral command `npm run verify:studio` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P05/checkpoints/W10/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
 - [ ] W11. Connect version-pinned import and export journeys. Implement importing cards and explicit native/kept/flagged reports, without inventing previews for unsupported objects. Export one immutable saved deck version. Offer export now or after run, Fix or Export anyway, reattach pending results after tab close, and PDF download. Keep PNG captures internal. Prove Studio and worker render the same saved version with identical font hashes, and keep that version in both the artifact and fit report. Verify import/export live status and errors in the accessibility tree without moving focus, with actual announcement transcripts collected in P09 X02. Verify its behavioral command `npm run verify:import-export` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P05/checkpoints/W11/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
@@ -454,15 +384,15 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] A person opens a deck from Home, edits slides and exports the saved version as PPTX, PDF or PNG. Phone viewing remains read-only. Save the actual outcome in `~/tmp/airdesign-autopilot/P05/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-05` to run the owned commands in order, namely npm run verify:studio then npm run verify:import-export. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P05/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-05` to run the owned commands in order, namely npm run verify:studio then npm run verify:import-export. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P05/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W10 create edit reopen deck; then W11 import edit export reopen at trunk and head. Save `~/tmp/airdesign-autopilot/P05/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
-- [ ] Lane 2. Drive W10 true empty first visit and pending request; then W11 corrupt PPTX through the public surface. Save `~/tmp/airdesign-autopilot/P05/lane-2/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W10 requires no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the chosen P01 entry flow persists a pending request without pretending an agent has run; and W11 requires invalid packages produce an actionable import failure and no partial deck. Record actual values in the lane receipt.
+- [ ] Lane 2. Drive W10 true empty first visit and pending request; then W11 corrupt PPTX through the public surface. Save `~/tmp/airdesign-autopilot/P05/lane-2/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W10 requires no seeded Scratchpad, Welcome or retired Starred view is presented as empty; the entry flow frozen in C10 at the start of P05 persists a pending request without pretending an agent has run; and W11 requires invalid packages produce an actionable import failure and no partial deck. Record actual values in the lane receipt.
 
 - [ ] Lane 3. Drive W10 search no result; then W11 font substitution through the public surface. Save `~/tmp/airdesign-autopilot/P05/lane-3/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W10 requires no-result copy preserves search input and offers a clear next action; and W11 requires substitution is visible and its export consequences can be inspected. Record actual values in the lane receipt.
 
@@ -480,19 +410,19 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W10 partial paste refusal; then W11 PDF range through the public surface. Save `~/tmp/airdesign-autopilot/P05/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W10 requires the accepted subset and refused content are explained before the user loses the original paste; and W11 requires the PDF contains only the chosen slides in their requested order without missing text. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W10 input-to-paint and Home load; W11 operation ACK and export-ready time. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P05/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P05/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P05/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P05/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P05/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W10 manual editing keeps the 16 ms render budget; propose Home usable within 2 s for 100 decks on the pinned local fixture; W11 id within 1 s; PPTX completes or fails within the 30 s worker deadline; record PDF absolute deadline in P01 for the fixture sizes. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P05/perf/verdict.json`.
 
 **Review gate.**
 
-- [ ] Show the operator the real before/after screenshot and a short video of the changed interaction, including its failure path. Save the operator decision in `~/tmp/airdesign-autopilot/P05/operator-review.md`. Wait for that decision before merge.
+- [ ] Show the operator the real before/after screenshot and a short video of the changed interaction, including its failure path. The agent-driven first-deck flow (F02, describe an idea and Aira drafts) first works in P08. The P05 operator review shows manual editing, import and export only. Save the operator decision in `~/tmp/airdesign-autopilot/P05/operator-review.md`. Wait for that decision before merge.
 
 **Merge.**
 
@@ -504,19 +434,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `packages/brand/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`: `packages/brand/src/`, `apps/studio/src/templates/`, `docs/design/v0.1/templates/`, `packages/files/src/assets/`, `apps/studio/src/images/`, `docs/design/v0.1/images/`
 
-- [ ] Create or update `apps/studio/src/templates/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
-
-- [ ] Create or update `docs/design/v0.1/templates/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
-
-- [ ] Create or update `packages/files/src/assets/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
-
-- [ ] Create or update `apps/studio/src/images/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
-
-- [ ] Create or update `docs/design/v0.1/images/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P06/files.txt`.
-
-**Contract references.** C02, C06, C07, C08, C19, C21, C23 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C02, C06, C07, C08, C19, C21, C23 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W12 browser templates and saved-version export; W13 browser assets and saved-version export.
 
@@ -532,11 +452,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] A person applies a template and adds an owned image, then exports the same version with provenance, layout and preserved source relationships intact. Save the actual outcome in `~/tmp/airdesign-autopilot/P06/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-06` to run the owned commands in order, namely npm run verify:brand then npm run verify:assets. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P06/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-06` to run the owned commands in order, namely npm run verify:brand then npm run verify:assets. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P06/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W12 apply look and undo; then W13 reuse image in two decks at trunk and head. Save `~/tmp/airdesign-autopilot/P06/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -558,13 +478,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W12 undo application; then W13 storage full through the public surface. Save `~/tmp/airdesign-autopilot/P06/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W12 requires one undo restores all application changes and retains unrelated later edits; and W13 requires upload refuses safely with a clear quota message and existing assets remain usable. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W12 template apply-to-paint; W13 thumbnail-ready time and crop-to-paint. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P06/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P06/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P06/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P06/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P06/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W12 provisional p95 at most 100 ms for 100 slides excluding cold fonts; cold-font wait is visible and separately measured; W13 provisional local thumbnail p95 at most 2 s for a 10 MB fixture; crop keeps the 16 ms edit frame budget. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P06/perf/verdict.json`.
 
@@ -582,21 +502,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `packages/usage/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`: `packages/usage/src/`, `apps/server/src/usage/`, `apps/studio/src/usage/`, `apps/server/src/mcp/`, `packages/tools/src/`, `packages/access/src/oauth/`, `apps/studio/src/agents/`
 
-- [ ] Create or update `apps/server/src/usage/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-- [ ] Create or update `apps/studio/src/usage/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-- [ ] Create or update `apps/server/src/mcp/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-- [ ] Create or update `packages/tools/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-- [ ] Create or update `packages/access/src/oauth/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-- [ ] Create or update `apps/studio/src/agents/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P07/files.txt`.
-
-**Contract references.** C05, C06, C07, C12, C13, C14, C15, C17, C20, C21, C24 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C05, C06, C07, C12, C13, C14, C15, C17, C20, C21, C24 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W14 ledger command API with trusted fixture credit grants; W15 MCP reference client and real consent UI.
 
@@ -604,7 +512,7 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Complete the ordered checkpoints below on this PR branch. Verify each checkpoint before its consumers. Preserve all scenario predicates in phase-data.json and lane-predicates.json; checkpoints do not create PRs or independent approval rounds. Save the contract and implementation receipts in `~/tmp/airdesign-autopilot/P07/build.md`.
 
-- [ ] W14. Enforce weekly usage with an auditable ledger. Define week identity from the stored time zone, immutable usage events, limit-hit ids, atomic reset receipts and reservations. Both agent paths use one admission contract, with Aira weighted higher by a versioned rate table. Finish the current atomic change at limit, retain the request and keep manual editing available. Refund only platform-caused failures. Resolve timezone changes and DST in P01 before implementing. Own the credit ledger and reset admission primitives here, but use trusted ledger-level fixture grants for paid-credit scenarios until P08. These are not provider webhooks or UI checkout. Imports, exports, themes and stock images consume no agent allowance. Freeze whether a User Agent may trigger automatic credit spending in C17 before implementing; a remote tool cannot perform billing actions. Verify its behavioral command `npm run verify:usage` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P07/checkpoints/W14/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
+- [ ] W14. Enforce weekly usage with an auditable ledger. Define week identity from the stored time zone, immutable usage events, limit-hit ids, atomic reset receipts and reservations. Both agent paths use one admission contract, with Aira weighted higher by a versioned rate table. Finish the current atomic change at limit, retain the request and keep manual editing available. Refund only platform-caused failures. Freeze timezone changes and DST in C14 at the start of P07 before implementing. Own the credit ledger and reset admission primitives here, but use trusted ledger-level fixture grants for paid-credit scenarios until P08. These are not provider webhooks or UI checkout. Imports, exports, themes and stock images consume no agent allowance. Freeze whether a User Agent may trigger automatic credit spending in C17 at the start of P07 before implementing; a remote tool cannot perform billing actions. Verify its behavioral command `npm run verify:usage` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P07/checkpoints/W14/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
 - [ ] W15. Expose the same tools through authorized MCP. Register the documented catalog from shared domain handlers, with Effect MCP integration validated against the pinned SDK/spec. Add PKCE, per-connection rotating refresh, revocation and 30-day idle expiry. Bound responses and snapshot cursors. Keep deck deletion, billing and account actions unavailable. Design expired approval and failed app-return states. Load deck/jsx here only. This slice intentionally exposes the complete documented catalog after its file, template and image handlers exist. An earlier partial-catalog release requires a revised contract and dependency graph, not silently omitted tools. Validate resource indicators and exact token audience, and test supported client-ID metadata or registration paths against the pinned revision. Integrate the real signed approval-return flow from P01. An out-of-usage MCP result reports reset time, balance and the person-controlled reset link while retaining the request. Public vendor connections are P09 X05 and require an authorized HTTPS test endpoint/tunnel; a local reference client is sufficient for this PR, not a vendor-support claim. Record the paid two-model tool evaluation as pending P09 X03. Verify its behavioral command `npm run verify:mcp` before the next dependent checkpoint. Save the result in `~/tmp/airdesign-autopilot/P07/checkpoints/W15/`. All retained scenarios and pass predicates in [the checkpoint data](phase-data.json) and [the predicate register](lane-predicates.json) are required, including the combined live lanes below.
 
@@ -612,11 +520,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] An approved MCP client edits an owned deck through scoped tools and receives consistent usage, exhausted-budget, pagination and authorization results. Save the actual outcome in `~/tmp/airdesign-autopilot/P07/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-07` to run the owned commands in order, namely npm run verify:usage then npm run verify:mcp. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P07/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-07` to run the owned commands in order, namely npm run verify:usage then npm run verify:mcp. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P07/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W14 limit reached with saved request; then W15 connect get_context edit deck at trunk and head. Save `~/tmp/airdesign-autopilot/P07/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -638,13 +546,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W14 fixture-funded three-reset cap and actor policy; then W15 native capture image through the public surface. Save `~/tmp/airdesign-autopilot/P07/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W14 requires trusted fixture credit permits at most three configured automatic resets; the fourth is refused and User Agent admission follows the accepted C17 spending rule without billing tools; and W15 requires capture returns the intended protocol image block plus bounded metadata. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W14 admission and ledger transaction latency; W15 warm p95 reads, edits, captures and full tools/list size. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P07/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P07/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P07/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P07/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P07/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W14 provisional p95 at most 50 ms local admission and zero duplicate debits under concurrent retries; W15 at most 20 tools and 8000 declared estimator tokens; non-image results below 20000 UTF-8 bytes; reads 500 ms, edits 1 s, captures 2 s; slow ACK 1 s. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P07/perf/verdict.json`.
 
@@ -662,23 +570,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `packages/agent/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`: `packages/agent/src/`, `apps/server/src/agent/`, `apps/studio/src/chat/`, `apps/server/src/billing/`, `packages/usage/src/payments/`, `apps/studio/src/settings/`, `apps/server/src/account/`, `apps/worker/src/account-deletion/`
 
-- [ ] Create or update `apps/server/src/agent/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `apps/studio/src/chat/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `apps/server/src/billing/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `packages/usage/src/payments/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `apps/studio/src/settings/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `apps/server/src/account/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-- [ ] Create or update `apps/worker/src/account-deletion/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P08/files.txt`.
-
-**Contract references.** C01, C02, C03, C05, C06, C07, C14, C15, C16, C17, C22, C24 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C01, C02, C03, C05, C06, C07, C14, C15, C16, C17, C22, C24 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W16 browser Aira with genuine deterministic-adapter commits; W17 account UI and verified fixture/sandbox payment/reconciliation APIs.
 
@@ -694,11 +588,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Aira makes real tool commits through the deterministic adapter, respects person edits and usage, and the account UI reconciles sandbox credits and deletion safely. Save the actual outcome in `~/tmp/airdesign-autopilot/P08/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-08` to run the owned commands in order, namely npm run verify:agent then npm run verify:billing. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P08/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-08` to run the owned commands in order, namely npm run verify:agent then npm run verify:billing. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P08/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W16 first-deck prompt to saved deck; then W17 sandbox payment and reset at trunk and head. Save `~/tmp/airdesign-autopilot/P08/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -720,13 +614,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W16 duplicate stream and accessible status; then W17 delete-account and accessible payment status through the public surface. Save `~/tmp/airdesign-autopilot/P08/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W16 requires duplicate events do not duplicate activity, changes or debits; status/error tree semantics are correct and updates retain focus, with actual announcements required in P09 X02; and W17 requires deletion obeys C16 and explicit confirmation; payment waiting/result/error roles are programmatically determinable without moving focus, with real transcripts required in P09 X02. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W16 first committed change and commit-to-paint; W17 webhook ACK and result propagation. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P08/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P08/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P08/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P08/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P08/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W16 connected paint p95 at most 100 ms; measure harness dispatch and stream overhead separately with the deterministic adapter; record real-model first-change latency as not run until an approved P09 trial; W17 provisional webhook ACK at most 1 s after durable receipt and UI result within 2 s of verified credit commit; no live charges. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P08/perf/verdict.json`.
 
@@ -744,21 +638,9 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 **Files.**
 
-- [ ] Create or update `bench/quality/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
+- [ ] Create or update these paths and record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`: `bench/quality/`, `bench/release/`, `packages/lint/`, `docs/release/`, `apps/site/src/`, `apps/site/content/`, `docs/launch/`
 
-- [ ] Create or update `bench/release/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-- [ ] Create or update `packages/lint/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-- [ ] Create or update `docs/release/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-- [ ] Create or update `apps/site/src/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-- [ ] Create or update `apps/site/content/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-- [ ] Create or update `docs/launch/` for this slice. Record the actual diff in `~/tmp/airdesign-autopilot/P09/files.txt`.
-
-**Contract references.** C04, C05, C07, C08, C14, C15, C20, C21, C22, C24 in [the register](contract-index.json). Every frozen-rule or in-P01 reference in this PR resolves to these entries; W01 in P01 must accept them before the consumer checkpoint starts.
+**Contract references.** C04, C05, C07, C08, C14, C15, C20, C21, C22, C24 in [the register](contract-index.json). Contracts frozen earlier are consumed as accepted. Contracts whose freezeIn is this PR are accepted in its first checkpoint before any consumer.
 
 **Verification surface.** W18 release harness plus actual external reference applications/clients; W19 built site browser and authorized client guide walkthroughs.
 
@@ -790,11 +672,11 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] The release dossier contains the mandatory actual-reference evidence and the built site makes only proven claims. Missing mandatory external evidence blocks this PR; publication remains separate. Save the actual outcome in `~/tmp/airdesign-autopilot/P09/outcome.md`.
 
-**Verify, unit.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, unit.**
 
-- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-09` to run the owned commands in order, namely npm run verify:release then npm run verify:site. Run the aggregate command plus the migrated root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P09/unit/`.
+- [ ] Add behavioral coverage at the checkpoint test paths recorded in [the checkpoint data](phase-data.json). Introduce `npm run verify:pr-09` to run the owned commands in order, namely npm run verify:release then npm run verify:site. Run the aggregate command plus the root tests and typecheck. Save commands, head and full logs in `~/tmp/airdesign-autopilot/P09/unit/`.
 
-**Verify, live.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked. Ten lanes on `grok-4.7` at the PR head, per the boot recipe.
+**Verify, live.** Ten lanes at the PR head, per the boot recipe.
 
 - [ ] Lane 1. Regression lane against trunk. Drive W18 first deck edit export reopen; then W19 landing to sign-in to deck at trunk and head. Save `~/tmp/airdesign-autopilot/P09/lane-1/comparison.json` and the raw responses. Add a screenshot for a UI surface or a terminal capture for CLI/API proof. Pass when existing behavior is preserved; when trunk lacks the feature, record missing and prove the new result from You see without claiming a trunk pass.
 
@@ -816,13 +698,13 @@ Build the UI from the v0.1 handoff using shadcn/ui CSS variables. Copy needed AI
 
 - [ ] Lane 10. Drive W18 retired sharing absent; then W19 broken-link scan through the public surface. Save `~/tmp/airdesign-autopilot/P09/lane-10/receipt.json` and its trace. Add a real screenshot for a UI surface, or raw structured responses and a terminal capture for CLI/API proof. Pass when W18 requires route and UI scans expose no retired sharing entry or share-link promise; and W19 requires the generated site contains no broken internal links or unsupported routes. Record actual values in the lane receipt.
 
-**Verify, perf.** Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.
+**Verify, perf.**
 
 - [ ] Metric. Measure W18 end-to-end latency, memory and case-level quality statistics; W19 static-page load and build artifact size. Save sample definitions and the measured limiter in `~/tmp/airdesign-autopilot/P09/perf/metric.json`.
 
-- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. When absent, measure the absolute head operation against C07 instead. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P09/perf/`.
+- [ ] Probe. Add a reproducible probe beside each checkpoint test path. When trunk has comparable work, run it first, then at least 20 interleaved warm samples plus separate cold trials; a p95 comparison needs at least 100 warm samples per comparable revision and uncertainty. While trunk has no comparable product code, the gate is the absolute C07 budget. Do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Documentation-only follow-ups may record N/A with a reason and proof of no runtime diff. Save raw data or the justified N/A in `~/tmp/airdesign-autopilot/P09/perf/`.
 
-- [ ] Baseline. Save the trunk result or evidence the feature is absent in `~/tmp/airdesign-autopilot/P09/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
+- [ ] Baseline. While trunk has no comparable product code, do not build trunk-comparison rigs or collect interleaved trunk samples for absent features. Lane 1 records the feature as absent. Save the comparable trunk result, or evidence the feature is absent, in `~/tmp/airdesign-autopilot/P09/perf/baseline.json`. Measure the exact added operation and user end state at head when no comparable trunk surface exists.
 
 - [ ] Rule. Fail when the following acceptance rule is unmet. W18 enforce all P02/P04/P07 latency limits and zero authorization/atomicity failures; quality thresholds are frozen policy and require calibrated human evidence; W19 provisional LCP at most 2.5 s under a pinned mobile network profile; record trunk comparison only for equivalent pages. Apply the provisional 10 percent relative p95 rule only to comparable operations with sufficient evidence; investigate noise and report inconclusive rather than inventing a regression. A justified docs-only N/A may pass the perf box. Save `~/tmp/airdesign-autopilot/P09/perf/verdict.json`.
 
@@ -862,7 +744,7 @@ Use each research README for its recorded evidence, source paths and limitations
 - Generating all target packages first gives a large empty dependency graph. Introduce a package only with an executable consumer.
 - A CRDT first does not settle the required human-versus-agent authority or selective run undo. Use the specified server order and explicit run epochs, then test multi-connection behavior.
 - Converting arbitrary PPTX to one flattened image loses editable semantics. Keep unknown source parts and provenance beside native elements. Label kept and flagged content honestly.
-- Rebuilding the UI library wholesale with another component stack discards existing keyboard behavior. Migrate proven primitives, bridge semantic tokens and add only missing pieces.
+- Build from shadcn/ui primitives and the v0.1 handoff. Do not hand-roll keyboard behavior those primitives provide.
 - A scripted fake drafting state cannot establish live collaboration. Real accepted commands drive the canvas and activity timeline.
 - A GPU renderer is not chosen without a measured DOM/SVG bottleneck. Preserve native text input, IME and accessible representations.
 - Combining model orchestration with every module duplicates the edit boundary. Keep Aira as a harness over the same authenticated tools used by remote agents.
