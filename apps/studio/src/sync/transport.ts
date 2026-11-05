@@ -19,7 +19,34 @@ export function transport(client: SyncClient, person: string, deck: string, erro
   let generation=0
   let resumed=false
   let offlineAt=Date.now()
-  const cache = (snapshot:Snapshot)=>localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(snapshot))
+  let previous:Snapshot|undefined
+  let pending:Snapshot|undefined
+  let persistence:ReturnType<typeof setTimeout>|undefined
+  let checkpoints:(()=>void)[]=[]
+  const cache = (snapshot:Snapshot)=>{
+    const checkpoint=new Promise<void>(resolve=>{checkpoints.push(resolve)})
+    pending=snapshot
+    if(persistence)return checkpoint
+    persistence=setTimeout(()=>{
+      const persist=()=>{
+        persistence=undefined
+        const latest=pending;pending=undefined
+        if(latest)try{
+          localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))
+          const durable=checkpoints;checkpoints=[]
+          for(const resolve of durable)resolve()
+        }catch(failure){error(String(failure))}
+      }
+      if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
+      else void afterPaint().then(persist)
+    },100)
+    return checkpoint
+  }
+  let received=Promise.resolve()
+  const afterPaint=()=>new Promise<void>(resolve=>{
+    if(document.visibilityState!=="visible"){setTimeout(resolve,0);return}
+    requestAnimationFrame(()=>setTimeout(resolve,0))
+  })
   async function connect() {
     const own=++generation
     clearTimeout(timer)
@@ -42,20 +69,23 @@ export function transport(client: SyncClient, person: string, deck: string, erro
       const active=new WebSocket(url)
       socket=active
       active.onmessage=event=> {
+        received=received.then(async()=>{
+        await afterPaint()
         if (own!==generation || stopped) return
         try {
-          const message=parseMessage(JSON.parse(String(event.data)))
+          const message=parseMessage(JSON.parse(String(event.data)),previous)
           if (message.kind==="snapshot" || message.kind==="receipt") {
             if (message.deck.id!==deck) throw new Error("wrong-deck-snapshot")
-            if (message.seq>=client.seq) {client.receive(message);cache(message)}
+            if (message.seq>=client.seq) {previous=message;client.receive(message)}
             if (!resumed) { resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=> { if (active.readyState===WebSocket.OPEN) active.send(JSON.stringify(command)) }) }
-            if (message.kind==="receipt") void client.acknowledge(message.receipt).catch(e=>error(String(e)))
+            if(previous){const checkpoint=cache(previous);if(message.kind==="receipt")void client.acknowledge(message.receipt,checkpoint).catch(failure=>error(String(failure)))}
           } else if (message.kind==="signed-out") { client.stop("signed-out");active.close() }
           else if (message.kind==="error") {
             if (message.code==="deck-deleted") { client.stop("deleted");active.close() }
             else error(message.code)
           }
         } catch (e) { error(String(e));active.close() }
+        }).catch(failure=>error(String(failure)))
       }
       active.onclose=()=> { if (own===generation && !stopped && client.state.kind!=="deleted" && client.state.kind!=="signed-out") { if (resumed) offlineAt=Date.now();resumed=false;retry() } }
       active.onerror=()=>active.close()

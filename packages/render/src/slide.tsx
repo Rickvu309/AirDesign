@@ -22,7 +22,7 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     if (localRuns.current === signature) { localRuns.current = null; return }
     caretStyle.current = element.runs[0]
     canonicalChildren(node, element.runs)
-  }, [element, signature])
+  }, [element, signature, commit])
   useLayoutEffect(() => {
     const node = ref.current
     if (!node || !commit) return
@@ -78,7 +78,8 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     localRuns.current = JSON.stringify(runs)
     commit?.(element.id, runs)
   }
-  return <div ref={ref} data-text={element.id} data-theme-font={themeFont} role={commit ? "textbox" : undefined} aria-label={commit ? `Text ${element.id}` : undefined} aria-multiline={commit ? true : undefined} contentEditable={Boolean(commit) && element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
+  if(!commit)return <div key="readonly" data-text={element.id} data-theme-font={themeFont} style={{inlineSize:"100%",blockSize:"100%",whiteSpace:"pre-wrap",overflowWrap:"break-word",lineHeight:1.2,fontFamily:"Geist"}}>{element.runs.map((run,index)=><span key={index} style={{fontFamily:"Geist",fontSize:run.size,fontWeight:run.bold ? 600 : 400,color:run.color}}>{run.text}</span>)}</div>
+  return <div key="editable" ref={ref} data-text={element.id} data-theme-font={themeFont} role="textbox" aria-label={`Text ${element.id}`} aria-multiline contentEditable={element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
     event.preventDefault()
     if (composing.current) return
     const node = event.currentTarget

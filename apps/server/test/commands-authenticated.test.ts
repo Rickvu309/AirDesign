@@ -56,6 +56,7 @@ it("orders two authenticated command clients on separate connections and denies 
     } finally { await restarted.close() }
   } finally {
     await first.close();await second.close();await access.close()
+    expect((await admin.query<{count:string}>("SELECT count(*) FROM pg_stat_activity WHERE datname=$1",[database])).rows[0]?.count).toBe("0")
     await admin.query(`DROP DATABASE ${database} WITH (FORCE)`)
     await admin.end()
   }

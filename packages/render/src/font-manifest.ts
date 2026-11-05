@@ -1,0 +1,1 @@
+export const fontManifest={family:"Geist",faces:[{weight:400,file:"geist-latin-400.woff2",sha256:"ead637fd0b6b887d829b3ce3f25fdc242b1de0cfb69c0d97987933675d1315ba"},{weight:600,file:"geist-latin-600.woff2",sha256:"edde7cc4e2719898f981a6d970a756030fff75a8ed36dd6a457a60181b889ebf"}]}

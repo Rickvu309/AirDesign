@@ -4,16 +4,17 @@ import type { Access } from "@airdesign/access"
 import type { HistoryStore } from "../db/history-store.ts"
 import { parseCommand } from "../../../../packages/rpc/src/parse-command.ts"
 import type { Snapshot } from "../../../../packages/rpc/src/client.ts"
+import { snapshotDelta } from "../../../../packages/rpc/src/snapshot-delta.ts"
 export function attachSync(server: Server, access: Access, store: HistoryStore, origin: string) {
   const sockets = new WebSocketServer({noServer:true,maxPayload:1_048_576})
-  const peers = new Map<WebSocket,{deck:string;request:Request;personId:string}>()
+  const peers = new Map<WebSocket,{deck:string;request:Request;personId:string;seq:number|null}>()
   async function refresh(deck: string, snapshot?: Snapshot & {committedAt?:number}, except?: WebSocket) {
     await Promise.all([...peers].filter(([,peer])=>peer.deck===deck).map(async ([socket,peer])=> {
       try {
         const principal = await access.principal(peer.request)
         if (!principal || principal.personId !== peer.personId) { socket.send(JSON.stringify({kind:"signed-out"})); socket.close(); return }
         const current = snapshot ?? await store.read(principal,deck)
-        if (socket !== except && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"snapshot",...current}))
+        if (socket !== except && socket.readyState === WebSocket.OPEN && (peer.seq===null || current.seq>=peer.seq)) {socket.send(JSON.stringify({kind:"snapshot",...snapshotDelta(current,peer.seq)}));peer.seq=current.seq}
       } catch (error) {
         if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
       }
@@ -32,7 +33,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       const identity=token ? await store.runIdentity(principal,deck,token) : {kind:"person" as const}
       await store.read(principal,deck)
       sockets.handleUpgrade(incoming,socket,head,websocket=> {
-        peers.set(websocket,{deck,request,personId:principal.personId})
+        peers.set(websocket,{deck,request,personId:principal.personId,seq:null})
         websocket.on("error",()=>websocket.close())
         websocket.on("close",()=>peers.delete(websocket))
         let ordered = Promise.resolve()
@@ -43,7 +44,9 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
             const receipt = await store.commit(current,deck,parseCommand(JSON.parse(data.toString())),identity)
             const committedAt=Date.now()
             const snapshot={...await store.read(current,deck),committedAt}
-            websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshot}))
+            const peer=peers.get(websocket)
+            websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null)}))
+            if(peer)peer.seq=snapshot.seq
             await refresh(deck,snapshot,websocket)
           }).catch(error=> { if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"})) })
         })

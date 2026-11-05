@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@airdesign/ui"
-import { commandId, type Command, type CommandId } from "../../../../packages/change-log/src/index.ts"
+import { commandId, type Command } from "../../../../packages/change-log/src/index.ts"
 import { flatten, id, type Id, type Run } from "../../../../packages/deck/src/index.ts"
 import { fixtureDeck } from "../../../../packages/deck/src/fixture.ts"
 import { Slide } from "../../../../packages/render/src/index.ts"
@@ -19,7 +19,6 @@ export function SyncFixture() {
   const [selectedSlide,setSelectedSlide]=useState("")
   const client=useRef<SyncClient | null>(null)
   const connection=useRef<ReturnType<typeof transport> | null>(null)
-  const undo=useRef<CommandId[]>([]), redo=useRef<CommandId[]>([])
   const deckId=new URLSearchParams(location.search).get("deck") ?? "deck"
   const [loaded,setLoaded]=useState(false)
   async function load(create=false) {
@@ -45,8 +44,6 @@ export function SyncFixture() {
       const sync=new SyncClient(person,snapshot,indexedOutbox(),()=>render(n=>n+1))
       await sync.load()
       client.current=sync
-      undo.current=sync.queue.filter(item=>(item.command.kind==="edit" || item.command.kind==="patch") && item.command.run===null).map(item=>item.command.id)
-      redo.current=[]
       if (deleted) sync.stop("deleted")
       connection.current=deleted ? null : transport(sync,person,deckId,setMessage)
       setMissing(false);setLoaded(true);setMessage("")
@@ -62,19 +59,17 @@ export function SyncFixture() {
       if(command.kind==="start-run")runCredential.current=result.runCredential
     }catch(error){setMessage(String(error))}
   }
-  async function enqueue(command:Command,personEdit=false) {
-    try {await client.current?.enqueue(command);if(personEdit){undo.current.push(command.id);redo.current=[]}} catch(error){setMessage(String(error))}
+  async function enqueue(command:Command) {
+    try {await client.current?.enqueue(command)} catch(error){setMessage(String(error))}
   }
   function patch(target:Id,fields:Extract<Command,{kind:"patch"}>["fields"]) {
     const sync=client.current
-    if(sync) void enqueue({id:requestId(),kind:"patch",target,fields,base:sync.seq,run:null},true)
+    if(sync) void enqueue({id:requestId(),kind:"patch",target,fields,base:sync.seq,run:null})
   }
   function commitText(target:Id,runs:[Run,...Run[]]) {patch(target,JSON.parse(JSON.stringify({runs})))}
   function historyText(direction:"undo"|"redo") {
-    const target=(direction==="undo" ? undo : redo).current.pop()
+    const target=client.current?.historyTarget(direction)
     if(!target) return
-    const destination=(direction==="undo" ? redo : undo)
-    destination.current.push(target)
     void enqueue({id:requestId(),kind:direction,target})
   }
   async function recover(item:Extract<Pending,{kind:"rejected"}>) {

@@ -97,11 +97,18 @@ function projection(history: History): Deck {
 }
 function materialize(list: Node[], deckId: Id, seq: number): Deck {
   const tree = new Map(list.map(n => [n.id,n]))
+  const childrenByParent = new Map<Id | null, Node[]>()
+  for(const node of list) {
+    const children=childrenByParent.get(node.parent) ?? []
+    children.push(node)
+    childrenByParent.set(node.parent,children)
+  }
+  for(const children of childrenByParent.values())children.sort((a,b)=>a.order-b.order||a.id.localeCompare(b.id))
   const reached = new Set<Id>()
   function build(node: Node, visited: Set<Id>): Json {
     if (visited.has(node.id)) throw new Error("history-cycle")
     reached.add(node.id)
-    const children = [...tree.values()].filter(n => n.parent === node.id).sort((a,b) => a.order - b.order || a.id.localeCompare(b.id))
+    const children = childrenByParent.get(node.id) ?? []
     const value: { [key: string]: Json } = { ...node.fields, id: node.id }
     const next = new Set([...visited, node.id])
     if (node.parent === null) { value.version = seq; value.slides = children.map(n => build(n, next)) }

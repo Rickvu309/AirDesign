@@ -41,7 +41,7 @@ export async function localStack() {
     await start()
     studio=await preview({root:"apps/studio",configFile:false,preview:{host:"127.0.0.1",port:studioPort,strictPort:true,proxy:{"/api":api,"/ws":{target:api,ws:true}}}})
   } catch(error) {await stop();await admin.query(`DROP DATABASE ${database} WITH (FORCE)`);await admin.end();await rm(folder,{recursive:true,force:true});throw error}
-  return {origin,api,url,async restart(){await stop();await start()},async database(work){const client=new pg.Client({connectionString:url});await client.connect();try{return await work(client)}finally{await client.end()}},async close(){await studio.close();await stop();await admin.query(`DROP DATABASE ${database} WITH (FORCE)`);await admin.end();await rm(folder,{recursive:true,force:true})}}
+  return {origin,api,url,operationsPath:`${folder}/operations.sqlite`,async restart(){await stop();await start()},async database(work){const client=new pg.Client({connectionString:url});await client.connect();try{return await work(client)}finally{await client.end()}},async close(){await studio.close();await stop();await admin.query(`DROP DATABASE ${database} WITH (FORCE)`);await admin.end();await rm(folder,{recursive:true,force:true})}}
 }
 
 export async function signIn(context, origin, email) {

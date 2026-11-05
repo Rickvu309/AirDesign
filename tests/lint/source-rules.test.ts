@@ -120,3 +120,9 @@ it("rejects the original unbounded API body collector and accepts the bounded ad
   assert.equal(operationSafetyHits("apps/server/src/main.ts",original)[0]?.reason,"unbounded-request-stream-use-readRequestBody")
   assert.deepEqual(operationSafetyHits("apps/server/src/main.ts","const body = await readRequestBody(request)"),[])
 })
+
+it("rejects API responses that Chrome could cache after a deck is restored",()=>{
+ const original="response."+"writeHead(outgoing.status, headers)"
+ assert.equal(responseHeaderHits(original)[0]?.reason,"api-responses-require-no-store-for-deck-restore")
+ assert.deepEqual(responseHeaderHits('headers["cache-control"] = "no-store"\n'+original),[])
+})

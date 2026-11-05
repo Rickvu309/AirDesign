@@ -2,7 +2,7 @@
   "id": "C10",
   "schemaVersion": 1,
   "title": "Home and first request design conflicts",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P05",
   "acceptIn": "P05",
   "owner": "apps/studio",
@@ -10,14 +10,34 @@
     "path": "docs/design/v0.1/backlog.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Home starts truly empty and never seeds example decks. Recents and All decks show only owned decks; Starred is retired. New deck opens an empty editor with its first-request field. Preserve the first pending request across sign-in and deck creation. Before P08, save that request with explicit pending copy and never simulate Aira drafting. Phone deck routes are read-only and say Edit on a laptop.",
   "alternatives": [
-    "Decide in P05 before any consumer."
+    "Seed Home with fictional decks.",
+    "Keep Starred alongside Recents and All decks.",
+    "Start simulated drafting when a request is stored before P08."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "empty-account",
+      "expect": "Home has no deck cards and offers New deck and Import PowerPoint."
+    },
+    {
+      "id": "first-request-before-p08",
+      "expect": "The request is saved as pending; no run or generated slides are claimed."
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "fabricated-recents",
+      "reject": "Displaying seeded deck cards as owned decks."
+    },
+    {
+      "id": "simulated-drafting",
+      "reject": "Showing Aira is drafting without an actual run."
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
+    "kind": "design-decision-and-contract-tests",
     "command": "npm run verify:contracts"
   },
   "migration": {

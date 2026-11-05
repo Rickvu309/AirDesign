@@ -37,6 +37,7 @@ try {
     assert.equal(pixels, 0, `${name} snapshot parity`)
     await load(deck)
     assert.equal(await field.innerText(), expectedText)
+    assert.equal(await field.locator("div,p,br").count(), 0, `${name} reload restores canonical run spans`)
     results.cases.push({ name, runs, differingPixels: pixels })
     return deck
   }

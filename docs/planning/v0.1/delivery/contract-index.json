@@ -98,7 +98,7 @@
       "source": "docs/design/v0.1/backlog.md",
       "acceptIn": "P05",
       "freezeIn": "P05",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "apps/studio",
       "decision": "docs/contracts/c10-home-and-first-request-design-conflicts.json"
     },
