@@ -96,7 +96,7 @@
     {
       "id": "C10",
       "path": "docs/contracts/c10-home-and-first-request-design-conflicts.json",
-      "status": "deferred",
+      "status": "accepted",
       "freezeIn": "P05",
       "owner": "apps/studio"
     },
