@@ -53,6 +53,15 @@ export function SyncFixture() {
     } catch(error) {setMessage(String(error));setLoaded(true)}
   }
   useEffect(()=>{void load();return ()=>connection.current?.close()},[])
+  const runCredential=useRef<string | null>(null)
+  async function agentCommand(command:Command) {
+    try {
+      const response=await fetch(`/api/decks/${deckId}/commands`,{method:"POST",headers:{"content-type":"application/json",...(runCredential.current && command.kind==="patch" ? {"x-run-credential":runCredential.current} : {})},body:JSON.stringify(command)})
+      const result=await response.json()
+      if(result.kind!=="applied")throw new Error(result.code)
+      if(command.kind==="start-run")runCredential.current=result.runCredential
+    }catch(error){setMessage(String(error))}
+  }
   async function enqueue(command:Command,personEdit=false) {
     try {await client.current?.enqueue(command);if(personEdit){undo.current.push(command.id);redo.current=[]}} catch(error){setMessage(String(error))}
   }
@@ -82,6 +91,7 @@ export function SyncFixture() {
   return <main className="render-fixture" data-sync-state={state?.kind ?? "loading"} data-seq={sync?.seq ?? 0} data-ready={loaded}>
     <h1>Durable editing · sync fixture</h1>
     {state && <p role="status">{labels[state.kind]}{"count" in state && state.count>0 ? ` · ${state.count} pending` : ""}</p>}
+    {sync?.queue.map(item=>item.kind==="rejected" ? <section key={item.command.id} aria-label="Recover a change"><p>Change {item.command.id}: {item.code}. Your original change is kept on this device.</p>{item.restore && <Button size="compact" variant="primary" disabled={blocked || state?.kind==="offline" || state?.kind==="retrying"} onClick={()=>void recover(item)}>Restore deleted slide and retry</Button>}<Button size="compact" variant="secondary" onClick={()=>void sync.dismiss(item.command.id)}>Discard this change</Button><details><summary>Original change</summary><pre>{JSON.stringify(item.command,null,2)}</pre></details></section> : null)}
     <div className="render-controls">
       <a href="/">Account</a>
       {missing && <Button size="compact" variant="primary" onClick={()=>void load(true)}>Create fixture deck</Button>}
@@ -89,15 +99,15 @@ export function SyncFixture() {
       <Button size="compact" variant="secondary" disabled={!sync || blocked} onPointerDown={e=>e.preventDefault()} onClick={()=>historyText("redo")}>Redo</Button>
       <Button size="compact" variant="secondary" onClick={()=>connection.current?.reconnect()}>Reconnect</Button>
       <Button size="compact" variant="primary" disabled={!connected}>Ask</Button><Button size="compact" variant="primary" disabled={!connected}>Export</Button>
-      <Button size="compact" variant="secondary" disabled={!connected} onClick={()=>{const next=crypto.randomUUID();setRun(next);void enqueue({id:requestId(),kind:"start-run",run:next})}}>Start agent request</Button>
-      <Button size="compact" variant="secondary" disabled={!connected || !run || !slide} onClick={()=>{if(sync && run && slide) void enqueue({id:requestId(),kind:"patch",base:sync.seq,run,target:slide.id,fields:{notes:"Agent draft"}})}}>Apply agent draft</Button>
+      <Button size="compact" variant="secondary" disabled={!connected} onClick={()=>{const next=crypto.randomUUID();setRun(next);void agentCommand({id:requestId(),kind:"start-run",run:next})}}>Start agent request</Button>
+      <Button size="compact" variant="secondary" disabled={!connected || !run || !slide} onClick={()=>{if(sync && run && slide) void agentCommand({id:requestId(),kind:"patch",base:sync.seq,run,target:slide.id,fields:{notes:"Agent draft"}})}}>Apply agent draft</Button>
       <Button size="compact" variant="secondary" disabled={!connected || !run} onClick={()=>{if(run) void enqueue({id:requestId(),kind:"undo-run",run})}}>Undo agent request</Button>
     </div>
     {deck && <p>{deck.slides.length} slides · revision {sync?.seq} · {slide ? flatten(slide.elements).length : 0} visible elements</p>}
     {slide && <><label htmlFor="sync-slide">Slide</label><select id="sync-slide" value={slide.id} onChange={event=>setSelectedSlide(event.target.value)}>{deck?.slides.map((item,index)=><option key={item.id} value={item.id}>Slide {index+1}</option>)}</select></>}
     {slide && <><label htmlFor="sync-notes">Speaker notes</label><textarea id="sync-notes" disabled={blocked} value={slide.notes} onChange={e=>patch(slide.id,{notes:e.target.value})} /><div className="render-viewport"><Slide slide={slide} themes={deck?.themes} commitText={blocked ? undefined : commitText} historyText={historyText} /></div></>}
     {deck && !slide && <p>This deck has no slides. Changes to a removed slide can be restored below.</p>}
-    {sync?.queue.map(item=>item.kind==="rejected" ? <section key={item.command.id} aria-label="Recover a change"><p>Change {item.command.id}: {item.code}. Your original change is kept on this device.</p>{item.restore && <Button size="compact" variant="primary" disabled={blocked || state?.kind==="offline" || state?.kind==="retrying"} onClick={()=>void recover(item)}>Restore deleted slide and retry</Button>}<Button size="compact" variant="secondary" onClick={()=>void sync.dismiss(item.command.id)}>Discard this change</Button><details><summary>Original change</summary><pre>{JSON.stringify(item.command,null,2)}</pre></details></section> : null)}
+
     {state?.kind==="signed-out" && <a href="/">Sign in</a>}
     {state?.kind==="deleted" && <Button size="compact" variant="secondary" onClick={()=>{const link=document.createElement("a");link.href=URL.createObjectURL(new Blob([JSON.stringify(sync?.queue)],{type:"application/json"}));link.download="unsaved-changes.json";link.click();URL.revokeObjectURL(link.href)}}>Download unsaved changes</Button>}
     {message && <p role="alert">{message}</p>}

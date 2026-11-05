@@ -8,14 +8,14 @@ import { id } from "../../deck/src/index.ts"
 function patch(name: string, notes=name): Command { return {id:commandId(name),kind:"patch",base:0,run:null,target:id("s0"),fields:{notes}} }
 function memory() {
   const storage=new Map<string,Pending[]>()
-  const outbox:Outbox={read:async key=>structuredClone(storage.get(key) ?? []),write:async(key,items)=>{storage.set(key,structuredClone(items))}}
+  const outbox:Outbox={read:async key=>structuredClone(storage.get(key) ?? []),write:async(key,items,removed=[])=>{storage.set(key,[...(storage.get(key) ?? []).filter(item=>!removed.includes(item.command.id) && !items.some(next=>next.command.id===item.command.id)),...structuredClone(items)])}}
   return {storage,outbox}
 }
 it("paints immediately, persists before sending and never loses typing during an acknowledgement",async()=>{
   const {outbox,storage}=memory()
   let release:()=>void=()=>{}
   const written=new Promise<void>(resolve=>{release=resolve})
-  const delayed:Outbox={read:outbox.read,write:async(key,items)=>{await written;await outbox.write(key,items)}}
+  const delayed:Outbox={read:outbox.read,write:async(key,items,removed)=>{await written;await outbox.write(key,items,removed)}}
   const client=new SyncClient("person",{deck:fixtureDeck(2),seq:0},delayed,()=>{})
   const sent:Command[]=[]
   client.connected(command=>{expect(storage.get(client.key)?.some(item=>item.command.id===command.id)).toBe(true);sent.push(command)})
@@ -66,4 +66,15 @@ it("rebases queued people over later agent snapshots, preserves restore choices 
   expect(reloaded.resume("a")).toBe(false)
   await expect(reloaded.enqueue(patch("never"))).rejects.toThrow("deleted")
   expect(reloaded.queue).toHaveLength(2)
+})
+
+it("projects offline edit undo redo across reload",async()=>{
+  const {outbox}=memory(), snapshot={deck:fixtureDeck(2),seq:0}
+  const client=new SyncClient("a",snapshot,outbox,()=>{})
+  await client.enqueue(patch("offline","mine"))
+  await client.enqueue({id:commandId("undo"),kind:"undo",target:commandId("offline")})
+  expect(client.deck.slides[0]?.notes).toBe(snapshot.deck.slides[0]?.notes)
+  await client.enqueue({id:commandId("redo"),kind:"redo",target:commandId("offline")})
+  const reload=new SyncClient("a",snapshot,outbox,()=>{});await reload.load()
+  expect(reload.deck.slides[0]?.notes).toBe("mine")
 })

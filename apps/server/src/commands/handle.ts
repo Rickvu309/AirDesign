@@ -14,7 +14,15 @@ export function commandsHandler(access: Access, store: HistoryStore, origin: str
       const match = /^\/api\/decks\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(commands|events))?$/.exec(url.pathname)
       if (!match?.[1]) return Response.json({ code: "not-found" }, { status: 404 })
       const deck = match[1]
-      if (match[2] === "commands" && request.method === "POST") { const receipt = await store.commit(principal, deck, parseCommand(await request.json())); await changed(deck); return Response.json(receipt) }
+      if (match[2] === "commands" && request.method === "POST") {
+        const command=parseCommand(await request.json())
+        const token=request.headers.get("x-run-credential")
+        const identity=token ? await store.runIdentity(principal,deck,token) : {kind:"person" as const}
+        const receipt=await store.commit(principal,deck,command,identity)
+        await changed(deck)
+        const runCredential=receipt.kind==="applied" && command.kind==="start-run" ? await store.issueRunToken(principal,deck,command.run) : undefined
+        return Response.json({...receipt,...(runCredential ? {runCredential} : {})})
+      }
       if (match[2] === "events" && request.method === "GET") {
         const after = Number(url.searchParams.get("after") ?? 0)
         if (!Number.isSafeInteger(after) || after < 0) throw new Error("invalid-sequence")

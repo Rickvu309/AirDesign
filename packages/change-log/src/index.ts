@@ -8,6 +8,8 @@ export function commandId(value: string): CommandId {
   return value
 }
 function isCommandId(value: unknown): value is CommandId { return typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value) }
+export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string}
+export type AuthorityError = {code:"execution-identity-mismatch";expected:ExecutionIdentity}
 export type Command = { id: CommandId } & (
   { kind: "edit"; base: number; changes: ChangeSet; run: string | null } |
   { kind: "patch"; base: number; target: Id; fields: Node["fields"]; run: string | null } |
@@ -15,6 +17,10 @@ export type Command = { id: CommandId } & (
   { kind: "close-run" | "undo-run"; run: string } |
   { kind: "undo" | "redo"; target: CommandId }
 )
+export function executionMatches(command: Command, identity: ExecutionIdentity): boolean {
+  if(command.kind==="edit" || command.kind==="patch")return command.run===(identity.kind==="person" ? null : identity.run)
+  return identity.kind==="person" || (command.kind==="close-run" && command.run===identity.run)
+}
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
 export type Node = { id: Id; parent: Id | null; order: number; fields: { [key: string]: Json } }
 export type Patch = { id: Id; before: Node | null; after: Node | null; keys: string[]; adopts: boolean; places: boolean }
@@ -77,6 +83,16 @@ function projection(history: History): Deck {
       siblings.forEach((sibling,index) => { sibling.order=index })
     }
   }
+  const retained = new Set<Id>()
+  function retainParent(node: Node) {
+    if(node.parent===null || tree.has(node.parent) || retained.has(node.parent))return
+    retained.add(node.parent)
+    const parent=history.events.flatMap(event=>event.patches).findLast(patch=>patch.id===node.parent && patch.after)?.after
+    if(!parent)throw new Error("missing-adopted-parent")
+    tree.set(parent.id,structuredClone(parent))
+    retainParent(parent)
+  }
+  for(const node of tree.values())retainParent(node)
   return materialize([...tree.values()], history.initial.id, history.seq)
 }
 function materialize(list: Node[], deckId: Id, seq: number): Deck {
@@ -99,12 +115,16 @@ function materialize(list: Node[], deckId: Id, seq: number): Deck {
   if (reached.size !== tree.size) throw new Error("unreachable-history-node")
   return deck
 }
-export function execute(current: History, command: Command): { history: History; receipt: Receipt } {
+export function execute(current: History, command: Command, identity: ExecutionIdentity = {kind:"person"}): { history: History; receipt: Receipt } {
   const history = structuredClone(current)
   const refuse = (code: string) => {
     const targets=command.kind==="patch" ? [command.target] : command.kind==="edit" ? command.changes.changes.flatMap(change=>"target" in change ? [change.target] : []) : []
     const deletion=current.events.findLast(event=>event.active && event.patches.some(patch=>patch.after===null && targets.includes(patch.id)))
     return { history: current, receipt: { id: command.id, seq: current.seq, kind: "refused", code, command, ...(code==="invalid-reference" && deletion ? {restore:deletion.id} : {}) } satisfies Receipt }
+  }
+  if(!executionMatches(command,identity)) {
+    const error:AuthorityError={code:"execution-identity-mismatch",expected:identity}
+    return refuse(error.code)
   }
   const run = "run" in command ? history.runs.find(r => r.id === command.run) : undefined
   switch (command.kind) {
@@ -144,7 +164,7 @@ export function execute(current: History, command: Command): { history: History;
         }
       }
       history.deck = applied.deck
-      history.events.push({ id: command.id, seq: history.seq + 1, actor: command.run === null ? "person" : "agent", run: command.run, patches: delta, active: true, toggledAt: history.seq + 1 })
+      history.events.push({ id: command.id, seq: history.seq + 1, actor: identity.kind === "person" ? "person" : "agent", run: command.run, patches: delta, active: true, toggledAt: history.seq + 1 })
       history.usedIds.push(...delta.filter(p => !p.before).map(p => p.id))
       break
     }

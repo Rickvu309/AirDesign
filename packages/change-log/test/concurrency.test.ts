@@ -10,7 +10,7 @@ function edit(request: string, history: History, text: string, run: string | nul
   return { id: cid(request), kind: "edit", base: history.seq, run, changes: { changes: [{ kind: "set", target: slide.id, value: { ...slide, notes: text } }] } }
 }
 function must(history: History, command: Command): History {
-  const result = execute(history, command)
+  const result = execute(history, command, "run" in command && command.run!==null && (command.kind==="edit" || command.kind==="patch") ? {kind:"run",run:command.run} : {kind:"person"})
   expect(result.receipt).toMatchObject({ kind: "applied" })
   return result.history
 }
@@ -19,12 +19,12 @@ describe("ordered durable history", () => {
     let h = initialHistory(fixtureDeck(2))
     h = must(h, { id: cid("start"), kind: "start-run", run: "old" })
     h = must(h, edit("person", h, "mine"))
-    expect(execute(h, edit("late",h,"old", "old")).receipt).toMatchObject({ kind: "refused", code: "person-protected" })
+    expect(execute(h, edit("late",h,"old", "old"),{kind:"run",run:"old"}).receipt).toMatchObject({ kind: "refused", code: "person-protected" })
     h = must(h, { id: cid("new"), kind: "start-run", run: "new" })
     h = must(h, edit("new-edit",h,"allowed", "new"))
     expect(h.deck.slides[0]?.notes).toBe("allowed")
     h = must(h,{ id: cid("close"), kind: "close-run", run: "new" })
-    expect(execute(h,edit("closed",h,"late","new")).receipt).toMatchObject({ kind: "refused", code: "run-closed" })
+    expect(execute(h,edit("closed",h,"late","new"),{kind:"run",run:"new"}).receipt).toMatchObject({ kind: "refused", code: "run-closed" })
   })
   it("undo rebuilds structure while adopting a person-edited run child", () => {
     let h = initialHistory(fixtureDeck(2))
@@ -55,7 +55,7 @@ describe("ordered durable history", () => {
     let h = initialHistory(fixtureDeck(2))
     h = must(h,{id:cid("start"),kind:"start-run",run:"agent"})
     h = must(h,edit("person",h,"mine"))
-    const refused = execute(h,{...edit("stale",h,"overwrite","agent"),base:0})
+    const refused = execute(h,{...edit("stale",h,"overwrite","agent"),base:0},{kind:"run",run:"agent"})
     expect(refused.receipt).toMatchObject({kind:"refused",code:"stale-base"})
     expect(refused.history).toEqual(h)
     h = must(h,{id:cid("remove"),kind:"edit",run:null,base:h.seq,changes:{changes:[{kind:"remove",target:id("s0e1")}]}})
@@ -71,4 +71,23 @@ describe("ordered durable history", () => {
     expect(h.deck.slides[0]).toMatchObject({notes:"Canonical render fixture",size:{width:800,height:600}})
   })
 
+})
+
+it("preserves only required ancestor containers for a nested adopted child",()=>{
+  let h=initialHistory(fixtureDeck(2))
+  h=must(h,{id:cid("nested_start"),kind:"start-run",run:"nested"})
+  const slide=h.deck.slides[0]
+  if(!slide)throw new Error("fixture-slide")
+  const child={...fixtureElement(1),id:id("nested_child")}
+  const group={...fixtureElement(1),id:id("nested_group"),kind:"group" as const,children:[child,{...fixtureElement(1),id:id("untouched")}]}
+  h=must(h,{id:cid("nested_insert"),kind:"edit",base:h.seq,run:"nested",changes:{changes:[{kind:"insert",parent:h.deck.id,index:1,value:{...slide,id:id("nested_slide"),elements:[group]}}]}})
+  h=must(h,{id:cid("nested_adopt"),kind:"patch",base:h.seq,run:null,target:child.id,fields:{fill:"#ff0000"}})
+  h=must(h,{id:cid("nested_undo"),kind:"undo-run",run:"nested"})
+  const restored=h.deck.slides.find(s=>s.id==="nested_slide")
+  expect(restored?.elements).toHaveLength(1)
+  const container=restored?.elements[0]
+  expect(container?.kind).toBe("group")
+  if(container?.kind!=="group")throw new Error("missing-container")
+  expect(container.children).toHaveLength(1)
+  expect(container.children[0]).toMatchObject({id:"nested_child",fill:"#ff0000"})
 })

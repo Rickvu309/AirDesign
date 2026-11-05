@@ -28,6 +28,8 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       const request = new Request(new URL("/api/account",origin),{headers:{cookie:incoming.headers.cookie ?? ""}})
       const principal = await access.principal(request)
       if (!principal) { socket.destroy(); return }
+      const token=url.searchParams.get("runCredential")
+      const identity=token ? await store.runIdentity(principal,deck,token) : {kind:"person" as const}
       await store.read(principal,deck)
       sockets.handleUpgrade(incoming,socket,head,websocket=> {
         peers.set(websocket,{deck,request,personId:principal.personId})
@@ -38,7 +40,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
           ordered = ordered.then(async ()=> {
             const current = await access.principal(request)
             if (!current || current.personId !== principal.personId) { websocket.send(JSON.stringify({kind:"signed-out"})); websocket.close(); return }
-            const receipt = await store.commit(current,deck,parseCommand(JSON.parse(data.toString())))
+            const receipt = await store.commit(current,deck,parseCommand(JSON.parse(data.toString())),identity)
             const committedAt=Date.now()
             const snapshot={...await store.read(current,deck),committedAt}
             websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshot}))

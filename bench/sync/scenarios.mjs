@@ -8,7 +8,7 @@ import { signIn } from "./local-stack.mjs"
 export async function browserClient(browser,origin,email,options={}) {
   const context=await browser.newContext({viewport:{width:1470,height:1000},...options})
   const person=options.storageState ? (await (await context.request.get(`${origin}/api/account`)).json()).personId : await signIn(context,origin,email)
-  const control={offline:false,loseAck:false,lost:null,frames:[],attempts:0,inbound:()=>{}}
+  const control={offline:false,loseAck:false,lost:null,frames:[],outgoing:[],attempts:0,inbound:()=>{}}
   await context.route("**/api/**",route=>control.offline ? route.abort("internetdisconnected") : route.continue())
   await context.routeWebSocket("**/ws**",socket=>{
     control.attempts++
@@ -21,7 +21,7 @@ export async function browserClient(browser,origin,email,options={}) {
       if(control.loseAck && message.kind==="receipt") {control.loseAck=false;control.lost=message;control.offline=true;socket.close();return}
       socket.send(data)
     })
-    socket.onMessage(data=>server.send(data))
+    socket.onMessage(data=>{control.outgoing.push(JSON.parse(String(data)));server.send(data)})
   })
   await context.addInitScript(()=>{
     const Socket=WebSocket
@@ -41,8 +41,14 @@ export async function browserClient(browser,origin,email,options={}) {
 
 export async function queue(client,deck) {
   return client.page.evaluate(({person,deck})=>new Promise((resolve,reject)=>{
-    const opened=indexedDB.open("airdesign-outbox",1)
-    opened.onsuccess=()=>{const db=opened.result;const tx=db.transaction("queues","readonly");const request=tx.objectStore("queues").get(JSON.stringify([person,deck]));request.onsuccess=()=>{resolve(request.result ?? []);db.close()};request.onerror=()=>reject(request.error)}
+    const opened=indexedDB.open("airdesign-outbox")
+    opened.onsuccess=()=>{
+      const db=opened.result,key=JSON.stringify([person,deck])
+      const modern=db.objectStoreNames.contains("commands")
+      const request=modern ? db.transaction("commands").objectStore("commands").getAll(IDBKeyRange.bound([key],[key,[]])) : db.transaction("queues").objectStore("queues").get(key)
+      request.onsuccess=()=>{resolve(modern ? request.result.sort((a,b)=>a.queuedAt-b.queuedAt).map(row=>row.pending) : request.result ?? []);db.close()}
+      request.onerror=()=>reject(request.error)
+    }
     opened.onerror=()=>reject(opened.error)
   }),{person:client.person,deck})
 }
@@ -53,14 +59,20 @@ export async function runLanes({browser,stack,output,capture=async()=>{},context
   const b=await browserClient(browser,stack.origin,"p04-owner@example.com",{...contextOptions,storageState:await a.context.storageState()})
   const traces=new Map(), receipts=[]
   let lane=0
-  async function call(client,path,method="GET",data) {
-    const response=await client.context.request.fetch(stack.origin+path,{method,headers:{origin:stack.origin,...(method==="GET" ? {} : {"content-type":"application/json"})},...(data===undefined ? {} : {data})})
+  async function call(client,path,method="GET",data,credential) {
+    const response=await client.context.request.fetch(stack.origin+path,{method,headers:{origin:stack.origin,...(credential ? {"x-run-credential":credential} : {}),...(method==="GET" ? {} : {"content-type":"application/json"})},...(data===undefined ? {} : {data})})
     const value=await response.json()
     const list=traces.get(lane) ?? [];list.push({path,method,status:response.status(),request:data,response:value});traces.set(lane,list)
     return {status:response.status(),value}
   }
   async function create(deck) { const value={...fixtureDeck(5,2),id:deck};assert.equal((await call(a,"/api/decks","POST",value)).status,201);return value }
-  async function command(deck,value,client=a){return (await call(client,`/api/decks/${deck}/commands`,"POST",value)).value}
+  const credentials=new Map()
+  async function command(deck,value,client=a){
+    const credential=(value.kind==="edit" || value.kind==="patch") && value.run!==null ? credentials.get(JSON.stringify([deck,value.run])) : undefined
+    const result=(await call(client,`/api/decks/${deck}/commands`,"POST",value,credential)).value
+    if(value.kind==="start-run" && result.runCredential)credentials.set(JSON.stringify([deck,value.run]),result.runCredential)
+    return result
+  }
   async function snapshot(deck){return (await call(a,`/api/decks/${deck}`)).value}
   const cid=name=>`${lane}_${name}`
   async function patch(deck,name,fields,run=null,base=0,target="s0",client=a){return command(deck,{id:cid(name),kind:"patch",base,run,target,fields},client)}
@@ -186,6 +198,9 @@ export async function runLanes({browser,stack,output,capture=async()=>{},context
     await a.open("laneseven");await b.open("laneseven");await a.offline();await a.notes.fill("restore my removed slide");const recoverable=await queue(a,"laneseven")
     await command("laneseven",{id:cid("delete_slide"),kind:"edit",base:2,run:null,changes:{changes:[{kind:"remove",target:"s0"}]}})
     a.control.offline=false;await a.page.getByRole("button",{name:"Reconnect",exact:true}).click();await a.page.getByRole("button",{name:"Restore deleted slide and retry",exact:true}).waitFor();const rejected=await queue(a,"laneseven");assert.equal(rejected[0].command.id,recoverable[0].command.id);assert.equal(rejected[0].kind,"rejected")
+    const restore=a.page.getByRole("button",{name:"Restore deleted slide and retry",exact:true})
+    await expect(restore).toBeInViewport()
+    await restore.focus();await a.page.keyboard.press("Tab");await a.page.keyboard.press("Shift+Tab");await expect(restore).toBeFocused()
     await capture("deleted-slide-restore-choice",a,b)
     await a.page.getByRole("button",{name:"Restore deleted slide and retry",exact:true}).click();await a.saved();await expect(a.notes).toHaveValue("restore my removed slide");await expect(b.notes).toHaveValue("restore my removed slide")
     await record({original,retry,recoverable,rejected,restored:await snapshot("laneseven")})
@@ -222,7 +237,7 @@ export async function runLanes({browser,stack,output,capture=async()=>{},context
     await call(a,"/api/session/revoke","POST",{});const other=await signIn(a.context,stack.origin,"p04-other@example.com");assert.notEqual(other,a.person)
     a.control.offline=false;await a.page.getByRole("button",{name:"Reconnect",exact:true}).click();await a.page.locator('main[data-sync-state="signed-out"]').waitFor();assert.deepEqual(await queue(a,"laneten"),isolated)
     const denied=await call(a,"/api/decks/laneten");assert.equal(denied.status,404)
-    const otherQueue=await a.page.evaluate(({person,deck})=>new Promise(resolve=>{const request=indexedDB.open("airdesign-outbox",1);request.onsuccess=()=>{const db=request.result;const get=db.transaction("queues").objectStore("queues").get(JSON.stringify([person,deck]));get.onsuccess=()=>{resolve(get.result ?? []);db.close()}}}),{person:other,deck:"laneten"});assert.deepEqual(otherQueue,[])
+    const otherQueue=await queue({...a,person:other},"laneten");assert.deepEqual(otherQueue,[])
     await record({late,expiredRetained:originalQueue,samePrincipalReauthenticated:same,isolatedQueue:isolated,otherPrincipal:other,otherQueue,crossOwnerStatus:denied.status})
     }
     return {head,receipts,errors:[...a.errors,...b.errors]}

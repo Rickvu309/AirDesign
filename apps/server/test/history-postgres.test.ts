@@ -21,7 +21,7 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     const slide = deck.slides[0]
     if (!slide) throw new Error("fixture-slide")
     const command: Command = {id:commandId("edit"),kind:"edit",base:1,run:"run",changes:{changes:[{kind:"set",target:slide.id,value:{...slide,notes:"two-connections"}}]}}
-    const [a,b] = await Promise.all([first.commit(owner,deck.id,structuredClone(command)),second.commit(owner,deck.id,structuredClone(command))])
+    const [a,b] = await Promise.all([first.commit(owner,deck.id,structuredClone(command),{kind:"run",run:"run"}),second.commit(owner,deck.id,structuredClone(command),{kind:"run",run:"run"})])
     expect(a).toEqual(b)
     expect((await first.read(owner,deck.id)).seq).toBe(2)
     const results = await Promise.all([first.commit(owner,deck.id,{id:commandId("undo-a"),kind:"undo-run",run:"run"}),second.commit(owner,deck.id,{id:commandId("undo-b"),kind:"undo-run",run:"run"})])
@@ -33,7 +33,7 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     const adoption={...fixtureDeck(5,2),id:id("adoption")}
     await first.create(owner,adoption)
     await first.commit(owner,adoption.id,{id:commandId("start_adoption"),kind:"start-run",run:"adoption"})
-    await first.commit(owner,adoption.id,{id:commandId("insert_adoption"),kind:"edit",run:"adoption",base:1,changes:{changes:[{kind:"insert",parent:id("s0"),index:0,value:{...fixtureElement(0),id:id("adopted")}},{kind:"insert",parent:id("s0"),index:1,value:{...fixtureElement(1),id:id("untouched")}}]}})
+    await first.commit(owner,adoption.id,{id:commandId("insert_adoption"),kind:"edit",run:"adoption",base:1,changes:{changes:[{kind:"insert",parent:id("s0"),index:0,value:{...fixtureElement(0),id:id("adopted")}},{kind:"insert",parent:id("s0"),index:1,value:{...fixtureElement(1),id:id("untouched")}}] }},{kind:"run",run:"adoption"})
     await second.commit(owner,adoption.id,{id:commandId("move_adoption"),kind:"edit",run:null,base:2,changes:{changes:[{kind:"move",target:id("adopted"),parent:id("s1"),index:0}]}})
     expect(await first.commit(owner,adoption.id,{id:commandId("undo_adoption"),kind:"undo-run",run:"adoption"})).toMatchObject({kind:"applied"})
     const adopted=(await second.read(owner,adoption.id)).deck
@@ -42,7 +42,7 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     const movement={...fixtureDeck(5,2),id:id("movement")}
     await first.create(owner,movement)
     await first.commit(owner,movement.id,{id:commandId("start_move"),kind:"start-run",run:"move"})
-    await first.commit(owner,movement.id,{id:commandId("agent_move"),kind:"edit",run:"move",base:1,changes:{changes:[{kind:"move",target:id("s0e1"),parent:id("s1"),index:0}]}})
+    await first.commit(owner,movement.id,{id:commandId("agent_move"),kind:"edit",run:"move",base:1,changes:{changes:[{kind:"move",target:id("s0e1"),parent:id("s1"),index:0}] }},{kind:"run",run:"move"})
     await second.commit(owner,movement.id,{id:commandId("person_move"),kind:"edit",run:null,base:2,changes:{changes:[{kind:"move",target:id("s0e1"),parent:id("s0"),index:4}]}})
     await first.commit(owner,movement.id,{id:commandId("undo_move"),kind:"undo-run",run:"move"})
     expect((await second.read(owner,movement.id)).deck.slides[0]?.elements[4]?.id).toBe("s0e1")
