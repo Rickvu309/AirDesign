@@ -2,7 +2,7 @@ import { PGlite } from "@electric-sql/pglite"
 import pg from "pg"
 import { createHash, randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
-import { execute, executionMatches, initialHistory, type Command, type History, type Principal, type Receipt, type ExecutionIdentity } from "../../../../packages/change-log/src/index.ts"
+import { execute, executionMatches, initialHistory, type Command, type History, type Principal, type Receipt, type ExecutionIdentity, type Contribution, type RunState, commandId } from "../../../../packages/change-log/src/index.ts"
 import type { Deck } from "../../../../packages/deck/src/index.ts"
 import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistoryIndex } from "./history-index.ts"
 
@@ -73,7 +73,15 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         return { deck, seq: 0 }
       })
     },
-    async read(principal: Principal, deckId: string) { return transaction(async tx => { const history = await owned(tx, principal, deckId); return { deck: history.deck, seq: history.seq } }) },
+    async read(principal: Principal, deckId: string) { return transaction(async tx => {
+      const history = await owned(tx, principal, deckId)
+      const events=await tx.query<{payload:Contribution}>("SELECT payload FROM editing_contribution WHERE deck=$1 ORDER BY (payload->>'seq')::integer",[deckId])
+      const runs=await tx.query<{payload:RunState}>("SELECT payload FROM editing_run WHERE deck=$1",[deckId])
+      const receipts=await tx.query<{id:string}>("SELECT id FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='applied'",[deckId])
+      history.events=events.rows.map(row=>row.payload)
+      history.runs=runs.rows.map(row=>row.payload)
+      return {deck:history.deck,seq:history.seq,contributions:{history,applied:receipts.rows.map(row=>commandId(row.id))}}
+    }) },
     async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}): Promise<Receipt> {
       return transaction(async tx => {
         const history = await owned(tx, principal, deckId)

@@ -1,11 +1,13 @@
-import { execute, initialHistory, type Command, type Receipt } from "../../change-log/src/index.ts"
+import { commandId, execute, initialHistory, type Command, type Receipt, type History, type CommandId } from "../../change-log/src/index.ts"
 import { parseDeck, type Deck } from "../../deck/src/index.ts"
+import { parseContributions } from "./snapshot-history.ts"
 import { outboxKey, type Outbox, type Pending } from "./outbox.ts"
 export type SyncState = {kind:"saved"} | {kind:"pending";count:number} | {kind:"offline";count:number} | {kind:"retrying";count:number} | {kind:"signed-out";count:number} | {kind:"deleted";count:number} | {kind:"recovery";count:number}
-export type Snapshot = {deck:Deck;seq:number}
+export type Snapshot = {deck:Deck;seq:number;contributions?:{history:History;applied:CommandId[]}}
 export function parseSnapshot(value: unknown): Snapshot {
   if (!value || typeof value !== "object" || !("deck" in value) || !("seq" in value) || typeof value.seq !== "number" || !Number.isSafeInteger(value.seq) || value.seq < 0) throw new Error("invalid-snapshot")
-  return {deck:parseDeck(value.deck),seq:value.seq}
+  const deck=parseDeck(value.deck)
+  return {deck,seq:value.seq,...("contributions" in value ? {contributions:parseContributions(value.contributions,deck,value.seq)} : {})}
 }
 export class SyncClient {
   readonly key: string
@@ -20,22 +22,28 @@ export class SyncClient {
   private sent = new Set<string>()
   private releases = new Map<string,()=>void>()
   private durable = new Set<string>()
-  private projected: Deck | null = null
+  private projected: History | null = null
   private changed: ()=>void
   constructor(person: string, snapshot: Snapshot, outbox: Outbox, changed: ()=>void) { this.key=outboxKey(person,snapshot.deck.id);this.snapshot=snapshot;this.outbox=outbox;this.changed=changed }
   async load() { this.pending=await this.outbox.read(this.key);this.durable=new Set(this.pending.map(item=>item.command.id));this.notify() }
   get seq() { return this.snapshot.seq }
   get queue() { return structuredClone(this.pending) }
-  get deck(): Deck {
+  get deck(): Deck { return this.history.deck }
+  get history(): History {
     if (this.projected) return this.projected
-    let history = initialHistory(this.snapshot.deck)
-    const retainEvents=this.pending.some(item=>item.kind==="queued" && item.command.kind!=="patch" && item.command.kind!=="edit")
-    for (const item of this.pending) if (item.kind === "queued") {
+    let history = structuredClone(this.snapshot.contributions?.history ?? initialHistory(this.snapshot.deck))
+    const applied=new Set(this.snapshot.contributions?.applied ?? [])
+    for (const item of this.pending) if (item.kind === "queued" && !applied.has(item.command.id)) {
       history = execute(history,item.command).history
-      if(!retainEvents)history.events=[]
     }
-    this.projected=history.deck
-    return history.deck
+    this.projected=history
+    return history
+  }
+  historyTarget(direction: "undo" | "redo"): CommandId | null {
+    const history=this.history
+    const candidates=history.events.filter(event=>event.actor==="person" && event.active===(direction==="undo")).sort((a,b)=>direction==="undo" ? b.seq-a.seq : b.toggledAt-a.toggledAt)
+    for(const event of candidates)if(execute(history,{id:commandId(`preview_${direction}_${history.seq}`),kind:direction,target:event.id}).receipt.kind==="applied")return event.id
+    return null
   }
   get state(): SyncState {
     const count=this.pending.length

@@ -1,7 +1,7 @@
 import { expect, it } from "vitest"
-import { SyncClient } from "../src/client.ts"
+import { SyncClient, parseSnapshot } from "../src/client.ts"
 import { outboxKey, type Outbox, type Pending } from "../src/outbox.ts"
-import { commandId, type Command } from "../../change-log/src/index.ts"
+import { commandId, execute, initialHistory, type Command } from "../../change-log/src/index.ts"
 import { fixtureDeck, fixtureElement } from "../../deck/src/fixture.ts"
 import { id } from "../../deck/src/index.ts"
 
@@ -91,4 +91,52 @@ it("preserves used node ids while projecting a mutation-only queue",async()=>{
   expect(client.deck.slides[0]?.elements.find(item=>item.id===element.id)).toEqual(element)
   const reload=new SyncClient("a",snapshot,outbox,()=>{});await reload.load()
   expect(reload.deck).toEqual(client.deck)
+})
+
+it.each([false,true])("projects saved undo and redo with lost acknowledgement=%s",async lost=>{
+  const {outbox}=memory(), deck=fixtureDeck(2,2)
+  const edit=patch("saved_person","saved person notes")
+  let history=execute(initialHistory(deck),edit).history
+  history=execute(history,{id:commandId("start_agent"),kind:"start-run",run:"fixture_run"}).history
+  history=execute(history,{id:commandId("agent_other"),kind:"patch",base:history.seq,run:"fixture_run",target:id("s1"),fields:{notes:"agent notes"}},{kind:"run",run:"fixture_run"}).history
+  const snapshot={deck:history.deck,seq:history.seq,contributions:{history,applied:[edit.id,commandId("start_agent"),commandId("agent_other")]}}
+  const client=new SyncClient("a",snapshot,outbox,()=>{})
+  if(lost) await client.enqueue(edit)
+  expect(client.historyTarget("undo")).toBe(edit.id)
+  await client.enqueue({id:commandId("undo_saved"),kind:"undo",target:edit.id})
+  expect(client.deck.slides[0]?.notes).toBe(deck.slides[0]?.notes)
+  expect(client.deck.slides[1]?.notes).toBe("agent notes")
+  const reloaded=new SyncClient("a",parseSnapshot(JSON.parse(JSON.stringify(snapshot))),outbox,()=>{})
+  await reloaded.load()
+  expect(reloaded.deck).toEqual(client.deck)
+  expect(reloaded.historyTarget("redo")).toBe(edit.id)
+  await reloaded.enqueue({id:commandId("redo_saved"),kind:"redo",target:edit.id})
+  expect(reloaded.deck.slides[0]?.notes).toBe("saved person notes")
+  expect(reloaded.deck.slides[1]?.notes).toBe("agent notes")
+})
+
+it("does not replay an undo whose acknowledgement was lost",async()=>{
+  const {outbox}=memory(), deck=fixtureDeck(2)
+  const edit=patch("saved_for_undo","saved")
+  let history=execute(initialHistory(deck),edit).history
+  const undo:Command={id:commandId("already_undone"),kind:"undo",target:edit.id}
+  history=execute(history,undo).history
+  const snapshot={deck:history.deck,seq:history.seq,contributions:{history,applied:[edit.id,undo.id]}}
+  const client=new SyncClient("a",snapshot,outbox,()=>{})
+  await client.enqueue(undo)
+  await client.enqueue({id:commandId("redo_after_lost_ack"),kind:"redo",target:edit.id})
+  expect(client.deck.slides[0]?.notes).toBe("saved")
+  expect(client.history.events.find(event=>event.id===edit.id)?.active).toBe(true)
+})
+
+it("rejects malformed cached contribution history at the snapshot boundary",()=>{
+  const history=execute(initialHistory(fixtureDeck(2)),patch("history_boundary")).history
+  const snapshot={deck:history.deck,seq:history.seq,contributions:{history,applied:[commandId("history_boundary")]}}
+  expect(parseSnapshot(snapshot).contributions?.history).toEqual(history)
+  for(const invalid of [
+    {...snapshot,seq:history.seq+1},
+    {...snapshot,contributions:{...snapshot.contributions,history:{...history,deck:fixtureDeck(2)}}},
+    {...snapshot,contributions:{...snapshot.contributions,history:{...history,events:[{...history.events[0],active:"yes"}]}}},
+    {...snapshot,contributions:{...snapshot.contributions,applied:[42]}},
+  ]) expect(()=>parseSnapshot(invalid)).toThrow()
 })

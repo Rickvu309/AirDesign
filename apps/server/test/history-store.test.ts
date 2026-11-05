@@ -4,6 +4,8 @@ import path from "node:path"
 import os from "node:os"
 import { createHistoryStore } from "../src/db/history-store.ts"
 import { commandId, initialHistory, type Command, type History } from "../../../packages/change-log/src/index.ts"
+import { SyncClient, parseSnapshot } from "../../../packages/rpc/src/client.ts"
+import type { Outbox } from "../../../packages/rpc/src/outbox.ts"
 import { id } from "../../../packages/deck/src/index.ts"
 import { fixtureDeck, fixtureElement } from "../../../packages/deck/src/fixture.ts"
 const owner = { personId: "owner" }, stranger = { personId: "stranger" }
@@ -84,4 +86,25 @@ it("retains a nested adopted child and minimal ancestors after database restart"
   store=await createHistoryStore({kind:"pglite",path:folder})
   expect((await store.read(owner,deck.id)).deck.slides.find(item=>item.id==="kept_slide")).toEqual(kept)
  }finally{await store.close();await rm(folder,{recursive:true,force:true})}
+})
+
+it("returns authoritative contribution history for offline undo after restart",async()=>{
+  const folder=await mkdtemp(path.join(os.homedir(),"tmp/p05-offline-history-"))
+  let store=await createHistoryStore({kind:"pglite",path:folder})
+  try {
+    const deck=fixtureDeck(2)
+    await store.create(owner,deck)
+    const command=edit("saved_before_close",initialHistory(deck),"saved edit")
+    expect(await store.commit(owner,deck.id,command)).toMatchObject({kind:"applied"})
+    await store.close()
+    store=await createHistoryStore({kind:"pglite",path:folder})
+    const snapshot=parseSnapshot(JSON.parse(JSON.stringify(await store.read(owner,deck.id))))
+    expect(snapshot.contributions?.applied).toContain(command.id)
+    expect(snapshot.contributions?.history.events).toMatchObject([{id:command.id,actor:"person",active:true}])
+    const outbox:Outbox={read:async()=>[],write:async()=>{}}
+    const client=new SyncClient("owner",snapshot,outbox,()=>{})
+    await client.enqueue({id:cid("offline_undo"),kind:"undo",target:command.id})
+    expect(client.deck.slides[0]?.notes).toBe(deck.slides[0]?.notes)
+    await expect(store.read(stranger,deck.id)).rejects.toThrow("deck-not-found")
+  }finally {await store.close();await rm(folder,{recursive:true,force:true})}
 })
