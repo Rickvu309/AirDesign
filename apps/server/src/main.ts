@@ -49,12 +49,18 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, request: 
     body: method === "GET" || method === "HEAD" ? undefined : new Uint8Array(body),
   })
   const outgoing = await access.handle(incoming)
-  const headers = Object.fromEntries(outgoing.headers.entries())
-  delete headers["set-cookie"]
-  response.writeHead(outgoing.status, headers)
-  for (const cookie of outgoing.headers.getSetCookie()) {
-    response.appendHeader("set-cookie", cookie)
+  const headers: Record<string, string | string[]> = {}
+  outgoing.headers.forEach((value, key) => {
+    if (key.toLowerCase() === "set-cookie") {
+      return
+    }
+    headers[key] = value
+  })
+  const cookies = outgoing.headers.getSetCookie()
+  if (cookies.length > 0) {
+    headers["set-cookie"] = cookies
   }
+  response.writeHead(outgoing.status, headers)
   response.end(Buffer.from(await outgoing.arrayBuffer()))
 }
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "vitest"
 import { commentHits } from "../../scripts/lint/comment-rule.ts"
 import { importBoundaryHits } from "../../scripts/lint/import-boundary.ts"
+import { responseHeaderHits } from "../../scripts/lint/response-headers.ts"
 
 describe("comment rule", () => {
   it("rejects a line comment and a suppression comment and accepts the same code without them", () => {
@@ -44,5 +45,15 @@ describe("import boundaries", () => {
   it("accepts studio importing the access client", () => {
     const hits = importBoundaryHits("/repo/apps/studio/src/main.tsx", 'import { createAccessClient } from "@airdesign/access/client"\n', "/repo")
     assert.equal(hits.length, 0)
+  })
+})
+
+describe("response headers", () => {
+  it("rejects appending a header after the response is started and accepts cookies on writeHead", () => {
+    const call = "." + "append" + "Header"
+    const bad = `response.writeHead(200)\nresponse${call}("set-cookie", cookie)\n`
+    const good = "response.writeHead(200, { \"set-cookie\": [cookie] })\n"
+    assert.equal(responseHeaderHits(bad)[0]?.reason, "append-header-after-send")
+    assert.deepEqual(responseHeaderHits(good), [])
   })
 })
