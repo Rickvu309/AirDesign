@@ -1,8 +1,9 @@
-import type { Element, Slide } from "../../deck/src/model.ts"
+import type { Deck, Element, Slide } from "../../deck/src/model.ts"
 import { flatten } from "../../deck/src/apply.ts"
 export type FontReport = { loaded: string; missing: string[] }
-export function fontReport(slide: Slide): FontReport {
+export function fontReport(slide: Slide, themes: Deck["themes"] = []): FontReport {
   const requested = flatten(slide.elements).flatMap(e => e.kind === "text" ? e.runs.map(r => r.font) : [])
+  requested.push(...themes.filter(t => t.id === slide.theme || flatten(slide.elements).some(e => e.theme === t.id)).map(t => t.font))
   return { loaded: "Geist", missing: [...new Set(requested.filter(font => font !== "Geist"))] }
 }
 export function elementFonts(element: Element): string[] { return element.kind === "text" ? element.runs.map(r => r.font) : [] }

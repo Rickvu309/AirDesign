@@ -1,6 +1,8 @@
 import { expect, it } from "vitest"
 import { createElement } from "react"
 import { renderToStaticMarkup } from "react-dom/server"
+import type { Slide as DeckSlide } from "../../deck/src/model.ts"
+import { overlapId } from "../../deck/src/model.ts"
 import { fixtureDeck, fixtureElement } from "../../deck/src/fixture.ts"
 import { Slide } from "../src/slide.tsx"
 import { fontReport } from "../src/fonts.ts"
@@ -17,7 +19,7 @@ it("discloses missing fonts and uses the pinned fallback", () => {
   const slide = fixtureDeck(1).slides[0]!
   const text = slide.elements[0]!
   if (text.kind !== "text") throw new Error("text fixture")
-  const changed = { ...slide, elements: [{ ...text, runs: text.runs.map(r => ({ ...r, font: "Unavailable" })) }] }
+  const changed: DeckSlide = { ...slide, elements: [{ ...text, runs: [{ ...text.runs[0], font: "Unavailable" }] }] }
   expect(fontReport(changed)).toEqual({ loaded: "Geist", missing: ["Unavailable"] })
   expect(renderToStaticMarkup(createElement(Slide, { slide: changed }))).toContain("Missing fonts: Unavailable")
 })
@@ -26,7 +28,7 @@ it("reports clipped ids and locations and distinguishes approved overlap", () =>
   const a = { ...fixtureElement(1), box: { x: -10, y: 3, width: 40, height: 40 } }
   const b = { ...fixtureElement(2), box: a.box }
   expect(hardDefects({ ...slide, elements: [a, b] })).toMatchObject([{ code: "clipping", ids: [a.id], location: { x: -10, y: 3 } }, { code: "clipping" }, { code: "accidental-overlap" }])
-  const approved = { ...slide, elements: [{ ...a, overlap: "approved" }, { ...b, overlap: "approved" }] }
+  const approved = { ...slide, elements: [{ ...a, overlap: overlapId("approved") }, { ...b, overlap: overlapId("approved") }] }
   expect(hardDefects(approved).some(d => d.code === "accidental-overlap")).toBe(false)
   expect(hardDefects({ ...slide, elements: [fixtureElement(4)] }, ["e4"])[0]?.code).toBe("clipping")
 })

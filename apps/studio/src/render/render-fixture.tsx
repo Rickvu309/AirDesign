@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { Button } from "@airdesign/ui"
 import { apply, flatten, parseDeck, validate } from "../../../../packages/deck/src/index.ts"
-import type { ChangeSet, Id } from "../../../../packages/deck/src/model.ts"
+import type { Run, ChangeSet, Id } from "../../../../packages/deck/src/model.ts"
 import { fixtureDeck } from "../../../../packages/deck/src/fixture.ts"
 import { Slide, measure, waitForFonts } from "../../../../packages/render/src/index.ts"
 import { hardDefects } from "../../../../packages/lint/src/hard-defects.ts"
@@ -27,12 +27,10 @@ export function RenderFixture() {
     if (result.ok) { current.current = result.deck; setDeck(result.deck); setMessage(`Applied version ${result.deck.version}`) }
     else setMessage(result.error.message)
   }, [])
-  const commitText = useCallback((id: Id, text: string) => {
+  const commitText = useCallback((id: Id, runs: [Run, ...Run[]]) => {
     const element = current.current.slides.flatMap(s => flatten(s.elements)).find(e => e.id === id)
     if (element?.kind !== "text") return
-    const run = element.runs[0]
-    if (!run) return
-    commit({ changes: [{ kind: "set", target: id, value: { ...element, runs: [{ ...run, text }] } }] })
+    commit({ changes: [{ kind: "set", target: id, value: { ...element, runs } }] })
   }, [commit])
   const pointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     const node = event.currentTarget
@@ -76,7 +74,7 @@ export function RenderFixture() {
       <Button variant="secondary" size="compact" onClick={() => setJson(JSON.stringify(deck))}>Save deck JSON</Button>
       <Button variant="secondary" size="compact" onClick={() => { try { const loaded = parseDeck(JSON.parse(json)); validate(loaded); if (!loaded.slides.length) throw new Error("Fixture needs one slide"); setReady(false); setDeck(loaded); setMessage("Loaded saved deck") } catch (error) { setMessage(String(error)) } }}>Load saved deck</Button>
     </div>
-    <div className="render-viewport" ref={viewport}><div className="render-stage" data-zoom={zoom} data-pan-x={pan.x} data-pan-y={pan.y} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, visibility: ready ? "visible" : "hidden" }}><Slide slide={slide} commitText={commitText} onPointerDown={pointerDown} /></div></div>
+    <div className="render-viewport" ref={viewport}><div className="render-stage" data-zoom={zoom} data-pan-x={pan.x} data-pan-y={pan.y} style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, visibility: ready ? "visible" : "hidden" }}><Slide slide={slide} themes={deck.themes} commitText={commitText} onPointerDown={pointerDown} /></div></div>
     <label htmlFor="deck-json">Deck JSON</label><textarea id="deck-json" value={json} onChange={e => setJson(e.target.value)} />
     <pre role="status">{message}</pre>
   </main>

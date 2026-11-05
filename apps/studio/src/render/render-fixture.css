@@ -7,6 +7,9 @@
 .render-stage [data-kind=shape] { touch-action: none; }
 .render-fixture pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media print {
+  [data-font-warning] { display: none; }
+  .render-stage { transform: none !important; }
+  .render-fixture [data-selected=true] { outline: none; }
   .render-fixture { padding: 0; display: block; }
   .render-controls, .render-fixture h1, .render-fixture label, .render-fixture textarea, .render-fixture button, .render-fixture pre { display: none; }
   .render-viewport { padding: 0; border: 0; min-block-size: 0; overflow: visible; }

@@ -15,6 +15,10 @@ export function validate(deck: Deck): void {
     for (const node of [slide, ...flatten(slide.elements)]) {
       if (ids.has(node.id)) reject("invalid-structure", `Duplicate id ${node.id}`)
       ids.add(node.id)
+      if (isElement(node)) {
+        if (node.placeholder !== null && !deck.placeholders?.includes(node.placeholder)) reject("invalid-reference", `Missing placeholder ${node.placeholder}`)
+        if (node.overlap !== null && !deck.overlaps?.includes(node.overlap)) reject("invalid-reference", `Missing overlap ${node.overlap}`)
+      }
       if (node.theme !== null && !deck.themes.some(t => t.id === node.theme)) reject("invalid-reference", `Missing theme ${node.theme}`)
     }
   }
@@ -34,9 +38,10 @@ function replace(deck: Deck, target: Id, value: Deck | Slide | Element | null): 
       if (value && (!isSlide(value) || value.id !== target)) return reject("invalid-structure", "Slide replacement must retain its id and kind")
       return value && isSlide(value) ? [{ ...value, version: slide.version + 1 }] : []
     }
-    if (!flatten(slide.elements).some(e => e.id === target)) return [slide]
+    const element = flatten(slide.elements).find(e => e.id === target)
+    if (!element) return [slide]
     found = true
-    if (value && (!isElement(value) || value.id !== target)) return reject("invalid-structure", "Element replacement must retain its id and kind")
+    if (value && (!isElement(value) || value.id !== target || value.kind !== element.kind)) return reject("invalid-structure", "Element replacement must retain its id and kind")
     return [{ ...slide, version: slide.version + 1, elements: replaceElements(slide.elements, target, value && isElement(value) ? value : null) }]
   })
   if (!found) return reject("invalid-reference", `Missing target ${target}`)
@@ -80,6 +85,12 @@ export function apply(deck: Deck, changes: ChangeSet): ApplyResult {
       next = change(next, op)
       validate(next)
     }
+    const changedThemes = new Set([...deck.themes, ...next.themes].filter(theme => {
+      const before = deck.themes.find(t => t.id === theme.id)
+      const after = next.themes.find(t => t.id === theme.id)
+      return before?.font !== after?.font || before?.background !== after?.background
+    }).map(theme => theme.id))
+    next = { ...next, slides: next.slides.map(slide => [slide.theme, ...flatten(slide.elements).map(e => e.theme)].some(theme => theme !== null && changedThemes.has(theme)) ? { ...slide } : slide) }
     const version = Math.max(deck.version, next.version, ...deck.slides.map(slide => slide.version)) + 1
     const slides = next.slides.map(slide => deck.slides.includes(slide) ? slide : { ...slide, version })
     return { ok: true, deck: { ...next, slides, version }, inverse: { changes: [{ kind: "set", target: deck.id, value: deck }] } }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { apply, flatten, id, parseChangeSet, parseDeck } from "../src/index.ts"
+import { apply, flatten, id, placeholderId, parseChangeSet, parseDeck } from "../src/index.ts"
 import { fixtureDeck, fixtureElement } from "../src/fixture.ts"
 import type { ChangeSet, Deck, Element } from "../src/model.ts"
 const deck = fixtureDeck(3)
@@ -15,7 +15,7 @@ function semantic(value: Deck) { return { ...value, version: 0, slides: value.sl
 describe("canonical atomic changes", () => {
   it("serializes and reopens without losing sources, themes, notes or arbitrary sizes", () => {
     const original = { kind: "original", part: "ppt/slides/slide1.xml", sha256: "a".repeat(64), objectId: "42", dependencies: ["ppt/media/image1.png"] } as const
-    const value: Deck = { ...deck, slides: [{ ...slide, size: { width: 777, height: 888 }, elements: [{ ...first, source: { ...original, dependencies: [...original.dependencies] }, support: { kind: "kept", preview: "data:image/png;base64,AA==" }, placeholder: "title" }, { ...slide.elements[1]!, support: { kind: "flagged", reason: "Unsupported effect", preview: null } }] }] }
+    const value: Deck = { ...deck, slides: [{ ...slide, size: { width: 777, height: 888 }, elements: [{ ...first, source: { ...original, dependencies: [...original.dependencies] }, support: { kind: "kept", preview: "data:image/png;base64,AA==" }, placeholder: placeholderId("title") }, { ...slide.elements[1]!, support: { kind: "flagged", reason: "Unsupported effect", preview: null } }] }] }
     expect(parseDeck(JSON.parse(JSON.stringify(value)))).toEqual(value)
   })
   it("inserts a unique stable slide at the requested position", () => {
@@ -36,7 +36,7 @@ describe("canonical atomic changes", () => {
   it("preserves Unicode runs and inverses without mutating input or untouched elements", () => {
     if (first.kind !== "text") throw new Error("text fixture")
     const before = JSON.stringify(deck)
-    const value = { ...first, runs: [{ ...first.runs[0]!, text: "Tiếng Việt 日本語 é 👩🏽‍💻" }, { ...first.runs[0]!, text: "Second style", bold: false, color: "#102030" }] }
+    const value: Element = { ...first, runs: [{ ...first.runs[0]!, text: "Tiếng Việt 日本語 é 👩🏽‍💻" }, { ...first.runs[0]!, text: "Second style", bold: false, color: "#102030" }] }
     const changed = success({ changes: [{ kind: "set", target: first.id, value }] })
     expect(changed.deck.slides[0]!.elements[1]).toBe(slide.elements[1])
     expect(changed.deck.slides[0]!.elements[0]).toEqual(value)
