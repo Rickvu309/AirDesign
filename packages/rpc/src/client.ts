@@ -65,10 +65,12 @@ export class SyncClient {
     this.notify()
     return this.persist([item])
   }
-  acknowledge(receipt: Receipt): Promise<void> {
+  acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> {
     this.pending=this.pending.flatMap(item=>item.command.id!==receipt.id ? [item] : receipt.kind==="applied" ? [] : [{kind:"rejected",command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}])
     this.sent.delete(receipt.id);this.notify()
-    return this.persist(this.pending.filter(item=>item.command.id===receipt.id),receipt.kind==="applied" ? [receipt.id] : []).then(()=>this.releases.get(receipt.id)?.())
+    const retained=this.pending.filter(item=>item.command.id===receipt.id)
+    const persist=()=>this.persist(retained,receipt.kind==="applied" ? [receipt.id] : []).then(()=>this.releases.get(receipt.id)?.())
+    return durableCheckpoint ? durableCheckpoint.then(persist) : persist()
   }
   async dismiss(id: string) { this.pending=this.pending.filter(p=>p.command.id!==id);this.notify();await this.persist([],[id]) }
   async recover(id: string, commands: Command[]) {

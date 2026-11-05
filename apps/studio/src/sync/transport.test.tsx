@@ -70,6 +70,8 @@ it.each([40,180])("keeps an acknowledged edit and undo on offline reload at %i m
     for(let n=0;n<10;n++)await Promise.resolve()
     deliver!({data:JSON.stringify({kind:"receipt",...snapshot,receipt:applied.receipt})})
     await vi.advanceTimersByTimeAsync(delay)
+    expect(client.queue).toEqual([])
+    expect(stored).toHaveLength(1)
     const reload=new SyncClient("owner",cachedSnapshot("owner",original.deck.id)!,outbox,()=>{})
     await reload.load()
     expect(reload.deck.slides[0]!.notes).toBe("acknowledged edit")
