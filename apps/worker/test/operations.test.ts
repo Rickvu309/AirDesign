@@ -226,6 +226,12 @@ it("rejects decoded SVG URL and CSS escapes with a strict SVG allowlist", () => 
   }
   expect(() => rejectActiveSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0L10 10" fill="&#35;fff" style="stroke: red; stroke-width: 2"/></svg>')).not.toThrow()
   for (const xml of ['<!DOCTYPE svg><svg/>', '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject/></svg>', '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:expression(alert(1))"/></svg>']) expect(() => rejectActiveSvg(xml)).toThrow("unsafe-svg")
+  for (const xml of [
+    '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0" style="fill: u&#114;l(http://169.254.169.254/latest)"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><style>path { fill: url(http://169.254.169.254/latest) }</style><path d="M0 0"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg"><use href="http://169.254.169.254/latest#a"/></svg>',
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="http://169.254.169.254/latest#a"/></svg>',
+  ]) expect(() => rejectActiveSvg(xml)).toThrow("unsafe-svg")
 })
 it("retains terminal cleanup obligations across crashes before removal", async () => {
   const { store, root, filename } = await storage()
