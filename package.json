@@ -33,7 +33,8 @@
     "verify:studio": "node scripts/verify-studio.mjs",
     "build:export-renderer": "vite build --ssr apps/worker/src/export/render.tsx --outDir apps/worker/dist",
     "verify:import-export": "node scripts/verify-import-export.mjs",
-    "verify:pr-05": "npm run verify:studio && npm run verify:import-export"
+    "verify:pr-05": "npm run verify:studio && npm run verify:import-export",
+    "verify:brand": "node scripts/verify-brand.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
@@ -56,5 +57,8 @@
   },
   "overrides": {
     "image-size": "2.0.4"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5"
   }
 }

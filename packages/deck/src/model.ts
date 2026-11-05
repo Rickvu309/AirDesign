@@ -22,14 +22,15 @@ export type Source = { kind: "created" } | { kind: "original"; part: string; sha
 export type Support = { kind: "native" } | { kind: "kept"; preview: string | null } | { kind: "flagged"; reason: string; preview: string | null }
 export type Box = { x: number; y: number; width: number; height: number }
 export type Run = { text: string; bold: boolean; font: string; size: number; color: string }
-type ElementBase = { id: Id; box: Box; source: Source; support: Support; theme: ThemeId | null; placeholder: PlaceholderId | null; overlap: OverlapId | null }
+type ElementBase = { styleLinks?: ("font" | "color" | "fill")[]; id: Id; box: Box; source: Source; support: Support; theme: ThemeId | null; placeholder: PlaceholderId | null; overlap: OverlapId | null }
 export type Element = ElementBase & (
   { kind: "text"; runs: [Run, ...Run[]] } |
   { kind: "shape"; geometry: "rectangle" | "ellipse" | "triangle"; fill: string } |
   { kind: "group"; children: Element[] }
 )
 export type Slide = { id: Id; version: number; size: { width: number; height: number }; elements: Element[]; notes: string; theme: ThemeId | null; source: Source }
-export type Deck = { id: Id; version: number; slides: Slide[]; placeholders?: PlaceholderId[]; overlaps?: OverlapId[]; themes: { id: ThemeId; font: string; background: string }[] }
+export type TemplatePin = { id: string; version: number; family: string }
+export type Deck = { template?: TemplatePin; id: Id; version: number; slides: Slide[]; placeholders?: PlaceholderId[]; overlaps?: OverlapId[]; themes: { id: ThemeId; font: string; background: string }[] }
 export type Change =
   { kind: "insert"; parent: Id; index: number; value: Slide | Element } |
   { kind: "set"; target: Id; value: Slide | Element | Deck } |

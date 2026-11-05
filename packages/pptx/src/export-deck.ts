@@ -22,7 +22,8 @@ async function generated(deck:Deck) {
   const pptx=new PptxGenJS()
   pptx.defineLayout({name:"saved",width:first.size.width/96,height:first.size.height/96});pptx.layout="saved"
   pptx.author="AirDesign";pptx.subject="Saved deck; PowerPoint compatibility pending P09"
-  for(const source of deck.slides){const slide=pptx.addSlide();slide.background={color:(deck.themes.find(theme=>theme.id===source.theme)?.background ?? "#ffffff").slice(1)};for(const element of source.elements)addElement(slide,element);slide.addNotes(source.notes)}
+  for(const theme of deck.themes)pptx.defineSlideMaster({title:theme.id,background:{color:theme.background.slice(1)},objects:[]})
+  for(const source of deck.slides){const slide=pptx.addSlide(source.theme===null ? undefined : {masterName:source.theme});slide.background={color:(deck.themes.find(theme=>theme.id===source.theme)?.background ?? "#ffffff").slice(1)};for(const element of source.elements)addElement(slide,element);slide.addNotes(source.notes)}
   const bytes=await pptx.write({outputType:"nodebuffer"});if(!(bytes instanceof Uint8Array))throw new Error("pptx-output-type")
   const parts=await readArchive(Buffer.from(bytes))
   for(const [name,bytes] of parts)if(/^ppt\/slides\/slide\d+\.xml$/.test(name)){const parsed=parseXml(bytes);let xml=parsed.xml;const nodes=parsed.nodes.filter(node=>node.local==="cNvPr");for(const [index,node] of [...nodes.entries()].reverse())xml=xml.slice(0,node.start)+parsed.xml.slice(node.start,node.openEnd).replace(/\bid="[^"]*"/,`id="${index+1}"`)+xml.slice(node.openEnd);parts.set(name,Buffer.from(xml))}

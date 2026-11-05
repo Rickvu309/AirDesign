@@ -13,7 +13,7 @@ function support(v: unknown): v is Support {
 function box(v: unknown): v is Box { return record(v) && finite(v.x) && finite(v.y) && finite(v.width) && finite(v.height) && v.width >= 0 && v.height >= 0 }
 function run(v: unknown): v is Run { return record(v) && typeof v.text === "string" && typeof v.bold === "boolean" && typeof v.font === "string" && finite(v.size) && v.size > 0 && typeof v.color === "string" }
 export function isElement(v: unknown): v is Element {
-  if (!record(v) || !isId(v.id) || !box(v.box) || !source(v.source) || !support(v.support) || !(v.theme === null || isThemeId(v.theme)) || !(v.placeholder === null || isPlaceholderId(v.placeholder)) || !(v.overlap === null || isOverlapId(v.overlap))) return false
+  if (!record(v) || !(v.styleLinks === undefined || (Array.isArray(v.styleLinks) && v.styleLinks.every(key => ["font", "color", "fill"].includes(String(key))))) || !isId(v.id) || !box(v.box) || !source(v.source) || !support(v.support) || !(v.theme === null || isThemeId(v.theme)) || !(v.placeholder === null || isPlaceholderId(v.placeholder)) || !(v.overlap === null || isOverlapId(v.overlap))) return false
   switch (v.kind) {
     case "text": return Array.isArray(v.runs) && v.runs.length > 0 && v.runs.every(run)
     case "shape": return ["rectangle", "ellipse", "triangle"].includes(String(v.geometry)) && typeof v.fill === "string"
@@ -25,7 +25,7 @@ export function isSlide(v: unknown): v is Slide {
   return record(v) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && record(v.size) && finite(v.size.width) && v.size.width > 0 && finite(v.size.height) && v.size.height > 0 && Array.isArray(v.elements) && v.elements.every(isElement) && typeof v.notes === "string" && (v.theme === null || isThemeId(v.theme)) && source(v.source)
 }
 export function isDeck(v: unknown): v is Deck {
-  return record(v) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && Array.isArray(v.slides) && v.slides.every(isSlide) && (v.placeholders === undefined || (Array.isArray(v.placeholders) && v.placeholders.every(isPlaceholderId))) && (v.overlaps === undefined || (Array.isArray(v.overlaps) && v.overlaps.every(isOverlapId))) && Array.isArray(v.themes) && v.themes.every(t => record(t) && isThemeId(t.id) && typeof t.font === "string" && typeof t.background === "string")
+  return record(v) && (v.template === undefined || (record(v.template) && isId(v.template.id) && Number.isSafeInteger(v.template.version) && Number(v.template.version) > 0 && isId(v.template.family))) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && Array.isArray(v.slides) && v.slides.every(isSlide) && (v.placeholders === undefined || (Array.isArray(v.placeholders) && v.placeholders.every(isPlaceholderId))) && (v.overlaps === undefined || (Array.isArray(v.overlaps) && v.overlaps.every(isOverlapId))) && Array.isArray(v.themes) && v.themes.every(t => record(t) && isThemeId(t.id) && typeof t.font === "string" && typeof t.background === "string")
 }
 export function parseDeck(v: unknown): Deck {
   if (!isDeck(v)) throw new Error("Invalid canonical deck")

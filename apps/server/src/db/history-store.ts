@@ -5,7 +5,7 @@ import pg from "pg"
 import { createHash, randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
 import { execute, executionMatches, initialHistory, type Command, type History, type Principal, type Receipt, type ExecutionIdentity, type Contribution, type RunState, commandId } from "../../../../packages/change-log/src/index.ts"
-import type { Deck } from "../../../../packages/deck/src/index.ts"
+import type { ChangeSet, Deck } from "../../../../packages/deck/src/index.ts"
 import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistoryIndex } from "./history-index.ts"
 
 type Transaction = Pick<PGlite, "query">
@@ -86,16 +86,17 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       history.runs=runs.rows.map(row=>row.payload)
       return {deck:history.deck,seq:history.seq,contributions:{history,applied:receipts.rows.map(row=>commandId(row.id))}}
     }) },
-    async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}): Promise<Receipt> {
+    async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}, preparation?: { key: string; changes: (deck: Deck) => ChangeSet }): Promise<Receipt> {
       return transaction(async tx => {
         const history = await owned(tx, principal, deckId)
         if(!executionMatches(command,identity))return {id:command.id,seq:history.seq,kind:"refused",code:"execution-identity-mismatch",command}
-        const payload = createHash("sha256").update(canonical({command,identity})).digest("hex")
+        const payload = createHash("sha256").update(canonical({command,identity,...(preparation ? {preparation:preparation.key} : {})})).digest("hex")
         const prior = await tx.query<{ payload: string; receipt: Receipt }>("SELECT payload,receipt FROM editing_receipt WHERE deck=$1 AND id=$2", [deckId, command.id])
         if (prior.rows[0]) {
           if (prior.rows[0].payload !== payload) throw new Error("request-id-payload-mismatch")
           return prior.rows[0].receipt
         }
+        if (preparation) { if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required"); command = { ...command, base: history.seq, changes: preparation.changes(history.deck) } }
         await loadHistoryIndex(tx,deckId,history,command)
         const result = execute(history, command, identity)
         await tx.query("INSERT INTO editing_receipt(deck,id,payload,receipt) VALUES ($1,$2,$3,$4)", [deckId, command.id, payload, JSON.stringify(result.receipt)])
