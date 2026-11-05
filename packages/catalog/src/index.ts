@@ -5,10 +5,10 @@ import { initialHistory, type History, type Principal } from "../../change-log/s
 export type CatalogSql = { query<R>(sql:string,params?:unknown[]):Promise<{rows:R[]}> }
 export type CatalogTransaction = <T>(work:(tx:CatalogSql)=>Promise<T>)=>Promise<T>
 export type CatalogSource={bytes:Buffer;report:Record<string,unknown>}
-export type DeckEntry = { id:string;title:string;updated:number;deletedAt:number|null;pendingRequest:string;slides:number }
-type Row = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History;deleted:boolean}
+export type DeckEntry = { id:string;title:string;updated:number;deletedAt:number|null;generation:number;pendingRequest:string;slides:number }
+type Row = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History;deleted:boolean;trash_generation:number}
 const day=24*60*60*1000
-function entry(row:Row):DeckEntry {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,slides:row.state.deck.slides.length}}
+function entry(row:Row):DeckEntry {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,generation:Number(row.trash_generation),slides:row.state.deck.slides.length}}
 function title(value:string) {const text=value.trim();if(!text || text.length>200)throw new Error("invalid-deck-title");return text}
 function newId() {return id(`d${randomUUID().replaceAll("-","").slice(0,30)}`)}
 export async function initializeCatalog(tx:CatalogSql) {
@@ -17,6 +17,7 @@ export async function initializeCatalog(tx:CatalogSql) {
   await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS deleted_at double precision")
   await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS pending_request text NOT NULL DEFAULT ''")
   await tx.query("UPDATE editing_deck SET deleted_at=updated_at WHERE deleted=true AND deleted_at IS NULL")
+  await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS trash_generation integer NOT NULL DEFAULT 0")
   await tx.query("CREATE INDEX IF NOT EXISTS catalog_owner_updated ON editing_deck(owner,updated_at DESC)")
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_source(deck text PRIMARY KEY REFERENCES editing_deck(id) ON DELETE CASCADE,bytes bytea NOT NULL,report jsonb NOT NULL)")
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_request(owner text NOT NULL, request text NOT NULL, input jsonb NOT NULL, deck text NOT NULL, PRIMARY KEY(owner,request))")
@@ -54,9 +55,26 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
     async readDeleted(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);return {deck:row.state.deck,seq:row.state.seq,deleted:row.deleted}})},
     async rename(principal:Principal,deck:string,name:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");await tx.query("UPDATE editing_deck SET title=$2,updated_at=$3 WHERE id=$1",[deck,title(name),clock()]);return entry(await owned(tx,principal,deck))})},
     async pending(principal:Principal,deck:string,text:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");if(text.length>20000)throw new Error("request-too-long");await tx.query("UPDATE editing_deck SET pending_request=$2 WHERE id=$1",[deck,text]);return entry(await owned(tx,principal,deck))})},
-    async trash(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(!row.deleted)await tx.query("UPDATE editing_deck SET deleted=true,deleted_at=$2 WHERE id=$1",[deck,clock()]);return entry(await owned(tx,principal,deck))})},
+    async trash(principal:Principal,deck:string) {return transaction(async tx=>{
+      const row=await owned(tx,principal,deck)
+      if(!row.deleted){
+        const state={...row.state,runs:row.state.runs.map(run=>run.kind==="open" ? {...run,kind:"closed" as const,epoch:run.epoch+1} : run)}
+        await tx.query("UPDATE editing_deck SET deleted=true,deleted_at=$2,trash_generation=trash_generation+1,state=$3 WHERE id=$1",[deck,clock(),JSON.stringify(state)])
+        await tx.query("UPDATE editing_run SET payload=jsonb_set(jsonb_set(payload,'{kind}','\"closed\"'::jsonb),'{epoch}',to_jsonb((payload->>'epoch')::integer+1)) WHERE deck=$1 AND payload->>'kind'='open'",[deck])
+        await tx.query("DELETE FROM editing_run_credential WHERE deck=$1",[deck])
+      }
+      return entry(await owned(tx,principal,deck))
+    })},
     async restore(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted_at!==null && Number(row.deleted_at)<=clock()-30*day)throw new Error("deck-expired");await tx.query("UPDATE editing_deck SET deleted=false,deleted_at=NULL,updated_at=$2 WHERE id=$1",[deck,clock()]);return entry(await owned(tx,principal,deck))})},
-    async purge(principal?:Principal) {return transaction(async tx=>{const result=await tx.query<{id:string}>(principal ? "SELECT id FROM editing_deck WHERE deleted=true AND owner=$1 ORDER BY id FOR UPDATE SKIP LOCKED" : "SELECT id FROM editing_deck WHERE deleted=true AND deleted_at<=$1 ORDER BY id FOR UPDATE SKIP LOCKED",[principal ? principal.personId : clock()-30*day]);for(const row of result.rows)await remove(tx,row.id);return result.rows.map(row=>row.id)})},
+    async emptyTrash(principal:Principal,confirmed:{id:string;generation:number}[]) {return transaction(async tx=>{
+      const removed:string[]=[]
+      for(const target of [...confirmed].sort((a,b)=>a.id.localeCompare(b.id))){
+        const row=(await tx.query<{id:string}>("SELECT id FROM editing_deck WHERE id=$1 AND owner=$2 AND deleted=true AND trash_generation=$3 FOR UPDATE",[target.id,principal.personId,target.generation])).rows[0]
+        if(row){await remove(tx,row.id);removed.push(row.id)}
+      }
+      return removed
+    })},
+    async purge() {return transaction(async tx=>{const result=await tx.query<{id:string}>("SELECT id FROM editing_deck WHERE deleted=true AND deleted_at<=$1 ORDER BY id FOR UPDATE SKIP LOCKED",[clock()-30*day]);for(const row of result.rows)await remove(tx,row.id);return result.rows.map(row=>row.id)})},
   }
 }
 function canonical(value:unknown):string {

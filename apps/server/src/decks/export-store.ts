@@ -4,7 +4,7 @@ import type { History,Principal } from "../../../../packages/change-log/src/inde
 import type { Deck } from "../../../../packages/deck/src/index.ts"
 
 export type ExportOptions={format:"pptx"|"pdf";slides:string[];timing:"now"|"after-run";expectedSeq:number;allowIssues:boolean}
-export type SavedVersion={deck:Deck;seq:number;source:string|null}
+export type SavedVersion={deck:Deck;seq:number;source:string|null;title:string}
 export type ExportJob={id:string;deck:string;format:ExportOptions["format"];attempts:number;options:ExportOptions;diagnostics:string[]}&(
   {kind:"waiting"|"queued"|"running"|"cancelled"|"expired"}|{kind:"failed";reason:string}|{kind:"ready";seq:number;sha256:string;expires:number;report:Record<string,unknown>}
 )
@@ -12,6 +12,7 @@ type Row={id:string;owner:string;deck:string;options:ExportOptions;snapshot:Save
 const resultLife=7*86400000
 export async function initializeExports(tx:CatalogSql) {
   await tx.query("CREATE TABLE IF NOT EXISTS deck_export(id text PRIMARY KEY,owner text NOT NULL,request text NOT NULL,deck text NOT NULL REFERENCES editing_deck(id) ON DELETE CASCADE,options jsonb NOT NULL,snapshot jsonb,state text NOT NULL,attempts integer NOT NULL DEFAULT 0,diagnostics jsonb NOT NULL DEFAULT '[]',lease text,deadline double precision,reason text,result bytea,sha text,expires double precision,report jsonb NOT NULL DEFAULT '{}',UNIQUE(owner,request))")
+  await tx.query("ALTER TABLE deck_export ADD COLUMN IF NOT EXISTS created double precision NOT NULL DEFAULT 0")
 }
 function exposed(row:Row):ExportJob {
   const base={id:row.id,deck:row.deck,format:row.options.format,attempts:row.attempts,options:row.options,diagnostics:row.diagnostics}
@@ -25,10 +26,10 @@ function valid(options:ExportOptions) {
 export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
   async function owned(tx:CatalogSql,principal:Principal,id:string) {const row=(await tx.query<Row>("SELECT * FROM deck_export WHERE id=$1 AND owner=$2 FOR UPDATE",[id,principal.personId])).rows[0];if(!row)throw new Error("export-not-found");if(row.state==="ready" && Number(row.expires)<=clock()){await tx.query("UPDATE deck_export SET state='expired',result=NULL WHERE id=$1",[id]);return {...row,state:"expired" as const,result:null}}return row}
   async function capture(tx:CatalogSql,deck:string,owner:string) {
-    const row=(await tx.query<{state:History;deleted:boolean}>("SELECT state,deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,owner])).rows[0]
+    const row=(await tx.query<{state:History;deleted:boolean;title:string}>("SELECT state,deleted,title FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,owner])).rows[0]
     if(!row)throw new Error("deck-not-found");if(row.deleted)throw new Error("deck-deleted")
     const source=(await tx.query<{bytes:Uint8Array}>("SELECT bytes FROM catalog_source WHERE deck=$1",[deck])).rows[0]
-    return {snapshot:{deck:row.state.deck,seq:row.state.seq,source:source ? Buffer.from(source.bytes).toString("base64") : null},running:(await tx.query<{payload:History["runs"][number]}>("SELECT payload FROM editing_run WHERE deck=$1",[deck])).rows.some(run=>run.payload.kind==="open")}
+    return {snapshot:{title:row.title,deck:row.state.deck,seq:row.state.seq,source:source ? Buffer.from(source.bytes).toString("base64") : null},running:(await tx.query<{payload:History["runs"][number]}>("SELECT payload FROM editing_run WHERE deck=$1",[deck])).rows.some(run=>run.payload.kind==="open")}
   }
   return {
     async submit(principal:Principal,request:string,deck:string,options:ExportOptions) {valid(options);if(!/^[A-Za-z0-9_-]{1,100}$/.test(request))throw new Error("invalid-request-id");return transaction(async tx=>{
@@ -39,12 +40,13 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
       const selected=options.slides.length ? options.slides : current.snapshot.deck.slides.map(slide=>slide.id)
       if(!selected.length || selected.some(id=>!current.snapshot.deck.slides.some(slide=>slide.id===id)))throw new Error("invalid-slide-range")
       const waiting=options.timing==="after-run" && current.running,id=randomUUID()
-      await tx.query("INSERT INTO deck_export(id,owner,request,deck,options,snapshot,state) VALUES($1,$2,$3,$4,$5,$6,$7)",[id,principal.personId,request,deck,JSON.stringify(options),waiting ? null : JSON.stringify(current.snapshot),waiting ? "waiting" : "queued"])
+      await tx.query("INSERT INTO deck_export(id,owner,request,deck,options,snapshot,state,created) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",[id,principal.personId,request,deck,JSON.stringify(options),waiting ? null : JSON.stringify(current.snapshot),waiting ? "waiting" : "queued",clock()])
       return exposed(await owned(tx,principal,id))
     })},
+    async list(principal:Principal,deck:string){return transaction(async tx=>(await tx.query<Row>("SELECT * FROM deck_export WHERE owner=$1 AND deck=$2 ORDER BY created,id",[principal.personId,deck])).rows.map(exposed))},
     async active(id:string,lease:string){return transaction(async tx=>(await tx.query<{id:string}>("SELECT id FROM deck_export WHERE id=$1 AND lease=$2 AND state='running'",[id,lease])).rows.length===1)},
     async status(principal:Principal,id:string){return transaction(async tx=>exposed(await owned(tx,principal,id)))},
-    async artifact(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="ready"||!row.result)throw new Error("export-artifact-unavailable");return {bytes:Buffer.from(row.result),format:row.options.format,seq:row.snapshot?.seq}})},
+    async artifact(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="ready"||!row.result)throw new Error("export-artifact-unavailable");return {bytes:Buffer.from(row.result),format:row.options.format,seq:row.snapshot?.seq,title:row.snapshot?.title ?? "AirDesign"}})},
     async cancel(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(["waiting","queued","running"].includes(row.state))await tx.query("UPDATE deck_export SET state='cancelled',result=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
     async retry(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="failed"||row.attempts>=3)throw new Error("export-retry-unavailable");await tx.query("UPDATE deck_export SET state='queued',reason=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
     async claim(){await transaction(async tx=>{

@@ -9,6 +9,7 @@ type StudioShellProps = {
 }
 
 export function StudioShell({ intentLabel, showIntent, onSignOut, children }: StudioShellProps) {
+  const editor=window.location.pathname.startsWith("/deck/")
   const [commandsOpen, setCommandsOpen] = useState(false)
   const items: CommandMenuItem[] = [
     { id: "home", label: copy("shell.home"), onSelect: () => window.location.assign("/") },
@@ -25,13 +26,13 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, children }: St
     return () => document.removeEventListener("keydown", onKey)
   }, [])
   return (
-    <div className="ad-shell" id="shell">
-      <header className="ad-topbar">
+    <div className={editor ? "ad-shell ad-editor-shell" : "ad-shell"} id="shell">
+      {!editor && <header className="ad-topbar">
         <span className="ad-brand">{copy("shell.brand")}</span>
         <Toolbar label={copy("shell.home")} items={[{ id: "home", label: copy("shell.home"), onSelect: () => window.location.assign("/") }]} />
         <button type="button" className="ad-button ad-button-secondary ad-button-compact" onClick={() => setCommandsOpen(true)}>{copy("shell.command")}</button>
         <button type="button" className="ad-button ad-button-secondary ad-button-settings" onClick={onSignOut}>{copy("access.sign_out")}</button>
-      </header>
+      </header>}
       <main className="ad-main">
         {showIntent ? <p className="ad-intent" role="status">{copy("home.intent_kept")} {intentLabel}</p> : null}
         {children}

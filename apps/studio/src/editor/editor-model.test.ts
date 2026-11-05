@@ -1,9 +1,24 @@
+import { createNativePresentation } from "../../../../packages/pptx/src/native.ts"
+import { importedDeck } from "../../../../packages/pptx/src/import-deck.ts"
+import { writeSavedPptx } from "../../../../packages/pptx/src/export-deck.ts"
+import { exportPptx,importPptx } from "../../../../packages/pptx/src/index.ts"
 import { describe,it,expect } from "vitest"
 import { id } from "../../../../packages/deck/src/index.ts"
 import { fixtureDeck } from "../../../../packages/deck/src/fixture.ts"
 import { newSlide,orderedSlides,reviewPaste,selectSlides } from "./editor-model.ts"
 
 describe("manual slide operations",()=>{
+  it("adds slides in the imported presentation size",()=>{
+    const deck=fixtureDeck(1);deck.slides[0]!.size={width:1280,height:720}
+    expect(newSlide(deck).size).toEqual({width:1280,height:720})
+  })
+  it("exports imported presentations after adding a manual slide",async()=>{
+    const source=await createNativePresentation([{title:"Imported",notes:"",table:{headers:["Year"],rows:[["2026"]]},chart:{name:"Value",labels:["A"],values:[3]}}]),deck=importedDeck(source)
+    deck.slides.push(newSlide(deck))
+    const result=importedDeck(await importPptx(await writeSavedPptx(deck,1,await exportPptx(source),{})))
+    expect(result.slides).toHaveLength(2)
+    expect(result.slides[1]?.size).toEqual(result.slides[0]?.size)
+  })
   it("keeps toggle, shift and batch movement in deck order",()=>{
     const deck=fixtureDeck(1,5),s=deck.slides.map(slide=>slide.id)
     expect(selectSlides(deck,[],id("s3"),id("s1"),true,false)).toEqual(s.slice(1,4))

@@ -51,6 +51,6 @@ it("restores history before expiry and purges only expired Trash exactly once",a
     expect(results.flatMap(result=>result.removed)).toEqual([entry.id])
     await expect(store.catalog.readDeleted(owner,entry.id)).rejects.toThrow("deck-not-found")
     expect((await store.catalog.list(other,true)).map(row=>row.id)).toEqual([fresh.id])
-    expect(await store.catalog.purge(owner)).toEqual([])
+    expect(await store.catalog.emptyTrash(owner,[])).toEqual([])
   }finally{await store.close()}
 })

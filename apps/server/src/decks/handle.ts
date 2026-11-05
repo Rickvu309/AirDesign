@@ -1,5 +1,6 @@
 import { parseDeck } from "../../../../packages/deck/src/index.ts"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
+import { exportFilename } from "./export-filename.ts"
 import { parseExportOptions } from "./parse-export.ts"
 import { mutationRejection, type Access } from "@airdesign/access"
 import type { HistoryStore } from "../db/history-store.ts"
@@ -15,13 +16,14 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
       const exportMatch=/^\/api\/catalog\/export-jobs\/([a-f0-9-]{36})(?:\/(artifact|cancel|retry))?$/.exec(url.pathname)
       if(exportMatch?.[1]) {
         const id=exportMatch[1]
-        if(exportMatch[2]==="artifact" && request.method==="GET"){const result=await history.exports.artifact(principal,id);return new Response(new Uint8Array(result.bytes),{headers:{"content-type":result.format==="pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation","content-disposition":`attachment; filename="AirDesign-v${result.seq}.${result.format}"`}})}
+        if(exportMatch[2]==="artifact" && request.method==="GET"){const result=await history.exports.artifact(principal,id);return new Response(new Uint8Array(result.bytes),{headers:{"content-type":result.format==="pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation","content-disposition":`attachment; filename="${exportFilename(result.title,result.seq,result.format)}"`}})}
         if(exportMatch[2]==="cancel" && request.method==="POST")return Response.json(await history.exports.cancel(principal,id))
         if(exportMatch[2]==="retry" && request.method==="POST")return Response.json(await history.exports.retry(principal,id))
         if(!exportMatch[2] && request.method==="GET")return Response.json(await history.exports.status(principal,id))
         return Response.json({code:"method-not-allowed"},{status:405})
       }
       const submit=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})\/exports$/.exec(url.pathname)
+      if(submit?.[1] && request.method==="GET")return Response.json(await history.exports.list(principal,submit[1]))
       if(submit?.[1] && request.method==="POST"){const body:unknown=await request.json();return Response.json(await history.exports.submit(principal,text(body,"requestId"),submit[1],parseExportOptions(body)),{status:202})}
       if(url.pathname==="/api/catalog/import" && request.method==="POST") {
         const body:unknown=await request.json(),op=operationId(text(body,"operation")),status=operations.status(principal,op)
@@ -32,7 +34,7 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
       }
       if(url.pathname==="/api/catalog" && request.method==="GET")return Response.json(await catalog.list(principal,url.searchParams.get("trash")==="true",url.searchParams.get("search") ?? ""))
       if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest")),{status:201})}
-      if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const removed=await catalog.purge(principal);await Promise.all(removed.map(changed));return Response.json({removed})}
+      if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const confirmed=body && typeof body==="object" && "decks" in body ? body.decks : null;if(!Array.isArray(confirmed))throw new Error("confirmation-snapshot-required");const targets=confirmed.map((value:unknown)=>{if(!value || typeof value!=="object" || !("id" in value) || typeof value.id!=="string" || !("generation" in value) || typeof value.generation!=="number" || !Number.isSafeInteger(value.generation))throw new Error("invalid-confirmation-snapshot");return {id:value.id,generation:value.generation}});const removed=await catalog.emptyTrash(principal,targets);await Promise.all(removed.map(changed));return Response.json({removed})}
       const match=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(rename|duplicate|trash|restore|request|view))?$/.exec(url.pathname)
       const deck=match?.[1];if(!deck)return Response.json({code:"not-found"},{status:404})
       if(!match[2] && request.method==="GET")return Response.json(await catalog.details(principal,deck))

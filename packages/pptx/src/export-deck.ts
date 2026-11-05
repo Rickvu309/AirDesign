@@ -1,5 +1,6 @@
 import PptxGenJS from "pptxgenjs"
 import path from "node:path"
+import { isDeepStrictEqual } from "node:util"
 import type { Deck,Element } from "../../deck/src/index.ts"
 import { importPptx,patchText } from "./index.ts"
 import { readArchive,writeArchive } from "./archive.ts"
@@ -39,10 +40,28 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
   if(source){
     let original=await importPptx(source)
     const baseline=importedDeck(original)
-    for(const slide of deck.slides)for(const element of slide.elements)if(element.kind==="text" && element.source.kind==="original" && element.support.kind==="native"){
-      const source=element.source
-      const match=/^text:(\d+)$/.exec(element.source.objectId)
-      if(match && !baseline.slides.flatMap(slide=>slide.elements).some(old=>old.kind==="text" && old.source.kind==="original" && old.source.part===source.part && old.source.objectId===source.objectId && old.runs.map(run=>run.text).join("")===element.runs.map(run=>run.text).join("")))original=patchText(original,element.source.part,Number(match[1]),element.runs.map(run=>run.text).join(""))
+    for(const slide of deck.slides)if(slide.source.kind==="original"){
+      const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
+      if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.length)throw new Error("source-slide-structure-change-requires-fix")
+      for(const [index,element] of slide.elements.entries()){
+        const previous=old.elements[index]
+        if(!previous)throw new Error("source-slide-structure-change-requires-fix")
+        const withoutText=(value:Element)=>value.kind==="text" ? {...value,runs:[]} : value
+        if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
+        if(element.kind==="text" && previous.kind==="text" && element.source.kind==="original"){
+          const indices=element.source.objectId.slice(5).split(",").map(Number)
+          const style=(run:typeof element.runs[number])=>({...run,text:""})
+          const collapsed=element.runs.length===1 && isDeepStrictEqual(style(element.runs[0]),style(previous.runs[0]))
+          if(indices.length!==previous.runs.length || (!collapsed && (element.runs.length!==previous.runs.length || element.runs.some((run,index)=>!isDeepStrictEqual(style(run),style(previous.runs[index]!))))))throw new Error("source-text-structure-change-requires-fix")
+          for(const [runIndex,previousRun] of previous.runs.entries()){
+            const text=collapsed ? runIndex===0 ? element.runs[0].text : "" : element.runs[runIndex]!.text
+            if(text!==previousRun.text){
+              if(element.support.kind!=="native")throw new Error("kept-object-change-requires-fix")
+              original=patchText(original,source.part,indices[runIndex]!,text)
+            }
+          }
+        }
+      }
     }
     parts=new Map(original.parts)
     const prefix="airdesign-generated/"

@@ -44,27 +44,39 @@ export async function runImportExport(browser,stack,output) {
     await page.getByRole("button",{name:"Fix slide 1",exact:true}).click()
     await expect(page.getByRole("button",{name:"Slide 1",exact:true})).toBeFocused()
     await page.getByRole("button",{name:"Export",exact:true}).click()
+    await call(`/api/catalog/${imported}/rename`,{title:"Quarterly / Strategy"})
     await page.getByRole("button",{name:"Export anyway",exact:true}).click()
     await expect(page.getByRole("status").filter({hasText:"Export queued"})).toBeVisible()
-    const jobs=await page.evaluate(()=>Object.entries(localStorage).filter(([key])=>key.startsWith('["export",'))),jobId=jobs[0][1]
+    const jobs=await call(`/api/catalog/${imported}/exports`),jobId=jobs.at(-1).id
     const pinned=await call(`/api/catalog/export-jobs/${jobId}`)
     const savedBefore=await call(`/api/decks/${imported}`)
     await call(`/api/decks/${imported}/commands`,{id:crypto.randomUUID(),kind:"patch",base:savedBefore.seq,run:null,target:"s0",fields:{notes:"Later note excluded"}})
+    await call(`/api/catalog/${imported}/rename`,{title:"Later name"})
     await page.close();await worker()
     const result=await call(`/api/catalog/export-jobs/${jobId}`);assert.equal(result.kind,"ready",JSON.stringify(result));assert.equal(result.seq,savedBefore.seq);assert.equal(result.report.seq,savedBefore.seq);assert.deepEqual(result.report.fontManifest,fontManifest)
     assert.equal(result.report.acknowledged,true);assert.ok(result.report.flags.length>0)
-    const bytes=Buffer.from(await (await request.get(`${stack.origin}/api/catalog/export-jobs/${jobId}/artifact`)).body()),pptx=await importPptx(bytes),original=await importPptx(input)
+    const artifact=await request.get(`${stack.origin}/api/catalog/export-jobs/${jobId}/artifact`)
+    assert.equal(artifact.headers()["content-disposition"],`attachment; filename="Quarterly _ Strategy-v${savedBefore.seq}.pptx"`)
+    const bytes=Buffer.from(await artifact.body()),pptx=await importPptx(bytes),original=await importPptx(input)
     const preserved=[...original.parts].filter(([name])=>!name.endsWith(".xml")&&!name.endsWith(".rels"))
     assert.ok(preserved.length>0);for(const [name,content] of preserved)assert.deepEqual(pptx.parts.get(name),content,name)
     const manifest=JSON.parse(pptx.parts.get("airdesign/saved-version.json").toString());assert.equal(manifest.seq,savedBefore.seq);assert.equal(manifest.deck.slides[0].notes,savedBefore.deck.slides[0].notes);assert.ok(pptx.parts.get("ppt/slides/slide1.xml").toString().includes("Edited imported title"))
     page=await context.newPage();await page.goto(`${stack.origin}/deck/${imported}`);await page.locator('[data-sync-state="saved"]').waitFor();await page.getByRole("button",{name:"Export",exact:true}).click();await expect(page.getByRole("link",{name:"Download PPTX",exact:true})).toBeVisible()
-    assert.equal((await page.evaluate(()=>Object.entries(localStorage).filter(([key])=>key.startsWith('["export",'))))[0][1],jobId)
+    assert.ok((await call(`/api/catalog/${imported}/exports`)).some(job=>job.id===jobId))
     const current=await call(`/api/decks/${imported}`),pdf=await call(`/api/catalog/${imported}/exports`,{requestId:crypto.randomUUID(),format:"pdf",timing:"now",expectedSeq:current.seq,slides:[current.deck.slides[0].id],allowIssues:true})
     const pdfElapsed=await worker(),pdfResult=await call(`/api/catalog/export-jobs/${pdf.id}`)
     assert.equal(pdfResult.kind,"ready",JSON.stringify(pdfResult))
     const pdfBytes=Buffer.from(await (await request.get(`${stack.origin}/api/catalog/export-jobs/${pdf.id}/artifact`)).body());assert.equal(pdfBytes.subarray(0,5).toString(),"%PDF-")
     const directory=output ?? `${process.env.HOME}/tmp/p05-export-proof-${process.pid}`;await mkdir(directory,{recursive:true});await writeFile(`${directory}/saved.pptx`,bytes);await writeFile(`${directory}/saved.pdf`,pdfBytes)
     const document=await getDocument({data:new Uint8Array(pdfBytes),useSystemFonts:false}).promise;assert.equal(document.numPages,1);const text=(await (await document.getPage(1)).getTextContent()).items.map(item=>"str" in item ? item.str : "").join(" ");assert.ok(text.includes("Edited imported title"),text);await document.cleanup();assert.deepEqual(pdfResult.report.slideIds,[current.deck.slides[0].id])
+    await page.close()
+    for(let tab=0;tab<2;tab++){
+      const recovered=await context.newPage();await recovered.goto(`${stack.origin}/deck/${imported}`);await recovered.locator('[data-sync-state="saved"]').waitFor();await recovered.getByRole("button",{name:"Export",exact:true}).click()
+      const retained=recovered.getByLabel("Retained exports",{exact:true});await expect(retained.locator("option")).toHaveCount(2)
+      for(const [id,format] of [[jobId,"PPTX"],[pdf.id,"PDF"]]){await retained.selectOption(id);await expect(recovered.getByRole("link",{name:`Download ${format}`,exact:true})).toHaveAttribute("href",`/api/catalog/export-jobs/${id}/artifact`)}
+      await recovered.close()
+    }
+    trace.push({recovery:"two closed submission tabs, two fresh tabs, both formats retained",jobs:[jobId,pdf.id]})
     await writeFile(`${directory}/trace.json`,JSON.stringify(trace,null,2))
     return {verdict:"pass",imported,job:jobId,savedSeq:savedBefore.seq,pdf:pdf.id,pdfWorkerMs:pdfElapsed,trace:`${directory}/trace.json`,pinned,fonts:fontManifest}
   } finally {await context.close()}

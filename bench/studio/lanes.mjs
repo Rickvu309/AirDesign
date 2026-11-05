@@ -96,7 +96,7 @@ try {
   await expect(page.getByRole("status").filter({hasText:"Export queued"})).toBeVisible()
   await page.getByRole("button",{name:"Close export",exact:true}).focus()
   const focus=await page.evaluate(()=>document.activeElement.outerHTML)
-  const retryId=await page.evaluate(()=>Object.entries(localStorage).find(([k])=>k.startsWith('["export",'))[1])
+  const retryId=(await call("/api/catalog/combined/exports")).at(-1).id
   await worker({PLAYWRIGHT_BROWSERS_PATH:`${workerRoot}/missing-browser`})
   await expect(page.getByRole("status").filter({hasText:"Export failed"})).toBeVisible()
   assert.equal(await page.evaluate(()=>document.activeElement.outerHTML),focus)

@@ -4,10 +4,10 @@ import { parseContributions } from "./snapshot-history.ts"
 import { outboxKey, type Outbox, type Pending } from "./outbox.ts"
 export type SyncState = {kind:"saved"} | {kind:"pending";count:number} | {kind:"offline";count:number} | {kind:"retrying";count:number} | {kind:"signed-out";count:number} | {kind:"deleted";count:number} | {kind:"recovery";count:number}
 export type Snapshot = {deck:Deck;seq:number;contributions?:{history:History;applied:CommandId[]}}
-export function parseSnapshot(value: unknown): Snapshot {
+export function parseSnapshot(value: unknown,previous?:Snapshot): Snapshot {
   if (!value || typeof value !== "object" || !("deck" in value) || !("seq" in value) || typeof value.seq !== "number" || !Number.isSafeInteger(value.seq) || value.seq < 0) throw new Error("invalid-snapshot")
   const deck=parseDeck(value.deck)
-  return {deck,seq:value.seq,...("contributions" in value ? {contributions:parseContributions(value.contributions,deck,value.seq)} : {})}
+  return {deck,seq:value.seq,...("contributions" in value ? {contributions:parseContributions(value.contributions,deck,value.seq,previous?.contributions?.history)} : {})}
 }
 export class SyncClient {
   readonly key: string
@@ -31,7 +31,7 @@ export class SyncClient {
   get deck(): Deck { return this.history.deck }
   get history(): History {
     if (this.projected) return this.projected
-    let history = structuredClone(this.snapshot.contributions?.history ?? initialHistory(this.snapshot.deck))
+    let history = this.snapshot.contributions?.history ?? initialHistory(this.snapshot.deck)
     const applied=new Set(this.snapshot.contributions?.applied ?? [])
     for (const item of this.pending) if (item.kind === "queued" && !applied.has(item.command.id)) {
       history = execute(history,item.command).history
@@ -56,7 +56,7 @@ export class SyncClient {
   disconnected(retrying=false) { this.online=false;this.sender=null;for(const release of this.releases.values())release();this.sent.clear();this.retrying=retrying;this.changed() }
   stop(kind: "signed-out" | "deleted") { this.blocked=kind;this.disconnected() }
   resume(person: string) { if (this.key !== outboxKey(person,this.snapshot.deck.id) || this.blocked === "deleted") return false;this.blocked=null;return true }
-  receive(snapshot: Snapshot) { if (snapshot.deck.id !== this.snapshot.deck.id || snapshot.seq < this.snapshot.seq) return;this.snapshot=structuredClone(snapshot);this.notify() }
+  receive(snapshot: Snapshot) { if (snapshot.deck.id !== this.snapshot.deck.id || snapshot.seq < this.snapshot.seq) return;this.snapshot=snapshot;this.notify() }
   enqueue(command: Command): Promise<void> {
     if (this.blocked) return Promise.reject(new Error(this.blocked))
     if (this.pending.some(p=>p.command.id===command.id)) return Promise.reject(new Error("pending-id-reused"))
