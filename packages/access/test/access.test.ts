@@ -87,6 +87,34 @@ describe("access", () => {
     expect(await replay.call("/api/session", undefined, "GET")).toMatchObject({ json: { status: "signed-out" } })
   })
 
+  it("issues a fresh intent of the same kind when recovery starts after a day", async () => {
+    const jar = client()
+    const issued = await jar.call("/api/access/intent", { kind: "import" })
+    await jar.call("/api/access/email", { email: "day-late@example.com", intent: issued.json.token })
+    const message = inbox.read("day-late@example.com").at(-1)
+    now += accessPolicy.intentTtlMs + 1
+    const expired = await jar.call("/api/access/consume-link", { token: message?.linkToken })
+    expect(expired.status).toBe(400)
+    expect(expired.json.status).toBe("link-expired")
+    expect(expired.json.kind).toBe("import")
+    expect(expired.json.intentToken).toEqual(expect.any(String))
+    expect(expired.json.intentToken).not.toBe(issued.json.token)
+    expect(expired.json).not.toHaveProperty("returnTo")
+    expect(expired.json).not.toHaveProperty("url")
+    const stale = await jar.call("/api/access/email", { email: "day-late@example.com", intent: issued.json.token })
+    expect(stale.status).toBe(400)
+    expect(stale.json.status).toBe("intent-rejected")
+    const resent = await jar.call("/api/access/email", { email: "day-late@example.com", intent: expired.json.intentToken })
+    expect(resent.status).toBe(200)
+    expect(resent.json.status).toBe("check-email")
+    const code = inbox.read("day-late@example.com").at(-1)?.code
+    const signed = await jar.call("/api/access/code", { email: "day-late@example.com", code, intent: expired.json.intentToken })
+    expect(signed.json).toMatchObject({ status: "signed-in", kind: "import", intentToken: expired.json.intentToken })
+    const redirect = await jar.call("/api/access/intent", { kind: "import", returnTo: "https://evil.example" })
+    expect(redirect.status).toBe(400)
+    expect(redirect.json.status).toBe("intent-rejected")
+  })
+
   it("refuses an expired link and keeps the signed intent", async () => {
     const jar = client()
     const issued = await jar.call("/api/access/intent", { kind: "new-deck" })

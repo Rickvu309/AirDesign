@@ -390,26 +390,40 @@ async function consumeLink(
   const rows = await db.select().from(tables.challenge).where(eq(tables.challenge.linkHash, sha256(body.token)))
   const current = rows[0]
   if (!current || current.consumed) {
-    const kept = current ? readIntent(options.secret, current.intentToken) : null
-    return json(400, { status: "link-used", screen: "S29.01", intentToken: kept?.token ?? null, kind: kept?.kind ?? null })
+    return recoveryResponse(options, "link-used", current?.intentToken ?? null)
   }
   const kept = readIntent(options.secret, current.intentToken)
   if (current.expiresAt.getTime() <= options.clock() || current.locked) {
-    return json(400, {
-      status: "link-expired",
-      screen: "S29.01",
-      intentToken: kept?.token ?? null,
-      kind: kept?.kind ?? null,
-    })
+    return recoveryResponse(options, "link-expired", current.intentToken)
   }
   const claimed = await claimChallenge(db, tables, current.id, options.clock())
   if (!claimed) {
-    return json(400, { status: "link-used", screen: "S29.01", intentToken: kept?.token ?? null, kind: kept?.kind ?? null })
+    return recoveryResponse(options, "link-used", current.intentToken)
   }
   if (!kept || kept.exp <= options.clock()) {
     return json(400, { status: "intent-rejected" })
   }
   return signInResponse(options, auth, db, tables, secure, current.email, kept)
+}
+
+function recoveryResponse(options: CreateAccessOptions, status: "link-expired" | "link-used", stored: string | null): Response {
+  const recovered = freshRecoveryIntent(options, stored)
+  return json(400, { status, screen: "S29.01", intentToken: recovered.intentToken, kind: recovered.kind })
+}
+
+function freshRecoveryIntent(options: CreateAccessOptions, stored: string | null): { intentToken: string | null; kind: IntentKind | null } {
+  if (!stored) {
+    return { intentToken: null, kind: null }
+  }
+  const kept = readIntent(options.secret, stored)
+  if (!kept) {
+    return { intentToken: null, kind: null }
+  }
+  if (kept.exp > options.clock()) {
+    return { intentToken: kept.token, kind: kept.kind }
+  }
+  const fresh = issueIntent(options.secret, kept.kind, options.clock())
+  return { intentToken: fresh.token, kind: fresh.kind }
 }
 
 async function claimChallenge(db: Database, tables: Tables, id: string, now: number): Promise<boolean> {

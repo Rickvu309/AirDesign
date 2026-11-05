@@ -17,6 +17,9 @@ const intentCopy: Record<IntentKind, "shell.home" | "home.new_deck" | "home.impo
 export type AccessRoute = { kind: "studio" } | { kind: "link"; token: string }
 
 const studioRoute: AccessRoute = { kind: "studio" }
+const studioHandoff = "studio"
+
+type StudioHandoff = { airdesignAccess: typeof studioHandoff; consumedLinkToken: string }
 
 export function readAccessRoute(location: { pathname: string; search: string }): AccessRoute {
   const token = readAccessLinkToken(location)
@@ -26,7 +29,24 @@ export function readAccessRoute(location: { pathname: string; search: string }):
   return { kind: "link", token }
 }
 
-export function AccessApp({ client, initialScreen = "signin", initialKind = "home", initialIntent = null, route = studioRoute }: { client: AccessClient; initialScreen?: Screen; initialKind?: IntentKind; initialIntent?: string | null; route?: AccessRoute }) {
+function routeAfterHandoff(route: AccessRoute): AccessRoute {
+  if (route.kind !== "link") {
+    return route
+  }
+  const state = history.state as Partial<StudioHandoff> | null
+  if (state?.airdesignAccess === studioHandoff && state.consumedLinkToken === route.token) {
+    return studioRoute
+  }
+  return route
+}
+
+function replaceWithStudio(token: string): void {
+  const state: StudioHandoff = { airdesignAccess: studioHandoff, consumedLinkToken: token }
+  history.replaceState(state, "", "/")
+}
+
+export function AccessApp({ client, initialScreen = "signin", initialKind = "home", initialIntent = null, route: requestedRoute = studioRoute }: { client: AccessClient; initialScreen?: Screen; initialKind?: IntentKind; initialIntent?: string | null; route?: AccessRoute }) {
+  const [route, setRoute] = useState<AccessRoute>(() => routeAfterHandoff(requestedRoute))
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
@@ -40,12 +60,22 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const [session, setSession] = useState<Extract<SessionResult, { status: "signed-in" }> | null>(null)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
+  const enterWorkspace = (nextKind: IntentKind, nextIntent: string, handoffToken: string | null) => {
+    setKind(nextKind)
+    setIntentToken(nextIntent)
+    if (handoffToken) {
+      replaceWithStudio(handoffToken)
+      setRoute(studioRoute)
+    }
+    setScreen("home")
+  }
+
   useEffect(() => {
     if (route.kind === "link" || screen !== "signin" || intentToken) {
       return
     }
     let cancel = false
-    void client.issueIntent("home").then((issued) => {
+    void client.issueIntent(kind).then((issued) => {
       if (cancel || issued.status !== "issued") {
         return
       }
@@ -55,36 +85,50 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     return () => {
       cancel = true
     }
-  }, [client, intentToken, route, screen])
+  }, [client, intentToken, kind, route, screen])
 
   useEffect(() => {
+    if (route.kind !== "link") {
+      return
+    }
     let cancel = false
     void (async () => {
-      if (route.kind === "link") {
-        const result = await client.consumeLink(route.token)
-        if (cancel) {
-          return
-        }
-        if (result.status === "signed-in") {
-          setKind(result.kind)
-          setIntentToken(result.intentToken)
-          setScreen("home")
-          return
-        }
-        if (result.status === "link-expired" || result.status === "link-used") {
-          if (result.intentToken) {
-            setIntentToken(result.intentToken)
-          }
-          if (result.kind) {
-            setKind(result.kind)
-          }
-          setLinkStatus(result.status)
-          setScreen("expired")
-          return
-        }
-        setScreen("signin")
+      const result = await client.consumeLink(route.token)
+      if (cancel) {
         return
       }
+      if (result.status === "signed-in") {
+        replaceWithStudio(route.token)
+        setKind(result.kind)
+        setIntentToken(result.intentToken)
+        setRoute(studioRoute)
+        setScreen("home")
+        return
+      }
+      if (result.status === "link-expired" || result.status === "link-used") {
+        if (result.intentToken) {
+          setIntentToken(result.intentToken)
+        }
+        if (result.kind) {
+          setKind(result.kind)
+        }
+        setLinkStatus(result.status)
+        setScreen("expired")
+        return
+      }
+      setScreen("signin")
+    })()
+    return () => {
+      cancel = true
+    }
+  }, [client, route])
+
+  useEffect(() => {
+    if (route.kind !== "studio" || screen !== "checking") {
+      return
+    }
+    let cancel = false
+    void (async () => {
       const result = await client.session()
       if (cancel) {
         return
@@ -101,12 +145,12 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         return
       }
       setSession(null)
-      setScreen((current) => current === "home" || current === "checking" ? "signin" : current)
+      setScreen("signin")
     })()
     return () => {
       cancel = true
     }
-  }, [client, route])
+  }, [client, route, screen])
 
   useEffect(() => {
     if (!codeError) {
@@ -154,11 +198,9 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       setScreen("expired")
       return
     }
-    setKind(result.kind)
-    setIntentToken(result.intentToken)
     setCodeError(undefined)
     toast(copy("access.signed_in"))
-    setScreen("home")
+    enterWorkspace(result.kind, result.intentToken, route.kind === "link" ? route.token : null)
   }
 
   const onResend = async () => {
@@ -177,8 +219,13 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     setSession(null)
     setEmail("")
     setCode("")
+    setCodeError(undefined)
     setIntentToken(null)
     setKind("home")
+    if (route.kind === "link") {
+      history.replaceState({ airdesignAccess: studioHandoff }, "", "/")
+    }
+    setRoute(studioRoute)
     setScreen("signin")
   }
 

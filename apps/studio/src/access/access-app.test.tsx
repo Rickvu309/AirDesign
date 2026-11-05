@@ -14,6 +14,7 @@ afterEach(() => {
   })
   root = null
   document.body.innerHTML = ""
+  history.replaceState(null, "", "/")
 })
 
 describe("studio access", () => {
@@ -151,6 +152,94 @@ describe("studio access", () => {
     expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
     expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
     expect(document.querySelector(".ad-sign-in")).not.toBeNull()
+  })
+
+  it("keeps the workspace when the handed-off link is mounted again", async () => {
+    history.replaceState(null, "", "/access/link?token=once")
+    let claims = 0
+    const client = fakeClient({
+      signedIn: true,
+      kind: "import",
+      link: { status: "signed-in", personId: "person", intentToken: "import-intent", kind: "import" },
+    })
+    const consume = client.consumeLink.bind(client)
+    client.consumeLink = async (token) => {
+      claims += 1
+      if (claims > 1) {
+        return { status: "link-used", screen: "S29.01", intentToken: "import-intent", kind: "import" }
+      }
+      return consume(token)
+    }
+    await render(<AccessApp client={client} route={{ kind: "link", token: "once" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(location.pathname).toBe("/")
+    expect(document.querySelector("#shell")).not.toBeNull()
+    expect(claims).toBe(1)
+    await act(async () => {
+      root?.unmount()
+    })
+    root = null
+    document.body.innerHTML = ""
+    await render(<AccessApp client={client} route={{ kind: "link", token: "once" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("#shell")).not.toBeNull()
+    expect(document.querySelector("[data-screen=expired]")).toBeNull()
+    expect(claims).toBe(1)
+  })
+
+  it("issues a home intent after sign-out from a link sign-in", async () => {
+    history.replaceState(null, "", "/access/link?token=handoff")
+    let issued = 0
+    const client = fakeClient({
+      signedIn: true,
+      kind: "import",
+      link: { status: "signed-in", personId: "person", intentToken: "import-intent", kind: "import" },
+    })
+    const issue = client.issueIntent.bind(client)
+    client.issueIntent = async (next) => {
+      issued += 1
+      return issue(next)
+    }
+    await render(<AccessApp client={client} route={{ kind: "link", token: "handoff" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(issued).toBe(0)
+    await act(async () => {
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")?.click()
+    })
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>("button.ad-button-danger")?.click()
+      await flush()
+    })
+    expect(document.querySelector("[data-screen=signin]")).not.toBeNull()
+    expect(issued).toBe(1)
+    const email = document.querySelector<HTMLInputElement>("input")
+    await act(async () => {
+      setValue(email, "ada@example.com")
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
+  })
+
+  it("rejects a used link that was not handed off to the studio url", async () => {
+    history.replaceState({ airdesignAccess: "studio", consumedLinkToken: "other" }, "", "/access/link?token=again")
+    const client = fakeClient({
+      signedIn: true,
+      kind: "import",
+      link: { status: "link-used", screen: "S29.01", intentToken: "import-intent", kind: "import" },
+    })
+    await render(<AccessApp client={client} route={{ kind: "link", token: "again" }} initialScreen="checking" />)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("#shell")).toBeNull()
+    expect(document.querySelector("[data-link-status=link-used]")).not.toBeNull()
   })
 
   it("restores a signed-in import intent after a reload and returns to sign-in when the cookie is revoked", async () => {

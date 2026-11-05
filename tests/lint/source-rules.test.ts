@@ -3,6 +3,7 @@ import { describe, it } from "vitest"
 import { commentHits } from "../../scripts/lint/comment-rule.ts"
 import { importBoundaryHits } from "../../scripts/lint/import-boundary.ts"
 import { accessSafetyHits } from "../../scripts/lint/access-safety.ts"
+import { gateRecordingHits } from "../../scripts/lint/gate-recording.ts"
 import { responseHeaderHits } from "../../scripts/lint/response-headers.ts"
 
 describe("comment rule", () => {
@@ -78,6 +79,22 @@ describe("access safety", () => {
     const good = "  serve(access, request, response).catch((error: unknown) => writeHandlerError(response, error))\n"
     assert.equal(accessSafetyHits("apps/server/src/main.ts", bad)[0]?.reason, "discarded-request")
     assert.deepEqual(accessSafetyHits("apps/server/src/main.ts", good), [])
+  })
+})
+
+describe("gate recording", () => {
+  it("rejects a video recording in a gate test and accepts the evidence script", () => {
+    const verb = ["rec", "ord"].join("")
+    const action = ["sta", "rt"].join("")
+    const extension = ["web", "m"].join("")
+    const bad = `await browser(["${verb}", "${action}", "sign-in.${extension}"])\n`
+    const good = "await browser([\"reload\"])\n"
+    const testFile = "apps/studio/src/access/link-route.browser.test.ts"
+    const evidence = "scripts/evidence/record-sign-in.ts"
+    assert.equal(gateRecordingHits(testFile, bad)[0]?.reason, "video-recorded-in-gate")
+    assert.deepEqual(gateRecordingHits(testFile, good), [])
+    assert.deepEqual(gateRecordingHits(evidence, bad), [])
+    assert.deepEqual(gateRecordingHits("scripts/verify-access.mjs", bad)[0]?.reason, "video-recorded-in-gate")
   })
 })
 

@@ -26,7 +26,7 @@ describe("browser link route", () => {
     await api?.close()
   })
 
-  it("signs in from a link, rejects replay and expiry, and recovers on a phone", async () => {
+  it("signs in from a link, reloads that url, and recovers a day-old intent on a phone", async () => {
     const studioPort = await freePort()
     process.env.AIRDESIGN_EXPOSE_INBOX = "1"
     api = await startServer(0, { clock: () => now, publicOrigin: `http://127.0.0.1:${studioPort}` })
@@ -42,19 +42,35 @@ describe("browser link route", () => {
     const first = await issuedLink(email, "import")
     await browser(["set", "viewport", "1440", "900"])
     await browser(["open", `${studio}${first.linkPath}`])
-    await browser(["record", "start", path.join(evidence, "review/sign-in.webm")])
     await browser(["wait", "#shell"])
     expect(await browser(["get", "text", "h1"])).toContain("No decks yet")
     expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
+    expect(await browser(["get", "url"])).not.toContain("/access/link")
     await browser(["screenshot", path.join(evidence, "lane-10/desktop-link.png")])
-    await browser(["open", studio])
-    await browser(["wait", "#shell"])
-    expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
     await browser(["reload"])
     await browser(["wait", "#shell"])
     expect(await browser(["get", "text", "h1"])).toContain("No decks yet")
+    expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
+    expect(await browser(["get", "url"])).not.toContain("/access/link")
+    await browser(["click", "button.ad-button-settings"])
+    await browser(["wait", "button.ad-button-danger"])
+    await browser(["scrollintoview", "button.ad-button-danger"])
+    await browser(["click", "button.ad-button-danger"])
+    await browser(["wait", "[data-screen=signin]"])
+    expect(await browser(["get", "url"])).not.toContain("/access/link")
+    await browser(["reload"])
+    await browser(["wait", "[data-screen=signin]"])
+    expect(await browser(["get", "text", "h1"])).toContain("Sign in")
+    now += accessPolicy.resendWaitMs
+    await browser(["fill", "input[type=email]", email])
+    await clickUntil("button.ad-button-primary", "[data-screen=check]")
+    await submitCode(email)
+    await browser(["wait", "#shell"])
+    expect(await browser(["get", "text", "h1"])).toContain("No decks yet")
+    expect(await browser(["get", "url"])).not.toContain("/access/link")
     await browser(["open", `${studio}${first.linkPath}`])
     await browser(["wait", "[data-link-status=link-used]"])
+    expect(await browser(["eval", "document.querySelector('#shell') ? 'shell' : 'gone'"])).toContain("gone")
     expect(await browser(["get", "text", ".ad-intent"])).toContain("Your place is saved.")
     now += accessPolicy.resendWaitMs
     const expired = await issuedLink(email, "import")
@@ -65,35 +81,34 @@ describe("browser link route", () => {
     expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
     await browser(["screenshot", path.join(evidence, "lane-10/desktop-link-expired.png")])
     await browser(["set", "viewport", "320", "720"])
+    const lateEmail = "late-link@example.com"
+    const late = await issuedLink(lateEmail, "import")
+    now += accessPolicy.intentTtlMs + 1
+    await browser(["open", `${studio}${late.linkPath}`])
+    await browser(["wait", "[data-link-status=link-expired]"])
+    expect(await browser(["eval", "String(window.innerWidth)"])).toContain("320")
+    expect(await browser(["get", "text", "h1"])).toContain("This link has expired")
+    expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
     await browser(["screenshot", path.join(evidence, "lane-10/phone-link-expired.png")])
-    const clicked = await browser(["click", "button.ad-button-primary"])
-    await browser(["wait", "300"])
-    const afterClick = await browser(["eval", "document.body.innerText.slice(0,240)"])
-    if (!afterClick.includes("Sign in")) {
-      throw new Error(`${clicked}\n${afterClick}`)
-    }
-    await browser(["fill", "input[type=email]", email])
-    await browser(["click", "button.ad-button-primary"])
-    await browser(["wait", "[data-screen=check]"])
+    await clickUntil("button.ad-button-primary", "[data-screen=signin]")
+    await browser(["fill", "input[type=email]", lateEmail])
+    await clickUntil("button.ad-button-primary", "[data-screen=check]")
+    await submitCode(lateEmail)
+    await browser(["wait", "#shell"])
+    expect(await browser(["get", "text", "h1"])).toContain("No decks yet")
+    expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
+    expect(await browser(["get", "url"])).not.toContain("/access/link")
+    await browser(["screenshot", path.join(evidence, "lane-10/phone-link.png")])
+    await browser(["reload"])
+    await browser(["wait", "#shell"])
+    expect(await browser(["get", "text", ".ad-intent"])).toContain("Import a PowerPoint")
+  }, 240_000)
+
+  async function submitCode(email: string): Promise<void> {
     const code = await latestCode(email)
     await browser(["click", ".ad-code-box"])
     await browser(["keyboard", "type", code])
-    await browser(["wait", "#shell"])
-    expect(await browser(["get", "text", "h1"])).toContain("No decks yet")
-    await browser(["screenshot", path.join(evidence, "lane-10/phone-link.png")])
-    await browser(["set", "viewport", "1440", "900"])
-    await browser(["open", studio])
-    await browser(["wait", "#shell"])
-    await browser(["click", "button.ad-button-settings"])
-    await browser(["wait", "button.ad-button-danger"])
-    await browser(["scrollintoview", "button.ad-button-danger"])
-    await browser(["click", "button.ad-button-danger"])
-    await browser(["wait", "[data-screen=signin]"])
-    await browser(["reload"])
-    await browser(["wait", "[data-screen=signin]"])
-    expect(await browser(["get", "text", "h1"])).toContain("Sign in")
-    await browser(["record", "stop"])
-  }, 180_000)
+  }
 
   function runningApi(): RunningServer {
     if (!api) {
@@ -125,6 +140,22 @@ describe("browser link route", () => {
     return code
   }
 })
+
+async function clickUntil(selector: string, ready: string): Promise<void> {
+  const started = Date.now()
+  let last = ""
+  while (Date.now() - started < 15_000) {
+    const clicked = await browser(["click", selector], true)
+    const found = await browser(["eval", `document.querySelector(${JSON.stringify(ready)}) ? "yes" : document.body.innerText.slice(0, 240)`], true)
+    if (found.includes("yes")) {
+      return
+    }
+    last = `${clicked}\n${found}`
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  const url = await browser(["get", "url"], true)
+  throw new Error(`missing ${ready}\n${url}\n${last}`)
+}
 
 function post(base: string, route: string, body: unknown): Promise<Response> {
   return fetch(`${base}${route}`, {
