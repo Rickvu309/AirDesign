@@ -1,3 +1,4 @@
+import { loadDeck } from "./load-deck.mjs"
 import assert from "node:assert/strict"
 import { mkdir, writeFile } from "node:fs/promises"
 import { execFile, spawnSync } from "node:child_process"
@@ -40,11 +41,7 @@ const scenarios = [
   { deck, changeSets: [{ changes: [{ kind: "set", target: text.id, value: changedText }] }] },
   { deck, changeSets: [{ changes: [{ kind: "set", target: text.id, value: changedText }] }] },
 ]
-async function load(value) {
-  await page.getByLabel("Deck JSON", { exact: true }).fill(JSON.stringify(value))
-  await page.getByRole("button", { name: "Load saved deck", exact: true }).click()
-  await page.locator("[data-ready=true]").waitFor()
-}
+async function load(value) { await loadDeck(page, value) }
 async function saved() { await page.getByRole("button", { name: "Save deck JSON", exact: true }).click(); return JSON.parse(await page.getByLabel("Deck JSON", { exact: true }).inputValue()) }
 const errors = []
 page.on("pageerror", e => errors.push(String(e)))
@@ -204,13 +201,34 @@ try {
         const fixture = fixtureDeck(2)
         const [a, b] = fixture.slides[0].elements
         if (n === 8) a.box.x = -20
-        else { a.overlap = "intentional"; b.overlap = "intentional"; b.box = { ...a.box } }
+        else { fixture.overlaps = ["intentional"]; a.overlap = "intentional"; b.overlap = "intentional"; b.box = { ...a.box } }
         await load(fixture)
         await page.getByRole("button", { name: "Measure and check", exact: true }).click()
         await page.waitForFunction(() => document.querySelector("pre")?.textContent?.includes('"defects"'))
         actual = JSON.parse(await page.locator("pre").textContent())
         if (n === 8) { assert(actual.defects.some(d => d.code === "clipping" && d.ids.includes(a.id) && d.location.x === -20)) }
-        else assert(!actual.defects.some(d => d.code === "accidental-overlap"))
+        else {
+          assert.deepEqual(actual.layout.map(e => e.id).sort(), [a.id, b.id].sort())
+          for (const element of [a, b]) {
+            const measured = actual.layout.find(e => e.id === element.id)
+            assert.deepEqual({ x: measured.x, y: measured.y, width: measured.width, height: measured.height }, element.box)
+            assert.equal(element.overlap, "intentional")
+          }
+          assert(!actual.defects.some(d => d.code === "accidental-overlap"))
+          const positive = actual
+          await page.screenshot({ path: `${root}/${path}/intentional-overlap.png` })
+          const unmarked = structuredClone(fixture)
+          for (const element of unmarked.slides[0].elements) element.overlap = null
+          await load(unmarked)
+          await page.getByRole("button", { name: "Measure and check", exact: true }).click()
+          const negative = JSON.parse(await page.locator("pre[role=status]").textContent())
+          assert(negative.defects.some(d => d.code === "accidental-overlap" && d.ids.includes(a.id) && d.ids.includes(b.id)))
+          const invalid = structuredClone(fixture)
+          invalid.overlaps = []
+          await assert.rejects(load(invalid), /Deck load was rejected/)
+          await load(fixture)
+          actual = { ...positive, expectedElements: fixture.slides[0].elements, negativeControl: negative, invalidLoadRejected: true }
+        }
       }
       if (n === 10) {
         await page.goto(`${origin}/render-fixture`)

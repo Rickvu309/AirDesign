@@ -1,6 +1,5 @@
 import type { Run } from "../../deck/src/model.ts"
-export function editableRuns(root: HTMLElement, styles: [Run, ...Run[]]): [Run, ...Run[]] {
-  const fallback = styles[0]
+export function editableRuns(root: HTMLElement, styles: [Run, ...Run[]], fallback = styles[0]): [Run, ...Run[]] {
   const runs: Run[] = []
   function append(text: string, style: Run) {
     if (!text) return

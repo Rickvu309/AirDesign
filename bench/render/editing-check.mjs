@@ -1,3 +1,4 @@
+import { loadDeck } from "./load-deck.mjs"
 import assert from "node:assert/strict"
 import { mkdir, writeFile } from "node:fs/promises"
 import { execFileSync } from "node:child_process"
@@ -7,7 +8,7 @@ import { PNG } from "pngjs"
 import pixelmatch from "pixelmatch"
 import { fixtureDeck, fixtureElement } from "../../packages/deck/src/fixture.ts"
 import { snapshot } from "../../packages/render/src/server.ts"
-const output = `${process.env.HOME}/tmp/airdesign-autopilot/P02/fix1`
+const output = `${process.env.HOME}/tmp/airdesign-autopilot/P02/fix2`
 await mkdir(output, { recursive: true })
 const server = await preview({ root: "apps/studio", configFile: false, preview: { host: "127.0.0.1", port: 0 } })
 const origin = `http://127.0.0.1:${server.httpServer.address().port}`
@@ -20,11 +21,7 @@ try {
   await page.goto(`${origin}/render-fixture`)
   await page.locator("[data-ready=true]").waitFor()
   const field = page.locator("[data-text]")
-  async function load(deck) {
-    await page.getByLabel("Deck JSON").fill(JSON.stringify(deck))
-    await page.getByRole("button", { name: "Load saved deck", exact: true }).click()
-    await page.locator("[data-ready=true]").waitFor()
-  }
+  async function load(deck) { await loadDeck(page, deck) }
   async function saved() {
     await page.getByRole("button", { name: "Save deck JSON", exact: true }).click()
     return JSON.parse(await page.getByLabel("Deck JSON").inputValue())
@@ -42,6 +39,55 @@ try {
     assert.equal(await field.innerText(), expectedText)
     results.cases.push({ name, runs, differingPixels: pixels })
     return deck
+  }
+  const invalid = fixtureDeck(2)
+  invalid.slides[0].elements[0].overlap = "missing"
+  await assert.rejects(load(invalid), /Deck load was rejected/)
+  results.cases.push({ name: "invalid-load-rejects-stale-ready", rejected: true })
+  for (const action of ["bold-shortcut", "styled-html", "paste", "drop"]) {
+    await load(fixtureDeck(1))
+    await field.focus()
+    await page.keyboard.press("ControlOrMeta+A")
+    if (action === "bold-shortcut") {
+      await page.keyboard.press("ControlOrMeta+B")
+      await page.keyboard.type("Toggle")
+    } else if (action === "styled-html") {
+      await page.evaluate(() => document.execCommand("insertHTML", false, '<span style="color:red;font-size:70px;font-style:italic">Pasted</span>'))
+    } else {
+      await field.evaluate((node, type) => {
+        const data = new DataTransfer()
+        data.setData("text/html", '<b style="color:red">Pasted</b>')
+        data.setData("text/plain", "Pasted")
+        node.dispatchEvent(type === "paste" ? new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }) : new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }))
+      }, action)
+    }
+    await parity(action, action === "bold-shortcut" ? "Toggle" : "Pasted")
+  }
+  await load(fixtureDeck(1))
+  const cancelled = await field.evaluate(node => ["formatBold", "formatItalic", "formatUnderline", "formatStrikeThrough", "formatJustifyCenter", "formatRemove"].map(inputType => !node.dispatchEvent(new InputEvent("beforeinput", { inputType, bubbles: true, cancelable: true }))))
+  assert(cancelled.every(Boolean))
+  results.cases.push({ name: "all-native-format-types-cancelled", cancelled })
+  for (const action of ["styled-html", "paste", "drop"]) {
+    const deck = fixtureDeck(1)
+    const run = deck.slides[0].elements[0].runs[0]
+    deck.slides[0].elements[0].runs = [{ ...run, text: "Alpha ", color: "#ff0000" }, { ...run, text: "Beta", color: "#0000ff", bold: false }]
+    await load(deck)
+    await field.focus()
+    await field.evaluate(node => {
+      const text = node.lastChild.firstChild
+      document.getSelection().setBaseAndExtent(text, 0, text, 4)
+    })
+    if (action === "styled-html") await page.evaluate(() => document.execCommand("insertHTML", false, '<span style="color:green;font-size:70px">Pasted</span>'))
+    else await field.evaluate((node, type) => {
+      const data = new DataTransfer()
+      data.setData("text/html", '<b style="color:green">Pasted</b>')
+      data.setData("text/plain", "Pasted")
+      node.dispatchEvent(type === "paste" ? new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }) : new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: data }))
+    }, action)
+    await page.keyboard.type("!")
+    const changed = await parity(`caret-${action}`, "Alpha Pasted!")
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).color, "#0000ff")
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).bold, false)
   }
   const styled = fixtureDeck(1)
   const run = styled.slides[0].elements[0].runs[0]
