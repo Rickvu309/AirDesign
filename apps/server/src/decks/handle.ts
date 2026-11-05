@@ -1,0 +1,52 @@
+import { parseDeck } from "../../../../packages/deck/src/index.ts"
+import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
+import { parseExportOptions } from "./parse-export.ts"
+import { mutationRejection, type Access } from "@airdesign/access"
+import type { HistoryStore } from "../db/history-store.ts"
+
+function text(body:unknown,key:string):string {if(!body || typeof body!=="object" || !(key in body))throw new Error(`missing-${key}`);const value=Reflect.get(body,key);if(typeof value!=="string")throw new Error(`invalid-${key}`);return value}
+export function decksHandler(access:Access,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,operations:OperationStore) {
+  const catalog=history.catalog
+  return async(request:Request):Promise<Response>=>{
+    const rejection=mutationRejection(request,origin);if(rejection)return Response.json(rejection,{status:rejection.status})
+    const principal=await access.principal(request);if(!principal)return Response.json({code:"signed-out"},{status:401})
+    const url=new URL(request.url)
+    try {
+      const exportMatch=/^\/api\/catalog\/export-jobs\/([a-f0-9-]{36})(?:\/(artifact|cancel|retry))?$/.exec(url.pathname)
+      if(exportMatch?.[1]) {
+        const id=exportMatch[1]
+        if(exportMatch[2]==="artifact" && request.method==="GET"){const result=await history.exports.artifact(principal,id);return new Response(new Uint8Array(result.bytes),{headers:{"content-type":result.format==="pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation","content-disposition":`attachment; filename="AirDesign-v${result.seq}.${result.format}"`}})}
+        if(exportMatch[2]==="cancel" && request.method==="POST")return Response.json(await history.exports.cancel(principal,id))
+        if(exportMatch[2]==="retry" && request.method==="POST")return Response.json(await history.exports.retry(principal,id))
+        if(!exportMatch[2] && request.method==="GET")return Response.json(await history.exports.status(principal,id))
+        return Response.json({code:"method-not-allowed"},{status:405})
+      }
+      const submit=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})\/exports$/.exec(url.pathname)
+      if(submit?.[1] && request.method==="POST"){const body:unknown=await request.json();return Response.json(await history.exports.submit(principal,text(body,"requestId"),submit[1],parseExportOptions(body)),{status:202})}
+      if(url.pathname==="/api/catalog/import" && request.method==="POST") {
+        const body:unknown=await request.json(),op=operationId(text(body,"operation")),status=operations.status(principal,op)
+        if(status.kind!=="ready")throw new Error("import-not-ready")
+        const deck=parseDeck(status.report.deck),bytes=operations.artifact(principal,op)
+        const entry=await catalog.create(principal,text(body,"requestId"),text(body,"title"),"",deck,{bytes,report:status.report})
+        return Response.json({entry,report:status.report},{status:201})
+      }
+      if(url.pathname==="/api/catalog" && request.method==="GET")return Response.json(await catalog.list(principal,url.searchParams.get("trash")==="true",url.searchParams.get("search") ?? ""))
+      if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest")),{status:201})}
+      if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const removed=await catalog.purge(principal);await Promise.all(removed.map(changed));return Response.json({removed})}
+      const match=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(rename|duplicate|trash|restore|request|view))?$/.exec(url.pathname)
+      const deck=match?.[1];if(!deck)return Response.json({code:"not-found"},{status:404})
+      if(!match[2] && request.method==="GET")return Response.json(await catalog.details(principal,deck))
+      if(match[2]==="view" && request.method==="GET")return Response.json(await catalog.readDeleted(principal,deck))
+      if(request.method!=="POST")return Response.json({code:"method-not-allowed"},{status:405})
+      const body:unknown=await request.json()
+      switch(match[2]) {
+        case "rename":return Response.json(await catalog.rename(principal,deck,text(body,"title")))
+        case "request":return Response.json(await catalog.pending(principal,deck,text(body,"pendingRequest")))
+        case "duplicate": {const source=await history.read(principal,deck),entry=await catalog.details(principal,deck);return Response.json(await catalog.create(principal,text(body,"requestId"),`${entry.title} copy`,"",source.deck,await catalog.original(principal,deck) ?? undefined),{status:201})}
+        case "trash": {const entry=await catalog.trash(principal,deck);await changed(deck);return Response.json(entry)}
+        case "restore": {const entry=await catalog.restore(principal,deck);await changed(deck);return Response.json(entry)}
+        default:return Response.json({code:"not-found"},{status:404})
+      }
+    }catch(error){const code=error instanceof Error ? error.message : "catalog-failed";return Response.json({code},{status:code==="deck-not-found" ? 404 : code==="deck-expired" ? 410 : 400})}
+  }
+}

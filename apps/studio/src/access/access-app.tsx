@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
 import { AlertDialog, Button, CodeEntry, TextField, copy, fillCopy, toast } from "@airdesign/ui"
-import type { AccessClient, IntentKind, SessionResult } from "@airdesign/access/client"
+import type { AccessClient, IntentKind } from "@airdesign/access/client"
 import { readAccessLinkToken } from "@airdesign/access/client"
+import { Workspace } from "../decks/workspace.tsx"
 import { StudioShell } from "../shell/studio-shell.tsx"
 
 type Screen = "checking" | "signin" | "check" | "expired" | "home"
@@ -57,7 +58,6 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const [linkStatus, setLinkStatus] = useState<LinkStatus>("link-expired")
   const [resendAvailableAt, setResendAvailableAt] = useState(0)
   const [now, setNow] = useState(() => Date.now())
-  const [session, setSession] = useState<Extract<SessionResult, { status: "signed-in" }> | null>(null)
   const [confirmSignOut, setConfirmSignOut] = useState(false)
 
   const enterWorkspace = (nextKind: IntentKind, nextIntent: string, handoffToken: string | null) => {
@@ -134,7 +134,6 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         return
       }
       if (result.status === "signed-in") {
-        setSession(result)
         if (result.kind) {
           setKind(result.kind)
         }
@@ -144,7 +143,6 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         setScreen("home")
         return
       }
-      setSession(null)
       setScreen("signin")
     })()
     return () => {
@@ -216,7 +214,6 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const onSignOut = async () => {
     await client.revoke()
     setConfirmSignOut(false)
-    setSession(null)
     setEmail("")
     setCode("")
     setCodeError(undefined)
@@ -237,11 +234,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     return (
       <>
         <StudioShell intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          <section className="ad-empty">
-            <h1 className="ad-title">{copy("home.empty_title")}</h1>
-            <p className="ad-helper">{copy("home.empty_body")}</p>
-            <p className="ad-helper">{session ? copy("access.signed_in") : ""}</p>
-          </section>
+          <Workspace />
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}

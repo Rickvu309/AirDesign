@@ -1,3 +1,5 @@
+import { initializeExports,exportStore } from "../decks/export-store.ts"
+import { createCatalog, initializeCatalog } from "../../../../packages/catalog/src/index.ts"
 import { PGlite } from "@electric-sql/pglite"
 import pg from "pg"
 import { createHash, randomUUID } from "node:crypto"
@@ -8,7 +10,7 @@ import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistor
 
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string } | { kind: "postgres"; url: string }) {
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string } | { kind: "postgres"; url: string }, clock=Date.now) {
   if (driver.kind === "pglite" && driver.path) await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
@@ -39,7 +41,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-    await initializeHistoryIndex(tx) })
+    await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
     const result = await tx.query<{ state: History; deleted: boolean }>("SELECT state, deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE", [deckId, principal.personId])
     const row = result.rows[0]
@@ -48,6 +50,8 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return row.state
   }
   return {
+    catalog:createCatalog(transaction,clock),
+    exports:exportStore(transaction,clock),
     async issueRunToken(principal: Principal, deckId: string, run: string) {
       return transaction(async tx=>{
         await owned(tx,principal,deckId)
@@ -98,7 +102,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         if (result.receipt.kind === "applied") {
           await saveHistoryIndex(tx,deckId,history,result.history)
           await tx.query("INSERT INTO editing_event(deck,seq,command,receipt) VALUES ($1,$2,$3,$4)", [deckId,result.history.seq,JSON.stringify(command),JSON.stringify(result.receipt)])
-          await tx.query("UPDATE editing_deck SET state=$2 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history))])
+          await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])
         }
         return result.receipt
       })
@@ -110,7 +114,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         return { head: history.seq, events: result.rows }
       })
     },
-    async delete(principal: Principal, deckId: string) { return transaction(async tx => { await owned(tx, principal, deckId); await tx.query("UPDATE editing_deck SET deleted=true WHERE id=$1", [deckId]) }) },
+    async delete(principal: Principal, deckId: string) { return transaction(async tx => { await owned(tx, principal, deckId); await tx.query("UPDATE editing_deck SET deleted=true,deleted_at=$2 WHERE id=$1", [deckId,clock()]) }) },
     async close() { if (closed) return;closed=true;await local?.close();await pool?.end();await Promise.all(connections) },
   }
 }

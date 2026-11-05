@@ -116,3 +116,5 @@ All screens are 1470 x 923 (the landing page is taller).
 | S92.04 | Credits / Out of usage / Reset complete | [S92.04-credits-out-of-usage-reset-complete.png](screens/S92.04-credits-out-of-usage-reset-complete.png) |
 | S99.01 | Credits / Errors / Payment failed | [S99.01-credits-errors-payment-failed.png](screens/S99.01-credits-errors-payment-failed.png) |
 | S99.02 | Credits / Errors / Payment expired | [S99.02-credits-errors-payment-expired.png](screens/S99.02-credits-errors-payment-expired.png) |
+
+P05 state details: [Manual workspace states](p05-manual-workspace-states.md).

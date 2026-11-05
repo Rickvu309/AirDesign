@@ -239,6 +239,12 @@ async function openDatabase(driver: AccessDriver): Promise<{ db: Database; table
   }
   const tables = accessTables(applicationSchemaName)
   const pool = new pg.Pool({ connectionString: driver.url })
+  const connections = new Set<Promise<void>>()
+  pool.on("connect", client => {
+    const ended = new Promise<void>(resolve => client.once("end", resolve))
+    connections.add(ended)
+    void ended.then(() => connections.delete(ended))
+  })
   await pool.query(accessSchemaSql(applicationSchemaName, "stable"))
   const db = drizzlePg(pool, { schema: tables }) as unknown as Database
   let closed = false
@@ -251,6 +257,7 @@ async function openDatabase(driver: AccessDriver): Promise<{ db: Database; table
       }
       closed = true
       await pool.end()
+      await Promise.all(connections)
     },
   }
 }
