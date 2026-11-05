@@ -19,7 +19,7 @@ export async function runPerformance({page,stack,call,worker,head,output,create,
     try{
       await coldPage.goto(stack.origin+`/deck/${entry.id}`,{waitUntil:"domcontentloaded"})
       await coldPage.locator('[data-font-state="loading"]').waitFor();assert.ok(await coldPage.getByText("Loading deck fonts…").isVisible());gate.resolve()
-      await coldPage.locator('[data-font-state="ready"]').waitFor();const waitMs=Number(await coldPage.locator('[data-font-state="ready"]').getAttribute("data-font-wait-ms"));assert.ok(fontRequests.length>=2);coldFonts.push({trial,waitMs,visible:true,requests:fontRequests.length})
+      await coldPage.locator('[data-font-state="ready"]').waitFor({state:"attached"});const waitMs=Number(await coldPage.locator('[data-font-state="ready"]').getAttribute("data-font-wait-ms"));assert.ok(fontRequests.length>=2);coldFonts.push({trial,waitMs,visible:true,requests:fontRequests.length})
     }finally{gate.resolve();await context.close()}
   }
   await page.goto(stack.origin+`/deck/${entry.id}`);await page.locator('[data-sync-state="saved"]').waitFor();await page.evaluate(()=>document.fonts.ready)
