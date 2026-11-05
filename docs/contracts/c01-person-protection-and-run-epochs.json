@@ -1,0 +1,109 @@
+{
+  "id": "C01",
+  "schemaVersion": 1,
+  "title": "Person protection and run epochs",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/contract-rules",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "A person edit protects its property, and for a node property the whole node, from any agent run whose start is earlier than the edit. Scalar writes and structural writes (parent, order, existence) use that same guard. A run that started at or after the edit is a new explicit request and may change the property. An older run never overwrites the person value.",
+  "alternatives": [
+    "Last write wins between the person and the agent.",
+    "Protect only scalar fields and let an older run delete or reparent the node.",
+    "Queue the older run and apply it after the person edit."
+  ],
+  "examples": [
+    {
+      "id": "older-run-cannot-overwrite-person-text",
+      "body": {
+        "events": [
+          {
+            "type": "person-edit",
+            "at": 10,
+            "property": "node:slide-1/title",
+            "value": "person title"
+          },
+          {
+            "type": "agent-write",
+            "at": 12,
+            "runId": "run_old",
+            "runStartedAt": 5,
+            "property": "node:slide-1/title",
+            "value": "agent title"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "property": "node:slide-1/title",
+        "value": "person title"
+      }
+    },
+    {
+      "id": "new-request-may-change-protected-text",
+      "body": {
+        "events": [
+          {
+            "type": "person-edit",
+            "at": 10,
+            "property": "node:slide-1/title",
+            "value": "person title"
+          },
+          {
+            "type": "agent-write",
+            "at": 20,
+            "runId": "run_new",
+            "runStartedAt": 16,
+            "property": "node:slide-1/title",
+            "value": "new request"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "applied",
+        "property": "node:slide-1/title",
+        "value": "new request"
+      }
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "older-run-cannot-delete-a-node-the-person-edited",
+      "body": {
+        "events": [
+          {
+            "type": "person-edit",
+            "at": 10,
+            "property": "node:child-c/text",
+            "value": "mine"
+          },
+          {
+            "type": "agent-write",
+            "at": 14,
+            "runId": "run_old",
+            "runStartedAt": 4,
+            "property": "node:child-c/existence",
+            "value": "absent"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "refused",
+        "property": "node:child-c/existence",
+        "value": "present"
+      }
+    }
+  ],
+  "evidence": {
+    "kind": "executable-examples",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

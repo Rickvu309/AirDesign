@@ -1,0 +1,27 @@
+{
+  "id": "C23",
+  "schemaVersion": 1,
+  "title": "Templates and image provenance",
+  "status": "deferred",
+  "freezeIn": "P06",
+  "acceptIn": "P06",
+  "owner": "packages/brand",
+  "source": {
+    "path": "docs/design/v0.1/logic.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": null,
+  "alternatives": [
+    "Decide in P06 before any consumer."
+  ],
+  "examples": [],
+  "counterexamples": [],
+  "evidence": {
+    "kind": "deferred",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

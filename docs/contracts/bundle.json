@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361",
+  "contracts": [
+    {
+      "id": "C01",
+      "path": "docs/contracts/c01-person-protection-and-run-epochs.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/contract-rules"
+    },
+    {
+      "id": "C02",
+      "path": "docs/contracts/c02-structural-run-undo-and-adoption.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/contract-rules"
+    },
+    {
+      "id": "C03",
+      "path": "docs/contracts/c03-individual-undo-redo-and-undo-change.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/contract-rules"
+    },
+    {
+      "id": "C04",
+      "path": "docs/contracts/c04-native-kept-flagged-and-source-preservation.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/pptx"
+    },
+    {
+      "id": "C06",
+      "path": "docs/contracts/c06-principal-and-ownership-boundary.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/access"
+    },
+    {
+      "id": "C07",
+      "path": "docs/contracts/c07-performance-budgets-and-measurement.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "bench"
+    },
+    {
+      "id": "C08",
+      "path": "docs/contracts/c08-rendering-and-font-tolerance.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/render"
+    },
+    {
+      "id": "C09",
+      "path": "docs/contracts/c09-email-access-and-session-policy.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/access"
+    },
+    {
+      "id": "C16",
+      "path": "docs/contracts/c16-retention-and-deletion.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/access"
+    },
+    {
+      "id": "C19",
+      "path": "docs/contracts/c19-worker-resource-and-security-limits.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "apps/worker"
+    },
+    {
+      "id": "C21",
+      "path": "docs/contracts/c21-evidence-and-external-gate-boundaries.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "docs/contracts"
+    },
+    {
+      "id": "C22",
+      "path": "docs/contracts/c22-tokens-accessibility-and-phone-scope.json",
+      "status": "accepted",
+      "freezeIn": "P01",
+      "owner": "packages/ui"
+    },
+    {
+      "id": "C05",
+      "path": "docs/contracts/c05-tool-catalog-and-actor-authority.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/agent"
+    },
+    {
+      "id": "C10",
+      "path": "docs/contracts/c10-home-and-first-request-design-conflicts.json",
+      "status": "deferred",
+      "freezeIn": "P05",
+      "owner": "apps/studio"
+    },
+    {
+      "id": "C11",
+      "path": "docs/contracts/c11-export-and-operation-behavior.json",
+      "status": "deferred",
+      "freezeIn": "P04",
+      "owner": "packages/pptx"
+    },
+    {
+      "id": "C12",
+      "path": "docs/contracts/c12-snapshot-paging-and-response-limits.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/agent"
+    },
+    {
+      "id": "C13",
+      "path": "docs/contracts/c13-remote-authorization-and-registration.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/access"
+    },
+    {
+      "id": "C14",
+      "path": "docs/contracts/c14-week-identity-timezone-and-dst.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/usage"
+    },
+    {
+      "id": "C15",
+      "path": "docs/contracts/c15-credits-refunds-and-payment-races.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/usage"
+    },
+    {
+      "id": "C17",
+      "path": "docs/contracts/c17-user-agent-usage-and-automatic-spending-conflict.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "packages/usage"
+    },
+    {
+      "id": "C18",
+      "path": "docs/contracts/c18-offline-person-edits-and-account-isolation.json",
+      "status": "deferred",
+      "freezeIn": "P04",
+      "owner": "packages/change-log"
+    },
+    {
+      "id": "C20",
+      "path": "docs/contracts/c20-quality-and-tool-evaluation.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "evals"
+    },
+    {
+      "id": "C23",
+      "path": "docs/contracts/c23-templates-and-image-provenance.json",
+      "status": "deferred",
+      "freezeIn": "P06",
+      "owner": "packages/brand"
+    },
+    {
+      "id": "C24",
+      "path": "docs/contracts/c24-provider-and-public-endpoint-authorization.json",
+      "status": "deferred",
+      "freezeIn": "P07",
+      "owner": "apps/server"
+    }
+  ]
+}

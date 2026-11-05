@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "licensedPptx": [],
+  "synthetic": [
+    {
+      "id": "text-span-two-runs",
+      "license": "repo-authored",
+      "path": "fixtures/pptx/text-span-two-runs"
+    }
+  ],
+  "unresolved": [
+    {
+      "id": "office-reference-corpus",
+      "reason": "no licensed Office corpus in this checkout",
+      "gate": "X01"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "limits": {
+    "zipBytes": 104857600,
+    "unpackedBytes": 524288000,
+    "parts": 10000,
+    "wallMs": 30000,
+    "cpu": "one-core",
+    "memoryBytes": 536870912,
+    "networkEgress": "none",
+    "temp": "per-owner-job"
+  },
+  "hostileFont": {
+    "caseId": "font-zip-bomb",
+    "owner": "P03",
+    "status": "unproven",
+    "expectation": "reject or kill the worker without renderer egress"
+  }
+}

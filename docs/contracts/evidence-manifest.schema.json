@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "airdesign://evidence/manifest/v1",
+  "type": "object",
+  "required": [
+    "head",
+    "node",
+    "platform",
+    "lockfileSha256",
+    "viewport"
+  ],
+  "properties": {
+    "head": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "viewport": {
+      "type": "object"
+    },
+    "fontHashes": {
+      "type": "object"
+    }
+  }
+}

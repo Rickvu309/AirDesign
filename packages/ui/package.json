@@ -1,0 +1,31 @@
+{
+  "name": "@airdesign/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "dist",
+    "fonts"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./copy": "./dist/copy/copy-kit.json"
+  },
+  "dependencies": {
+    "cmdk": "1.1.1",
+    "sonner": "2.0.8"
+  },
+  "peerDependencies": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
+}

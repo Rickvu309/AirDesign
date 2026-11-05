@@ -1,0 +1,55 @@
+{
+  "id": "C22",
+  "schemaVersion": 1,
+  "title": "Tokens accessibility and phone scope",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/ui",
+  "source": {
+    "path": "docs/design/v0.1/tokens.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "shadcn semantic variables are the only app colors. Text that must be read uses pairs at or above 4.5:1: muted text is #5C5C5A, primary button stops are #3E6FBE to #2D6FCD under white type, and error text is #B92F2F. The paper palette stays available for non-text. Motion is two custom properties, 150ms cubic-bezier(0.22, 1, 0.36, 1) and 280ms cubic-bezier(0.32, 0.72, 0, 1). Reduced motion sets both to 0ms and leaves focus visible. Studio is light only. Access and read-only deck viewing fit 320 CSS px. Keyboard, focus return, status, and named errors are required. The canonical copy source is docs/design/v0.1/copy-kit.json.",
+  "alternatives": [
+    "Keep the designed primary gradient even though white type fails 4.5:1.",
+    "Add a Studio dark theme.",
+    "Inline a second motion duration per component.",
+    "Use the planning markdown table as a second runtime copy source."
+  ],
+  "examples": [
+    {
+      "id": "contrast-corrections",
+      "mutedForeground": "#5C5C5A",
+      "primaryStops": [
+        "#3E6FBE",
+        "#2D6FCD"
+      ],
+      "errorText": "#B92F2F"
+    },
+    {
+      "id": "motion-tokens",
+      "micro": "150ms cubic-bezier(0.22, 1, 0.36, 1)",
+      "panel": "280ms cubic-bezier(0.32, 0.72, 0, 1)"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "no-studio-dark-theme",
+      "darkClass": false
+    },
+    {
+      "id": "gray-500-is-not-body-text",
+      "token": "#909090",
+      "textUse": false
+    }
+  ],
+  "evidence": {
+    "kind": "ui-package",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

@@ -8,7 +8,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/contract-rules",
+      "decision": "docs/contracts/c01-person-protection-and-run-epochs.json"
     },
     "C02": {
       "title": "Structural run undo and adoption",
@@ -16,7 +18,9 @@
       "source": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/contract-rules",
+      "decision": "docs/contracts/c02-structural-run-undo-and-adoption.json"
     },
     "C03": {
       "title": "Individual undo/redo and undo_change",
@@ -24,7 +28,9 @@
       "source": "docs/planning/v0.1/content/f03-edit-and-refine-flow.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/contract-rules",
+      "decision": "docs/contracts/c03-individual-undo-redo-and-undo-change.json"
     },
     "C04": {
       "title": "Native kept flagged and source preservation",
@@ -32,7 +38,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/pptx",
+      "decision": "docs/contracts/c04-native-kept-flagged-and-source-preservation.json"
     },
     "C05": {
       "title": "Tool catalog and actor authority",
@@ -40,7 +48,9 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/agent",
+      "decision": "docs/contracts/c05-tool-catalog-and-actor-authority.json"
     },
     "C06": {
       "title": "Principal and ownership boundary",
@@ -48,7 +58,9 @@
       "source": "docs/planning/v0.1/content/key-components.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/access",
+      "decision": "docs/contracts/c06-principal-and-ownership-boundary.json"
     },
     "C07": {
       "title": "Performance budgets and measurement",
@@ -56,7 +68,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "bench",
+      "decision": "docs/contracts/c07-performance-budgets-and-measurement.json"
     },
     "C08": {
       "title": "Rendering and font tolerance",
@@ -64,7 +78,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/render",
+      "decision": "docs/contracts/c08-rendering-and-font-tolerance.json"
     },
     "C09": {
       "title": "Email access and session policy",
@@ -72,7 +88,9 @@
       "source": "docs/design/v0.1/logic.md; docs/design/v0.1/backlog.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/access",
+      "decision": "docs/contracts/c09-email-access-and-session-policy.json"
     },
     "C10": {
       "title": "Home and first request design conflicts",
@@ -80,7 +98,9 @@
       "source": "docs/design/v0.1/backlog.md",
       "acceptIn": "P05",
       "freezeIn": "P05",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "apps/studio",
+      "decision": "docs/contracts/c10-home-and-first-request-design-conflicts.json"
     },
     "C11": {
       "title": "Export and operation behavior",
@@ -88,7 +108,9 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P04",
       "freezeIn": "P04",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/pptx",
+      "decision": "docs/contracts/c11-export-and-operation-behavior.json"
     },
     "C12": {
       "title": "Snapshot paging and response limits",
@@ -96,7 +118,9 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/agent",
+      "decision": "docs/contracts/c12-snapshot-paging-and-response-limits.json"
     },
     "C13": {
       "title": "Remote authorization and registration",
@@ -104,7 +128,9 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/access",
+      "decision": "docs/contracts/c13-remote-authorization-and-registration.json"
     },
     "C14": {
       "title": "Week identity timezone and DST",
@@ -112,7 +138,9 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/usage",
+      "decision": "docs/contracts/c14-week-identity-timezone-and-dst.json"
     },
     "C15": {
       "title": "Credits refunds and payment races",
@@ -120,7 +148,9 @@
       "source": "docs/planning/v0.1/content/f07-usage-flow.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/usage",
+      "decision": "docs/contracts/c15-credits-refunds-and-payment-races.json"
     },
     "C16": {
       "title": "Retention and deletion",
@@ -128,7 +158,9 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/access",
+      "decision": "docs/contracts/c16-retention-and-deletion.json"
     },
     "C17": {
       "title": "User Agent usage and automatic spending conflict",
@@ -136,7 +168,9 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/usage",
+      "decision": "docs/contracts/c17-user-agent-usage-and-automatic-spending-conflict.json"
     },
     "C18": {
       "title": "Offline person edits and account isolation",
@@ -144,7 +178,9 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P04",
       "freezeIn": "P04",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/change-log",
+      "decision": "docs/contracts/c18-offline-person-edits-and-account-isolation.json"
     },
     "C19": {
       "title": "Worker resource and security limits",
@@ -152,7 +188,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "apps/worker",
+      "decision": "docs/contracts/c19-worker-resource-and-security-limits.json"
     },
     "C20": {
       "title": "Quality and tool evaluation",
@@ -160,7 +198,9 @@
       "source": "docs/planning/v0.1/research/quality/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "evals",
+      "decision": "docs/contracts/c20-quality-and-tool-evaluation.json"
     },
     "C21": {
       "title": "Evidence and external gate boundaries",
@@ -168,7 +208,9 @@
       "source": "docs/planning/v0.1/content/engine-constraints.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "docs/contracts",
+      "decision": "docs/contracts/c21-evidence-and-external-gate-boundaries.json"
     },
     "C22": {
       "title": "Tokens accessibility and phone scope",
@@ -176,7 +218,9 @@
       "source": "docs/design/v0.1/tokens.md",
       "acceptIn": "P01",
       "freezeIn": "P01",
-      "status": "proposed"
+      "status": "accepted",
+      "owner": "packages/ui",
+      "decision": "docs/contracts/c22-tokens-accessibility-and-phone-scope.json"
     },
     "C23": {
       "title": "Templates and image provenance",
@@ -184,7 +228,9 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P06",
       "freezeIn": "P06",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "packages/brand",
+      "decision": "docs/contracts/c23-templates-and-image-provenance.json"
     },
     "C24": {
       "title": "Provider and public endpoint authorization",
@@ -192,7 +238,9 @@
       "source": "docs/planning/v0.1/content/monorepo-map.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "proposed"
+      "status": "deferred",
+      "owner": "apps/server",
+      "decision": "docs/contracts/c24-provider-and-public-endpoint-authorization.json"
     }
   },
   "prReferences": {

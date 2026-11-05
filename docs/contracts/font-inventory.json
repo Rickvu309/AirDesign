@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "fonts": [
+    {
+      "name": "Geist",
+      "role": "ui",
+      "license": "OFL-1.1",
+      "file": "packages/ui/fonts/geist-latin.woff2",
+      "sha256": null,
+      "status": "unresolved",
+      "reason": "vendored with the UI package"
+    },
+    {
+      "name": "Calibri",
+      "role": "reference",
+      "license": "unresolved",
+      "sha256": null,
+      "status": "unresolved",
+      "gate": "X01",
+      "reason": "no licensed font file in this checkout"
+    },
+    {
+      "name": "Aptos",
+      "role": "reference",
+      "license": "unresolved",
+      "sha256": null,
+      "status": "unresolved",
+      "gate": "X01",
+      "reason": "no licensed font file in this checkout"
+    }
+  ]
+}

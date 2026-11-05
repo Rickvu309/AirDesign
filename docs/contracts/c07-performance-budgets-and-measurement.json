@@ -1,0 +1,66 @@
+{
+  "id": "C07",
+  "schemaVersion": 1,
+  "title": "Performance budgets and measurement",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "bench",
+  "source": {
+    "path": "docs/planning/v0.1/content/engine-constraints.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "Adopt the absolute budgets in budgets. PDF has its own deadline and is not the import wall time. Model and tool latency are not borrowed from import or fixture-run time. While trunk has no comparable product code, measure the added operation against these absolute budgets and do not build a trunk comparison. Record workload, sample count, warm or cold state, and the limiter with every probe.",
+  "alternatives": [
+    "Use one shared latency number for import, PDF, and model calls.",
+    "Fail P01 on a relative p95 against trunk code that does not exist.",
+    "Leave PDF inside the import wall-time budget."
+  ],
+  "examples": [
+    {
+      "id": "pdf-deadline-is-separate",
+      "pdfDeadlineMs": 2000,
+      "importWallMs": 30000
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "tool-read-is-not-import-wall",
+      "toolReadWarmP95Ms": 500,
+      "importWallMs": 30000
+    }
+  ],
+  "evidence": {
+    "kind": "budget-table",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  },
+  "budgets": {
+    "fixtureCliWallMs": 30000,
+    "fixtureCliPeakRssBytes": 268435456,
+    "packedUiBytes": 200000,
+    "shellStartupMs": 3000,
+    "authWarmP95Ms": 500,
+    "authColdMs": 2000,
+    "panZoomDragFps": 60,
+    "panZoomDragElements": 300,
+    "editPaintMs": 16,
+    "agentChangeVisibleMs": 100,
+    "hundredSlideEditableMs": 2000,
+    "commitToPaintMs": 100,
+    "toolReadWarmP95Ms": 500,
+    "toolEditWarmP95Ms": 1000,
+    "toolCaptureWarmP95Ms": 2000,
+    "operationAckMs": 1000,
+    "workerWallMs": 30000,
+    "workerZipBytes": 104857600,
+    "workerUnpackedBytes": 524288000,
+    "workerParts": 10000,
+    "workerRssBytes": 536870912,
+    "pdfDeadlineMs": 2000,
+    "importWallMs": 30000
+  }
+}

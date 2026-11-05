@@ -1,0 +1,44 @@
+{
+  "id": "C06",
+  "schemaVersion": 1,
+  "title": "Principal and ownership boundary",
+  "status": "accepted",
+  "freezeIn": "P01",
+  "acceptIn": "P01",
+  "owner": "packages/access",
+  "source": {
+    "path": "docs/planning/v0.1/content/key-components.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": "The only trusted principal is a person id, or an agent connection or run that belongs to that person. Account, session, file, history, asset, and agent-write boundaries check that person id. A caller who does not own the resource gets the same not-found result as a missing resource and no write occurs. No fixture authentication bypass exists.",
+  "alternatives": [
+    "Trust a client-supplied user id.",
+    "Return 403 with the other person's email when access is denied.",
+    "Share one session across people in a workspace."
+  ],
+  "examples": [
+    {
+      "id": "owner-reads-own-account",
+      "caller": "person_a",
+      "resourceOwner": "person_a",
+      "result": "visible"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "other-person-sees-not-found-and-writes-nothing",
+      "caller": "person_a",
+      "resourceOwner": "person_b",
+      "result": "not-found",
+      "write": "none"
+    }
+  ],
+  "evidence": {
+    "kind": "access-behavior-tests",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

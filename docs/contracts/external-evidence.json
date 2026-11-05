@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "id": "windows-powerpoint",
+      "available": false,
+      "passed": false,
+      "gate": "X01",
+      "reason": "no Windows PowerPoint build on this machine"
+    },
+    {
+      "id": "mac-powerpoint",
+      "available": false,
+      "passed": false,
+      "gate": "X01",
+      "reason": "no pinned Mac PowerPoint reference in this checkout"
+    },
+    {
+      "id": "screen-reader",
+      "available": false,
+      "passed": false,
+      "gate": "X02",
+      "drivers": [],
+      "reason": "no assistive-technology transcript in this checkout"
+    }
+  ]
+}

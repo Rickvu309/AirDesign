@@ -1,0 +1,27 @@
+{
+  "id": "C12",
+  "schemaVersion": 1,
+  "title": "Snapshot paging and response limits",
+  "status": "deferred",
+  "freezeIn": "P07",
+  "acceptIn": "P07",
+  "owner": "packages/agent",
+  "source": {
+    "path": "docs/planning/v0.1/research/tools/README.md",
+    "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
+  },
+  "rule": null,
+  "alternatives": [
+    "Decide in P07 before any consumer."
+  ],
+  "examples": [],
+  "counterexamples": [],
+  "evidence": {
+    "kind": "deferred",
+    "command": "npm run verify:contracts"
+  },
+  "migration": {
+    "policy": "additive-only",
+    "from": null
+  }
+}

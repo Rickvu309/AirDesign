@@ -1,0 +1,27 @@
+export const performanceBudgets = {
+  fixtureCliWallMs: 30_000,
+  fixtureCliPeakRssBytes: 256 * 1024 * 1024,
+  packedUiBytes: 200_000,
+  shellStartupMs: 3_000,
+  authWarmP95Ms: 500,
+  authColdMs: 2_000,
+  panZoomDragFps: 60,
+  panZoomDragElements: 300,
+  editPaintMs: 16,
+  agentChangeVisibleMs: 100,
+  hundredSlideEditableMs: 2_000,
+  commitToPaintMs: 100,
+  toolReadWarmP95Ms: 500,
+  toolEditWarmP95Ms: 1_000,
+  toolCaptureWarmP95Ms: 2_000,
+  operationAckMs: 1_000,
+  workerWallMs: 30_000,
+  workerZipBytes: 100 * 1024 * 1024,
+  workerUnpackedBytes: 500 * 1024 * 1024,
+  workerParts: 10_000,
+  workerRssBytes: 512 * 1024 * 1024,
+  pdfDeadlineMs: 2_000,
+  importWallMs: 30_000,
+} as const
+
+export type PerformanceBudgetName = keyof typeof performanceBudgets

@@ -1,0 +1,10 @@
+{
+  "fixtureId": "text-span-two-runs",
+  "edit": { "part": "slide.xml", "spanId": "r2", "nextText": "Changed" },
+  "expect": {
+    "unchangedParts": ["notes.xml", "theme.xml"],
+    "unchangedSpanIds": ["r1"],
+    "lineCountDelta": 0,
+    "repairPrompt": false
+  }
+}
