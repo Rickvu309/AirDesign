@@ -21,7 +21,7 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     const node = ref.current
     if (!node || composing.current || renderedRuns.current?.node === node && renderedRuns.current.signature === signature) return
     renderedRuns.current = {node,signature}
-    if (localRuns.current === signature) { localRuns.current = null; return }
+    if (localRuns.current === signature) { localRuns.current = null; renderedRuns.current = null; return }
     caretStyle.current = element.runs[0]
     canonicalChildren(node, element.runs)
   }, [element, signature, commit])

@@ -21,7 +21,7 @@ export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
   const anchor = offset(selection?.anchorNode ?? null, selection?.anchorOffset ?? 0)
   const focus = offset(selection?.focusNode ?? null, selection?.focusOffset ?? 0)
   const spans=[...node.childNodes]
-  if(spans.length===runs.length && spans.every(span=>span instanceof node.ownerDocument.defaultView!.HTMLSpanElement && span.childNodes.length===1 && span.firstChild?.nodeType===3 && span.getAttributeNames().every(name=>name==="style" || name==="data-run-style") && Array.from({length:span.style.length},(_,index)=>span.style.item(index)).every(name=>["font-family","font-size","font-weight","color"].includes(name)))){
+  if(!selection && spans.length===runs.length && spans.every(span=>span instanceof node.ownerDocument.defaultView!.HTMLSpanElement && span.childNodes.length===1 && span.firstChild?.nodeType===3 && span.getAttributeNames().every(name=>name==="style" || name==="data-run-style") && Array.from({length:span.style.length},(_,index)=>span.style.item(index)).every(name=>["font-family","font-size","font-weight","color"].includes(name)))){
     runs.forEach((run,index)=>{
       const span=spans[index]
       if(!(span instanceof node.ownerDocument.defaultView!.HTMLSpanElement))throw new Error("text-span-required")
