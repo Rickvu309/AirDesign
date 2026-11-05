@@ -75,3 +75,31 @@ Every screen, component and agent message uses these strings by key. Write a new
 | `usage.reset_confirm_title` | Reset usage? |
 | `usage.reset_confirm_body` | This uses $5 of your credits. |
 | `import.failed_title` | Unable to import this file |
+| `access.sign_in_title` | Sign in |
+| `access.email_label` | Email |
+| `access.continue` | Continue |
+| `access.check_title` | Check your email |
+| `access.check_body` | Use the link or the 6-digit code. The link works once and expires in 15 minutes. |
+| `access.code_label` | Code |
+| `access.resend` | Resend email |
+| `access.resend_wait` | Resend is available in {n} seconds. |
+| `access.different_email` | Use a different email |
+| `access.wrong_code` | That code is not valid. Try again. |
+| `access.expired_title` | This link has expired |
+| `access.expired_body` | Send a new link to continue. Your place is saved. |
+| `access.send_new` | Send a new link |
+| `access.sign_out` | Sign out |
+| `access.sign_out_title` | Sign out? |
+| `access.sign_out_body` | This ends the session on this device. |
+| `access.signed_in` | Signed in. |
+| `home.empty_title` | No decks yet |
+| `home.empty_body` | This is where your decks will show up. |
+| `home.new_deck` | Start a deck |
+| `home.import` | Import a PowerPoint |
+| `home.connect_agent` | Connect an agent |
+| `home.intent_kept` | Your place is saved. |
+| `shell.command` | Commands |
+| `shell.home` | Home |
+| `shell.brand` | AirDesign |
+| `shell.command_empty` | No commands match. |
+| `access.email_invalid` | Enter an email address. |

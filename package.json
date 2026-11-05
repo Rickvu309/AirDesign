@@ -14,7 +14,7 @@
     "verify:pr-01": "node scripts/verify-pr-01.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "node scripts/lint-sources.mjs && oxlint ."
+    "lint": "node --experimental-strip-types scripts/lint-sources.ts && oxlint ."
   },
   "devDependencies": {
     "@types/node": "24.10.1",

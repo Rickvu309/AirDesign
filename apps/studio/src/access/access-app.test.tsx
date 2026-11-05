@@ -1,0 +1,170 @@
+import { mkdirSync, writeFileSync } from "node:fs"
+import path from "node:path"
+import { act, type ReactNode } from "react"
+import { createRoot, type Root } from "react-dom/client"
+import { afterEach, describe, expect, it } from "vitest"
+import type { AccessClient, IntentKind } from "@airdesign/access/client"
+import { AccessApp } from "./access-app.tsx"
+
+let root: Root | null = null
+
+afterEach(() => {
+  act(() => {
+    root?.unmount()
+  })
+  root = null
+  document.body.innerHTML = ""
+})
+
+describe("studio access", () => {
+  it("keeps a wrong code on the check screen and returns focus to the code", async () => {
+    const client = fakeClient()
+    await render(<AccessApp client={client} />)
+    await act(async () => {
+      await flush()
+    })
+    const email = document.querySelector<HTMLInputElement>("input")
+    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")
+    await act(async () => {
+      setValue(email, "ada@example.com")
+      button?.click()
+      await flush()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
+    const boxes = [...document.querySelectorAll<HTMLInputElement>(".ad-code-box")]
+    expect(boxes[0]?.autocomplete).toBe("one-time-code")
+    await act(async () => {
+      const paste = new Event("paste", { bubbles: true, cancelable: true })
+      Object.defineProperty(paste, "clipboardData", { value: { getData: () => "000000" } })
+      boxes[0]?.dispatchEvent(paste)
+      await flush()
+    })
+    expect(document.querySelector("[role=alert]")?.textContent).toBe("That code is not valid. Try again.")
+    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
+    expect(document.activeElement).toBe(document.querySelector(".ad-code-box"))
+  })
+
+  it("clears the email when the person switches address", async () => {
+    const client = fakeClient()
+    await render(<AccessApp client={client} />)
+    await act(async () => {
+      await flush()
+    })
+    const email = document.querySelector<HTMLInputElement>("input")
+    await act(async () => {
+      setValue(email, "ada@example.com")
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      await flush()
+    })
+    await act(async () => {
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Use a different email")?.click()
+    })
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+    expect(document.querySelector("input")?.value).toBe("")
+    expect(document.body.textContent).not.toContain("ada@example.com")
+  })
+
+  it("returns focus from the sign-out dialog", async () => {
+    const client = fakeClient({ signedIn: true })
+    await render(<AccessApp client={client} initialScreen="home" />)
+    await act(async () => {
+      await flush()
+    })
+    const trigger = [...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")
+    trigger?.focus()
+    await act(async () => {
+      trigger?.click()
+    })
+    expect(document.querySelector("[role=dialog]")).not.toBeNull()
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))
+    })
+    expect(document.querySelector("[role=dialog]")).toBeNull()
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it("shows the saved intent on the home shell", async () => {
+    const client = fakeClient({ signedIn: true, kind: "import" })
+    const started = performance.now()
+    await render(<AccessApp client={client} initialScreen="home" initialKind="import" initialIntent="signed-intent" />)
+    const shellStartupMs = performance.now() - started
+    const evidence = path.join(process.env.HOME ?? "", "tmp/airdesign-autopilot/P01/perf")
+    mkdirSync(evidence, { recursive: true })
+    writeFileSync(path.join(evidence, "w02-shell.json"), `${JSON.stringify({ shellStartupMs, budgetMs: 3000, trunk: "absent" }, null, 2)}\n`)
+    expect(shellStartupMs).toBeLessThan(3000)
+    await act(async () => {
+      await flush()
+    })
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
+    expect(document.body.textContent).toContain("No decks yet")
+  })
+})
+
+function setValue(input: HTMLInputElement | null | undefined, value: string) {
+  if (!input) {
+    return
+  }
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set
+  setter?.call(input, value)
+  input.dispatchEvent(new Event("input", { bubbles: true }))
+  input.dispatchEvent(new Event("change", { bubbles: true }))
+}
+
+async function render(node: ReactNode) {
+  document.body.innerHTML = `<div id="root"></div>`
+  const host = document.getElementById("root")
+  if (!host) {
+    throw new Error("missing root")
+  }
+  root = createRoot(host)
+  await act(async () => {
+    root?.render(node)
+  })
+}
+
+function flush() {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+function fakeClient(options: { signedIn?: boolean; kind?: IntentKind } = {}): AccessClient {
+  const kind = options.kind ?? "home"
+  return {
+    async issueIntent(next) {
+      return { status: "issued", token: "signed-intent", kind: next }
+    },
+    async sendEmail(email) {
+      if (!email.includes("@")) {
+        return { status: "email-invalid" }
+      }
+      return { status: "check-email", resendAvailableAt: Date.now() + 30_000 }
+    },
+    async submitCode() {
+      return { status: "invalid-code", screen: "S22.01" }
+    },
+    async consumeLink() {
+      return { status: "link-expired", screen: "S29.01", intentToken: "signed-intent", kind }
+    },
+    async session() {
+      if (!options.signedIn) {
+        return { status: "signed-out" }
+      }
+      return { status: "signed-in", personId: "person", email: "ada@example.com", displayName: "ada", freeUsageWeekStartedAt: null }
+    },
+    async revoke() {
+      return { status: "signed-out" }
+    },
+    async account() {
+      return this.session()
+    },
+    async readPerson() {
+      return { status: "not-found" }
+    },
+    async updatePerson() {
+      return { status: "not-found" }
+    },
+    async deleteAccount() {
+      return { status: "confirmation-required" }
+    },
+  }
+}

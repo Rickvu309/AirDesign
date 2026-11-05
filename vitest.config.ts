@@ -1,6 +1,13 @@
+import path from "node:path"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@airdesign/ui": path.resolve("packages/ui/src/index.ts"),
+      "@airdesign/access/client": path.resolve("packages/access/src/client/index.ts"),
+    },
+  },
   test: {
     projects: [
       {
@@ -9,8 +16,8 @@ export default defineConfig({
           environment: "node",
           include: [
             "tests/**/*.test.ts",
-            "packages/access/**/*.test.ts",
-            "packages/contract-rules/**/*.test.ts",
+            "packages/**/*.test.ts",
+            "apps/**/*.test.ts",
             "packages/ui/test/**/*.test.mjs",
           ],
         },
@@ -19,6 +26,7 @@ export default defineConfig({
         test: {
           name: "dom",
           environment: "happy-dom",
+          setupFiles: ["packages/ui/test/react-act.ts"],
           include: ["packages/ui/**/*.test.tsx", "apps/studio/**/*.test.tsx"],
         },
       },

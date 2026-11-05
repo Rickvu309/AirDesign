@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
 import { readdir, readFile } from "node:fs/promises"
 import path from "node:path"
 import { describe, it } from "vitest"
@@ -116,12 +117,16 @@ describe("feasibility inventories", () => {
 
   it("gives every font a hash or an explicit unresolved entry", async () => {
     const inventory = JSON.parse(await readFile(path.join(contractsDir, "font-inventory.json"), "utf8")) as {
-      fonts: { name: string; license: string; sha256: string | null; status: string; reason?: string }[]
+      fonts: { name: string; license: string; sha256: string | null; status: string; reason?: string; file?: string }[]
     }
     for (const font of inventory.fonts) {
       const hashed = typeof font.sha256 === "string" && /^[0-9a-f]{64}$/.test(font.sha256)
       const unresolved = font.status === "unresolved" && typeof font.reason === "string" && font.license.length > 0
       assert.ok(hashed || unresolved, font.name)
+      if (hashed && font.file) {
+        const bytes = await readFile(path.join(root, font.file))
+        assert.equal(createHash("sha256").update(bytes).digest("hex"), font.sha256)
+      }
     }
   })
 

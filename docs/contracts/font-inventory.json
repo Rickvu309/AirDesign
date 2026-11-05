@@ -5,10 +5,17 @@
       "name": "Geist",
       "role": "ui",
       "license": "OFL-1.1",
-      "file": "packages/ui/fonts/geist-latin.woff2",
-      "sha256": null,
-      "status": "unresolved",
-      "reason": "vendored with the UI package"
+      "file": "packages/ui/fonts/geist-latin-400.woff2",
+      "sha256": "ead637fd0b6b887d829b3ce3f25fdc242b1de0cfb69c0d97987933675d1315ba",
+      "status": "resolved"
+    },
+    {
+      "name": "Geist Semibold",
+      "role": "ui",
+      "license": "OFL-1.1",
+      "file": "packages/ui/fonts/geist-latin-600.woff2",
+      "sha256": "edde7cc4e2719898f981a6d970a756030fff75a8ed36dd6a457a60181b889ebf",
+      "status": "resolved"
     },
     {
       "name": "Calibri",
