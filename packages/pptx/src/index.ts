@@ -53,6 +53,16 @@ async function inertWorkbook(bytes: Buffer): Promise<boolean> {
 export async function importPptx(input: Buffer): Promise<Presentation> {
   const parts = await readArchive(input)
   if (!parts.has("[Content_Types].xml") || !parts.has("_rels/.rels") || !parts.has("ppt/presentation.xml")) throw new Error("opc-presentation-required")
+  const contentTypes = parseXml(parts.get("[Content_Types].xml") ?? Buffer.alloc(0))
+  const defaults = new Map<string, string>()
+  const overrides = new Map<string, string>()
+  for (const node of contentTypes.nodes) {
+    if (node.uri !== "http://schemas.openxmlformats.org/package/2006/content-types") continue
+    const type = node.attributes.ContentType?.toLowerCase()
+    if (!type) continue
+    if (node.local === "Default" && node.attributes.Extension) defaults.set(node.attributes.Extension.toLowerCase(), type)
+    if (node.local === "Override" && node.attributes.PartName) overrides.set(node.attributes.PartName.replace(/^\//, ""), type)
+  }
   const original = new Map(parts)
   const removals: SafetyRemoval[] = []
   const relationships: Relationship[] = []
@@ -63,7 +73,7 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
   for (const [name, bytes] of parts) {
     if (/\.(xml|rels)$/i.test(name)) { nodesSeen += parseXml(bytes).nodes.length; if (nodesSeen > fileLimits.nodes) throw new Error("xml-job-node-limit") }
     if (/\.(ttf|otf|woff2?|fntdata|odttf)$/i.test(name)) inspectFont(bytes)
-    if (/\.svg$/i.test(name)) rejectActiveSvg(bytes.toString("utf8"))
+    if (/\.svg$/i.test(name) || (overrides.get(name) ?? defaults.get(path.posix.extname(name).slice(1).toLowerCase())) === "image/svg+xml") rejectActiveSvg(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
     if (/vbaProject|activeX|\/embeddings\//i.test(name) && !workbooks.has(name)) {
       removed.add(name)
       removals.push({ part: name, reason: /vbaProject/i.test(name) ? "macros" : "active-embedded-objects", detail: "payload removed" })
@@ -135,7 +145,11 @@ export function patchText(presentation: Presentation, part: string, index: numbe
   const node = parsed.nodes.filter(node => node.uri === drawingUri && node.local === "t")[index]
   if (!node || node.closeStart < node.openEnd || parsed.nodes.some(child => child.start > node.start && child.end < node.end)) throw new Error("qualified-text-span-required")
   const parts = new Map(presentation.parts)
-  parts.set(part, Buffer.from(parsed.xml.slice(0,node.openEnd) + escapeXml(text) + parsed.xml.slice(node.closeStart)))
+  const selfClosing = parsed.xml.slice(node.start, node.openEnd).endsWith("/>")
+  const replacement = selfClosing
+    ? parsed.xml.slice(node.start, node.openEnd - 2).trimEnd() + ">" + escapeXml(text) + `</${node.name}>`
+    : parsed.xml.slice(node.start, node.openEnd) + escapeXml(text) + parsed.xml.slice(node.closeStart, node.end)
+  parts.set(part, Buffer.from(parsed.xml.slice(0,node.start) + replacement + parsed.xml.slice(node.end)))
   parseXml(parts.get(part) ?? Buffer.alloc(0))
   return { ...presentation, parts }
 }

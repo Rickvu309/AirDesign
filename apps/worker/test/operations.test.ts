@@ -1,14 +1,16 @@
 import { createServer, request as httpRequest } from "node:http"
 import { readRequestBody, RequestBodyLimit } from "../../../packages/files/src/request-body.ts"
 import { afterEach, expect, it } from "vitest"
-import { mkdtemp, rm, readdir, readFile } from "node:fs/promises"
+import { mkdtemp, rm, readdir, readFile, mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
 import { OperationStore } from "../../../packages/operations/src/index.ts"
 import { createAccess, createMemoryInbox } from "@airdesign/access"
 import { operationsHandler } from "../../server/src/operations/handle.ts"
+import { randomBytes } from "node:crypto"
+import { readArchive, writeArchive } from "../../../packages/pptx/src/archive.ts"
 import { deliver } from "../src/isolation.ts"
-import { requireLocalUpload, rejectActiveSvg, inspectFont } from "../../../packages/files/src/index.ts"
+import { requireLocalUpload, rejectActiveSvg, inspectFont, fileLimits } from "../../../packages/files/src/index.ts"
 
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup() })
@@ -46,7 +48,9 @@ it("persists restart, retries at most three times, expires after seven days and 
   for (let attempt = 0; attempt < 3; attempt++) {
     expect(second.claim(job.id)).not.toBeNull()
     now += 35_001
-    expect(second.recover().map(recovered => recovered.id)).toEqual([job.id])
+    const recovered = second.recover()
+    expect(recovered.map(recovered => recovered.id)).toEqual([job.id])
+    for (const item of recovered) second.acknowledgeCleanup(item.id, item.lease)
   }
   expect(store.status(owner, job.id).kind).toBe("failed")
   for (const method of [() => store.status(other, job.id), () => store.cancel(other, job.id), () => store.artifact(other, job.id)]) expect(method).toThrow("not-found")
@@ -69,6 +73,7 @@ it("recovers a cancelled lease once when its worker cannot finish cleanup", asyn
   if (!claim) throw new Error("missing-claim")
   store.cancel(owner,job.id)
   expect(store.recover()).toEqual([{ id: job.id, lease: claim.lease, ownerDirectory: claim.ownerDirectory }])
+  store.acknowledgeCleanup(job.id, claim.lease)
   expect(store.recover()).toEqual([])
   expect(store.status(owner,job.id).kind).toBe("cancelled")
   expect(store.complete(job.id,claim.lease,input)).toBe(false)
@@ -92,6 +97,15 @@ it("uses real P01 sessions with origin checks and cross-owner denial on submit, 
   const call = (route: string, cookie: string, body?: unknown, origin = "http://localhost") => handle(new Request(`http://localhost/api/operations${route}`, { method: body === undefined ? "GET" : "POST", headers: { cookie, origin, "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }))
   expect((await call("", "", { base64: input.toString("base64"), requestId: "first" })).status).toBe(401)
   expect((await call("", a, {}, "http://evil.example")).status).toBe(403)
+  const parts = await readArchive(await readFile("fixtures/pptx/preservation.pptx"))
+  parts.set("ppt/media/large.bin", randomBytes(9 * 1024 * 1024))
+  const large = await writeArchive(parts)
+  expect(large.length).toBeGreaterThan(8.5 * 1024 * 1024)
+  expect((await call("", a, { base64: large.toString("base64"), requestId: "large-valid" })).status).toBe(202)
+  const boundary = Buffer.alloc(fileLimits.compressed)
+  input.copy(boundary)
+  expect((await call("", a, { base64: boundary.toString("base64"), requestId: "boundary" })).status).toBe(202)
+  expect((await call("", a, { base64: Buffer.concat([boundary, Buffer.alloc(1)]).toString("base64"), requestId: "over-boundary" })).status).toBe(400)
   const response = await call("", a, { base64: input.toString("base64"), requestId: "first" })
   expect(response.status).toBe(202)
   const job = await response.json()
@@ -148,9 +162,9 @@ it("never lets cleanup from an obsolete lease remove replacement files", async (
   const first = deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))
   now += 35_001
   expect(store.recover().map(value => value.id)).toEqual([job.id])
-  const second = deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))
+  expect(await deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))).toBe(false)
   expect(await first).toBe(false)
-  expect(await second).toBe(true)
+  expect(await deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))).toBe(true)
   expect(store.artifact(owner, job.id)).toEqual(input)
 })
 
@@ -204,4 +218,65 @@ it("reports the structured rejection reason from an isolated import worker", asy
   expect(await deliver(store,job.id,jobs,path.resolve("apps/worker/src/import.ts"))).toBe(false)
   expect(store.status(owner,job.id)).toMatchObject({ kind: "failed", reason: "zip-expansion-limit" })
   expect(await readdir(jobs)).toEqual([])
+})
+
+it("rejects decoded SVG URL and CSS escapes with a strict SVG allowlist", () => {
+  for (const attributes of ['fill="u&#114;l(http://169.254.169.254/latest)"', 'fill="u\\72l(http://169.254.169.254/latest)"', 'style="fill: u\\000072 l(http://169.254.169.254/latest)"', 'unknown="value"']) {
+    expect(() => rejectActiveSvg(`<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0" ${attributes}/></svg>`)).toThrow("unsafe-svg")
+  }
+  expect(() => rejectActiveSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0L10 10" fill="&#35;fff" style="stroke: red; stroke-width: 2"/></svg>')).not.toThrow()
+  for (const xml of ['<!DOCTYPE svg><svg/>', '<svg xmlns="http://www.w3.org/2000/svg"><foreignObject/></svg>', '<svg xmlns="http://www.w3.org/2000/svg"><path style="fill:expression(alert(1))"/></svg>']) expect(() => rejectActiveSvg(xml)).toThrow("unsafe-svg")
+})
+it("retains terminal cleanup obligations across crashes before removal", async () => {
+  const { store, root, filename } = await storage()
+  for (const terminal of ["ready", "failed", "cancelled"]) {
+    const job = store.submit(owner, terminal, input)
+    const claim = store.claim(job.id)
+    if (!claim) throw new Error("claim-required")
+    if (terminal === "ready") store.complete(job.id, claim.lease, input)
+    if (terminal === "failed") store.fail(job.id, claim.lease, "test")
+    if (terminal === "cancelled") store.cancel(owner, job.id)
+    const directory = path.join(root, claim.ownerDirectory, job.id, claim.lease)
+    await mkdir(directory, { recursive: true })
+    await writeFile(path.join(directory, "input.pptx"), input)
+    const restarted = new OperationStore(filename)
+    const obligation = { id: job.id, lease: claim.lease, ownerDirectory: claim.ownerDirectory }
+    expect(restarted.recover()).toContainEqual(obligation)
+    expect(await readFile(path.join(directory, "input.pptx"))).toEqual(input)
+    await rm(directory, { recursive: true, force: true })
+    expect(restarted.recover()).toContainEqual(obligation)
+    restarted.close()
+    expect(store.recover()).toContainEqual(obligation)
+    expect(store.recover()).toContainEqual(obligation)
+    store.acknowledgeCleanup(job.id, claim.lease)
+    expect(store.recover()).not.toContainEqual(obligation)
+  }
+})
+it("retains recovery cleanup descriptors and prevents replacement before removal", async () => {
+  let now = Date.now()
+  const { store, root, filename } = await storage(() => now)
+  const job = store.submit(owner, "recovery-crash", input)
+  const claim = store.claim(job.id)
+  if (!claim) throw new Error("claim-required")
+  const directory = path.join(root, claim.ownerDirectory, job.id, claim.lease)
+  await mkdir(directory, { recursive: true })
+  await writeFile(path.join(directory, "input.pptx"), input)
+  now += 35_001
+  const obligation = { id: job.id, lease: claim.lease, ownerDirectory: claim.ownerDirectory }
+  expect(store.recover()).toEqual([obligation])
+  expect(store.claim(job.id)).toBeNull()
+  const restarted = new OperationStore(filename, () => now)
+  expect(restarted.recover()).toEqual([obligation])
+  expect(await readFile(path.join(directory, "input.pptx"))).toEqual(input)
+  await rm(directory, { recursive: true, force: true })
+  await rm(directory, { recursive: true, force: true })
+  expect(restarted.recover()).toEqual([obligation])
+  restarted.close()
+  expect(store.recover()).toEqual([obligation])
+  store.acknowledgeCleanup(job.id, claim.lease)
+  expect(store.recover()).toEqual([])
+  const replacement = store.claim(job.id)
+  expect(replacement).not.toBeNull()
+  store.acknowledgeCleanup(job.id, claim.lease)
+  expect(store.active(job.id, replacement?.lease ?? "")).toBe(true)
 })

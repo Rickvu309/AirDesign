@@ -73,7 +73,7 @@ export class OperationStore {
   }
   claim(id: OperationId): { lease: string; input: Buffer; ownerDirectory: string } | null {
     const lease = randomUUID()
-    const value = this.db.prepare("UPDATE operations SET state='running',attempts=attempts+1,lease=?,deadline=?,holder=? WHERE id=? AND state='queued' AND attempts<3 RETURNING input,owner").get(lease, this.clock() + 35_000, process.pid, id)
+    const value = this.db.prepare("UPDATE operations SET state='running',attempts=attempts+1,lease=?,deadline=?,holder=? WHERE id=? AND state='queued' AND lease IS NULL AND attempts<3 RETURNING input,owner").get(lease, this.clock() + 35_000, process.pid, id)
     if (!value) return null
     const row = record(value)
     if (!(row.input instanceof Uint8Array)) throw new Error("missing-input")
@@ -90,19 +90,22 @@ export class OperationStore {
   }
   recover(): { id: OperationId; lease: string; ownerDirectory: string }[] {
     const recovered: { id: OperationId; lease: string; ownerDirectory: string }[] = []
-    for (const value of this.db.prepare("SELECT id,lease,owner,holder,deadline,state FROM operations WHERE state='running' OR (state='cancelled' AND lease IS NOT NULL)").all()) {
+    for (const value of this.db.prepare("SELECT id,lease,owner,holder,deadline,state FROM operations WHERE lease IS NOT NULL").all()) {
       const row = record(value)
       let alive = true
       try { process.kill(number(row.holder), 0) } catch { alive = false }
       if (row.state === "running" && alive && number(row.deadline) > this.clock()) continue
       const id = operationId(text(row.id))
       const lease = text(row.lease)
-      const changed = row.state === "cancelled"
-        ? this.db.prepare("UPDATE operations SET lease=NULL WHERE id=? AND state='cancelled' AND lease=?").run(id, lease).changes
+      const changed = row.state !== "running"
+        ? 1
         : this.db.prepare("UPDATE operations SET state=CASE WHEN attempts<3 THEN 'queued' ELSE 'failed' END, input=CASE WHEN attempts<3 THEN input ELSE NULL END, reason='worker-retry-exhausted' WHERE id=? AND state='running' AND lease=?").run(id, lease).changes
       if (changed === 1) recovered.push({ id, lease, ownerDirectory: createHash("sha256").update(text(row.owner)).digest("hex") })
     }
     return recovered
+  }
+  acknowledgeCleanup(id: OperationId, lease: string): void {
+    this.db.prepare("UPDATE operations SET lease=NULL,holder=NULL,deadline=NULL WHERE id=? AND lease=? AND state<>'running'").run(id, lease)
   }
   pending(): OperationId[] { return this.db.prepare("SELECT id FROM operations WHERE state='queued'").all().map(row => operationId(text(record(row).id))) }
   close(): void { this.db.close() }

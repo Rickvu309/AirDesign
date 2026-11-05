@@ -1,3 +1,4 @@
+import { SaxesParser } from "saxes"
 import { performanceBudgets } from "../../contract-rules/src/budgets.ts"
 
 export const fileLimits = {
@@ -18,14 +19,51 @@ export function safePartName(name: string): boolean {
 
 export function requireLocalUpload(value: unknown): Buffer {
   if (typeof value !== "object" || value === null || !("base64" in value) || typeof value.base64 !== "string" || Object.keys(value).some(key => key !== "base64" && key !== "requestId")) throw new Error("local-upload-required-no-paths-or-urls")
-  if (value.base64.length > Math.ceil(fileLimits.compressed / 3) * 4 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value.base64)) throw new Error("upload-limit-or-invalid-base64")
+  if (value.base64.length > Math.ceil(fileLimits.compressed / 3) * 4 || (value.base64.length % 4 !== 0 || /[^A-Za-z0-9+/=]/.test(value.base64) || !/^[A-Za-z0-9+/]*={0,2}$/.test(value.base64))) throw new Error("upload-limit-or-invalid-base64")
   const input = Buffer.from(value.base64, "base64")
   if (input.length < 4 || input.length > fileLimits.compressed || input.readUInt32LE(0) !== 0x04034b50) throw new Error("pptx-upload-required")
   return input
 }
 
+const svgElements = new Set(["svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "text", "tspan", "title", "desc"])
+const svgNumbers = new Set(["x", "y", "x1", "x2", "y1", "y2", "width", "height", "rx", "ry", "r", "cx", "cy", "stroke-width", "opacity", "fill-opacity", "stroke-opacity", "font-size"])
+function safeSvgValue(name: string, value: string): boolean {
+  if (value.length > 4096) return false
+  if (svgNumbers.has(name)) return /^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?%?$/i.test(value)
+  if (name === "fill" || name === "stroke") return /^(?:none|transparent|currentColor|black|white|red|green|blue|#[a-f0-9]{3,8})$/i.test(value)
+  if (name === "d") return /^[MmZzLlHhVvCcSsQqTtAa0-9eE+., -]*$/.test(value)
+  if (name === "points" || name === "viewBox") return /^[0-9eE+., -]+$/.test(value)
+  if (name === "transform") return /^(?:(?:matrix|translate|scale|rotate|skewX|skewY)\([0-9eE+., -]+\)\s*)+$/.test(value)
+  if (name === "fill-rule") return ["nonzero", "evenodd"].includes(value)
+  if (name === "stroke-linecap") return ["butt", "round", "square"].includes(value)
+  if (name === "stroke-linejoin") return ["miter", "round", "bevel"].includes(value)
+  if (name === "text-anchor") return ["start", "middle", "end"].includes(value)
+  return false
+}
 export function rejectActiveSvg(xml: string): void {
-  if (/<(?:[^:<> ]+:)?(?:script|style|animate|animateMotion|animateTransform|set|audio|video|handler|object|embed|link|meta|foreignObject|iframe|image|use)\b|\bon[a-z]+\s*=|(?:href|src)\s*=|url\s*\(|<!DOCTYPE|<!ENTITY|<\?/i.test(xml)) throw new Error("unsafe-svg")
+  const unsafe = () => { throw new Error("unsafe-svg") }
+  if (Buffer.byteLength(xml) > fileLimits.xml || /<!DOCTYPE|<!ENTITY/i.test(xml)) unsafe()
+  const parser = new SaxesParser({ xmlns: true })
+  let depth = 0
+  let nodes = 0
+  parser.on("error", unsafe)
+  parser.on("doctype", unsafe)
+  parser.on("processinginstruction", unsafe)
+  parser.on("opentag", tag => {
+    if (++depth > fileLimits.depth || ++nodes > fileLimits.nodes || !svgElements.has(tag.local) || tag.uri !== "http://www.w3.org/2000/svg" || (nodes === 1 && tag.local !== "svg") || Object.keys(tag.attributes).length > fileLimits.attributes) unsafe()
+    for (const attribute of Object.values(tag.attributes)) {
+      if (attribute.uri === "http://www.w3.org/2000/xmlns/") continue
+      if (attribute.uri) unsafe()
+      if (attribute.name === "style") {
+        for (const declaration of attribute.value.split(";").filter(value => value.trim())) {
+          const [name, value, extra] = declaration.split(":")
+          if (extra !== undefined || !name || !value || !safeSvgValue(name.trim(), value.trim())) unsafe()
+        }
+      } else if (!safeSvgValue(attribute.name, attribute.value)) unsafe()
+    }
+  })
+  parser.on("closetag", () => { depth-- })
+  parser.write(xml).close()
 }
 
 export function inspectFont(bytes: Buffer): { tables: number; rendererUse: "unqualified" } {

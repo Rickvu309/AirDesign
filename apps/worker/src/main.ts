@@ -17,6 +17,7 @@ try {
     })
     const directory = path.join(root,recovered.ownerDirectory,recovered.id,recovered.lease)
     await rm(directory, { recursive: true, force: true })
+    store.acknowledgeCleanup(recovered.id, recovered.lease)
     await rmdir(path.dirname(directory)).catch(() => undefined)
     await rmdir(path.dirname(path.dirname(directory))).catch(() => undefined)
   }

@@ -1,4 +1,7 @@
-import { readFile } from "node:fs/promises"
+import { libreOfficeFastCheck } from "./libreoffice.ts"
+import { mkdtemp, rm, readFile } from "node:fs/promises"
+import os from "node:os"
+import path from "node:path"
 import { patchChartValues } from "../src/edit/chart-values.ts"
 import PptxGenJS from "pptxgenjs"
 import { beforeAll, expect, it } from "vitest"
@@ -143,4 +146,37 @@ it("validates the committed fixture hashes and rejects hostile archive, XML and 
       expect(imported.parts.has("ppt/presentation.xml")).toBe(true)
     }
   }
+})
+
+it("rejects SVG content types hidden behind binary extensions", async () => {
+  for (const declaration of ['<Override PartName="/ppt/media/active.bin" ContentType="image/svg+xml"/>', '<Default Extension="bin" ContentType="image/svg+xml"/>']) {
+    const parts = new Map(original.parts)
+    parts.set("[Content_Types].xml", Buffer.from((parts.get("[Content_Types].xml")?.toString() ?? "").replace("</Types>", declaration + "</Types>")))
+    parts.set("ppt/media/active.bin", Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>'))
+    await expect(importPptx(await writeArchive(parts))).rejects.toThrow("unsafe-svg")
+  }
+})
+it("expands self-closing native text inside its element and preserves unrelated bytes", async () => {
+  for (const empty of ["<a:t/>", "<a:t />"]) {
+    const parts = new Map(original.parts)
+    const name = "ppt/slides/slide1.xml"
+    const xml = (parts.get(name)?.toString() ?? "").replace("<a:t>P03 native fixture</a:t>", empty)
+    expect(xml).toContain(empty)
+    parts.set(name, Buffer.from(xml))
+    const deck = await importPptx(await writeArchive(parts))
+    const changed = patchText(deck, name, 0, "Inside & safe")
+    expect(changed.parts.get(name)?.toString()).toBe(xml.replace(empty, empty.replace(/\s*\/>$/, ">") + "Inside &amp; safe</a:t>"))
+    for (const [part, bytes] of parts) if (part !== name) expect(changed.parts.get(part)).toEqual(bytes)
+    const nodes = parseXml(changed.parts.get(name) ?? Buffer.alloc(0))
+    const text = nodes.nodes.find(node => node.local === "t")
+    expect(text && nodes.xml.slice(text.openEnd, text.closeStart)).toBe("Inside &amp; safe")
+  }
+})
+
+it("reports missing LibreOffice as unavailable and requires a real PDF for a pass", async () => {
+  const directory = await mkdtemp(path.join(os.homedir(), "tmp/p03-lo-test-"))
+  try {
+    expect((await libreOfficeFastCheck("fixtures/pptx/preservation.pptx", directory, "")).status).toBe("unavailable")
+    await expect(libreOfficeFastCheck("fixtures/pptx/preservation.pptx", directory, "/usr/bin/true")).rejects.toThrow()
+  } finally { await rm(directory, { recursive: true, force: true }) }
 })

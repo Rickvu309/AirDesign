@@ -184,7 +184,7 @@ try {
       await writeFile(path.join(directory,`${name}.json`),JSON.stringify(report,null,2))
       return report
     })
-    const receipt = { head, lane, verdict: [3,5].includes(lane) ? "blocked-fast-render" : "passed-local", operation, tempCleanup: true, pptx }
+    const receipt = { head, lane, verdict: [3,5].includes(lane) && (!Array.isArray(pptx.libreOffice) || pptx.libreOffice.some(result => object(result).status !== "passed")) ? "unavailable-fast-render" : "passed-local", operation, tempCleanup: true, pptx }
     await writeFile(path.join(directory,lane === 1 ? "comparison.json" : "receipt.json"),JSON.stringify(receipt,null,2))
     receipts.push(receipt)
     process.stdout.write(JSON.stringify({ lane, verdict: receipt.verdict, fixture: pptx.inputSha256 })+"\n")

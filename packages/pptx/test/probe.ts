@@ -1,3 +1,4 @@
+import { libreOfficeFastCheck } from "./libreoffice.ts"
 import assert from "node:assert/strict"
 import path from "node:path"
 import { readFile } from "node:fs/promises"
@@ -43,7 +44,7 @@ export async function probePptx(lane: number, directory: string, cli: PptxComman
     assert.ok(table.parts.get("ppt/slides/slide1.xml")?.toString().includes(">77</a:t>"))
     assert.ok(chart.parts.get("ppt/charts/chart1.xml")?.toString().includes(">88</c:v>"))
     proof.nativeTextTableChartLocalReimport = true
-    proof.libreOffice = "blocked-UNO-startup-abort"
+    proof.libreOffice = await Promise.all(["output", "native", "table", "chart"].map(name => libreOfficeFastCheck(path.join(directory, `${name}.pptx`), path.join(directory, "LibreOffice", name))))
   }
   if ([4,5].includes(lane)) {
     assert.ok(after.parts.get("ppt/slides/slide1.xml")?.toString().includes('id="800"'))
@@ -52,7 +53,7 @@ export async function probePptx(lane: number, directory: string, cli: PptxComman
     for (const name of dependencies) assert.equal(hash(after.parts.get(name) ?? Buffer.alloc(0)),hash(before.parts.get(name) ?? Buffer.alloc(0)))
     proof.groupAndPlaceholderPlacementBytesExact = true
     proof.visibleInheritance = "unproven-reference-required"
-    if (lane === 5) proof.libreOffice = "blocked-UNO-startup-abort"
+    if (lane === 5) proof.libreOffice = [await libreOfficeFastCheck(output, path.join(directory, "LibreOffice", "output"))]
   }
   if (lane === 6) for (const index of [1,2]) {
     const notes = after.parts.get(`ppt/notesSlides/notesSlide${index}.xml`)

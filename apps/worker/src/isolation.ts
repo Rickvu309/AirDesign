@@ -51,6 +51,7 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     if (cancellation) clearInterval(cancellation)
     await killed
     await rm(directory, { recursive: true, force: true })
+    store.acknowledgeCleanup(id, claimed.lease)
     await rmdir(path.dirname(directory)).catch(() => undefined)
     await rmdir(path.dirname(path.dirname(directory))).catch(() => undefined)
   }
