@@ -25,13 +25,14 @@ if (signed.status !== "signed-in") {
 }
 const cookie = signed.cookie
 for (let warm = 0; warm < 3; warm += 1) {
-  await call("/api/session", undefined, "GET", cookie)
+  requireSignedIn(await call("/api/session", undefined, "GET", cookie))
 }
 const samples: number[] = []
 for (let sample = 0; sample < 20; sample += 1) {
   const started = performance.now()
-  await call("/api/session", undefined, "GET", cookie)
+  const session = await call("/api/session", undefined, "GET", cookie)
   samples.push(performance.now() - started)
+  requireSignedIn(session)
 }
 samples.sort((left, right) => left - right)
 const p95 = samples[Math.ceil(samples.length * 0.95) - 1] ?? samples[samples.length - 1]
@@ -54,13 +55,27 @@ await mkdir(directory, { recursive: true })
 await writeFile(path.join(directory, "w08-auth.json"), `${JSON.stringify(evidence, null, 2)}\n`)
 await access.close()
 
+function requireSignedIn(session: { httpStatus: number; status?: string }) {
+  if (session.httpStatus !== 200 || session.status !== "signed-in") {
+    throw new Error(`measured session read is not signed in: ${session.httpStatus} ${session.status ?? "none"}`)
+  }
+}
+
 async function call(pathname: string, body?: Record<string, unknown>, method: "GET" | "POST" = "POST", cookie = "") {
   const init: RequestInit = { method, headers: { "content-type": "application/json", cookie } }
   if (method !== "GET") {
     init.body = JSON.stringify(body ?? {})
   }
   const response = await access.handle(new Request(`http://127.0.0.1${pathname}`, init))
-  const set = response.headers.getSetCookie().at(-1)?.split(";")[0] ?? cookie
   const json = await response.json() as { status?: string; token?: string }
-  return { status: json.status, token: json.token, cookie: set }
+  return { httpStatus: response.status, status: json.status, token: json.token, cookie: mergeCookies(cookie, response.headers.getSetCookie()) }
+}
+
+function mergeCookies(current: string, setCookies: readonly string[]) {
+  const jar = new Map(current.split("; ").filter(Boolean).map((pair) => [pair.split("=")[0] ?? "", pair] as const))
+  for (const header of setCookies) {
+    const pair = header.split(";")[0] ?? ""
+    jar.set(pair.split("=")[0] ?? "", pair)
+  }
+  return [...jar.values()].join("; ")
 }
