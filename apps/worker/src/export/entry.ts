@@ -1,3 +1,4 @@
+import {jobPath} from "../job-path.ts"
 import { readFile,writeFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { chromium } from "playwright"
@@ -7,7 +8,7 @@ import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
 import { fontReport } from "../../../../packages/render/src/fonts.ts"
 
 try {
-  const input=JSON.parse(await readFile("/job/input.json","utf8")),deck=parseDeck(input.snapshot.deck),seq=input.snapshot.seq
+  const input=JSON.parse(await readFile(jobPath("input.json"),"utf8")),deck=parseDeck(input.snapshot.deck),seq=input.snapshot.seq
   if(!Number.isSafeInteger(seq)||seq<0)throw new Error("invalid-saved-version")
   const selected:string[]=input.options.slides
   const slides=selected.length ? selected.map(id=>{const slide=deck.slides.find(slide=>slide.id===id);if(!slide)throw new Error("invalid-slide-range");return slide}) : deck.slides
@@ -32,9 +33,9 @@ try {
       await page.setContent(renderDocument(saved,seq,fonts.join(""),digest,input.snapshot.assets ?? {}),{waitUntil:"load"})
       await page.evaluate(async()=>{const fonts=await Promise.all([document.fonts.load("400 16px Geist"),document.fonts.load("600 16px Geist")]);await document.fonts.ready;if(fonts.some(faces=>!faces.length))throw new Error("pinned-fonts-unavailable")})
       output=await page.pdf({width:`${first.size.width}px`,height:`${first.size.height}px`,printBackground:true,margin:{top:0,right:0,bottom:0,left:0}})
-      await page.locator(".export-slide").first().screenshot({path:"/job/internal.png",animations:"disabled"})
+      await page.locator(".export-slide").first().screenshot({path:jobPath("internal.png"),animations:"disabled"})
     }finally{await browser.close()}
   }
-  await writeFile("/job/result.bin",output)
-  await writeFile("/job/report.json",JSON.stringify(report))
-}catch(error){await writeFile("/job/failure.json",JSON.stringify({code:error instanceof Error ? error.message.slice(0,200) : "export-failed"}));process.exitCode=1}
+  await writeFile(jobPath("result.bin"),output)
+  await writeFile(jobPath("report.json"),JSON.stringify(report))
+}catch(error){await writeFile(jobPath("failure.json"),JSON.stringify({code:error instanceof Error ? error.message.slice(0,200) : "export-failed"}));process.exitCode=1}

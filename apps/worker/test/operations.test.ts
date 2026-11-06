@@ -1,6 +1,6 @@
 import { createServer, request as httpRequest } from "node:http"
 import { readRequestBody, RequestBodyLimit } from "../../../packages/files/src/request-body.ts"
-import { afterEach, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, vi, expect, it } from "vitest"
 import { mkdtemp, rm, readdir, readFile, mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
@@ -12,6 +12,9 @@ import { readArchive, writeArchive } from "../../../packages/pptx/src/archive.ts
 import { deliver } from "../src/isolation.ts"
 import { requireLocalUpload, rejectActiveSvg, inspectFont, fileLimits } from "../../../packages/files/src/index.ts"
 
+describe.each(["systemd","container"])("%s isolation",mode => {
+beforeEach(() => { vi.stubEnv("AIRDESIGN_ISOLATION",mode) })
+afterEach(() => { vi.unstubAllEnvs() })
 const cleanups: (() => Promise<void>)[] = []
 afterEach(async () => { for (const cleanup of cleanups.splice(0)) await cleanup() })
 async function storage(clock = Date.now) {
@@ -117,7 +120,7 @@ it("rejects URL/path uploads, active SVG and hostile fonts before any external a
   expect(() => rejectActiveSvg('<svg><script>x</script></svg>')).toThrow("unsafe-svg")
   expect(() => inspectFont(Buffer.alloc(2))).toThrow("hostile-font")
 })
-it("delivers inside enforced cgroup and network namespace, then reclaims the temporary payload", async () => {
+it("delivers inside the selected isolation driver and reclaims the temporary payload", async () => {
   const { store, root } = await storage()
   const job = store.submit(owner, "isolated", input)
   expect(await deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))).toBe(true)
@@ -285,4 +288,6 @@ it("retains recovery cleanup descriptors and prevents replacement before removal
   expect(replacement).not.toBeNull()
   store.acknowledgeCleanup(job.id, claim.lease)
   expect(store.active(job.id, replacement?.lease ?? "")).toBe(true)
+})
+
 })

@@ -7,6 +7,8 @@
     "packages/*"
   ],
   "scripts": {
+    "start:web": "node apps/server/src/main.ts",
+    "start:worker": "node apps/worker/src/service.ts",
     "probe:compat": "node --experimental-strip-types scripts/probe-compat.ts",
     "verify:contracts": "node scripts/verify-contracts.mjs",
     "verify:ui": "node scripts/verify-ui.mjs",
@@ -60,7 +62,6 @@
     "oxlint": "1.91.0",
     "pdfjs-dist": "6.5.438",
     "pixelmatch": "^8.0.0",
-    "playwright": "^1.64.1",
     "pngjs": "^7.0.0",
     "typescript": "5.9.3",
     "vite": "8.3.6",
@@ -73,6 +74,7 @@
     "image-size": "2.0.4"
   },
   "dependencies": {
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "playwright": "^1.64.1"
   }
 }

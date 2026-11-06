@@ -1,3 +1,4 @@
+import {isolationMode, spawnContainerJob, killContainerJob} from "../container-process.ts"
 import { spawn } from "node:child_process"
 import { mkdir,writeFile,readFile,rm,rmdir } from "node:fs/promises"
 import path from "node:path"
@@ -11,10 +12,10 @@ export async function deliverExport(store:ReturnType<typeof exportStore>,root:st
   try {
     await mkdir(directory,{recursive:true,mode:0o700});await writeFile(path.join(directory,"input.json"),JSON.stringify(job),{mode:0o600})
     const repo=path.resolve(import.meta.dirname,"../../../.."),cache=process.env.PLAYWRIGHT_BROWSERS_PATH ?? path.join(os.homedir(),".cache/ms-playwright")
-    const child=spawn("systemd-run",["--user","--scope","--quiet",`--unit=${unit}`,"-p","MemoryMax=805306368","-p","MemorySwapMax=0","-p","CPUQuota=200%","prlimit","--cpu=30","--fsize=524288000","--nofile=256","--","bwrap","--unshare-all","--die-with-parent","--new-session","--ro-bind","/usr","/usr","--ro-bind","/lib","/lib","--ro-bind","/etc/fonts","/etc/fonts","--ro-bind",repo,repo,"--ro-bind",cache,cache,"--bind",directory,"/job","--proc","/proc","--dev","/dev","--tmpfs","/tmp","--chdir","/job","--clearenv","--setenv","PATH","/usr/bin","--setenv","HOME",os.homedir(),"--setenv","PLAYWRIGHT_BROWSERS_PATH",cache,"/usr/bin/node","--max-old-space-size=384",path.join(import.meta.dirname,"entry.ts")],{stdio:["ignore","ignore","pipe"]})
+    const child=isolationMode() === "container" ? spawnContainerJob(directory,path.join(import.meta.dirname,"entry.ts")) : spawn("systemd-run",["--user","--scope","--quiet",`--unit=${unit}`,"-p","MemoryMax=805306368","-p","MemorySwapMax=0","-p","CPUQuota=200%","prlimit","--cpu=30","--fsize=524288000","--nofile=256","--","bwrap","--unshare-all","--die-with-parent","--new-session","--ro-bind","/usr","/usr","--ro-bind","/lib","/lib","--ro-bind","/etc/fonts","/etc/fonts","--ro-bind",repo,repo,"--ro-bind",cache,cache,"--bind",directory,"/job","--proc","/proc","--dev","/dev","--tmpfs","/tmp","--chdir","/job","--clearenv","--setenv","PATH","/usr/bin","--setenv","HOME",os.homedir(),"--setenv","PLAYWRIGHT_BROWSERS_PATH",cache,"/usr/bin/node","--max-old-space-size=384",path.join(import.meta.dirname,"entry.ts")],{stdio:["ignore","ignore","pipe"]})
     let diagnostic=""
-    child.stderr.on("data",(value:Buffer)=>{diagnostic=(diagnostic+value.toString()).slice(-2000)})
-    function kill(){killed??=new Promise(resolve=>{const killer=spawn("systemctl",["--user","kill","--signal=SIGKILL",unit],{stdio:"ignore"});const finish=()=>{child.kill("SIGKILL");resolve()};killer.once("exit",finish);killer.once("error",finish)})}
+    child.stderr?.on("data",(value:Buffer)=>{diagnostic=(diagnostic+value.toString()).slice(-2000)})
+    function kill(){if(isolationMode() === "container"){killContainerJob(child);return}killed??=new Promise(resolve=>{const killer=spawn("systemctl",["--user","kill","--signal=SIGKILL",unit],{stdio:"ignore"});const finish=()=>{child.kill("SIGKILL");resolve()};killer.once("exit",finish);killer.once("error",finish)})}
     timer=setTimeout(kill,Math.max(1,job.deadline-Date.now()))
     let checking=false
     cancellation=setInterval(()=>{if(checking)return;checking=true;void store.active(job.id,job.lease).then(active=>{if(!active)kill()}).catch(kill).finally(()=>{checking=false})},50)

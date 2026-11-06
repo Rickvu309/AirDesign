@@ -82,3 +82,20 @@ it("retries auth cleanup after owned purge has completed",async()=>{
     expect(await fixture.history.deletions.pending()).toEqual([])
   }finally{await db.end();await fixture.close()}
 })
+
+it("reconciles web-owned queued bytes after a remote worker releases a deleting account",async()=>{
+  const fixture=await mcpFixture(),operations=new OperationStore(fixture.operationsPath,fixture.now)
+  try{
+    const owner=await fixture.signIn("delete-remote-worker@example.com")
+    const operation=operations.submit({personId:owner.personId},"remote-delete",Buffer.from("source")),lease=operations.claim(operation.id)
+    if(!lease)throw new Error("lease-missing")
+    await fixture.json("/api/account/deletion",{confirm:"delete-account"},owner.cookie)
+    expect(await fixture.history.deletions.pending()).toHaveLength(1)
+    operations.fail(operation.id,lease.lease,"account-deleted")
+    const response=await fetch(fixture.origin+"/internal/worker",{method:"POST",headers:{authorization:"Bearer dev-only-secret-change-me-32chars","content-type":"application/json"},body:JSON.stringify({kind:"claim",queue:"import"})})
+    expect(response.status).toBe(200)
+    expect(await response.json()).toBeNull()
+    expect(await fixture.history.deletions.pending()).toEqual([])
+    expect(()=>operations.status({personId:owner.personId},operation.id)).toThrow("not-found")
+  }finally{operations.close();await fixture.close()}
+})

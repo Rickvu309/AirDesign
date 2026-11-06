@@ -97,6 +97,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         return {history:result.history,receipt:result.receipt}
   }
   return {
+    health: () => transaction(async tx => { await tx.query("SELECT 1") }),
     deletions:accountDeletionStore(transaction,clock),
     agents:agentStore(transaction,clock),
     files:ownedFiles(transaction),

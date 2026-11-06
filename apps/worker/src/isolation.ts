@@ -1,3 +1,4 @@
+import {isolationMode, spawnContainerJob, killContainerJob} from "./container-process.ts"
 import { spawn } from "node:child_process"
 import { mkdir, writeFile, readFile, rm, rmdir } from "node:fs/promises"
 import path from "node:path"
@@ -15,10 +16,11 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     await mkdir(directory, { recursive: true, mode: 0o700 })
     await writeFile(path.join(directory, "input.pptx"), claimed.input, { mode: 0o600 })
     const repo = path.resolve(import.meta.dirname, "../../..")
-    const child = spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })
+    const child = isolationMode() === "container" ? spawnContainerJob(directory,program) : spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })
     let diagnostic = ""
-    child.stderr.on("data", (value: Buffer) => { diagnostic = (diagnostic + value.toString()).slice(-2000) })
+    child.stderr?.on("data", (value: Buffer) => { diagnostic = (diagnostic + value.toString()).slice(-2000) })
     const kill = () => {
+      if (isolationMode() === "container") { killContainerJob(child); return }
       killed ??= new Promise<void>(resolve => {
         const killer = spawn("systemctl", ["--user", "kill", "--signal=SIGKILL", unit], { stdio: "ignore" })
         killer.once("exit", () => { child.kill("SIGKILL"); resolve() })
