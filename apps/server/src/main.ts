@@ -1,3 +1,12 @@
+import {PGlite} from "@electric-sql/pglite"
+import {once} from "node:events"
+import {billingHandler} from "./billing/handle.ts"
+import {localPaymentProvider} from "../../../packages/usage/src/payments/provider.ts"
+import {deliverAccountDeletion} from "../../worker/src/account-deletion/deliver.ts"
+import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
+import {agentHandler} from "./agent/handle.ts"
+import {localAdapter} from "../../../packages/agent/src/local-adapter.ts"
+import {domainTools} from "./mcp/domain-tools.ts"
 import {mcpHandler} from "./mcp/handle.ts"
 import {oauthHandler} from "./mcp/oauth-handle.ts"
 import { usageHandler } from "./usage/handle.ts"
@@ -23,6 +32,7 @@ export type RunningServer = {
 }
 
 export type StartServerOptions = {
+  agentAdapter?: AgentAdapter
   clock?: () => number
   operationsPath?: string
   templatesPath?: string
@@ -36,30 +46,36 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const secret = process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars"
   const databaseUrl = process.env.AIRDESIGN_DATABASE_URL
   const publicOrigin = extras.publicOrigin ?? process.env.AIRDESIGN_PUBLIC_ORIGIN ?? "http://127.0.0.1:41732"
+  const memory = databaseUrl===undefined&&extras.accessPath==="memory://"&&extras.historyPath==="memory://" ? await PGlite.create() : undefined
   const access = await createAccess({
-    driver: databaseUrl === undefined ? { kind: "pglite", dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
+    driver: databaseUrl === undefined ? { kind: "pglite", client:memory, dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
     secret,
     mail: inbox,
     clock: extras.clock ?? (() => Date.now()),
     guard: { allow: () => true },
     exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
     publicOrigin,
+    deleteOwnedData:async owner=>{await aira.stopOwner(owner);await history.deletions.enqueue(owner);await deliverAccountDeletion(history,operations,imageQueue,templates,path.join(os.homedir(),"tmp/airdesign-jobs"))},
   })
   const operationsPath=extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
   const operations = new OperationStore(operationsPath, extras.clock)
   const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
-  const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl }, extras.clock)
+  const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", client:memory, path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl }, extras.clock)
   const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
   const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
   const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
+  const changed=async(deck:string)=>{await sync.refresh(deck);await aira.publish(deck)}
   const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates)
-  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,deck=>sync.refresh(deck))
+  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret)
+  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? localAdapter,deck=>sync.refresh(deck))
+  await access.resumeDeletions()
+  const handleBilling=billingHandler(access,history,localPaymentProvider(process.env.AIRDESIGN_PAYMENT_FIXTURE_SECRET ?? "dev-only-local-payment-fixture"),publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin)
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, request, response).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, aira.handle, handleBilling, request, response).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
@@ -73,6 +89,8 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
     port: bound,
     async close() {
       sync.close()
+      await aira.close()
+      server.closeAllConnections()
       await new Promise<void>((resolve, reject) => {
         server.close((error) => error ? reject(error) : resolve())
       })
@@ -86,7 +104,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, handleUsage: (request: Request) => Promise<Response>, handleOAuth:(request:Request)=>Promise<Response>, handleMcp:(request:Request)=>Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, handleUsage: (request: Request) => Promise<Response>, handleOAuth:(request:Request)=>Promise<Response>, handleMcp:(request:Request)=>Promise<Response>, handleAira:(request:Request)=>Promise<Response>, handleBilling:(request:Request)=>Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const host = request.headers.host ?? "127.0.0.1"
     const body = await readRequestBody(request)
@@ -103,7 +121,7 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
       return
     }
     const pathname=new URL(incoming.url).pathname
-    const outgoing = pathname==="/mcp" || pathname.startsWith("/api/mcp/") ? await handleMcp(incoming) : pathname.startsWith("/oauth/") || pathname.startsWith("/.well-known/") || pathname.startsWith("/api/agents") ? await handleOAuth(incoming) : pathname.startsWith("/api/usage") ? await handleUsage(incoming) : new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
+    const outgoing = pathname.startsWith("/api/billing/") ? await handleBilling(incoming) : pathname.startsWith("/api/aira") ? await handleAira(incoming) : pathname==="/mcp" || pathname.startsWith("/api/mcp/") ? await handleMcp(incoming) : pathname.startsWith("/oauth/") || pathname.startsWith("/.well-known/") || pathname.startsWith("/api/agents") ? await handleOAuth(incoming) : pathname.startsWith("/api/usage") ? await handleUsage(incoming) : new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {
@@ -117,7 +135,11 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
     }
     headers["cache-control"] = "no-store"
     response.writeHead(outgoing.status, headers)
-    response.end(Buffer.from(await outgoing.arrayBuffer()))
+    if(!outgoing.body){response.end();return}
+    const reader=outgoing.body.getReader()
+    response.once("close",()=>{void reader.cancel().catch(()=>undefined)})
+    for(;;){const chunk=await reader.read();if(chunk.done||response.destroyed)break;if(!response.write(chunk.value))await once(response,"drain",{signal:AbortSignal.timeout(15000)})}
+    response.end()
   } catch (error) {
     writeHandlerError(response, error)
   }

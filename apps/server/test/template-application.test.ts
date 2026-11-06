@@ -11,7 +11,7 @@ it("saves the deck's pinned look rather than its first historical theme",async()
   try{
     const entry=await history.catalog.create(owner,"create","Dark look","",fixtureDeck(1))
     await history.commit(owner,entry.id,{id:commandId("dark"),kind:"edit",base:0,run:null,changes:{changes:[]}},{kind:"person"},{key:"dark",changes:deck=>applyTemplate(deck,basics[1]!,{kind:"apply-deck"}).changes})
-    const handler=templatesHandler({principal:async()=>owner,handle:async()=>new Response(),close:async()=>undefined},templates,history,origin,async()=>undefined)
+    const handler=templatesHandler({principal:async()=>owner,handle:async()=>new Response(),resumeDeletions:async()=>undefined,close:async()=>undefined},templates,history,origin,async()=>undefined)
     const response=await handler(new Request(origin+"/api/templates/from-deck",{method:"POST",headers:{origin,"content-type":"application/json"},body:JSON.stringify({deck:entry.id,id:"personal",name:"Personal dark"})}))
     expect(response.status).toBe(201)
     expect(await response.json()).toMatchObject({font:"Geist",background:basics[1]!.background,foreground:basics[1]!.foreground,accent:basics[1]!.accent,fontRight:"installed"})

@@ -1,3 +1,5 @@
+import {initializeAccountDeletion,accountDeletionStore,lockRetainedAccount} from "../account/deletion-store.ts"
+import {initializeAgents,agentStore} from "../agent/store.ts"
 import {initializeOwnedFiles,ownedFiles} from "../../../../packages/files/src/owned-files.ts"
 import {initializeToolSnapshots,toolSnapshots} from "../../../../packages/tools/src/snapshots.ts"
 import { initializeOAuth, oauthStore } from "../../../../packages/access/src/oauth/store.ts"
@@ -16,9 +18,9 @@ import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistor
 
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string } | { kind: "postgres"; url: string }, clock=Date.now) {
-  if (driver.kind === "pglite" && driver.path) await mkdir(driver.path, { recursive: true })
-  const local = driver.kind === "pglite" ? new PGlite(driver.path) : null
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string }, clock=Date.now) {
+  if (driver.kind === "pglite" && driver.path && driver.path!=="memory://") await mkdir(driver.path, { recursive: true })
+  const local = driver.kind === "pglite" ? driver.client ?? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
   const connections = new Set<Promise<void>>()
   pool?.on("connect", client => {
@@ -47,8 +49,9 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-    await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
+    await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
+    await lockRetainedAccount(tx,principal.personId)
     const result = await tx.query<{ state: History; deleted: boolean }>("SELECT state, deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE", [deckId, principal.personId])
     const row = result.rows[0]
     if (!row) throw new Error("deck-not-found")
@@ -56,6 +59,8 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return row.state
   }
   return {
+    deletions:accountDeletionStore(transaction,clock),
+    agents:agentStore(transaction,clock),
     files:ownedFiles(transaction),
     snapshots:toolSnapshots(transaction,clock),
     oauth:(secret:string,resource:string)=>oauthStore(transaction,secret,resource,clock),
@@ -85,6 +90,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     },
     async create(principal: Principal, deck: Deck) {
       return transaction(async tx => {
+        await lockRetainedAccount(tx,principal.personId)
         await ownedDeckAssets(tx,principal,deck);await captureTemplateSources(tx,principal,deck)
         await tx.query("INSERT INTO editing_deck(id,owner,state) VALUES ($1,$2,$3)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck))])
         return { deck, seq: 0 }
@@ -124,7 +130,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         const result = execute(history, command, identity)
         if (result.receipt.kind === "applied" && identity.kind === "run" && !themeOnly(history.deck,result.history.deck) && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
           const ledger = usageLedger(work => work(tx),clock)
-          const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:"user-agent",request:JSON.stringify(command),units:1})
+          const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:identity.actor ?? "user-agent",request:JSON.stringify(command),units:1})
           if (admission.kind === "out-of-usage") return {id:command.id,seq:history.seq,kind:"refused",code:"out-of-usage",command}
           await ledger.settle(principal.personId,admission.reservation,"finished")
         }

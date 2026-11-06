@@ -3,6 +3,7 @@ import { AlertDialog, Button, CodeEntry, TextField, copy, fillCopy, toast } from
 import type { AccessClient, IntentKind } from "@airdesign/access/client"
 import { readAccessLinkToken } from "@airdesign/access/client"
 import {AgentsPanel,AgentApproval} from "../agents/agents-panel.tsx"
+import {AccountPanel} from "../settings/account-panel.tsx"
 import { UsagePanel } from "../usage/usage-panel.tsx"
 import "../settings/settings.css"
 import { Workspace } from "../decks/workspace.tsx"
@@ -240,7 +241,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     return (
       <>
         <StudioShell intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : <UsagePanel/>}</section> : <Workspace />}
+          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace />}
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}

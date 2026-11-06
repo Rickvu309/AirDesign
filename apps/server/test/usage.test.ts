@@ -78,7 +78,7 @@ it("meters authoritative run commits while manual editing stays available",async
     expect(await store.commit(owner,deck.id,edit,{kind:"run",run:"run"})).toMatchObject({kind:"refused",code:"out-of-usage"})
     expect((await store.read(owner,deck.id)).seq).toBe(1)
     expect(await store.commit(owner,deck.id,{...edit,id:commandId("manual"),run:null})).toMatchObject({kind:"applied"})
-    const access={principal:async()=>owner,handle:async()=>new Response(),close:async()=>undefined}
+    const access={principal:async()=>owner,handle:async()=>new Response(),resumeDeletions:async()=>undefined,close:async()=>undefined}
     const handler=usageHandler(access,store,"http://localhost")
     const response=await handler(new Request("http://localhost/api/usage/fixture-credit",{method:"POST",headers:{origin:"http://localhost","content-type":"application/json"},body:JSON.stringify({owner:"other",cents:10000})}))
     expect(response.status).toBe(404)

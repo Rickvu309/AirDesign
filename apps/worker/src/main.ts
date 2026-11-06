@@ -1,3 +1,5 @@
+import {TemplateStore} from "../../../packages/brand/src/template-store.ts"
+import {deliverAccountDeletion} from "./account-deletion/deliver.ts"
 import { spawn } from "node:child_process"
 import path from "node:path"
 import os from "node:os"
@@ -12,7 +14,7 @@ await mkdir(root, { recursive: true, mode: 0o700 })
 const store = new OperationStore(database)
 const images = new OperationStore(database+".images")
 try {
-  if(mode==="all"&&process.env.AIRDESIGN_DATABASE_URL) {const {createHistoryStore}=await import("../../server/src/db/history-store.ts"),{purgeExpiredDecks}=await import("./purge/expired-decks.ts"),{deliverExport}=await import("./export/deliver.ts");const history=await createHistoryStore({kind:"postgres",url:process.env.AIRDESIGN_DATABASE_URL});try{await purgeExpiredDecks(history.catalog);while(true){const result=await deliverExport(history.exports,root);if(!result)break;process.stdout.write(JSON.stringify(result)+"\n")}}finally{await history.close()}}
+  if(mode==="all"&&process.env.AIRDESIGN_DATABASE_URL) {const {createHistoryStore}=await import("../../server/src/db/history-store.ts"),{purgeExpiredDecks}=await import("./purge/expired-decks.ts"),{deliverExport}=await import("./export/deliver.ts");const history=await createHistoryStore({kind:"postgres",url:process.env.AIRDESIGN_DATABASE_URL});try{const templates=new TemplateStore(database+".templates");try{await deliverAccountDeletion(history,store,images,templates,root)}finally{templates.close()}await purgeExpiredDecks(history.catalog);while(true){const result=await deliverExport(history.exports,root);if(!result)break;process.stdout.write(JSON.stringify(result)+"\n")}}finally{await history.close()}}
   for (const queue of [store,images]) for (const recovered of queue.recover()) {
     await new Promise<void>(resolve => {
       const killer = spawn("systemctl", ["--user", "kill", "--signal=SIGKILL", `airdesign-${recovered.id}-${recovered.lease}.scope`], { stdio: "ignore" })

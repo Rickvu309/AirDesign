@@ -55,5 +55,9 @@ export class TemplateStore {
     const row = this.db.prepare("SELECT id,version FROM template_defaults WHERE owner=?").get(principal.personId)
     return row ? this.get(principal,String(row.id),Number(row.version)) : this.get(principal,"light",1)
   }
+  deleteOwner(owner:string){
+    this.db.exec("BEGIN IMMEDIATE")
+    try{for(const table of ["templates","template_defaults","template_request"])if(this.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table))this.db.prepare(`DELETE FROM ${table} WHERE owner=?`).run(owner);this.db.exec("COMMIT")}catch(error){this.db.exec("ROLLBACK");throw error}
+  }
   close() { this.db.close() }
 }

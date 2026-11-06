@@ -108,5 +108,10 @@ export class OperationStore {
     this.db.prepare("UPDATE operations SET lease=NULL,holder=NULL,deadline=NULL WHERE id=? AND lease=? AND state<>'running'").run(id, lease)
   }
   pending(): OperationId[] { return this.db.prepare("SELECT id FROM operations WHERE state='queued'").all().map(row => operationId(text(record(row).id))) }
+  ownerRunning(owner:string):boolean {return !!this.db.prepare("SELECT id FROM operations WHERE owner=? AND state='running' LIMIT 1").get(owner)}
+  deleteOwner(owner:string):void {
+    if(this.db.prepare("SELECT id FROM operations WHERE owner=? AND state='running' LIMIT 1").get(owner))throw new Error("account-operation-still-running")
+    this.db.prepare("DELETE FROM operations WHERE owner=?").run(owner)
+  }
   close(): void { this.db.close() }
 }
