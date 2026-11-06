@@ -55,8 +55,12 @@ Aira selects the Claude Agent SDK when the AirDesign Claude key is set, with the
 
 ## Volume ownership
 
-Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv` before starting the app. The app itself never runs as root.
+Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv`, disables privilege escalation and clears capabilities before execing Node. The app itself never runs as root.
 
 ## Service role
 
-One image serves both services. `AIRDESIGN_ROLE` selects the start script: unset or `web` runs `npm run start:web`, `worker` runs `npm run start:worker`. Set `AIRDESIGN_ROLE=worker` on the worker service. Railway may ignore an uploaded `railway.json` start command, so the role variable is the source of truth.
+One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: unset or `web` runs `node apps/server/src/main.ts`, `worker` runs `node apps/worker/src/service.ts`. The entrypoint execs Node directly so SIGTERM reaches the app. Set `AIRDESIGN_ROLE=worker` on the worker service. Railway may ignore an uploaded `railway.json` start command, so the role variable is the source of truth.
+
+Worker artifact completion uses an authenticated binary PUT to `/internal/worker` with queue, operation ID and lease query parameters, followed by a separate JSON completion report. Uploads spool to private disk in bounded chunks and reject more than 500 MiB as they arrive; reports are limited to 8 MiB. The existing SQLite artifact commit still reads the accepted artifact once into a Buffer. Public upload limits are unchanged. Abandoned upload files are removed when the web process starts.
+
+The worker journals export scratch and process-group ownership on its persistent jobs volume before rendering. On restart it kills abandoned groups, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.

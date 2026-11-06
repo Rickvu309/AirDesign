@@ -11,5 +11,11 @@ export function deploymentRuntimeHits(file:string,source:string): string[] {
   if (normalized.endsWith("packages/agent/src/harness.ts") && source.includes("input:z.unknown()")) return ["sdk-tool-schema: expose the authoritative tool arguments to the model"]
   if(normalized.endsWith("apps/worker/src/remote-queue.ts")&&source.includes('new OperationStore(":memory:")'))return ["remote-job-journal: persist lease and scratch ownership before execution"]
   if(normalized.endsWith("packages/agent/src/sdk-adapter.ts")&&source.includes("const prompt=JSON.stringify"))return ["sdk-steering: stream follow-up requests into the active run"]
+  if(normalized.endsWith("apps/worker/src/export/deliver.ts")&&(!source.includes("journal.save(")||!source.includes("journal.started(")))return ["export-job-journal: persist scratch and process ownership before execution"]
+  if(normalized.endsWith("apps/worker/src/remote-queue.ts")&&/result:.*toString\("base64"\)/.test(source))return ["worker-binary-transfer: stream artifacts separately from JSON reports"]
+  if(normalized.endsWith("apps/server/src/worker/handle.ts")&&source.includes('result:z.string()'))return ["worker-binary-transfer: artifacts must not be JSON strings"]
+  if(normalized.endsWith("Dockerfile")&&source.includes("npm run start:"))return ["container-direct-node: entrypoint must exec node directly"]
+  if(/railway(?:\.worker)?\.json$/.test(normalized)&&source.includes("npm run start:"))return ["container-direct-node: start the role-selecting entrypoint"]
+  if(normalized.endsWith("scripts/docker/entrypoint.sh")&&(!source.includes('exec node "$entry"')||!source.includes("--no-new-privs --bounding-set=-all --inh-caps=-all")))return ["container-direct-node: exec node with privilege restrictions"]
   return []
 }

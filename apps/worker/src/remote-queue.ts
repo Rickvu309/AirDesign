@@ -17,7 +17,7 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string):
   }
   const journal=new RemoteJournal(root)
   try{
-  for(const entry of journal.entries()){
+  for(const entry of journal.entries().filter(entry=>entry.queue!=="export")){
     await journal.clean(entry)
     await request({kind:"fail",queue:entry.queue,id:entry.id,lease:entry.lease,reason:"worker-restarted"})
     await request({kind:"cleaned",queue:entry.queue,id:entry.id,lease:entry.lease})
@@ -43,7 +43,17 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string):
       await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process))
       clearInterval(cancellation)
       const status = store.status(principal,local.id)
-      if (status.kind === "ready") await request({kind:"complete",queue,id:job.id,lease:job.lease,result:store.artifact(principal,local.id).toString("base64"),report:status.report})
+      if (status.kind === "ready") {
+        const url=new URL("/internal/worker",origin)
+        url.search=new URLSearchParams({queue,id:job.id,lease:job.lease}).toString()
+        const artifact=store.artifact(principal,local.id)
+        let offset=0
+        const body=new ReadableStream<Uint8Array>({pull(controller){if(offset===artifact.length){controller.close();return}const end=Math.min(offset+65536,artifact.length);controller.enqueue(artifact.subarray(offset,end));offset=end}})
+        const upload={method:"PUT",headers:{authorization:`Bearer ${secret}`,"content-type":"application/octet-stream"},body,duplex:"half",signal:AbortSignal.timeout(120000),redirect:"error"} satisfies RequestInit & {duplex:"half"}
+        const response=await fetch(url,upload)
+        if(!response.ok)throw new Error(`worker-artifact-failed:${response.status}`)
+        await request({kind:"complete",queue,id:job.id,lease:job.lease,report:status.report})
+      }
       else await request({kind:"fail",queue,id:job.id,lease:job.lease,reason:status.kind === "failed" ? status.reason : "worker-cancelled"})
     } finally { clearInterval(cancellation); await pending; store.close() }
     const entry=journal.entries().find(entry=>entry.lease===job.lease)

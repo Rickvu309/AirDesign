@@ -43,3 +43,14 @@ it("rejects volatile remote jobs and snapshot-only Claude requests",()=>{
  expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts",'abortController:controller; const prompt=JSON.stringify(context.request)')).not.toEqual([])
  expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts",'abortController:controller; prompt:prompt()')).toEqual([])
 })
+
+it("rejects the original export, JSON transfer and npm signal boundaries",()=>{
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'await mkdir(directory);spawnContainerJob(directory,entry)')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'journal.save(job);journal.started(lease,process)')).toEqual([])
+ expect(deploymentRuntimeHits("apps/worker/src/remote-queue.ts",'result:store.artifact().toString("base64")')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/worker/src/remote-queue.ts",'body:Readable.toWeb(stream)')).toEqual([])
+ expect(deploymentRuntimeHits("Dockerfile",'CMD ["npm run start:web"]')).not.toEqual([])
+ expect(deploymentRuntimeHits("Dockerfile",'ENTRYPOINT ["/app/scripts/docker/entrypoint.sh"]')).toEqual([])
+ expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec "$@"')).not.toEqual([])
+ expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec node "$entry"; --no-new-privs --bounding-set=-all --inh-caps=-all')).toEqual([])
+})

@@ -4,7 +4,11 @@ import {rm,rmdir} from "node:fs/promises"
 import {spawn} from "node:child_process"
 import path from "node:path"
 import {z} from "zod"
-const entry=z.object({id:z.string().uuid(),lease:z.string().uuid(),queue:z.enum(["import","image"]),database:z.string(),directory:z.string().nullable(),unit:z.string().nullable(),pid:z.number().nullable(),identity:z.string().nullable(),mode:z.enum(["container","systemd"])})
+const ownership=z.object({id:z.string().uuid(),lease:z.string().uuid(),directory:z.string().nullable(),unit:z.string().nullable(),pid:z.number().nullable(),identity:z.string().nullable(),mode:z.enum(["container","systemd"])})
+const entry=z.discriminatedUnion("queue",[
+ ownership.extend({queue:z.enum(["import","image"]),database:z.string()}),
+ ownership.extend({queue:z.literal("export"),database:z.null()}),
+])
 function identity(pid:number):string|null{
  try{return readFileSync(`/proc/${pid}/stat`,"utf8").split(") ")[1]?.split(" ")[19] ?? null}catch{return null}
 }
@@ -35,7 +39,7 @@ export class RemoteJournal{
    await rmdir(path.dirname(job.directory)).catch(()=>undefined)
    await rmdir(path.dirname(path.dirname(job.directory))).catch(()=>undefined)
   }
-  for(const suffix of ["","-wal","-shm"])await rm(job.database+suffix,{force:true})
+  if(job.database)for(const suffix of ["","-wal","-shm"])await rm(job.database+suffix,{force:true})
  }
  forget(lease:string){this.db.prepare("DELETE FROM jobs WHERE lease=?").run(lease)}
  close(){this.db.close()}

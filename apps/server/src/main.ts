@@ -84,7 +84,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
-  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")))
+  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
   const server = createServer((request, response) => {
     if (request.url === "/healthz") {
       void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
@@ -128,14 +128,18 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
     if(workerRequest&&!workerAuthorized(request.headers.authorization,process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars")){
       request.resume();response.writeHead(401,{"content-type":"application/json"});response.end(JSON.stringify({code:"unauthorized"}));return
     }
-    const body = await readRequestBody(request,workerRequest ? workerCompletionLimit : undefined)
+    const binaryWorker=workerRequest&&request.method==="PUT"
+    const chunks=request[Symbol.asyncIterator]()
+    const stream=binaryWorker ? new ReadableStream<Uint8Array>({async pull(controller){const chunk=await chunks.next();if(chunk.done)controller.close();else if(chunk.value instanceof Uint8Array)controller.enqueue(chunk.value);else controller.error(new Error("invalid-body-chunk"))},async cancel(){request.resume()}}) : undefined
+    const body = binaryWorker ? undefined : await readRequestBody(request,workerRequest ? workerCompletionLimit : undefined)
     const method = request.method ?? "GET"
     let incoming: Request
     try {
       incoming = new Request(new URL(request.url ?? "/", process.env.NODE_ENV === "production" ? publicOrigin : `http://${host}`), {
         method,
         headers: new Headers(entries(request.headers)),
-        body: method === "GET" || method === "HEAD" ? undefined : new Uint8Array(body),
+        body: method === "GET" || method === "HEAD" ? undefined : binaryWorker ? stream : new Uint8Array(body ?? []),
+        ...binaryWorker ? {duplex:"half"} : {},
       })
     } catch (error) {
       writeHandlerError(response, error)

@@ -24,8 +24,9 @@ it("kills a crashed remote worker group and erases its persisted upload mapping 
   let journal=new RemoteJournal(root)
   try{
    const entries=journal.entries();expect(entries).toHaveLength(1)
-   const entry=entries[0];if(!entry?.directory)throw new Error("missing-scratch")
+   const entry=entries[0];if(!entry?.directory||!entry.database)throw new Error("missing-scratch")
    expect(await readFile(path.join(entry.directory,"input.pptx"),"utf8")).toBe("private upload")
+   const database=entry.database
    expect(entry.id).toBe("00000000-0000-4000-8000-000000000002")
    journal.close()
    const commands:unknown[]=[]
@@ -33,7 +34,7 @@ it("kills a crashed remote worker group and erases its persisted upload mapping 
     const command=JSON.parse(String(input?.body))
     commands.push(command)
     await expect(readFile(path.join(entry.directory ?? "","input.pptx"))).rejects.toThrow()
-    await expect(readFile(entry.database)).rejects.toThrow()
+    await expect(readFile(database)).rejects.toThrow()
     return Response.json(command.kind==="claim"?null:{ok:true})
    })
    try{await drainRemoteQueue("https://worker.test","test-secret",root)}finally{transport.mockRestore();journal=new RemoteJournal(root)}
@@ -44,7 +45,7 @@ it("kills a crashed remote worker group and erases its persisted upload mapping 
     {kind:"claim",queue:"import"},
    ])
    await expect(readFile(path.join(entry.directory,"input.pptx"))).rejects.toThrow()
-   await expect(readFile(entry.database)).rejects.toThrow()
+   await expect(readFile(database)).rejects.toThrow()
    const stat=await readFile(`/proc/${descendant}/stat`,"utf8").catch(()=>"")
    expect(stat===""||stat.split(") ")[1]?.startsWith("Z")).toBe(true)
    expect(journal.entries()).toEqual([])

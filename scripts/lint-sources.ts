@@ -84,7 +84,7 @@ async function collect(directory: string): Promise<string[]> {
       files.push(...await collect(full))
       continue
     }
-    if (sourceExtensions.has(path.extname(entry.name))) {
+    if (sourceExtensions.has(path.extname(entry.name)) || entry.name === "Dockerfile" || entry.name === "entrypoint.sh") {
       files.push(full)
     }
   }
