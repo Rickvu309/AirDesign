@@ -18,3 +18,4 @@ AirDesign makes logical, consulting-quality decks for executives. Start from an 
 - Where an app, package or module goes: [monorepo-map.md](docs/planning/v0.1/content/monorepo-map.md).
 - Build order, slide drawing or journeys: [the planning index](docs/planning/v0.1/README.md).
 - Screens, visuals or copy: [the design index](docs/design/v0.1/README.md).
+- After every deployment: run [verify-live](.agents/skills/verify-live/SKILL.md) against the expected deployed commit.

@@ -64,3 +64,19 @@ One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: un
 Worker artifact completion uses an authenticated binary PUT to `/internal/worker` with queue, operation ID and lease query parameters, followed by a separate JSON completion report. Uploads spool to private disk in bounded chunks and reject more than 500 MiB as they arrive; reports are limited to 8 MiB. The existing SQLite artifact commit still reads the accepted artifact once into a Buffer. Public upload limits are unchanged. Abandoned upload files are removed when the web process starts.
 
 The worker journals export scratch and process-group ownership on its persistent jobs volume before rendering. On restart it kills abandoned groups, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.
+
+## Verify the deployed commit and journey
+
+Expose the image build identity by supplying Docker build argument `AIRDESIGN_BUILD_SHA` or Railway's `RAILWAY_GIT_COMMIT_SHA`. An optional `AIRDESIGN_BUILD_TIME` fixes the UTC build timestamp. The build writes the identity once; web `/version` and site `/version.json` serve that identity. Build the Pages artifact from the same commit. A runtime environment change cannot relabel an old artifact.
+
+Set `AIRDESIGN_SMOKE_EMAILS` on the web service to a dedicated smoke email, or a comma-separated allowlist. Leave it unset to disable operator minting. The CLI reuses `AIRDESIGN_DATABASE_URL` (or `DATABASE_URL`), `AIRDESIGN_SECRET`, and `AIRDESIGN_PUBLIC_ORIGIN`; it needs no additional secret. Do not add a public mint endpoint or enable the inbox. The smoke account must start empty.
+
+After every web, worker or Pages deploy, run the [verify-live skill](../../.agents/skills/verify-live/SKILL.md) from the checkout of the deployed commit:
+
+```sh
+npm run verify:live -- --expect-sha "$(git rev-parse HEAD)" --smoke-email "$AIRDESIGN_SMOKE_EMAIL" --railway
+```
+
+The runner executes `railway ssh --service web -- node apps/server/src/smoke/mint-link.ts <smoke-email>` just before sign-in. It keeps the one-use, two-minute link in process memory. Container execution and the explicit allowlist authorize this operator path. It uses C09's normal session and atomic link-consumption behavior without changing emailed-link expiry or exposing a new HTTP capability. Never print or retain the credential.
+
+A passing health check alone is insufficient. Keep the JSON receipt, screenshots, and exports with the release record. Treat any failed step as a failed release; fix or roll back and rerun the complete journey. The verifier checks every public site page and its links, production access boundaries, build identity, persisted editing, both worker export formats, and smoke-account cleanup without spending on Aira.

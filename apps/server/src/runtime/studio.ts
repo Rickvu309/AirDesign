@@ -18,7 +18,7 @@ export async function serveStudio(request: IncomingMessage, response: ServerResp
   const filename = asset ? target : path.join(root,"index.html")
   try {
     const bytes = await readFile(filename)
-    response.writeHead(200,{"content-type":mime[path.extname(filename)] ?? "application/octet-stream", "cache-control":asset ? "public, max-age=3600" : "no-store", "x-content-type-options":"nosniff"})
+    response.writeHead(200,{"content-type":mime[path.extname(filename)] ?? "application/octet-stream", "cache-control":/^\/assets\/[^/]+-[a-zA-Z0-9_-]{8,}\.[a-z0-9]+$/.test(pathname) ? "public, max-age=31536000, immutable" : "no-store", "x-content-type-options":"nosniff"})
     response.end(request.method === "HEAD" ? undefined : bytes)
   } catch {
     response.writeHead(404); response.end("not-found")

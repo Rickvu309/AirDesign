@@ -1,3 +1,4 @@
+import {readBuildIdentity} from "../../../scripts/live/build-identity.ts"
 import {access as accessFile} from "node:fs/promises"
 import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
 import {workerHandler} from "./worker/handle.ts"
@@ -85,7 +86,16 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
+  const version = await readBuildIdentity()
   const server = createServer((request, response) => {
+    response.setHeader("x-content-type-options", "nosniff")
+    response.setHeader("referrer-policy", "no-referrer")
+    if (publicOrigin.startsWith("https:")) response.setHeader("strict-transport-security", "max-age=31536000; includeSubDomains")
+    if (request.url === "/version" && request.method === "GET") {
+      response.writeHead(200, {"content-type":"application/json", "cache-control":"no-store"})
+      response.end(JSON.stringify(version))
+      return
+    }
     if (request.url === "/healthz") {
       void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
       return

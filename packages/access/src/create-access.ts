@@ -86,7 +86,7 @@ export type Access = {
 
 const redirectKeys = new Set(["returnTo", "next", "url"])
 
-export async function createAccess(options: CreateAccessOptions): Promise<Access> {
+export async function createAccess(options: CreateAccessOptions): Promise<Access & {mintSmokeLink(email: string, allowlist: readonly string[]): Promise<string>}> {
   if (process.env.NODE_ENV === "production" && options.exposeInbox) throw new Error("AIRDESIGN_EXPOSE_INBOX is forbidden in production")
   if (options.driver.kind === "postgres" && options.driver.url.trim() === "") {
     throw new Error("postgres-url-missing")
@@ -156,6 +156,18 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
 
   return {
     handle,
+    async mintSmokeLink(address, allowlist) {
+      const email = normalizeEmail(address)
+      if (!isEmail(email) || !allowlist.map(normalizeEmail).includes(email)) throw new Error("smoke-email-not-allowlisted")
+      const now = options.clock(), token = randomBytes(32).toString("base64url")
+      const intent = issueIntent(options.secret, "home", now)
+      await opened.db.insert(tables.challenge).values({
+        id: randomBytes(16).toString("hex"), email, codeHash: sha256(randomBytes(32).toString("hex")),
+        linkHash: sha256(token), intentToken: intent.token, expiresAt: new Date(now + 120_000),
+        attempts: 0, locked: false, consumed: false,
+      })
+      return new URL(accessLinkPath(token), origin).href
+    },
     resumeDeletions,
     async principal(request) {
       const loaded = await loadSession(auth, request)
