@@ -56,3 +56,7 @@ Aira selects the Claude Agent SDK when the AirDesign Claude key is set, with the
 ## Volume ownership
 
 Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv` before starting the app. The app itself never runs as root.
+
+## Service role
+
+One image serves both services. `AIRDESIGN_ROLE` selects the start script: unset or `web` runs `npm run start:web`, `worker` runs `npm run start:worker`. Set `AIRDESIGN_ROLE=worker` on the worker service. Railway may ignore an uploaded `railway.json` start command, so the role variable is the source of truth.
