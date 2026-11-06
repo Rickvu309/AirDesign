@@ -16,6 +16,9 @@ export function parseCommand(value: unknown): Command {
     case "start-run": case "close-run": case "undo-run":
       if (!("run" in value) || typeof value.run !== "string" || !/^[a-zA-Z0-9_-]{1,100}$/.test(value.run)) break
       return { id, kind: value.kind, run: value.run }
+    case "undo-change":
+      if (!("target" in value) || typeof value.target!=="string" || !("base" in value) || typeof value.base!=="number" || !Number.isSafeInteger(value.base) || value.base<0 || !("run" in value) || typeof value.run!=="string")break
+      return {id,kind:"undo-change",target:commandId(value.target),base:value.base,run:value.run}
     case "undo": case "redo":
       if (!("target" in value) || typeof value.target !== "string") break
       return { id, kind: value.kind, target: commandId(value.target) }

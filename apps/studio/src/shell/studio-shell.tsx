@@ -13,6 +13,8 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, children }: St
   const [commandsOpen, setCommandsOpen] = useState(false)
   const items: CommandMenuItem[] = [
     { id: "home", label: copy("shell.home"), onSelect: () => window.location.assign("/") },
+    { id: "usage", label: "Usage", onSelect: () => window.location.assign("/settings/usage") },
+    { id: "agents", label: "Connected agents", onSelect: () => window.location.assign("/settings/agents") },
     { id: "sign-out", label: copy("access.sign_out"), onSelect: onSignOut },
   ]
   useEffect(() => {
@@ -31,6 +33,7 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, children }: St
         <span className="ad-brand">{copy("shell.brand")}</span>
         <Toolbar label={copy("shell.home")} items={[{ id: "home", label: copy("shell.home"), onSelect: () => window.location.assign("/") }]} />
         <button type="button" className="ad-button ad-button-secondary ad-button-compact" onClick={() => setCommandsOpen(true)}>{copy("shell.command")}</button>
+        <a className="ad-button ad-button-secondary ad-button-compact" href="/settings/usage">Settings</a>
         <button type="button" className="ad-button ad-button-secondary ad-button-settings" onClick={onSignOut}>{copy("access.sign_out")}</button>
       </header>}
       <main className="ad-main">

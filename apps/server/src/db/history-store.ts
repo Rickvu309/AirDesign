@@ -1,3 +1,7 @@
+import {initializeOwnedFiles,ownedFiles} from "../../../../packages/files/src/owned-files.ts"
+import {initializeToolSnapshots,toolSnapshots} from "../../../../packages/tools/src/snapshots.ts"
+import { initializeOAuth, oauthStore } from "../../../../packages/access/src/oauth/store.ts"
+import { initializeUsage, usageLedger } from "../../../../packages/usage/src/ledger.ts"
 import { initializeTemplateSources,templateSources,captureTemplateSources } from "../templates/source-store.ts"
 import { initializeAssets,imageStore,ownedDeckAssets } from "../images/store.ts"
 import { initializeExports,exportStore } from "../decks/export-store.ts"
@@ -43,7 +47,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-    await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
+    await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
     const result = await tx.query<{ state: History; deleted: boolean }>("SELECT state, deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE", [deckId, principal.personId])
     const row = result.rows[0]
@@ -52,6 +56,10 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return row.state
   }
   return {
+    files:ownedFiles(transaction),
+    snapshots:toolSnapshots(transaction,clock),
+    oauth:(secret:string,resource:string)=>oauthStore(transaction,secret,resource,clock),
+    usage:usageLedger(transaction,clock),
     images:imageStore(transaction),
     templateSources:templateSources(transaction),
     catalog:createCatalog(transaction,clock),
@@ -99,7 +107,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       const receipts=await tx.query<{id:string}>("SELECT id FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='applied'",[deckId])
       return {deck:history.deck,seq:history.seq,contributions:{history:{base,seq:history.seq,events:events.rows.map(row=>row.payload),runs:runs.rows.map(row=>row.payload),usedIds:history.usedIds},applied:receipts.rows.map(row=>commandId(row.id))}}
     })},
-    async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}, preparation?: { key: string; changes: (deck: Deck) => ChangeSet }): Promise<Receipt> {
+    async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}, preparation?: { key: string; changes: (deck: Deck) => ChangeSet }, strictBase?:number): Promise<Receipt> {
       return transaction(async tx => {
         const history = await owned(tx, principal, deckId)
         if(!executionMatches(command,identity))return {id:command.id,seq:history.seq,kind:"refused",code:"execution-identity-mismatch",command}
@@ -109,9 +117,17 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
           if (prior.rows[0].payload !== payload) throw new Error("request-id-payload-mismatch")
           return prior.rows[0].receipt
         }
+        if(strictBase!==undefined && history.seq!==strictBase)return {id:command.id,seq:history.seq,kind:"refused",code:"stale-base",command}
         if (preparation) { if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required"); command = { ...command, base: history.seq, changes: preparation.changes(history.deck) } }
         if(!preparation)await loadHistoryIndex(tx,deckId,history,command)
+        if(strictBase!==undefined && identity.kind==="run" && !history.runs.some(run=>run.id===identity.run))history.runs.push({id:identity.run,epoch:history.seq,kind:"open"})
         const result = execute(history, command, identity)
+        if (result.receipt.kind === "applied" && identity.kind === "run" && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
+          const ledger = usageLedger(work => work(tx),clock)
+          const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:"user-agent",request:JSON.stringify(command),units:1})
+          if (admission.kind === "out-of-usage") return {id:command.id,seq:history.seq,kind:"refused",code:"out-of-usage",command}
+          await ledger.settle(principal.personId,admission.reservation,"finished")
+        }
         await tx.query("INSERT INTO editing_receipt(deck,id,payload,receipt) VALUES ($1,$2,$3,$4)", [deckId, command.id, payload, JSON.stringify(result.receipt)])
         if (result.receipt.kind === "applied") {
           await ownedDeckAssets(tx,principal,result.history.deck);await captureTemplateSources(tx,principal,result.history.deck)

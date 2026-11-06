@@ -2,6 +2,9 @@ import { useEffect, useState } from "react"
 import { AlertDialog, Button, CodeEntry, TextField, copy, fillCopy, toast } from "@airdesign/ui"
 import type { AccessClient, IntentKind } from "@airdesign/access/client"
 import { readAccessLinkToken } from "@airdesign/access/client"
+import {AgentsPanel,AgentApproval} from "../agents/agents-panel.tsx"
+import { UsagePanel } from "../usage/usage-panel.tsx"
+import "../settings/settings.css"
 import { Workspace } from "../decks/workspace.tsx"
 import { StudioShell } from "../shell/studio-shell.tsx"
 
@@ -106,10 +109,10 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         return
       }
       if (result.status === "link-expired" || result.status === "link-used") {
-        if (result.intentToken) {
+        if (result.intentToken && !initialIntent) {
           setIntentToken(result.intentToken)
         }
-        if (result.kind) {
+        if (result.kind && !initialIntent) {
           setKind(result.kind)
         }
         setLinkStatus(result.status)
@@ -134,10 +137,10 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         return
       }
       if (result.status === "signed-in") {
-        if (result.kind) {
+        if (result.kind && !initialIntent) {
           setKind(result.kind)
         }
-        if (result.intentToken) {
+        if (result.intentToken && !initialIntent) {
           setIntentToken(result.intentToken)
         }
         setScreen("home")
@@ -231,10 +234,13 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   }
 
   if (screen === "home") {
+    if (kind === "connect-agent" && intentToken && window.location.pathname === "/agents/approve") {
+      return <main className="agent-approval-page"><AgentApproval intent={intentToken} client={client}/></main>
+    }
     return (
       <>
         <StudioShell intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          <Workspace />
+          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : <UsagePanel/>}</section> : <Workspace />}
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}

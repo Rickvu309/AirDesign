@@ -1,11 +1,11 @@
 export type MutationRejection = { status: 403; code: "origin-rejected" } | { status: 415; code: "content-type-rejected" }
 
-export function mutationRejection(request: Request, publicOrigin: string): MutationRejection | null {
+export function mutationRejection(request: Request, publicOrigin: string, mediaTypes: readonly string[] = ["application/json"]): MutationRejection | null {
   if (request.method === "GET" || request.method === "HEAD") {
     return null
   }
   const media = (request.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() ?? ""
-  if (media !== "application/json") {
+  if (!mediaTypes.includes(media)) {
     return { status: 415, code: "content-type-rejected" }
   }
   const origin = request.headers.get("origin")

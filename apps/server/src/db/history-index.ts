@@ -19,11 +19,11 @@ export async function loadHistoryIndex(tx: Transaction, deck: string, history: H
   const heads = await tx.query<{node:string;key:string;latest:Pick<Contribution,"id">;person:Pick<Contribution,"id">|null}>("SELECT node,key,latest,person FROM editing_key WHERE deck=$1", [deck])
   const targets = command.kind === "undo-run"
     ? await tx.query<{ payload: Contribution }>("SELECT payload FROM editing_contribution WHERE deck=$1 AND run=$2", [deck,command.run])
-    : command.kind === "undo" || command.kind === "redo"
+    : command.kind === "undo" || command.kind === "undo-change" || command.kind === "redo"
       ? await tx.query<{ payload: Contribution }>("SELECT payload FROM editing_contribution WHERE deck=$1 AND id=$2", [deck,command.target])
       : { rows: [] }
   const excluded = targets.rows.map(row => row.payload.id)
-  const active = command.kind === "undo" || command.kind === "redo" || command.kind === "undo-run"
+  const active = command.kind === "undo" || command.kind === "undo-change" || command.kind === "redo" || command.kind === "undo-run"
     ? await tx.query<{node:string;key:string;id:string}>("SELECT k.node,k.key,p.event AS id FROM editing_key k CROSS JOIN LATERAL (SELECT event FROM editing_property p WHERE p.deck=k.deck AND p.node=k.node AND p.key=k.key AND p.active AND NOT (p.event=ANY($2::text[])) ORDER BY p.seq DESC LIMIT 1) p WHERE k.deck=$1", [deck,excluded])
     : { rows: [] }
   const references=[...active.rows,...heads.rows.flatMap(row=>(row.person ? [row.latest,row.person] : [row.latest]).map(event=>({node:row.node,key:row.key,id:event.id})))]
