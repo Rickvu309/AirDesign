@@ -36,7 +36,13 @@ try {
  const events=await (await a.context.request.get(stack.origin+"/api/decks/"+deck+"/events?after=0")).json()
  assert.deepEqual(events.events.map(event=>event.command.id).sort(),ids.sort())
  const deliveries=a.control.outgoing.filter(command=>ids.includes(command.id)).map(command=>command.id)
- assert.deepEqual(deliveries.sort(),ids.sort())
+ assert.deepEqual([...new Set(deliveries)].sort(),ids.sort())
+ for(const id of ids){
+  const original=events.events.find(event=>event.command.id===id)
+  const receipts=a.control.frames.filter(frame=>frame.kind==="receipt" && frame.receipt.id===id).map(frame=>frame.receipt)
+  assert(receipts.length>=1)
+  assert(receipts.every(receipt=>receipt.kind==="applied" && receipt.seq===original.seq))
+ }
  await a.offline()
  await a.notes.fill("offline undo redo")
  await a.page.getByRole("button",{name:"Undo",exact:true}).click()
@@ -54,4 +60,11 @@ try {
  const result={head,verdict:"pass",sameContext:true,pages:2,ids,deliveries,events:events.events,offlineHistory,finalSequence:snapshot.seq}
  if(process.env.P04_FIX_OUTPUT)await writeFile(process.env.P04_FIX_OUTPUT,JSON.stringify(result,null,2))
  process.stdout.write(JSON.stringify({head,verdict:"pass",sameContext:true,pages:2})+"\n")
+}catch(error){
+ if(process.env.P04_FIX_OUTPUT && a){
+  const events=await (await a.context.request.get(stack.origin+"/api/decks/sharedoutbox/events?after=0")).json()
+  const rows=await stack.database(async tx=>({events:(await tx.query("SELECT * FROM editing_event WHERE deck='sharedoutbox' ORDER BY seq")).rows,receipts:(await tx.query("SELECT * FROM editing_receipt WHERE deck='sharedoutbox'")).rows,history:(await tx.query("SELECT * FROM editing_contribution WHERE deck='sharedoutbox'")).rows,deck:(await tx.query("SELECT * FROM editing_deck WHERE id='sharedoutbox'")).rows}))
+  await writeFile(process.env.P04_FIX_OUTPUT,JSON.stringify({head,error:String(error),events,rows,frames:a.control.frames,outgoing:a.control.outgoing},null,2))
+ }
+ throw error
 }finally{await a?.context.close();await browser.close();await stack.close()}

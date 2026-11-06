@@ -48,6 +48,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
   await transaction(async tx => { await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
+    await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
     await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
