@@ -22,7 +22,7 @@ it("uses the floating editor shell, switches views and exposes contextual action
     expect(container.querySelector(".editor-section h2")?.textContent).toBe("Slides")
     expect(container.querySelector(".editor-menu")).toBeNull()
     const button=(name:string)=>[...container.querySelectorAll("button")].find(value=>value.getAttribute("aria-label")===name || value.textContent===name)!
-    expect(button("Agent").disabled).toBe(true)
+    expect(button("Agent").disabled).toBe(false)
     await act(async()=>button("Single slide view").click())
     expect(container.querySelectorAll(".editor-slide:not([hidden])")).toHaveLength(1)
     await act(async()=>button("Grid view").click())

@@ -1,0 +1,11 @@
+{
+  "name": "@airdesign/agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "0.2.31",
+    "zod": "4.6.7",
+    "@modelcontextprotocol/sdk": "1.26.0"
+  }
+}

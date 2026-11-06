@@ -32,6 +32,7 @@ export type CreateAccessOptions = {
   clock: () => number
   guard: AccessGuard
   exposeInbox: boolean
+  deleteOwnedData?: (personId:string)=>Promise<void>
   publicOrigin?: string
 }
 
@@ -544,6 +545,9 @@ async function deleteAccount(
     freeUsageWeekStartedAt: started,
     deletedAt: new Date(options.clock()),
   }).onConflictDoNothing()
+  await options.deleteOwnedData?.(user.id)
+  await db.delete(tables.challenge).where(eq(tables.challenge.email,normalizeEmail(user.email)))
+  await db.delete(tables.sendWindow).where(eq(tables.sendWindow.email,normalizeEmail(user.email)))
   const context = await auth.$context
   await context.internalAdapter.deleteUserSessions(user.id)
   await context.internalAdapter.deleteUser(user.id)

@@ -1,3 +1,4 @@
+import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
 import {meteredToolSafetyHits} from "./lint/metered-tool-safety.ts"
 import { editorStackingHits } from "./lint/editor-stacking.ts"
@@ -23,6 +24,7 @@ const files = await collect(repoRoot)
 const failures: string[] = []
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for(const hit of formSubmitButtonHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of meteredToolSafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for (const hit of historyQuerySafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of operationSafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)

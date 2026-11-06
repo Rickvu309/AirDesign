@@ -8,7 +8,7 @@ export function commandId(value: string): CommandId {
   return value
 }
 function isCommandId(value: unknown): value is CommandId { return typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value) }
-export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string;undoOf?:string}
+export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string;undoOf?:string;actor?:"aira" | "user-agent"}
 export type AuthorityError = {code:"execution-identity-mismatch";expected:ExecutionIdentity}
 export type Command = { id: CommandId } & (
   { kind: "edit"; base: number; changes: ChangeSet; run: string | null } |

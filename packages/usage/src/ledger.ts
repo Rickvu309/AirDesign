@@ -1,3 +1,5 @@
+import {lockRetainedAccount} from "../../access/src/account-retention.ts"
+import type {PaymentEvent} from "./payments/provider.ts"
 import { createHash, randomUUID } from "node:crypto"
 import { usageWeek, type UsageWeek } from "./week.ts"
 export type UsageActor = "user-agent" | "aira"
@@ -9,12 +11,20 @@ type State = { week: UsageWeek; pendingZone: string | null; used: number; cycle:
 export type UsageSnapshot = State & { remaining: number; resetLink: "/settings/usage" }
 export type Admission = { kind: "admitted"; reservation: string; duplicate: boolean } | { kind: "out-of-usage"; limitHit: string; request: string; usage: UsageSnapshot }
 const snapshot = (state: State): UsageSnapshot => ({ ...state, remaining: Math.max(0, usageRates.allowance - state.used), resetLink: "/settings/usage" })
+export type Payment={id:string;cents:number;kind:"pending"|"cancelled"|"expired"|"paid"|"reversed";expires:number}
 export async function initializeUsage(tx: UsageTransaction) {
+  await tx.query("CREATE TABLE IF NOT EXISTS account_deletion(owner text PRIMARY KEY,requested bigint NOT NULL,deadline bigint NOT NULL)")
+  await tx.query("CREATE TABLE IF NOT EXISTS account_deletion_receipt(id text PRIMARY KEY,completed bigint)")
+  await tx.query("CREATE TABLE IF NOT EXISTS usage_payment (id text PRIMARY KEY, owner text NOT NULL, data jsonb NOT NULL)")
+  await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS usage_payment_one_pending ON usage_payment(owner) WHERE data->>'kind'='pending'")
+  await tx.query("CREATE TABLE IF NOT EXISTS usage_payment_receipt (id text PRIMARY KEY, payment text NOT NULL REFERENCES usage_payment(id), data jsonb NOT NULL)")
   await tx.query("CREATE TABLE IF NOT EXISTS usage_account (owner text PRIMARY KEY, state jsonb NOT NULL)")
   await tx.query("CREATE TABLE IF NOT EXISTS usage_event (owner text NOT NULL REFERENCES usage_account(owner), id text NOT NULL, kind text NOT NULL, at bigint NOT NULL, data jsonb NOT NULL, PRIMARY KEY(owner,id))")
-  await tx.query("CREATE OR REPLACE FUNCTION usage_event_immutable() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN RAISE EXCEPTION ''usage-events-are-append-only''; END'")
+  await tx.query("CREATE OR REPLACE FUNCTION usage_event_immutable() RETURNS trigger LANGUAGE plpgsql AS 'BEGIN IF TG_OP = ''DELETE'' THEN IF TG_TABLE_NAME = ''usage_event'' THEN IF EXISTS(SELECT 1 FROM account_deletion WHERE owner=OLD.owner) THEN RETURN OLD; END IF; ELSIF TG_TABLE_NAME = ''usage_payment_receipt'' THEN IF EXISTS(SELECT 1 FROM usage_payment p JOIN account_deletion d ON d.owner=p.owner WHERE p.id=OLD.payment) THEN RETURN OLD; END IF; END IF; END IF; RAISE EXCEPTION ''usage-events-are-append-only''; END'")
   if(!(await tx.query("SELECT 1 FROM pg_trigger WHERE tgname='usage_event_immutable'")).rows.length)await tx.query("CREATE TRIGGER usage_event_immutable BEFORE UPDATE OR DELETE ON usage_event FOR EACH ROW EXECUTE FUNCTION usage_event_immutable()")
   if(!(await tx.query("SELECT 1 FROM pg_trigger WHERE tgname='usage_event_no_truncate'")).rows.length)await tx.query("CREATE TRIGGER usage_event_no_truncate BEFORE TRUNCATE ON usage_event FOR EACH STATEMENT EXECUTE FUNCTION usage_event_immutable()")
+  if(!(await tx.query("SELECT 1 FROM pg_trigger WHERE tgname='usage_payment_receipt_immutable'")).rows.length)await tx.query("CREATE TRIGGER usage_payment_receipt_immutable BEFORE UPDATE OR DELETE ON usage_payment_receipt FOR EACH ROW EXECUTE FUNCTION usage_event_immutable()")
+  if(!(await tx.query("SELECT 1 FROM pg_trigger WHERE tgname='usage_payment_receipt_no_truncate'")).rows.length)await tx.query("CREATE TRIGGER usage_payment_receipt_no_truncate BEFORE TRUNCATE ON usage_payment_receipt FOR EACH STATEMENT EXECUTE FUNCTION usage_event_immutable()")
   await tx.query("CREATE TABLE IF NOT EXISTS usage_reservation (owner text NOT NULL REFERENCES usage_account(owner), id text NOT NULL, data jsonb NOT NULL, PRIMARY KEY(owner,id))")
 }
 export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
@@ -25,6 +35,7 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
     await tx.query("UPDATE usage_account SET state=$2 WHERE owner=$1", [owner,JSON.stringify(state)])
   }
   async function account(tx: UsageTransaction, owner: string) {
+    await lockRetainedAccount(tx,owner)
     const initial: State = { week: usageWeek(clock(), "UTC"), pendingZone: null, used: 0, cycle: 0, paid: 0, bonus: 0, autoReset: false, automaticResets: 0, hit: null, hitAllowsAutomaticReset: false }
     await tx.query("INSERT INTO usage_account(owner,state) VALUES ($1,$2) ON CONFLICT DO NOTHING", [owner,JSON.stringify(initial)])
     const found = await tx.query<{ state: State }>("SELECT state FROM usage_account WHERE owner=$1 FOR UPDATE", [owner])
@@ -126,6 +137,83 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
         const prior = await tx.query("SELECT id FROM usage_event WHERE owner=$1 AND id=$2",[owner,`reset:${hit}`])
         if (!prior.rows.length) await reset(tx,owner,state,hit,false)
         return snapshot(state)
+      })
+    },
+    async checkout(owner:string,cents:number){
+      if(!Number.isSafeInteger(cents)||cents<1000||cents%100!==0||cents>1000000)throw new Error("invalid-payment-amount")
+      return transaction(async tx=>{
+        await account(tx,owner)
+        const rows=await tx.query<{data:Payment}>("SELECT data FROM usage_payment WHERE owner=$1 AND data->>'kind'='pending' FOR UPDATE",[owner])
+        const prior=rows.rows[0]?.data
+        if(prior&&prior.expires>clock())return prior
+        if(prior)await tx.query("UPDATE usage_payment SET data=$2 WHERE id=$1",[prior.id,JSON.stringify({...prior,kind:"expired"})])
+        const payment:Payment={id:randomUUID(),cents,kind:"pending",expires:clock()+30*60000}
+        await tx.query("INSERT INTO usage_payment(id,owner,data) VALUES($1,$2,$3)",[payment.id,owner,JSON.stringify(payment)])
+        await event(tx,owner,`checkout:${payment.id}`,"checkout-created",payment)
+        return payment
+      })
+    },
+    async payment(owner:string,id:string,cancel=false){
+      return transaction(async tx=>{
+        await account(tx,owner)
+        const payment=(await tx.query<{data:Payment}>("SELECT data FROM usage_payment WHERE id=$1 AND owner=$2 FOR UPDATE",[id,owner])).rows[0]?.data
+        if(!payment)throw new Error("payment-not-found")
+        if(payment.kind==="pending"&&(cancel||payment.expires<=clock())){
+          payment.kind=cancel ? "cancelled" : "expired"
+          await tx.query("UPDATE usage_payment SET data=$2 WHERE id=$1",[id,JSON.stringify(payment)])
+          await event(tx,owner,`${payment.kind}:${id}`,`payment-${payment.kind}`,payment)
+        }
+        return payment
+      })
+    },
+    async receivePayment(input:PaymentEvent){
+      return transaction(async tx=>{
+        const row=(await tx.query<{owner:string}>("SELECT owner FROM usage_payment WHERE id=$1",[input.payment])).rows[0]
+        if(!row)throw new Error("payment-not-found")
+        const state=await account(tx,row.owner)
+        const owner=row.owner
+        const payment=(await tx.query<{data:Payment}>("SELECT data FROM usage_payment WHERE id=$1 FOR UPDATE",[input.payment])).rows[0]?.data
+        if(!payment||payment.cents!==input.cents)throw new Error("payment-amount-mismatch")
+        const prior=(await tx.query<{data:PaymentEvent}>("SELECT data FROM usage_payment_receipt WHERE id=$1",[input.id])).rows[0]
+        if(prior){if(prior.data.id!==input.id||prior.data.payment!==input.payment||prior.data.cents!==input.cents||prior.data.kind!==input.kind)throw new Error("receipt-payload-mismatch");return payment}
+        await tx.query("INSERT INTO usage_payment_receipt(id,payment,data) VALUES($1,$2,$3)",[input.id,input.payment,JSON.stringify(input)])
+        if(input.kind==="paid"&&payment.kind!=="paid"&&payment.kind!=="reversed"){
+          if(!Number.isSafeInteger(state.paid+payment.cents))throw new Error("credit-overflow")
+          state.paid+=payment.cents;payment.kind="paid"
+          await event(tx,owner,`paid:${payment.id}`,"payment-credit",{payment:payment.id,cents:payment.cents,kind:"paid"})
+        }
+        if(input.kind!=="paid"&&payment.kind!=="reversed"){
+          const removed=payment.kind==="paid" ? Math.min(state.paid,payment.cents) : 0
+          state.paid-=removed;payment.kind="reversed"
+          await event(tx,owner,`reversed:${payment.id}`,input.kind,{payment:payment.id,cents:payment.cents,removed})
+        }
+        await event(tx,owner,`provider:${input.id}`,"verified-payment-receipt",input)
+        await tx.query("UPDATE usage_payment SET data=$2 WHERE id=$1",[payment.id,JSON.stringify(payment)])
+        await save(tx,owner,state)
+        return payment
+      })
+    },
+    async reconcile(owner:string,id:string,input:{payments:PaymentEvent[];model:{reservation:string;units:number;actor:UsageActor}[]}){
+      if(!/^[A-Za-z0-9_-]{1,100}$/.test(id)||input.payments.length>1000||input.model.length>1000)throw new Error("invalid-reconciliation")
+      return transaction(async tx=>{
+        await account(tx,owner)
+        const hash=createHash("sha256").update(JSON.stringify(input)).digest("hex")
+        const prior=(await tx.query<{data:{hash:string;missing:string[];mismatched:string[]}}>("SELECT data FROM usage_event WHERE owner=$1 AND id=$2",[owner,`reconcile:${id}`])).rows[0]?.data
+        if(prior){if(prior.hash!==hash)throw new Error("reconciliation-id-reused");return prior}
+        const missing:string[]=[],mismatched:string[]=[]
+        for(const payment of input.payments){
+          const receipt=(await tx.query<{data:PaymentEvent}>("SELECT r.data FROM usage_payment_receipt r JOIN usage_payment p ON p.id=r.payment WHERE r.id=$1 AND p.owner=$2",[payment.id,owner])).rows[0]?.data
+          if(!receipt)missing.push(payment.id)
+          else if(receipt.payment!==payment.payment||receipt.cents!==payment.cents||receipt.kind!==payment.kind)mismatched.push(payment.id)
+        }
+        for(const model of input.model){
+          const reservation=(await tx.query<{data:Reservation}>("SELECT data FROM usage_reservation WHERE owner=$1 AND id=$2",[owner,model.reservation])).rows[0]?.data
+          if(!reservation)missing.push(model.reservation)
+          else if(reservation.units!==model.units||reservation.actor!==model.actor)mismatched.push(model.reservation)
+        }
+        const report={hash,missing,mismatched}
+        await event(tx,owner,`reconcile:${id}`,"usage-reconciled",report)
+        return report
       })
     },
     async grantFixture(owner: string, id: string, cents: number, kind: "paid" | "bonus") {

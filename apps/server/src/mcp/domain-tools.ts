@@ -12,7 +12,7 @@ import {operationId,type OperationStore} from "../../../../packages/operations/s
 import type {TemplateStore} from "../../../../packages/brand/src/template-store.ts"
 import type {HistoryStore} from "../db/history-store.ts"
 import {slideCaptures} from "./capture.ts"
-export type ToolPrincipal=Principal&{connection:string}
+export type ToolPrincipal=Principal&{connection:string;airaRun?:string}
 const string=(args:Record<string,unknown>,key:string,fallback="")=>typeof args[key]==="string" ? args[key] : fallback
 const number=(args:Record<string,unknown>,key:string,fallback=0)=>typeof args[key]==="number" ? args[key] : fallback
 function brandedDeck(template:Template):Deck{
@@ -62,7 +62,7 @@ export function domainTools(history:HistoryStore,templates:TemplateStore,operati
         case "check_deck":return page(async()=>{const current=await saved(principal,args);validate(current.deck);const checks=Array.isArray(args.checks) ? args.checks : ["structure","support"];return {meta:{savedVersion:current.seq,valid:true,checks},items:(checks.includes("support") ? nodes(current.deck) : []).filter(node=>{const support=node.fields.support;return support&&typeof support==="object"&&!Array.isArray(support)&&support.kind!=="native"}).map(node=>({id:node.id,support:node.fields.support}))}})
         case "apply_changes":case "undo_change":{
           const deck=string(args,"deckId"),base=number(args,"base"),prefix=`mcp_${principal.connection.replaceAll("-","")}_`
-          const run=prefix+createHash("sha256").update(string(args,"requestId")).digest("hex")
+          const run=principal.airaRun ?? prefix+createHash("sha256").update(string(args,"requestId")).digest("hex")
           let undoOf:string|undefined
           if(name==="undo_change"){
             const target=(await history.read(principal,deck)).contributions.history.events.find(event=>event.id===args.changeId)
@@ -71,7 +71,7 @@ export function domainTools(history:HistoryStore,templates:TemplateStore,operati
           }
           const request=commandId(`m_${createHash("sha256").update(principal.connection+":"+string(args,"requestId")).digest("hex")}`)
           const command=name==="apply_changes" ? parseCommand({id:request,kind:"edit",base,run,changes:{changes:args.changes}}) : parseCommand({id:request,kind:"undo-change",base,run,target:string(args,"changeId")})
-          const receipt=await history.commit(principal,deck,command,{kind:"run",run,...(undoOf ? {undoOf} : {})},undefined,base)
+          const receipt=await history.commit(principal,deck,command,{kind:"run",run,actor:principal.airaRun ? "aira" : "user-agent",...(undoOf ? {undoOf} : {})},undefined,base)
           if(receipt.kind==="applied"){await changed(deck);return boundedResult({...receipt,changeId:request,savedVersion:receipt.seq})}
           if(receipt.code==="out-of-usage")return textResult({kind:"out-of-usage",requestKept:true,requestId:args.requestId,usage:await history.usage.status(owner),message:"Your weekly usage is used up. Reset it in AirDesign or wait until the next reset. You can keep editing manually."},true)
           return textResult({kind:"refused",code:receipt.code,savedVersion:receipt.seq},true)
