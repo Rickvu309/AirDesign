@@ -47,7 +47,7 @@ node bench/release/assess-external.mjs ${id==="X03"?"tools":"calibration"} "$1" 
 `)
  if(id==="X03")await writeFile(path.join(directory,"model-input.template.json"),JSON.stringify({head,authorization:null,operator:null,environment:null,baselineHead:"fdafe16ccde2b7012d1876ad868215ae745e4d6c",actualSdkRun:null,models:[{version:"Claude-pinned-version-required",provider:null,sdk:null},{version:"second-model-pinned-version-required",provider:null,sdk:null}],rows:[]},null,2))
  if(id==="X04"){
-  await writeFile(path.join(directory,"quality-input.template.json"),JSON.stringify({head,authorization:null,operator:null,environment:null,releaseSetSha256:createHash("sha256").update(await readFile("bench/quality/release-set.json")).digest("hex"),baselines:[],calibration:{judgeEligible:false},rows:[]},null,2))
+  await writeFile(path.join(directory,"quality-input.template.json"),JSON.stringify({head,authorization:null,operator:null,environment:null,releaseSetSha256:createHash("sha256").update(await readFile("bench/quality/release-set.json")).digest("hex"),baselines:[],previousHead:null,previousResultsPath:null,previousResultsSha256:null,previousFrozenBeforeGeneration:false,calibration:{judgeEligible:false},rows:[]},null,2))
   await writeFile(path.join(directory,"score-quality.sh"),`#!/usr/bin/env bash
 set -euo pipefail
 cd '${process.cwd()}'

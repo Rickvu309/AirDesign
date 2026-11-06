@@ -1,8 +1,8 @@
 import {it,expect} from "vitest"
-import {releaseClaimHits,sandboxDependencyHits,productCaptureHits} from "../../packages/lint/src/release-claims.ts"
+import {releaseClaimHits,publicAmountHits,retiredRouteHits,sandboxDependencyHits,productCaptureHits} from "../../packages/lint/src/release-claims.ts"
 it("rejects unsupported public claims and retired routes",()=>{
  for(const original of ["lossless export","works in PowerPoint","supported Claude",'<a href="/share/deck">'])expect(releaseClaimHits(original).length).toBeGreaterThan(0)
- expect(releaseClaimHits("PPTX export. PowerPoint acceptance pending. Not yet verified with Claude.")).toEqual([])
+ expect(releaseClaimHits("PPTX export.",[{id:"export",text:"PPTX export.",kind:"proven",receipt:"P03/report.md"}])).toEqual([])
 })
 
 it("keeps archived worker dependencies inside the sandbox root",()=>{
@@ -19,5 +19,20 @@ it("rejects a product before-capture that can show its opening placeholder",()=>
 
 it("rejects retired Studio entries and fake unfinished UI",()=>{
  for(const source of ["<button>Share</button>","<button>Present</button>",'const route="/share/old"',"fake drafting","coming soon"])expect(releaseClaimHits(source).length).toBeGreaterThan(0)
- expect(releaseClaimHits("<button>Export</button> Export saved PPTX")).toEqual([])
+ expect(retiredRouteHits("<button>Export</button> Export saved PPTX")).toEqual([])
+})
+
+it("rejects unregistered claim categories and paraphrases",()=>{
+ for(const text of ["100% PowerPoint fidelity","Supports ChatGPT and Cursor","Fully screen-reader accessible","A usage reset consumes $15","Perfect fidelity in every deck","Connect with any vendor","Accessible to every screen reader","Reset for fifteen dollars"]){
+  expect(releaseClaimHits(text)).not.toEqual([])
+ }
+})
+
+it("requires evidence or an explicit unverified external gate for registered copy",()=>{
+ const text="Vendor verified"
+ expect(releaseClaimHits(text,[{id:"unproven",text,kind:"proven",receipt:""}])).not.toEqual([])
+ expect(releaseClaimHits(text,[{id:"premature",text,kind:"blocked",gate:"X05"}])).not.toEqual([])
+ expect(releaseClaimHits("Vendor unverified",[{id:"pending",text:"Vendor unverified",kind:"blocked",gate:"X05"}])).toEqual([])
+ for(const amount of ["Reset for $15","Buy 100 credits","Includes 10,000 units"] )expect(publicAmountHits(amount)).not.toEqual([])
+ expect(publicAmountHits("Includes {{allowance}} units for {{freePrice}}" )).toEqual([])
 })

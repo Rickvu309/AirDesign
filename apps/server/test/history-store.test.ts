@@ -127,3 +127,27 @@ it("sends only changed contributions while preserving local undo across sync del
     await expect(store.delta(stranger,deck.id,2)).rejects.toThrow("deck-not-found")
   }finally{await store.close()}
 })
+
+it("returns committed incremental checkpoints that preserve undo and durable replay",async()=>{
+ const store=await createHistoryStore({kind:"pglite"})
+ try{
+  const deck=fixtureDeck(1)
+  await store.create(owner,deck)
+  const first:Command={id:cid("checkpoint_first"),kind:"patch",base:0,run:null,target:deck.slides[0]!.id,fields:{notes:"first"}}
+  const second:Command={...first,id:cid("checkpoint_second"),base:1,fields:{notes:"second"}}
+  await store.commit(owner,deck.id,first)
+  const committed=await store.commitSnapshot(owner,deck.id,second,{kind:"person"},1)
+  expect(committed.receipt).toMatchObject({kind:"applied",seq:2})
+  expect(committed.snapshot.contributions.history.events.map(event=>event.seq)).toEqual([2])
+  expect(committed.snapshot.deck.slides[0]?.notes).toBe("second")
+  expect(committed.snapshot.contributions.applied).toContain(second.id)
+  expect((await store.replay(owner,deck.id,1)).events.map(event=>event.receipt)).toEqual([committed.receipt])
+  expect((await store.commitSnapshot(owner,deck.id,second,{kind:"person"},2)).receipt).toEqual(committed.receipt)
+  const undone=await store.commitSnapshot(owner,deck.id,{id:cid("checkpoint_undo"),kind:"undo",target:second.id},{kind:"person"},2)
+  expect(undone.snapshot.deck.slides[0]?.notes).toBe("first")
+  expect(undone.snapshot.contributions.history.events.map(event=>event.seq)).toEqual([2])
+  const full=await store.commitSnapshot(owner,deck.id,first,{kind:"person"},null)
+  expect(full.snapshot.contributions.history.events.map(event=>event.seq)).toEqual([1,2])
+  await expect(store.commitSnapshot(stranger,deck.id,second,{kind:"person"},2)).rejects.toThrow("deck-not-found")
+ }finally{await store.close()}
+})

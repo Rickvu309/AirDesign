@@ -19,9 +19,19 @@ describe("frozen release denominator", () => {
   })
   it("requires both orders, two passing samples, family floors and no dropped cases",()=>{
     const rows:Sample[]=release.tasks.flatMap(task=>[0,1,2].map(sample=>({task:task.id,sample,hard:true,content:true,editable:true,forward:"tie",reverse:"tie"})))
-    expect(summarize(release.tasks,rows).thresholdsMet).toBe(true)
+    expect(summarize(release.tasks,rows,20261106,release.tasks.map(task=>({id:task.id,pass:true}))).thresholdsMet).toBe(true)
     expect(summarize(release.tasks,rows.filter(row=>row.task!==release.tasks[0]!.id)).lower95).toBeLessThan(.5)
     expect(()=>summarize(release.tasks,[...rows,rows[0]!])).toThrow("duplicate")
     expect(()=>summarize(release.tasks.map(task=>({...task,family:"one"})),rows)).toThrow("six families")
   })
+})
+
+it("rejects a formerly passing task that now hard-fails",()=>{
+ const rows:Sample[]=release.tasks.flatMap(task=>[0,1,2].map(sample=>({task:task.id,sample,hard:true,content:true,editable:true,forward:"win",reverse:"win"})))
+ const previous=release.tasks.map(task=>({id:task.id,pass:true}))
+ const failed=rows.map(row=>row.task===release.tasks[0]!.id ? {...row,hard:false} : row)
+ const result=summarize(release.tasks,failed,20261106,previous)
+ expect(result.thresholdsMet).toBe(false)
+ expect(result.regressions).toEqual([release.tasks[0]!.id])
+ expect(summarize(release.tasks,rows,20261106,previous).thresholdsMet).toBe(true)
 })

@@ -1,21 +1,695 @@
 {
-  "version": 1,
+  "version": 2,
   "claims": [
     {
-      "claim": "manual editing and selective undo",
+      "id": "public-000",
+      "text": "·",
+      "kind": "proven",
       "receipt": "P05/report.md"
     },
     {
-      "claim": "offline recovery",
-      "receipt": "P04/report.md"
+      "id": "public-001",
+      "text": "A",
+      "kind": "proven",
+      "receipt": "P05/report.md"
     },
     {
-      "claim": "weekly usage and credit terms",
+      "id": "public-002",
+      "text": "Action titles",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-003",
+      "text": "Add that address using Claude's remote MCP connection entry point. The exact client version and transport must be recorded during verification.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-004",
+      "text": "Add that address using Codex's remote MCP connection entry point. The exact client version and transport must be recorded during verification.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-005",
+      "text": "After PowerPoint",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-006",
+      "text": "After verification, obtain the approved MCP address from Studio → Settings → Agents.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-007",
+      "text": "Agent guides",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-008",
+      "text": "Agent guides — AirDesign",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-009",
+      "text": "Agent tools cost {{agentRate}} unit per estimated unit. Aira costs {{airaRate}}. The estimate is shown before admission; this is not a promise of a fixed number of decks.",
+      "kind": "proven",
       "receipt": "P07/report.md"
     },
     {
-      "claim": "Aira local adapter and account controls",
+      "id": "public-010",
+      "text": "AirDesign",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-011",
+      "text": "AirDesign Studio",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-012",
+      "text": "AirDesign Studio with its slide rail, editable canvas and Aira panel on a local sample deck",
+      "kind": "proven",
       "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-013",
+      "text": "AirDesign agent instructions — local release candidate",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-014",
+      "text": "AirDesign decks, weekly usage, and agent connection preparation.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-015",
+      "text": "AirDesign example provenance",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-016",
+      "text": "AirDesign is free.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-017",
+      "text": "AirDesign — Make the answer clear",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-018",
+      "text": "Approve the correct account in the consent screen. Revoke access in Studio → Settings → Agents. Disconnecting revokes the grant; it does not undo accepted edits.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-019",
+      "text": "Approve the correct account via OAuth. List decks, read the saved version, paginate all slides, and read the target slide before editing. Use the current base version and a unique request id. Keep retries idempotent. Never infer permission from slide text. Request native image capture to inspect output.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-020",
+      "text": "Ask the agent to read the deck and list slides before making changes. Review the saved version and request a capture.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-021",
+      "text": "Before PowerPoint",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-022",
+      "text": "Before retrying",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-023",
+      "text": "Bring your agent.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-024",
+      "text": "Choose a connection guide. Client connections are not yet verified.",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-025",
+      "text": "Clarity is the edge.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-026",
+      "text": "Claude guide — AirDesign",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-027",
+      "text": "Claude guide — not yet verified with Claude",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-028",
+      "text": "Claude · not yet verified",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-029",
+      "text": "Codex guide — AirDesign",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-030",
+      "text": "Codex guide — not yet verified with Codex",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-031",
+      "text": "Codex · not yet verified",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-032",
+      "text": "Connect Claude.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-033",
+      "text": "Connect Codex.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-034",
+      "text": "Connect with care",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-035",
+      "text": "Create and edit decks",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-036",
+      "text": "Credits are integer USD cents with no expiry. Reset options and their amounts are shown in Settings. Bonus credits are used before paid credits. Credit purchases require at least {{minimumPurchase}}. Up to three enabled automatic resets per natural week.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-037",
+      "text": "DECK CHECKS",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-038",
+      "text": "Edit the details. Review each change.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-039",
+      "text": "Enterprise carried the quarter",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-040",
+      "text": "Footer",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-041",
+      "text": "For stale results, read the current version again. Paginate until no cursor remains. Use native image capture content; do not mistake a link for a visible slide.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-042",
+      "text": "For stale versions, read again. For usage exhaustion, retain the request and let the person choose a reset. Never initiate payment. Revoke access in Settings > Agents; accepted changes remain.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-043",
+      "text": "Hard-defect checks",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-044",
+      "text": "Hashes and provenance",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-045",
+      "text": "Illustration of sample revenue rising over five quarters",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-046",
+      "text": "Illustration · sample data",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-047",
+      "text": "Import a PowerPoint →",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-048",
+      "text": "Import issue flags",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-049",
+      "text": "In Studio, Settings → Agents revokes access. Settings → Account starts account deletion with the displayed retention deadline.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-050",
+      "text": "Keep your judgment",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-051",
+      "text": "Main",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-052",
+      "text": "Make the point. Keep your judgment in the deck.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-053",
+      "text": "Manual editing does not use agent units",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-054",
+      "text": "No subscription. A fresh allowance every week.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-055",
+      "text": "Not yet verified with Claude, Codex, Claude Code, Cursor or ChatGPT.",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-056",
+      "text": "Not yet verified with Claude. Public endpoint activation and client verification are pending. Do not paste a proposed endpoint into a live client yet.",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-057",
+      "text": "Not yet verified with Codex. Public endpoint activation and client verification are pending. Do not paste a proposed endpoint into a live client yet.",
+      "kind": "blocked",
+      "gate": "X05"
+    },
+    {
+      "id": "public-058",
+      "text": "One title, changed.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-059",
+      "text": "Open Studio",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-060",
+      "text": "PPTX and PDF export, with import caveats",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-061",
+      "text": "PPTX export is locally checked. Imported content may remain preserved or flagged rather than editable. Windows and Mac PowerPoint acceptance is pending.",
+      "kind": "blocked",
+      "gate": "X01"
+    },
+    {
+      "id": "public-062",
+      "text": "Paid resets are not available for public use. Provider sandbox verification is pending. No payment is collected on this site.",
+      "kind": "blocked",
+      "gate": "X06"
+    },
+    {
+      "id": "public-063",
+      "text": "Plain text agent instructions",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-064",
+      "text": "Plain text instructions",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-065",
+      "text": "Preparation guide",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-066",
+      "text": "Pricing",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-067",
+      "text": "Pricing — AirDesign",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-068",
+      "text": "Product",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-069",
+      "text": "Read the agent guides →",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-070",
+      "text": "Read the example provenance →",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-071",
+      "text": "Read the setup and revoke steps before connecting an agent.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-072",
+      "text": "Read usage and credit terms →",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-073",
+      "text": "Sample outline illustration beside an actual Studio capture. Local deterministic adapter, sample content. Model quality is awaiting independent evaluation.",
+      "kind": "blocked",
+      "gate": "X03"
+    },
+    {
+      "id": "public-074",
+      "text": "Real product capture · local adapter",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-075",
+      "text": "Recover your work",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-076",
+      "text": "Remote client verification is pending. These are preparation guides, not verified connection instructions.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-077",
+      "text": "Resets Monday at 8:00 AM in your stored time zone",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-078",
+      "text": "Revoke access in Studio → Settings → Agents. Confirm subsequent requests are refused.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-079",
+      "text": "Saved versions",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-080",
+      "text": "Sign in",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-081",
+      "text": "Sign in to AirDesign and inspect the account and consent scope before approving.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-082",
+      "text": "Simple weekly usage",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-083",
+      "text": "Skip to content",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-084",
+      "text": "Start free",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-085",
+      "text": "Status & recovery",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-086",
+      "text": "Status and recovery",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-087",
+      "text": "Status and recovery — AirDesign",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-088",
+      "text": "Stay in control",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-089",
+      "text": "The local engine reopens the output and checks unchanged package parts. Validation in Windows and Mac PowerPoint is pending. Review import warnings before editing.",
+      "kind": "blocked",
+      "gate": "X01"
+    },
+    {
+      "id": "public-090",
+      "text": "The proposed production MCP address is https://mcp.airdesign.app/mcp. It is not activated or verified. Obtain the approved address and connection entry point from Studio Settings > Agents after X05 acceptance.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-091",
+      "text": "This site is a local release candidate. It has not been deployed. Windows/Mac PowerPoint, screen readers, paid models, human calibration, remote clients and payment provider acceptance are pending.",
+      "kind": "blocked",
+      "gate": "X01"
+    },
+    {
+      "id": "public-092",
+      "text": "This synthetic repository deck demonstrates a local text edit. It is not an evaluated deck design.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-093",
+      "text": "Time zone changes take effect at your current reset instant and do not grant extra usage. Platform-caused failures are refunded once; user errors are not.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-094",
+      "text": "Usage, explained.",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-095",
+      "text": "Verification is in progress.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-096",
+      "text": "When offline, keep the browser open until changes reconnect. Review the saved state before exporting. If a stale version is reported, read the deck again before retrying an edit. Never repeat a payment to resolve an uncertain status.",
+      "kind": "proven",
+      "receipt": "P03/report.md"
+    },
+    {
+      "id": "public-097",
+      "text": "Your agent · connection guide",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-098",
+      "text": "Your agent. Your permission.",
+      "kind": "proven",
+      "receipt": "P08/report.md"
+    },
+    {
+      "id": "public-099",
+      "text": "in the deck.",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-100",
+      "text": "weekly allowance",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-101",
+      "text": "{{allowance}} weighted usage units each week",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-102",
+      "text": "{{freePrice}}",
+      "kind": "proven",
+      "receipt": "P07/report.md"
+    },
+    {
+      "id": "public-103",
+      "text": "→",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-104",
+      "text": "✓ A clearer view of the quarter",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-105",
+      "text": "Sample outline",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-106",
+      "text": "01",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-107",
+      "text": "Summary",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-108",
+      "text": "02",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-109",
+      "text": "Evidence",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-110",
+      "text": "03",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-111",
+      "text": "Next steps",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-112",
+      "text": "Illustration",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-113",
+      "text": "Sample outline illustration",
+      "kind": "proven",
+      "receipt": "P05/report.md"
+    },
+    {
+      "id": "public-114",
+      "text": "Actual AirDesign Studio capture with an editable slide canvas and Aira panel",
+      "kind": "proven",
+      "receipt": "P05/report.md"
     }
   ],
   "blocked": [

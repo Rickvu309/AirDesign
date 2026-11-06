@@ -67,17 +67,21 @@ export class SyncClient {
     this.notify()
     return this.persist([item])
   }
-  async acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> {
-    this.acknowledging.add(receipt.id)
+  acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> { return this.acknowledgeBatch([receipt],durableCheckpoint) }
+  async acknowledgeBatch(receipts: Receipt[], durableCheckpoint?: Promise<void>): Promise<void> {
+    const byId=new Map(receipts.map(receipt=>[receipt.id,receipt]))
+    for(const id of byId.keys())this.acknowledging.add(id)
     try{
       if(durableCheckpoint)await durableCheckpoint
-      const retained=this.pending.flatMap(item=>item.command.id===receipt.id && receipt.kind!=="applied" ? [{kind:"rejected" as const,command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}] : [])
-      await this.persist(retained,receipt.kind==="applied" ? [receipt.id] : [])
-      this.pending=this.pending.flatMap(item=>item.command.id!==receipt.id ? [item] : retained)
-      this.sent.delete(receipt.id)
-      this.releases.get(receipt.id)?.()
+      const retained=this.pending.flatMap(item=>{
+        const receipt=byId.get(item.command.id)
+        return receipt && receipt.kind!=="applied" ? [{kind:"rejected" as const,command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}] : []
+      })
+      await this.persist(retained,receipts.filter(receipt=>receipt.kind==="applied").map(receipt=>receipt.id))
+      this.pending=[...this.pending.filter(item=>!byId.has(item.command.id)),...retained]
+      for(const id of byId.keys()){this.sent.delete(id);this.releases.get(id)?.()}
       this.notify()
-    }finally{this.acknowledging.delete(receipt.id)}
+    }finally{for(const id of byId.keys())this.acknowledging.delete(id)}
   }
   async dismiss(id: string) { this.pending=this.pending.filter(p=>p.command.id!==id);this.notify();await this.persist([],[id]) }
   async recover(id: string, commands: Command[]) {

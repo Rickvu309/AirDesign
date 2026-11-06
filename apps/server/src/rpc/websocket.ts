@@ -9,7 +9,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
   const sockets = new WebSocketServer({noServer:true,maxPayload:1_048_576})
   const peers = new Map<WebSocket,{deck:string;request:Request;personId:string;seq:number|null}>()
   async function refresh(deck: string, snapshot?: Snapshot & {committedAt?:number}, except?: WebSocket) {
-    await Promise.all([...peers].filter(([,peer])=>peer.deck===deck).map(async ([socket,peer])=> {
+    await Promise.all([...peers].filter(([socket,peer])=>peer.deck===deck && socket!==except).map(async ([socket,peer])=> {
       try {
         const principal = await access.principal(peer.request)
         if (!principal || principal.personId !== peer.personId) { socket.send(JSON.stringify({kind:"signed-out"})); socket.close(); return }
@@ -19,6 +19,16 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
       }
     }))
+  }
+  const broadcasts=new Map<string,{snapshot:Snapshot & {committedAt?:number};timer:ReturnType<typeof setTimeout>}>()
+  function publish(deck:string,snapshot:Snapshot & {committedAt?:number}){
+    const pending=broadcasts.get(deck)
+    if(pending){pending.snapshot=snapshot;return}
+    const broadcast={snapshot,timer:setTimeout(()=>{
+      broadcasts.delete(deck)
+      void refresh(deck,broadcast.snapshot)
+    },16)}
+    broadcasts.set(deck,broadcast)
   }
   server.on("upgrade",(incoming,socket,head)=> {
     void (async ()=> {
@@ -39,15 +49,19 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         let ordered = Promise.resolve()
         websocket.on("message",data=> {
           ordered = ordered.then(async ()=> {
+            const started=performance.now()
             const current = await access.principal(request)
+            const authorized=performance.now()
             if (!current || current.personId !== principal.personId) { websocket.send(JSON.stringify({kind:"signed-out"})); websocket.close(); return }
-            const receipt = await store.commit(current,deck,parseCommand(JSON.parse(data.toString())),identity)
-            const committedAt=Date.now()
-            const snapshot={...await store.read(current,deck),committedAt}
+            const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
+            const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
+            const committed=await store.commitSnapshot(current,deck,parseCommand(JSON.parse(data.toString())),identity,base)
+            const {receipt}=committed
+            const snapshot={...committed.snapshot,committedAt:Date.now()}
             const peer=peers.get(websocket)
-            websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null)}))
+            websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
             if(peer)peer.seq=snapshot.seq
-            await refresh(deck,snapshot,websocket)
+            publish(deck,snapshot)
           }).catch(error=> { if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"})) })
         })
         void (async ()=> {
@@ -64,5 +78,5 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       })
     })().catch(()=>socket.destroy())
   })
-  return { refresh, close() { for (const socket of peers.keys()) socket.terminate(); sockets.close() } }
+  return { refresh, close() { for(const broadcast of broadcasts.values())clearTimeout(broadcast.timer);broadcasts.clear();for (const socket of peers.keys()) socket.terminate(); sockets.close() } }
 }

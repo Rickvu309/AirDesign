@@ -34,4 +34,6 @@ Bootstrap human acceptance uses the median of the three independent overall rati
 
 Store one result row per task/sample with candidate JSON, tool/skill/model hashes, baseline artifact hash, screenshots, export screenshots, hard-check findings, layout vector, both raw judgments, normalized verdict, human overrides, token usage, dollar cost and stage timings. Keep generation failures in the denominator. Run a changed grader against archived outputs before trusting apparent improvements. Never auto-promote an unreviewed candidate into the reference baseline.
 
+The release scorer also requires the previous release’s 48 task pass results, frozen before candidate generation. Record a distinct previous head, the result path and its SHA-256 in the quality input. The assessment checks the hash and head before comparing every task. A formerly passing task that now fails vetoes acceptance even when aggregate and family thresholds pass. Missing or incomplete previous results block acceptance.
+
 Frozen for P09. Baselines remain unvetted until X04. Deterministic replay is a harness check, not a quality result. No quality claim is authorized.

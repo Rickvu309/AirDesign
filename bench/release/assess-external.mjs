@@ -21,7 +21,12 @@ if(kind==="quality"){
  for(const baseline of source.baselines)assert.ok(release.tasks.some(task=>task.id===baseline.task)&&/^[a-f0-9]{64}$/.test(baseline.sha256)&&baseline.humanVetted&&baseline.frozenBeforeGeneration)
  assert.equal(source.calibration.judgeEligible,true,"Calibrated human evidence required before judging")
  assert.ok(source.rows.every(row=>["win","tie","loss","unresolved"].includes(row.forward)&&["win","tie","loss","unresolved"].includes(row.reverse)&&[row.hard,row.content,row.editable].every(value=>typeof value==="boolean")))
- result=summarize(release.tasks,source.rows)
+ assert.ok(source.previousFrozenBeforeGeneration && source.previousHead!==source.head && source.previousHead && /^[a-f0-9]{64}$/.test(source.previousResultsSha256),"Pin frozen previous release results")
+ const previousBytes=await readFile(source.previousResultsPath)
+ assert.equal(createHash("sha256").update(previousBytes).digest("hex"),source.previousResultsSha256)
+ const previous=JSON.parse(previousBytes)
+ assert.equal(previous.head,source.previousHead)
+ result=summarize(release.tasks,source.rows,20261106,previous.cases)
 }
 await writeFile(output,JSON.stringify({head:source.head,kind,result,acceptance:"numeric assessment only; operator must inspect raw evidence and close external gate"},null,2))
 console.log(JSON.stringify({kind,output,accepted:result.thresholdsMet??result.judgeEligible??result.pass}))

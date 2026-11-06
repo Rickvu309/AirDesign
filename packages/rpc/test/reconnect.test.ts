@@ -190,3 +190,20 @@ it("keeps acknowledged work locked across disconnect until its checkpoint is dur
     expect(second.queue).toEqual([])
   }finally{checkpoint();first.disconnected();second.disconnected();vi.unstubAllGlobals()}
 })
+
+it("acknowledges a receipt batch only after its durable checkpoint and preserves later typing",async()=>{
+ const {outbox}=memory(),writes=vi.fn(outbox.write),client=new SyncClient("batch",{deck:fixtureDeck(1),seq:0},{read:outbox.read,write:writes},()=>{})
+ await client.enqueue(patch("batch_first","first"));await client.enqueue(patch("batch_second","second"))
+ writes.mockClear()
+ let durable:()=>void=()=>{}
+ const checkpoint=new Promise<void>(resolve=>{durable=resolve})
+ const acknowledged=client.acknowledgeBatch([{id:commandId("batch_first"),kind:"applied",seq:1},{id:commandId("batch_second"),kind:"applied",seq:2}],checkpoint)
+ await Promise.resolve()
+ expect(writes).not.toHaveBeenCalled()
+ expect((await outbox.read(client.key)).map(item=>item.command.id)).toEqual(["batch_first","batch_second"])
+ await client.enqueue(patch("batch_later","later"))
+ writes.mockClear();durable();await acknowledged
+ expect(writes).toHaveBeenCalledTimes(1)
+ expect((await outbox.read(client.key)).map(item=>item.command.id)).toEqual(["batch_later"])
+ expect(client.deck.slides[0]?.notes).toBe("later")
+})

@@ -5,7 +5,7 @@ export function utility(sample: Sample | undefined) {
   if (!sample || !sample.hard || !sample.content || !sample.editable || sample.forward !== sample.reverse) return 0
   return sample.forward === "win" ? 1 : sample.forward === "tie" ? .5 : 0
 }
-export function summarize(tasks: readonly {id: string; family: string}[], rows: Sample[], seed = 20261106) {
+export function summarize(tasks: readonly {id: string; family: string}[], rows: Sample[], seed = 20261106, previous?: readonly {id:string;pass:boolean}[]) {
   if (tasks.length !== 48 || new Set(tasks.map(task => task.id)).size !== 48) throw new Error("Expected 48 distinct frozen tasks")
   const counts = [...new Set(tasks.map(task => task.family))].map(family => tasks.filter(task => task.family === family).length)
   if (counts.length !== 6 || counts.some(count => count !== 8)) throw new Error("Expected six families with eight tasks each")
@@ -20,9 +20,11 @@ export function summarize(tasks: readonly {id: string; family: string}[], rows: 
     const values = samples.map(utility)
     return {...task, mean: values.reduce<number>((a,b) => a+b,0)/3, pass: values.filter(value => value >= .5).length >= 2}
   })
+  if(previous && (previous.length!==48 || new Set(previous.map(row=>row.id)).size!==48 || previous.some(row=>!tasks.some(task=>task.id===row.id) || typeof row.pass!=="boolean")))throw new Error("Expected 48 frozen previous case results")
+  const regressions=cases.filter(task=>previous?.some(row=>row.id===task.id && row.pass) && !task.pass).map(task=>task.id)
   let state = seed >>> 0
   const random = () => { state = (Math.imul(1664525,state)+1013904223) >>> 0; return state/4294967296 }
   const bootstrap = Array.from({length:10000}, () => Array.from({length:48}, () => cases[Math.floor(random()*48)]!.mean).reduce((a,b) => a+b,0)/48).sort((a,b) => a-b)
   const families = [...new Set(tasks.map(task => task.family))].map(family => ({family,passed:cases.filter(task => task.family === family && task.pass).length}))
-  return {seed,resamples:10000,denominator:144,missing:144-rows.length,cases,families,lower95:bootstrap[249]!,upper95:bootstrap[9749]!,passed:cases.filter(task => task.pass).length,thresholdsMet:cases.filter(task => task.pass).length>=44 && families.every(family => family.passed>=7) && bootstrap[249]!>=.5}
+  return {regressions,previousResultsPresent:previous!==undefined,seed,resamples:10000,denominator:144,missing:144-rows.length,cases,families,lower95:bootstrap[249]!,upper95:bootstrap[9749]!,passed:cases.filter(task => task.pass).length,thresholdsMet:previous!==undefined && regressions.length===0 && cases.filter(task => task.pass).length>=44 && families.every(family => family.passed>=7) && bootstrap[249]!>=.5}
 }
