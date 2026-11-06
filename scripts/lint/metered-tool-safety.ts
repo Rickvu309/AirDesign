@@ -6,7 +6,7 @@ export function meteredToolSafetyHits(file:string,source:string){
   reject(/CREATE\s+TABLE[^"\n]*[,(]\s*offset\s+(?:integer|bigint|text)\b/gi,"sql-column-offset-is-reserved-use-position")
   if(!file.endsWith(`${path.sep}account${path.sep}deletion-store.ts`))reject(/\b(?:UPDATE|DELETE\s+FROM|TRUNCATE(?:\s+TABLE)?)\s+usage_event\b/gi,"usage-events-are-append-only")
   reject(/\bclassName=["']ad-button\b(?![^"']*\bad-button-(?:dialog|settings|compact|sign-in)\b)[^"']*["']/g,"button-class-requires-an-explicit-size")
-  if(file.endsWith(`${path.sep}studio${path.sep}vite.config.ts`))reject(/["']\/mcp["']\s*:(?![^\n]*\bchangeOrigin\s*:\s*false)[^\n]+/g,"mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
+  if(file.endsWith(`${path.sep}studio${path.sep}vite.config.ts`)||file.endsWith(`${path.sep}agent-account${path.sep}fixture.mjs`))reject(/["']\/mcp["']\s*:(?![^\n]*\bchangeOrigin\s*:\s*false)[^\n]+/g,"mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
   if(file.includes(`${path.sep}mcp${path.sep}`)){
     reject(/!result\.content\.some\([^\n]+&&Buffer\.byteLength/g,"image-results-must-obey-an-envelope-limit")
     reject(/\.grantFixture\s*\(|\.usage\.reset\s*\(|\.usage\.configure\s*\(/g,"remote-tools-cannot-spend-or-configure-credits")

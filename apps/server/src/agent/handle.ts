@@ -20,7 +20,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
   }
   async function snapshot(owner:string,deck:string){
     const saved=await history.read({personId:owner},deck)
-    const remote=saved.contributions.history.events.filter(event=>event.actor!=="person").slice(-20).map(event=>({id:event.id,run:event.run,active:event.active,targets:event.patches.map(patch=>patch.id)}))
+    const remote=saved.contributions.history.events.filter(event=>event.actor!=="person"&&!event.run?.startsWith("aira_")).slice(-20).map(event=>({id:event.id,run:event.run,active:event.active,targets:event.patches.map(patch=>patch.id)}))
     return {enabled:await history.agents.enabled(owner),run:await current(owner,deck),remote}
   }
   async function publish(deck:string){await Promise.all([...subscribers.values()].filter(group=>group.deck===deck).map(async group=>{try{const value=JSON.stringify(await snapshot(group.owner,group.deck));for(const send of group.sends)send(value)}catch{for(const send of group.sends)send(JSON.stringify({code:"deck-unavailable"}))}}))}

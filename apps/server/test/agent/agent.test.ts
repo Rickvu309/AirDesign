@@ -18,6 +18,7 @@ it("commits selected text through SDK tools, meters Aira, rejects foreign or inv
       const started=await (await fixture.json("/api/aira?deck=deck",{action:"send",text:"Selected content",selection:["s0e0"]},owner.cookie)).json()
       let final=await stream.next();while(final.run?.kind!=="complete"&&final.run?.kind!=="failed")final=await stream.next()
       expect(final.run.kind).toBe("complete");expect(final.run.id).toBe(started.id)
+      expect(final.remote).toEqual([])
       expect(final.run.events.filter((event:{name:string})=>event.name==="apply_changes")).toMatchObject([{scope:"s0"}])
       let saved=await fixture.history.read({personId:owner.personId},"deck")
       expect(saved.deck.slides[0]?.elements[0]).toMatchObject({runs:[{text:"Selected content"}]})

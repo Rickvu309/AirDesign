@@ -10,6 +10,8 @@ it("rejects mutable usage history and remote billing or payload authority",()=>{
   expect(meteredToolSafetyHits("apps/studio/src/agents/agents-panel.tsx",'<a className="ad-button ad-button-primary ad-button-dialog">Start again</a>')).toEqual([])
   expect(meteredToolSafetyHits("apps/studio/vite.config.ts",'"/mcp": process.env.AIRDESIGN_API_ORIGIN')[0]?.reason).toBe("mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
   expect(meteredToolSafetyHits("apps/studio/vite.config.ts",'"/mcp": {target:backend,changeOrigin:false}')).toEqual([])
+  expect(meteredToolSafetyHits("bench/agent-account/fixture.mjs",'"/mcp":fixture.apiOrigin')).toHaveLength(1)
+  expect(meteredToolSafetyHits("bench/agent-account/fixture.mjs",'"/mcp":{target:fixture.apiOrigin,changeOrigin:false}')).toEqual([])
 })
 
 it("enforces the image envelope as well as text envelopes",()=>{
