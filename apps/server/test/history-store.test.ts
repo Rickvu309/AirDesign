@@ -152,7 +152,7 @@ it("returns committed incremental checkpoints that preserve undo and durable rep
  }finally{await store.close()}
 })
 
-it("commits an ordered reconnect batch with immutable receipts, rollback and durable replay",async()=>{
+it("commits an ordered reconnect batch with immutable receipts, isolated errors and durable replay",async()=>{
  const folder=await mkdtemp(path.join(os.homedir(),"tmp/p09-batch-"))
  let store=await createHistoryStore({kind:"pglite",path:folder})
  try{
@@ -166,14 +166,15 @@ it("commits an ordered reconnect batch with immutable receipts, rollback and dur
   expect(batch.snapshot.contributions.applied).toHaveLength(100)
   expect((await store.commitBatchSnapshot(owner,deck.id,commands,person,0)).receipts).toEqual(batch.receipts)
   const first=commands[0]!
-  const fresh:Command={id:cid("rolled_back"),kind:"patch",base:100,run:null,target:id("s0"),fields:{notes:"must roll back"}}
-  await expect(store.commitBatchSnapshot(owner,deck.id,[fresh,{...first,base:999}],person,100)).rejects.toThrow("request-id-payload-mismatch")
-  expect((await store.read(owner,deck.id)).seq).toBe(100)
+  const fresh:Command={id:cid("isolated_good"),kind:"patch",base:100,run:null,target:id("s0"),fields:{notes:"neighbor commits"}}
+  const isolated=await store.commitBatchSnapshot(owner,deck.id,[fresh,{...first,base:999},{...fresh,id:cid("second_good"),fields:{notes:"second neighbor"}}],person,100)
+  expect(isolated.results).toEqual([{kind:"receipt",receipt:{id:"isolated_good",seq:101,kind:"applied"}},{kind:"error",code:"request-id-payload-mismatch"},{kind:"receipt",receipt:{id:"second_good",seq:102,kind:"applied"}}])
+  expect((await store.read(owner,deck.id)).seq).toBe(102)
   await expect(store.commitBatchSnapshot(stranger,deck.id,commands,person,0)).rejects.toThrow("deck-not-found")
   await store.close();store=await createHistoryStore({kind:"pglite",path:folder})
-  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("batch 99")
+  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("second neighbor")
   expect((await store.replay(owner,deck.id,0)).events).toHaveLength(100)
   expect((await store.commit(owner,deck.id,{id:cid("batch_undo"),kind:"undo",target:commands[99]!.id})).kind).toBe("applied")
-  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("batch 98")
+  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("second neighbor")
  }finally{await store.close();await rm(folder,{recursive:true,force:true})}
 })

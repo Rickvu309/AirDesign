@@ -20,6 +20,33 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       }
     }))
   }
+  type Arrival = {websocket:WebSocket; raw:string; deliver:(batch:string[])=>Promise<void>}
+  const arrivals=new Map<string,{pending:Arrival[];ordered:Promise<void>;timer:ReturnType<typeof setTimeout>|undefined}>()
+  function enqueue(deck:string,arrival:Arrival){
+    let queue=arrivals.get(deck)
+    if(!queue){queue={pending:[],ordered:Promise.resolve(),timer:undefined};arrivals.set(deck,queue)}
+    queue.pending.push(arrival)
+    if(queue.timer!==undefined)return
+    const current=queue
+    current.timer=setTimeout(()=>{
+      current.timer=undefined
+      const pending=current.pending;current.pending=[]
+      for(let offset=0;offset<pending.length;){
+        const first=pending[offset]
+        if(!first)break
+        const batch:string[]=[]
+        while(offset<pending.length && pending[offset]?.websocket===first.websocket && batch.length<100){
+          const next=pending[offset++]
+          if(next)batch.push(next.raw)
+        }
+        current.ordered=current.ordered.then(()=>first.deliver(batch)).catch(error=>{
+          if(first.websocket.readyState===WebSocket.OPEN)first.websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
+        })
+      }
+      const drained=current.ordered
+      void drained.then(()=>{if(current.ordered===drained && current.timer===undefined && current.pending.length===0 && arrivals.get(deck)===current)arrivals.delete(deck)})
+    },16)
+  }
   const broadcasts=new Map<string,{snapshot:Snapshot & {committedAt?:number};timer:ReturnType<typeof setTimeout>}>()
   function publish(deck:string,snapshot:Snapshot & {committedAt?:number}){
     const pending=broadcasts.get(deck)
@@ -46,38 +73,34 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         peers.set(websocket,{deck,request,personId:principal.personId,seq:null})
         websocket.on("error",()=>websocket.close())
         websocket.on("close",()=>peers.delete(websocket))
-        let ordered = Promise.resolve()
-        let inbox:string[]=[]
-        let delivery:ReturnType<typeof setTimeout>|undefined
-        websocket.on("close",()=>clearTimeout(delivery))
-        websocket.on("message",data=> {
-          inbox.push(data.toString())
-          if(delivery!==undefined)return
-          delivery=setTimeout(()=>{
-            delivery=undefined
-            const pending=inbox;inbox=[]
-            for(let offset=0;offset<pending.length;offset+=100){
-              const batch=pending.slice(offset,offset+100)
-              ordered = ordered.then(async ()=> {
-                const started=performance.now()
-                const current = await access.principal(request)
-                const authorized=performance.now()
-                if (!current || current.personId !== principal.personId) { websocket.send(JSON.stringify({kind:"signed-out"})); websocket.close(); return }
-                const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
-                const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
-                const commands=batch.map(raw=>parseCommand(JSON.parse(raw)))
-                const committed=await store.commitBatchSnapshot(current,deck,commands,identity,base)
-                const snapshot={...committed.snapshot,committedAt:Date.now()}
-                const peer=peers.get(websocket)
-                for(const [index,receipt] of committed.receipts.entries()){
-                  websocket.send(JSON.stringify({kind:"receipt",receipt,...(index===0 ? snapshotDelta(snapshot,peer?.seq ?? null) : {checkpoint:"previous",deckId:deck,seq:snapshot.seq,committedAt:snapshot.committedAt}),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
-                  if(peer)peer.seq=snapshot.seq
-                }
-                publish(deck,snapshot)
-              }).catch(error=> { if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"})) })
-            }
-          },16)
-        })
+        const deliver=async(batch:string[])=>{
+          const started=performance.now()
+          const current=await access.principal(request)
+          const authorized=performance.now()
+          if(!current || current.personId!==principal?.personId){websocket.send(JSON.stringify({kind:"signed-out"}));websocket.close();return}
+          const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
+          const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
+          const parsed=batch.map(raw=>{
+            try{return {kind:"command" as const,command:parseCommand(JSON.parse(raw))}}
+            catch(error){return {kind:"error" as const,code:error instanceof SyntaxError ? "invalid-command" : error instanceof Error ? error.message : "invalid-command"}}
+          })
+          const commands=parsed.flatMap(item=>item.kind==="command" ? [item.command] : [])
+          const committed=commands.length ? await store.commitBatchSnapshot(current,deck,commands,identity,base) : null
+          const snapshot=committed ? {...committed.snapshot,committedAt:Date.now()} : null
+          const peer=peers.get(websocket)
+          let index=0,checkpointSent=false
+          for(const item of parsed){
+            const result=item.kind==="error" ? item : committed?.results[index++]
+            if(!result)throw new Error("missing-command-result")
+            if(result.kind==="error"){websocket.send(JSON.stringify(result));continue}
+            if(!snapshot)throw new Error("missing-command-snapshot")
+            websocket.send(JSON.stringify({kind:"receipt",receipt:result.receipt,...(!checkpointSent ? snapshotDelta(snapshot,peer?.seq ?? null) : {checkpoint:"previous",deckId:deck,seq:snapshot.seq,committedAt:snapshot.committedAt}),...(committed?.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
+            checkpointSent=true
+            if(peer)peer.seq=snapshot.seq
+          }
+          if(snapshot)publish(deck,snapshot)
+        }
+        websocket.on("message",data=>enqueue(deck,{websocket,raw:data.toString(),deliver}))
         void (async ()=> {
           let cursor=after
           while (websocket.readyState===WebSocket.OPEN) {
@@ -92,5 +115,5 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       })
     })().catch(()=>socket.destroy())
   })
-  return { refresh, close() { for(const broadcast of broadcasts.values())clearTimeout(broadcast.timer);broadcasts.clear();for (const socket of peers.keys()) socket.terminate(); sockets.close() } }
+  return { refresh, close() { for(const queue of arrivals.values())clearTimeout(queue.timer);arrivals.clear();for(const broadcast of broadcasts.values())clearTimeout(broadcast.timer);broadcasts.clear();for (const socket of peers.keys()) socket.terminate(); sockets.close() } }
 }

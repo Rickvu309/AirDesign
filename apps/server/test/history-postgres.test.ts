@@ -88,10 +88,15 @@ it("replays simultaneous duplicate batches once and enforces command identity in
     for(const table of ["editing_event","editing_receipt","editing_contribution"]){
       expect((await sql.query(`SELECT count(*)::integer AS count FROM ${table} WHERE deck=$1`,[deck.id])).rows).toEqual([{count:1}])
     }
-    await expect(second.commitBatchSnapshot(owner,deck.id,[{...command,fields:{notes:"changed payload"}}],{kind:"person"},0)).rejects.toThrow("request-id-payload-mismatch")
+    expect((await second.commitBatchSnapshot(owner,deck.id,[{...command,fields:{notes:"changed payload"}}],{kind:"person"},0)).results).toEqual([{kind:"error",code:"request-id-payload-mismatch"}])
     expect((await first.read(owner,deck.id)).seq).toBe(1)
     await expect(sql.query("INSERT INTO editing_event(deck,seq,command,receipt) SELECT deck,seq+1,command,receipt FROM editing_event WHERE deck=$1",[deck.id])).rejects.toMatchObject({code:"23505"})
     expect((await second.replay(owner,deck.id,0)).events).toHaveLength(1)
+    await sql.query("CREATE FUNCTION fail_batch_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.command->>'id'='infra_failure' THEN RAISE EXCEPTION 'storage-unavailable'; END IF; RETURN NEW; END $$")
+    await sql.query("CREATE TRIGGER fail_batch_event BEFORE INSERT ON editing_event FOR EACH ROW EXECUTE FUNCTION fail_batch_event()")
+    await expect(first.commitBatchSnapshot(owner,deck.id,[{...command,id:commandId("infra_neighbor"),fields:{notes:"roll back"}},{...command,id:commandId("infra_failure"),fields:{notes:"failure"}}],{kind:"person"},1)).rejects.toThrow("storage-unavailable")
+    expect((await second.read(owner,deck.id)).seq).toBe(1)
+    expect((await sql.query("SELECT id FROM editing_receipt WHERE deck=$1 ORDER BY id",[deck.id])).rows).toEqual([{id:"duplicate"}])
   } finally {
     await sql.end();await first.close();await second.close()
     await admin.query(`DROP DATABASE ${database}`)

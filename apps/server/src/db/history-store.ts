@@ -166,17 +166,26 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     async commitBatchSnapshot(principal:Principal,deckId:string,commands:Command[],identity:ExecutionIdentity,base:number|null){
       if(commands.length===0 || commands.length>100)throw new Error("invalid-command-batch")
       return transaction(async tx=>{
-        const started=performance.now(),receipts:Receipt[]=[],commandMs:number[]=[]
+        const started=performance.now(),receipts:Receipt[]=[],results:({kind:"receipt";receipt:Receipt}|{kind:"error";code:string})[]=[],commandMs:number[]=[]
         let history=await owned(tx,principal,deckId)
         for(const command of commands){
           const start=performance.now()
-          const result=await commit(tx,principal,deckId,command,identity,undefined,undefined,currentProjection(history))
-          receipts.push(result.receipt);history=result.history;commandMs.push(performance.now()-start)
+          await tx.query("SAVEPOINT batch_command")
+          try {
+            const result=await commit(tx,principal,deckId,command,identity,undefined,undefined,currentProjection(history))
+            receipts.push(result.receipt);results.push({kind:"receipt",receipt:result.receipt});history=result.history
+          } catch(error) {
+            if(!(error instanceof Error) || error.message!=="request-id-payload-mismatch")throw error
+            await tx.query("ROLLBACK TO SAVEPOINT batch_command")
+            results.push({kind:"error",code:error.message})
+          }
+          await tx.query("RELEASE SAVEPOINT batch_command")
+          commandMs.push(performance.now()-start)
         }
         await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1",[deckId,JSON.stringify(currentProjection(history)),clock()])
         const committed=performance.now()
         const snapshot=await snapshotFrom(tx,history,deckId,base)
-        return {receipts,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,commandMs,checkpointMs:performance.now()-committed}} : {})}
+        return {receipts,results,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,commandMs,checkpointMs:performance.now()-committed}} : {})}
       })
     },
     async replay(principal: Principal, deckId: string, after: number) {
