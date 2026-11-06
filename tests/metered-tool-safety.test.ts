@@ -12,6 +12,8 @@ it("rejects mutable usage history and remote billing or payload authority",()=>{
   expect(meteredToolSafetyHits("apps/studio/vite.config.ts",'"/mcp": {target:backend,changeOrigin:false}')).toEqual([])
   expect(meteredToolSafetyHits("bench/agent-account/fixture.mjs",'"/mcp":fixture.apiOrigin')).toHaveLength(1)
   expect(meteredToolSafetyHits("bench/agent-account/fixture.mjs",'"/mcp":{target:fixture.apiOrigin,changeOrigin:false}')).toEqual([])
+  expect(meteredToolSafetyHits("bench/agent-account/performance.mjs",'committed.find(entry=>entry.payment?.id===receiptId)')[0]?.reason).toBe("payment-commit-probe-must-match-payment-and-receipt")
+  expect(meteredToolSafetyHits("bench/agent-account/performance.mjs",'committed.find(entry=>entry.payment?.id===receiptId&&entry.payment?.payment===checkout.id)')).toEqual([])
 })
 
 it("enforces the image envelope as well as text envelopes",()=>{
