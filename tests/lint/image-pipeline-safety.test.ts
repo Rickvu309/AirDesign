@@ -26,3 +26,9 @@ it("indexes operation expiration without scanning image payloads",()=>{
   expect(imagePipelineSafetyHits(file,source.replace(" CREATE INDEX IF NOT EXISTS operations_expiry ON operations(state,expires);",""))).toEqual([{line:1,reason:"operation-expiry-must-use-metadata-index"}])
   expect(imagePipelineSafetyHits(file,source)).toEqual([])
 })
+
+it("checks native exported pictures through their slide relationship rather than a PNG suffix",()=>{
+  const file="bench/templates-images/live.mjs"
+  expect(imagePipelineSafetyHits(file,'parts.find(([name])=>name.startsWith("ppt/media/")&&name.endsWith(".png"))')).toEqual([{line:1,reason:"native-picture-probe-must-follow-relationship"}])
+  expect(imagePipelineSafetyHits(file,readFileSync(file,"utf8"))).toEqual([])
+})

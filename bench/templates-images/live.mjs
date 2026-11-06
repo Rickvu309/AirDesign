@@ -84,7 +84,8 @@ try{
   await apply(deck,missing.id,1,{substitution:"Geist"});assert.equal((await snapshot(deck)).deck.themes.find(theme=>theme.id===missing.id).font,"Geist")
   await call("/api/assets/update",{deck,asset:asset.id,elementId:"pictureA",crop,focal,mask:"ellipse",alt:"Earth from space",requestId:uid()})
   const maskExport=await exportDeck(deck,"mask-alt.pptx"),maskParts=await readArchive(maskExport.bytes),xml=maskParts.get("ppt/slides/slide1.xml").toString();assert.match(xml,/prst="ellipse"/);assert.match(xml,/l="20000" t="10000" r="30000" b="30000"/)
-  const png=[...maskParts].find(([name])=>name.startsWith("ppt/media/")&&name.endsWith(".png"));assert.equal((await sharp(png[1]).metadata()).width,asset.width)
+  const maskGraph=await importPptx(maskExport.bytes),picturePart=maskGraph.report.relationships.find(rel=>rel.part==="ppt/slides/slide1.xml"&&rel.type.endsWith("/image"))?.target;assert.ok(picturePart)
+  const nativePicture=maskParts.get(picturePart);assert.ok(nativePicture);assert.equal((await sharp(nativePicture).metadata()).width,asset.width);assert.equal(hash(nativePicture),originalHash)
   await receipt({missingFont:missing.font,explicitSubstitution:"Geist",mask:"ellipse",crop,sourceWidth:asset.width})
 
   lane=5
