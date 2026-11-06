@@ -8,6 +8,7 @@ export function meteredToolSafetyHits(file:string,source:string){
   reject(/\bclassName=["']ad-button\b(?![^"']*\bad-button-(?:dialog|settings|compact|sign-in)\b)[^"']*["']/g,"button-class-requires-an-explicit-size")
   if(file.endsWith(`${path.sep}studio${path.sep}vite.config.ts`))reject(/["']\/mcp["']\s*:(?![^\n]*\bchangeOrigin\s*:\s*false)[^\n]+/g,"mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
   if(file.includes(`${path.sep}mcp${path.sep}`)){
+    reject(/!result\.content\.some\([^\n]+&&Buffer\.byteLength/g,"image-results-must-obey-an-envelope-limit")
     reject(/\.grantFixture\s*\(|\.usage\.reset\s*\(|\.usage\.configure\s*\(/g,"remote-tools-cannot-spend-or-configure-credits")
     reject(/identity\s*:\s*args\.|run\s*:\s*args\.|personId\s*:\s*args\./g,"derive-tool-authority-on-server")
   }

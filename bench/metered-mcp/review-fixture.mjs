@@ -14,7 +14,7 @@ export async function reviewFixture(){
   process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin
   const studio=path.resolve("apps/studio"),packages=path.resolve("packages")
   const vite=await createServer({root:studio,configFile:path.join(studio,"vite.config.ts"),resolve:{alias:{"@airdesign/ui":path.join(packages,"ui/src/index.ts"),"@airdesign/access/client":path.join(packages,"access/src/client/index.ts")}},server:{host:"127.0.0.1",port,strictPort:true}});await vite.listen()
-  const directory=path.join(os.homedir(),"tmp/airdesign-autopilot/P07/review"),session=`p07-review-${process.pid}`,transcript=[]
+  const directory=path.join(process.env.P07_EVIDENCE ?? path.join(os.homedir(),"tmp/airdesign-autopilot/P07"),"review"),session=`p07-review-${process.pid}`,transcript=[]
   await mkdir(directory,{recursive:true})
   const browser=async(...args)=>{const {stdout,stderr}=await execute("agent-browser",["--session",session,...args],{maxBuffer:2*1024*1024,timeout:45000});transcript.push({args:args[0]==="cookies"?["cookies","set","redacted"]:args,stdout,stderr});return stdout}
   try{

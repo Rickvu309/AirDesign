@@ -10,7 +10,7 @@ export function usageHandler(access: Access, history: HistoryStore, origin: stri
     const path = new URL(request.url).pathname
     try {
       if (path === "/api/usage" && request.method === "GET") return Response.json(await history.usage.status(owner))
-      if (path === "/api/usage/history" && request.method === "GET") return Response.json(await history.usage.events(owner))
+      if (path === "/api/usage/history" && request.method === "GET") return Response.json(await history.usage.history(owner,new URL(request.url).searchParams.get("cursor") ?? undefined))
       const body: unknown = await request.json()
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("invalid-usage-command")
       if (path === "/api/usage/reset" && request.method === "POST" && "limitHit" in body && typeof body.limitHit === "string" && Object.keys(body).length === 1) return Response.json(await history.usage.reset(owner,body.limitHit))

@@ -15,6 +15,9 @@ export async function initializeToolSnapshots(tx:UsageTransaction){
 }
 export function toolSnapshots(transaction:UsageTransactions,clock=Date.now){
   return {
+    async binary(owner:string,bytes:Buffer){
+      return transaction(async tx=>{const id=randomUUID(),expires=clock()+15*60000;await tx.query("DELETE FROM tool_snapshot WHERE expires<=$1",[clock()]);await tx.query("INSERT INTO tool_snapshot(id,owner,query,data,expires) VALUES($1,$2,$3,$4,$5)",[id,owner,"capture",JSON.stringify({base64:bytes.toString("base64")}),expires]);return {resource:`airdesign://captures/${id}`,expires}})
+    },
     async resource(owner:string,id:string){return transaction(async tx=>{const row=(await tx.query<{data:unknown}>("SELECT data FROM tool_snapshot WHERE id=$1 AND owner=$2 AND expires>$3",[id,owner,clock()])).rows[0];if(!row)throw new Error("resource-not-found");return row.data})},
     async page(owner:string,tool:string,args:Record<string,unknown>,load:()=>Promise<{items:unknown[];meta:Record<string,unknown>}>){
       const {cursor,...query}=args,limit=typeof args.limit==="number" ? args.limit : 20

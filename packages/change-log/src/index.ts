@@ -8,7 +8,7 @@ export function commandId(value: string): CommandId {
   return value
 }
 function isCommandId(value: unknown): value is CommandId { return typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value) }
-export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string}
+export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string;undoOf?:string}
 export type AuthorityError = {code:"execution-identity-mismatch";expected:ExecutionIdentity}
 export type Command = { id: CommandId } & (
   { kind: "edit"; base: number; changes: ChangeSet; run: string | null } |
@@ -181,7 +181,7 @@ export function execute(current: History, command: Command, identity: ExecutionI
     case "undo-change":
     case "redo": {
       const event = history.events.find(e => e.id === command.target)
-      if(command.kind==="undo-change" && (command.base!==history.seq || event?.run!==command.run))return refuse(command.base!==history.seq ? "stale-base" : "invalid-undo-target")
+      if(command.kind==="undo-change" && (command.base!==history.seq || event?.run!==(identity.kind==="run" ? identity.undoOf ?? command.run : command.run)))return refuse(command.base!==history.seq ? "stale-base" : "invalid-undo-target")
       if (!event || event.active === (command.kind === "redo")) return refuse("invalid-undo-target")
       if (command.kind === "redo" && event.run !== null && history.runs.some(run => run.id === event.run && run.kind === "undone")) return refuse("run-closed")
       if (command.kind === "redo" && history.events.some(e => e.id !== event.id && Math.max(e.seq,e.toggledAt) > event.toggledAt && e.patches.some(p => event.patches.some(q => q.id === p.id && q.keys.some(k => p.keys.includes(k)))))) return refuse("redo-invalidated")

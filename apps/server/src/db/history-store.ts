@@ -122,7 +122,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         if(!preparation)await loadHistoryIndex(tx,deckId,history,command)
         if(strictBase!==undefined && identity.kind==="run" && !history.runs.some(run=>run.id===identity.run))history.runs.push({id:identity.run,epoch:history.seq,kind:"open"})
         const result = execute(history, command, identity)
-        if (result.receipt.kind === "applied" && identity.kind === "run" && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
+        if (result.receipt.kind === "applied" && identity.kind === "run" && !themeOnly(history.deck,result.history.deck) && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
           const ledger = usageLedger(work => work(tx),clock)
           const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:"user-agent",request:JSON.stringify(command),units:1})
           if (admission.kind === "out-of-usage") return {id:command.id,seq:history.seq,kind:"refused",code:"out-of-usage",command}
@@ -153,4 +153,10 @@ function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`
   if (value && typeof value === "object") return `{${Object.entries(value).sort(([a],[b]) => a.localeCompare(b)).map(([k,v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(",")}}`
   return JSON.stringify(value) ?? "null"
+}
+
+function themeOnly(before:Deck,after:Deck):boolean{
+  const withoutThemes=(deck:Deck)=>JSON.stringify(deck,(key,value)=>["themes","theme","version"].includes(key) ? undefined : value)
+  const withThemes=(deck:Deck)=>canonical(JSON.parse(JSON.stringify(deck,(key,value)=>key==="version" ? undefined : value)))
+  return withThemes(before)!==withThemes(after) && canonical(JSON.parse(withoutThemes(before)))===canonical(JSON.parse(withoutThemes(after)))
 }

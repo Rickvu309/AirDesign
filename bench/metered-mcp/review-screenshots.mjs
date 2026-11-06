@@ -15,6 +15,10 @@ try{
     await review.click("Cancel")
     await review.browser("open",review.expired);await shot("expired","Approval has expired")
     await review.browser("open",review.origin+"/settings/usage");await shot("usage-limit","Weekly usage")
+    assert.equal(JSON.parse(await review.browser("eval","document.querySelector('input[type=checkbox]').disabled")),true)
+    await review.click("Reset");await shot("usage-no-credits","No credits yet")
+    assert.ok((await review.browser("snapshot","-i")).includes('button "Close"'))
+    await review.click("Close")
   }
   await writeFile(path.join(review.directory,"screenshots.json"),JSON.stringify({head,receipts},null,2))
 }finally{await review.close()}

@@ -5,7 +5,7 @@ const deck={deckId:string},version={...deck,savedVersion:integer},write={...deck
 const page={cursor:string,limit:{type:"integer",minimum:1,maximum:50}}
 const definitions=[
   ["get_deck","Read a saved deck outline, with stable slide ids. Page through the frozen snapshot.",{...deck,...page},["deckId"]],
-  ["get_slide","Read complete JSON subtrees from one saved slide. Target rootId for a smaller subtree. JSON is authoritative.",{...deck,slideId:string,rootId:string,format:{type:"string",enum:["json"]},...page},["deckId","slideId"]],
+  ["get_slide","Read complete JSON or JSX subtrees from one saved slide. Target rootId for a smaller subtree. JSON is authoritative.",{...deck,slideId:string,rootId:string,format:{type:"string",enum:["json","jsx"]},...page},["deckId","slideId"]],
   ["get_context","Read available workspace context. Remote clients have no active Studio selection.",{},[]],
   ["get_brand","Read one existing brand template and its versioned tokens.",{brandId:string,version:integer},["brandId"]],
   ["find_elements","Find element ids and summaries in one deck. Query matches text; kind filters element type.",{...deck,query:{type:"string",maxLength:200},kind:{type:"string",enum:["text","shape","image","group"]},...page},["deckId"]],

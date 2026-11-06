@@ -11,3 +11,9 @@ it("rejects mutable usage history and remote billing or payload authority",()=>{
   expect(meteredToolSafetyHits("apps/studio/vite.config.ts",'"/mcp": process.env.AIRDESIGN_API_ORIGIN')[0]?.reason).toBe("mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
   expect(meteredToolSafetyHits("apps/studio/vite.config.ts",'"/mcp": {target:backend,changeOrigin:false}')).toEqual([])
 })
+
+it("enforces the image envelope as well as text envelopes",()=>{
+  const file="apps/server/src/mcp/handle.ts"
+  expect(meteredToolSafetyHits(file,'if(!result.content.some(item=>item.type==="image")&&Buffer.byteLength(JSON.stringify(result))>toolTextLimit)throw new Error("large")')[0]?.reason).toBe("image-results-must-obey-an-envelope-limit")
+  expect(meteredToolSafetyHits(file,'if(Buffer.byteLength(JSON.stringify(result))>(hasImage ? 500000 : toolTextLimit))throw new Error("large")')).toEqual([])
+})

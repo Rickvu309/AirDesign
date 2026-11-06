@@ -144,6 +144,15 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
         return snapshot(state)
       })
     },
+    async history(owner:string,cursor?:string){
+      let boundary:{at:string;id:string}|null=null
+      if(cursor){const value:unknown=JSON.parse(Buffer.from(cursor,"base64url").toString());if(!value||typeof value!=="object"||!("at" in value)||typeof value.at!=="string"||!/^\d+$/.test(value.at)||!("id" in value)||typeof value.id!=="string")throw new Error("invalid-history-cursor");boundary={at:value.at,id:value.id}}
+      return transaction(async tx=>{
+        const rows=(await tx.query<{id:string;kind:string;at:string;data:unknown}>("SELECT id,kind,at,data FROM usage_event WHERE owner=$1 AND ($2::bigint IS NULL OR (at,id)<($2::bigint,$3::text)) ORDER BY at DESC,id DESC LIMIT 101",[owner,boundary?.at ?? null,boundary?.id ?? null])).rows
+        const items=rows.slice(0,100),last=items.at(-1)
+        return {items,nextCursor:rows.length>100&&last ? Buffer.from(JSON.stringify({at:String(last.at),id:last.id})).toString("base64url") : null}
+      })
+    },
     async events(owner: string) { return transaction(async tx => (await tx.query("SELECT id,kind,at,data FROM usage_event WHERE owner=$1 ORDER BY at,id LIMIT 100",[owner])).rows) },
   }
 }
