@@ -1,3 +1,4 @@
+import {releaseClaimHits} from "../packages/lint/src/release-claims.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
 import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
@@ -18,13 +19,15 @@ import { gateRecordingHits } from "./lint/gate-recording.ts"
 import { responseHeaderHits } from "./lint/response-headers.ts"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css"])
+const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css", ".html", ".txt", ".json"])
 const skipped = new Set(["node_modules", "dist", "coverage", "docs", "fixtures"])
 
 const files = await collect(repoRoot)
 const failures: string[] = []
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  if (file.includes("/apps/site/")) for (const hit of releaseClaimHits(source)) failures.push(`${file}: ${hit}`)
+  if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
   for(const hit of recoverySafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of formSubmitButtonHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of meteredToolSafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)

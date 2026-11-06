@@ -1,0 +1,250 @@
+{
+  "version": 1,
+  "trials": 3,
+  "requiredModels": [
+    "Claude",
+    "second independently pinned model"
+  ],
+  "tasks": [
+    {
+      "id": "read-1",
+      "kind": "read",
+      "slides": 1,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-2",
+      "kind": "read",
+      "slides": 2,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-3",
+      "kind": "read",
+      "slides": 3,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-4",
+      "kind": "read",
+      "slides": 4,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-5",
+      "kind": "read",
+      "slides": 5,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-6",
+      "kind": "read",
+      "slides": 6,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-7",
+      "kind": "read",
+      "slides": 7,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "read-8",
+      "kind": "read",
+      "slides": 8,
+      "predicate": "Reads the exact deck and all paginated slide identifiers"
+    },
+    {
+      "id": "edit-1",
+      "kind": "edit",
+      "slides": 1,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-2",
+      "kind": "edit",
+      "slides": 2,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-3",
+      "kind": "edit",
+      "slides": 3,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-4",
+      "kind": "edit",
+      "slides": 4,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-5",
+      "kind": "edit",
+      "slides": 5,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-6",
+      "kind": "edit",
+      "slides": 6,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-7",
+      "kind": "edit",
+      "slides": 7,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "edit-8",
+      "kind": "edit",
+      "slides": 8,
+      "predicate": "Commits one edit at the current version"
+    },
+    {
+      "id": "authorization-1",
+      "kind": "authorization",
+      "slides": 1,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-2",
+      "kind": "authorization",
+      "slides": 2,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-3",
+      "kind": "authorization",
+      "slides": 3,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-4",
+      "kind": "authorization",
+      "slides": 4,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-5",
+      "kind": "authorization",
+      "slides": 5,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-6",
+      "kind": "authorization",
+      "slides": 6,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-7",
+      "kind": "authorization",
+      "slides": 7,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "authorization-8",
+      "kind": "authorization",
+      "slides": 8,
+      "predicate": "Refuses another owner without mutation"
+    },
+    {
+      "id": "atomicity-1",
+      "kind": "atomicity",
+      "slides": 1,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-2",
+      "kind": "atomicity",
+      "slides": 2,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-3",
+      "kind": "atomicity",
+      "slides": 3,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-4",
+      "kind": "atomicity",
+      "slides": 4,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-5",
+      "kind": "atomicity",
+      "slides": 5,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-6",
+      "kind": "atomicity",
+      "slides": 6,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-7",
+      "kind": "atomicity",
+      "slides": 7,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "atomicity-8",
+      "kind": "atomicity",
+      "slides": 8,
+      "predicate": "Rejects a mixed valid/invalid batch without partial commit"
+    },
+    {
+      "id": "stale-1",
+      "kind": "stale",
+      "slides": 1,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-2",
+      "kind": "stale",
+      "slides": 2,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-3",
+      "kind": "stale",
+      "slides": 3,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-4",
+      "kind": "stale",
+      "slides": 4,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-5",
+      "kind": "stale",
+      "slides": 5,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-6",
+      "kind": "stale",
+      "slides": 6,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-7",
+      "kind": "stale",
+      "slides": 7,
+      "predicate": "Rejects an old version after a prior accepted change"
+    },
+    {
+      "id": "stale-8",
+      "kind": "stale",
+      "slides": 8,
+      "predicate": "Rejects an old version after a prior accepted change"
+    }
+  ]
+}

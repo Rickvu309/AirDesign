@@ -18,6 +18,7 @@ export default defineConfig({
           testTimeout: 20_000,
           include: [
             "tests/**/*.test.ts",
+            "bench/**/*.test.ts",
             "packages/**/*.test.ts",
             "apps/**/*.test.ts",
             "packages/ui/test/**/*.test.mjs",

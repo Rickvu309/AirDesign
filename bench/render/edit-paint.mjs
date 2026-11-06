@@ -4,7 +4,7 @@ import { writeFile, mkdir } from "node:fs/promises"
 import { spawnSync } from "node:child_process"
 import os from "node:os"
 import assert from "node:assert/strict"
-const root = `${os.homedir()}/tmp/airdesign-autopilot/P02/perf`
+const root = process.env.P02_OUTPUT ?? `${os.homedir()}/tmp/airdesign-autopilot/P02/perf`
 await mkdir(root, { recursive: true })
 const server = await preview({ root: "apps/studio", configFile: false, preview: { host: "127.0.0.1", port: 0 } })
 const address = server.httpServer.address()

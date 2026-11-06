@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process"
 import os from "node:os"
 import { apply } from "../../packages/deck/src/apply.ts"
 import { fixtureDeck } from "../../packages/deck/src/fixture.ts"
-const root = `${os.homedir()}/tmp/airdesign-autopilot/P02/perf`
+const root = process.env.P02_OUTPUT ?? `${os.homedir()}/tmp/airdesign-autopilot/P02/perf`
 await mkdir(root, { recursive: true })
 const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim()
 let deck = fixtureDeck(300)
