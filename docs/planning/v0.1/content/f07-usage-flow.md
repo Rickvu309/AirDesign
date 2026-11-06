@@ -4,6 +4,8 @@ AirDesign / v0.1 / F07
 
 F07 Usage and resets
 
+Release state: X06 is open. Without a configured payment provider, Settings shows “Buying credits is not available yet.” with no checkout or waiting state. Weekly allowance, reset time and existing balances remain available. Signed local payment fixtures require explicit test or bench wiring. The payment journeys below describe the provider-enabled state.
+
 AirDesign is free. Usage resets every week. People who do not want to wait pay to reset, from a credit balance.
 
 Screen

@@ -3,11 +3,12 @@ import {deliverAccountDeletion} from "./account-deletion/deliver.ts"
 import { spawn } from "node:child_process"
 import path from "node:path"
 import os from "node:os"
-import { mkdir, rm, rmdir } from "node:fs/promises"
+import { access, mkdir, rm, rmdir } from "node:fs/promises"
 import { OperationStore } from "../../../packages/operations/src/index.ts"
 import { deliver } from "./isolation.ts"
 const mode=process.argv[2] ?? "all"
 if(mode!=="all"&&mode!=="images")throw new Error("unknown-worker-mode")
+await access(new URL("../dist/render.js",import.meta.url)).catch(()=>{throw new Error("PDF renderer missing. Run npm run build before starting the worker.")})
 const database = process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
 const root = process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(), "tmp/airdesign-jobs")
 await mkdir(root, { recursive: true, mode: 0o700 })

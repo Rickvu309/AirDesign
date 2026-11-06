@@ -4,7 +4,7 @@ import {createRoot} from "react-dom/client"
 import {UsagePanel} from "./usage-panel.tsx"
 it("keeps the request at zero credits and offers explicit credits and automatic reset controls",async()=>{
   const requests:string[]=[]
-  vi.stubGlobal("fetch",async(url:string)=>{requests.push(url);return Response.json(url.endsWith("/history") ? {items:[],nextCursor:null} : {used:10000,remaining:0,paid:0,bonus:0,hit:"hit",autoReset:false,week:{zone:"UTC",resetsAt:1804483200000}})})
+  vi.stubGlobal("fetch",async(url:string)=>{requests.push(url);return Response.json(url.endsWith("/history") ? {items:[],nextCursor:null} : {payments:{kind:"configured"},used:10000,remaining:0,paid:0,bonus:0,hit:"hit",autoReset:false,week:{zone:"UTC",resetsAt:1804483200000}})})
   const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
   try{
     await act(async()=>{root.render(<UsagePanel/>);await new Promise(resolve=>setTimeout(resolve,20))})

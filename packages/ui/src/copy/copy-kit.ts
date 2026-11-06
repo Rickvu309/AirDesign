@@ -9,6 +9,7 @@ export const copyKit = {
   "agent.resume": "Resume",
   "credits.title": "Credits",
   "credits.facts": "Each reset is $5. Credits never expire.",
+  "credits.unavailable": "Buying credits is not available yet.",
   "credits.add": "Add credits",
   "credits.minimum": "Minimum $10.",
   "auto.title": "Auto reset",

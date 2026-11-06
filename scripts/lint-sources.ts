@@ -1,3 +1,4 @@
+import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
 import {releaseClaimHits,publicAmountHits,type PublicClaim,sandboxDependencyHits,productCaptureHits} from "../packages/lint/src/release-claims.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
@@ -28,6 +29,7 @@ const failures: string[] = []
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
   for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
   if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims)]) failures.push(`${file}: ${hit}`)

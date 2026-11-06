@@ -1,7 +1,7 @@
 import {PGlite} from "@electric-sql/pglite"
 import {once} from "node:events"
 import {billingHandler} from "./billing/handle.ts"
-import {localPaymentProvider} from "../../../packages/usage/src/payments/provider.ts"
+import type {PaymentProvider} from "../../../packages/usage/src/payments/provider.ts"
 import {deliverAccountDeletion} from "../../worker/src/account-deletion/deliver.ts"
 import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
 import {agentHandler} from "./agent/handle.ts"
@@ -32,6 +32,7 @@ export type RunningServer = {
 }
 
 export type StartServerOptions = {
+  paymentProvider?: PaymentProvider
   agentAdapter?: AgentAdapter
   clock?: () => number
   operationsPath?: string
@@ -70,8 +71,8 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret)
   const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? localAdapter,deck=>sync.refresh(deck))
   await access.resumeDeletions()
-  const handleBilling=billingHandler(access,history,localPaymentProvider(process.env.AIRDESIGN_PAYMENT_FIXTURE_SECRET ?? "dev-only-local-payment-fixture"),publicOrigin)
-  const handleUsage = usageHandler(access,history,publicOrigin)
+  const handleBilling=billingHandler(access,history,extras.paymentProvider,publicOrigin)
+  const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {

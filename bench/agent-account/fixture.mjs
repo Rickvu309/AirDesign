@@ -27,7 +27,7 @@ export async function scenario({browserEnabled=false}={}){
     }
   }
   const portProbe=createServer();await new Promise(resolve=>portProbe.listen(0,"127.0.0.1",resolve));const port=portProbe.address().port;await new Promise(resolve=>portProbe.close(resolve))
-  const browserOrigin=`http://127.0.0.1:${port}`,fixture=await mcpFixture({...browserEnabled ? {publicOrigin:browserOrigin} : {},agentAdapter:adapter}),origin=fixture.origin,trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
+  const browserOrigin=`http://127.0.0.1:${port}`,fixture=await mcpFixture({...browserEnabled ? {publicOrigin:browserOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")}),origin=fixture.origin,trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
   let vite
   if(browserEnabled){process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin;vite=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port,strictPort:true,proxy:{"/api":fixture.apiOrigin,"/ws":{target:fixture.apiOrigin,ws:true},"/mcp":{target:fixture.apiOrigin,changeOrigin:false},"/oauth":fixture.apiOrigin}}})}
   const provider=localPaymentProvider("dev-only-local-payment-fixture")
