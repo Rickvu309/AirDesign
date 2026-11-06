@@ -138,10 +138,10 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         return
       }
       if (result.status === "signed-in") {
-        if (result.kind && !initialIntent) {
+        if (result.kind && !initialIntent && initialKind === "home") {
           setKind(result.kind)
         }
-        if (result.intentToken && !initialIntent) {
+        if (result.intentToken && !initialIntent && initialKind === "home") {
           setIntentToken(result.intentToken)
         }
         setScreen("home")
@@ -241,7 +241,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     return (
       <>
         <StudioShell intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace />}
+          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace startImport={kind === "import"}/>}
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}

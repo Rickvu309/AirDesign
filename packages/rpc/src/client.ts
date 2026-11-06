@@ -19,6 +19,7 @@ export class SyncClient {
   private blocked: "signed-out" | "deleted" | null = null
   private retrying = false
   private work: Promise<void> = Promise.resolve()
+  private reading: {epoch:number;work:Promise<Pending[]>}|null=null
   private sender: ((command: Command)=>void) | null = null
   private sent = new Set<string>()
   private acknowledging = new Set<string>()
@@ -67,17 +68,21 @@ export class SyncClient {
     this.notify()
     return this.persist([item])
   }
-  async acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> {
-    this.acknowledging.add(receipt.id)
+  acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> { return this.acknowledgeBatch([receipt],durableCheckpoint) }
+  async acknowledgeBatch(receipts: Receipt[], durableCheckpoint?: Promise<void>): Promise<void> {
+    const byId=new Map(receipts.map(receipt=>[receipt.id,receipt]))
+    for(const id of byId.keys())this.acknowledging.add(id)
     try{
       if(durableCheckpoint)await durableCheckpoint
-      const retained=this.pending.flatMap(item=>item.command.id===receipt.id && receipt.kind!=="applied" ? [{kind:"rejected" as const,command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}] : [])
-      await this.persist(retained,receipt.kind==="applied" ? [receipt.id] : [])
-      this.pending=this.pending.flatMap(item=>item.command.id!==receipt.id ? [item] : retained)
-      this.sent.delete(receipt.id)
-      this.releases.get(receipt.id)?.()
+      const retained=this.pending.flatMap(item=>{
+        const receipt=byId.get(item.command.id)
+        return receipt && receipt.kind!=="applied" ? [{kind:"rejected" as const,command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}] : []
+      })
+      await this.persist(retained,receipts.filter(receipt=>receipt.kind==="applied").map(receipt=>receipt.id))
+      this.pending=[...this.pending.filter(item=>!byId.has(item.command.id)),...retained]
+      for(const id of byId.keys()){this.sent.delete(id);this.releases.get(id)?.()}
       this.notify()
-    }finally{this.acknowledging.delete(receipt.id)}
+    }finally{for(const id of byId.keys())this.acknowledging.delete(id)}
   }
   async dismiss(id: string) { this.pending=this.pending.filter(p=>p.command.id!==id);this.notify();await this.persist([],[id]) }
   async recover(id: string, commands: Command[]) {
@@ -97,7 +102,17 @@ export class SyncClient {
     const epoch=this.connectionEpoch
     const deliver=async()=>{
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return
-      if(!(await this.outbox.read(this.key)).some(item=>item.command.id===command.id)){
+      if(!this.reading || this.reading.epoch!==epoch){
+        const read={epoch,work:new Promise<Pending[]>((resolve,reject)=>{
+          setTimeout(()=>{
+            if(this.reading===read)this.reading=null
+            void this.outbox.read(this.key).then(resolve,reject)
+          },0)
+        })}
+        this.reading=read
+      }
+      const reading=this.reading.work
+      if(!(await reading).some(item=>item.command.id===command.id)){
         this.pending=this.pending.filter(item=>item.command.id!==command.id);this.notify();return
       }
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return

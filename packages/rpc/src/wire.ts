@@ -20,8 +20,15 @@ export function parseMessage(value: unknown,previous?:Snapshot): Message {
     const r = value.receipt
     if (!("id" in r) || typeof r.id !== "string" || !("seq" in r) || typeof r.seq !== "number" || !Number.isSafeInteger(r.seq) || r.seq < 0 || !("kind" in r)) throw new Error("invalid-receipt")
     const id=commandId(r.id)
-    if (r.kind === "applied") return {kind:"receipt",receipt:{kind:"applied",id,seq:r.seq},...parseSnapshot(value,previous)}
-    if (r.kind === "refused" && "code" in r && typeof r.code === "string" && "command" in r) return {kind:"receipt",receipt:{kind:"refused",id,seq:r.seq,code:r.code,command:parseCommand(r.command),...("restore" in r && typeof r.restore==="string" ? {restore:commandId(r.restore)} : {})},...parseSnapshot(value,previous)}
+    const snapshot="checkpoint" in value && value.checkpoint==="previous" ? referencedSnapshot(value,previous) : parseSnapshot(value,previous)
+    if(r.seq>snapshot.seq)throw new Error("invalid-receipt-sequence")
+    if (r.kind === "applied") return {kind:"receipt",receipt:{kind:"applied",id,seq:r.seq},...snapshot}
+    if (r.kind === "refused" && "code" in r && typeof r.code === "string" && "command" in r) return {kind:"receipt",receipt:{kind:"refused",id,seq:r.seq,code:r.code,command:parseCommand(r.command),...("restore" in r && typeof r.restore==="string" ? {restore:commandId(r.restore)} : {})},...snapshot}
   }
   throw new Error("invalid-message")
+}
+
+function referencedSnapshot(value:object,previous?:Snapshot):Snapshot {
+  if(!previous || !("deckId" in value) || value.deckId!==previous.deck.id || !("seq" in value) || value.seq!==previous.seq)throw new Error("missing-receipt-checkpoint")
+  return {deck:previous.deck,seq:previous.seq,...(previous.contributions ? {contributions:previous.contributions} : {})}
 }

@@ -5,12 +5,12 @@ import { ImportCard } from "../import/import-card.tsx"
 import { ManualEditor } from "../editor/manual-editor.tsx"
 import { api,createDeck,deckAction,listDecks } from "./catalog-client.ts"
 
-export function Workspace() {
+export function Workspace({startImport=false}:{startImport?:boolean}) {
   const deck=/^\/deck\/([a-zA-Z][a-zA-Z0-9_-]{0,31})$/.exec(window.location.pathname)?.[1]
-  return deck ? <ManualEditor deckId={deck}/> : <Home/>
+  return deck ? <ManualEditor deckId={deck}/> : <Home startImport={startImport}/>
 }
-function Home() {
-  const [view,setView]=useState<"grid"|"list">("grid"),[newMenu,setNewMenu]=useState(false),[importing,setImporting]=useState(false)
+function Home({startImport}:{startImport:boolean}) {
+  const [view,setView]=useState<"grid"|"list">("grid"),[newMenu,setNewMenu]=useState(false),[importing,setImporting]=useState(startImport)
   const [browse,setBrowse]=useState<"recent"|"all">("recent")
   const [trash,setTrash]=useState(window.location.pathname==="/trash"),[search,setSearch]=useState("")
   const [decks,setDecks]=useState<DeckEntry[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("")

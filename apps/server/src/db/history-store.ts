@@ -48,6 +48,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
   await transaction(async tx => { await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
+    await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
     await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
     await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
@@ -57,6 +58,43 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     if (!row) throw new Error("deck-not-found")
     if (row.deleted) throw new Error("deck-deleted")
     return row.state
+  }
+  async function snapshotFrom(tx:Transaction,history:History,deckId:string,base:number|null){
+    const events=await tx.query<{payload:Contribution}>("SELECT payload FROM editing_contribution WHERE deck=$1 AND ($2::integer IS NULL OR (payload->>'seq')::integer>$2 OR (payload->>'toggledAt')::integer>$2) ORDER BY (payload->>'seq')::integer",[deckId,base])
+    const runs=await tx.query<{payload:RunState}>("SELECT payload FROM editing_run WHERE deck=$1",[deckId])
+    const receipts=await tx.query<{id:string}>("SELECT id FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='applied'",[deckId])
+    history.events=events.rows.map(row=>row.payload)
+    history.runs=runs.rows.map(row=>row.payload)
+    return {deck:history.deck,seq:history.seq,contributions:{history,applied:receipts.rows.map(row=>commandId(row.id))}}
+  }
+  async function commit(tx:Transaction,principal:Principal,deckId:string,command:Command,identity:ExecutionIdentity,preparation?:{key:string;changes:(deck:Deck)=>ChangeSet},strictBase?:number,admitted?:History):Promise<{receipt:Receipt;history:History}>{
+        const history = admitted ?? await owned(tx, principal, deckId)
+        if(!executionMatches(command,identity))return {history,receipt:{id:command.id,seq:history.seq,kind:"refused",code:"execution-identity-mismatch",command}}
+        const payload = createHash("sha256").update(canonical({command,identity,...(preparation ? {preparation:preparation.key} : {})})).digest("hex")
+        const prior = await tx.query<{ payload: string; receipt: Receipt }>("SELECT payload,receipt FROM editing_receipt WHERE deck=$1 AND id=$2", [deckId, command.id])
+        if (prior.rows[0]) {
+          if (prior.rows[0].payload !== payload) throw new Error("request-id-payload-mismatch")
+          return {history,receipt:prior.rows[0].receipt}
+        }
+        if(strictBase!==undefined && history.seq!==strictBase)return {history,receipt:{id:command.id,seq:history.seq,kind:"refused",code:"stale-base",command}}
+        if (preparation) { if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required"); command = { ...command, base: history.seq, changes: preparation.changes(history.deck) } }
+        if(!preparation)await loadHistoryIndex(tx,deckId,history,command)
+        if(strictBase!==undefined && identity.kind==="run" && !history.runs.some(run=>run.id===identity.run))history.runs.push({id:identity.run,epoch:history.seq,kind:"open"})
+        const result = execute(history, command, identity)
+        if (result.receipt.kind === "applied" && identity.kind === "run" && !themeOnly(history.deck,result.history.deck) && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
+          const ledger = usageLedger(work => work(tx),clock)
+          const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:identity.actor ?? "user-agent",request:JSON.stringify(command),units:1})
+          if (admission.kind === "out-of-usage") return {history,receipt:{id:command.id,seq:history.seq,kind:"refused",code:"out-of-usage",command}}
+          await ledger.settle(principal.personId,admission.reservation,"finished")
+        }
+        await tx.query("INSERT INTO editing_receipt(deck,id,payload,receipt) VALUES ($1,$2,$3,$4)", [deckId, command.id, payload, JSON.stringify(result.receipt)])
+        if (result.receipt.kind === "applied") {
+          await ownedDeckAssets(tx,principal,result.history.deck);await captureTemplateSources(tx,principal,result.history.deck)
+          await saveHistoryIndex(tx,deckId,history,result.history)
+          await tx.query("INSERT INTO editing_event(deck,seq,command,receipt) VALUES ($1,$2,$3,$4)", [deckId,result.history.seq,JSON.stringify(command),JSON.stringify(result.receipt)])
+          if(!admitted)await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])
+        }
+        return {history:result.history,receipt:result.receipt}
   }
   return {
     deletions:accountDeletionStore(transaction,clock),
@@ -114,34 +152,40 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       return {deck:history.deck,seq:history.seq,contributions:{history:{base,seq:history.seq,events:events.rows.map(row=>row.payload),runs:runs.rows.map(row=>row.payload),usedIds:history.usedIds},applied:receipts.rows.map(row=>commandId(row.id))}}
     })},
     async commit(principal: Principal, deckId: string, command: Command, identity: ExecutionIdentity = {kind:"person"}, preparation?: { key: string; changes: (deck: Deck) => ChangeSet }, strictBase?:number): Promise<Receipt> {
-      return transaction(async tx => {
-        const history = await owned(tx, principal, deckId)
-        if(!executionMatches(command,identity))return {id:command.id,seq:history.seq,kind:"refused",code:"execution-identity-mismatch",command}
-        const payload = createHash("sha256").update(canonical({command,identity,...(preparation ? {preparation:preparation.key} : {})})).digest("hex")
-        const prior = await tx.query<{ payload: string; receipt: Receipt }>("SELECT payload,receipt FROM editing_receipt WHERE deck=$1 AND id=$2", [deckId, command.id])
-        if (prior.rows[0]) {
-          if (prior.rows[0].payload !== payload) throw new Error("request-id-payload-mismatch")
-          return prior.rows[0].receipt
+      return transaction(async tx=>(await commit(tx,principal,deckId,command,identity,preparation,strictBase)).receipt)
+    },
+    async commitSnapshot(principal:Principal,deckId:string,command:Command,identity:ExecutionIdentity,base:number|null){
+      return transaction(async tx=>{
+        const started=performance.now()
+        const {receipt,history}=await commit(tx,principal,deckId,command,identity)
+        const committed=performance.now()
+        const snapshot=await snapshotFrom(tx,history,deckId,base)
+        return {receipt,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,checkpointMs:performance.now()-committed}} : {})}
+      })
+    },
+    async commitBatchSnapshot(principal:Principal,deckId:string,commands:Command[],identity:ExecutionIdentity,base:number|null){
+      if(commands.length===0 || commands.length>100)throw new Error("invalid-command-batch")
+      return transaction(async tx=>{
+        const started=performance.now(),receipts:Receipt[]=[],results:({kind:"receipt";receipt:Receipt}|{kind:"error";code:string})[]=[],commandMs:number[]=[]
+        let history=await owned(tx,principal,deckId)
+        for(const command of commands){
+          const start=performance.now()
+          await tx.query("SAVEPOINT batch_command")
+          try {
+            const result=await commit(tx,principal,deckId,command,identity,undefined,undefined,currentProjection(history))
+            receipts.push(result.receipt);results.push({kind:"receipt",receipt:result.receipt});history=result.history
+          } catch(error) {
+            if(!(error instanceof Error) || error.message!=="request-id-payload-mismatch")throw error
+            await tx.query("ROLLBACK TO SAVEPOINT batch_command")
+            results.push({kind:"error",code:error.message})
+          }
+          await tx.query("RELEASE SAVEPOINT batch_command")
+          commandMs.push(performance.now()-start)
         }
-        if(strictBase!==undefined && history.seq!==strictBase)return {id:command.id,seq:history.seq,kind:"refused",code:"stale-base",command}
-        if (preparation) { if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required"); command = { ...command, base: history.seq, changes: preparation.changes(history.deck) } }
-        if(!preparation)await loadHistoryIndex(tx,deckId,history,command)
-        if(strictBase!==undefined && identity.kind==="run" && !history.runs.some(run=>run.id===identity.run))history.runs.push({id:identity.run,epoch:history.seq,kind:"open"})
-        const result = execute(history, command, identity)
-        if (result.receipt.kind === "applied" && identity.kind === "run" && !themeOnly(history.deck,result.history.deck) && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
-          const ledger = usageLedger(work => work(tx),clock)
-          const admission = await ledger.reserve(principal.personId,{id:`${deckId}:${command.id}`,actor:identity.actor ?? "user-agent",request:JSON.stringify(command),units:1})
-          if (admission.kind === "out-of-usage") return {id:command.id,seq:history.seq,kind:"refused",code:"out-of-usage",command}
-          await ledger.settle(principal.personId,admission.reservation,"finished")
-        }
-        await tx.query("INSERT INTO editing_receipt(deck,id,payload,receipt) VALUES ($1,$2,$3,$4)", [deckId, command.id, payload, JSON.stringify(result.receipt)])
-        if (result.receipt.kind === "applied") {
-          await ownedDeckAssets(tx,principal,result.history.deck);await captureTemplateSources(tx,principal,result.history.deck)
-          await saveHistoryIndex(tx,deckId,history,result.history)
-          await tx.query("INSERT INTO editing_event(deck,seq,command,receipt) VALUES ($1,$2,$3,$4)", [deckId,result.history.seq,JSON.stringify(command),JSON.stringify(result.receipt)])
-          await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])
-        }
-        return result.receipt
+        await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1",[deckId,JSON.stringify(currentProjection(history)),clock()])
+        const committed=performance.now()
+        const snapshot=await snapshotFrom(tx,history,deckId,base)
+        return {receipts,results,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,commandMs,checkpointMs:performance.now()-committed}} : {})}
       })
     },
     async replay(principal: Principal, deckId: string, after: number) {

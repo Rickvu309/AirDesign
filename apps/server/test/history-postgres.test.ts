@@ -61,3 +61,45 @@ it("orders two real Postgres connections and concurrent run undo without duplica
     await admin.end()
   }
 })
+
+it("replays simultaneous duplicate batches once and enforces command identity in the event table", async () => {
+  const database = `airdesign_duplicate_${randomBytes(6).toString("hex")}`
+  const host=process.env.AIRDESIGN_PG_HOST ?? "/home/quan/.local/pg/sock", user=process.env.AIRDESIGN_PG_USER ?? "quan"
+  const admin=new pg.Client({host,user,database:"postgres"})
+  await admin.connect()
+  await admin.query(`CREATE DATABASE ${database}`)
+  const driver={kind:"postgres",url:`postgresql://${user}@/${database}?host=${host}`} as const
+  const first=await createHistoryStore(driver),second=await createHistoryStore(driver)
+  const sql=new pg.Client({connectionString:driver.url})
+  await sql.connect()
+  try {
+    const owner={personId:"owner"},deck=fixtureDeck(2)
+    await first.create(owner,deck)
+    const command:Command={id:commandId("duplicate"),kind:"patch",base:0,run:null,target:id("s0"),fields:{notes:"one commit"}}
+    const [a,b]=await Promise.all([
+      first.commitBatchSnapshot(owner,deck.id,[structuredClone(command)],{kind:"person"},0),
+      second.commitBatchSnapshot(owner,deck.id,[structuredClone(command)],{kind:"person"},0),
+    ])
+    expect(a.receipts).toEqual([{id:"duplicate",kind:"applied",seq:1}])
+    expect(b.receipts).toEqual(a.receipts)
+    expect(a.snapshot.seq).toBe(1)
+    expect(b.snapshot.seq).toBe(1)
+    expect((await first.replay(owner,deck.id,0)).events).toHaveLength(1)
+    for(const table of ["editing_event","editing_receipt","editing_contribution"]){
+      expect((await sql.query(`SELECT count(*)::integer AS count FROM ${table} WHERE deck=$1`,[deck.id])).rows).toEqual([{count:1}])
+    }
+    expect((await second.commitBatchSnapshot(owner,deck.id,[{...command,fields:{notes:"changed payload"}}],{kind:"person"},0)).results).toEqual([{kind:"error",code:"request-id-payload-mismatch"}])
+    expect((await first.read(owner,deck.id)).seq).toBe(1)
+    await expect(sql.query("INSERT INTO editing_event(deck,seq,command,receipt) SELECT deck,seq+1,command,receipt FROM editing_event WHERE deck=$1",[deck.id])).rejects.toMatchObject({code:"23505"})
+    expect((await second.replay(owner,deck.id,0)).events).toHaveLength(1)
+    await sql.query("CREATE FUNCTION fail_batch_event() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.command->>'id'='infra_failure' THEN RAISE EXCEPTION 'storage-unavailable'; END IF; RETURN NEW; END $$")
+    await sql.query("CREATE TRIGGER fail_batch_event BEFORE INSERT ON editing_event FOR EACH ROW EXECUTE FUNCTION fail_batch_event()")
+    await expect(first.commitBatchSnapshot(owner,deck.id,[{...command,id:commandId("infra_neighbor"),fields:{notes:"roll back"}},{...command,id:commandId("infra_failure"),fields:{notes:"failure"}}],{kind:"person"},1)).rejects.toThrow("storage-unavailable")
+    expect((await second.read(owner,deck.id)).seq).toBe(1)
+    expect((await sql.query("SELECT id FROM editing_receipt WHERE deck=$1 ORDER BY id",[deck.id])).rows).toEqual([{id:"duplicate"}])
+  } finally {
+    await sql.end();await first.close();await second.close()
+    await admin.query(`DROP DATABASE ${database}`)
+    await admin.end()
+  }
+},30_000)

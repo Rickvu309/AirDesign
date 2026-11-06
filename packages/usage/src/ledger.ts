@@ -3,6 +3,7 @@ import type {PaymentEvent} from "./payments/provider.ts"
 import { createHash, randomUUID } from "node:crypto"
 import { usageWeek, type UsageWeek } from "./week.ts"
 export type UsageActor = "user-agent" | "aira"
+export const usageBilling={weeklyPriceCents:0,minimumPurchaseCents:1000,resetCents:500} as const
 export const usageRates = { version: 1, allowance: 10000, "user-agent": 1, aira: 3 } as const
 export type UsageTransaction = { query: <R>(sql: string, params?: unknown[]) => Promise<{ rows: R[] }> }
 export type UsageTransactions = <T>(work: (tx: UsageTransaction) => Promise<T>) => Promise<T>
@@ -57,16 +58,16 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
   async function reset(tx: UsageTransaction, owner: string, state: State, hit: string, automatic: boolean) {
     if (!state.hit || state.hit !== hit || state.used < usageRates.allowance) throw new Error("stale-limit-hit")
     if (automatic && (!state.autoReset || state.automaticResets >= 3)) throw new Error("automatic-reset-unavailable")
-    if (state.bonus + state.paid < 500) throw new Error("insufficient-credits")
-    const bonus = Math.min(state.bonus,500)
+    if (state.bonus + state.paid < usageBilling.resetCents) throw new Error("insufficient-credits")
+    const bonus = Math.min(state.bonus,usageBilling.resetCents)
     state.bonus -= bonus
-    state.paid -= 500 - bonus
+    state.paid -= usageBilling.resetCents - bonus
     state.used = 0
     state.hit = null
     state.hitAllowsAutomaticReset = false
     state.cycle++
     if (automatic) state.automaticResets++
-    await event(tx,owner,`reset:${hit}`,"credit-reset",{hit,automatic,bonus,paid:500-bonus,week:state.week.id,cycle:state.cycle})
+    await event(tx,owner,`reset:${hit}`,"credit-reset",{hit,automatic,bonus,paid:usageBilling.resetCents-bonus,week:state.week.id,cycle:state.cycle})
     await save(tx,owner,state)
   }
   return {
@@ -94,7 +95,7 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
         }
         const waiting = await tx.query<{data:{hash:string}}>("SELECT data FROM usage_event WHERE owner=$1 AND id=$2",[owner,`waiting:${input.id}`])
         if (waiting.rows[0] && waiting.rows[0].data.hash !== hash) throw new Error("request-id-payload-mismatch")
-        if (state.used >= usageRates.allowance && state.hitAllowsAutomaticReset && input.actor === "aira" && state.autoReset && state.automaticResets < 3 && state.bonus + state.paid >= 500 && state.hit) await reset(tx,owner,state,state.hit,true)
+        if (state.used >= usageRates.allowance && state.hitAllowsAutomaticReset && input.actor === "aira" && state.autoReset && state.automaticResets < 3 && state.bonus + state.paid >= usageBilling.resetCents && state.hit) await reset(tx,owner,state,state.hit,true)
         if (state.used >= usageRates.allowance) {
           if (!state.hit) { state.hit = randomUUID(); await save(tx,owner,state) }
           if (!waiting.rows.length) await event(tx,owner,`waiting:${input.id}`,"request-kept",{...input,hash,hit:state.hit})
@@ -140,7 +141,7 @@ export function usageLedger(transaction: UsageTransactions, clock = Date.now) {
       })
     },
     async checkout(owner:string,cents:number){
-      if(!Number.isSafeInteger(cents)||cents<1000||cents%100!==0||cents>1000000)throw new Error("invalid-payment-amount")
+      if(!Number.isSafeInteger(cents)||cents<usageBilling.minimumPurchaseCents||cents%100!==0||cents>1000000)throw new Error("invalid-payment-amount")
       return transaction(async tx=>{
         await account(tx,owner)
         const rows=await tx.query<{data:Payment}>("SELECT data FROM usage_payment WHERE owner=$1 AND data->>'kind'='pending' FOR UPDATE",[owner])

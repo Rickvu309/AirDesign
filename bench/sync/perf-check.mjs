@@ -87,6 +87,7 @@ try {
   await writeFile(`${output}/perf/paint-debug.json`,JSON.stringify(raw.paint,null,2))
   assert.equal(raw.paint.length,100);assert(raw.paint.every(sample=>sample.actual===sample.expected && sample.ms>=0))
   for(let trial=0;trial<5;trial++) {
+    a.control.frames=[]
     await a.offline()
     await a.page.evaluate(trial=>{
       const field=document.querySelector('#sync-notes')
@@ -99,12 +100,16 @@ try {
     assert.deepEqual(pending.map(item=>item.command.kind==="patch" ? item.command.fields.notes : null),Array.from({length:100},(_,index)=>`recovery ${trial} command ${index}`))
     const before=(await (await a.context.request.get(`${stack.origin}/api/decks/browserperf`)).json()).seq
     a.control.offline=false
+    const profiler=process.env.P04_PROFILE==="1" && trial===0 ? await a.context.newCDPSession(a.page) : null
+    if(profiler){await profiler.send("Profiler.enable");await profiler.send("Profiler.setSamplingInterval",{interval:100});await profiler.send("Profiler.start")}
     const start=performance.now()
     await a.page.getByRole("button",{name:"Reconnect",exact:true}).click();await a.saved();await expect(b.notes).toHaveValue(`recovery ${trial} command 99`)
     const elapsed=performance.now()-start
+    if(profiler){const profile=await profiler.send("Profiler.stop");await writeFile(`${output}/perf/recovery-browser.cpuprofile`,JSON.stringify(profile.profile));await profiler.detach()}
     const snapshot=await (await a.context.request.get(`${stack.origin}/api/decks/browserperf`)).json()
     assert.equal(snapshot.seq,before+100);assert.equal((await queue(a,"browserperf")).length,0)
-    raw.recovery.push({trial,count:100,from:before,to:snapshot.seq,ms:elapsed})
+    const receipts=a.control.frames.filter(message=>message.kind==="receipt")
+    raw.recovery.push({trial,count:100,from:before,to:snapshot.seq,ms:elapsed,serverCommitSpanMs:receipts.at(-1).committedAt-receipts[0].committedAt,receipts:receipts.map(message=>({seq:message.seq,committedAt:message.committedAt,...(message.profile ? {profile:message.profile} : {})}))})
   }
   await a.context.close();await b.context.close()
   const warm=summary(raw.warm.flatMap(run=>run.values)), paint=summary(raw.paint.map(sample=>sample.ms)), recovery=summary(raw.recovery.map(sample=>sample.ms))

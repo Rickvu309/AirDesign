@@ -1,3 +1,4 @@
+import type { Receipt } from "../../../../packages/change-log/src/index.ts"
 import { SyncClient, parseSnapshot, type Snapshot } from "../../../../packages/rpc/src/client.ts"
 import { parseMessage } from "../../../../packages/rpc/src/wire.ts"
 export async function currentPerson(): Promise<string | null> {
@@ -25,7 +26,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
   let persistenceStarted:number|undefined
   let persistenceQueued=false
   let checkpoints:(()=>void)[]=[]
-  const cache = (snapshot:Snapshot)=>{
+  const cache = (snapshot:Snapshot,recovering=false)=>{
     const checkpoint=new Promise<void>(resolve=>{checkpoints.push(resolve)})
     pending=snapshot
     if(persistenceQueued)return checkpoint
@@ -42,18 +43,21 @@ export function transport(client: SyncClient, person: string, deck: string, erro
           for(const resolve of durable)resolve()
         }catch(failure){error(String(failure))}
       }
-      if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
+      if(recovering)persist()
+      else if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
       else void afterPaint().then(persist)
-    },Math.min(100,Math.max(0,1000-(Date.now()-persistenceStarted))))
+    },recovering ? 0 : Math.min(100,Math.max(0,1000-(Date.now()-persistenceStarted))))
     return checkpoint
   }
   let received=Promise.resolve()
+  let recovering=false
   const afterPaint=()=>new Promise<void>(resolve=>{
     if(document.visibilityState!=="visible"){setTimeout(resolve,0);return}
     requestAnimationFrame(()=>setTimeout(resolve,0))
   })
   async function connect() {
     const own=++generation
+    recovering=client.queue.length>1
     clearTimeout(timer)
     socket?.close();socket=null
     client.disconnected(Date.now()-offlineAt>=3000)
@@ -73,25 +77,46 @@ export function transport(client: SyncClient, person: string, deck: string, erro
       url.searchParams.set("deck",deck);url.searchParams.set("after",String(client.seq))
       const active=new WebSocket(url)
       socket=active
+      let inbox:string[]=[]
+      let delivery:ReturnType<typeof setTimeout>|undefined
       active.onmessage=event=> {
-        received=received.then(async()=>{
-        if (own!==generation || stopped) return
-        try {
-          const message=parseMessage(JSON.parse(String(event.data)),previous)
-          if(message.kind==="receipt")await afterPaint()
-          if (own!==generation || stopped) return
-          if (message.kind==="snapshot" || message.kind==="receipt") {
-            if (message.deck.id!==deck) throw new Error("wrong-deck-snapshot")
-            if (message.seq>=client.seq) {previous=message;client.receive(message)}
-            if (!resumed) { resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=> { if (active.readyState===WebSocket.OPEN) active.send(JSON.stringify(command)) }) }
-            if(previous){const checkpoint=cache(previous);if(message.kind==="receipt")void client.acknowledge(message.receipt,checkpoint).catch(failure=>error(String(failure)))}
-          } else if (message.kind==="signed-out") { client.stop("signed-out");active.close() }
-          else if (message.kind==="error") {
-            if (message.code==="deck-deleted") { client.stop("deleted");active.close() }
-            else error(message.code)
-          }
-        } catch (e) { error(String(e));active.close() }
-        }).catch(failure=>error(String(failure)))
+        inbox.push(String(event.data))
+        if(delivery!==undefined)return
+        const drain=()=>{
+          delivery=undefined
+          const batch=inbox;inbox=[]
+          received=received.then(async()=>{
+            if(own!==generation || stopped)return
+            try{
+              const receipts:Receipt[]=[]
+              let latest:Snapshot|undefined
+              for(const raw of batch){
+                const message=parseMessage(JSON.parse(raw),previous)
+                if(message.kind==="snapshot" || message.kind==="receipt"){
+                  if(message.deck.id!==deck)throw new Error("wrong-deck-snapshot")
+                  if(message.seq>=Math.max(client.seq,previous?.seq ?? 0)){previous=message;latest=message}
+                  if(message.kind==="receipt")receipts.push(message.receipt)
+                }else if(message.kind==="signed-out"){client.stop("signed-out");active.close()}
+                else if(message.kind==="error"){
+                  if(message.code==="deck-deleted"){client.stop("deleted");active.close()}
+                  else error(message.code)
+                }
+              }
+              if(receipts.length)await afterPaint()
+              if(own!==generation || stopped)return
+              if(receipts.length && !latest)latest=previous
+              if(latest){
+                client.receive(latest)
+                if(!resumed){resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=>{if(active.readyState===WebSocket.OPEN)active.send(JSON.stringify(command))})}
+                const checkpoint=cache(latest,recovering)
+                if(receipts.length)void client.acknowledgeBatch(receipts,checkpoint).then(()=>{if(client.queue.length===0)recovering=false}).catch(failure=>error(String(failure)))
+              }
+              if(recovering && client.queue.length===0)recovering=false
+            }catch(failure){error(String(failure));active.close()}
+          }).catch(failure=>error(String(failure)))
+        }
+        if(resumed && recovering)delivery=setTimeout(drain,48)
+        else drain()
       }
       active.onclose=()=> { if (own===generation && !stopped && client.state.kind!=="deleted" && client.state.kind!=="signed-out") { if (resumed) offlineAt=Date.now();resumed=false;retry() } }
       active.onerror=()=>active.close()

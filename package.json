@@ -44,7 +44,10 @@
     "verify:agent": "vitest run packages/agent/test apps/server/test/agent apps/studio/src/chat tests/metered-tool-safety.test.ts",
     "verify:billing": "vitest run packages/usage/test/payments.test.ts apps/server/test/billing apps/server/test/account apps/studio/src/settings apps/studio/src/usage/usage-panel.test.tsx",
     "verify:pr-08": "npm run verify:agent && npm run verify:billing",
-    "usage:reconcile": "node apps/server/src/billing/reconcile.ts"
+    "usage:reconcile": "node apps/server/src/billing/reconcile.ts",
+    "verify:release": "vitest run bench/release tests/lint/release-claims.test.ts && node bench/release/replay.mjs && node bench/release/tool-replay.mjs && node bench/release/recovery.mjs",
+    "verify:site": "vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs",
+    "verify:pr-09": "npm run verify:release && npm run verify:site"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

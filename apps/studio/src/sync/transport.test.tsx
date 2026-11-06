@@ -139,3 +139,89 @@ it.each([40,180])("keeps an acknowledged edit and undo on offline reload at %i m
     expect(checkpoint.historyTarget("undo")).toBe(command.id)
   }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks();localStorage.clear()}
 })
+
+it("checkpoints the final recovery receipt promptly and yields once per batch",async()=>{
+ vi.useFakeTimers();localStorage.clear()
+ const deck=fixtureDeck(1),initial={deck,seq:0}
+ let stored:Pending[]=[]
+ const outbox={read:async()=>structuredClone(stored),write:async(_key:string,items:Pending[],removed:string[]=[])=>{stored=[...stored.filter(item=>!removed.includes(item.command.id)&&!items.some(next=>next.command.id===item.command.id)),...structuredClone(items)]}}
+ const client=new SyncClient("owner",initial,outbox,()=>{})
+ const commands=Array.from({length:16},(_,index)=>({id:commandId(`recovery_${index}`),kind:"patch" as const,base:0,run:null,target:id("s0"),fields:{notes:`recovery ${index}`}}))
+ for(const command of commands)await client.enqueue(command)
+ const frames=vi.fn((callback:()=>void)=>setTimeout(callback,16))
+ vi.stubGlobal("requestAnimationFrame",frames)
+ vi.stubGlobal("requestIdleCallback",()=>1)
+ Object.defineProperty(document,"visibilityState",{configurable:true,value:"visible"})
+ let deliver:((event:{data:string})=>void)|undefined
+ class Socket{
+  static OPEN=1
+  readyState=1
+  set onmessage(value:(event:{data:string})=>void){deliver=value}
+  close(){}
+  send(){}
+ }
+ vi.stubGlobal("WebSocket",Socket)
+ vi.stubGlobal("fetch",vi.fn(async(url:string)=>url==="/api/account" ? {json:async()=>({status:"signed-in",personId:"owner"})} : {ok:true,status:200}))
+ const errors:string[]=[],stop=transport(client,"owner",deck.id,value=>errors.push(value))
+ try{
+  await vi.advanceTimersByTimeAsync(0)
+  deliver!({data:JSON.stringify({kind:"snapshot",...initial})})
+  await vi.advanceTimersByTimeAsync(0)
+  let history=initialHistory(deck)
+  for(const command of commands){
+   const result=execute(history,command);history=result.history
+   deliver!({data:JSON.stringify({kind:"receipt",receipt:result.receipt,deck:history.deck,seq:history.seq,contributions:{history,applied:commands.slice(0,history.seq).map(item=>item.id)}})})
+  }
+  await vi.advanceTimersByTimeAsync(90)
+  expect(client.queue).toEqual([])
+  expect(stored).toEqual([])
+  expect(frames.mock.calls.length).toBeLessThanOrEqual(2)
+  const checkpoint=cachedSnapshot("owner",deck.id)
+  expect(checkpoint?.deck.slides[0]?.notes).toBe("recovery 15")
+  expect(checkpoint?.seq).toBe(16)
+  expect(errors).toEqual([])
+ }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks()}
+})
+
+it.each([false,true])("acknowledges an older receipt against the newer durable peer snapshot with recovery=%s",async(recovering)=>{
+ vi.useFakeTimers();localStorage.clear()
+ const deck=fixtureDeck(1),initial={deck,seq:0}
+ let stored:Pending[]=[]
+ const outbox={read:async()=>structuredClone(stored),write:async(_key:string,items:Pending[],removed:string[]=[])=>{stored=[...stored.filter(item=>!removed.includes(item.command.id)&&!items.some(next=>next.command.id===item.command.id)),...structuredClone(items)]}}
+ const client=new SyncClient("owner",initial,outbox,()=>{})
+ const command={id:commandId("older_receipt"),kind:"patch" as const,base:0,run:null,target:id("s0"),fields:{notes:"local edit"}}
+ await client.enqueue(command)
+ const queued={...command,id:commandId("still_pending"),fields:{notes:"newer peer edit"}}
+ if(recovering)await client.enqueue(queued)
+ vi.stubGlobal("requestAnimationFrame",(callback:()=>void)=>setTimeout(callback,16))
+ vi.stubGlobal("requestIdleCallback",(callback:()=>void)=>{setTimeout(callback,0);return 1})
+ Object.defineProperty(document,"visibilityState",{configurable:true,value:"visible"})
+ let deliver:((event:{data:string})=>void)|undefined
+ class Socket{
+  static OPEN=1
+  readyState=1
+  set onmessage(value:(event:{data:string})=>void){deliver=value}
+  close(){}
+  send(){}
+ }
+ vi.stubGlobal("WebSocket",Socket)
+ vi.stubGlobal("fetch",vi.fn(async(url:string)=>url==="/api/account" ? {json:async()=>({status:"signed-in",personId:"owner"})} : {ok:true,status:200}))
+ const errors:string[]=[],stop=transport(client,"owner",deck.id,value=>errors.push(value))
+ try{
+  await vi.advanceTimersByTimeAsync(0)
+  deliver!({data:JSON.stringify({kind:"snapshot",...initial})})
+  await vi.advanceTimersByTimeAsync(0)
+  const local=execute(initialHistory(deck),command)
+  const peer=execute(local.history,{...command,id:commandId("newer_peer"),base:1,fields:{notes:"newer peer edit"}})
+  deliver!({data:JSON.stringify({kind:"snapshot",deck:peer.history.deck,seq:2,contributions:{history:peer.history,applied:[command.id,commandId("newer_peer")]}})})
+  await vi.advanceTimersByTimeAsync(0)
+  deliver!({data:JSON.stringify({kind:"receipt",receipt:local.receipt,deck:local.history.deck,seq:1,contributions:{history:local.history,applied:[command.id]}})})
+  await vi.advanceTimersByTimeAsync(180)
+  expect(client.queue.map(item=>item.command.id)).toEqual(recovering ? [queued.id] : [])
+  expect(stored.map(item=>item.command.id)).toEqual(recovering ? [queued.id] : [])
+  expect(client.deck.slides[0]?.notes).toBe("newer peer edit")
+  expect(cachedSnapshot("owner",deck.id)?.seq).toBe(2)
+  expect(cachedSnapshot("owner",deck.id)?.deck.slides[0]?.notes).toBe("newer peer edit")
+  expect(errors).toEqual([])
+ }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks();localStorage.clear()}
+})

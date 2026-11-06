@@ -1,3 +1,5 @@
+import {renderSiteTerms} from "./site-terms.ts"
+import {releaseClaimHits,publicAmountHits,type PublicClaim,sandboxDependencyHits,productCaptureHits} from "../packages/lint/src/release-claims.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
 import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
@@ -18,13 +20,18 @@ import { gateRecordingHits } from "./lint/gate-recording.ts"
 import { responseHeaderHits } from "./lint/response-headers.ts"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css"])
+const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css", ".html", ".txt", ".json"])
 const skipped = new Set(["node_modules", "dist", "coverage", "docs", "fixtures"])
 
 const files = await collect(repoRoot)
 const failures: string[] = []
+const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
+  for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
+  if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims)]) failures.push(`${file}: ${hit}`)
+  if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
   for(const hit of recoverySafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of formSubmitButtonHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of meteredToolSafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
