@@ -2,11 +2,13 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { AccessClient, IntentKind, VerifyResult } from "@airdesign/access/client"
 import { AccessApp } from "./access-app.tsx"
 
 let root: Root | null = null
+
+beforeEach(()=>{vi.stubGlobal("fetch",vi.fn(async()=>Response.json([])))})
 
 afterEach(() => {
   act(() => {

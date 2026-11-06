@@ -61,7 +61,7 @@ try{
   })
   await lane(7,async(owner,id)=>{
     await s.fixture.history.usage.reserve(owner.personId,{id:"lane7-almost",actor:"user-agent",request:"Existing workload",units:9998})
-    const run=await s.run(owner,id,"Keep this request at the usage limit"),saved=await read(owner,id);assert.equal(run.kind,"failed");assert.equal(run.events.filter(event=>event.name==="apply_changes").length,1);assert.equal(saved.deck.slides[0].notes,run.request);assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,10001)
+    const run=await s.run(owner,id,"Keep this request at the usage limit"),saved=await read(owner,id);assert.equal(run.kind,"limited");assert.equal(run.events.filter(event=>event.name==="apply_changes").length,1);assert.equal(saved.deck.slides[0].notes,run.request);assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,10001)
     const manual=await command(owner,id,{kind:"patch",base:saved.seq,run:null,target:"s0e0",fields:{box:{x:50,y:40,width:800,height:60}}});assert.equal(manual.kind,"applied")
     const payments=await Promise.all([checkout(owner),checkout(owner,2500),checkout(owner,3000)]);assert.equal(new Set(payments.map(payment=>payment.id)).size,1);await settle(payments[0],"lane7-paid");const fresh=await checkout(owner);assert.notEqual(fresh.id,payments[0].id)
     return {run:run.id,savedRequest:run.request,atomicChanges:1,used:10001,manual:manual.kind,pendingIds:payments.map(payment=>payment.id),nextPayment:fresh.id,paid:(await usage(owner)).paid}

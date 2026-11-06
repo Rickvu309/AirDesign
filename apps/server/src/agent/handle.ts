@@ -1,3 +1,4 @@
+import {UsageLimitError} from "../../../../packages/agent/src/activity.ts"
 import {randomUUID} from "node:crypto"
 import {mutationRejection,type Access} from "@airdesign/access"
 import {runHarness,type AgentAdapter,type AgentContext} from "../../../../packages/agent/src/harness.ts"
@@ -26,8 +27,9 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
   async function publish(deck:string){await Promise.all([...subscribers.values()].filter(group=>group.deck===deck).map(async group=>{try{const value=JSON.stringify(await snapshot(group.owner,group.deck));for(const send of group.sends)send(value)}catch{for(const send of group.sends)send(JSON.stringify({code:"deck-unavailable"}))}}))}
   async function save(run:AgentRun){await history.agents.save(run);await publish(run.deck)}
   async function closeRun(run:AgentRun){await history.commit({personId:run.owner},run.deck,{id:commandId(`close_${run.id}`),kind:"close-run",run:run.id},{kind:"run",run:run.id});await changed(run.deck)}
-  async function stop(live:LiveRun){live.data.kind="stopped";live.controller.abort();await live.task;await closeRun(live.data);await save(live.data)}
-  async function stopOwner(owner:string){await serial(async()=>{await history.agents.configure(owner,false);await Promise.all([...runs.values()].filter(run=>run.data.owner===owner&&run.data.kind==="working").map(stop))})}
+  async function stop(live:LiveRun){live.data.kind="stopped";live.controller.abort();await live.task;await save(live.data)}
+  async function stopOwnedRuns(owner:string){await Promise.all([...runs.values()].filter(run=>run.data.owner===owner&&run.data.kind==="working").map(stop))}
+  async function stopOwner(owner:string){await serial(()=>stopOwnedRuns(owner))}
   function launch(data:AgentRun){
     const live:LiveRun={data,controller:new AbortController(),task:Promise.resolve()}
     runs.set(keyOf(data.owner,data.deck),live)
@@ -44,9 +46,9 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
           append(data,item);await save(data)
         }
         if(data.kind==="working")data.kind="complete"
-      }catch(error){if(data.kind!=="stopped"){data.kind="failed";append(data,{kind:"message",text:`${error instanceof Error ? error.message : "Run failed"}. Changes so far stay.`})}}
+      }catch(error){if(data.kind!=="stopped"){if(error instanceof UsageLimitError){data.kind="limited";append(data,{kind:"limit",limit:error.limit})}else{data.kind="failed";append(data,{kind:"message",text:`${error instanceof Error ? error.message : "Run failed"}. Changes so far stay.`})}}}
       finally{
-        if(data.kind!=="failed")await closeRun(data).catch(()=>undefined)
+        if(data.kind==="complete")await closeRun(data).catch(()=>undefined)
         await save(data).catch(()=>undefined)
       }
     })()
@@ -60,7 +62,8 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
       if(url.pathname==="/api/aira/configure"){
         if(request.method==="GET")return Response.json({enabled:await history.agents.enabled(principal.personId)})
         const body:unknown=await request.json();if(!body||typeof body!=="object"||!("enabled" in body)||typeof body.enabled!=="boolean")throw new Error("invalid-configuration")
-        if(body.enabled)await serial(()=>history.agents.configure(principal.personId,true));else await stopOwner(principal.personId)
+        const enabled=body.enabled
+        await serial(async()=>{await history.agents.configure(principal.personId,enabled);if(!enabled)await stopOwnedRuns(principal.personId)})
         return Response.json({enabled:body.enabled})
       }
       await history.read(principal,deck)
@@ -87,7 +90,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
           active.kind="undone";await changed(deck);await save(active);return Response.json({...receipt,kept})
         }
         if(!await history.agents.enabled(principal.personId))throw new Error("aira-disabled")
-        if(body.action==="resume"&&active?.kind==="failed"){active.kind="working";launch(active);await save(active);return Response.json({id:active.id,kind:active.kind},{status:202})}
+        if(body.action==="resume"&&(active?.kind==="failed"||active?.kind==="stopped"||active?.kind==="limited")){active.kind="working";launch(active);await save(active);return Response.json({id:active.id,kind:active.kind},{status:202})}
         if(body.action!=="send"||!("text" in body)||typeof body.text!=="string"||!body.text.trim()||body.text.length>8000)throw new Error("invalid-agent-request")
         if(active?.kind==="working"){
           active.request=body.text;append(active,{kind:"message",text:body.text});await save(active);return Response.json({id:active.id,kind:active.kind,joined:true})

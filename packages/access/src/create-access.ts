@@ -19,7 +19,7 @@ import { mutationRejection } from "./mutation-guard.ts"
 import { accessSchemaSql, accessTables, applicationSchemaName } from "./schema.ts"
 import { headerCookies, intentCookieName, intentSetCookie, readRequestCookie, sessionSetCookie } from "./session-cookie.ts"
 
-export type AccessDriver = { kind: "pglite"; dataDir?: string } | { kind: "postgres"; url: string }
+export type AccessDriver = { kind: "pglite"; dataDir?: string; client?: PGlite } | { kind: "postgres"; url: string }
 
 export type AccessGuard = {
   allow(): boolean
@@ -80,6 +80,7 @@ type LoadedSession = { user: SessionUser | null; cookies: string[] }
 export type Access = {
   handle(request: Request): Promise<Response>
   principal(request: Request): Promise<{ personId: string } | null>
+  resumeDeletions(): Promise<void>
   close(): Promise<void>
 }
 
@@ -125,12 +126,24 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
     logger: { level: "error" },
   }) as unknown as SessionApi
 
+  const getSession = auth.api.getSession.bind(auth.api)
+  auth.api.getSession = async input => {
+    const loaded = await getSession(input)
+    if (loaded?.response && (await opened.db.select().from(tables.deletion).where(eq(tables.deletion.owner, loaded.response.user.id))).length) return { ...loaded, response: null }
+    return loaded
+  }
+  let deletionTask: Promise<void> | undefined
+  function resumeDeletions() {
+    deletionTask ??= finishDeletions(options, auth, opened.db, tables).finally(() => { deletionTask = undefined })
+    return deletionTask
+  }
   const handle = async (request: Request) => {
     const rejected = mutationRejection(request, origin.origin)
     if (rejected) {
       return json(rejected.status, { status: rejected.code })
     }
     try {
+      if(new URL(request.url).pathname==="/api/account/deletion"&&request.method==="POST")await resumeDeletions()
       return await route(options, auth, opened.db, tables, secure, request)
     } catch (error) {
       if (error instanceof URIError) {
@@ -142,6 +155,7 @@ export async function createAccess(options: CreateAccessOptions): Promise<Access
 
   return {
     handle,
+    resumeDeletions,
     async principal(request) {
       const loaded = await loadSession(auth, request)
       return loaded.user ? { personId: loaded.user.id } : null
@@ -221,7 +235,7 @@ async function openDatabase(driver: AccessDriver): Promise<{ db: Database; table
     if (driver.dataDir && driver.dataDir !== "memory://") await mkdir(path.dirname(driver.dataDir), { recursive: true, mode: 0o700 })
     const schemaName = driver.dataDir ? applicationSchemaName : `ns_${randomBytes(8).toString("hex")}`
     const tables = accessTables(schemaName)
-    const client = await PGlite.create(driver.dataDir)
+    const client = driver.client ?? await PGlite.create(driver.dataDir)
     await client.exec(accessSchemaSql(schemaName, driver.dataDir ? "stable" : "disposable"))
     const db = drizzle(client, { schema: tables })
     let closed = false
@@ -234,7 +248,7 @@ async function openDatabase(driver: AccessDriver): Promise<{ db: Database; table
         }
         closed = true
         if (!driver.dataDir) await client.exec(dropDisposableSchemaSql(schemaName))
-        await client.close()
+        if (!driver.client) await client.close()
       },
     }
   }
@@ -540,22 +554,32 @@ async function deleteAccount(
   }
   const user = loaded.user
   const started = user.freeUsageWeekStartedAt ? new Date(user.freeUsageWeekStartedAt) : new Date(options.clock())
-  await db.insert(tables.tombstone).values({
-    emailHash: sha256(normalizeEmail(user.email)),
-    freeUsageWeekStartedAt: started,
-    deletedAt: new Date(options.clock()),
-  }).onConflictDoNothing()
-  await options.deleteOwnedData?.(user.id)
-  await db.delete(tables.challenge).where(eq(tables.challenge.email,normalizeEmail(user.email)))
-  await db.delete(tables.sendWindow).where(eq(tables.sendWindow.email,normalizeEmail(user.email)))
-  const context = await auth.$context
-  await context.internalAdapter.deleteUserSessions(user.id)
-  await context.internalAdapter.deleteUser(user.id)
+  await db.transaction(async tx => {
+    await tx.insert(tables.tombstone).values({
+      emailHash: sha256(normalizeEmail(user.email)),
+      freeUsageWeekStartedAt: started,
+      deletedAt: new Date(options.clock()),
+    }).onConflictDoNothing()
+    await tx.insert(tables.deletion).values({ owner: user.id, email: normalizeEmail(user.email) }).onConflictDoNothing()
+  })
+  await finishDeletions(options, auth, db, tables)
   const cleared = [
     await sessionSetCookie(options.secret, "", secure, 0),
     intentSetCookie("", secure, 0),
   ]
   return json(200, { status: "deleted" }, cleared)
+}
+
+async function finishDeletions(options: CreateAccessOptions, auth: SessionApi, db: Database, tables: Tables) {
+  const context = await auth.$context
+  for (const job of await db.select().from(tables.deletion)) {
+    await context.internalAdapter.deleteUserSessions(job.owner)
+    await options.deleteOwnedData?.(job.owner)
+    await db.delete(tables.challenge).where(eq(tables.challenge.email, job.email))
+    await db.delete(tables.sendWindow).where(eq(tables.sendWindow.email, job.email))
+    await context.internalAdapter.deleteUser(job.owner)
+    await db.delete(tables.deletion).where(eq(tables.deletion.owner, job.owner))
+  }
 }
 
 async function readPerson(auth: SessionApi, request: Request, personId: string): Promise<Response> {

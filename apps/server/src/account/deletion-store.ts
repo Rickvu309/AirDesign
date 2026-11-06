@@ -8,7 +8,7 @@ export async function initializeAccountDeletion(tx:CatalogSql){
 }
 export function accountDeletionStore(transaction:CatalogTransaction,clock:()=>number){return {
   async enqueue(owner:string){await transaction(async tx=>{
-    await lockRetainedAccount(tx,owner)
+    if(!await lockRetainedAccount(tx,owner,true))return
     await tx.query("INSERT INTO account_deletion(owner,requested,deadline) VALUES($1,$2,$3) ON CONFLICT(owner) DO NOTHING",[owner,clock(),clock()+30*86400000])
     await tx.query("UPDATE oauth_connection SET data=jsonb_set(data,'{revoked}','true') WHERE data->>'owner'=$1",[owner])
   })},

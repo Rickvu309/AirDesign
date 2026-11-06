@@ -1,3 +1,4 @@
+import {PGlite} from "@electric-sql/pglite"
 import {once} from "node:events"
 import {billingHandler} from "./billing/handle.ts"
 import {localPaymentProvider} from "../../../packages/usage/src/payments/provider.ts"
@@ -45,8 +46,9 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const secret = process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars"
   const databaseUrl = process.env.AIRDESIGN_DATABASE_URL
   const publicOrigin = extras.publicOrigin ?? process.env.AIRDESIGN_PUBLIC_ORIGIN ?? "http://127.0.0.1:41732"
+  const memory = databaseUrl===undefined&&extras.accessPath==="memory://"&&extras.historyPath==="memory://" ? await PGlite.create() : undefined
   const access = await createAccess({
-    driver: databaseUrl === undefined ? { kind: "pglite", dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
+    driver: databaseUrl === undefined ? { kind: "pglite", client:memory, dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
     secret,
     mail: inbox,
     clock: extras.clock ?? (() => Date.now()),
@@ -58,7 +60,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const operationsPath=extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
   const operations = new OperationStore(operationsPath, extras.clock)
   const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
-  const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl }, extras.clock)
+  const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", client:memory, path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl }, extras.clock)
   const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
   const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
   const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
@@ -67,6 +69,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret)
   const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? localAdapter,deck=>sync.refresh(deck))
+  await access.resumeDeletions()
   const handleBilling=billingHandler(access,history,localPaymentProvider(process.env.AIRDESIGN_PAYMENT_FIXTURE_SECRET ?? "dev-only-local-payment-fixture"),publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin)
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))

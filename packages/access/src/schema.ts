@@ -70,7 +70,11 @@ export function accessTables(schemaName: string) {
     freeUsageWeekStartedAt: timestamp("freeUsageWeekStartedAt", { mode: "date" }).notNull(),
     deletedAt: timestamp("deletedAt", { mode: "date" }).notNull(),
   })
-  return { user, session, account, verification, challenge, sendWindow, tombstone }
+  const deletion = namespace.table("account_deletion_job", {
+    owner: text("owner").primaryKey(),
+    email: text("email").notNull(),
+  })
+  return { user, session, account, verification, challenge, sendWindow, tombstone, deletion }
 }
 
 export function accessSchemaSql(schemaName: string, mode: "disposable" | "stable"): string {
@@ -79,6 +83,7 @@ export function accessSchemaSql(schemaName: string, mode: "disposable" | "stable
   const createTable = mode === "stable" ? "CREATE TABLE IF NOT EXISTS" : "CREATE TABLE"
   return `
     ${createSchema}
+    ${createTable} ${schema}.account_deletion_job (owner text PRIMARY KEY, email text NOT NULL);
     ${createTable} ${schema}."user" (
       id text PRIMARY KEY,
       name text NOT NULL,

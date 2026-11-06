@@ -39,6 +39,8 @@ it("requires consent, stops an active run, removes owned rows, ends all sessions
     const tombstone=(await db.query(`SELECT *,to_char("freeUsageWeekStartedAt",'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS week FROM airdesign.tombstone WHERE "emailHash"=$1`,[createHash("sha256").update("delete-owner@example.com").digest("hex")])).rows[0]
     expect(tombstone.week).toBe(original.freeUsageWeekStartedAt)
     expect(await fixture.history.deletions.purge(owner.personId)).toBe(false)
+    await fixture.history.deletions.enqueue(owner.personId)
+    expect(await fixture.history.deletions.pending()).toEqual([])
     fixture.advance(86400000)
     const again=await fixture.signIn("delete-owner@example.com")
     expect(again.personId).not.toBe(owner.personId)
@@ -62,4 +64,21 @@ it("durably queues deletion while a worker owns a lease, then removes queued byt
     await expect(access(directory)).rejects.toThrow()
     expect(await fixture.history.deletions.pending()).toEqual([])
   }finally{operations.close();images.close();templates.close();await fixture.close()}
+})
+
+it("retries auth cleanup after owned purge has completed",async()=>{
+  const fixture=await mcpFixture(),db=new pg.Client({connectionString:fixture.url});await db.connect()
+  try{
+    const owner=await fixture.signIn("retry-auth@example.com");await fixture.json("/api/decks",fixtureDeck(1,1),owner.cookie)
+    await db.query("CREATE FUNCTION airdesign.fail_auth_cleanup() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'interrupted-auth-cleanup'; END $$")
+    await db.query('CREATE TRIGGER interrupt_cleanup BEFORE DELETE ON airdesign."user" FOR EACH STATEMENT EXECUTE FUNCTION airdesign.fail_auth_cleanup()')
+    expect((await fixture.json("/api/account/deletion",{confirm:"delete-account"},owner.cookie)).status).toBe(500)
+    expect((await fixture.json("/api/account",undefined,owner.cookie)).status).toBe(401)
+    expect((await db.query("SELECT owner FROM airdesign.account_deletion_job")).rows).toHaveLength(1)
+    await db.query('DROP TRIGGER interrupt_cleanup ON airdesign."user"')
+    expect((await fixture.json("/api/account/deletion",{confirm:"delete-account"},owner.cookie)).status).toBe(401)
+    expect((await db.query("SELECT owner FROM airdesign.account_deletion_job")).rows).toEqual([])
+    expect((await db.query('SELECT id FROM airdesign."user"')).rows).toEqual([])
+    expect(await fixture.history.deletions.pending()).toEqual([])
+  }finally{await db.end();await fixture.close()}
 })

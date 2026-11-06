@@ -105,7 +105,7 @@ it("does not report refused commits as completed and resumes the saved request a
     const stream=await eventStream(fixture.origin+"/api/aira/events?deck=deck",owner.cookie)
     try{
       await stream.next();await fixture.json("/api/aira?deck=deck",{action:"send",text:"Saved after limit"},owner.cookie)
-      let value=await stream.next();while(value.run?.kind!=="failed")value=await stream.next()
+      let value=await stream.next();while(value.run?.kind!=="limited")value=await stream.next()
       expect(value.run.events.filter((event:{name?:string})=>event.name==="apply_changes")).toHaveLength(0)
       expect((await fixture.history.read({personId:owner.personId},"deck")).deck.slides[0]?.notes).not.toBe("Saved after limit")
       const run=value.run.id;fixture.advance(7*86400000)
