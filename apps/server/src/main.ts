@@ -1,3 +1,6 @@
+import { imagesHandler } from "./images/handle.ts"
+import { templatesHandler } from "./templates/handle.ts"
+import { TemplateStore } from "../../../packages/brand/src/template-store.ts"
 import { decksHandler } from "./decks/handle.ts"
 import { attachSync } from "./rpc/websocket.ts"
 import { createHistoryStore } from "./db/history-store.ts"
@@ -19,6 +22,7 @@ export type RunningServer = {
 export type StartServerOptions = {
   clock?: () => number
   operationsPath?: string
+  templatesPath?: string
   historyPath?: string
   accessPath?: string
   publicOrigin?: string
@@ -38,13 +42,18 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
     exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
     publicOrigin,
   })
-  const operations = new OperationStore(extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite"), extras.clock)
+  const operationsPath=extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
+  const operations = new OperationStore(operationsPath, extras.clock)
+  const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
   const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl }, extras.clock)
-  const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations)
+  const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
+  const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
+  const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
+  const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates)
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {
-    serve(access, handleOperation, handleCommands, handleDecks, request, response).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, request, response).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
@@ -62,13 +71,15 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
         server.close((error) => error ? reject(error) : resolve())
       })
       await history.close()
+      imageQueue.close()
+      templates.close()
       operations.close()
       await access.close()
     },
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const host = request.headers.host ?? "127.0.0.1"
     const body = await readRequestBody(request)
@@ -84,7 +95,7 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
       writeHandlerError(response, error)
       return
     }
-    const outgoing = new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
+    const outgoing = new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {

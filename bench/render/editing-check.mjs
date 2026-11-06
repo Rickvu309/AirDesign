@@ -109,8 +109,9 @@ try {
   await field.focus()
   await page.keyboard.press("ControlOrMeta+End")
   await page.keyboard.press("Enter")
+  await page.keyboard.press("Enter")
   await page.keyboard.type("Tail")
-  const multilineStyled = await parity("styled-enter", "Alpha Beta!日本語 👩🏽‍💻\nTail")
+  const multilineStyled = await parity("styled-enter", "Alpha Beta!日本語 👩🏽‍💻\n\nTail")
   assert.equal(multilineStyled.slides[0].elements[0].runs.at(-1).color, "#0000ff")
   for (const key of ["Enter", "Shift+Enter"]) {
     const empty = fixtureDeck(1)

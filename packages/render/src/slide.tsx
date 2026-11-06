@@ -15,11 +15,13 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
   const insertingPlainText = useRef(false)
   const caretStyle = useRef(element.runs[0])
   const localRuns = useRef<string | null>(null)
+  const renderedRuns = useRef<{node:HTMLDivElement;signature:string} | null>(null)
   const signature = JSON.stringify(element.runs)
   useLayoutEffect(() => {
     const node = ref.current
-    if (!node || composing.current) return
-    if (localRuns.current === signature) { localRuns.current = null; return }
+    if (!node || composing.current || renderedRuns.current?.node === node && renderedRuns.current.signature === signature) return
+    renderedRuns.current = {node,signature}
+    if (localRuns.current === signature) { localRuns.current = null; renderedRuns.current = null; return }
     caretStyle.current = element.runs[0]
     canonicalChildren(node, element.runs)
   }, [element, signature, commit])
@@ -101,15 +103,16 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     node.dispatchEvent(new InputEvent("beforeinput", { inputType: "insertFromDrop", dataTransfer: event.dataTransfer, bubbles: true, cancelable: true }))
   }} onCompositionStart={() => { composing.current = true }} onCompositionEnd={event => { composing.current = false; save(event.currentTarget) }} onInput={event => { if (!composing.current) { save(event.currentTarget) } }} />
 }
-const Item = memo(function Item({ element, commit, pointerDown, themes, inheritedTheme, history }: { history: TextHistory | undefined; themes: Deck["themes"]; inheritedTheme: DeckSlide["theme"]; element: Element; commit: CommitText | undefined; pointerDown: PointerEventHandler<HTMLDivElement> | undefined }) {
+const Item = memo(function Item({ element, commit, pointerDown, themes, inheritedTheme, history, imageSources }: { imageSources: Record<string,string> | undefined; history: TextHistory | undefined; themes: Deck["themes"]; inheritedTheme: DeckSlide["theme"]; element: Element; commit: CommitText | undefined; pointerDown: PointerEventHandler<HTMLDivElement> | undefined }) {
   const theme = themes.find(t => t.id === (element.theme ?? inheritedTheme))
   let content
   if (element.support.kind !== "native") {
     content = element.support.preview ? <img src={element.support.preview} alt={`${element.support.kind} object ${element.id}`} style={{ inlineSize: "100%", blockSize: "100%" }} /> : <div role="img" aria-label={`Preview unavailable for ${element.id}`}>Preview unavailable</div>
   } else {
     switch (element.kind) {
-      case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} />); break
+      case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} />); break
       case "text": content = <Text element={element} commit={commit} history={history} themeFont={theme?.font} />; break
+      case "image": {const crop=element.image.crop;content=<div style={{position:"relative",inlineSize:"100%",blockSize:"100%",overflow:"hidden",borderRadius:element.image.mask==="ellipse" ? "50%" : 0}}><img draggable={false} src={imageSources?.[element.image.asset] ?? `/api/assets/${element.image.asset}/media`} alt={element.image.alt} style={{position:"absolute",maxInlineSize:"none",inlineSize:`${100/crop.width}%`,blockSize:`${100/crop.height}%`,insetInlineStart:`${-crop.x/crop.width*100}%`,insetBlockStart:`${-crop.y/crop.height*100}%`}}/></div>;break}
       case "shape": content = <svg width="100%" height="100%" viewBox={`0 0 ${element.box.width} ${element.box.height}`} aria-label={`${element.geometry} ${element.id}`} style={{ pointerEvents: "none" }}>
         {element.geometry === "rectangle" ? <rect width={element.box.width} height={element.box.height} fill={element.fill} style={{ pointerEvents: "visiblePainted" }} /> : element.geometry === "ellipse" ? <ellipse cx={element.box.width / 2} cy={element.box.height / 2} rx={element.box.width / 2} ry={element.box.height / 2} fill={element.fill} style={{ pointerEvents: "visiblePainted" }} /> : <path d={`M ${element.box.width / 2} 0 L ${element.box.width} ${element.box.height} L 0 ${element.box.height} Z`} fill={element.fill} style={{ pointerEvents: "visiblePainted" }} />}
       </svg>; break
@@ -118,12 +121,12 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
   }
   return <div data-element={element.id} data-kind={element.kind} style={{ ...position(element), pointerEvents: element.kind === "shape" && element.support.kind === "native" ? "none" : undefined }} onPointerDown={pointerDown}>{content}</div>
 })
-export function Slide({ slide, themes = [], commitText, onPointerDown, historyText }: { historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
+export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources }: {imageSources?: Record<string,string>; historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
   const fonts = fontReport(slide, themes)
   return <section aria-label={`Slide ${slide.id}`}>
     {fonts.missing.length > 0 && <p role="status" data-font-warning="">Missing fonts: {fonts.missing.join(", ")}. Using pinned Geist.</p>}
     <div data-slide={slide.id} data-version={slide.version} style={{ position: "relative", inlineSize: slide.size.width, blockSize: slide.size.height, background: themes.find(t => t.id === slide.theme)?.background ?? "white", overflow: "clip" }}>
-      {slide.elements.map(element => <Item key={element.id} element={element} commit={commitText} history={historyText} pointerDown={onPointerDown} themes={themes} inheritedTheme={slide.theme} />)}
+      {slide.elements.map(element => <Item key={element.id} element={element} commit={commitText} history={historyText} pointerDown={onPointerDown} themes={themes} inheritedTheme={slide.theme} imageSources={imageSources} />)}
     </div>
   </section>
 }

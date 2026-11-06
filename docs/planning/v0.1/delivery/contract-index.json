@@ -228,7 +228,7 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P06",
       "freezeIn": "P06",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/brand",
       "decision": "docs/contracts/c23-templates-and-image-provenance.json"
     },

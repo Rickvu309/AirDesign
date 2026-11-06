@@ -2,7 +2,7 @@
   "id": "C23",
   "schemaVersion": 1,
   "title": "Templates and image provenance",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P06",
   "acceptIn": "P06",
   "owner": "packages/brand",
@@ -10,15 +10,44 @@
     "path": "docs/design/v0.1/logic.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "A deck pins an immutable template version. Applying a version changes only linked properties in one person history command; local overrides remain and are listed. Imported masters form distinct layout families. New versions are offered, never forced. Assets belong to the authenticated person, deduplicate by owner and content hash, and retain immutable validated originals and source/license provenance. Crop, focus, mask and alt text belong to placements. All reads, placements and exports enforce ownership; unsafe files are refused before storage.",
   "alternatives": [
-    "Decide in P06 before any consumer."
+    "Overwrite local formatting on template updates.",
+    "Deduplicate across owners or mutate original images when cropping."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "linked-update-retains-local",
+      "linked": "updated",
+      "local": "retained",
+      "historySteps": 1
+    },
+    {
+      "id": "same-owner-duplicate",
+      "originals": 1,
+      "placements": 2
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "other-owner-asset",
+      "result": "not-found",
+      "write": "none"
+    },
+    {
+      "id": "newer-version",
+      "result": "offer-only",
+      "deckVersion": "unchanged"
+    },
+    {
+      "id": "hostile-svg",
+      "result": "refused",
+      "stored": false
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
-    "command": "npm run verify:contracts"
+    "kind": "template-and-asset-behavior-tests",
+    "command": "npm run verify:pr-06"
   },
   "migration": {
     "policy": "additive-only",

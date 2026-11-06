@@ -3,17 +3,17 @@ import path from "node:path"
 import os from "node:os"
 import { mkdir, rm, rmdir } from "node:fs/promises"
 import { OperationStore } from "../../../packages/operations/src/index.ts"
-import { createHistoryStore } from "../../server/src/db/history-store.ts"
-import { purgeExpiredDecks } from "./purge/expired-decks.ts"
-import { deliverExport } from "./export/deliver.ts"
 import { deliver } from "./isolation.ts"
+const mode=process.argv[2] ?? "all"
+if(mode!=="all"&&mode!=="images")throw new Error("unknown-worker-mode")
 const database = process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
 const root = process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(), "tmp/airdesign-jobs")
 await mkdir(root, { recursive: true, mode: 0o700 })
 const store = new OperationStore(database)
+const images = new OperationStore(database+".images")
 try {
-  if(process.env.AIRDESIGN_DATABASE_URL) {const history=await createHistoryStore({kind:"postgres",url:process.env.AIRDESIGN_DATABASE_URL});try{await purgeExpiredDecks(history.catalog);while(true){const result=await deliverExport(history.exports,root);if(!result)break;process.stdout.write(JSON.stringify(result)+"\n")}}finally{await history.close()}}
-  for (const recovered of store.recover()) {
+  if(mode==="all"&&process.env.AIRDESIGN_DATABASE_URL) {const {createHistoryStore}=await import("../../server/src/db/history-store.ts"),{purgeExpiredDecks}=await import("./purge/expired-decks.ts"),{deliverExport}=await import("./export/deliver.ts");const history=await createHistoryStore({kind:"postgres",url:process.env.AIRDESIGN_DATABASE_URL});try{await purgeExpiredDecks(history.catalog);while(true){const result=await deliverExport(history.exports,root);if(!result)break;process.stdout.write(JSON.stringify(result)+"\n")}}finally{await history.close()}}
+  for (const queue of [store,images]) for (const recovered of queue.recover()) {
     await new Promise<void>(resolve => {
       const killer = spawn("systemctl", ["--user", "kill", "--signal=SIGKILL", `airdesign-${recovered.id}-${recovered.lease}.scope`], { stdio: "ignore" })
       killer.once("exit", () => resolve())
@@ -21,12 +21,16 @@ try {
     })
     const directory = path.join(root,recovered.ownerDirectory,recovered.id,recovered.lease)
     await rm(directory, { recursive: true, force: true })
-    store.acknowledgeCleanup(recovered.id, recovered.lease)
+    queue.acknowledgeCleanup(recovered.id, recovered.lease)
     await rmdir(path.dirname(directory)).catch(() => undefined)
     await rmdir(path.dirname(path.dirname(directory))).catch(() => undefined)
   }
-  for (const id of store.pending()) {
+  for (const id of images.pending()) {
+    const committed=await deliver(images,id,root,path.resolve(import.meta.dirname,"validate-image.ts"))
+    process.stdout.write(JSON.stringify({id,committed,kind:"image"})+"\n")
+  }
+  if(mode==="all")for (const id of store.pending()) {
     const committed = await deliver(store, id, root, path.resolve(import.meta.dirname,"import.ts"))
     process.stdout.write(JSON.stringify({ id, committed }) + "\n")
   }
-} finally { store.close() }
+} finally { images.close();store.close() }

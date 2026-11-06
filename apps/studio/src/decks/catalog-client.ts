@@ -1,7 +1,7 @@
 import type { DeckEntry } from "../../../../packages/catalog/src/index.ts"
 
 export async function api<T>(path:string,body?:unknown,method=body===undefined ? "GET" : "POST"):Promise<T> {
-  const response=await fetch(path,{method,...(body===undefined ? {} : {headers:{"content-type":"application/json"},body:JSON.stringify(body)})})
+  const response=await fetch(path,{method,...(method==="GET" && body===undefined ? {} : {headers:{"content-type":"application/json"}}),...(body===undefined ? {} : {body:JSON.stringify(body)})})
   const value=await response.json()
   if(!response.ok)throw new Error(typeof value?.code==="string" ? value.code : "request-failed")
   return value

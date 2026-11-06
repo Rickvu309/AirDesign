@@ -1,3 +1,5 @@
+import { ImagePanel } from "../images/image-panel.tsx"
+import { TemplatePanel } from "../templates/template-panel.tsx"
 import { useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
 import { AlertDialog,Button } from "@airdesign/ui"
 import { commandId,type Command } from "../../../../packages/change-log/src/index.ts"
@@ -8,11 +10,12 @@ import { deckAction } from "../decks/catalog-client.ts"
 import { newSlide,orderedSlides,reviewPaste,selectSlides,type PasteReview } from "./editor-model.ts"
 import { ExportDialog } from "../export/export-dialog.tsx"
 import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
-import { waitForFonts } from "../../../../packages/render/src/fonts.ts"
+import { FontReadiness } from "../templates/font-readiness.tsx"
 import { useDeck } from "./use-deck.ts"
 
 const labels={saved:"Saved",pending:"Saving…",offline:"Offline · changes saved on this device",retrying:"Still offline · reconnect to save your changes",recovery:"Some changes need your attention",deleted:"This deck is in Trash. It is read-only. Your unsaved changes are kept on this device.","signed-out":"Sign in to the same account to save your changes."}
 export function ManualEditor({deckId}:{deckId:string}) {
+  const [designOpen,setDesignOpen]=useState(false),[imagesOpen,setImagesOpen]=useState(false)
   const {sync,entry,setEntry,error,setError,reconnect}=useDeck(deckId)
   const [selection,setSelection]=useState<Id[]>([]),anchor=useRef<Id|null>(null)
   const [phone,setPhone]=useState(()=>window.matchMedia("(max-width: 767px)").matches)
@@ -22,7 +25,6 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const [view,setView]=useState<"grid"|"single">("grid"),[zoom,setZoom]=useState(100),[menu,setMenu]=useState(false),[contextMenu,setContextMenu]=useState(false)
   const [changesOpen,setChangesOpen]=useState(false)
   const deck=sync?.deck,state=sync?.state
-  useEffect(()=>{void waitForFonts(document).catch(failure=>setError(String(failure)))},[setError])
   const readonly=phone || state?.kind==="deleted" || state?.kind==="signed-out"
   useEffect(()=>{if(entry?.pendingRequest)setRequest(entry.pendingRequest)},[entry?.pendingRequest])
   useEffect(()=>{const media=window.matchMedia("(max-width: 767px)"),change=()=>setPhone(media.matches);media.addEventListener("change",change);return ()=>media.removeEventListener("change",change)},[])
@@ -64,12 +66,15 @@ export function ManualEditor({deckId}:{deckId:string}) {
       <div className="editor-view" aria-label="Slide view"><button type="button" aria-label="Single slide view" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>▣</button><button type="button" aria-label="Grid view" aria-pressed={view==="grid"} onClick={()=>setView("grid")}>⊞</button></div>
     </header>
     <aside className="editor-export"><label><span className="sr-only">Zoom</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(Number(event.target.value))}>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={state?.kind!=="saved"||readonly||!deck?.slides.length} onClick={()=>setExportOpen(true)}>Export</Button></aside>
+    <FontReadiness/>
     <p role="status" className="editor-status">{phone ? "Edit on a laptop · read-only viewing" : state ? labels[state.kind] : "Opening your saved deck…"}{selection.length>0 ? ` · ${selection.length} selected` : ""}</p>
     {error && <p role="alert">{error} <a href="/">Back to Home</a></p>}
     {(state?.kind==="offline"||state?.kind==="retrying") && <Button size="compact" variant="secondary" onClick={reconnect}>Reconnect</Button>}
     {state?.kind==="deleted" && <Button size="compact" variant="secondary" onClick={()=>void deckAction(deckId,"restore").then(()=>location.reload()).catch(failure=>setError(String(failure)))}>Restore deck</Button>}
     {contextMenu && <nav className="editor-context editor-menu" aria-label="Slide actions">{actions()}<button type="button" onClick={()=>setContextMenu(false)}>Close menu</button></nav>}
-    {!phone && <nav className="editor-dock" aria-label="Design tools"><button type="button" aria-label="Select slides" aria-pressed={view==="grid"} onClick={()=>setView("grid")}>↖</button><button type="button" aria-label="Edit slide text" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>T</button><button type="button" disabled title="Shape tools are not available yet">◇</button><button type="button" disabled title="Image tools are not available yet">▧</button><button type="button" disabled title="Components are not available yet">⊞</button><span className="dock-divider"/><button type="button" disabled title="Aira is not available until P08">Agent</button><span className="dock-design">Design</span></nav>}
+    {!phone && <nav className="editor-dock" aria-label="Design tools"><button type="button" aria-label="Select slides" aria-pressed={view==="grid"} onClick={()=>setView("grid")}>↖</button><button type="button" aria-label="Edit slide text" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>T</button><button type="button" disabled title="Shape tools are not available yet">◇</button><button type="button" aria-label="Images" aria-pressed={imagesOpen} onClick={()=>{setImagesOpen(!imagesOpen);setDesignOpen(false)}}>▧</button><button type="button" disabled title="Components are not available yet">⊞</button><span className="dock-divider"/><button type="button" disabled title="Aira is not available until P08">Agent</button><button type="button" aria-pressed={designOpen} onClick={()=>{setDesignOpen(!designOpen);setImagesOpen(false)}}>Design</button></nav>}
+    {imagesOpen && deck && <ImagePanel deck={deck} slideId={selection[0]} disabled={readonly||state?.kind!=="saved"} close={()=>setImagesOpen(false)}/>}
+    {designOpen && deck && <TemplatePanel deck={deck} disabled={readonly||state?.kind!=="saved"} close={()=>setDesignOpen(false)}/>}
     {!deck?.slides.length && !readonly && <section className="editor-first-request"><h2>What would you like to make?</h2><p>Describe your deck, or add a slide and start editing.</p><label htmlFor="first-request">Your first request</label><textarea id="first-request" value={request} onChange={event=>{setRequest(event.target.value);sessionStorage.setItem("first-pending-request",event.target.value)}}/><Button size="dialog" variant="primary" onClick={()=>void saveRequest()} disabled={!request.trim()}>Save request</Button><p role="status">{requestStatus || (entry?.pendingRequest ? "Request saved · pending. Aira is not available yet." : "Aira is not available yet. You can edit your deck by hand.")}</p></section>}
     <section className="editor-section" aria-label="Slides section"><h2>Slides</h2>
     <div className="editor-slides" aria-label="Slides" style={{maxInlineSize:view==="single" ? `${960*zoom/100}px` : undefined,gridTemplateColumns:view==="grid" ? `repeat(auto-fill,minmax(min(100%,${300*zoom/100}px),1fr))` : undefined}} onContextMenu={event=>{event.preventDefault();setContextMenu(true)}}>

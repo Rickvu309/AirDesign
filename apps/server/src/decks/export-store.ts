@@ -1,10 +1,14 @@
+import { captureTemplateSources } from "../templates/source-store.ts"
+import { ownedDeckAssets } from "../images/store.ts"
 import { randomUUID,createHash } from "node:crypto"
 import type { CatalogSql,CatalogTransaction } from "../../../../packages/catalog/src/index.ts"
 import type { History,Principal } from "../../../../packages/change-log/src/index.ts"
 import type { Deck } from "../../../../packages/deck/src/index.ts"
 
 export type ExportOptions={format:"pptx"|"pdf";slides:string[];timing:"now"|"after-run";expectedSeq:number;allowIssues:boolean}
-export type SavedVersion={deck:Deck;seq:number;source:string|null;title:string}
+import type { AssetProvenance } from "../../../../packages/files/src/assets/provenance.ts"
+
+export type SavedVersion={deck:Deck;seq:number;source:string|null;title:string;assets?:Record<string,string>;provenance?:Record<string,AssetProvenance>;templates?:Record<string,string>}
 export type ExportJob={id:string;deck:string;format:ExportOptions["format"];attempts:number;options:ExportOptions;diagnostics:string[]}&(
   {kind:"waiting"|"queued"|"running"|"cancelled"|"expired"}|{kind:"failed";reason:string}|{kind:"ready";seq:number;sha256:string;expires:number;report:Record<string,unknown>}
 )
@@ -29,7 +33,10 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
     const row=(await tx.query<{state:History;deleted:boolean;title:string}>("SELECT state,deleted,title FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,owner])).rows[0]
     if(!row)throw new Error("deck-not-found");if(row.deleted)throw new Error("deck-deleted")
     const source=(await tx.query<{bytes:Uint8Array}>("SELECT bytes FROM catalog_source WHERE deck=$1",[deck])).rows[0]
-    return {snapshot:{title:row.title,deck:row.state.deck,seq:row.state.seq,source:source ? Buffer.from(source.bytes).toString("base64") : null},running:(await tx.query<{payload:History["runs"][number]}>("SELECT payload FROM editing_run WHERE deck=$1",[deck])).rows.some(run=>run.payload.kind==="open")}
+    const templates=await captureTemplateSources(tx,{personId:owner},row.state.deck)
+    const provenance:Record<string,AssetProvenance>={}
+    const assets=await ownedDeckAssets(tx,{personId:owner},row.state.deck,true,provenance)
+    return {snapshot:{templates,assets,provenance,title:row.title,deck:row.state.deck,seq:row.state.seq,source:source ? Buffer.from(source.bytes).toString("base64") : null},running:(await tx.query<{payload:History["runs"][number]}>("SELECT payload FROM editing_run WHERE deck=$1",[deck])).rows.some(run=>run.payload.kind==="open")}
   }
   return {
     async submit(principal:Principal,request:string,deck:string,options:ExportOptions) {valid(options);if(!/^[A-Za-z0-9_-]{1,100}$/.test(request))throw new Error("invalid-request-id");return transaction(async tx=>{

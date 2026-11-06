@@ -34,7 +34,8 @@ export function nodes(deck: Deck): Node[] {
   const result: Node[] = []
   function visit(value: Deck | Deck["slides"][number] | Element, parent: Id | null, order: number) {
     const fields: Node["fields"] = {}
-    for (const [key, field] of Object.entries(value)) if (!["id", "version", "slides", "elements", "children"].includes(key)) fields[key] = json(field)
+    const source: Record<string, Json | undefined> = value
+    for (const [key, field] of Object.entries(source)) if (field !== undefined && !["id", "version", "slides", "elements", "children"].includes(key)) fields[key] = field
     result.push({ id: value.id, parent, order, fields })
     const children = "slides" in value ? value.slides : "elements" in value ? value.elements : value.kind === "group" ? value.children : []
     children.forEach((child, index) => visit(child, value.id, index))
@@ -42,17 +43,11 @@ export function nodes(deck: Deck): Node[] {
   visit(deck, null, 0)
   return result
 }
-function json(value: unknown): Json {
-  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number") return value
-  if (Array.isArray(value)) return value.map(json)
-  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, json(v)]))
-  throw new Error("invalid-json")
-}
 function same(a: unknown, b: unknown): boolean { return JSON.stringify(a) === JSON.stringify(b) }
 function patches(before: Deck, after: Deck): Patch[] {
-  const previous = nodes(before), next = nodes(after)
-  return [...new Set([...previous, ...next].map(n => n.id))].flatMap(id => {
-    const a = previous.find(n => n.id === id) ?? null, b = next.find(n => n.id === id) ?? null
+  const previous = new Map(nodes(before).map(node=>[node.id,node])), next = new Map(nodes(after).map(node=>[node.id,node]))
+  return [...new Set([...previous.keys(), ...next.keys()])].flatMap(id => {
+    const a = previous.get(id) ?? null, b = next.get(id) ?? null
     const keys = !a || !b ? ["existence"] : [...new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])].filter(k => !same(a.fields[k], b.fields[k]))
     if (a && b && a.parent !== b.parent) keys.push("parent")
     if (a && b && a.order !== b.order) keys.push("order")
@@ -60,15 +55,15 @@ function patches(before: Deck, after: Deck): Patch[] {
   })
 }
 function projection(history: History): Deck {
-  const tree = new Map(nodes(history.initial).map(n => [n.id, structuredClone(n)]))
+  const tree = new Map(nodes(history.initial).map(n => [n.id,n]))
   for (const event of history.events) {
     if (!event.active) continue
     for (const patch of event.patches) {
       if (!patch.after) { tree.delete(patch.id); continue }
       let node = tree.get(patch.id)
-      if (!node) { if (!patch.adopts && !patch.keys.includes("existence")) continue; node = structuredClone(patch.after); tree.set(patch.id, node) }
+      if (!node) { if (!patch.adopts && !patch.keys.includes("existence")) continue; node = {...patch.after,fields:{...patch.after.fields}}; tree.set(patch.id, node) }
       for (const key of patch.keys) {
-        if (key === "existence") tree.set(patch.id, structuredClone(patch.after))
+        if (key === "existence") tree.set(patch.id, {...patch.after,fields:{...patch.after.fields}})
         else if (key === "parent") node.parent = patch.after.parent
         else if (key === "order") node.order = patch.after.order
         else if (key in patch.after.fields) node.fields[key] = patch.after.fields[key] ?? null
@@ -89,7 +84,7 @@ function projection(history: History): Deck {
     retained.add(node.parent)
     const parent=history.events.flatMap(event=>event.patches).findLast(patch=>patch.id===node.parent && patch.after)?.after
     if(!parent)throw new Error("missing-adopted-parent")
-    tree.set(parent.id,structuredClone(parent))
+    tree.set(parent.id,{...parent,fields:{...parent.fields}})
     retainParent(parent)
   }
   for(const node of tree.values())retainParent(node)
@@ -123,7 +118,7 @@ function materialize(list: Node[], deckId: Id, seq: number): Deck {
   return deck
 }
 export function execute(current: History, command: Command, identity: ExecutionIdentity = {kind:"person"}): { history: History; receipt: Receipt } {
-  const history = structuredClone(current)
+  const history:History={...current,deck:{...current.deck},events:current.events.map(event=>({...event})),runs:current.runs.map(run=>({...run})),usedIds:[...current.usedIds]}
   const refuse = (code: string) => {
     const targets=command.kind==="patch" ? [command.target] : command.kind==="edit" ? command.changes.changes.flatMap(change=>"target" in change ? [change.target] : []) : []
     const deletion=current.events.findLast(event=>event.active && event.patches.some(patch=>patch.after===null && targets.includes(patch.id)))

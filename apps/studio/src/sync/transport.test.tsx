@@ -6,7 +6,7 @@ import { id } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
 import { cachedSnapshot,transport } from "./transport.ts"
 
-it("yields a paint before receipt reconciliation and batches persisted snapshots",async()=>{
+it("applies incoming snapshots without waiting for a frame and batches persisted snapshots",async()=>{
   vi.useFakeTimers()
   const snapshot={deck:fixtureDeck(1),seq:0}
   const client=new SyncClient("owner",snapshot,{read:async()=>[],write:async()=>{}},()=>{})
@@ -31,18 +31,31 @@ it("yields a paint before receipt reconciliation and batches persisted snapshots
     expect(deliver).toBeDefined()
     deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})})
     deliver!({data:JSON.stringify({kind:"snapshot",...snapshot,seq:1})})
-    await Promise.resolve()
-    expect(receive.mock.calls.length).toBe(0)
+    for(let count=0;count<10;count++)await Promise.resolve()
+    expect(receive).toHaveBeenCalledTimes(2)
     expect(write).not.toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(80)
     expect(receive).toHaveBeenCalledTimes(2)
     expect(write).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(100)
+    deliver!({data:JSON.stringify({kind:"snapshot",...snapshot,seq:2})})
+    for(let count=0;count<10;count++)await Promise.resolve()
+    await vi.advanceTimersByTimeAsync(80)
+    expect(idle).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(20)
     expect(write).not.toHaveBeenCalled()
     expect(idle).toBeDefined()
     idle!()
     expect(write).toHaveBeenCalledTimes(1)
-    expect(JSON.parse(write.mock.calls[0]![1]).seq).toBe(1)
+    expect(JSON.parse(write.mock.calls[0]![1]).seq).toBe(2)
+    idle=undefined
+    for(let seq=3;seq<=14;seq++){
+      deliver!({data:JSON.stringify({kind:"snapshot",...snapshot,seq})})
+      await vi.advanceTimersByTimeAsync(90)
+    }
+    expect(idle).toBeDefined()
+    idle!()
+    expect(write).toHaveBeenCalledTimes(2)
+    expect(JSON.parse(write.mock.calls[1]![1]).seq).toBe(14)
     expect(errors).toEqual([])
   }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks()}
 })
@@ -70,7 +83,8 @@ it.each([40,180])("keeps an acknowledged edit and undo on offline reload at %i m
     for(let n=0;n<10;n++)await Promise.resolve()
     deliver!({data:JSON.stringify({kind:"receipt",...snapshot,receipt:applied.receipt})})
     await vi.advanceTimersByTimeAsync(delay)
-    expect(client.queue).toEqual([])
+    expect(client.queue).toHaveLength(1)
+    expect(client.state.kind).toBe("pending")
     expect(stored).toHaveLength(1)
     const reload=new SyncClient("owner",cachedSnapshot("owner",original.deck.id)!,outbox,()=>{})
     await reload.load()
@@ -81,6 +95,8 @@ it.each([40,180])("keeps an acknowledged edit and undo on offline reload at %i m
     idle!()
     for(let n=0;n<15;n++)await Promise.resolve()
     expect(stored).toEqual([])
+    expect(client.queue).toEqual([])
+    expect(client.state.kind).toBe("saved")
     const checkpoint=new SyncClient("owner",cachedSnapshot("owner",original.deck.id)!,outbox,()=>{})
     await checkpoint.load()
     expect(checkpoint.deck.slides[0]!.notes).toBe("acknowledged edit")

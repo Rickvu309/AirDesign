@@ -1,3 +1,6 @@
+import { applyTemplate } from "../../../../packages/brand/src/index.ts"
+import type { TemplateStore } from "../../../../packages/brand/src/template-store.ts"
+import { apply, id, themeId } from "../../../../packages/deck/src/index.ts"
 import { parseDeck } from "../../../../packages/deck/src/index.ts"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
 import { exportFilename } from "./export-filename.ts"
@@ -6,7 +9,7 @@ import { mutationRejection, type Access } from "@airdesign/access"
 import type { HistoryStore } from "../db/history-store.ts"
 
 function text(body:unknown,key:string):string {if(!body || typeof body!=="object" || !(key in body))throw new Error(`missing-${key}`);const value=Reflect.get(body,key);if(typeof value!=="string")throw new Error(`invalid-${key}`);return value}
-export function decksHandler(access:Access,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,operations:OperationStore) {
+export function decksHandler(access:Access,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,operations:OperationStore,templates?:TemplateStore) {
   const catalog=history.catalog
   return async(request:Request):Promise<Response>=>{
     const rejection=mutationRejection(request,origin);if(rejection)return Response.json(rejection,{status:rejection.status})
@@ -33,7 +36,7 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
         return Response.json({entry,report:status.report},{status:201})
       }
       if(url.pathname==="/api/catalog" && request.method==="GET")return Response.json(await catalog.list(principal,url.searchParams.get("trash")==="true",url.searchParams.get("search") ?? ""))
-      if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest")),{status:201})}
+      if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),templates ? defaultDeck(templates.default(principal)) : undefined),{status:201})}
       if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const confirmed=body && typeof body==="object" && "decks" in body ? body.decks : null;if(!Array.isArray(confirmed))throw new Error("confirmation-snapshot-required");const targets=confirmed.map((value:unknown)=>{if(!value || typeof value!=="object" || !("id" in value) || typeof value.id!=="string" || !("generation" in value) || typeof value.generation!=="number" || !Number.isSafeInteger(value.generation))throw new Error("invalid-confirmation-snapshot");return {id:value.id,generation:value.generation}});const removed=await catalog.emptyTrash(principal,targets);await Promise.all(removed.map(changed));return Response.json({removed})}
       const match=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(rename|duplicate|trash|restore|request|view))?$/.exec(url.pathname)
       const deck=match?.[1];if(!deck)return Response.json({code:"not-found"},{status:404})
@@ -51,4 +54,11 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
       }
     }catch(error){const code=error instanceof Error ? error.message : "catalog-failed";return Response.json({code},{status:code==="deck-not-found" ? 404 : code==="deck-expired" ? 410 : 400})}
   }
+}
+
+function defaultDeck(template: import("../../../../packages/brand/src/index.ts").Template) {
+  const deck={id:id("newDeck"),version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
+  const result=apply(deck,applyTemplate(deck,template,{kind:"apply-deck"},undefined).changes)
+  if (!result.ok) throw new Error(result.error.code)
+  return result.deck
 }

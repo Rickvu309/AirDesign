@@ -22,14 +22,19 @@ export function transport(client: SyncClient, person: string, deck: string, erro
   let previous:Snapshot|undefined
   let pending:Snapshot|undefined
   let persistence:ReturnType<typeof setTimeout>|undefined
+  let persistenceStarted:number|undefined
+  let persistenceQueued=false
   let checkpoints:(()=>void)[]=[]
   const cache = (snapshot:Snapshot)=>{
     const checkpoint=new Promise<void>(resolve=>{checkpoints.push(resolve)})
     pending=snapshot
-    if(persistence)return checkpoint
+    if(persistenceQueued)return checkpoint
+    persistenceStarted ??= Date.now()
+    clearTimeout(persistence)
     persistence=setTimeout(()=>{
+      persistenceQueued=true
       const persist=()=>{
-        persistence=undefined
+        persistence=undefined;persistenceStarted=undefined;persistenceQueued=false
         const latest=pending;pending=undefined
         if(latest)try{
           localStorage.setItem(JSON.stringify(["snapshot",person,deck]),JSON.stringify(latest))
@@ -39,7 +44,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
       }
       if(typeof requestIdleCallback==="function")requestIdleCallback(persist,{timeout:1000})
       else void afterPaint().then(persist)
-    },100)
+    },Math.min(100,Math.max(0,1000-(Date.now()-persistenceStarted))))
     return checkpoint
   }
   let received=Promise.resolve()
@@ -70,10 +75,11 @@ export function transport(client: SyncClient, person: string, deck: string, erro
       socket=active
       active.onmessage=event=> {
         received=received.then(async()=>{
-        await afterPaint()
         if (own!==generation || stopped) return
         try {
           const message=parseMessage(JSON.parse(String(event.data)),previous)
+          if(message.kind==="receipt")await afterPaint()
+          if (own!==generation || stopped) return
           if (message.kind==="snapshot" || message.kind==="receipt") {
             if (message.deck.id!==deck) throw new Error("wrong-deck-snapshot")
             if (message.seq>=client.seq) {previous=message;client.receive(message)}

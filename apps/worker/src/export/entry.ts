@@ -17,9 +17,9 @@ try {
   const missingFonts=[...new Set(slides.flatMap(slide=>fontReport(slide,deck.themes).missing))]
   if((flags.length||missingFonts.length)&&!input.options.allowIssues)throw new Error("export-needs-review")
   const digest=createHash("sha256").update(JSON.stringify({deck:saved,seq})).digest("hex")
-  const report={deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
+  const report={provenance:input.snapshot.provenance ?? {},deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
   let output:Buffer
-  if(input.options.format==="pptx")output=await writeSavedPptx(saved,seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report)
+  if(input.options.format==="pptx")output=await writeSavedPptx(saved,seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report,input.snapshot.assets ?? {},input.snapshot.templates ?? {})
   else {
     const first=slides[0];if(!first)throw new Error("empty-export")
     if(slides.some(slide=>slide.size.width!==first.size.width||slide.size.height!==first.size.height))throw new Error("mixed-slide-sizes-require-fix")
@@ -29,7 +29,7 @@ try {
       const context=await browser.newContext({offline:true,viewport:{width:Math.ceil(first.size.width),height:Math.ceil(first.size.height)}})
       const page=await context.newPage()
       await page.route("**/*",route=>route.abort())
-      await page.setContent(renderDocument(saved,seq,fonts.join(""),digest),{waitUntil:"load"})
+      await page.setContent(renderDocument(saved,seq,fonts.join(""),digest,input.snapshot.assets ?? {}),{waitUntil:"load"})
       await page.evaluate(async()=>{const fonts=await Promise.all([document.fonts.load("400 16px Geist"),document.fonts.load("600 16px Geist")]);await document.fonts.ready;if(fonts.some(faces=>!faces.length))throw new Error("pinned-fonts-unavailable")})
       output=await page.pdf({width:`${first.size.width}px`,height:`${first.size.height}px`,printBackground:true,margin:{top:0,right:0,bottom:0,left:0}})
       await page.locator(".export-slide").first().screenshot({path:"/job/internal.png",animations:"disabled"})

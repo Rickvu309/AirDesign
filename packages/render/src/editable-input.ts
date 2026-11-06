@@ -8,7 +8,7 @@ function runSpan(node: HTMLElement, run: Run) {
   return span
 }
 export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
-  const selection = node.ownerDocument.getSelection()
+  const selection = node.contains(node.ownerDocument.activeElement) ? node.ownerDocument.getSelection() : null
   function offset(target: Node | null, index: number) {
     if (!target || !node.contains(target)) return null
     const range = node.ownerDocument.createRange()
@@ -20,7 +20,16 @@ export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
   }
   const anchor = offset(selection?.anchorNode ?? null, selection?.anchorOffset ?? 0)
   const focus = offset(selection?.focusNode ?? null, selection?.focusOffset ?? 0)
-  node.replaceChildren(...runs.map(run => runSpan(node, run)))
+  const spans=[...node.childNodes]
+  if(!selection && spans.length===runs.length && spans.every(span=>span instanceof node.ownerDocument.defaultView!.HTMLSpanElement && span.childNodes.length===1 && span.firstChild?.nodeType===3 && span.getAttributeNames().every(name=>name==="style" || name==="data-run-style") && Array.from({length:span.style.length},(_,index)=>span.style.item(index)).every(name=>["font-family","font-size","font-weight","color"].includes(name)))){
+    runs.forEach((run,index)=>{
+      const span=spans[index]
+      if(!(span instanceof node.ownerDocument.defaultView!.HTMLSpanElement))throw new Error("text-span-required")
+      if(span.firstChild && span.firstChild.textContent!==run.text)span.firstChild.textContent=run.text
+      span.dataset.runStyle=JSON.stringify({...run,text:""})
+      Object.assign(span.style,{fontFamily:"Geist",fontSize:`${run.size}px`,fontWeight:run.bold ? "600" : "400",color:run.color})
+    })
+  }else node.replaceChildren(...runs.map(run => runSpan(node, run)))
   function point(position: number): [Node, number] {
     for (const span of node.childNodes) {
       const text = span.firstChild
