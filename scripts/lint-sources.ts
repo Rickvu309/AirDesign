@@ -1,4 +1,4 @@
-import {releaseClaimHits} from "../packages/lint/src/release-claims.ts"
+import {releaseClaimHits,sandboxDependencyHits,productCaptureHits} from "../packages/lint/src/release-claims.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
 import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
@@ -26,6 +26,8 @@ const files = await collect(repoRoot)
 const failures: string[] = []
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
+  for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
   if (file.includes("/apps/site/")) for (const hit of releaseClaimHits(source)) failures.push(`${file}: ${hit}`)
   if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
   for(const hit of recoverySafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
