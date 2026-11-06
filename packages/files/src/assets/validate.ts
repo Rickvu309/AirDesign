@@ -9,18 +9,15 @@ export async function validateImage(input:Buffer):Promise<ValidatedImage> {
   if(input.length===0 || input.length>assetLimits.bytes)throw new Error("image-size-limit")
   const svg=/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(input.subarray(0,1024).toString())
   if(svg)rejectActiveSvg(input.toString("utf8"))
-  const decoder=sharp(input,{limitInputPixels:assetLimits.pixels,failOn:"warning"}),metadata=await decoder.metadata()
+  const decoder=sharp(input,{limitInputPixels:assetLimits.pixels,sequentialRead:true,failOn:"warning"}),metadata=await decoder.metadata()
   const mime=metadata.format==="png" ? "image/png" : metadata.format==="jpeg" ? "image/jpeg" : metadata.format==="webp" ? "image/webp" : metadata.format==="svg" && svg ? "image/svg+xml" : null
   if(!mime || !metadata.width || !metadata.height || (metadata.pages ?? 1)>1)throw new Error("unsupported-image")
-  const {data:pixels,info}=await decoder.rotate().raw().toBuffer({resolveWithObject:true})
-  const raster=()=>sharp(pixels,{raw:{width:info.width,height:info.height,channels:info.channels}})
+  const oriented=()=>decoder.clone().autoOrient()
   const exportMime=mime==="image/jpeg" ? "image/jpeg" : "image/png"
   const reusable=(mime==="image/png" || mime==="image/jpeg") && (metadata.orientation===undefined || metadata.orientation===1)
-  const full=await (reusable ? Promise.resolve(input) : exportMime==="image/jpeg" ? raster().jpeg({quality:95}).toBuffer() : raster().png({compressionLevel:0}).toBuffer())
-  const [preview,thumbnail]=await Promise.all([
-    exportMime==="image/png" && !metadata.exif && !metadata.icc && !metadata.iptc && !metadata.xmp && info.width<=assetLimits.edge && info.height<=assetLimits.edge ? Promise.resolve({data:full,info}) : raster().resize({width:assetLimits.edge,height:assetLimits.edge,fit:"inside",withoutEnlargement:true}).png({compressionLevel:0}).toBuffer({resolveWithObject:true}),
-    raster().resize({width:512,height:512,fit:"inside",withoutEnlargement:true}).png({compressionLevel:0}).toBuffer(),
-  ])
+  const full=await (reusable ? Promise.resolve(input) : exportMime==="image/jpeg" ? oriented().jpeg({quality:95,optimiseCoding:false}).toBuffer() : oriented().png({compressionLevel:0}).toBuffer())
+  const preview=await (exportMime==="image/png" && !metadata.exif && !metadata.icc && !metadata.iptc && !metadata.xmp && metadata.width<=assetLimits.edge && metadata.height<=assetLimits.edge ? Promise.resolve({data:full,info:{width:metadata.width,height:metadata.height}}) : oriented().resize({width:assetLimits.edge,height:assetLimits.edge,fit:"inside",withoutEnlargement:true}).png({compressionLevel:0}).toBuffer({resolveWithObject:true}))
+  const thumbnail=await oriented().resize({width:512,height:512,fit:"inside",withoutEnlargement:true}).png({compressionLevel:0}).toBuffer()
   return {original:input.toString("base64"),exportImage:full.toString("base64"),exportMime,normalized:preview.data.toString("base64"),thumbnail:thumbnail.toString("base64"),hash:createHash("sha256").update(input).digest("hex"),mime,width:preview.info.width,height:preview.info.height,originalWidth:metadata.width,originalHeight:metadata.height,bytes:input.length}
 }
 const imageRepresentations=["original","normalized","thumbnail","exportImage"] as const

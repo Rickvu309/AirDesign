@@ -1,6 +1,9 @@
+import sharp from "sharp"
 import { readFile,writeFile } from "node:fs/promises"
 import { readImageJob } from "../../../packages/files/src/assets/image-job.ts"
 import { validateImage,serializeValidatedImage } from "../../../packages/files/src/assets/validate.ts"
+sharp.concurrency(1)
+sharp.cache(false)
 try {
   const {bytes,provenance}=readImageJob(await readFile("/job/input.pptx"))
   const result=await validateImage(bytes)

@@ -12,9 +12,16 @@ it("rejects the default PNG compression cost in the isolated validator",()=>{
   expect(imagePipelineSafetyHits(file,source)).toEqual([])
 })
 
-it("rejects decoding the normalized image again for a thumbnail",()=>{
-  expect(imagePipelineSafetyHits("packages/files/src/assets/validate.ts","sharp(data).resize(512)")).toMatchObject([{reason:"image-thumbnail-must-use-decoded-raster"}])
-  expect(imagePipelineSafetyHits("packages/files/src/assets/validate.ts","sharp(pixels,{raw:info}).resize(512)")).toEqual([])
+it("rejects full decoded rasters that exhaust the image worker",()=>{
+  const file="packages/files/src/assets/validate.ts"
+  expect(imagePipelineSafetyHits(file,"await decoder.rotate().raw().toBuffer({resolveWithObject:true})")).toEqual([{line:1,reason:"image-validator-must-not-materialize-decoded-raster"}])
+  expect(imagePipelineSafetyHits(file,readFileSync(file,"utf8"))).toEqual([])
+})
+it("rejects JPEG Huffman optimization that buffers the full image",()=>{
+  const file="packages/files/src/assets/validate.ts",source=readFileSync(file,"utf8")
+  expect(imagePipelineSafetyHits(file,source.replace(",optimiseCoding:false",""))).toMatchObject([{reason:"image-jpeg-must-disable-full-image-huffman-buffer"}])
+  expect(imagePipelineSafetyHits(file,"oriented().jpeg().toBuffer()")).toEqual([{line:1,reason:"image-jpeg-must-disable-full-image-huffman-buffer"}])
+  expect(imagePipelineSafetyHits(file,source)).toEqual([])
 })
 it("keeps operation metadata queries off payload blobs",()=>{
   expect(imagePipelineSafetyHits("packages/operations/src/index.ts",'db.prepare("SELECT * FROM operations WHERE id=?")')).toMatchObject([{reason:"image-query-must-select-only-needed-columns"}])
