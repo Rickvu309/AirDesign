@@ -94,7 +94,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
                 const message=parseMessage(JSON.parse(raw),previous)
                 if(message.kind==="snapshot" || message.kind==="receipt"){
                   if(message.deck.id!==deck)throw new Error("wrong-deck-snapshot")
-                  if(message.seq>=client.seq){previous=message;latest=message}
+                  if(message.seq>=Math.max(client.seq,previous?.seq ?? 0)){previous=message;latest=message}
                   if(message.kind==="receipt")receipts.push(message.receipt)
                 }else if(message.kind==="signed-out"){client.stop("signed-out");active.close()}
                 else if(message.kind==="error"){

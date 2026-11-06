@@ -183,7 +183,7 @@ it("checkpoints the final recovery receipt promptly and yields once per batch",a
  }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks()}
 })
 
-it("acknowledges an older receipt against the newer durable peer snapshot",async()=>{
+it.each([false,true])("acknowledges an older receipt against the newer durable peer snapshot with recovery=%s",async(recovering)=>{
  vi.useFakeTimers();localStorage.clear()
  const deck=fixtureDeck(1),initial={deck,seq:0}
  let stored:Pending[]=[]
@@ -191,6 +191,8 @@ it("acknowledges an older receipt against the newer durable peer snapshot",async
  const client=new SyncClient("owner",initial,outbox,()=>{})
  const command={id:commandId("older_receipt"),kind:"patch" as const,base:0,run:null,target:id("s0"),fields:{notes:"local edit"}}
  await client.enqueue(command)
+ const queued={...command,id:commandId("still_pending"),fields:{notes:"newer peer edit"}}
+ if(recovering)await client.enqueue(queued)
  vi.stubGlobal("requestAnimationFrame",(callback:()=>void)=>setTimeout(callback,16))
  vi.stubGlobal("requestIdleCallback",(callback:()=>void)=>{setTimeout(callback,0);return 1})
  Object.defineProperty(document,"visibilityState",{configurable:true,value:"visible"})
@@ -215,8 +217,8 @@ it("acknowledges an older receipt against the newer durable peer snapshot",async
   await vi.advanceTimersByTimeAsync(0)
   deliver!({data:JSON.stringify({kind:"receipt",receipt:local.receipt,deck:local.history.deck,seq:1,contributions:{history:local.history,applied:[command.id]}})})
   await vi.advanceTimersByTimeAsync(180)
-  expect(client.queue).toEqual([])
-  expect(stored).toEqual([])
+  expect(client.queue.map(item=>item.command.id)).toEqual(recovering ? [queued.id] : [])
+  expect(stored.map(item=>item.command.id)).toEqual(recovering ? [queued.id] : [])
   expect(client.deck.slides[0]?.notes).toBe("newer peer edit")
   expect(cachedSnapshot("owner",deck.id)?.seq).toBe(2)
   expect(cachedSnapshot("owner",deck.id)?.deck.slides[0]?.notes).toBe("newer peer edit")
