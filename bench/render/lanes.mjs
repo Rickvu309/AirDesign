@@ -12,7 +12,7 @@ import { PNG } from "pngjs"
 import pixelmatch from "pixelmatch"
 import { apply, id, flatten } from "../../packages/deck/src/index.ts"
 import { fixtureDeck, fixtureElement } from "../../packages/deck/src/fixture.ts"
-const root = `${os.homedir()}/tmp/airdesign-autopilot/P02`
+const root = process.env.P02_EVIDENCE ?? `${os.homedir()}/tmp/airdesign-autopilot/P02`
 const runFile = promisify(execFile)
 const head = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).stdout.trim()
 const json = async (file, value) => { await mkdir(`${root}/${file.substring(0, file.lastIndexOf("/"))}`, { recursive: true }); await writeFile(`${root}/${file}`, JSON.stringify({ head, ...value }, null, 2)) }

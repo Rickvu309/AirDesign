@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "claims": [
+    {
+      "claim": "manual editing and selective undo",
+      "receipt": "P05/report.md"
+    },
+    {
+      "claim": "offline recovery",
+      "receipt": "P04/report.md"
+    },
+    {
+      "claim": "weekly usage and credit terms",
+      "receipt": "P07/report.md"
+    },
+    {
+      "claim": "Aira local adapter and account controls",
+      "receipt": "P08/report.md"
+    }
+  ],
+  "blocked": [
+    "X01",
+    "X02",
+    "X03",
+    "X04",
+    "X05",
+    "X06"
+  ]
+}

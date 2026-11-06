@@ -1,4 +1,4 @@
-import {mkdir,readFile,writeFile,copyFile,readdir} from "node:fs/promises"
+import {mkdir,readFile,writeFile,copyFile} from "node:fs/promises"
 import {createHash} from "node:crypto"
 import {execFileSync} from "node:child_process"
 import os from "node:os"
@@ -25,6 +25,39 @@ ${predicates[id].map(value=>`- [ ] ${value}`).join("\n")}
 Save raw outputs, versions, authorization receipt and artifact hashes under results/. Do not edit blocked receipt until the operator has reviewed actual evidence. Validate the inventory with: node bench/release/validate-external.mjs ${id}
 `)
  await copyFile("bench/release/validate-external.mjs",path.join(directory,"validate.mjs"))
+ await writeFile(path.join(directory,"run.sh"),`#!/usr/bin/env bash
+set -euo pipefail
+cd '${process.cwd()}'
+node bench/release/validate-external.mjs ${id}
+`)
+ await mkdir(path.join(directory,"results"),{recursive:true})
+ await writeFile(path.join(directory,"results/index.template.json"),JSON.stringify({head,authorization:null,environment:null,operator:null,evidence:predicates[id].map(predicate=>({predicate,path:null,actualValue:null}))},null,2))
+ await writeFile(path.join(directory,"recording-template.md"),`# ${id} raw operator record
+
+Head: ${head}
+
+Authorization: pending. Environment versions: pending. Operator: pending.
+
+Record each action, expected predicate, actual result, timestamp, transcript and artifact hash. Preserve failures. Do not mark a predicate passed without the actual application, assistive technology, model, client or provider required by this gate.
+`)
+ if(id==="X03"||id==="X04")await writeFile(path.join(directory,"score.sh"),`#!/usr/bin/env bash
+set -euo pipefail
+cd '${process.cwd()}'
+node bench/release/assess-external.mjs ${id==="X03"?"tools":"calibration"} "$1" "$2"
+`)
+ if(id==="X03")await writeFile(path.join(directory,"model-input.template.json"),JSON.stringify({head,authorization:null,operator:null,environment:null,baselineHead:"fdafe16ccde2b7012d1876ad868215ae745e4d6c",actualSdkRun:null,models:[{version:"Claude-pinned-version-required",provider:null,sdk:null},{version:"second-model-pinned-version-required",provider:null,sdk:null}],rows:[]},null,2))
+ if(id==="X04"){
+  await writeFile(path.join(directory,"quality-input.template.json"),JSON.stringify({head,authorization:null,operator:null,environment:null,releaseSetSha256:createHash("sha256").update(await readFile("bench/quality/release-set.json")).digest("hex"),baselines:[],calibration:{judgeEligible:false},rows:[]},null,2))
+  await writeFile(path.join(directory,"score-quality.sh"),`#!/usr/bin/env bash
+set -euo pipefail
+cd '${process.cwd()}'
+node bench/release/assess-external.mjs quality "$1" "$2"
+`)
+ }
+ if(id==="X01")await writeFile(path.join(directory,"office-checks.csv"),"head,os,office_build,fixture,sha256,repair_prompt,native_text,native_table,native_chart,master_font_inventory,pixel_fraction,item_fraction,line_delta,artifact\n")
+ if(id==="X02")await writeFile(path.join(directory,"speech-transcript.csv"),"head,os,browser,assistive_technology,flow,action,expected_announcement,actual_speech,focus,artifact\n")
+ if(id==="X05")await writeFile(path.join(directory,"client-checks.csv"),"head,client,version,authorized_https_origin,oauth_connect,native_image,pagination,stale_recovery,revoke,redacted_transcript\n")
+ if(id==="X06")await writeFile(path.join(directory,"provider-checks.csv"),"head,provider,sandbox_country,currency,fx,signed_event,event_id,payment_id,expected_balance,actual_balance,reconciliation,scheduling_readiness,artifact\n")
  await writeFile(path.join(directory,"fixtures.json"),JSON.stringify({quality:"bench/quality/release-set.json",tools:"bench/quality/tool-tasks.json",referencePack:path.join(os.homedir(),"tmp/airdesign-autopilot/P03/P03R"),priorEvidence:"P01-P08 manifests",protocol:"docs/release/judge-protocol.md"},null,2))
 }
 const directory=path.join(root,"calibration");await mkdir(directory,{recursive:true})

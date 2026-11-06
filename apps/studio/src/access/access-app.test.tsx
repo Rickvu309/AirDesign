@@ -21,6 +21,13 @@ afterEach(() => {
 })
 
 describe("studio access", () => {
+  it("keeps the discovery import action over a saved home session", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true,kind:"home"})} initialScreen="checking" initialKind="import" />)
+    await act(flush)
+    expect(document.body.textContent).toContain("Import PowerPoint")
+    expect(document.querySelector(".import-card")).not.toBeNull()
+  })
+
   it("shows the approval account without the workspace and preserves the URL intent over a saved session intent", async () => {
     const requests: string[] = []
     vi.stubGlobal("fetch", async (input: string) => {

@@ -4,7 +4,7 @@ export function calibrate(rows:Rating[]) {
   if(pairs.length!==120||rows.length!==360)throw new Error("120 pairs and three raters required")
   const grouped=pairs.map(pair=>rows.filter(row=>row.pair===pair))
   if(grouped.some(group=>group.length!==3||new Set(group.map(row=>row.rater)).size!==3))throw new Error("independent rater roles required")
-  for(const row of rows)if(![row.overall,...row.axes].every(value=>Number.isInteger(value)&&value>=1&&value<=5)||row.axes.length!==5||!Number.isInteger(row.hardDefects)||row.hardDefects<0)throw new Error("invalid rating")
+  for(const row of rows)if(!["designer-1","designer-2","target-reader"].includes(row.rater)||!["win","tie","loss"].includes(row.human)||!["win","tie","loss","unresolved"].includes(row.judge)||![row.overall,...row.axes].every(value=>Number.isInteger(value)&&value>=1&&value<=5)||row.axes.length!==5||!Number.isInteger(row.hardDefects)||row.hardDefects<0)throw new Error("invalid rating")
   const median=(values:number[])=>values.toSorted((a,b)=>a-b)[1]!
   const accepted=grouped.filter(group=>median(group.map(row=>row.overall))>=4&&[0,1,2,3,4].every(axis=>median(group.map(row=>row.axes[axis]!))>=4)&&group.every(row=>row.hardDefects===0)).length
   const counts=Array.from({length:5},(_,i)=>rows.filter(row=>row.overall===i+1).length)
