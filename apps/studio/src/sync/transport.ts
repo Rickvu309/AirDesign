@@ -103,7 +103,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     if (attempts>=3) return
     timer=setTimeout(()=>void connect(),[500,1000,2000][attempts++] ?? 2000)
   }
-  const online=()=>{attempts=0;void connect()}
+  const online=()=>{if(resumed && socket?.readyState===WebSocket.OPEN)return;attempts=0;void connect()}
   const offline=()=>socket?.close()
   window.addEventListener("online",online)
   window.addEventListener("offline",offline)

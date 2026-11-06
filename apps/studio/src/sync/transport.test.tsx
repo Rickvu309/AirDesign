@@ -6,6 +6,42 @@ import { id } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
 import { cachedSnapshot,transport } from "./transport.ts"
 
+it.each(["manual","network-online"])("keeps an unacknowledged edit on its healthy connection after %s reconnect",async(trigger)=>{
+  vi.useFakeTimers()
+  const snapshot={deck:fixtureDeck(1),seq:0}
+  let stored:Pending[]=[],deliver:((event:{data:string})=>void)|undefined
+  const sent:string[]=[],errors:string[]=[]
+  const client=new SyncClient("owner",snapshot,{read:async()=>stored,write:async(_key,items)=>{stored=items}},()=>{})
+  vi.stubGlobal("requestIdleCallback",()=>1)
+  class Socket{
+    static OPEN=1
+    readyState=1
+    set onmessage(value:(event:{data:string})=>void){deliver=value}
+    close(){this.readyState=3}
+    send(value:string){sent.push(value)}
+  }
+  vi.stubGlobal("WebSocket",Socket)
+  vi.stubGlobal("fetch",vi.fn(async(url:string)=>url==="/api/account" ? {json:async()=>({status:"signed-in",personId:"owner"})} : {ok:true,status:200}))
+  const stop=transport(client,"owner",snapshot.deck.id,value=>errors.push(value))
+  try{
+    await vi.advanceTimersByTimeAsync(0)
+    deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})})
+    await vi.advanceTimersByTimeAsync(0)
+    const command={id:commandId("healthy_connection_edit"),kind:"patch" as const,base:0,run:null,target:id("s0"),fields:{notes:"pending receipt"}}
+    await client.enqueue(command)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(sent.map(value=>JSON.parse(value).id)).toEqual([command.id])
+    if(trigger==="manual")stop.reconnect()
+    else window.dispatchEvent(new Event("online"))
+    await vi.advanceTimersByTimeAsync(0)
+    deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})})
+    await vi.advanceTimersByTimeAsync(0)
+    expect(sent.map(value=>JSON.parse(value).id)).toEqual([command.id])
+    expect(client.queue.map(item=>item.command.id)).toEqual([command.id])
+    expect(errors).toEqual([])
+  }finally{stop.close();vi.useRealTimers();vi.unstubAllGlobals();vi.restoreAllMocks()}
+})
+
 it("applies incoming snapshots without waiting for a frame and batches persisted snapshots",async()=>{
   vi.useFakeTimers()
   const snapshot={deck:fixtureDeck(1),seq:0}
