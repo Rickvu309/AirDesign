@@ -6,7 +6,7 @@ import {mcpFixture} from "../mcp/fixture.ts"
 import {eventStream} from "../agent/stream.ts"
 const provider=localPaymentProvider("dev-only-local-payment-fixture")
 it("serializes checkout and verified settlements, rejects forged receipts, keeps pending returns unspendable and reconciles idempotently",async()=>{
-  const fixture=await mcpFixture(),second=await createHistoryStore({kind:"postgres",url:fixture.url},fixture.now)
+  const fixture=await mcpFixture({paymentProvider:provider}),second=await createHistoryStore({kind:"postgres",url:fixture.url},fixture.now)
   try{
     const owner=await fixture.signIn("billing-owner@example.com"),other=await fixture.signIn("billing-other@example.com")
     expect((await fixture.json("/api/billing/checkout",{cents:999},owner.cookie)).status).toBe(400)
@@ -42,7 +42,7 @@ it("serializes checkout and verified settlements, rejects forged receipts, keeps
   }finally{await second.close();await fixture.close()}
 })
 it("expires stale links, accepts late paid events, reverses purchased credit only and never charges a provider for Reset",async()=>{
-  const fixture=await mcpFixture()
+  const fixture=await mcpFixture({paymentProvider:provider})
   try{
     const owner=await fixture.signIn("billing-reversal@example.com")
     const expired=await fixture.history.usage.checkout(owner.personId,1000)

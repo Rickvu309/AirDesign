@@ -1,4 +1,5 @@
 import {createHmac,timingSafeEqual} from "node:crypto"
+export type PaymentAvailability={kind:"unavailable"}|{kind:"configured"}
 export type PaymentEvent={id:string;payment:string;cents:number;kind:"paid"|"refunded"|"chargeback"}
 export interface PaymentProvider {kind:"local-fixture";verify:(body:string,signature:string)=>PaymentEvent;checkout:(id:string)=>string}
 export function localPaymentProvider(secret:string):PaymentProvider & {sign:(event:PaymentEvent)=>{body:string;signature:string}}{

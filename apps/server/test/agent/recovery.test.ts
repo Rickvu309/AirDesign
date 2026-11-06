@@ -32,7 +32,8 @@ it("resumes stopped work with one identity, skips accepted scopes and keeps late
   }finally{release.resolve();await f.close()}
 })
 it("keeps typed usage refusal and resumes the saved request after a person resets",async()=>{
-  const f=await mcpFixture()
+  const provider=localPaymentProvider("dev-only-local-payment-fixture")
+  const f=await mcpFixture({paymentProvider:provider})
   try{
     const owner=await f.signIn("limited@example.com");await f.json("/api/decks",fixtureDeck(2,2),owner.cookie)
     await f.history.usage.reserve(owner.personId,{id:"exhaust",actor:"user-agent",request:"prior work",units:10000})
@@ -44,7 +45,7 @@ it("keeps typed usage refusal and resumes the saved request after a person reset
       const limit=final.run.events.find((event:{kind:string})=>event.kind==="limit")?.limit
       expect(limit.usage.hit).toEqual(expect.any(String));expect(limit.usage.week.resetsAt).toBeGreaterThan(0)
       const checkout=await (await f.json("/api/billing/checkout",{cents:1000},owner.cookie)).json()
-      const signed=localPaymentProvider("dev-only-local-payment-fixture").sign({id:"recovery-paid",payment:checkout.payment.id,cents:1000,kind:"paid"})
+      const signed=provider.sign({id:"recovery-paid",payment:checkout.payment.id,cents:1000,kind:"paid"})
       expect((await fetch(f.origin+"/api/billing/webhook",{method:"POST",headers:{"x-payment-signature":signed.signature},body:signed.body})).status).toBe(200)
       expect((await f.json("/api/usage/reset",{limitHit:limit.usage.hit},owner.cookie)).status).toBe(200)
       expect((await f.json("/api/aira?deck=deck",{action:"resume"},owner.cookie)).status).toBe(202)

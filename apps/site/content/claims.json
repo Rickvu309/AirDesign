@@ -1,6 +1,7 @@
 {
   "version": 2,
   "claims": [
+    {"id":"studio-credits-unavailable","text":"Buying credits is not available yet.","kind":"blocked","gate":"X06"},
     {
       "id": "public-000",
       "text": "·",

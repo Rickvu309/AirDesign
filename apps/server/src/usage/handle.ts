@@ -1,6 +1,7 @@
 import { mutationRejection, type Access } from "@airdesign/access"
 import type { HistoryStore } from "../db/history-store.ts"
-export function usageHandler(access: Access, history: HistoryStore, origin: string) {
+import type {PaymentAvailability} from "../../../../packages/usage/src/payments/provider.ts"
+export function usageHandler(access: Access, history: HistoryStore, origin: string, payments:PaymentAvailability={kind:"unavailable"}) {
   return async (request: Request): Promise<Response> => {
     const rejection = mutationRejection(request,origin)
     if (rejection) return Response.json(rejection,{status:rejection.status})
@@ -9,7 +10,7 @@ export function usageHandler(access: Access, history: HistoryStore, origin: stri
     const owner = principal.personId
     const path = new URL(request.url).pathname
     try {
-      if (path === "/api/usage" && request.method === "GET") return Response.json(await history.usage.status(owner))
+      if (path === "/api/usage" && request.method === "GET") return Response.json({...await history.usage.status(owner),payments})
       if (path === "/api/usage/history" && request.method === "GET") return Response.json(await history.usage.history(owner,new URL(request.url).searchParams.get("cursor") ?? undefined))
       const body: unknown = await request.json()
       if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("invalid-usage-command")

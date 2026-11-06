@@ -2,10 +2,11 @@ import {mutationRejection,type Access} from "@airdesign/access"
 import type {HistoryStore} from "../db/history-store.ts"
 import type {Payment} from "../../../../packages/usage/src/ledger.ts"
 import type {PaymentProvider} from "../../../../packages/usage/src/payments/provider.ts"
-export function billingHandler(access:Access,history:HistoryStore,provider:PaymentProvider,origin:string){
+export function billingHandler(access:Access,history:HistoryStore,provider:PaymentProvider|undefined,origin:string){
   const listeners=new Map<string,Set<(payment:Payment)=>void>>()
   async function handle(request:Request){
     try{
+      if(!provider)return Response.json({code:"payments-unavailable"},{status:503})
       const path=new URL(request.url).pathname
       if(path==="/api/billing/webhook"&&request.method==="POST"){
         const body=await request.text();if(Buffer.byteLength(body)>10000)throw new Error("receipt-too-large")
