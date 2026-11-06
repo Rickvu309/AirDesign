@@ -1,5 +1,5 @@
 import {it,expect} from "vitest"
-import {readFileSync} from "node:fs"
+import {readFileSync,readdirSync} from "node:fs"
 import {discoveryIntent} from "../../studio/src/access/discovery-intent.ts"
 import {usageRates} from "../../../packages/usage/src/ledger.ts"
 it("keeps each discovery intent at the sign-in boundary",()=>{
@@ -16,4 +16,8 @@ it("publishes the shipped allowance and weighted rates",()=>{
 
 it("requires a real product capture and exported package examples",()=>{
  for(const file of ["studio-capture.png","examples/before.pptx","examples/after.pptx"])expect(readFileSync(`apps/site/public/${file}`).byteLength).toBeGreaterThan(1000)
+})
+
+it("routes every public HTML page through the site build",()=>{
+ expect(readdirSync("apps/site/public",{recursive:true}).filter(file=>String(file).endsWith(".html"))).toEqual([])
 })

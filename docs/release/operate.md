@@ -33,3 +33,5 @@ The disposable recovery probe exercises backup and restore, deletion that surviv
 | Payment sandbox, eligibility, FX and reconciliation | rickvu |
 
 Record named delegates in the external receipts before they execute a gate. There is no active production schedule in this candidate.
+
+Rickvu owns monthly human judge recalibration and reruns the pinned two-model tool evaluation after any tool schema or description change. Actual paid-model first-change distributions remain X03; this candidate sets no model latency promise from the import budget.
