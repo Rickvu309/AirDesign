@@ -47,22 +47,36 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         websocket.on("error",()=>websocket.close())
         websocket.on("close",()=>peers.delete(websocket))
         let ordered = Promise.resolve()
+        let inbox:string[]=[]
+        let delivery:ReturnType<typeof setTimeout>|undefined
+        websocket.on("close",()=>clearTimeout(delivery))
         websocket.on("message",data=> {
-          ordered = ordered.then(async ()=> {
-            const started=performance.now()
-            const current = await access.principal(request)
-            const authorized=performance.now()
-            if (!current || current.personId !== principal.personId) { websocket.send(JSON.stringify({kind:"signed-out"})); websocket.close(); return }
-            const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
-            const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
-            const committed=await store.commitSnapshot(current,deck,parseCommand(JSON.parse(data.toString())),identity,base)
-            const {receipt}=committed
-            const snapshot={...committed.snapshot,committedAt:Date.now()}
-            const peer=peers.get(websocket)
-            websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
-            if(peer)peer.seq=snapshot.seq
-            publish(deck,snapshot)
-          }).catch(error=> { if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"})) })
+          inbox.push(data.toString())
+          if(delivery!==undefined)return
+          delivery=setTimeout(()=>{
+            delivery=undefined
+            const pending=inbox;inbox=[]
+            for(let offset=0;offset<pending.length;offset+=100){
+              const batch=pending.slice(offset,offset+100)
+              ordered = ordered.then(async ()=> {
+                const started=performance.now()
+                const current = await access.principal(request)
+                const authorized=performance.now()
+                if (!current || current.personId !== principal.personId) { websocket.send(JSON.stringify({kind:"signed-out"})); websocket.close(); return }
+                const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
+                const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
+                const commands=batch.map(raw=>parseCommand(JSON.parse(raw)))
+                const committed=await store.commitBatchSnapshot(current,deck,commands,identity,base)
+                const snapshot={...committed.snapshot,committedAt:Date.now()}
+                const peer=peers.get(websocket)
+                for(const receipt of committed.receipts){
+                  websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
+                  if(peer)peer.seq=snapshot.seq
+                }
+                publish(deck,snapshot)
+              }).catch(error=> { if (websocket.readyState === WebSocket.OPEN) websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"})) })
+            }
+          },16)
         })
         void (async ()=> {
           let cursor=after

@@ -19,6 +19,7 @@ export class SyncClient {
   private blocked: "signed-out" | "deleted" | null = null
   private retrying = false
   private work: Promise<void> = Promise.resolve()
+  private reading: {epoch:number;work:Promise<Pending[]>}|null=null
   private sender: ((command: Command)=>void) | null = null
   private sent = new Set<string>()
   private acknowledging = new Set<string>()
@@ -101,7 +102,12 @@ export class SyncClient {
     const epoch=this.connectionEpoch
     const deliver=async()=>{
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return
-      if(!(await this.outbox.read(this.key)).some(item=>item.command.id===command.id)){
+      if(!this.reading || this.reading.epoch!==epoch){
+        const read={epoch,work:this.outbox.read(this.key)}
+        this.reading=read
+        void read.work.finally(()=>{if(this.reading===read)this.reading=null}).catch(()=>{})
+      }
+      if(!(await this.reading.work).some(item=>item.command.id===command.id)){
         this.pending=this.pending.filter(item=>item.command.id!==command.id);this.notify();return
       }
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return

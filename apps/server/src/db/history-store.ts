@@ -66,8 +66,8 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     history.runs=runs.rows.map(row=>row.payload)
     return {deck:history.deck,seq:history.seq,contributions:{history,applied:receipts.rows.map(row=>commandId(row.id))}}
   }
-  async function commit(tx:Transaction,principal:Principal,deckId:string,command:Command,identity:ExecutionIdentity,preparation?:{key:string;changes:(deck:Deck)=>ChangeSet},strictBase?:number):Promise<{receipt:Receipt;history:History}>{
-        const history = await owned(tx, principal, deckId)
+  async function commit(tx:Transaction,principal:Principal,deckId:string,command:Command,identity:ExecutionIdentity,preparation?:{key:string;changes:(deck:Deck)=>ChangeSet},strictBase?:number,admitted?:History):Promise<{receipt:Receipt;history:History}>{
+        const history = admitted ?? await owned(tx, principal, deckId)
         if(!executionMatches(command,identity))return {history,receipt:{id:command.id,seq:history.seq,kind:"refused",code:"execution-identity-mismatch",command}}
         const payload = createHash("sha256").update(canonical({command,identity,...(preparation ? {preparation:preparation.key} : {})})).digest("hex")
         const prior = await tx.query<{ payload: string; receipt: Receipt }>("SELECT payload,receipt FROM editing_receipt WHERE deck=$1 AND id=$2", [deckId, command.id])
@@ -160,6 +160,21 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
         const committed=performance.now()
         const snapshot=await snapshotFrom(tx,history,deckId,base)
         return {receipt,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,checkpointMs:performance.now()-committed}} : {})}
+      })
+    },
+    async commitBatchSnapshot(principal:Principal,deckId:string,commands:Command[],identity:ExecutionIdentity,base:number|null){
+      if(commands.length===0 || commands.length>100)throw new Error("invalid-command-batch")
+      return transaction(async tx=>{
+        const started=performance.now(),receipts:Receipt[]=[],commandMs:number[]=[]
+        let history=await owned(tx,principal,deckId)
+        for(const command of commands){
+          const start=performance.now()
+          const result=await commit(tx,principal,deckId,command,identity,undefined,undefined,currentProjection(history))
+          receipts.push(result.receipt);history=result.history;commandMs.push(performance.now()-start)
+        }
+        const committed=performance.now()
+        const snapshot=await snapshotFrom(tx,history,deckId,base)
+        return {receipts,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,commandMs,checkpointMs:performance.now()-committed}} : {})}
       })
     },
     async replay(principal: Principal, deckId: string, after: number) {

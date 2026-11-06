@@ -207,3 +207,24 @@ it("acknowledges a receipt batch only after its durable checkpoint and preserves
  expect((await outbox.read(client.key)).map(item=>item.command.id)).toEqual(["batch_later"])
  expect(client.deck.slides[0]?.notes).toBe("later")
 })
+
+it("reads a reconnect outbox once for concurrent command locks and refreshes it after release",async()=>{
+ const {outbox}=memory(),read=vi.fn(outbox.read),client=new SyncClient("owner",{deck:fixtureDeck(1),seq:0},{read,write:outbox.write},()=>{})
+ for(let index=0;index<100;index++)await client.enqueue(patch(`concurrent_${index}`))
+ const sent:Command[]=[]
+ vi.stubGlobal("window",{})
+ vi.stubGlobal("navigator",{locks:{request:async(_key:string,deliver:()=>Promise<void>)=>deliver()}})
+ try{
+  client.connected(command=>sent.push(command))
+  for(let n=0;n<10;n++)await Promise.resolve()
+  expect(read).toHaveBeenCalledTimes(1)
+  expect(sent.map(command=>command.id)).toEqual(Array.from({length:100},(_,index)=>`concurrent_${index}`))
+  client.disconnected()
+  await outbox.write(client.key,[],sent.map(command=>command.id))
+  client.connected(command=>sent.push(command))
+  for(let n=0;n<10;n++)await Promise.resolve()
+  expect(read).toHaveBeenCalledTimes(2)
+  expect(sent).toHaveLength(100)
+  expect(client.queue).toEqual([])
+ }finally{client.disconnected();vi.unstubAllGlobals()}
+})

@@ -151,3 +151,29 @@ it("returns committed incremental checkpoints that preserve undo and durable rep
   await expect(store.commitSnapshot(stranger,deck.id,second,{kind:"person"},2)).rejects.toThrow("deck-not-found")
  }finally{await store.close()}
 })
+
+it("commits an ordered reconnect batch with immutable receipts, rollback and durable replay",async()=>{
+ const folder=await mkdtemp(path.join(os.homedir(),"tmp/p09-batch-"))
+ let store=await createHistoryStore({kind:"pglite",path:folder})
+ try{
+  const deck=fixtureDeck(2),person={kind:"person" as const}
+  await store.create(owner,deck)
+  const commands:Extract<Command,{kind:"patch"}>[]=Array.from({length:100},(_,index)=>({id:cid(`batch_${index}`),kind:"patch",base:0,run:null,target:id("s0"),fields:{notes:`batch ${index}`}}))
+  const batch=await store.commitBatchSnapshot(owner,deck.id,commands,person,0)
+  expect(batch.receipts.map(receipt=>receipt.seq)).toEqual(Array.from({length:100},(_,index)=>index+1))
+  expect(batch.receipts.every(receipt=>receipt.kind==="applied")).toBe(true)
+  expect(batch.snapshot.deck.slides[0]?.notes).toBe("batch 99")
+  expect(batch.snapshot.contributions.applied).toHaveLength(100)
+  expect((await store.commitBatchSnapshot(owner,deck.id,commands,person,0)).receipts).toEqual(batch.receipts)
+  const first=commands[0]!
+  const fresh:Command={id:cid("rolled_back"),kind:"patch",base:100,run:null,target:id("s0"),fields:{notes:"must roll back"}}
+  await expect(store.commitBatchSnapshot(owner,deck.id,[fresh,{...first,base:999}],person,100)).rejects.toThrow("request-id-payload-mismatch")
+  expect((await store.read(owner,deck.id)).seq).toBe(100)
+  await expect(store.commitBatchSnapshot(stranger,deck.id,commands,person,0)).rejects.toThrow("deck-not-found")
+  await store.close();store=await createHistoryStore({kind:"pglite",path:folder})
+  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("batch 99")
+  expect((await store.replay(owner,deck.id,0)).events).toHaveLength(100)
+  expect((await store.commit(owner,deck.id,{id:cid("batch_undo"),kind:"undo",target:commands[99]!.id})).kind).toBe("applied")
+  expect((await store.read(owner,deck.id)).deck.slides[0]?.notes).toBe("batch 98")
+ }finally{await store.close();await rm(folder,{recursive:true,force:true})}
+})
