@@ -103,11 +103,16 @@ export class SyncClient {
     const deliver=async()=>{
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return
       if(!this.reading || this.reading.epoch!==epoch){
-        const read={epoch,work:this.outbox.read(this.key)}
+        const read={epoch,work:new Promise<Pending[]>((resolve,reject)=>{
+          setTimeout(()=>{
+            if(this.reading===read)this.reading=null
+            void this.outbox.read(this.key).then(resolve,reject)
+          },0)
+        })}
         this.reading=read
-        void read.work.finally(()=>{if(this.reading===read)this.reading=null}).catch(()=>{})
       }
-      if(!(await this.reading.work).some(item=>item.command.id===command.id)){
+      const reading=this.reading.work
+      if(!(await reading).some(item=>item.command.id===command.id)){
         this.pending=this.pending.filter(item=>item.command.id!==command.id);this.notify();return
       }
       if(epoch!==this.connectionEpoch || !this.online || this.blocked)return

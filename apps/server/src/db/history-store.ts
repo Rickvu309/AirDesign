@@ -91,7 +91,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
           await ownedDeckAssets(tx,principal,result.history.deck);await captureTemplateSources(tx,principal,result.history.deck)
           await saveHistoryIndex(tx,deckId,history,result.history)
           await tx.query("INSERT INTO editing_event(deck,seq,command,receipt) VALUES ($1,$2,$3,$4)", [deckId,result.history.seq,JSON.stringify(command),JSON.stringify(result.receipt)])
-          await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])
+          if(!admitted)await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1", [deckId, JSON.stringify(currentProjection(result.history)),clock()])
         }
         return {history:result.history,receipt:result.receipt}
   }
@@ -172,6 +172,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
           const result=await commit(tx,principal,deckId,command,identity,undefined,undefined,currentProjection(history))
           receipts.push(result.receipt);history=result.history;commandMs.push(performance.now()-start)
         }
+        await tx.query("UPDATE editing_deck SET state=$2,updated_at=$3 WHERE id=$1",[deckId,JSON.stringify(currentProjection(history)),clock()])
         const committed=performance.now()
         const snapshot=await snapshotFrom(tx,history,deckId,base)
         return {receipts,snapshot,...(process.env.AIRDESIGN_SYNC_PROFILE==="1" ? {profile:{commitMs:committed-started,commandMs,checkpointMs:performance.now()-committed}} : {})}

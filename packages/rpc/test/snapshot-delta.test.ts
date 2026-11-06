@@ -2,6 +2,7 @@ import { expect,it } from "vitest"
 import { commandId,execute,initialHistory } from "../../change-log/src/index.ts"
 import { fixtureDeck } from "../../deck/src/fixture.ts"
 import { id } from "../../deck/src/index.ts"
+import { parseMessage } from "../src/wire.ts"
 import { parseSnapshot } from "../src/client.ts"
 import { snapshotDelta } from "../src/snapshot-delta.ts"
 
@@ -18,4 +19,19 @@ it("merges incremental edits and toggles without reparsing retained contribution
   const toggled=parseSnapshot(snapshotDelta({deck:undone.deck,seq:undone.seq,contributions:{history:undone,applied:[]}},2),parsed)
   expect(toggled.contributions?.history.events[0]?.active).toBe(false)
   expect(()=>parseSnapshot(update)).toThrow("history-base-mismatch")
+})
+
+it("reuses only the exact preceding checkpoint for individual batch receipts",()=>{
+ const previous=parseMessage({kind:"receipt",receipt:{kind:"applied",id:"first",seq:1},deck:fixtureDeck(1),seq:100})
+ if(previous.kind!=="receipt")throw new Error("expected-receipt")
+ const frame={kind:"receipt",receipt:{kind:"applied",id:"last",seq:100},checkpoint:"previous",deckId:previous.deck.id,seq:100}
+ const receipt=parseMessage(frame,previous)
+ expect(receipt.kind).toBe("receipt")
+ if(receipt.kind!=="receipt")throw new Error("expected-receipt")
+ expect(receipt.deck).toBe(previous.deck)
+ expect(receipt.receipt.id).toBe("last")
+ expect(()=>parseMessage(frame)).toThrow("missing-receipt-checkpoint")
+ expect(()=>parseMessage({...frame,seq:99},previous)).toThrow("missing-receipt-checkpoint")
+ expect(()=>parseMessage({...frame,deckId:"other"},previous)).toThrow("missing-receipt-checkpoint")
+ expect(()=>parseMessage({...frame,receipt:{...frame.receipt,seq:101}},previous)).toThrow("invalid-receipt-sequence")
 })

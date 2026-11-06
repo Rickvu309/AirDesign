@@ -159,9 +159,10 @@ it("does not send work retained by an obsolete connection after reconnect",async
     client.connected(command=>old.push(command))
     client.disconnected()
     client.connected(command=>current.push(command))
+    await new Promise(resolve=>setTimeout(resolve,10))
     expect(reads).toHaveLength(2)
     for(const resolve of reads)resolve()
-    for(let n=0;n<10;n++)await Promise.resolve()
+    await new Promise(resolve=>setTimeout(resolve,10))
     expect(old).toEqual([])
     expect(current.map(command=>command.id)).toEqual(["reconnect_once"])
   }finally{client.disconnected();vi.unstubAllGlobals()}
@@ -179,11 +180,11 @@ it("keeps acknowledged work locked across disconnect until its checkpoint is dur
   const sent:Command[]=[]
   try{
     first.connected(()=>{})
-    for(let n=0;n<10;n++)await Promise.resolve()
+    await new Promise(resolve=>setTimeout(resolve,10))
     const acknowledged=first.acknowledge({id:commandId("durable_once"),kind:"applied",seq:1},durable)
     first.disconnected()
     second.connected(command=>sent.push(command))
-    for(let n=0;n<10;n++)await Promise.resolve()
+    await new Promise(resolve=>setTimeout(resolve,10))
     expect(sent).toEqual([])
     checkpoint();await acknowledged;await locked
     expect(sent).toEqual([])
@@ -216,15 +217,45 @@ it("reads a reconnect outbox once for concurrent command locks and refreshes it 
  vi.stubGlobal("navigator",{locks:{request:async(_key:string,deliver:()=>Promise<void>)=>deliver()}})
  try{
   client.connected(command=>sent.push(command))
-  for(let n=0;n<10;n++)await Promise.resolve()
+  await new Promise(resolve=>setTimeout(resolve,10))
   expect(read).toHaveBeenCalledTimes(1)
   expect(sent.map(command=>command.id)).toEqual(Array.from({length:100},(_,index)=>`concurrent_${index}`))
   client.disconnected()
   await outbox.write(client.key,[],sent.map(command=>command.id))
   client.connected(command=>sent.push(command))
-  for(let n=0;n<10;n++)await Promise.resolve()
+  await new Promise(resolve=>setTimeout(resolve,10))
   expect(read).toHaveBeenCalledTimes(2)
   expect(sent).toHaveLength(100)
   expect(client.queue).toEqual([])
  }finally{client.disconnected();vi.unstubAllGlobals()}
+})
+
+it("does not share an outbox read with a command whose lock arrives after the read starts",async()=>{
+ const {outbox}=memory()
+ let reading:()=>void=()=>{},releaseRead:()=>void=()=>{},releaseLock:()=>void=()=>{}
+ const started=new Promise<void>(resolve=>{reading=resolve})
+ const finish=new Promise<void>(resolve=>{releaseRead=resolve})
+ let calls=0
+ const client=new SyncClient("owner",{deck:fixtureDeck(1),seq:0},{write:outbox.write,read:async key=>{
+  calls++
+  const snapshot=await outbox.read(key)
+  if(calls===1){reading();await finish}
+  return snapshot
+ }},()=>{})
+ await client.enqueue(patch("available"));await client.enqueue(patch("contended"))
+ vi.stubGlobal("window",{})
+ vi.stubGlobal("navigator",{locks:{request:async(key:string,deliver:()=>Promise<void>)=>{
+  if(key.includes("contended"))await new Promise<void>(resolve=>{releaseLock=resolve})
+  await deliver()
+ }}})
+ const sent:Command[]=[]
+ try{
+  client.connected(command=>sent.push(command))
+  await started
+  await outbox.write(client.key,[],["contended"])
+  releaseLock();releaseRead()
+  await new Promise(resolve=>setTimeout(resolve,20))
+  expect(calls).toBe(2)
+  expect(sent.map(command=>command.id)).toEqual(["available"])
+ }finally{releaseRead();releaseLock();client.disconnected();vi.unstubAllGlobals()}
 })

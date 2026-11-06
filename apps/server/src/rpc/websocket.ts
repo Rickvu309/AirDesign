@@ -69,8 +69,8 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
                 const committed=await store.commitBatchSnapshot(current,deck,commands,identity,base)
                 const snapshot={...committed.snapshot,committedAt:Date.now()}
                 const peer=peers.get(websocket)
-                for(const receipt of committed.receipts){
-                  websocket.send(JSON.stringify({kind:"receipt",receipt,...snapshotDelta(snapshot,peer?.seq ?? null),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
+                for(const [index,receipt] of committed.receipts.entries()){
+                  websocket.send(JSON.stringify({kind:"receipt",receipt,...(index===0 ? snapshotDelta(snapshot,peer?.seq ?? null) : {checkpoint:"previous",deckId:deck,seq:snapshot.seq,committedAt:snapshot.committedAt}),...(committed.profile ? {profile:{...committed.profile,authorizationMs:authorized-started,transactionMs:performance.now()-authorized}} : {})}))
                   if(peer)peer.seq=snapshot.seq
                 }
                 publish(deck,snapshot)
