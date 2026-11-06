@@ -1,4 +1,5 @@
 import {access as accessFile} from "node:fs/promises"
+import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
 import {workerHandler} from "./worker/handle.ts"
 import {productionEnvironment} from "./runtime/environment.ts"
 import {serveStudio} from "./runtime/studio.ts"
@@ -123,7 +124,11 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
   try {
     if (await serveStudio(request, response)) return
     const host = request.headers.host ?? "127.0.0.1"
-    const body = await readRequestBody(request)
+    const workerRequest=new URL(request.url ?? "/","http://localhost").pathname==="/internal/worker"
+    if(workerRequest&&!workerAuthorized(request.headers.authorization,process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars")){
+      request.resume();response.writeHead(401,{"content-type":"application/json"});response.end(JSON.stringify({code:"unauthorized"}));return
+    }
+    const body = await readRequestBody(request,workerRequest ? workerCompletionLimit : undefined)
     const method = request.method ?? "GET"
     let incoming: Request
     try {

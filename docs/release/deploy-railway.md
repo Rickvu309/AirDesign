@@ -9,7 +9,7 @@ Use `railway.json` for `web` and `railway.worker.json` for `worker`. Both servic
 | Service | Command | Storage | Health check |
 | --- | --- | --- | --- |
 | web | `npm run start:web` | Persistent writable volume mounted at `/data` | GET `/healthz`, 200 only after a live database query |
-| worker | `npm run start:worker` | Private disposable job directories | Process supervision; no public listener |
+| worker | `npm run start:worker` | Separate persistent volume mounted at `/data` | Process supervision; no public listener |
 | Postgres | Railway managed PostgreSQL | Managed persistent database | Railway managed |
 
 Deploy the built `apps/site/dist` separately to Cloudflare Pages project `airdesign`. Set `AIRDESIGN_STUDIO_ORIGIN` at build time to override its default, `https://studio.airdesign.app`.
@@ -23,13 +23,13 @@ Values and credentials belong in Railway variables, never in version control.
 | Service | Variable names |
 | --- | --- |
 | web | `NODE_ENV`, `PORT`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_PUBLIC_ORIGIN`, `AIRDESIGN_MCP_ORIGIN`, `RESEND_API_KEY`, `MAIL_FROM`, `AIRDESIGN_CLAUDE_KEY`, `ANTHROPIC_API_KEY`, `AIRDESIGN_CLAUDE_MODEL`, `AIRDESIGN_OPERATIONS_PATH` |
-| worker | `NODE_ENV`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_WORKER_API_ORIGIN`, `AIRDESIGN_OPERATIONS_PATH`, `AIRDESIGN_ISOLATION`, `PLAYWRIGHT_BROWSERS_PATH` |
+| worker | `NODE_ENV`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_WORKER_API_ORIGIN`, `AIRDESIGN_OPERATIONS_PATH`, `AIRDESIGN_ISOLATION`, `AIRDESIGN_WORKER_TEMP`, `PLAYWRIGHT_BROWSERS_PATH` |
 
 Use `production` for `NODE_ENV`. Set the two public origins to their respective HTTPS origins, without trailing slashes. Use the same secret of at least 32 characters in both services. `DATABASE_URL` is the Railway PostgreSQL reference; `AIRDESIGN_DATABASE_URL` remains an alias for existing installations.
 
 Set the web operation path to `/data/operations.sqlite`. SQLite stores import jobs, image jobs, and template metadata on this web volume. PostgreSQL stores accounts, saved decks, export jobs, usage, OAuth, and deletion records. A shared filesystem between services is unnecessary. The worker claims import and image payloads through the authenticated `/internal/worker` endpoint. Completion is fenced by the originating lease. Use Railway's private web URL for `AIRDESIGN_WORKER_API_ORIGIN`, including its port. The internal endpoint requires the shared secret on every request, including when reached through a public host.
 
-The worker operation path is local scratch, for example `/home/node/tmp/operations.sqlite`. Set `AIRDESIGN_WORKER_TEMP` to override private job scratch. The image sets `AIRDESIGN_ISOLATION=container` and `PLAYWRIGHT_BROWSERS_PATH`. The web volume must be writable by the node user. Mount only one writer of this volume.
+Set the worker operation path to `/data/operations.sqlite` on its own volume. Remote job scratch defaults to `/data/jobs` beside that database; `AIRDESIGN_WORKER_TEMP` overrides it and must stay on the same persistent worker volume. A durable journal records the remote lease, local operation database, scratch directory, systemd unit and container process group before job execution. Restart kills recovered groups and erases their files before acknowledging cleanup to web. Web retains leases and blocks account deletion until that acknowledgment. A missing worker journal fails closed; restore the original worker volume before retrying. Keep one worker writer and retain its volume across releases. Container jobs wait for the journal commit before executing, and kill their group if their supervisor disappears. The image sets `AIRDESIGN_ISOLATION=container` and `PLAYWRIGHT_BROWSERS_PATH`. The web volume must be writable by the node user. Mount only one writer of this volume.
 
 `AIRDESIGN_EXPOSE_INBOX=1` is refused in production. Resend is selected when its key is present; the in-memory inbox remains the development default. `AIRDESIGN_RESEND_ENDPOINT` is an optional HTTP adapter override for a local mail mock during rehearsal. Omit it in Railway. Payments remain unavailable because no payment provider is injected.
 

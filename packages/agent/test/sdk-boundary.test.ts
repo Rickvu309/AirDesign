@@ -49,3 +49,20 @@ it("recognizes the pinned SDK cancellation only after Stop",()=>{
  expect(expectedAgentAbort(error,controller.signal)).toBe(true)
  expect(expectedAgentAbort(new Error("unexpected transport failure"),controller.signal)).toBe(false)
 })
+
+it("forwards steering into the active Claude input stream",async()=>{
+ const query:SdkQuery=async function*({prompt}){
+  yield* []
+  expect(typeof prompt).not.toBe("string")
+  if(typeof prompt==="string")return
+  const input=prompt[Symbol.asyncIterator]()
+  expect((await input.next()).value.message.content).toContain("initial")
+  followup?.("steer now")
+  expect((await input.next()).value.message.content).toContain("steer now")
+  await input.return?.()
+ }
+ let followup:((text:string)=>void)|undefined
+ const context={run:"run",deckId:"deck",selection:[],request:"initial",subscribeRequest(listener:(text:string)=>void){followup=listener;return ()=>{followup=undefined}}}
+ for await(const event of claudeAdapter({key:"fake",model:"fake",query})(context,async()=>({content:[]}),new AbortController().signal))expect(event).toBeUndefined()
+ expect(followup).toBeUndefined()
+})

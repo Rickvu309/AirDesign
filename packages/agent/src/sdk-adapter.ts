@@ -28,17 +28,34 @@ export function claudeAdapter(configuration:{key:string;model:string;query?:SdkQ
     })
     const env:NodeJS.ProcessEnv={...process.env,ANTHROPIC_API_KEY:configuration.key,CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:"1",DISABLE_NON_ESSENTIAL_MODEL_CALLS:"1"}
     delete env.CLAUDE_CODE_OAUTH_TOKEN
-    const prompt=JSON.stringify({deckId:context.deckId,run:context.run,selection:context.selection,completed:context.completed??[],request:context.request})
+    const initial=JSON.stringify({deckId:context.deckId,run:context.run,selection:context.selection,completed:context.completed??[],request:context.request})
+    const messages:import("@anthropic-ai/claude-agent-sdk").SDKUserMessage[]=[]
+    let wakeInput=()=>{},inputClosed=false
+    const enqueue=(text:string)=>{if(inputClosed)throw new Error("aira-run-finishing-retry");messages.push({type:"user",message:{role:"user",content:text},parent_tool_use_id:null,session_id:""});wakeInput()}
+    enqueue(initial)
+    const unsubscribe=context.subscribeRequest?.(enqueue)
+    const closeInput=()=>{inputClosed=true;wakeInput()}
+    controller.signal.addEventListener("abort",closeInput,{once:true});if(controller.signal.aborted)closeInput()
+    const prompt=async function*(){
+      while(!inputClosed||messages.length){
+        const message=messages.shift()
+        if(message)yield message
+        else await new Promise<void>(resolve=>{wakeInput=resolve;if(inputClosed||messages.length)resolve()})
+      }
+    }
     const task=agentBoundary.run({signal,fail},async()=>{
       try{
-        const run=(configuration.query??harness.query)({prompt,options:{...harness.options,env,model:configuration.model,abortController:controller,settingSources:[],systemPrompt:"You are Aira. Build and refine executive decks using only AirDesign tools. Read the deck first. Use unique request ids including the run id. Preserve completed changes on resume; inspect current state before editing. Follow the user request and selected content.",includePartialMessages:true}})
+        const run=(configuration.query??harness.query)({prompt:prompt(),options:{...harness.options,env,model:configuration.model,abortController:controller,settingSources:[],systemPrompt:"You are Aira. Build and refine executive decks using only AirDesign tools. Read the deck first. Use unique request ids including the run id. Preserve completed changes on resume; inspect current state before editing. Follow the user request and selected content.",includePartialMessages:true}})
         for await(const event of run){
           if(event.type==="assistant")for(const part of event.message.content)if(part.type==="text")queue.push({kind:"message",text:part.text})
-          if(event.type==="result"&&event.is_error)throw new Error(`Claude run failed: ${event.subtype}`)
+          if(event.type==="result"){
+            closeInput()
+            if(event.is_error)throw new Error(`Claude run failed: ${event.subtype}`)
+          }
           notify()
         }
       }catch(error){if(!expectedAgentAbort(error,signal))failure??=error}
-      finally{done=true;notify()}
+      finally{closeInput();done=true;notify()}
     })
     try{
       while(!done||queue.length){
@@ -48,7 +65,7 @@ export function claudeAdapter(configuration:{key:string;model:string;query?:SdkQ
       }
       await task
       if(failure)throw failure
-    }finally{controller.abort();signal.removeEventListener("abort",abort);await task}
+    }finally{unsubscribe?.();controller.abort();controller.signal.removeEventListener("abort",closeInput);signal.removeEventListener("abort",abort);await task}
   }
 }
 export function configuredAgent(environment:NodeJS.ProcessEnv=process.env):AgentAdapter|undefined{

@@ -13,7 +13,7 @@ process.on("unhandledRejection",error=>{
   if(!expectedAgentAbort(error,boundary.signal))boundary.fail(error)
 })
 export const agentSdkPin = "0.2.31"
-export type AgentContext = {run:string;deckId:string;selection:string[];request:string;completed?:string[]}
+export type AgentContext = {run:string;deckId:string;selection:string[];request:string;completed?:string[];subscribeRequest?:(listener:(text:string)=>void)=>()=>void}
 export type AgentActivity = {kind:"tool";name:string;result:unknown;scope?:string} | {kind:"message";text:string}
 export type AgentTools = (name:string,input:unknown)=>Promise<{content:({type:"text";text:string}|{type:"image";mimeType:string;data:string})[];isError?:boolean}>
 export type AgentAdapter = (context:AgentContext,call:AgentTools,signal:AbortSignal)=>AsyncIterable<AgentActivity>

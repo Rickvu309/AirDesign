@@ -9,5 +9,7 @@ export function deploymentRuntimeHits(file:string,source:string): string[] {
   if (normalized.endsWith("packages/agent/src/harness.ts") && !source.includes('process.on("unhandledRejection"')) return ["agent-process-boundary: contain detached adapter rejections"]
   if (normalized.endsWith("apps/server/src/agent/handle.ts") && source.includes('catch(error){if(data.kind!=="stopped"){')) return ["agent-stop-errors: swallow only expected cancellation errors"]
   if (normalized.endsWith("packages/agent/src/harness.ts") && source.includes("input:z.unknown()")) return ["sdk-tool-schema: expose the authoritative tool arguments to the model"]
+  if(normalized.endsWith("apps/worker/src/remote-queue.ts")&&source.includes('new OperationStore(":memory:")'))return ["remote-job-journal: persist lease and scratch ownership before execution"]
+  if(normalized.endsWith("packages/agent/src/sdk-adapter.ts")&&source.includes("const prompt=JSON.stringify"))return ["sdk-steering: stream follow-up requests into the active run"]
   return []
 }

@@ -4,7 +4,7 @@ import { mkdir, writeFile, readFile, rm, rmdir } from "node:fs/promises"
 import path from "node:path"
 import { OperationStore, type OperationId } from "../../../packages/operations/src/index.ts"
 
-export async function deliver(store: OperationStore, id: OperationId, root: string, program: string): Promise<boolean> {
+export async function deliver(store: OperationStore, id: OperationId, root: string, program: string, started?:(job:{directory:string;unit:string;pid:number})=>void): Promise<boolean> {
   const claimed = store.claim(id)
   if (!claimed) return false
   const directory = path.join(root, claimed.ownerDirectory, id, claimed.lease)
@@ -13,10 +13,12 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
   let killed: Promise<void> | undefined
   let cancellation: ReturnType<typeof setInterval> | undefined
   try {
+    started?.({directory,unit,pid:0})
     await mkdir(directory, { recursive: true, mode: 0o700 })
     await writeFile(path.join(directory, "input.pptx"), claimed.input, { mode: 0o600 })
     const repo = path.resolve(import.meta.dirname, "../../..")
-    const child = isolationMode() === "container" ? spawnContainerJob(directory,program) : spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })
+    const child = isolationMode() === "container" ? spawnContainerJob(directory,program,pid=>started?.({directory,unit,pid})) : spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })
+    if(isolationMode()==="systemd"&&child.pid)started?.({directory,unit,pid:child.pid})
     let diagnostic = ""
     child.stderr?.on("data", (value: Buffer) => { diagnostic = (diagnostic + value.toString()).slice(-2000) })
     const kill = () => {

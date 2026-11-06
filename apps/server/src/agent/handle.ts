@@ -6,7 +6,7 @@ import {commandId} from "../../../../packages/change-log/src/index.ts"
 import type {HistoryStore} from "../db/history-store.ts"
 import type {domainTools} from "../mcp/domain-tools.ts"
 import type {AgentRun,ActivityContent} from "./store.ts"
-type LiveRun={data:AgentRun;controller:AbortController;task:Promise<void>}
+type LiveRun={data:AgentRun;controller:AbortController;task:Promise<void>;requests:Set<(text:string)=>void>}
 export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType<typeof domainTools>,origin:string,adapter:AgentAdapter|undefined,changed:(deck:string)=>Promise<void>){
   const runs=new Map<string,LiveRun>(),subscribers=new Map<string,{owner:string;deck:string;sends:Set<(value:string)=>void>}>()
   let commands=Promise.resolve()
@@ -33,9 +33,9 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
   function launch(data:AgentRun){
     if(!adapter)throw new Error("aira-unavailable")
     const selectedAdapter=adapter
-    const live:LiveRun={data,controller:new AbortController(),task:Promise.resolve()}
+    const live:LiveRun={data,controller:new AbortController(),task:Promise.resolve(),requests:new Set()}
     runs.set(keyOf(data.owner,data.deck),live)
-    const context:AgentContext={run:data.id,deckId:data.deck,selection:data.selection,get request(){return data.request},completed:data.completed}
+    const context:AgentContext={run:data.id,deckId:data.deck,selection:data.selection,get request(){return data.request},completed:data.completed,subscribeRequest(listener){live.requests.add(listener);return ()=>{live.requests.delete(listener)}}}
     live.task=(async()=>{
       try{
         const call=async(name:string,input:unknown)=>{
@@ -96,7 +96,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
         if(body.action==="resume"&&(active?.kind==="failed"||active?.kind==="stopped"||active?.kind==="limited")){active.kind="working";launch(active);await save(active);return Response.json({id:active.id,kind:active.kind},{status:202})}
         if(body.action!=="send"||!("text" in body)||typeof body.text!=="string"||!body.text.trim()||body.text.length>8000)throw new Error("invalid-agent-request")
         if(active?.kind==="working"){
-          active.request=body.text;append(active,{kind:"message",text:body.text});await save(active);return Response.json({id:active.id,kind:active.kind,joined:true})
+          active.request=body.text;for(const listener of live?.requests ?? [])listener(body.text);append(active,{kind:"message",text:body.text});await save(active);return Response.json({id:active.id,kind:active.kind,joined:true})
         }
         const selection="selection" in body ? body.selection : []
         if(!Array.isArray(selection)||selection.length>100||!selection.every((value):value is string=>typeof value==="string"&&value.length<=100))throw new Error("invalid-selection")

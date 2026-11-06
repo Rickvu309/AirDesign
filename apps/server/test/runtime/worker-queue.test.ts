@@ -25,3 +25,17 @@ it("moves work between services and fences cancellation and obsolete leases",asy
     expect(images.artifact(owner,image.id).toString()).toBe("image")
   } finally { imports.close(); images.close() }
 })
+
+it("retains expired remote leases until the worker confirms scratch cleanup",async()=>{
+ let now=0
+ const imports=new OperationStore(":memory:",()=>now),images=new OperationStore(":memory:")
+ const handler=workerHandler(imports,images,"test-secret",async()=>[]),owner={personId:"owner"}
+ const request=(body:unknown)=>handler(new Request("https://studio.invalid/internal/worker",{method:"POST",headers:{authorization:"Bearer test-secret"},body:JSON.stringify(body)}))
+ try{
+  const job=imports.submit(owner,"crash",Buffer.from("upload")),lease=imports.claim(job.id)
+  now=40000
+  const response=await (await request({kind:"claim",queue:"import"})).json()
+  expect(response).toEqual({cleanup:[{id:job.id,lease:lease?.lease}]})
+  expect(imports.claim(job.id)).toBeNull()
+ }finally{imports.close();images.close()}
+})

@@ -12,7 +12,7 @@ const mode=process.argv[2] ?? "all"
 if(mode!=="all"&&mode!=="images")throw new Error("unknown-worker-mode")
 await access(new URL("../dist/render.js",import.meta.url)).catch(()=>{throw new Error("PDF renderer missing. Run npm run build before starting the worker.")})
 const database = process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
-const root = process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(), "tmp/airdesign-jobs")
+const root = process.env.AIRDESIGN_WORKER_TEMP ?? (process.env.AIRDESIGN_WORKER_API_ORIGIN ? path.join(path.dirname(database),"jobs") : path.join(os.homedir(), "tmp/airdesign-jobs"))
 await mkdir(root, { recursive: true, mode: 0o700 })
 const store = new OperationStore(database)
 const images = new OperationStore(database+".images")

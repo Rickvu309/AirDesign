@@ -36,3 +36,10 @@ it("rejects opaque SDK arguments that hide the tool contract from the model",()=
  expect(deploymentRuntimeHits("packages/agent/src/harness.ts",'process.on("unhandledRejection",guard); input:z.unknown()')).not.toEqual([])
  expect(deploymentRuntimeHits("packages/agent/src/harness.ts",'process.on("unhandledRejection",guard); input:z.fromJSONSchema(definition.inputSchema)')).toEqual([])
 })
+
+it("rejects volatile remote jobs and snapshot-only Claude requests",()=>{
+ expect(deploymentRuntimeHits("apps/worker/src/remote-queue.ts",'new OperationStore(":memory:")')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/worker/src/remote-queue.ts",'new OperationStore(database)')).toEqual([])
+ expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts",'abortController:controller; const prompt=JSON.stringify(context.request)')).not.toEqual([])
+ expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts",'abortController:controller; prompt:prompt()')).toEqual([])
+})

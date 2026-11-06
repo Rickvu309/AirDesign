@@ -1,8 +1,11 @@
+import {RemoteJournal} from "./remote-journal.ts"
+import {isolationMode} from "./container-process.ts"
 import {z} from "zod"
 import path from "node:path"
 import {OperationStore} from "../../../packages/operations/src/index.ts"
 import {deliver} from "./isolation.ts"
 
+const cleanup=z.object({cleanup:z.array(z.object({id:z.string().uuid(),lease:z.string().uuid()}))})
 const claim = z.object({id:z.string().uuid(),lease:z.string().uuid(),input:z.string()}).nullable()
 const active = z.object({active:z.boolean()})
 
@@ -12,10 +15,22 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string):
     if (!response.ok) throw new Error(`worker-api-failed:${response.status}`)
     return response.json()
   }
+  const journal=new RemoteJournal(root)
+  try{
+  for(const entry of journal.entries()){
+    await journal.clean(entry)
+    await request({kind:"fail",queue:entry.queue,id:entry.id,lease:entry.lease,reason:"worker-restarted"})
+    await request({kind:"cleaned",queue:entry.queue,id:entry.id,lease:entry.lease})
+    journal.forget(entry.lease)
+  }
   for (const queue of ["image","import"] as const) for (;;) {
-    const job = claim.parse(await request({kind:"claim",queue}))
+    const response=await request({kind:"claim",queue})
+    if(cleanup.safeParse(response).success)throw new Error("remote-cleanup-required-on-original-worker-volume")
+    const job = claim.parse(response)
     if (!job) break
-    const store = new OperationStore(":memory:"),principal = {personId:job.id}
+    const database=path.join(root,`remote-${job.lease}.sqlite`)
+    journal.save({...job,queue,database,directory:null,unit:null,pid:null,identity:null,mode:isolationMode()})
+    const store = new OperationStore(database),principal = {personId:job.id}
     const local = store.submit(principal,job.id,Buffer.from(job.input,"base64"))
     let pending: Promise<void> = Promise.resolve()
     let checking = false
@@ -25,11 +40,17 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string):
       pending = request({kind:"active",queue,id:job.id,lease:job.lease}).then(value => { if (!active.parse(value).active) store.cancel(principal,local.id) }).catch(() => { store.cancel(principal,local.id) }).finally(() => { checking = false })
     },100)
     try {
-      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"))
+      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process))
       clearInterval(cancellation)
       const status = store.status(principal,local.id)
       if (status.kind === "ready") await request({kind:"complete",queue,id:job.id,lease:job.lease,result:store.artifact(principal,local.id).toString("base64"),report:status.report})
       else await request({kind:"fail",queue,id:job.id,lease:job.lease,reason:status.kind === "failed" ? status.reason : "worker-cancelled"})
     } finally { clearInterval(cancellation); await pending; store.close() }
+    const entry=journal.entries().find(entry=>entry.lease===job.lease)
+    if(!entry)throw new Error("missing-remote-journal")
+    await journal.clean(entry)
+    await request({kind:"cleaned",queue,id:job.id,lease:job.lease})
+    journal.forget(job.lease)
   }
+  }finally{journal.close()}
 }
