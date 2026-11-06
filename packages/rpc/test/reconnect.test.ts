@@ -166,3 +166,27 @@ it("does not send work retained by an obsolete connection after reconnect",async
     expect(current.map(command=>command.id)).toEqual(["reconnect_once"])
   }finally{client.disconnected();vi.unstubAllGlobals()}
 })
+
+it("keeps acknowledged work locked across disconnect until its checkpoint is durable",async()=>{
+  const {outbox}=memory(),snapshot={deck:fixtureDeck(1),seq:0}
+  const first=new SyncClient("owner",snapshot,outbox,()=>{}),second=new SyncClient("owner",snapshot,outbox,()=>{})
+  await first.enqueue(patch("durable_once"));await second.load()
+  let locked=Promise.resolve()
+  vi.stubGlobal("window",{})
+  vi.stubGlobal("navigator",{locks:{request:(_key:string,deliver:()=>Promise<void>)=>{locked=locked.then(deliver);return locked}}})
+  let checkpoint:()=>void=()=>{}
+  const durable=new Promise<void>(resolve=>{checkpoint=resolve})
+  const sent:Command[]=[]
+  try{
+    first.connected(()=>{})
+    for(let n=0;n<10;n++)await Promise.resolve()
+    const acknowledged=first.acknowledge({id:commandId("durable_once"),kind:"applied",seq:1},durable)
+    first.disconnected()
+    second.connected(command=>sent.push(command))
+    for(let n=0;n<10;n++)await Promise.resolve()
+    expect(sent).toEqual([])
+    checkpoint();await acknowledged;await locked
+    expect(sent).toEqual([])
+    expect(second.queue).toEqual([])
+  }finally{checkpoint();first.disconnected();second.disconnected();vi.unstubAllGlobals()}
+})

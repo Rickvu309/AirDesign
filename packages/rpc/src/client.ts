@@ -55,7 +55,7 @@ export class SyncClient {
     return count ? {kind:"pending",count} : {kind:"saved"}
   }
   connected(sender: (command: Command)=>void) { if (this.blocked) return;this.sender=sender;this.online=true;this.retrying=false;this.flush();this.changed() }
-  disconnected(retrying=false) { this.connectionEpoch++;this.online=false;this.sender=null;for(const release of this.releases.values())release();this.sent.clear();this.retrying=retrying;this.changed() }
+  disconnected(retrying=false) { this.connectionEpoch++;this.online=false;this.sender=null;for(const [id,release] of this.releases)if(!this.acknowledging.has(id))release();this.sent.clear();this.retrying=retrying;this.changed() }
   stop(kind: "signed-out" | "deleted") { this.blocked=kind;this.disconnected() }
   resume(person: string) { if (this.key !== outboxKey(person,this.snapshot.deck.id) || this.blocked === "deleted") return false;this.blocked=null;return true }
   receive(snapshot: Snapshot) { if (snapshot.deck.id !== this.snapshot.deck.id || snapshot.seq < this.snapshot.seq) return;this.snapshot=snapshot;this.notify() }
