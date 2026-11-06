@@ -10,7 +10,7 @@ import type {PaymentProvider} from "../../../packages/usage/src/payments/provide
 import {deliverAccountDeletion} from "../../worker/src/account-deletion/deliver.ts"
 import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
 import {agentHandler} from "./agent/handle.ts"
-import {localAdapter} from "../../../packages/agent/src/local-adapter.ts"
+import {configuredAgent} from "../../../packages/agent/src/sdk-adapter.ts"
 import {domainTools} from "./mcp/domain-tools.ts"
 import {mcpHandler} from "./mcp/handle.ts"
 import {oauthHandler} from "./mcp/oauth-handle.ts"
@@ -77,7 +77,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
   const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
-  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? localAdapter,deck=>sync.refresh(deck))
+  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? configuredAgent(),deck=>sync.refresh(deck))
   await access.resumeDeletions()
   const handleBilling=billingHandler(access,history,extras.paymentProvider,publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})

@@ -1,13 +1,13 @@
 import {UsageLimitError} from "../../../../packages/agent/src/activity.ts"
 import {randomUUID} from "node:crypto"
 import {mutationRejection,type Access} from "@airdesign/access"
-import {runHarness,type AgentAdapter,type AgentContext} from "../../../../packages/agent/src/harness.ts"
+import {expectedAgentAbort,runHarness,type AgentAdapter,type AgentContext} from "../../../../packages/agent/src/harness.ts"
 import {commandId} from "../../../../packages/change-log/src/index.ts"
 import type {HistoryStore} from "../db/history-store.ts"
 import type {domainTools} from "../mcp/domain-tools.ts"
 import type {AgentRun,ActivityContent} from "./store.ts"
 type LiveRun={data:AgentRun;controller:AbortController;task:Promise<void>}
-export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType<typeof domainTools>,origin:string,adapter:AgentAdapter,changed:(deck:string)=>Promise<void>){
+export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType<typeof domainTools>,origin:string,adapter:AgentAdapter|undefined,changed:(deck:string)=>Promise<void>){
   const runs=new Map<string,LiveRun>(),subscribers=new Map<string,{owner:string;deck:string;sends:Set<(value:string)=>void>}>()
   let commands=Promise.resolve()
   async function serial<T>(work:()=>Promise<T>){const previous=commands;let release=()=>{};commands=new Promise<void>(resolve=>{release=resolve});await previous;try{return await work()}finally{release()}}
@@ -22,7 +22,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
   async function snapshot(owner:string,deck:string){
     const saved=await history.read({personId:owner},deck)
     const remote=saved.contributions.history.events.filter(event=>event.actor!=="person"&&!event.run?.startsWith("aira_")).slice(-20).map(event=>({id:event.id,run:event.run,active:event.active,targets:event.patches.map(patch=>patch.id)}))
-    return {enabled:await history.agents.enabled(owner),run:await current(owner,deck),remote}
+    return {enabled:!!adapter&&await history.agents.enabled(owner),...(!adapter?{unavailable:"Aira is unavailable. The server needs a Claude API key. You can keep editing manually."}:{}),run:await current(owner,deck),remote}
   }
   async function publish(deck:string){await Promise.all([...subscribers.values()].filter(group=>group.deck===deck).map(async group=>{try{const value=JSON.stringify(await snapshot(group.owner,group.deck));for(const send of group.sends)send(value)}catch{for(const send of group.sends)send(JSON.stringify({code:"deck-unavailable"}))}}))}
   async function save(run:AgentRun){await history.agents.save(run);await publish(run.deck)}
@@ -31,6 +31,8 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
   async function stopOwnedRuns(owner:string){await Promise.all([...runs.values()].filter(run=>run.data.owner===owner&&run.data.kind==="working").map(stop))}
   async function stopOwner(owner:string){await serial(()=>stopOwnedRuns(owner))}
   function launch(data:AgentRun){
+    if(!adapter)throw new Error("aira-unavailable")
+    const selectedAdapter=adapter
     const live:LiveRun={data,controller:new AbortController(),task:Promise.resolve()}
     runs.set(keyOf(data.owner,data.deck),live)
     const context:AgentContext={run:data.id,deckId:data.deck,selection:data.selection,get request(){return data.request},completed:data.completed}
@@ -40,13 +42,13 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
           if(live.controller.signal.aborted||!await history.agents.enabled(data.owner))throw new Error("run-stopped")
           return tools.call({personId:data.owner,connection:data.id,airaRun:data.id},name,input)
         }
-        for await(const event of runHarness(context,call,live.controller.signal,adapter)){
+        for await(const event of runHarness(context,call,live.controller.signal,selectedAdapter)){
           const item:ActivityContent=event.kind==="tool" ? {kind:"tool",name:event.name,...(event.scope ? {scope:event.scope} : {})} : {...event}
           if(item.kind==="tool"&&item.name==="apply_changes"&&item.scope&&!data.completed.includes(item.scope))data.completed.push(item.scope)
           append(data,item);await save(data)
         }
         if(data.kind==="working")data.kind="complete"
-      }catch(error){if(data.kind!=="stopped"){if(error instanceof UsageLimitError){data.kind="limited";append(data,{kind:"limit",limit:error.limit})}else{data.kind="failed";append(data,{kind:"message",text:`${error instanceof Error ? error.message : "Run failed"}. Changes so far stay.`})}}}
+      }catch(error){if(data.kind!=="stopped"||!expectedAgentAbort(error,live.controller.signal)){if(error instanceof UsageLimitError){data.kind="limited";append(data,{kind:"limit",limit:error.limit})}else{data.kind="failed";append(data,{kind:"message",text:`${error instanceof Error ? error.message : "Run failed"}. Changes so far stay.`})}}}
       finally{
         if(data.kind==="complete")await closeRun(data).catch(()=>undefined)
         await save(data).catch(()=>undefined)
@@ -60,7 +62,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
     try{
       const url=new URL(request.url),deck=url.searchParams.get("deck") ?? ""
       if(url.pathname==="/api/aira/configure"){
-        if(request.method==="GET")return Response.json({enabled:await history.agents.enabled(principal.personId)})
+        if(request.method==="GET")return Response.json({enabled:!!adapter&&await history.agents.enabled(principal.personId),...(!adapter?{unavailable:"Aira needs a Claude API key on the server."}:{})})
         const body:unknown=await request.json();if(!body||typeof body!=="object"||!("enabled" in body)||typeof body.enabled!=="boolean")throw new Error("invalid-configuration")
         const enabled=body.enabled
         await serial(async()=>{await history.agents.configure(principal.personId,enabled);if(!enabled)await stopOwnedRuns(principal.personId)})
@@ -89,6 +91,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
           if(receipt.kind!=="applied")throw new Error(receipt.code)
           active.kind="undone";await changed(deck);await save(active);return Response.json({...receipt,kept})
         }
+        if(!adapter)throw new Error("aira-unavailable")
         if(!await history.agents.enabled(principal.personId))throw new Error("aira-disabled")
         if(body.action==="resume"&&(active?.kind==="failed"||active?.kind==="stopped"||active?.kind==="limited")){active.kind="working";launch(active);await save(active);return Response.json({id:active.id,kind:active.kind},{status:202})}
         if(body.action!=="send"||!("text" in body)||typeof body.text!=="string"||!body.text.trim()||body.text.length>8000)throw new Error("invalid-agent-request")

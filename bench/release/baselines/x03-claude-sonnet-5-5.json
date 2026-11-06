@@ -1,0 +1,1102 @@
+{
+  "head": "b8fe45ff9bcb2093a347d294188c3f218c7254d4",
+  "models": [
+    {
+      "version": "claude-sonnet-5-5",
+      "provider": "Anthropic",
+      "sdk": "Claude Agent SDK 0.2.31 / MCP SDK 1.26.0"
+    }
+  ],
+  "kind": "first-paid-model-baseline",
+  "sourceSha256": "117f1619141ffc21ea3556a1ab23c9a9d6b51d2f999000eaeb837dfbb3962968",
+  "rows": [
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-1",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-1",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-1",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-2",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-2",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-2",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-3",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-3",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-3",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-4",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-4",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-4",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-5",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-5",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-5",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-6",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-6",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-6",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-7",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-7",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-7",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-8",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-8",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "read-8",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-1",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3061.4513489999954
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-1",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3331.2464550000004
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-1",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 4181.054400000001
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-2",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3206.156778999997
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-2",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3374.0792370000054
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-2",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3337.832319000001
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-3",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 2872.619179000001
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-3",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3089.743964999994
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-3",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3374.0273579999994
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-4",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 2898.057520999995
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-4",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3129.193115000002
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-4",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3284.644281000001
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-5",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3028.768860999997
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-5",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3273.5076120000012
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-5",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3372.7047020000027
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-6",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3054.895061000003
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-6",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3266.724648999996
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-6",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3425.747438999999
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-7",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3878.2127880000044
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-7",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 4054.0436999999947
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-7",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3378.832588999998
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-8",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3220.073477999991
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-8",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3102.8511889999936
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "edit-8",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": 3262.367499
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-1",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-1",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-1",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-2",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-2",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-2",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-3",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-3",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-3",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-4",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-4",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-4",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-5",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-5",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-5",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-6",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-6",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-6",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-7",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-7",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-7",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-8",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-8",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "authorization-8",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-1",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-1",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-1",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-2",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-2",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-2",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-3",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-3",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-3",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-4",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-4",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-4",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-5",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-5",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-5",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-6",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-6",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-6",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-7",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-7",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-7",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-8",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-8",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "atomicity-8",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-1",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-1",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-1",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-2",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-2",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-2",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-3",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-3",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-3",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-4",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-4",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-4",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-5",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-5",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-5",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-6",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-6",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-6",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-7",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-7",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-7",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-8",
+      "trial": 2,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-8",
+      "trial": 0,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    },
+    {
+      "model": "claude-sonnet-5-5",
+      "task": "stale-8",
+      "trial": 1,
+      "complete": true,
+      "authorized": true,
+      "atomic": true,
+      "firstChangeMs": null
+    }
+  ],
+  "priorPaidBaselineAvailable": false,
+  "modelWaiver": {
+    "operator": "rickvu",
+    "reason": "Operator authorized Claude-only X03 in brief-run.md; second model waived.",
+    "models": [
+      "claude-sonnet-5-5"
+    ]
+  }
+}

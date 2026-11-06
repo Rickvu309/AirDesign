@@ -20,9 +20,9 @@ Route both `studio.airdesign.app` and `mcp.airdesign.app` to `web`. Routing is b
 
 Values and credentials belong in Railway variables, never in version control.
 
-| Service | Required variable names |
+| Service | Variable names |
 | --- | --- |
-| web | `NODE_ENV`, `PORT`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_PUBLIC_ORIGIN`, `AIRDESIGN_MCP_ORIGIN`, `RESEND_API_KEY`, `MAIL_FROM`, `AIRDESIGN_OPERATIONS_PATH` |
+| web | `NODE_ENV`, `PORT`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_PUBLIC_ORIGIN`, `AIRDESIGN_MCP_ORIGIN`, `RESEND_API_KEY`, `MAIL_FROM`, `AIRDESIGN_CLAUDE_KEY`, `ANTHROPIC_API_KEY`, `AIRDESIGN_CLAUDE_MODEL`, `AIRDESIGN_OPERATIONS_PATH` |
 | worker | `NODE_ENV`, `DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_WORKER_API_ORIGIN`, `AIRDESIGN_OPERATIONS_PATH`, `AIRDESIGN_ISOLATION`, `PLAYWRIGHT_BROWSERS_PATH` |
 
 Use `production` for `NODE_ENV`. Set the two public origins to their respective HTTPS origins, without trailing slashes. Use the same secret of at least 32 characters in both services. `DATABASE_URL` is the Railway PostgreSQL reference; `AIRDESIGN_DATABASE_URL` remains an alias for existing installations.
@@ -50,3 +50,5 @@ The worker only needs database access and the authenticated web job endpoint. Im
 Before deployment run the root build, tests, type check, lint, and `verify:pr-01` through `verify:pr-09`. P03 operation tests execute under both isolation modes. Rehearse sign-in against a local mail mock, fixture import, saved edits, PPTX and PDF export through the worker, and OAuth authorization and revocation. Keep proof with the release record.
 
 Record the previous immutable image, site artifact, environment configuration, database schema, and queue version. Follow [the release and rollback procedure](operate.md) for consistent PostgreSQL and SQLite backups. Stop worker claims before replacing binaries. Fence active leases, restore compatible artifacts, deploy web, verify `/healthz`, then restart worker. Restore the previous Pages artifact separately. A binary rollback does not reverse saved edits, payments, or migrations. Replay deletion tombstones before enabling access after any database restore.
+
+Aira selects the Claude Agent SDK when the AirDesign Claude key is set, with the Anthropic key as fallback. The model defaults to `claude-sonnet-5-5`. Without a key, Aira is unavailable; manual editing remains enabled. Deterministic drafting is used only by tests and release replays.

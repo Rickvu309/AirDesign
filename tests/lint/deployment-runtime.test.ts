@@ -19,3 +19,20 @@ it("rejects the original site build without a production Studio destination",()=
  expect(deploymentRuntimeHits(file,'transformIndexHtml:renderSiteTerms')).not.toEqual([])
  expect(deploymentRuntimeHits(file,'process.env.AIRDESIGN_STUDIO_ORIGIN ?? "https://studio.airdesign.app"')).toEqual([])
 })
+
+it("rejects deterministic production drafting and missing SDK cancellation boundary",()=>{
+ expect(deploymentRuntimeHits("apps/server/src/main.ts","extras.agentAdapter ?? localAdapter")).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/main.ts","extras.agentAdapter ?? configuredAgent()")).toEqual([])
+ expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts","query({options:{}})")).not.toEqual([])
+ expect(deploymentRuntimeHits("packages/agent/src/sdk-adapter.ts",'abortController:controller; process.on("unhandledRejection",guard)')).toEqual([])
+})
+
+it("rejects hiding every unexpected error during Stop",()=>{
+ expect(deploymentRuntimeHits("apps/server/src/agent/handle.ts",'catch(error){if(data.kind!=="stopped"){')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/agent/handle.ts",'catch(error){if(data.kind!=="stopped"||!expectedAgentAbort(error,live.controller.signal)){')).toEqual([])
+})
+
+it("rejects opaque SDK arguments that hide the tool contract from the model",()=>{
+ expect(deploymentRuntimeHits("packages/agent/src/harness.ts",'process.on("unhandledRejection",guard); input:z.unknown()')).not.toEqual([])
+ expect(deploymentRuntimeHits("packages/agent/src/harness.ts",'process.on("unhandledRejection",guard); input:z.fromJSONSchema(definition.inputSchema)')).toEqual([])
+})
