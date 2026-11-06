@@ -48,7 +48,7 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/agent",
       "decision": "docs/contracts/c05-tool-catalog-and-actor-authority.json"
     },
@@ -118,7 +118,7 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/agent",
       "decision": "docs/contracts/c12-snapshot-paging-and-response-limits.json"
     },
@@ -128,7 +128,7 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/access",
       "decision": "docs/contracts/c13-remote-authorization-and-registration.json"
     },
@@ -138,7 +138,7 @@
       "source": "docs/design/v0.1/logic.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/usage",
       "decision": "docs/contracts/c14-week-identity-timezone-and-dst.json"
     },
@@ -148,7 +148,7 @@
       "source": "docs/planning/v0.1/content/f07-usage-flow.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/usage",
       "decision": "docs/contracts/c15-credits-refunds-and-payment-races.json"
     },
@@ -168,7 +168,7 @@
       "source": "docs/planning/v0.1/research/tools/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "packages/usage",
       "decision": "docs/contracts/c17-user-agent-usage-and-automatic-spending-conflict.json"
     },
@@ -198,7 +198,7 @@
       "source": "docs/planning/v0.1/research/quality/README.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "evals",
       "decision": "docs/contracts/c20-quality-and-tool-evaluation.json"
     },
@@ -238,7 +238,7 @@
       "source": "docs/planning/v0.1/content/monorepo-map.md",
       "acceptIn": "P07",
       "freezeIn": "P07",
-      "status": "deferred",
+      "status": "accepted",
       "owner": "apps/server",
       "decision": "docs/contracts/c24-provider-and-public-endpoint-authorization.json"
     }

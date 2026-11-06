@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
-import { afterEach, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import type { AccessClient, IntentKind, VerifyResult } from "@airdesign/access/client"
 import { AccessApp } from "./access-app.tsx"
 
@@ -15,9 +15,35 @@ afterEach(() => {
   root = null
   document.body.innerHTML = ""
   history.replaceState(null, "", "/")
+  vi.unstubAllGlobals()
 })
 
 describe("studio access", () => {
+  it("shows the approval account without the workspace and preserves the URL intent over a saved session intent", async () => {
+    const requests: string[] = []
+    vi.stubGlobal("fetch", async (input: string) => {
+      requests.push(input)
+      return Response.json({ client: "Reference agent", scope: "decks", expired: false })
+    })
+    history.replaceState(null, "", "/agents/approve?intent=approval-from-url")
+    await render(<AccessApp client={fakeClient({ signedIn: true, kind: "import" })} initialScreen="checking" initialKind="connect-agent" initialIntent="approval-from-url" />)
+    await act(flush)
+    expect(requests).toContain("/api/agents/approval?intent=approval-from-url")
+    expect(document.body.textContent).toContain("Reference agent wants to use AirDesign")
+    expect(document.body.textContent).toContain("ada@example.com")
+    expect(document.querySelector(".ad-studio-shell")).toBeNull()
+    expect(document.querySelector(".agent-approval-page")).not.toBeNull()
+  })
+
+  it("opens settings when a session still carries an earlier connect intent", async () => {
+    vi.stubGlobal("fetch", async () => Response.json([]))
+    history.replaceState(null, "", "/settings/agents")
+    await render(<AccessApp client={fakeClient({ signedIn: true, kind: "connect-agent" })} initialScreen="checking" />)
+    await act(flush)
+    expect(document.body.textContent).toContain("Connected agents")
+    expect(document.querySelector(".agent-approval")).toBeNull()
+  })
+
   it("keeps a wrong code on the check screen and returns focus to the code", async () => {
     const client = fakeClient()
     await render(<AccessApp client={client} />)

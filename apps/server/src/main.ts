@@ -1,3 +1,6 @@
+import {mcpHandler} from "./mcp/handle.ts"
+import {oauthHandler} from "./mcp/oauth-handle.ts"
+import { usageHandler } from "./usage/handle.ts"
 import { imagesHandler } from "./images/handle.ts"
 import { templatesHandler } from "./templates/handle.ts"
 import { TemplateStore } from "../../../packages/brand/src/template-store.ts"
@@ -50,10 +53,13 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
   const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
   const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates)
+  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,deck=>sync.refresh(deck))
+  const handleOAuth=oauthHandler(access,history,publicOrigin,secret)
+  const handleUsage = usageHandler(access,history,publicOrigin)
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
   const server = createServer((request, response) => {
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, request, response).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, request, response).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
@@ -70,6 +76,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
       await new Promise<void>((resolve, reject) => {
         server.close((error) => error ? reject(error) : resolve())
       })
+      await mcp.close()
       await history.close()
       imageQueue.close()
       templates.close()
@@ -79,7 +86,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, handleUsage: (request: Request) => Promise<Response>, handleOAuth:(request:Request)=>Promise<Response>, handleMcp:(request:Request)=>Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const host = request.headers.host ?? "127.0.0.1"
     const body = await readRequestBody(request)
@@ -95,7 +102,8 @@ async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOpe
       writeHandlerError(response, error)
       return
     }
-    const outgoing = new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
+    const pathname=new URL(incoming.url).pathname
+    const outgoing = pathname==="/mcp" || pathname.startsWith("/api/mcp/") ? await handleMcp(incoming) : pathname.startsWith("/oauth/") || pathname.startsWith("/.well-known/") || pathname.startsWith("/api/agents") ? await handleOAuth(incoming) : pathname.startsWith("/api/usage") ? await handleUsage(incoming) : new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {

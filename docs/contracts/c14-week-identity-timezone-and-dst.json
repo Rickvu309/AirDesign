@@ -2,7 +2,7 @@
   "id": "C14",
   "schemaVersion": 1,
   "title": "Week identity timezone and DST",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P07",
   "acceptIn": "P07",
   "owner": "packages/usage",
@@ -10,14 +10,24 @@
     "path": "docs/design/v0.1/logic.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Weeks start Monday at 08:00 in the stored IANA time zone, using local calendar arithmetic across DST. A timezone change is pending until the current stored UTC reset instant; it never changes the active week or grants allowance. At rollover select the containing week in the pending zone and grant exactly one allowance. Repeated changes replace the pending zone. Ambiguous local boundaries choose the earlier instant; nonexistent boundaries choose the first valid instant after the gap.",
   "alternatives": [
-    "Decide in P07 before any consumer."
+    "Leave this decision deferred and block dependent implementation."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "authorized-path",
+      "result": "allowed-within-contract"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "authority-or-budget-bypass",
+      "result": "refused"
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
+    "kind": "contract-decision-record",
     "command": "npm run verify:contracts"
   },
   "migration": {

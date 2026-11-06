@@ -2,7 +2,7 @@
   "id": "C20",
   "schemaVersion": 1,
   "title": "Quality and tool evaluation",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P07",
   "acceptIn": "P07",
   "owner": "evals",
@@ -10,14 +10,24 @@
     "path": "docs/planning/v0.1/research/quality/README.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Local deterministic authorization, atomicity, output and catalog tests are mandatory here. The paid two-model evaluation remains pending P09 X03: at least 40 fixed tasks, three trials per model, at least 90 percent completion and no baseline regression. Local smoke results do not imply model task quality or public vendor support.",
   "alternatives": [
-    "Decide in P07 before any consumer."
+    "Leave this decision deferred and block dependent implementation."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "authorized-path",
+      "result": "allowed-within-contract"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "authority-or-budget-bypass",
+      "result": "refused"
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
+    "kind": "contract-decision-record",
     "command": "npm run verify:contracts"
   },
   "migration": {

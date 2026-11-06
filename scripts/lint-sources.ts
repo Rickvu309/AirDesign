@@ -1,4 +1,5 @@
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
+import {meteredToolSafetyHits} from "./lint/metered-tool-safety.ts"
 import { editorStackingHits } from "./lint/editor-stacking.ts"
 import { viewportPanelSizingHits } from "./lint/viewport-panel-sizing.ts"
 import { historyQuerySafetyHits } from "./lint/history-query-safety.ts"
@@ -22,6 +23,7 @@ const files = await collect(repoRoot)
 const failures: string[] = []
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for(const hit of meteredToolSafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for (const hit of historyQuerySafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of operationSafetyHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of deckInvariantHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)

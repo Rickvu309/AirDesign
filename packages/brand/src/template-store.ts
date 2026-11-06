@@ -30,6 +30,21 @@ export class TemplateStore {
     this.db.prepare("INSERT INTO templates(owner,id,version,payload) VALUES(?,?,?,?)").run(principal.personId,template.id,template.version,JSON.stringify(template))
     return template
   }
+  update(principal:Principal,request:string,id:string,base:number,tokens:Partial<Pick<Template,"font"|"background"|"foreground"|"accent">>):Template {
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(request))throw new Error("invalid-request-id")
+    this.db.exec("CREATE TABLE IF NOT EXISTS template_request(owner TEXT NOT NULL,request TEXT NOT NULL,input TEXT NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(owner,request)); BEGIN IMMEDIATE")
+    try{
+      const input=JSON.stringify({id,base,tokens:Object.entries(tokens).sort(([a],[b])=>a.localeCompare(b))})
+      const prior=this.db.prepare("SELECT input,payload FROM template_request WHERE owner=? AND request=?").get(principal.personId,request)
+      if(prior){if(prior.input!==input)throw new Error("request-id-payload-mismatch");const result=parseTemplate(JSON.parse(String(prior.payload)));this.db.exec("COMMIT");return result}
+      const current=this.list(principal).filter(item=>item.id===id).sort((a,b)=>b.version-a.version)[0]
+      if(!current)throw new Error("brand-not-found")
+      if(current.version!==base)throw new Error("stale-base")
+      const result=this.save(principal,{...current,...tokens,fontRight:tokens.font&&tokens.font!==current.font ? tokens.font==="Geist" ? "installed" : "missing" : current.fontRight,version:base+1})
+      this.db.prepare("INSERT INTO template_request(owner,request,input,payload) VALUES(?,?,?,?)").run(principal.personId,request,input,JSON.stringify(result))
+      this.db.exec("COMMIT");return result
+    }catch(error){this.db.exec("ROLLBACK");throw error}
+  }
   setDefault(principal: Principal, id: string, version: number): Template {
     const template = this.get(principal,id,version)
     if(template.fontRight==="missing")throw new Error("choose-installed-font-before-default")

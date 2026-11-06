@@ -15,6 +15,9 @@ export default defineConfig({
     port: 41732,
     proxy: {
       "/ws": { target: process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731", ws: true },
+      "/mcp": { target: process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731", changeOrigin: false },
+      "/oauth": process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731",
+      "/.well-known": process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731",
       "/api": process.env.AIRDESIGN_API_ORIGIN ?? "http://127.0.0.1:41731",
     },
   },

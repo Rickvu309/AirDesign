@@ -8,17 +8,19 @@ export function commandId(value: string): CommandId {
   return value
 }
 function isCommandId(value: unknown): value is CommandId { return typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value) }
-export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string}
+export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string;undoOf?:string}
 export type AuthorityError = {code:"execution-identity-mismatch";expected:ExecutionIdentity}
 export type Command = { id: CommandId } & (
   { kind: "edit"; base: number; changes: ChangeSet; run: string | null } |
   { kind: "patch"; base: number; target: Id; fields: Node["fields"]; run: string | null } |
   { kind: "start-run"; run: string } |
   { kind: "close-run" | "undo-run"; run: string } |
-  { kind: "undo" | "redo"; target: CommandId }
+  { kind: "undo" | "redo"; target: CommandId } |
+  { kind: "undo-change"; target: CommandId; base: number; run: string }
 )
 export function executionMatches(command: Command, identity: ExecutionIdentity): boolean {
   if(command.kind==="edit" || command.kind==="patch")return command.run===(identity.kind==="person" ? null : identity.run)
+  if(command.kind==="undo-change")return identity.kind==="run" && command.run===identity.run
   return identity.kind==="person" || (command.kind==="close-run" && command.run===identity.run)
 }
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -176,8 +178,10 @@ export function execute(current: History, command: Command, identity: ExecutionI
       for (const event of history.events) if (event.run === run.id) { event.active = false; event.toggledAt = history.seq + 1 }
       break
     case "undo":
+    case "undo-change":
     case "redo": {
       const event = history.events.find(e => e.id === command.target)
+      if(command.kind==="undo-change" && (command.base!==history.seq || event?.run!==(identity.kind==="run" ? identity.undoOf ?? command.run : command.run)))return refuse(command.base!==history.seq ? "stale-base" : "invalid-undo-target")
       if (!event || event.active === (command.kind === "redo")) return refuse("invalid-undo-target")
       if (command.kind === "redo" && event.run !== null && history.runs.some(run => run.id === event.run && run.kind === "undone")) return refuse("run-closed")
       if (command.kind === "redo" && history.events.some(e => e.id !== event.id && Math.max(e.seq,e.toggledAt) > event.toggledAt && e.patches.some(p => event.patches.some(q => q.id === p.id && q.keys.some(k => p.keys.includes(k)))))) return refuse("redo-invalidated")
@@ -188,7 +192,7 @@ export function execute(current: History, command: Command, identity: ExecutionI
     default: { const exhaustive: never = command; return exhaustive }
   }
   history.seq++
-  try { if (command.kind === "undo" || command.kind === "redo" || command.kind === "undo-run") history.deck = projection(history) } catch { return refuse("undo-structure-conflict") }
+  try { if (command.kind === "undo" || command.kind === "undo-change" || command.kind === "redo" || command.kind === "undo-run") history.deck = projection(history) } catch { return refuse("undo-structure-conflict") }
   history.deck.version=history.seq
   return { history, receipt: { id: command.id, kind: "applied", seq: history.seq } }
 }

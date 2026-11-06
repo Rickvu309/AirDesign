@@ -2,7 +2,7 @@
   "id": "C12",
   "schemaVersion": 1,
   "title": "Snapshot paging and response limits",
-  "status": "deferred",
+  "status": "accepted",
   "freezeIn": "P07",
   "acceptIn": "P07",
   "owner": "packages/agent",
@@ -10,14 +10,24 @@
     "path": "docs/planning/v0.1/research/tools/README.md",
     "gitSha": "1ead9f54adee48bfefbe1057c24ed3fdd08af361"
   },
-  "rule": null,
+  "rule": "Snapshot pagination freezes ordered complete items on first read, bound to authenticated owner, query and resource version. Opaque cursors expire after 15 minutes. Default 20 and maximum 50 items; complete non-image MCP envelopes are strictly below 20000 UTF-8 bytes. Oversized individual items return an actionable error and resource reference; never truncate an element.",
   "alternatives": [
-    "Decide in P07 before any consumer."
+    "Leave this decision deferred and block dependent implementation."
   ],
-  "examples": [],
-  "counterexamples": [],
+  "examples": [
+    {
+      "id": "authorized-path",
+      "result": "allowed-within-contract"
+    }
+  ],
+  "counterexamples": [
+    {
+      "id": "authority-or-budget-bypass",
+      "result": "refused"
+    }
+  ],
   "evidence": {
-    "kind": "deferred",
+    "kind": "contract-decision-record",
     "command": "npm run verify:contracts"
   },
   "migration": {
