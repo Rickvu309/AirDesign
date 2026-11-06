@@ -8,6 +8,6 @@ ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/ms-playwright AIRDESIGN_ISOLAT
 WORKDIR /app
 COPY --from=build /app /app
 RUN apt-get update && apt-get install -y --no-install-recommends util-linux ca-certificates && npx playwright install --with-deps chromium && rm -rf /var/lib/apt/lists/* && mkdir -p /data /home/node/tmp && chown -R node:node /data /home/node /ms-playwright
-USER node
 EXPOSE 3000
+ENTRYPOINT ["/app/scripts/docker/entrypoint.sh"]
 CMD ["npm", "run", "start:web"]

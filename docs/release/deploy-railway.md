@@ -52,3 +52,7 @@ Before deployment run the root build, tests, type check, lint, and `verify:pr-01
 Record the previous immutable image, site artifact, environment configuration, database schema, and queue version. Follow [the release and rollback procedure](operate.md) for consistent PostgreSQL and SQLite backups. Stop worker claims before replacing binaries. Fence active leases, restore compatible artifacts, deploy web, verify `/healthz`, then restart worker. Restore the previous Pages artifact separately. A binary rollback does not reverse saved edits, payments, or migrations. Replay deletion tombstones before enabling access after any database restore.
 
 Aira selects the Claude Agent SDK when the AirDesign Claude key is set, with the Anthropic key as fallback. The model defaults to `claude-sonnet-5-5`. Without a key, Aira is unavailable; manual editing remains enabled. Deterministic drafting is used only by tests and release replays.
+
+## Volume ownership
+
+Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv` before starting the app. The app itself never runs as root.
