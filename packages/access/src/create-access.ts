@@ -87,6 +87,7 @@ export type Access = {
 const redirectKeys = new Set(["returnTo", "next", "url"])
 
 export async function createAccess(options: CreateAccessOptions): Promise<Access> {
+  if (process.env.NODE_ENV === "production" && options.exposeInbox) throw new Error("AIRDESIGN_EXPOSE_INBOX is forbidden in production")
   if (options.driver.kind === "postgres" && options.driver.url.trim() === "") {
     throw new Error("postgres-url-missing")
   }

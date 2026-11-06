@@ -1,4 +1,5 @@
-import {expect,it} from "vitest"
+import {claudeAdapter,type SdkQuery} from "../../../../packages/agent/src/sdk-adapter.ts"
+import {expect,it,vi} from "vitest"
 import {fixtureDeck} from "../../../../packages/deck/src/fixture.ts"
 import {commandId} from "../../../../packages/change-log/src/index.ts"
 import {localAdapter} from "../../../../packages/agent/src/local-adapter.ts"
@@ -146,4 +147,42 @@ it("bounds displayed activity while durable progress resumes without repeating a
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(6)
     }finally{await source.close()}
   }finally{await fixture.close()}
+})
+
+it("disables configured Aira honestly without credentials and refuses drafting",async()=>{
+  vi.stubEnv("AIRDESIGN_CLAUDE_KEY","");vi.stubEnv("ANTHROPIC_API_KEY","")
+  const fixture=await mcpFixture({agentAdapter:"configured"})
+  try{
+    const owner=await fixture.signIn("aira-no-key@example.com");await fixture.json("/api/decks",fixtureDeck(2,2),owner.cookie)
+    const snapshot=await (await fixture.json("/api/aira?deck=deck",undefined,owner.cookie)).json()
+    expect(snapshot).toMatchObject({enabled:false,run:null,unavailable:expect.stringContaining("Claude API key")})
+    const response=await fixture.json("/api/aira?deck=deck",{action:"send",text:"Must not draft",selection:[]},owner.cookie)
+    expect(response.status).toBe(400)
+    expect((await fixture.history.read({personId:owner.personId},"deck")).seq).toBe(0)
+    expect((await fixture.history.usage.status(owner.personId)).used).toBe(0)
+  }finally{await fixture.close();vi.unstubAllEnvs()}
+})
+
+it("joins steering from another tab into the active Claude SDK stream",async()=>{
+ const entered=deferred(),steered=deferred()
+ let received=""
+ const query:SdkQuery=async function*({prompt}){
+  yield* []
+  if(typeof prompt==="string")throw new Error("stream-required")
+  const input=prompt[Symbol.asyncIterator]()
+  await input.next();entered.resolve()
+  const next=await input.next();received=String(next.value.message.content);steered.resolve()
+  await input.return?.()
+ }
+ const fixture=await mcpFixture({agentAdapter:claudeAdapter({key:"test-only",model:"test-only",query})})
+ try{
+  const owner=await fixture.signIn("sdk-steering@example.com")
+  await fixture.json("/api/decks",fixtureDeck(1,1),owner.cookie)
+  const started=await (await fixture.json("/api/aira?deck=deck",{action:"send",text:"Initial"},owner.cookie)).json()
+  await entered.promise
+  const joined=await (await fixture.json("/api/aira?deck=deck",{action:"send",text:"Use the revised direction"},owner.cookie)).json()
+  await steered.promise
+  expect(joined).toMatchObject({id:started.id,joined:true})
+  expect(received).toBe("Use the revised direction")
+ }finally{await fixture.close()}
 })

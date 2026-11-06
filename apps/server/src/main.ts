@@ -1,3 +1,9 @@
+import {access as accessFile} from "node:fs/promises"
+import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
+import {workerHandler} from "./worker/handle.ts"
+import {productionEnvironment} from "./runtime/environment.ts"
+import {serveStudio} from "./runtime/studio.ts"
+import {createResendMail} from "../../../packages/access/src/resend-mail.ts"
 import {PGlite} from "@electric-sql/pglite"
 import {once} from "node:events"
 import {billingHandler} from "./billing/handle.ts"
@@ -5,7 +11,7 @@ import type {PaymentProvider} from "../../../packages/usage/src/payments/provide
 import {deliverAccountDeletion} from "../../worker/src/account-deletion/deliver.ts"
 import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
 import {agentHandler} from "./agent/handle.ts"
-import {localAdapter} from "../../../packages/agent/src/local-adapter.ts"
+import {configuredAgent} from "../../../packages/agent/src/sdk-adapter.ts"
 import {domainTools} from "./mcp/domain-tools.ts"
 import {mcpHandler} from "./mcp/handle.ts"
 import {oauthHandler} from "./mcp/oauth-handle.ts"
@@ -43,15 +49,17 @@ export type StartServerOptions = {
 }
 
 export async function startServer(port = 0, extras: StartServerOptions = {}): Promise<RunningServer> {
+  productionEnvironment()
+  if (process.env.NODE_ENV === "production") await accessFile(new URL("../../studio/dist/index.html",import.meta.url)).catch(() => { throw new Error("Studio build missing. Run npm run build before starting web.") })
   const inbox = createMemoryInbox()
   const secret = process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars"
-  const databaseUrl = process.env.AIRDESIGN_DATABASE_URL
+  const databaseUrl = process.env.AIRDESIGN_DATABASE_URL ?? process.env.DATABASE_URL
   const publicOrigin = extras.publicOrigin ?? process.env.AIRDESIGN_PUBLIC_ORIGIN ?? "http://127.0.0.1:41732"
   const memory = databaseUrl===undefined&&extras.accessPath==="memory://"&&extras.historyPath==="memory://" ? await PGlite.create() : undefined
   const access = await createAccess({
     driver: databaseUrl === undefined ? { kind: "pglite", client:memory, dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/access") } : { kind: "postgres", url: databaseUrl },
     secret,
-    mail: inbox,
+    mail: process.env.RESEND_API_KEY ? createResendMail({apiKey:process.env.RESEND_API_KEY,from:process.env.MAIL_FROM ?? "",publicOrigin,endpoint:process.env.AIRDESIGN_RESEND_ENDPOINT}) : inbox,
     clock: extras.clock ?? (() => Date.now()),
     guard: { allow: () => true },
     exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
@@ -67,22 +75,29 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
   const changed=async(deck:string)=>{await sync.refresh(deck);await aira.publish(deck)}
   const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates)
-  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed)
-  const handleOAuth=oauthHandler(access,history,publicOrigin,secret)
-  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? localAdapter,deck=>sync.refresh(deck))
+  const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
+  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin)
+  const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
+  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? configuredAgent(),deck=>sync.refresh(deck))
   await access.resumeDeletions()
   const handleBilling=billingHandler(access,history,extras.paymentProvider,publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
+  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
   const server = createServer((request, response) => {
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, aira.handle, handleBilling, request, response).catch((error: unknown) => {
+    if (request.url === "/healthz") {
+      void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
+      return
+    }
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, aira.handle, handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
   const sync = attachSync(server, access, history, publicOrigin)
-  await new Promise<void>((resolve) => {
-    server.listen(port, "127.0.0.1", () => resolve())
+  await new Promise<void>((resolve,reject) => {
+    server.once("error",reject)
+    server.listen(port, process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1", () => resolve())
   })
   const address = server.address()
   const bound = typeof address === "object" && address ? address.port : port
@@ -105,24 +120,33 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   }
 }
 
-async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, handleUsage: (request: Request) => Promise<Response>, handleOAuth:(request:Request)=>Promise<Response>, handleMcp:(request:Request)=>Promise<Response>, handleAira:(request:Request)=>Promise<Response>, handleBilling:(request:Request)=>Promise<Response>, request: IncomingMessage, response: ServerResponse): Promise<void> {
+async function serve(access: Awaited<ReturnType<typeof createAccess>>, handleOperation: (request: Request) => Promise<Response>, handleCommands: (request: Request) => Promise<Response>, handleDecks: (request: Request) => Promise<Response>, handleTemplates: (request: Request) => Promise<Response>, handleImages: (request: Request) => Promise<Response>, handleUsage: (request: Request) => Promise<Response>, handleOAuth:(request:Request)=>Promise<Response>, handleMcp:(request:Request)=>Promise<Response>, handleAira:(request:Request)=>Promise<Response>, handleBilling:(request:Request)=>Promise<Response>, request: IncomingMessage, response: ServerResponse, publicOrigin: string, handleWorker:(request:Request)=>Promise<Response>): Promise<void> {
   try {
+    if (await serveStudio(request, response)) return
     const host = request.headers.host ?? "127.0.0.1"
-    const body = await readRequestBody(request)
+    const workerRequest=new URL(request.url ?? "/","http://localhost").pathname==="/internal/worker"
+    if(workerRequest&&!workerAuthorized(request.headers.authorization,process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars")){
+      request.resume();response.writeHead(401,{"content-type":"application/json"});response.end(JSON.stringify({code:"unauthorized"}));return
+    }
+    const binaryWorker=workerRequest&&request.method==="PUT"
+    const chunks=request[Symbol.asyncIterator]()
+    const stream=binaryWorker ? new ReadableStream<Uint8Array>({async pull(controller){const chunk=await chunks.next();if(chunk.done)controller.close();else if(chunk.value instanceof Uint8Array)controller.enqueue(chunk.value);else controller.error(new Error("invalid-body-chunk"))},async cancel(){request.resume()}}) : undefined
+    const body = binaryWorker ? undefined : await readRequestBody(request,workerRequest ? workerCompletionLimit : undefined)
     const method = request.method ?? "GET"
     let incoming: Request
     try {
-      incoming = new Request(`http://${host}${request.url ?? "/"}`, {
+      incoming = new Request(new URL(request.url ?? "/", process.env.NODE_ENV === "production" ? publicOrigin : `http://${host}`), {
         method,
         headers: new Headers(entries(request.headers)),
-        body: method === "GET" || method === "HEAD" ? undefined : new Uint8Array(body),
+        body: method === "GET" || method === "HEAD" ? undefined : binaryWorker ? stream : new Uint8Array(body ?? []),
+        ...binaryWorker ? {duplex:"half"} : {},
       })
     } catch (error) {
       writeHandlerError(response, error)
       return
     }
     const pathname=new URL(incoming.url).pathname
-    const outgoing = pathname.startsWith("/api/billing/") ? await handleBilling(incoming) : pathname.startsWith("/api/aira") ? await handleAira(incoming) : pathname==="/mcp" || pathname.startsWith("/api/mcp/") ? await handleMcp(incoming) : pathname.startsWith("/oauth/") || pathname.startsWith("/.well-known/") || pathname.startsWith("/api/agents") ? await handleOAuth(incoming) : pathname.startsWith("/api/usage") ? await handleUsage(incoming) : new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
+    const outgoing = pathname === "/internal/worker" ? await handleWorker(incoming) : pathname.startsWith("/api/billing/") ? await handleBilling(incoming) : pathname.startsWith("/api/aira") ? await handleAira(incoming) : pathname==="/mcp" || pathname.startsWith("/api/mcp/") ? await handleMcp(incoming) : pathname.startsWith("/oauth/") || pathname.startsWith("/.well-known/") || pathname.startsWith("/api/agents") ? await handleOAuth(incoming) : pathname.startsWith("/api/usage") ? await handleUsage(incoming) : new URL(incoming.url).pathname.startsWith("/api/assets") ? await handleImages(incoming) : new URL(incoming.url).pathname.startsWith("/api/templates") ? await handleTemplates(incoming) : new URL(incoming.url).pathname.startsWith("/api/catalog") ? await handleDecks(incoming) : new URL(incoming.url).pathname.startsWith("/api/operations") ? await handleOperation(incoming) : new URL(incoming.url).pathname.startsWith("/api/decks") ? await handleCommands(incoming) : await access.handle(incoming)
     const headers: Record<string, string | string[]> = {}
     outgoing.headers.forEach((value, key) => {
       if (key.toLowerCase() === "set-cookie") {
@@ -178,4 +202,5 @@ if (entry === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT ?? "41731")
   const running = await startServer(port)
   process.stdout.write(`listening ${running.port}\n`)
+  for (const signal of ["SIGTERM","SIGINT"] as const) process.once(signal,() => { void running.close().catch(() => { process.exitCode=1 }) })
 }

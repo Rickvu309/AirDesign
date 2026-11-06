@@ -1,7 +1,7 @@
 import {mutationRejection,type Access} from "@airdesign/access"
 import type {HistoryStore} from "../db/history-store.ts"
-export function oauthHandler(access:Access,history:HistoryStore,origin:string,secret:string) {
-  const resource=`${origin}/mcp`,store=history.oauth(secret,resource)
+export function oauthHandler(access:Access,history:HistoryStore,origin:string,secret:string,resourceOrigin=origin) {
+  const resource=`${resourceOrigin}/mcp`,store=history.oauth(secret,resource)
   return async(request:Request):Promise<Response>=>{
     const url=new URL(request.url),path=url.pathname
     const reply=(body:unknown,status=200)=>Response.json(body,{status,headers:{"cache-control":"no-store"}})

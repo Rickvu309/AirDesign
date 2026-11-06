@@ -59,6 +59,8 @@ it("durably queues deletion while a worker owns a lease, then removes queued byt
     await expect(fixture.history.commit({personId:owner.personId},"deck",{id:commandId("late"),kind:"patch",target:fixtureDeck(1,1).id,fields:{version:1},base:0,run:null})).rejects.toThrow("account-deleting")
     await expect(fixture.history.usage.status(owner.personId)).rejects.toThrow("account-deleting")
     operations.fail(operation.id,lease.lease,"account-deleted")
+    expect(await deliverAccountDeletion(fixture.history,operations,images,templates,root)).toEqual([])
+    operations.acknowledgeCleanup(operation.id,lease.lease)
     expect(await deliverAccountDeletion(fixture.history,operations,images,templates,root)).toHaveLength(1)
     expect(await deliverAccountDeletion(fixture.history,operations,images,templates,root)).toEqual([])
     await expect(access(directory)).rejects.toThrow()
@@ -81,4 +83,24 @@ it("retries auth cleanup after owned purge has completed",async()=>{
     expect((await db.query('SELECT id FROM airdesign."user"')).rows).toEqual([])
     expect(await fixture.history.deletions.pending()).toEqual([])
   }finally{await db.end();await fixture.close()}
+})
+
+it("reconciles web-owned queued bytes after a remote worker releases a deleting account",async()=>{
+  const fixture=await mcpFixture(),operations=new OperationStore(fixture.operationsPath,fixture.now)
+  try{
+    const owner=await fixture.signIn("delete-remote-worker@example.com")
+    const operation=operations.submit({personId:owner.personId},"remote-delete",Buffer.from("source")),lease=operations.claim(operation.id)
+    if(!lease)throw new Error("lease-missing")
+    await fixture.json("/api/account/deletion",{confirm:"delete-account"},owner.cookie)
+    expect(await fixture.history.deletions.pending()).toHaveLength(1)
+    operations.fail(operation.id,lease.lease,"account-deleted")
+    const response=await fetch(fixture.origin+"/internal/worker",{method:"POST",headers:{authorization:"Bearer dev-only-secret-change-me-32chars","content-type":"application/json"},body:JSON.stringify({kind:"claim",queue:"import"})})
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({cleanup:[{id:operation.id,lease:lease.lease}]})
+    expect(await fixture.history.deletions.pending()).toHaveLength(1)
+    const cleaned=await fetch(fixture.origin+"/internal/worker",{method:"POST",headers:{authorization:"Bearer dev-only-secret-change-me-32chars","content-type":"application/json"},body:JSON.stringify({kind:"cleaned",queue:"import",id:operation.id,lease:lease.lease})})
+    expect(cleaned.status).toBe(200)
+    expect(await fixture.history.deletions.pending()).toEqual([])
+    expect(()=>operations.status({personId:owner.personId},operation.id)).toThrow("not-found")
+  }finally{operations.close();await fixture.close()}
 })

@@ -12,7 +12,10 @@ let result
 if(kind==="calibration")result=calibrate(source.rows)
 if(kind==="tools"){
  assert.ok(source.models.every(model=>model.version&&model.provider&&model.sdk)&&source.actualSdkRun&&source.baselineHead,"Pin model/provider/SDK and baseline; include actual SDK run")
- const tasks=JSON.parse(await readFile("bench/quality/tool-tasks.json","utf8"));result=toolVerdict(tasks.tasks,source.models.map(model=>model.version),source.rows)
+ const baselineBytes=await readFile(source.baselineResults)
+ assert.equal(createHash("sha256").update(baselineBytes).digest("hex"),source.baselineResultsSha256,"Pin frozen tool baseline results")
+ const baseline=JSON.parse(baselineBytes);assert.equal(baseline.head,source.baselineHead)
+ const tasks=JSON.parse(await readFile("bench/quality/tool-tasks.json","utf8"));result=toolVerdict(tasks.tasks,source.models.map(model=>model.version),source.rows,source.modelWaiver,baseline.rows)
 }
 if(kind==="quality"){
  const bytes=await readFile("bench/quality/release-set.json"),release=JSON.parse(bytes)

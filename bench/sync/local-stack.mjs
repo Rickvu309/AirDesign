@@ -27,7 +27,7 @@ export async function localStack() {
   const origin=`http://127.0.0.1:${studioPort}`, api=`http://127.0.0.1:${apiPort}`
   let child
   async function start() {
-    child=spawn(process.execPath,["apps/server/src/main.ts"],{env:{...process.env,PORT:String(apiPort),AIRDESIGN_DATABASE_URL:url,AIRDESIGN_PUBLIC_ORIGIN:origin,AIRDESIGN_EXPOSE_INBOX:"1",AIRDESIGN_OPERATIONS_PATH:`${folder}/operations.sqlite`},stdio:["ignore","pipe","pipe"]})
+    child=spawn(process.execPath,["apps/server/src/main.ts"],{env:{...process.env,NODE_ENV:"test",PORT:String(apiPort),AIRDESIGN_DATABASE_URL:url,AIRDESIGN_PUBLIC_ORIGIN:origin,AIRDESIGN_EXPOSE_INBOX:"1",AIRDESIGN_OPERATIONS_PATH:`${folder}/operations.sqlite`},stdio:["ignore","pipe","pipe"]})
     await new Promise((resolve,reject)=>{
       let output=""
       child.stdout.on("data",data=>{output+=data.toString();if(output.includes(`listening ${apiPort}`))resolve()})

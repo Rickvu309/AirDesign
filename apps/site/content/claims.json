@@ -40,7 +40,7 @@
     },
     {
       "id": "public-006",
-      "text": "After verification, obtain the approved MCP address from Studio → Settings → Agents.",
+      "text": "After verification, use https://mcp.airdesign.app/mcp, then confirm the address in Studio → Settings → Agents.",
       "kind": "proven",
       "receipt": "P08/report.md"
     },
