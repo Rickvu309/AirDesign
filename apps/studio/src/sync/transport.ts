@@ -104,6 +104,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
               }
               if(receipts.length)await afterPaint()
               if(own!==generation || stopped)return
+              if(receipts.length && !latest)latest=previous
               if(latest){
                 client.receive(latest)
                 if(!resumed){resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=>{if(active.readyState===WebSocket.OPEN)active.send(JSON.stringify(command))})}
