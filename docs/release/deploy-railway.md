@@ -8,8 +8,8 @@ Use `railway.json` for `web` and `railway.worker.json` for `worker`. Both servic
 
 | Service | Command | Storage | Health check |
 | --- | --- | --- | --- |
-| web | `npm run start:web` | Persistent writable volume mounted at `/data` | GET `/healthz`, 200 only after a live database query |
-| worker | `npm run start:worker` | Separate persistent volume mounted at `/data` | Process supervision; no public listener |
+| web | `/app/scripts/docker/entrypoint.sh` | Persistent writable volume mounted at `/data` | GET `/healthz`, 200 only after a live database query |
+| worker | `/app/scripts/docker/entrypoint.sh` with `AIRDESIGN_ROLE=worker` | Separate persistent volume mounted at `/data` | Process supervision; no public listener |
 | Postgres | Railway managed PostgreSQL | Managed persistent database | Railway managed |
 
 Deploy the built `apps/site/dist` separately to Cloudflare Pages project `airdesign`. Set `AIRDESIGN_STUDIO_ORIGIN` at build time to override its default, `https://studio.airdesign.app`.
