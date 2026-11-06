@@ -2,6 +2,19 @@ import {expect,it,vi} from "vitest"
 import {act} from "react"
 import {createRoot} from "react-dom/client"
 import {AddCredits} from "./add-credits.tsx"
+it("keeps checkout focus and explains recovery when the network fails",async()=>{
+  vi.stubGlobal("fetch",async()=>{throw new TypeError("Failed to fetch")})
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  try{
+    await act(async()=>root.render(<AddCredits refresh={async()=>{}}/>))
+    await act(async()=>container.querySelector<HTMLButtonElement>("button")!.click())
+    const submit=Array.from(container.querySelectorAll("button")).find(button=>button.textContent==="Continue to payment")!;submit.focus()
+    await act(async()=>submit.click())
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("Your credits are safe. Try again.")
+    expect(container.querySelector('[role="alert"]')?.textContent).not.toContain("TypeError")
+    expect(document.activeElement).toBe(submit);expect(submit.disabled).toBe(false)
+  }finally{await act(async()=>root.unmount());container.remove();sessionStorage.clear();vi.unstubAllGlobals()}
+})
 it("announces pending, paid, refund and error states without moving focus or granting from a browser return",async()=>{
   sessionStorage.clear()
   const streams:Stream[]=[],requests:string[]=[]

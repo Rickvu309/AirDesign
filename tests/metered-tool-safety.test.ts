@@ -34,3 +34,9 @@ it("preserves text input undo and streams HTTP events",()=>{
   expect(meteredToolSafetyHits("apps/server/src/main.ts","outgoing.arrayBuffer()")).toHaveLength(1)
   expect(meteredToolSafetyHits("apps/server/src/main.ts","outgoing.body.getReader()")).toEqual([])
 })
+
+it("keeps raw network exceptions out of checkout recovery copy",()=>{
+  const file="apps/studio/src/settings/add-credits.tsx"
+  expect(meteredToolSafetyHits(file,"setError(String(failure))")[0]?.reason).toBe("payment-errors-must-use-person-facing-copy")
+  expect(meteredToolSafetyHits(file,"setError(paymentUpdateError)")).toEqual([])
+})

@@ -8,6 +8,7 @@ export function meteredToolSafetyHits(file:string,source:string){
   reject(/\bclassName=["']ad-button\b(?![^"']*\bad-button-(?:dialog|settings|compact|sign-in)\b)[^"']*["']/g,"button-class-requires-an-explicit-size")
   if(file.endsWith(`${path.sep}studio${path.sep}vite.config.ts`)||file.endsWith(`${path.sep}agent-account${path.sep}fixture.mjs`))reject(/["']\/mcp["']\s*:(?![^\n]*\bchangeOrigin\s*:\s*false)[^\n]+/g,"mcp-proxy-must-preserve-public-host-with-changeOrigin-false")
   if(file.endsWith(`${path.sep}agent-account${path.sep}performance.mjs`))reject(/committed\.find\(entry=>entry\.payment\?\.id===receiptId\)/g,"payment-commit-probe-must-match-payment-and-receipt")
+  if(file.endsWith(`${path.sep}settings${path.sep}add-credits.tsx`))reject(/setError\(String\([^)]*\)\)/g,"payment-errors-must-use-person-facing-copy")
   if(file.includes(`${path.sep}mcp${path.sep}`)){
     reject(/!result\.content\.some\([^\n]+&&Buffer\.byteLength/g,"image-results-must-obey-an-envelope-limit")
     reject(/\.grantFixture\s*\(|\.usage\.reset\s*\(|\.usage\.configure\s*\(/g,"remote-tools-cannot-spend-or-configure-credits")
