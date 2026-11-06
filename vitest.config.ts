@@ -9,6 +9,7 @@ export default defineConfig({
     },
   },
   test: {
+    maxWorkers: Number(process.env.VITEST_MAX_WORKERS ?? 2),
     projects: [
       {
         test: {

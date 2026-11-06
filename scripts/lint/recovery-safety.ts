@@ -1,6 +1,7 @@
 export function recoverySafetyHits(file:string,source:string){
   const normalized=file.replaceAll("\\","/"),hits:{line:number;reason:string}[]=[]
   const reject=(reason:string)=>hits.push({line:1,reason})
+  if(normalized.endsWith("/vitest.config.ts")&&!source.includes("maxWorkers: Number(process.env.VITEST_MAX_WORKERS ?? 2)"))reject("bound-test-workers-to-heavy-memory-budget")
   if(normalized.endsWith("/packages/access/src/create-access.ts")){
     const start=source.indexOf("async function deleteAccount("),end=source.indexOf("async function readPerson(",start),deletion=source.slice(start,end)
     if(deletion.includes("await options.deleteOwnedData?.(user.id)"))reject("persist-deletion-job-and-revoke-sessions-before-owned-purge")
