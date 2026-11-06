@@ -15,11 +15,13 @@ export class SyncClient {
   private snapshot: Snapshot
   private pending: Pending[] = []
   private online = false
+  private connectionEpoch = 0
   private blocked: "signed-out" | "deleted" | null = null
   private retrying = false
   private work: Promise<void> = Promise.resolve()
   private sender: ((command: Command)=>void) | null = null
   private sent = new Set<string>()
+  private acknowledging = new Set<string>()
   private releases = new Map<string,()=>void>()
   private durable = new Set<string>()
   private projected: History | null = null
@@ -53,7 +55,7 @@ export class SyncClient {
     return count ? {kind:"pending",count} : {kind:"saved"}
   }
   connected(sender: (command: Command)=>void) { if (this.blocked) return;this.sender=sender;this.online=true;this.retrying=false;this.flush();this.changed() }
-  disconnected(retrying=false) { this.online=false;this.sender=null;for(const release of this.releases.values())release();this.sent.clear();this.retrying=retrying;this.changed() }
+  disconnected(retrying=false) { this.connectionEpoch++;this.online=false;this.sender=null;for(const release of this.releases.values())release();this.sent.clear();this.retrying=retrying;this.changed() }
   stop(kind: "signed-out" | "deleted") { this.blocked=kind;this.disconnected() }
   resume(person: string) { if (this.key !== outboxKey(person,this.snapshot.deck.id) || this.blocked === "deleted") return false;this.blocked=null;return true }
   receive(snapshot: Snapshot) { if (snapshot.deck.id !== this.snapshot.deck.id || snapshot.seq < this.snapshot.seq) return;this.snapshot=snapshot;this.notify() }
@@ -65,12 +67,17 @@ export class SyncClient {
     this.notify()
     return this.persist([item])
   }
-  acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> {
-    this.pending=this.pending.flatMap(item=>item.command.id!==receipt.id ? [item] : receipt.kind==="applied" ? [] : [{kind:"rejected",command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}])
-    this.sent.delete(receipt.id);this.notify()
-    const retained=this.pending.filter(item=>item.command.id===receipt.id)
-    const persist=()=>this.persist(retained,receipt.kind==="applied" ? [receipt.id] : []).then(()=>this.releases.get(receipt.id)?.())
-    return durableCheckpoint ? durableCheckpoint.then(persist) : persist()
+  async acknowledge(receipt: Receipt, durableCheckpoint?: Promise<void>): Promise<void> {
+    this.acknowledging.add(receipt.id)
+    try{
+      if(durableCheckpoint)await durableCheckpoint
+      const retained=this.pending.flatMap(item=>item.command.id===receipt.id && receipt.kind!=="applied" ? [{kind:"rejected" as const,command:item.command,code:receipt.code,...(receipt.restore ? {restore:receipt.restore} : {})}] : [])
+      await this.persist(retained,receipt.kind==="applied" ? [receipt.id] : [])
+      this.pending=this.pending.flatMap(item=>item.command.id!==receipt.id ? [item] : retained)
+      this.sent.delete(receipt.id)
+      this.releases.get(receipt.id)?.()
+      this.notify()
+    }finally{this.acknowledging.delete(receipt.id)}
   }
   async dismiss(id: string) { this.pending=this.pending.filter(p=>p.command.id!==id);this.notify();await this.persist([],[id]) }
   async recover(id: string, commands: Command[]) {
@@ -87,12 +94,13 @@ export class SyncClient {
   }) }
   private serial(action: ()=>Promise<void>): Promise<void> { const result=this.work.then(action);this.work=result.catch(()=>{});return result }
   private async send(command: Command) {
+    const epoch=this.connectionEpoch
     const deliver=async()=>{
-      if(!this.online || this.blocked)return
+      if(epoch!==this.connectionEpoch || !this.online || this.blocked)return
       if(!(await this.outbox.read(this.key)).some(item=>item.command.id===command.id)){
         this.pending=this.pending.filter(item=>item.command.id!==command.id);this.notify();return
       }
-      if(!this.online || this.blocked)return
+      if(epoch!==this.connectionEpoch || !this.online || this.blocked)return
       await new Promise<void>(resolve=>{
         this.releases.set(command.id,()=>{this.releases.delete(command.id);resolve()})
         this.sender?.(structuredClone(command))
@@ -101,5 +109,5 @@ export class SyncClient {
     if(typeof window!=="undefined" && navigator.locks)await navigator.locks.request(JSON.stringify([this.key,command.id]),deliver)
     else this.sender?.(structuredClone(command))
   }
-  private flush() { if (this.online && !this.blocked) for (const item of this.pending) if (item.kind==="queued" && this.durable.has(item.command.id) && !this.sent.has(item.command.id)) { this.sent.add(item.command.id);void this.send(item.command) } }
+  private flush() { if (this.online && !this.blocked) for (const item of this.pending) if (item.kind==="queued" && this.durable.has(item.command.id) && !this.sent.has(item.command.id) && !this.acknowledging.has(item.command.id)) { this.sent.add(item.command.id);void this.send(item.command) } }
 }

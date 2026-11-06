@@ -1,4 +1,4 @@
-import { expect, it } from "vitest"
+import { expect, it, vi } from "vitest"
 import { SyncClient, parseSnapshot } from "../src/client.ts"
 import { outboxKey, type Outbox, type Pending } from "../src/outbox.ts"
 import { commandId, execute, initialHistory, type Command } from "../../change-log/src/index.ts"
@@ -139,4 +139,30 @@ it("rejects malformed cached contribution history at the snapshot boundary",()=>
     {...snapshot,contributions:{...snapshot.contributions,history:{...history,events:[{...history.events[0],active:"yes"}]}}},
     {...snapshot,contributions:{...snapshot.contributions,applied:[42]}},
   ]) expect(()=>parseSnapshot(invalid)).toThrow()
+})
+
+it("does not send work retained by an obsolete connection after reconnect",async()=>{
+  const {outbox}=memory()
+  let waiting=false
+  const reads:(()=>void)[]=[]
+  const delayed:Outbox={write:outbox.write,read:async key=>{
+    if(waiting)await new Promise<void>(resolve=>{reads.push(resolve)})
+    return outbox.read(key)
+  }}
+  const client=new SyncClient("owner",{deck:fixtureDeck(1),seq:0},delayed,()=>{})
+  await client.enqueue(patch("reconnect_once"))
+  const old:Command[]=[],current:Command[]=[]
+  vi.stubGlobal("window",{})
+  vi.stubGlobal("navigator",{locks:{request:async(_key:string,deliver:()=>Promise<void>)=>deliver()}})
+  try{
+    waiting=true
+    client.connected(command=>old.push(command))
+    client.disconnected()
+    client.connected(command=>current.push(command))
+    expect(reads).toHaveLength(2)
+    for(const resolve of reads)resolve()
+    for(let n=0;n<10;n++)await Promise.resolve()
+    expect(old).toEqual([])
+    expect(current.map(command=>command.id)).toEqual(["reconnect_once"])
+  }finally{client.disconnected();vi.unstubAllGlobals()}
 })
