@@ -27,3 +27,18 @@ it("uses a native deck color for Mist instead of duplicating the white backgroun
     expect(container.querySelector<HTMLInputElement>('input[aria-label="White color"]')?.value).toBe("#ffffff")
   }finally{await act(async()=>root.unmount());container.remove()}
 })
+
+it("focuses search and restores the trigger after Escape and outside dismissal",async()=>{
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  try{
+    await act(async()=>root.render(<TemplatePanel deck={fixtureDeck(1)} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>))
+    const trigger=container.querySelector<HTMLButtonElement>('[aria-label="Choose template"]')!
+    await act(async()=>trigger.click())
+    expect(document.activeElement).toBe(container.querySelector('[aria-label="Search templates"]'))
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})))
+    expect(container.querySelector('[aria-label="Template picker"]')).toBeNull();expect(document.activeElement).toBe(trigger)
+    await act(async()=>trigger.click());await act(async()=>document.body.dispatchEvent(new Event("pointerdown",{bubbles:true})))
+    expect(container.querySelector('[aria-label="Template picker"]')).toBeNull();expect(document.activeElement).toBe(trigger)
+  }finally{await act(async()=>root.unmount());container.remove()}
+})
+
