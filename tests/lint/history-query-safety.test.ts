@@ -29,6 +29,13 @@ it("rejects worker schema maintenance and requires connect-only history stores",
   for(const file of ["apps/worker/src/main.ts","apps/worker/src/worker-cycle.ts"]){
     expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url})')).toMatchObject([{reason:"worker-history-store-must-connect-without-migrations"}])
     expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"migrate"})')).toHaveLength(1)
-    expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"connect"})')).toEqual([])
+    expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"connect",signal})')).toEqual([])
   }
+})
+
+it("requires shutdown signals at worker cycle and schema wait boundaries",()=>{
+  expect(historyQuerySafetyHits("apps/worker/src/service.ts","await runWorkerCycle()")).toMatchObject([{reason:"worker-cycle-must-receive-shutdown-signal"}])
+  expect(historyQuerySafetyHits("apps/worker/src/service.ts","await runWorkerCycle(shutdown.signal)")).toEqual([])
+  expect(historyQuerySafetyHits("apps/worker/src/worker-cycle.ts",'createHistoryStore({kind:"postgres",url,schema:"connect"})')).toMatchObject([{reason:"worker-history-store-must-cancel-schema-wait"}])
+  expect(historyQuerySafetyHits("apps/worker/src/worker-cycle.ts",'createHistoryStore({kind:"postgres",url,schema:"connect",signal})')).toEqual([])
 })
