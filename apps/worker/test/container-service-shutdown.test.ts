@@ -58,6 +58,8 @@ it.each([["schema", "container", "SIGTERM"], ["schema", "systemd", "SIGINT"], ["
     watcher.on("change", (_event, name) => { if (name === "started") ready() })
     worker = spawn(process.execPath, ["apps/worker/src/service.ts"], { cwd: shadow, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, DATABASE_URL: url, AIRDESIGN_DATABASE_URL: url, AIRDESIGN_ISOLATION: isolation, AIRDESIGN_SECRET: "shutdown-secret-at-least-32-characters", AIRDESIGN_WORKER_API_ORIGIN: `http://127.0.0.1:${address.port}`, AIRDESIGN_OPERATIONS_PATH: path.join(folder, "operations.sqlite"), AIRDESIGN_WORKER_TEMP: path.join(folder, "jobs") } })
     const exited = once(worker, "exit")
+    let output = ""
+    worker.stdout?.on("data", chunk => { output += String(chunk) })
     worker.stderr?.on("data", chunk => { diagnostic += String(chunk); if (scenario === "schema" && diagnostic.includes("history-schema-waiting")) ready() })
     const timeout = AbortSignal.timeout(12_000)
     try {
@@ -68,6 +70,9 @@ it.each([["schema", "container", "SIGTERM"], ["schema", "systemd", "SIGINT"], ["
     worker.kill(signal)
     const result = await Promise.race([exited, once(AbortSignal.timeout(2500), "abort").then(() => null)])
     expect(result, diagnostic).toEqual([0, null])
+    const events = output.split("\n").filter(line => line.includes("worker-shutdown-")).map(line => JSON.parse(line))
+    expect(events, output).toContainEqual(expect.objectContaining({ event: "worker-shutdown-started", signal }))
+    expect(events, output).toContainEqual(expect.objectContaining({ event: "worker-shutdown-complete" }))
     expect(performance.now() - stopped).toBeLessThan(2500)
     expect(diagnostic).not.toContain("HistorySchemaOutdated")
     expect(diagnostic).not.toContain("history-schema-outdated")
