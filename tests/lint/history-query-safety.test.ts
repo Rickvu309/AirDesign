@@ -26,8 +26,9 @@ it("keeps event metadata outside the per-property JSON records",()=>{
 })
 
 it("rejects worker schema maintenance and requires connect-only history stores",()=>{
-  const file="apps/worker/src/main.ts"
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url})')).toMatchObject([{reason:"worker-history-store-must-connect-without-migrations"}])
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"migrate"})')).toHaveLength(1)
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"connect"})')).toEqual([])
+  for(const file of ["apps/worker/src/main.ts","apps/worker/src/worker-cycle.ts"]){
+    expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url})')).toMatchObject([{reason:"worker-history-store-must-connect-without-migrations"}])
+    expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"migrate"})')).toHaveLength(1)
+    expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"connect"})')).toEqual([])
+  }
 })
