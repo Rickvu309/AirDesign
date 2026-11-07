@@ -22,6 +22,6 @@
 .image-masonry button { display:block;inline-size:100%;padding:0;border:0;border-radius:6px;overflow:hidden;cursor:pointer;background:var(--muted); }
 .image-masonry img { display:block;inline-size:100%;block-size:100%;object-fit:cover; }
 .image-panel footer { margin:0;padding:12px;gap:0; }
-.image-upload { position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;block-size:36px;padding:0;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;gap:6px;background:var(--card); }
+.image-panel .image-upload { position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;block-size:36px;padding:0;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;gap:6px;background:var(--card); }
 .image-upload input { position:absolute;inset:0;inline-size:100%;block-size:100%;opacity:0;cursor:pointer; }
 @media (pointer:coarse) { .image-panel header { min-block-size:44px; }.image-search input:not([type=range]) { font-size:16px;min-block-size:44px; }.image-upload { min-block-size:44px; }.image-panel .image-source select { font-size:16px; } }

@@ -25,6 +25,7 @@ try{
   assert((await page.locator('.image-masonry img').evaluateAll(nodes=>nodes.map(node=>node.complete&&node.naturalWidth>0))).every(Boolean));assert.equal(await page.locator('.aira-panel').count(),1)
   assert.equal(await page.locator('.image-panel').evaluate(node=>node.getBoundingClientRect().width),248)
   assert.equal(await page.locator('.editor-slide:not([hidden]) .slide-preview').evaluate(node=>node.getBoundingClientRect().width),720)
+  assert.equal(await page.locator('.image-upload').evaluate(node=>getComputedStyle(node).display),'flex')
   const library=await local.request(setup.owner,'/api/assets');assert.equal(library.assets.length,10)
   for(const image of library.assets){assert.equal(image.provenance.kind,'stock');assert(image.provenance.author);assert.match(image.provenance.source,/^https:/);assert.match(image.provenance.licenseUrl,/^https:/)}
   await page.screenshot({path:path.join(out,'stock.png'),animations:'disabled'})
