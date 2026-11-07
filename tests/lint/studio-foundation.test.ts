@@ -5,6 +5,9 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
+  it("rejects the flat expired-link layout and inherited heavy title", () => {
+    expect(studioFoundationHits(file, fixed.replace(".ad-access-error { display:flex;width:min(360px,100%);flex-direction:column;align-items:center;gap:20px; }", "").replace("font-weight:500;letter-spacing:normal;line-height:normal;", "font-weight:600;"))).toEqual([{ line: 1, reason: "studio-expired-link-uses-generator-mark-spacing-and-medium-title" }])
+  })
   it("keeps the code-entry focus ring inside the designed box", () => {
     expect(studioFoundationHits(file, fixed.replace(".ad-code-box:focus { border:2px solid var(--ring);outline:0; }", ""))).toEqual([{ line: 1, reason: "studio-code-focus-stays-inside-designed-box" }])
   })
