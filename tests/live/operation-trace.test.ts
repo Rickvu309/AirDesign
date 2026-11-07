@@ -46,13 +46,28 @@ it("ignores writes, non-JSON, unrelated routes, unknown kinds and malformed ids"
   expect(await tracker.settled()).toEqual([])
 })
 
-it("redacts credentials, artifact URLs and digests from operation reasons",()=>{
-  const reason=safeReason("upload failed Authorization: Bearer abc.def.ghi\nCookie: session=s3cr3t; theme=dark token: tok123 api_key=k9 at https://store.example/export/secret.pptx?token=t digest "+"ab".repeat(32)+" blob "+"Zm9vYmFy1234567890Zm9vYmFy1234567890")
-  for(const leaked of ["abc.def.ghi","s3cr3t","tok123","k9","store.example","secret.pptx","ab".repeat(32),"Zm9vYmFy1234567890"])expect(reason).not.toContain(leaked)
-  expect(reason).toContain("upload failed")
-  expect(reason.length).toBeLessThanOrEqual(200)
+it("keeps only the reason code and omits every free-text detail",()=>{
+  const leaks:[string,string][]=[
+    ["upload failed Authorization: Bearer abc.def.ghi","unclassified (details omitted)"],
+    ['export-failed {"api_key":"k9","token":"tok123"}',"export-failed (details omitted)"],
+    ["isolated-export-failed:1:artifact //store.example/export/private.pptx?sig=abc","isolated-export-failed:1 (details omitted)"],
+    ["isolated-worker-failed:null:digest XUFAKrxLKna5cZ2REBfFkg==","isolated-worker-failed:null (details omitted)"],
+    ["sk-abc123def456","unclassified (details omitted)"],
+    ["Cookie: session=s3cr3t","unclassified (details omitted)"],
+    ["https://store.example/a.pptx?token=t","unclassified (details omitted)"],
+  ]
+  for(const [reason,expected] of leaks)expect(safeReason(reason)).toBe(expected)
 })
 
-it("keeps ordinary operation reasons readable",()=>{
-  for(const reason of ["worker-retry-exhausted","deliberate-export-failure","render-timeout-after-three-attempts-on-slide-twelve","PDF deadline exceeded after 60 seconds"])expect(safeReason(reason)).toBe(reason)
+it("keeps every real operation reason code readable",()=>{
+  for(const reason of ["worker-retry-exhausted","worker-failed","worker-restarted","report-limit","invalid-worker-report","export-failed","export-report-limit","invalid-export-report","invalid-saved-version","invalid-slide-range","font-hash-mismatch","export-needs-review","empty-export","mixed-slide-sizes-require-fix","pinned-fonts-unavailable","deliberate-export-failure"])expect(safeReason(reason)).toBe(reason)
+  expect(safeReason("isolated-export-failed:137:")).toBe("isolated-export-failed:137")
+})
+
+it("records a failed operation without a reason as unclassified and never gives other kinds a reason",async()=>{
+  const tracker=operationTracker(50)
+  tracker.begin()
+  tracker.observe("GET","/api/operations/f",json,async()=>({id:"f",kind:"failed"}))
+  tracker.observe("GET","/api/operations/r",json,async()=>({id:"r",kind:"running",reason:"Bearer leaked"}))
+  expect(await tracker.settled()).toEqual([{id:"f",kind:"failed",reason:"unclassified (details omitted)"},{id:"r",kind:"running"}])
 })
