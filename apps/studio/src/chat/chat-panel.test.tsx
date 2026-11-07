@@ -74,3 +74,25 @@ it("shows separate slide and bar chart attachment chips without labelling icons 
     expect(container.querySelectorAll(".aira-attachments button")).toHaveLength(1)
   }finally{await act(async()=>root.unmount());container.remove()}
 })
+
+it("keeps activity compact and scope chips inside the composer, and loads real usage on demand",async()=>{
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  const requests:string[]=[]
+  vi.stubGlobal("fetch",async(url:string)=>{requests.push(url);return Response.json({used:3800,paid:1200,bonus:0,week:{resetsAt:1804483200000}})})
+  try{
+    await act(async()=>root.render(<ChatPanel deck={fixtureDeck(2,2)} selection={["s0"]} readonly={false} close={()=>{}} snapshot={{enabled:true,remote:[],run:{id:"run",owner:"owner",deck:"deck",request:"Refine",selection:["s0"],kind:"complete",completed:["s0"],events:[{id:1,kind:"tool",name:"get_deck"}]}}}/>))
+    expect(container.querySelector(".aira-composer .aira-attachments button")?.getAttribute("aria-label")).toBe("Remove Slide 1")
+    expect(container.querySelector(".aira-activity-log details")).toBeNull()
+    expect(container.querySelector("details.aira-activity-log")).toBeNull()
+    expect(container.querySelector(".aira-activity-log")?.textContent).toContain("Read deck content")
+    expect(requests).toEqual([])
+    const usage=container.querySelector<HTMLButtonElement>('button[aria-label="Usage"]')
+    expect(usage).not.toBeNull()
+    await act(async()=>usage?.click())
+    expect(requests).toEqual(["/api/usage"])
+    expect(container.querySelector('[aria-label="Usage details"]')?.textContent).toContain("38% used")
+    expect(container.querySelector('a[aria-label="Manage usage and credits"]')?.getAttribute("title")).toBe("Credits $12.00")
+    await act(async()=>container.querySelector<HTMLButtonElement>('.aira-composer .aira-attachments button')?.click())
+    expect(container.querySelector(".aira-attachments button")).toBeNull()
+  }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
+})

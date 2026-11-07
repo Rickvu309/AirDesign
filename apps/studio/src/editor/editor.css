@@ -194,3 +194,13 @@
 .ad-powerpoint-paste [data-icon] { width:16px;height:16px;margin:0; }
 .ad-powerpoint-paste [data-title] { font-size:13px;font-weight:400;white-space:nowrap; }
 [data-sonner-toast].ad-powerpoint-paste [data-button] { height:28px !important;margin:0 !important;padding:0 10px !important;border-radius:7px;background:transparent !important;color:var(--primary-foreground) !important;font-size:13px;font-weight:500; }
+
+.editor-navigation-menu { position:relative; }
+.editor-navigation-menu>summary { display:grid;place-items:center;inline-size:16px;block-size:36px;list-style:none;cursor:pointer; }
+.editor-navigation-menu>summary svg { inline-size:12px; }
+.editor-navigation-menu>div { position:absolute;inset-block-end:48px;inset-inline-start:0;inline-size:184px;background:var(--foreground);color:var(--card);border-radius:10px;padding:6px;box-shadow:var(--shadow-card); }
+.editor-navigation-menu>div button { display:flex;align-items:center;gap:10px;inline-size:100%;color:inherit;font-size:13px!important; }
+.editor-navigation-menu>div button[aria-pressed=true] { background:transparent;color:inherit; }
+.editor-navigation-menu>div button>span { inline-size:12px; }
+.studio-editor[data-navigation=hand] .editor-section { cursor:grab;touch-action:none;user-select:none; }
+.studio-editor[data-navigation=hand] .editor-section:active { cursor:grabbing; }
