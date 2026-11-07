@@ -43,6 +43,9 @@
   --card-foreground: #222222;
   --primary: #4d94fb;
   --primary-top: #93b8ef;
+  --signature-top: #3370e6;
+  --signature-bottom: #1e5ee6;
+  --signature-gradient: linear-gradient(180deg, var(--signature-top), var(--signature-bottom));
   --primary-foreground: #ffffff;
   --secondary: #ffffff;
   --secondary-foreground: #222222;
@@ -135,7 +138,7 @@ body {
 .ad-button-sign-in { height: 44px; width: 100%; padding: 0 16px; }
 
 .ad-button-primary {
-  background: linear-gradient(180deg, var(--primary-top), var(--primary));
+  background: var(--signature-gradient);
   color: var(--primary-foreground);
   border: 1px solid var(--primary-edge);
   box-shadow: var(--shadow-button);

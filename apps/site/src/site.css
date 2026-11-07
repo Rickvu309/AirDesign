@@ -53,7 +53,6 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
   --site-brand: var(--ring);
   --site-orb-top: #93b8ef;
   --site-button-top: #3370e6;
-  --site-button-bottom: #1e5ee6;
   --site-subtle: #666666;
   --site-navy: #102633;
   --site-claude: #d97757;
@@ -71,9 +70,9 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
 .brand { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 14px; }
 .brand .brand-mark { inline-size: 22px; block-size: 22px; margin: 0; fill: none; stroke: var(--foreground); stroke-width: 3.063; stroke-linecap: round; stroke-linejoin: round; }
 .brand-mark .brand-crossbar { stroke: var(--site-brand-accent); stroke-width: 2.188; }
-.button { background: linear-gradient(var(--site-button-top), var(--site-button-bottom)); border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro); }
+.button { background: var(--signature-gradient); border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro); }
 .button:active { transform: translateY(1px); opacity: 1; }
-@media (hover: hover) and (pointer: fine) { .button:hover { background: linear-gradient(var(--site-button-top),var(--site-button-bottom)); filter: brightness(.96); } }
+@media (hover: hover) and (pointer: fine) { .button:hover { background: var(--signature-gradient); filter: brightness(.96); } }
 .landing-page main { max-inline-size: none; padding: 0; }
 .landing-page h1,.landing-page h2 { font-family: var(--site-serif); letter-spacing: -.04em; font-weight: 400; }
 .landing-page h1 { font-size: clamp(58px,7.23vw,104px); letter-spacing: -3.4px; line-height: 1; max-inline-size: none; margin: 0; }
