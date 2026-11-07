@@ -13,7 +13,7 @@ it("keeps the template gallery in a picker and returns to the design controls af
     expect(container.querySelector('[aria-label="Template picker"]')).toBeNull()
     await act(async()=>button("Choose template").click())
     expect(container.querySelector('[aria-label="Template picker"]')).not.toBeNull()
-    await act(async()=>button("Slide titleDark slides · v1").click())
+    await act(async()=>button("Dark slides").click())
     expect(container.querySelector('[aria-label="Template picker"]')).toBeNull()
     expect(container.querySelector('[aria-label="Design panel"]')?.textContent).toContain("Dark slides · v1")
   }finally{await act(async()=>root.unmount());container.remove()}
@@ -61,4 +61,21 @@ it("names the current background color after it changes",async()=>{
 it("names the design panel header after the selected slide without a duplicate title row",async()=>{
  const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(1,3)
  try{await act(async()=>root.render(<TemplatePanel deck={deck} selection={[deck.slides[2]!.id]} edit={()=>{}} disabled={false} close={()=>{}}/>));expect(container.querySelector(".template-panel>header h2")?.textContent).toBe("Slide 3");expect(container.querySelector(".design-slide-title")).toBeNull()}finally{await act(async()=>root.unmount());container.remove()}
+})
+
+it("filters template cards by their look name without version metadata",async()=>{
+ const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+ try{
+  await act(async()=>root.render(<TemplatePanel deck={fixtureDeck(1)} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>))
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Choose template"]')!.click())
+  const cards=[...container.querySelectorAll<HTMLButtonElement>(".template-card")]
+  expect(cards.every(card=>!card.textContent?.includes(" · v"))).toBe(true)
+  expect(cards.map(card=>card.getAttribute("aria-label"))).toContain("Dark slides")
+  const input=container.querySelector<HTMLInputElement>('[aria-label="Search templates"]')!
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"Dark");input.dispatchEvent(new Event("input",{bubbles:true}))})
+  expect(container.querySelectorAll(".template-card")).toHaveLength(1)
+  await act(async()=>container.querySelector<HTMLButtonElement>(".template-card")!.click())
+  expect(container.querySelector(".template-picker")).toBeNull()
+  expect(document.activeElement).toBe(container.querySelector('[aria-label="Choose template"]'))
+ }finally{await act(async()=>root.unmount());container.remove()}
 })
