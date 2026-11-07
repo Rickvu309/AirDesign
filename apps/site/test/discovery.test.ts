@@ -95,3 +95,18 @@ it("presents the designed product story and segmented navigation",()=>{
  expect([...document.querySelectorAll("h2")].map(heading=>heading.textContent)).toEqual(["Make slides like magic.","Bring any agent.","AirDesign is free."])
  expect(document.querySelector("#product img")?.getAttribute("src")).toBe("/studio-capture.png")
 })
+
+it("rewrites only Studio route boundaries in built HTML",async()=>{
+ const {build}=await import("vite")
+ const routes=["/studio","/studio/","/studio/decks","/studio?start=new-deck","/studio#deck"]
+ const fixtures=[...routes,"/studio-capture.json","/studio-capture.png","/studio-capture-mobile.png","/studios"]
+ const result=await build({root:"apps/site",configFile:"apps/site/vite.config.ts",logLevel:"silent",plugins:[{name:"route-boundary-fixture",transformIndexHtml:{order:"pre",handler:html=>html.replace("</body>",`${fixtures.map(href=>`<a data-route-fixture href="${href}">Route</a>`).join("")}</body>`)}}],build:{write:false}})
+ const bundles=Array.isArray(result)?result:[result]
+ const output=bundles.flatMap(bundle=>"output" in bundle?bundle.output:[])
+ const landing=output.find(asset=>asset.fileName==="index.html")
+ if(!landing||landing.type!=="asset")throw new Error("Built landing HTML is missing")
+ const document=parseSiteHtml(String(landing.source))
+ const origin=process.env.AIRDESIGN_STUDIO_ORIGIN??"https://studio.airdesign.app"
+ expect([...document.querySelectorAll("[data-route-fixture]")].map(link=>link.getAttribute("href"))).toEqual(fixtures.map(href=>routes.includes(href)?origin+href:href))
+ expect(document.querySelector(".capture-note a")?.getAttribute("href")).toBe("/studio-capture.json")
+})
