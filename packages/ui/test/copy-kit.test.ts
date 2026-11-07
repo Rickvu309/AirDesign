@@ -1,8 +1,15 @@
 import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { copyKit } from "../src/copy/copy-kit.ts"
+import { copy } from "../src/copy/read-copy.ts"
+import { studioFoundationCopy } from "../src/copy/studio-foundation-copy.ts"
 
 describe("copy kit", () => {
+  it("reads supplemental Studio labels without shadowing canonical copy", () => {
+    expect(Object.keys(studioFoundationCopy).filter(key => key in copyKit)).toEqual([])
+    expect(copy("shell.recents")).toBe("Recents")
+    expect(copy("access.check_title")).toBe(copyKit["access.check_title"])
+  })
   it("matches the design kit string keys", () => {
     const design = JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8")) as Record<string, unknown>
     const packaged = JSON.parse(readFileSync("packages/ui/src/copy/copy-kit.json", "utf8")) as Record<string, unknown>
