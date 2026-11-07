@@ -6,6 +6,7 @@ import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
 import {releaseClaimHits,publicAmountHits,type PublicClaim,sandboxDependencyHits,productCaptureHits} from "../packages/lint/src/release-claims.ts"
+import {sharedBuildOutputHits} from "../packages/lint/src/test-build-isolation.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
 import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
@@ -48,6 +49,7 @@ for (const file of files) {
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
+  for (const hit of sharedBuildOutputHits(file,source)) failures.push(`${file}: ${hit}`)
   for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
   if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims)]) failures.push(`${file}: ${hit}`)
   if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
