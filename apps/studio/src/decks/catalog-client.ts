@@ -7,5 +7,5 @@ export async function api<T>(path:string,body?:unknown,method=body===undefined ?
   return value
 }
 export function listDecks(trash:boolean,search:string) {return api<DeckEntry[]>(`/api/catalog?trash=${trash}&search=${encodeURIComponent(search)}`)}
-export function createDeck(pendingRequest:string) {return api<DeckEntry>("/api/catalog",{requestId:crypto.randomUUID(),title:"Untitled deck",pendingRequest})}
-export function deckAction(deck:string,action:"rename"|"trash"|"restore"|"duplicate"|"request",body:unknown={}) {return api<DeckEntry>(`/api/catalog/${deck}/${action}`,body)}
+export function createDeck(pendingRequest:string,title="Untitled deck",starter?:"welcome") {return api<DeckEntry>("/api/catalog",{requestId:crypto.randomUUID(),title,pendingRequest,starter})}
+export function deckAction(deck:string,action:"star"|"rename"|"trash"|"restore"|"duplicate"|"request",body:unknown={}) {return api<DeckEntry>(`/api/catalog/${deck}/${action}`,body)}

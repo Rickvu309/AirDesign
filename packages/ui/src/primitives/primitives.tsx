@@ -41,7 +41,7 @@ export function Dropdown({ label, trigger, children }: { label: string; trigger:
     document.addEventListener("pointerdown", dismiss)
     return () => document.removeEventListener("pointerdown", dismiss)
   }, [])
-  return <details ref={ref} className="ad-dropdown" onClick={event => { if (event.target instanceof Element && event.target.closest(".ad-menu a,.ad-menu button")) { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }} onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }}><summary aria-label={label}>{trigger}</summary><div className="ad-menu">{children}</div></details>
+  return <details ref={ref} className="ad-dropdown" onClick={event => { if (event.target instanceof Element && event.target.closest(".ad-menu a,.ad-menu button")) { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }} onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }}><summary role="button" aria-label={label}>{trigger}</summary><div className="ad-menu">{children}</div></details>
 }
 export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
   const id = useId()

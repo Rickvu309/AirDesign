@@ -12,4 +12,8 @@ export const iconPaths = {
   plug: "M9 3v5M15 3v5M6 8h12v5a6 6 0 0 1-12 0zM12 19v3",
   mail: "M3 5h18v14H3zM3 6l9 7 9-7",
   plus: "M12 4v16M4 12h16",
+  star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z",
+  more: "M5 12h.01M12 12h.01M19 12h.01",
+  file: "M14 2H5v20h14V7zm0 0v6h5",
+  upload: "M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5",
 }
