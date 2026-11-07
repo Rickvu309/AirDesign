@@ -1,3 +1,4 @@
+import {clipboardSource} from "../../apps/studio/src/editor/editor-model.ts"
 import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
 import {scenario} from "../agent-account/fixture.mjs"
@@ -56,6 +57,13 @@ export async function seed(stack,entry){
 }
 export async function perform(page,step,stack,owner){
   switch(step.kind){
+    case "assert":await page.locator(step.selector).waitFor({state:"visible"});break
+    case "hold":{
+      const button=page.getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.getByLabel("Choose slide layout",{exact:true}).waitFor();await page.mouse.up();break
+    }
+    case "paste-slides":{
+      const deck=fixtureDeck(1,step.count),source=clipboardSource(deck,deck.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted`,{exact:true}).waitFor();break
+    }
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
     case "click":await page.getByRole("button",{name:step.name,exact:true}).first().click();break
     case "keyboard-activate":await page.getByRole("button",{name:step.name,exact:true}).first().press("Enter");break

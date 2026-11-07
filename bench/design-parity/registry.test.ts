@@ -18,6 +18,16 @@ describe("design parity contract",()=>{
   it("rejects malformed fixtures at the file boundary",()=>{
     expect(()=>parseRegistry([{status:"reachable",steps:[{kind:"invented"}]}])).toThrow()
   })
+  it("keeps new editor states reachable with visible DOM proof",async()=>{
+    const entries=await readRegistry()
+    for(const code of ["S41.03","S41.04","S43.04","S43.05","S43.06","S43.07"]){
+      const entry=entries.find(value=>value.code===code)
+      expect(entry?.status,code).toBe("reachable")
+      if(entry?.status==="reachable")expect(entry.steps.some(step=>step.kind==="assert"),code).toBe(true)
+    }
+    const entry=entries.find(value=>value.code==="S41.04")!
+    expect(()=>parseRegistry([{...entry,status:"reachable",steps:[{kind:"paste-slides",count:0}]}])).toThrow()
+  })
   it("seeds the design narrative with eight slides and the revenue chart labels",()=>{
     const deck=investorDeck("parity"),copy=deck.slides.flatMap(slide=>slide.elements.flatMap(element=>element.kind==="text" ? element.runs.map(run=>run.text) : []))
     expect(deck.slides).toHaveLength(8)

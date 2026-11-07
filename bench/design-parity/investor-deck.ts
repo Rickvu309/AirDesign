@@ -7,6 +7,7 @@ export function investorDeck(deckId:string) {
   const shape=(key:string,x:number,y:number,width:number,height:number,fill:string,geometry:"rectangle"|"ellipse"="rectangle"):Element=>({...base(key,{x,y,width,height}),kind:"shape",geometry,fill})
   const titles=["Q3 Investor Update","Three things to know","Revenue grew 39% year over year","71%","Customers","Product","Hiring plan","Next quarter"]
   for(const [index,slide] of deck.slides.entries()){
+    slide.section=index<2 ? "Opening" : index<5 ? "Performance" : "Outlook"
     slide.notes=index===2 ? "Lead with the trend, then the Q3 number. Mention the two enterprise deals." : ""
     slide.elements=[text(`s${index}e0`,titles[index]!,72,70)]
     if(index===0||index===7)slide.elements=[shape(`s${index}background`,0,0,960,540,index===0 ? "#102633" : "#1e6f8c"),text(`s${index}e0`,titles[index]!,72,360,800,65,42,"#ffffff"),shape(`s${index}rule`,72,438,280,6,"#a9c6d3")]
