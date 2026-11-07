@@ -1,8 +1,10 @@
 import { attachTemplateLayouts } from "./template-layouts.ts"
+import {patchTextColor} from "./edit/text-color.ts"
+import {patchSlideBackground} from "./edit/slide-background.ts"
 import PptxGenJS from "pptxgenjs"
 import path from "node:path"
 import { isDeepStrictEqual } from "node:util"
-import { flatten,type Deck,type Element } from "../../deck/src/index.ts"
+import { shapeGeometry,flatten,type Deck,type Element } from "../../deck/src/index.ts"
 import { importPptx,patchText } from "./index.ts"
 import { readArchive,writeArchive } from "./archive.ts"
 import { importedDeck } from "./import-deck.ts"
@@ -16,8 +18,8 @@ function addElement(slide:PptxGenJS.Slide,element:Element,assets:Record<string,s
   if(element.kind==="group"){for(const child of element.children)addElement(slide,child,assets,{x:element.box.x+offset.x,y:element.box.y+offset.y});return}
   if(element.kind==="text"){slide.addText(element.runs.map(run=>({text:run.text,options:{bold:run.bold,fontFace:run.font,fontSize:run.size*.75,color:run.color.slice(1)}})),{...box,margin:0,valign:"top"});return}
   if(element.kind==="image"){const data=assets[element.image.asset];if(!data)throw new Error("asset-not-found");slide.addImage({...box,data,objectName:element.id,altText:element.image.alt,rounding:element.image.mask==="ellipse"});return}
-  const shape=element.geometry==="rectangle" ? "rect" : element.geometry==="ellipse" ? "ellipse" : "triangle"
-  slide.addShape(shape,{...box,fill:{color:element.fill.slice(1)},line:{color:element.fill.slice(1),transparency:100}})
+  const shape=shapeGeometry[element.geometry].preset
+  slide.addShape(shape,{...box,...(element.geometry==="downTriangle" ? {rotate:180} : {}),fill:{color:element.fill.slice(1)},line:{color:element.fill.slice(1),transparency:100}})
 }
 async function generated(deck:Deck,assets:Record<string,string>) {
   const first=deck.slides[0];if(!first)throw new Error("empty-export")
@@ -26,7 +28,7 @@ async function generated(deck:Deck,assets:Record<string,string>) {
   pptx.defineLayout({name:"saved",width:first.size.width/96,height:first.size.height/96});pptx.layout="saved"
   pptx.author="AirDesign";pptx.subject="Saved deck; PowerPoint compatibility pending P09"
   for(const theme of deck.themes)pptx.defineSlideMaster({title:theme.id,background:{color:theme.background.slice(1)},objects:[]})
-  for(const source of deck.slides){const slide=pptx.addSlide(source.theme===null ? undefined : {masterName:source.theme});slide.background={color:(deck.themes.find(theme=>theme.id===source.theme)?.background ?? "#ffffff").slice(1)};for(const element of source.elements)addElement(slide,element,assets);slide.addNotes(source.notes)}
+  for(const source of deck.slides){const slide=pptx.addSlide(source.theme===null ? undefined : {masterName:source.theme});slide.background={color:(source.background ?? deck.themes.find(theme=>theme.id===source.theme)?.background ?? "#ffffff").slice(1)};for(const element of source.elements)addElement(slide,element,assets);slide.addNotes(source.notes)}
   const bytes=await pptx.write({outputType:"nodebuffer"});if(!(bytes instanceof Uint8Array))throw new Error("pptx-output-type")
   const parts=await readArchive(Buffer.from(bytes))
   for(const [name,bytes] of parts)if(/^ppt\/slides\/slide\d+\.xml$/.test(name)){const parsed=parseXml(bytes);let xml=parsed.xml;const nodes=parsed.nodes.filter(node=>node.local==="cNvPr");for(const [index,node] of [...nodes.entries()].reverse())xml=xml.slice(0,node.start)+parsed.xml.slice(node.start,node.openEnd).replace(/\bid="[^"]*"/,`id="${index+1}"`)+xml.slice(node.openEnd);parts.set(name,Buffer.from(xml))}
@@ -62,6 +64,7 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
     let original=await importPptx(source)
     const baseline=importedDeck(original)
     for(const slide of deck.slides)if(slide.source.kind==="original"){
+      if(slide.background)original=patchSlideBackground(original,slide.source.part,slide.background)
       const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
       if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
       for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
@@ -71,10 +74,13 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
         if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
         if(element.kind==="text" && previous.kind==="text" && element.source.kind==="original"){
           const indices=element.source.objectId.slice(5).split(",").map(Number)
-          const style=(run:typeof element.runs[number])=>({...run,text:""})
+          const style=(run:typeof element.runs[number])=>({...run,text:"",color:""})
           const collapsed=element.runs.length===1 && isDeepStrictEqual(style(element.runs[0]),style(previous.runs[0]))
           if(indices.length!==previous.runs.length || (!collapsed && (element.runs.length!==previous.runs.length || element.runs.some((run,index)=>!isDeepStrictEqual(style(run),style(previous.runs[index]!))))))throw new Error("source-text-structure-change-requires-fix")
           for(const [runIndex,previousRun] of previous.runs.entries()){
+            const currentRun=collapsed ? element.runs[0] : element.runs[runIndex]!
+            const color=collapsed && currentRun.color===previous.runs[0]!.color ? previousRun.color : currentRun.color
+            if(color!==previousRun.color){if(element.support.kind!=="native")throw new Error("kept-object-change-requires-fix");original=patchTextColor(original,source.part,indices[runIndex]!,color)}
             const text=collapsed ? runIndex===0 ? element.runs[0].text : "" : element.runs[runIndex]!.text
             if(text!==previousRun.text){
               if(element.support.kind!=="native")throw new Error("kept-object-change-requires-fix")

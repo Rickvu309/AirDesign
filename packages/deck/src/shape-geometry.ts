@@ -1,0 +1,19 @@
+export const shapeGeometry={
+  rectangle:{name:"Rectangle",preset:"rect",path:"M0 0H100V100H0Z"},
+  ellipse:{name:"Circle",preset:"ellipse",path:"M50 0A50 50 0 1 1 50 100A50 50 0 1 1 50 0Z"},
+  triangle:{name:"Triangle",preset:"triangle",path:"M50 0L100 100H0Z"},
+  diamond:{name:"Diamond",preset:"diamond",path:"M50 0L100 50L50 100L0 50Z"},
+  star:{name:"Star",preset:"star5",path:"M50 0L62 35L100 38L70 61L80 100L50 77L20 100L30 61L0 38L38 35Z"},
+  plus:{name:"Plus",preset:"plus",path:"M35 0H65V35H100V65H65V100H35V65H0V35H35Z"},
+  leftArrow:{name:"Left arrow",preset:"leftArrow",path:"M0 50L45 0V30H100V70H45V100Z"},
+  rightArrow:{name:"Right arrow",preset:"rightArrow",path:"M100 50L55 0V30H0V70H55V100Z"},
+  bubble:{name:"Callout",preset:"wedgeRectCallout",path:"M0 0H100V75H50L25 100V75H0Z"},
+  pentagon:{name:"Pentagon",preset:"pentagon",path:"M50 0L100 38L80 100H20L0 38Z"},
+  octagon:{name:"Octagon",preset:"octagon",path:"M30 0H70L100 30V70L70 100H30L0 70V30Z"},
+  chevron:{name:"Chevron",preset:"chevron",path:"M0 0H60L100 50L60 100H0L40 50Z"},
+  pill:{name:"Pill",preset:"roundRect",path:"M25 0H75Q100 0 100 25V75Q100 100 75 100H25Q0 100 0 75V25Q0 0 25 0Z"},
+  downTriangle:{name:"Down triangle",preset:"triangle",path:"M0 0H100L50 100Z"}
+} as const
+
+export type ShapeGeometry=keyof typeof shapeGeometry
+export function isShapeGeometry(value:unknown):value is ShapeGeometry {return typeof value==="string" && Object.hasOwn(shapeGeometry,value)}
