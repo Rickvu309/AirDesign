@@ -6,12 +6,14 @@ import {localAdapter} from "../../../../packages/agent/src/local-adapter.ts"
 import {agentSdkPin,type AgentAdapter} from "../../../../packages/agent/src/harness.ts"
 import {mcpFixture,toolValue} from "../mcp/fixture.ts"
 import {deferred,eventStream} from "./stream.ts"
-it("commits selected text through SDK tools, meters Aira, rejects foreign or invalid scope atomically and undoes without losing later human work",async()=>{
+import {brandedRuns,fontDeck} from "./font-fixture.ts"
+it("applies the pinned font to selected text, meters Aira, rejects foreign or invalid scope atomically and undoes without losing later human work",async()=>{
   const fixture=await mcpFixture()
   try{
     const owner=await fixture.signIn("aira-owner@example.com"),other=await fixture.signIn("aira-other@example.com")
     expect(agentSdkPin).toBe("0.2.31")
-    await fixture.json("/api/decks",fixtureDeck(2,2),owner.cookie)
+    const deck=fontDeck()
+    await fixture.json("/api/decks",deck,owner.cookie)
     expect((await fixture.json("/api/aira?deck=deck",{action:"send",text:"forged"},other.cookie)).status).toBe(400)
     const stream=await eventStream(fixture.origin+"/api/aira/events?deck=deck",owner.cookie)
     try{
@@ -19,11 +21,13 @@ it("commits selected text through SDK tools, meters Aira, rejects foreign or inv
       const started=await (await fixture.json("/api/aira?deck=deck",{action:"send",text:"Selected content",selection:["s0e0"]},owner.cookie)).json()
       let final=await stream.next();while(final.run?.kind!=="complete"&&final.run?.kind!=="failed")final=await stream.next()
       expect(final.run.kind).toBe("complete");expect(final.run.id).toBe(started.id)
+      expect(final.run.request).toBe("Selected content")
       expect(final.remote).toEqual([])
       expect(final.run.events.filter((event:{name:string})=>event.name==="apply_changes")).toMatchObject([{scope:"s0"}])
       let saved=await fixture.history.read({personId:owner.personId},"deck")
-      expect(saved.deck.slides[0]?.elements[0]).toMatchObject({runs:[{text:"Selected content"}]})
-      expect(saved.deck.slides[1]?.elements[0]).toMatchObject({runs:[{text:"A clear direction"}]})
+      expect(saved.deck.slides[0]?.elements).toEqual([{...deck.slides[0]!.elements[0],runs:brandedRuns},...deck.slides[0]!.elements.slice(1)])
+      expect(saved.deck.slides[0]?.notes).toBe(deck.slides[0]!.notes)
+      expect(saved.deck.slides[1]).toEqual(deck.slides[1])
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(3)
       const human=await fixture.history.commit({personId:owner.personId},"deck",{id:commandId("human_after"),kind:"patch",target:saved.deck.slides[0]!.elements[0]!.id,fields:{runs:[{text:"Keep my words",bold:true,font:"Geist",size:40,color:"#172333"}]},base:saved.seq,run:null})
       if(human.kind!=="applied")throw new Error(JSON.stringify(human))
@@ -31,11 +35,12 @@ it("commits selected text through SDK tools, meters Aira, rejects foreign or inv
       expect(undone.kind).toBe("applied");expect(undone.kept).toContain("s0e0")
       saved=await fixture.history.read({personId:owner.personId},"deck");expect(saved.deck.slides[0]?.elements[0]).toMatchObject({runs:[{text:"Keep my words"}]})
       const used=(await fixture.history.usage.status(owner.personId)).used
+      const beforeInvalid=await fixture.history.read({personId:owner.personId},"deck")
       await fixture.json("/api/aira?deck=deck",{action:"send",text:"Must not change",selection:["s1e0","missing"]},owner.cookie)
       final=await stream.next();while(final.run?.kind!=="failed")final=await stream.next()
       expect(final.run.events.at(-1).text).toContain("selection-not-in-deck")
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(used)
-      expect((await fixture.history.read({personId:owner.personId},"deck")).deck.slides[1]?.elements[0]).toMatchObject({runs:[{text:"A clear direction"}]})
+      expect((await fixture.history.read({personId:owner.personId},"deck")).deck).toEqual({...beforeInvalid.deck,version:expect.any(Number)})
     }finally{await stream.close()}
   }finally{await fixture.close()}
 })
@@ -51,7 +56,7 @@ it("joins a second tab, protects human edits, retains commits on failure, resume
   }
   const fixture=await mcpFixture({agentAdapter:adapter})
   try{
-    const owner=await fixture.signIn("aira-steer@example.com");await fixture.json("/api/decks",fixtureDeck(2,2),owner.cookie)
+    const owner=await fixture.signIn("aira-steer@example.com"),deck=fontDeck();await fixture.json("/api/decks",deck,owner.cookie)
     const remote=await fixture.authorize(owner.cookie)
     const stream=await eventStream(fixture.origin+"/api/aira/events?deck=deck",owner.cookie)
     try{
@@ -63,14 +68,20 @@ it("joins a second tab, protects human edits, retains commits on failure, resume
       release.resolve()
       let value=await stream.next();while(value.run?.kind!=="failed")value=await stream.next()
       expect(value.run.events.at(-1).text).toContain("Changes so far stay")
-      const updated=await fixture.history.read({personId:owner.personId},"deck");expect(updated.deck.slides[0]?.notes).toBe(fixtureDeck(2,2).slides[0]!.notes);expect(updated.deck.slides[0]?.elements.find(element=>element.kind==="text")).toMatchObject({runs:[expect.objectContaining({text:"Initial request"})]})
+      const updated=await fixture.history.read({personId:owner.personId},"deck")
+      expect(updated.deck.slides[0]).toMatchObject({notes:deck.slides[0]!.notes,elements:[{runs:brandedRuns},deck.slides[0]!.elements[1],{runs:[{text:"Keep supporting detail",font:"Geist"}]}]})
+      expect(updated.deck.slides[1]).toEqual(deck.slides[1])
+      expect(value.run.request).toBe("Steer remaining slides")
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(3)
       await fixture.json("/api/aira?deck=deck",{action:"resume"},owner.cookie)
       value=await stream.next();while(value.run?.kind!=="complete")value=await stream.next()
       expect(value.run.id).toBe(started.id)
       expect(value.run.events.filter((event:{name:string})=>event.name==="apply_changes")).toHaveLength(2)
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(6)
-      const saved=await fixture.history.read({personId:owner.personId},"deck");expect(saved.deck.slides[1]?.notes).toBe(fixtureDeck(2,2).slides[1]!.notes);expect(saved.deck.slides[1]?.elements.find(element=>element.kind==="text")).toMatchObject({runs:[expect.objectContaining({text:"Steer remaining slides"})]})
+      const saved=await fixture.history.read({personId:owner.personId},"deck")
+      expect(saved.deck.slides[0]).toEqual(updated.deck.slides[0])
+      expect(saved.deck.slides[1]).toMatchObject({notes:deck.slides[1]!.notes,elements:[{runs:brandedRuns},deck.slides[1]!.elements[1],{runs:[{text:"Keep supporting detail",font:"Geist"}]}]})
+      expect(value.run.request).toBe("Steer remaining slides")
       await fixture.json("/api/aira/configure",{enabled:false},owner.cookie)
       expect((await fixture.json("/api/aira?deck=deck",{action:"send",text:"Nope"},owner.cookie)).status).toBe(400)
       const read=toolValue(await remote.client.callTool({name:"get_deck",arguments:{deckId:"deck"}}));expect(read.items).toHaveLength(2)
@@ -93,27 +104,36 @@ it("cancels the active run without later commits and creates an editable first s
     await fixture.json("/api/aira?deck=deck",{action:"send",text:"An executive overview",selection:[]},owner.cookie)
     await entered.promise
     const stopped=await (await fixture.json("/api/aira?deck=deck",{action:"stop"},owner.cookie)).json();expect(stopped.kind).toBe("stopped")
-    const saved=await fixture.history.read({personId:owner.personId},"deck");expect(saved.deck.slides).toHaveLength(1);expect(saved.deck.slides[0]?.elements[0]).toMatchObject({kind:"text",runs:[{text:"An executive overview"}]})
+    const saved=await fixture.history.read({personId:owner.personId},"deck");expect(saved.deck.slides).toHaveLength(1);expect(saved.deck.slides[0]).toMatchObject({notes:"",elements:[{kind:"text",runs:[{text:"New presentation",font:"Geist"}]}]})
     expect((await fixture.history.usage.status(owner.personId)).used).toBe(3)
-    expect((await (await fixture.json("/api/aira?deck=deck",undefined,owner.cookie)).json()).run.kind).toBe("stopped")
+    expect((await (await fixture.json("/api/aira?deck=deck",undefined,owner.cookie)).json()).run).toMatchObject({kind:"stopped",request:"An executive overview"})
+    expect((await fixture.history.read({personId:owner.personId},"deck")).seq).toBe(saved.seq)
+    const title=saved.deck.slides[0]!.elements[0]!
+    const edited=await fixture.history.commit({personId:owner.personId},"deck",{id:commandId("edit_stopped_title"),kind:"patch",target:title.id,fields:{runs:[{text:"An executive overview",bold:true,font:"Geist",size:40,color:"#111827"}]},base:saved.seq,run:null})
+    expect(edited.kind).toBe("applied")
+    expect((await fixture.history.read({personId:owner.personId},"deck")).deck.slides[0]?.elements[0]).toMatchObject({runs:[{text:"An executive overview"}]})
   }finally{await fixture.close()}
 })
 it("does not report refused commits as completed and resumes the saved request after weekly usage returns",async()=>{
   const fixture=await mcpFixture()
   try{
-    const owner=await fixture.signIn("aira-exhausted@example.com");await fixture.json("/api/decks",fixtureDeck(1,1),owner.cookie)
+    const owner=await fixture.signIn("aira-exhausted@example.com"),deck=fontDeck(1);await fixture.json("/api/decks",deck,owner.cookie)
     await fixture.history.usage.reserve(owner.personId,{id:"fill",actor:"user-agent",request:"fill",units:10000})
     const stream=await eventStream(fixture.origin+"/api/aira/events?deck=deck",owner.cookie)
     try{
       await stream.next();await fixture.json("/api/aira?deck=deck",{action:"send",text:"Saved after limit"},owner.cookie)
       let value=await stream.next();while(value.run?.kind!=="limited")value=await stream.next()
       expect(value.run.events.filter((event:{name?:string})=>event.name==="apply_changes")).toHaveLength(0)
-      expect((await fixture.history.read({personId:owner.personId},"deck")).deck.slides[0]?.notes).not.toBe("Saved after limit")
+      expect((await fixture.history.read({personId:owner.personId},"deck")).deck).toEqual({...deck,version:expect.any(Number)})
+      expect(value.run.request).toBe("Saved after limit")
+      expect(await fixture.history.agents.latest(owner.personId,"deck")).toMatchObject({id:value.run.id,kind:"limited",request:"Saved after limit",completed:[]})
       const run=value.run.id;fixture.advance(7*86400000)
       await fixture.json("/api/aira?deck=deck",{action:"resume"},owner.cookie)
       value=await stream.next();while(value.run?.kind!=="complete")value=await stream.next()
       expect(value.run.id).toBe(run);expect(value.run.events.filter((event:{name?:string})=>event.name==="apply_changes")).toHaveLength(1)
-      const updated=await fixture.history.read({personId:owner.personId},"deck");expect(updated.deck.slides[0]?.notes).toBe(fixtureDeck(2,2).slides[0]!.notes);expect(updated.deck.slides[0]?.elements.find(element=>element.kind==="text")).toMatchObject({runs:[expect.objectContaining({text:"Saved after limit"})]})
+      const updated=await fixture.history.read({personId:owner.personId},"deck")
+      expect(updated.deck.slides[0]).toMatchObject({notes:deck.slides[0]!.notes,elements:[{runs:brandedRuns},deck.slides[0]!.elements[1],{runs:[{text:"Keep supporting detail",font:"Geist"}]}]})
+      expect(value.run.request).toBe("Saved after limit")
       expect((await fixture.history.usage.status(owner.personId)).used).toBe(3)
     }finally{await stream.close()}
   }finally{await fixture.close()}
