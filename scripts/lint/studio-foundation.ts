@@ -21,6 +21,9 @@ export function studioFoundationHits(file: string, source: string): { line: numb
     if (!source.includes('.workspace-home .import-card { position:relative;') || !source.includes('.import-diagnostics,.import-cancel { position:absolute;')) hits.push({line:1,reason:"studio-import-recovery-controls-stay-within-card-height"})
     if (!source.includes('.import-diagnostics pre { position:absolute;') || !source.includes('.import-diagnostics>summary { min-inline-size:44px;min-block-size:44px;')) hits.push({line:1,reason:"studio-import-details-preserve-header-and-touch-target"})
     if (!source.includes('.home-new-deck .ad-menu { min-inline-size:179px;inset-block-start:calc(100% + 4px);inset-inline-start:auto;inset-inline-end:0;padding:3px;font-size:var(--text-body-small); }') || !source.includes('gap:8px;padding:6px 8px;line-height:20px;')) hits.push({line:1,reason:"studio-new-deck-menu-aligns-with-trigger-and-reference-row-spacing"})
+    const newDeck=source.match(/\.home-new-deck \.ad-dropdown>summary\s*\{([^}]*)\}/)?.[1] ?? ""
+    if (!newDeck.includes("font-weight:500")) hits.push({line:1,reason:"studio-new-deck-uses-medium-signature-button-weight"})
+    if (!newDeck.includes("background:var(--signature-gradient)")) hits.push({line:1,reason:"studio-new-deck-paints-the-shared-signature-gradient"})
     if (!source.includes('.deck-starter .deck-preview { block-size:var(--deck-preview-height); }')) hits.push({line:1,reason:"studio-deck-starter-previews-need-intrinsic-height"})
     if (!source.includes('line-height:44px;overflow:hidden;text-overflow:ellipsis;')) hits.push({line:1,reason:"studio-touch-deck-title-links-truncate-inside-their-tap-target"})
     if (!source.includes('minmax(min(100%,320px),1fr)')) hits.push({line:1,reason:"studio-deck-grid-keeps-three-columns-at-1440"})
@@ -53,7 +56,6 @@ export function studioFoundationHits(file: string, source: string): { line: numb
   }
   if (file.endsWith("apps/studio/src/editor/workspace.css")) {
     const hits=[]
-    if (!/\.ad-shell \.home-new-deck>summary\s*\{[^}]*font-weight:500/.test(source)) hits.push({line:1,reason:"studio-new-deck-uses-medium-signature-button-weight"})
     if (/@media\s*\(hover:\s*hover\)\s*\{/.test(source)) hits.push({line:1,reason:"studio-deck-hover-requires-a-fine-pointer"})
     return hits
   }
