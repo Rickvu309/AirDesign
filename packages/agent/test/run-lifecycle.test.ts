@@ -4,8 +4,8 @@ import {fixtureDeck} from "../../deck/src/fixture.ts"
 import {runHarness,type AgentActivity,type AgentTools} from "../src/harness.ts"
 import {localAdapter} from "../src/local-adapter.ts"
 
-function sharedTools(){
-  const deck=fixtureDeck(1,2),writes:unknown[]=[]
+function sharedTools(deck=fixtureDeck(1,2)){
+  const writes:unknown[]=[]
   deck.slides[1]!.notes="Presenter’s private notes"
   const call:AgentTools=async(name,input)=>{
     const args=z.object({slideId:z.string().optional()}).parse(input)
@@ -22,7 +22,7 @@ it("resumes through SDK tools without repeating completed scopes and retains req
   for await(const event of runHarness(context,first.call,signal,localAdapter))events.push(event)
   expect(events.filter(event=>event.kind==="tool"&&event.name==="apply_changes")).toMatchObject([{scope:"s1"}])
   expect(first.writes).toHaveLength(1)
-  expect(first.writes[0]).toMatchObject({changes:[{target:"s1",value:{notes:"Presenter’s private notes",elements:[expect.objectContaining({runs:[expect.objectContaining({text:context.request})]})]}}]})
+  expect(first.writes[0]).toMatchObject({changes:[{target:"s1",value:{...fixtureDeck(1,2).slides[1],notes:"Presenter’s private notes"}}]})
   const replay=sharedTools()
   for await(const event of runHarness(context,replay.call,signal,localAdapter))expect(event).toBeDefined()
   expect(replay.writes).toEqual(first.writes)
@@ -43,4 +43,17 @@ it("stops dispatching writes when the consumer cancels an accepted scope",async(
   }
   expect(scopes).toEqual(["s0"])
   expect(tools.writes).toHaveLength(1)
+})
+
+it("never copies a run request into existing slide content or notes",async()=>{
+  for(const selection of [[],["s2"],["s2e0"]]){
+    const deck=fixtureDeck(1,8),eyebrow=deck.slides[2]!.elements[0]!
+    if(eyebrow.kind!=="text")throw new Error("missing-eyebrow")
+    eyebrow.runs[0].text="REVENUE"
+    const tools=sharedTools(deck),request="Make an 8-slide investor update from my notes. Calm, data first, our Halden brand."
+    for await(const event of localAdapter({run:"aira_content",deckId:"deck",selection,request},tools.call,new AbortController().signal))expect(event).toBeDefined()
+    expect(tools.writes.length).toBeGreaterThan(0)
+    expect(JSON.stringify(tools.writes)).not.toContain(request)
+    expect(JSON.stringify(tools.writes)).toContain("REVENUE")
+  }
 })

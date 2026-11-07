@@ -3,15 +3,23 @@ import {createHash} from "node:crypto"
 import {z} from "zod"
 import {isSlide,flatten,type Element,type Slide} from "../../deck/src/index.ts"
 import type {AgentAdapter,AgentTools} from "./harness.ts"
-const page=z.object({ok:z.literal(true),data:z.object({savedVersion:z.number().int(),items:z.array(z.unknown()),nextCursor:z.string().nullable().optional()})})
+const page=z.object({ok:z.literal(true),data:z.object({savedVersion:z.number().int(),items:z.array(z.unknown()),nextCursor:z.string().nullable().optional(),template:z.object({id:z.string(),version:z.number()}).nullable().optional()})})
 function read(result:Awaited<ReturnType<AgentTools>>){const text=result.content.find(item=>item.type==="text");if(!text||text.type!=="text")throw new Error("tool-response-missing");return page.parse(JSON.parse(text.text)).data}
 export const localAdapter:AgentAdapter=async function*(context,call,signal){
   const slideIds:string[]=[]
-  let cursor:string|undefined
+  let cursor:string|undefined,brandFont:string|undefined
   do{
     const result=await call("get_deck",{deckId:context.deckId,limit:50,...(cursor ? {cursor} : {})})
     yield {kind:"tool",name:"get_deck",result}
     const data=read(result)
+    if(data.template&&!brandFont){
+      const brand=await call("get_brand",{brandId:data.template.id,version:data.template.version})
+      if(brand.isError)throw new Error("brand-read-refused")
+      const content=brand.content.find(item=>item.type==="text")
+      if(!content||content.type!=="text")throw new Error("brand-response-missing")
+      brandFont=z.object({ok:z.literal(true),data:z.object({font:z.string()})}).parse(JSON.parse(content.text)).data.font
+      yield {kind:"tool",name:"get_brand",result:brand}
+    }
     slideIds.push(...z.array(z.object({id:z.string()})).parse(data.items).map(item=>item.id))
     cursor=data.nextCursor ?? undefined
   }while(cursor&&!signal.aborted)
@@ -37,18 +45,14 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     if(selected.has(id))found.add(id)
     for(const element of attached)found.add(element.id)
     if(selected.size&&!selected.has(id)&&!attached.length)continue
-    let updatedTitle=false
     const update=(element:Element):Element=>{
       if(element.kind==="group")return {...element,children:element.children.map(update)}
-      if(element.kind!=="text"||updatedTitle)return element
-      updatedTitle=true
-      return {...element,runs:[{...element.runs[0],text:context.request}]}
+      if(element.kind!=="text"||!brandFont)return element
+      const [first,...rest]=element.runs
+      return {...element,runs:[{...first,font:brandFont},...rest.map(run=>({...run,font:brandFont}))]}
     }
     const value:Slide={...slide,elements:slide.elements.map(update)}
-    const changes=attached.length ? attached.map(element=>{
-      const updated:Element=element.kind==="text" ? {...element,runs:[{...element.runs[0],text:context.request}]} : element
-      return {kind:"set" as const,target:element.id,value:updated}
-    }) : [{kind:"set" as const,target:slide.id,value}]
+    const changes=attached.length ? attached.map(element=>({kind:"set" as const,target:element.id,value:update(element)})) : [{kind:"set" as const,target:slide.id,value}]
     const digest=createHash("sha256").update(JSON.stringify([context.run,id,context.request,context.selection])).digest("hex").slice(0,40)
     const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`aira_${digest}`,changes})
     if(write.isError){
@@ -58,13 +62,13 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
       }
       throw new Error("change-refused")
     }
-    yield {kind:"tool",name:"apply_changes",result:write,scope:id}
+    yield {kind:"tool",name:"apply_changes",result:write,scope:id,...(brandFont ? {brandApplied:true} : {})}
   }
   if(selected.size&&found.size!==selected.size)throw new Error("selection-not-in-deck")
   if(!slideIds.length){
     const result=await call("get_deck",{deckId:context.deckId}),data=read(result)
     const suffix=createHash("sha256").update(context.run).digest("hex").slice(0,12)
-    const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`draft_${suffix}`,changes:[{kind:"insert",parent:context.deckId,index:0,value:{id:`slide_${suffix}`,version:0,size:{width:960,height:540},elements:[{id:`title_${suffix}`,kind:"text",box:{x:64,y:64,width:832,height:160},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,runs:[{text:context.request.slice(0,120),bold:true,font:"Geist",size:40,color:"#111827"}]}],notes:"",theme:null,source:{kind:"created"}}}]})
+    const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`draft_${suffix}`,changes:[{kind:"insert",parent:context.deckId,index:0,value:{id:`slide_${suffix}`,version:0,size:{width:960,height:540},elements:[{id:`title_${suffix}`,kind:"text",box:{x:64,y:64,width:832,height:160},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,runs:[{text:"New presentation",bold:true,font:"Geist",size:40,color:"#111827"}]}],notes:"",theme:null,source:{kind:"created"}}}]})
     if(write.isError){
       for(const item of write.content)if(item.type==="text"){
         const refusal=z.object({error:z.object({details:usageLimitSchema})}).safeParse(JSON.parse(item.text))

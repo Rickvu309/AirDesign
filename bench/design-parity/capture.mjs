@@ -22,6 +22,11 @@ export async function seed(stack,entry){
       stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
       await stack.request(owner,"/api/decks",deck,201)
       await stack.request(owner,`/api/catalog/${id}/rename`,{title})
+      if(entry.seed.startsWith("deck-")){
+        const name="Q3 board notes.txt",uploaded=await stack.request(owner,"/api/mcp/uploads",{requestId:`notes_${id}`,name,text:"Q3 investor update. Revenue: Q3 24 $4.1M, Q4 24 $4.6M, Q1 25 $5M, Q2 25 $5.4M, Q3 25 $5.7M. Revenue grew 39% year over year. Gross margin 71%. Two enterprise deals. Customers, Product, Hiring plan, Next quarter."},201)
+        const {client}=await stack.fixture.authorize(owner.cookie,"Codex"),file=await client.callTool({name:"add_file",arguments:{sourceUrl:uploaded.sourceUrl,name,requestId:`ingest_${id}`}})
+        stack.runSources.set(id,{fileId:JSON.parse(file.content.find(item=>item.type==="text").text).data.fileId,name})
+      }
       if(entry.seed==="trash-with-items")await stack.request(owner,`/api/catalog/${id}/trash`,{})
     }
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
@@ -94,7 +99,9 @@ export async function perform(page,step,stack,owner){
     case "agent":{
       const deck=page.url().split("/deck/")[1]
       if(!await page.getByLabel("Message Aira",{exact:true}).isVisible())await page.getByRole("button",{name:"Agent",exact:true}).click()
+      await page.getByLabel("Attach",{exact:true}).selectOption("whole")
       if(step.outcome==="remote"){
+        await stack.run(owner,deck,"Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
         const {client}=await stack.fixture.authorize(owner.cookie,"Claude"),current=await stack.request(owner,`/api/decks/${deck}`),title=current.deck.slides[0].elements.find(element=>element.id==="s0e0")
         const response=await client.callTool({name:"apply_changes",arguments:{deckId:deck,base:current.seq,requestId:"design-parity-remote",changes:[{kind:"set",target:"s0e0",value:{...title,runs:[{text:"Q3 Investor Update",font:"Geist",size:40,bold:true,color:"#111827"}]}}]}})
         if(response.isError)throw new Error("remote-fixture-write-failed")
@@ -112,7 +119,7 @@ export async function perform(page,step,stack,owner){
           await page.getByText("Your weekly usage is used up. Changes so far stay. You can keep editing manually.",{exact:true}).waitFor()
           break
         }
-        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after")
+        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after",step.outcome==="working"||step.outcome==="failed" ? 2 : 0)
         stack.parityFinish=async()=>{hold.release.resolve()}
         await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
         await page.getByRole("button",{name:"Send",exact:true}).click()

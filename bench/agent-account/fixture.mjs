@@ -18,13 +18,16 @@ export const head=(await execute("git",["rev-parse","HEAD"])).stdout.trim()
 export async function save(file,value){await mkdir(path.dirname(path.join(evidence,file)),{recursive:true});await writeFile(path.join(evidence,file),typeof value==="string" ? value : JSON.stringify(value,null,2)+"\n")}
 export async function scenario({browserEnabled=false}={}){
   let gate=null
+  const runSources=new Map()
   const commits=[]
   const adapter=async function*(context,call,signal){
     const pause=async current=>{gate=null;current.entered.resolve();await Promise.race([current.release.promise,new Promise(resolve=>{if(signal.aborted)resolve();else signal.addEventListener("abort",resolve,{once:true})})]);if(current.fail&&!signal.aborted)throw new Error("Local adapter interrupted at a change")}
-    const traced=async(name,input)=>{if(name==="apply_changes"&&gate?.phase==="before")await pause(gate);signal.throwIfAborted();const start=performance.now(),result=await call(name,input);if(name==="apply_changes")commits.push({run:context.run,input,result,start,ack:performance.now(),ackWall:Date.now()});return result}
+    const source=runSources.get(context.deckId)
+    if(source){const result=await call("read_file",{fileId:source.fileId});if(result.isError)throw new Error("source-read-failed");yield {kind:"tool",name:"read_file",result,fileName:source.name}}
+    const traced=async(name,input)=>{if(name==="apply_changes"&&gate?.phase==="before"&&gate.skip===0)await pause(gate);signal.throwIfAborted();const start=performance.now(),result=await call(name,input);if(name==="apply_changes")commits.push({run:context.run,input,result,start,ack:performance.now(),ackWall:Date.now()});return result}
     for await(const activity of localAdapter(context,traced,signal)){
       yield activity
-      if(activity.kind==="tool"&&activity.name==="apply_changes"&&gate?.phase==="after")await pause(gate)
+      if(activity.kind==="tool"&&activity.name==="apply_changes"&&gate){if(gate.skip>0)gate.skip--;else if(gate.phase==="after")await pause(gate)}
     }
   }
   const create=publicOrigin=>mcpFixture({...publicOrigin ? {publicOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")})
@@ -43,5 +46,5 @@ export async function scenario({browserEnabled=false}={}){
   async function open(session,url,selector){await browser(session,"open",origin+url);await browser(session,"wait","--fn",`Boolean(document.querySelector(${JSON.stringify(selector)}))`)}
   async function click(session,label){const snapshot=await browser(session,"snapshot","-i"),line=snapshot.split("\n").find(line=>line.includes(`button "${label}"`));assert.ok(line,`${label} absent: ${snapshot}`);const ref=line.match(/ref=(e\d+)/)?.[1];assert.ok(ref);await browser(session,"click",`@${ref}`)}
   async function capture(session,name){for(const width of [1440,320]){await browser(session,"set","viewport",String(width),"960");await browser(session,"screenshot",path.join(evidence,"review",`${name}-${width}.png`));await save(`review/${name}-${width}.tree.txt`,await browser(session,"snapshot"))}await browser(session,"set","viewport","1440","960")}
-  return {fixture,origin,trace,commits,request,webhook,provider,stream,until,run,deck,browser,login,open,click,capture,hold(fail=false,phase="after"){assert.equal(gate,null);gate={entered:deferred(),release:deferred(),fail,phase};return gate},async close(){for(const source of streams)await source.close();for(const session of sessions)await browser(session,"close").catch(()=>undefined);if(vite)await new Promise(resolve=>vite.httpServer.close(resolve));await fixture.close();if(previous===undefined)delete process.env.AIRDESIGN_API_ORIGIN;else process.env.AIRDESIGN_API_ORIGIN=previous}}
+  return {fixture,origin,trace,commits,runSources,request,webhook,provider,stream,until,run,deck,browser,login,open,click,capture,hold(fail=false,phase="after",skip=0){assert.equal(gate,null);gate={entered:deferred(),release:deferred(),fail,phase,skip};return gate},async close(){for(const source of streams)await source.close();for(const session of sessions)await browser(session,"close").catch(()=>undefined);if(vite)await new Promise(resolve=>vite.httpServer.close(resolve));await fixture.close();if(previous===undefined)delete process.env.AIRDESIGN_API_ORIGIN;else process.env.AIRDESIGN_API_ORIGIN=previous}}
 }
