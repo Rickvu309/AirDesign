@@ -2,9 +2,9 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
 import vm from "node:vm"
-import sharp from "sharp"
 import {compile} from "@tailwindcss/node"
 import {chromium} from "playwright"
+import {compareComponent,faithfulReference} from "./component-metric.mjs"
 import {compareDesign,metricVersion} from "./metric.mjs"
 const args=process.argv.slice(2),baseline=args[0],out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration")
 if(!baseline)throw new Error("usage: node bench/design-parity/calibrate.mjs BASELINE OUT")
@@ -13,12 +13,18 @@ const editorOnly=args.includes("--editor-only"),referencesOnly=args.includes("--
 const entries=JSON.parse(await fs.readFile("bench/design-parity/scenarios.json","utf8")),results=editorOnly ? JSON.parse(await fs.readFile(path.join(out,"calibration.json"),"utf8")).results : []
 const summary=({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})=>({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})
 for(const entry of editorOnly ? [] : entries){
-  const design=await fs.readFile(entry.design),meta=await sharp(design).metadata()
-  const shifted=await sharp(design).extract({left:0,top:0,width:meta.width-1,height:meta.height-1}).extend({left:1,top:1,right:0,bottom:0,background:"#ffffff"}).blur(0.3).png().toBuffer()
+  const design=await fs.readFile(entry.design)
+  const shifted=await faithfulReference(design)
   const reference=summary(await compareDesign(design,shifted))
   let measured
   if(!referencesOnly&&entry.status==="reachable")measured=summary(await compareDesign(design,await fs.readFile(path.join(baseline,entry.code,"capture.png"))))
-  results.push({code:entry.code,surface:entry.surface,reference,measured})
+  let component
+  if(entry.component){
+    const box=entry.component.designBox
+    const reference=summary((await compareComponent(design,shifted,box,{...box,left:box.left+1,top:box.top+1})).metric)
+    component={...entry.component,reference,target:(Math.ceil(reference.score*100)+1)/100}
+  }
+  results.push({code:entry.code,surface:entry.surface,reference,measured,component})
   process.stdout.write(`${entry.code} reference=${reference.score} baseline=${measured?.score}\n`)
 }
 await fs.writeFile(path.join(out,"calibration.json"),JSON.stringify({metric:metricVersion,results,editor:[]},null,2)+"\n")

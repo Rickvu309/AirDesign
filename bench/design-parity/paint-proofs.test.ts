@@ -35,7 +35,7 @@ it("proves real paint despite perfect canvas pixels and working invisible contro
 
 it("hashes actual geometry and viewBox instead of trusting a search label",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:[],controls:[],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[]}}}
+  const entry={...original,assertions:{...original.assertions,copyKeys:[],controls:[],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[]}}}
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
@@ -83,7 +83,7 @@ it("rejects four-pixel substitute ink over a strict-passing bitmap",async()=>{
 
 it("rejects canonical icons at the wrong rendered size or color",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:[],controls:[],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[]}}}
+  const entry={...original,assertions:{...original.assertions,copyKeys:[],controls:[],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[]}}}
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
@@ -120,7 +120,7 @@ it("requires elements to own the ink supplied by an image in the same box",async
 
 it("uses declared icon size and color tokens for its raster estimate",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:[],controls:[],structure:{icons:[{region:"main",name:"search",size:20,color:"gray.600" as const}],textRoles:[]}}}
+  const entry={...original,assertions:{...original.assertions,copyKeys:[],controls:[],structure:{icons:[{region:"main",name:"search",size:20,color:"gray.600" as const}],textRoles:[]}}}
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})

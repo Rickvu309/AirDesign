@@ -21,6 +21,8 @@ import { accessSafetyHits } from "./lint/access-safety.ts"
 import { gateRecordingHits } from "./lint/gate-recording.ts"
 import { responseHeaderHits } from "./lint/response-headers.ts"
 
+import {parseRegistry} from "../bench/design-parity/registry.ts"
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css", ".html", ".txt", ".json"])
 const skipped = new Set(["node_modules", "dist", "coverage", "docs", "fixtures"])
@@ -30,6 +32,9 @@ const failures: string[] = []
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  if(file.endsWith("/bench/design-parity/scenarios.json")){
+    try{parseRegistry(JSON.parse(source))}catch(error){failures.push(`${file}: required-copy-must-use-copy-kit-keys ${String(error)}`)}
+  }
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)

@@ -12,15 +12,12 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
-      ],
-      "texts": [
-        "Clarity is the edge."
+        "landing.hero"
       ],
       "controls": [
         {
           "role": "link",
-          "name": "Pricing"
+          "nameKey": "site.pricing"
         }
       ],
       "probe": {
@@ -55,15 +52,12 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
-      ],
-      "texts": [
-        "AirDesign is free."
+        "pricing.heading"
       ],
       "controls": [
         {
           "role": "link",
-          "name": "Pricing"
+          "nameKey": "site.pricing"
         }
       ],
       "probe": {
@@ -98,13 +92,14 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "access.sign_in_title"
+        "access.entry_title",
+        "access.email_label",
+        "access.continue_email"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Continue"
+          "nameKey": "access.continue_email"
         }
       ],
       "probe": {
@@ -151,11 +146,10 @@
       "copyKeys": [
         "access.check_title"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Use a different email"
+          "nameKey": "access.different_email"
         }
       ],
       "probe": {
@@ -190,13 +184,13 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "access.expired_title"
+        "access.expired_title",
+        "access.send_new"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Send a new link"
+          "nameKey": "access.send_new"
         }
       ],
       "probe": {
@@ -229,20 +223,19 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "home.empty_title"
+        "decks.recents"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -278,24 +271,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.recents"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "Recents"
+          "nameKey": "decks.recents"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -342,24 +334,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.recents"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "Recents"
+          "nameKey": "decks.recents"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -406,24 +397,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.all"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "All decks"
+          "nameKey": "decks.all"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -474,24 +464,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.all"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "All decks"
+          "nameKey": "decks.all"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -538,24 +527,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.recents"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "button",
-          "name": "Blank deck"
+          "nameKey": "decks.blank"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -596,22 +584,20 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
-      ],
-      "texts": [
-        "Importing PowerPoint"
+        "decks.recents",
+        "decks.importing"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -630,6 +616,10 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "current": "14",
+        "total": "24"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -652,23 +642,20 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand",
-        "import.failed_title"
-      ],
-      "texts": [
-        "Unable to import this file"
+        "decks.recents",
+        "decks.import_failed"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -717,22 +704,20 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
-      ],
-      "texts": [
-        "Deck moved to Trash"
+        "decks.trashed",
+        "common.undo"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -751,9 +736,23 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "deck": "Pricing Strategy Review"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 697,
+        "top": 11,
+        "width": 324,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S33.02",
@@ -768,24 +767,23 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
+        "decks.trash"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "heading",
-          "name": "Trash"
+          "nameKey": "decks.trash"
         },
         {
           "role": "button",
-          "name": "Empty Trash"
+          "nameKey": "trash.empty_open"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [
@@ -832,26 +830,26 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.brand"
-      ],
-      "texts": [
-        "Empty Trash?"
+        "trash.empty_title",
+        "trash.empty_body",
+        "trash.empty_action",
+        "common.cancel"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Delete permanently"
+          "nameKey": "trash.empty_action"
         },
         {
           "role": "button",
-          "name": "Cancel"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -862,10 +860,28 @@
             "color": "ink",
             "minimumContrast": 4.5
           }
-        ]
+        ],
+        "dialogActions": {
+          "primaryKey": "trash.empty_action",
+          "cancelKey": "common.cancel"
+        }
+      },
+      "copyValues": {
+        "n": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S41.01",
@@ -885,19 +901,17 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -926,6 +940,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -952,19 +969,17 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -993,6 +1008,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1010,19 +1028,17 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1051,6 +1067,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1068,19 +1087,18 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.new_slide",
+        "import.pasted",
+        "common.undo"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1109,9 +1127,24 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "n": "2",
+        "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 584,
+        "top": 11,
+        "width": 302,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S42.01",
@@ -1139,23 +1172,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Working\u2026 You can steer or stop this run."
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Stop"
+          "nameKey": "agent.stop"
         }
       ],
       "probe": {
@@ -1184,6 +1215,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1214,23 +1248,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Done. Review changes by slide."
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Undo run"
+          "nameKey": "agent.undo_run"
         }
       ],
       "probe": {
@@ -1259,6 +1291,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1293,23 +1328,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Done. Review changes by slide."
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Undo run"
+          "nameKey": "agent.undo_run"
         }
       ],
       "probe": {
@@ -1338,6 +1371,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1372,23 +1408,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Done. Review changes by slide."
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Undo run"
+          "nameKey": "agent.undo_run"
         }
       ],
       "probe": {
@@ -1417,6 +1451,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1451,23 +1488,20 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Choose a look"
+        "editor.templates"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Close picker"
+          "nameKey": "editor.close_picker"
         }
       ],
       "probe": {
@@ -1496,6 +1530,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1526,23 +1563,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Choose template"
+          "nameKey": "editor.choose_template"
         }
       ],
       "probe": {
@@ -1571,6 +1606,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1605,19 +1643,16 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "0.0 MB of 512 MB used"
+        "editor.images"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1646,6 +1681,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1663,19 +1701,17 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.export",
+        "editor.new_slide"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1704,6 +1740,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1721,19 +1760,16 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.shapes"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1762,6 +1798,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1779,19 +1818,16 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.text"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1820,6 +1856,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1837,19 +1876,16 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "editor.actions"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1878,6 +1914,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1908,19 +1947,18 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
+        "agent.failed_title",
+        "agent.failed_body",
         "agent.resume"
-      ],
-      "texts": [
-        "Aira couldn\u2019t finish. Changes so far stay."
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -1949,6 +1987,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -1982,19 +2023,16 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Reconnect"
+        "editor.offline"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -2023,9 +2061,23 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S61.01",
@@ -2056,18 +2108,17 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [],
-      "texts": [
-        "Export your deck"
+      "copyKeys": [
+        "editor.export"
       ],
       "controls": [
         {
           "role": "combobox",
-          "name": "File format"
+          "nameKey": "export.file_format"
         },
         {
           "role": "button",
-          "name": "Close export"
+          "nameKey": "export.close"
         }
       ],
       "probe": {
@@ -2088,7 +2139,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 495,
+        "top": 341,
+        "width": 480,
+        "height": 241
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S61.02",
@@ -2124,18 +2186,17 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [],
-      "texts": [
-        "Export your deck"
+      "copyKeys": [
+        "editor.export"
       ],
       "controls": [
         {
           "role": "combobox",
-          "name": "File format"
+          "nameKey": "export.file_format"
         },
         {
           "role": "button",
-          "name": "Close export"
+          "nameKey": "export.close"
         }
       ],
       "probe": {
@@ -2156,7 +2217,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 495,
+        "top": 317,
+        "width": 480,
+        "height": 289
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S61.03",
@@ -2170,18 +2242,17 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [],
-      "texts": [
-        "Export your deck"
+      "copyKeys": [
+        "export.downloaded"
       ],
       "controls": [
         {
           "role": "combobox",
-          "name": "File format"
+          "nameKey": "export.file_format"
         },
         {
           "role": "button",
-          "name": "Close export"
+          "nameKey": "export.close"
         }
       ],
       "probe": {
@@ -2200,9 +2271,23 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "file": "Q3 Investor Update.pptx"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 540,
+        "top": 11,
+        "width": 278,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S69.01",
@@ -2236,22 +2321,22 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [],
-      "texts": [
-        "Export your deck"
+      "copyKeys": [
+        "export.failed",
+        "pay.try_again"
       ],
       "controls": [
         {
           "role": "combobox",
-          "name": "File format"
+          "nameKey": "export.file_format"
         },
         {
           "role": "button",
-          "name": "Close export"
+          "nameKey": "export.close"
         },
         {
           "role": "button",
-          "name": "Retry export"
+          "nameKey": "export.retry"
         }
       ],
       "probe": {
@@ -2272,7 +2357,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 487,
+        "top": 11,
+        "width": 384,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S71.01",
@@ -2287,19 +2383,17 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
+        "oauth.approve_title",
         "common.cancel"
-      ],
-      "texts": [
-        "Claude wants to use AirDesign"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Allow"
+          "nameKey": "oauth.allow"
         },
         {
           "role": "button",
-          "name": "Cancel"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
@@ -2318,6 +2412,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "agent": "Claude"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -2343,18 +2440,17 @@
     "route": "/agents/approve",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [],
-      "texts": [
-        "Ready to return to your agent"
+      "copyKeys": [
+        "oauth.connected"
       ],
       "controls": [
         {
           "role": "link",
-          "name": "Return to Claude"
+          "nameKey": "oauth.return_claude"
         },
         {
           "role": "button",
-          "name": "Having trouble returning?"
+          "nameKey": "oauth.return_help"
         }
       ],
       "probe": {
@@ -2390,19 +2486,17 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
+        "oauth.approve_title",
         "common.cancel"
-      ],
-      "texts": [
-        "Codex wants to use AirDesign"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Allow"
+          "nameKey": "oauth.allow"
         },
         {
           "role": "button",
-          "name": "Cancel"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
@@ -2421,6 +2515,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "agent": "Codex"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -2438,20 +2535,22 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "usage.title"
+        "settings.title",
+        "usage.title",
+        "credits.title",
+        "auto.title"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2480,28 +2579,28 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
+        "settings.title",
         "agent.name"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "Connected agents"
+          "nameKey": "settings.connected_agents"
         },
         {
           "role": "button",
-          "name": "Disconnect"
+          "nameKey": "settings.disconnect"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2530,36 +2629,36 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
+        "settings.title",
+        "settings.profile"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "heading",
-          "name": "Profile"
+          "nameKey": "settings.profile"
         },
         {
           "role": "textbox",
-          "name": "Your name"
+          "nameKey": "settings.your_name"
         },
         {
           "role": "button",
-          "name": "Save name"
+          "nameKey": "settings.save_name"
         },
         {
           "role": "button",
-          "name": "Delete account"
+          "nameKey": "settings.delete_account"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2593,24 +2692,28 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "pay.continue"
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel",
+        "pay.new_tab"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Continue to payment"
+          "nameKey": "pay.continue"
         },
         {
           "role": "spinbutton",
-          "name": "Amount in USD"
+          "nameKey": "credits.amount_label"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2624,7 +2727,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S91.02",
@@ -2640,7 +2754,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment\u2026"
+        "text": "Waiting for your $25.00 payment…"
       },
       {
         "kind": "selector-click",
@@ -2656,26 +2770,25 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "usage.title"
-      ],
-      "texts": [
-        "Waiting for your $25.00 payment\u2026"
+        "pay.waiting",
+        "pay.open",
+        "common.cancel"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Commands"
+          "nameKey": "shell.command"
         },
         {
           "role": "button",
-          "name": "Cancel payment"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2687,6 +2800,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "amount": "$25.00"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -2716,22 +2832,21 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "credits.title"
-      ],
-      "texts": [
-        "Payment received. Credits added."
+        "pay.added_title",
+        "pay.added_body",
+        "common.done"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Close add credits"
+          "nameKey": "common.done"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -2743,9 +2858,24 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "amount": "$25.00",
+        "balance": "$40.00"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S92.01",
@@ -2773,19 +2903,18 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Aira paused at your usage limit. Changes so far stay."
+        "usage.limit_title",
+        "usage.limit_body",
+        "usage.reset_action"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -2814,6 +2943,9 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
@@ -2848,19 +2980,19 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "usage.reset_confirm_title"
-      ],
-      "texts": [
-        "Aira paused at your usage limit. Changes so far stay."
+        "usage.reset_confirm_title",
+        "usage.reset_confirm_body",
+        "usage.reset_action",
+        "common.cancel"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Reset for $5"
+          "nameKey": "usage.reset_action"
         },
         {
           "role": "button",
-          "name": "Cancel"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
@@ -2878,7 +3010,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S92.03",
@@ -2893,19 +3036,20 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Slides"
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         }
       ],
       "probe": {
@@ -2921,9 +3065,23 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S92.04",
@@ -2951,7 +3109,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you\u2019re ready."
+        "text": "Usage reset. Resume when you’re ready."
       }
     ],
     "viewport": {
@@ -2963,23 +3121,22 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "shell.home"
-      ],
-      "texts": [
-        "Usage reset. Resume when you\u2019re ready."
+        "usage.reset_done",
+        "agent.resume_line",
+        "agent.resume"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "nameKey": "editor.export"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "nameKey": "editor.slide_label"
         },
         {
           "role": "button",
-          "name": "Resume"
+          "nameKey": "agent.resume"
         }
       ],
       "probe": {
@@ -3008,9 +3165,23 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyValues": {
+        "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S99.01",
@@ -3025,13 +3196,19 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [
-        "access.expired_title"
+        "pay.failed_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
       ],
-      "texts": [],
       "controls": [
         {
           "role": "button",
-          "name": "Send a new link"
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
         }
       ],
       "probe": {
@@ -3051,7 +3228,18 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
   },
   {
     "code": "S99.02",
@@ -3078,22 +3266,26 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [
-        "credits.title"
-      ],
-      "texts": [
-        "This payment expired. Your balance is unchanged. Add credits to start again."
+        "pay.expired_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
       ],
       "controls": [
         {
           "role": "button",
-          "name": "Close add credits"
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
         }
       ],
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "title": "Sign out?",
-        "close": "Cancel"
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
@@ -3107,6 +3299,17 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
   }
 ]

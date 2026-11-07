@@ -619,6 +619,37 @@
         "edgeLoss": 0.9518409616321825,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 697,
+          "top": 11,
+          "width": 324,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 54,
+            "background": 108,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -707,6 +738,37 @@
         "edgeLoss": 0.7275393236736655,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -843,6 +905,37 @@
         "edgeLoss": 0.0059107286404219694,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 584,
+          "top": 11,
+          "width": 302,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 51,
+            "background": 105,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1335,6 +1428,37 @@
         "edgeLoss": 0.9423852948347996,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 534,
+          "top": 11,
+          "width": 290,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 48,
+            "background": 102,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1379,6 +1503,37 @@
         "edgeLoss": 0.8559134143396742,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 495,
+          "top": 341,
+          "width": 480,
+          "height": 241
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 130,
+            "background": 1110,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1423,6 +1578,37 @@
         "edgeLoss": 0.8140970257068607,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 495,
+          "top": 317,
+          "width": 480,
+          "height": 289
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 163,
+            "background": 1317,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1447,6 +1633,37 @@
         "edgeLoss": 0.0052222161779904575,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 540,
+          "top": 11,
+          "width": 278,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 51,
+            "background": 93,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1491,6 +1708,37 @@
         "edgeLoss": 0.9077705624713541,
         "sizeLoss": 0,
         "backgroundLoss": 0.07174887892376682
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 487,
+          "top": 11,
+          "width": 384,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 60,
+            "background": 132,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1799,6 +2047,37 @@
         "edgeLoss": 0.7847055351272997,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 515,
+          "top": 240,
+          "width": 440,
+          "height": 444
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 174,
+            "background": 1898,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1887,6 +2166,37 @@
         "edgeLoss": 0.8953422397634828,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1975,6 +2285,37 @@
         "edgeLoss": 0.8216944474451195,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 69,
+            "background": 815,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -1999,6 +2340,37 @@
         "edgeLoss": 0.021833826560790692,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 515,
+          "top": 240,
+          "width": 440,
+          "height": 444
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 173,
+            "background": 1899,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -2043,6 +2415,37 @@
         "edgeLoss": 0.8448034444024581,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 534,
+          "top": 11,
+          "width": 290,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 52,
+            "background": 98,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -2067,6 +2470,37 @@
         "edgeLoss": 0.00467254502976866,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     },
     {
@@ -2111,6 +2545,37 @@
         "edgeLoss": 0.8217946173190283,
         "sizeLoss": 0,
         "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
       }
     }
   ],

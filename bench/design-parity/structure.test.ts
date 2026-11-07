@@ -5,7 +5,7 @@ import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
 import {readRegistry} from "./registry.ts"
 it("rejects transparent bitmap substitute DOM, missing and swapped icons, wrong fonts and low contrast",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:["Recents"],controls:[{role:"button",name:"Commands"}],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[{selector:"time",role:"helper",color:"gray.500",minimumContrast:3}]}}} satisfies typeof original
+  const entry={...original,assertions:{...original.assertions,copyKeys:["decks.recents"],controls:[{role:"button",nameKey:"shell.command"}],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[{selector:"time",role:"helper",color:"gray.500",minimumContrast:3}]}}} satisfies typeof original
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})

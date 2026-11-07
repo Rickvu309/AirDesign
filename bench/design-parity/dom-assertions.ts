@@ -1,10 +1,8 @@
 import type {Page,Locator} from "playwright"
-import {readFile} from "node:fs/promises"
 import sharp from "sharp"
 import {createHash} from "node:crypto"
 import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
-import {z} from "zod"
-import type {Scenario} from "./registry.ts"
+import {resolveCopy,type Scenario} from "./registry.ts"
 
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
@@ -65,7 +63,26 @@ async function visible(page:Page,text:string){
   }
   throw failure(`text=${text}`,"required-visible-copy","painted exact copy","no painted candidate")
 }
+export async function assertDialogActions(page:Page,entry:Scenario){
+  const actions=entry.assertions.structure.dialogActions
+  if(!actions)return
+  const dialog=page.locator(entry.component?.selector??"dialog[open]")
+  for(const [key,kind] of [[actions.primaryKey,"destructive"],[actions.cancelKey,"cancel"]]){
+    const button=dialog.getByRole("button",{name:resolveCopy(key!,entry.assertions.copyValues),exact:true})
+    await assertRendered(button,true)
+    const style=await button.evaluate(element=>{
+      const style=getComputedStyle(element),range=document.createRange()
+      range.selectNodeContents(element)
+      const lines=[...new Set([...range.getClientRects()].filter(rect=>rect.width>0).map(rect=>Math.round(rect.top)))]
+      return {lines:lines.length,overflow:element.scrollWidth>element.clientWidth,background:style.backgroundColor,color:style.color,borders:[style.borderTopColor,style.borderRightColor,style.borderBottomColor,style.borderLeftColor],widths:[style.borderTopWidth,style.borderRightWidth,style.borderBottomWidth,style.borderLeftWidth],styles:[style.borderTopStyle,style.borderRightStyle,style.borderBottomStyle,style.borderLeftStyle],height:element.getBoundingClientRect().height,radius:style.borderRadius}
+    })
+    const expected=kind==="destructive" ? {background:"rgb(217, 63, 63)",color:"rgb(255, 255, 255)",border:"rgb(185, 47, 47)"} : {background:"rgb(255, 255, 255)",color:"rgb(34, 34, 34)",border:"rgb(215, 215, 214)"}
+    if(style.lines!==1||style.overflow)throw failure(button.toString(),"dialog-action-single-line",1,style)
+    if(style.background!==expected.background||style.color!==expected.color||style.borders.some(color=>color!==expected.border)||style.widths.some(width=>width!=="1px")||style.styles.some(border=>border!=="solid")||style.height!==36||style.radius!=="8px")throw failure(button.toString(),`dialog-action-${kind}-tokens`,expected,style)
+  }
+}
 async function assertStructure(page:Page,entry:Scenario){
+  await assertDialogActions(page,entry)
   for(const icon of entry.assertions.structure.icons){
     const locator=page.locator(icon.region).locator(`svg[data-icon="${icon.name}"]`).first()
     if(!await locator.count())throw failure(locator.toString(),"required-icon",1,0)
@@ -124,18 +141,16 @@ async function assertStructure(page:Page,entry:Scenario){
 export async function assertScenarioStructure(page:Page,entry:Scenario){
   try{await assertStructure(page,entry)}catch(error){throw new Error(`scenario=${entry.code} ${String(error)}`)}
 }
-export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-entry"){
-  const copy=z.record(z.string(),z.unknown()).parse(JSON.parse(await readFile(new URL("../../docs/design/v0.1/copy-kit.json",import.meta.url),"utf8")))
+export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-entry",values:Record<string,string>={}){
   for(const key of keys){
-    const text=z.string().parse(copy[key])
+    const text=resolveCopy(key,values)
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
   }
 }
 async function assertDOM(page:Page,entry:Scenario){
-  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code)
-  for(const text of entry.assertions.texts)await visible(page,text)
+  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
   for(const control of entry.assertions.controls){
-    const locator=page.getByRole(control.role,{name:control.name,exact:true}).first()
+    const locator=page.getByRole(control.role,{name:resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true}).first()
     if(!await locator.count())throw failure(locator.toString(),"required-control",1,0)
     await assertRendered(locator,true)
   }
@@ -159,7 +174,7 @@ async function probeInteraction(page:Page,entry:Scenario){
     }
     case "dialog":{
       await page.getByRole("button",{name:probe.open,exact:true}).first().click()
-      const dialog=page.getByRole("dialog",{name:probe.title,exact:true})
+      const dialog=page.getByRole("dialog",{name:resolveCopy(probe.titleKey,entry.assertions.copyValues),exact:true})
       await dialog.waitFor({state:"visible"})
       await dialog.getByRole("button",{name:probe.close,exact:true}).click()
       await dialog.waitFor({state:"hidden"})
