@@ -87,3 +87,35 @@ it("keeps a paid confirmation truthful if refreshing the balance fails",async()=
     expect(container.querySelector('[role="alert"]')?.textContent).toContain("Unable to refresh your balance")
   }finally{await act(async()=>root.unmount());container.remove();sessionStorage.clear();vi.unstubAllGlobals()}
 })
+
+it("reopens the same pending amount and checkout after remount without another purchase",async()=>{
+  sessionStorage.clear()
+  class Stream{onmessage:((event:MessageEvent)=>void)|null=null;onerror:(()=>void)|null=null;close(){}}
+  vi.stubGlobal("EventSource",Stream)
+  const payment={id:"12345678-1234-1234-1234-123456789abc",cents:2500,kind:"pending",expires:Date.now()+1800000}
+  const url="https://checkout.example.test/existing-25"
+  const request=vi.fn(async(path:string)=>Response.json(path.endsWith("/checkout") ? {payment,url} : payment))
+  vi.stubGlobal("fetch",request)
+  const openPayment=vi.fn();vi.stubGlobal("open",openPayment)
+  const container=document.createElement("div");document.body.append(container);let root=createRoot(container)
+  try{
+    await act(async()=>root.render(<AddCredits refresh={async()=>{}}/>))
+    await act(async()=>container.querySelector<HTMLButtonElement>("button")!.click())
+    await act(async()=>[...container.querySelectorAll("button")].find(value=>value.textContent==="$25")!.click())
+    await act(async()=>[...container.querySelectorAll("button")].find(value=>value.textContent==="Continue to payment")!.click())
+    await act(async()=>container.querySelector<HTMLButtonElement>("button")!.click())
+    expect(container.querySelector<HTMLDialogElement>("dialog")?.open).toBe(false)
+    expect(container.querySelector(".payment-status")?.textContent).toContain("$25.00")
+    expect(openPayment).toHaveBeenCalledTimes(2)
+    expect(openPayment).toHaveBeenLastCalledWith(url,"_blank","noopener,noreferrer")
+    expect(request.mock.calls.filter(([path])=>path.endsWith("/checkout"))).toHaveLength(1)
+    await act(async()=>root.unmount());root=createRoot(container)
+    await act(async()=>root.render(<AddCredits refresh={async()=>{}}/>))
+    await act(async()=>container.querySelector<HTMLButtonElement>("button")!.click())
+    expect(container.querySelector<HTMLDialogElement>("dialog")?.open).toBe(false)
+    expect(container.querySelector(".payment-status a")?.getAttribute("href")).toBe(url)
+    expect(container.querySelector(".payment-status")?.textContent).toContain("$25.00")
+    expect(openPayment).toHaveBeenCalledTimes(3)
+    expect(request.mock.calls.filter(([path])=>path.endsWith("/checkout"))).toHaveLength(1)
+  }finally{await act(async()=>root.unmount());container.remove();sessionStorage.clear();vi.unstubAllGlobals()}
+})

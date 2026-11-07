@@ -18,7 +18,7 @@ export function ChatPanel({deck,selection,readonly,close}:{deck:Deck;selection:s
   }
   async function resetUsage(hit:string){
     setBusy(true);setError("")
-    try{const response=await fetch("/api/usage/reset",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limitHit:hit})});if(!response.ok)throw new Error("Unable to reset usage. Try again in Settings → Usage.");setResetRun(snapshot?.run?.id ?? null);toast(copy("usage.reset_done"))}catch(failure){setError(String(failure))}finally{setBusy(false);setConfirmReset(null)}
+    try{const response=await fetch("/api/usage/reset",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({limitHit:hit})});if(!response.ok)throw new Error("Unable to reset usage. Try again in Settings → Usage.");setResetRun(snapshot?.run?.id ?? null);toast.success(copy("usage.reset_done"))}catch(failure){setError(String(failure))}finally{setBusy(false);setConfirmReset(null)}
   }
   async function prepareReset(hit:string){
     setBusy(true);setError("")
