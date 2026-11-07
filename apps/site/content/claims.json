@@ -1,7 +1,12 @@
 {
   "version": 2,
   "claims": [
-    {"id":"studio-credits-unavailable","text":"Buying credits is not available yet.","kind":"blocked","gate":"X06"},
+    {
+      "id": "studio-credits-unavailable",
+      "text": "Buying credits is not available yet.",
+      "kind": "blocked",
+      "gate": "X06"
+    },
     {
       "id": "public-000",
       "text": "·",
@@ -231,10 +236,11 @@
       "receipt": "P05/report.md"
     },
     {
-      "id": "public-038",
-      "text": "Edit the details. Review each change.",
-      "kind": "proven",
-      "receipt": "P05/report.md"
+      "id": "site-x03-notes",
+      "text": "Drop in your notes. Watch the deck build itself.",
+      "kind": "external-passed",
+      "gate": "X03",
+      "receipt": "P09/external/X03/results/report.md"
     },
     {
       "id": "public-039",
@@ -280,7 +286,7 @@
     },
     {
       "id": "public-046",
-      "text": "Illustration · sample data",
+      "text": "Revenue by customer segment, $M. Sample data.",
       "kind": "proven",
       "receipt": "P05/report.md"
     },
@@ -441,12 +447,6 @@
       "receipt": "P07/report.md"
     },
     {
-      "id": "public-073",
-      "text": "Sample outline illustration beside an actual Studio capture. Local deterministic adapter, sample content. Model quality is awaiting independent evaluation.",
-      "kind": "blocked",
-      "gate": "X03"
-    },
-    {
       "id": "public-074",
       "text": "Real product capture · local adapter",
       "kind": "proven",
@@ -550,7 +550,7 @@
     },
     {
       "id": "public-091",
-      "text": "This site is a local release candidate. It has not been deployed. Windows/Mac PowerPoint, screen readers, paid models, human calibration, remote clients and payment provider acceptance are pending.",
+      "text": "This site is a local release candidate. It has not been deployed. Windows/Mac PowerPoint, screen readers, human calibration, remote clients and payment provider acceptance are pending.",
       "kind": "blocked",
       "gate": "X01"
     },
@@ -825,10 +825,11 @@
       "receipt": "P09/report.md"
     },
     {
-      "id": "site-design-138",
-      "text": "Review changes by slide.",
-      "kind": "proven",
-      "receipt": "P09/report.md"
+      "id": "site-x03-building",
+      "text": "Building slide 3 of 8. Coffee optional.",
+      "kind": "external-passed",
+      "gate": "X03",
+      "receipt": "P09/external/X03/results/report.md"
     },
     {
       "id": "site-design-139",
@@ -891,10 +892,11 @@
       "receipt": "P09/report.md"
     },
     {
-      "id": "site-design-152",
-      "text": "Built-in agent",
-      "kind": "proven",
-      "receipt": "P09/report.md"
+      "id": "site-x03-built-in",
+      "text": "Aira built in",
+      "kind": "external-passed",
+      "gate": "X03",
+      "receipt": "P09/external/X03/results/report.md"
     },
     {
       "id": "site-design-153",
@@ -934,7 +936,7 @@
     },
     {
       "id": "site-design-159",
-      "text": "This page is served by the AirDesign site build. Windows/Mac PowerPoint, screen readers, paid models, human calibration, remote clients and payment provider acceptance are pending.",
+      "text": "This page is served by the AirDesign site build. Windows/Mac PowerPoint, screen readers, human calibration, remote clients and payment provider acceptance are pending.",
       "kind": "blocked",
       "gate": "X01"
     },
@@ -949,12 +951,41 @@
       "text": "Site build identity",
       "kind": "proven",
       "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-capture-state",
+      "text": "Illustrative build state. Actual Studio capture, sample Halden deck, local deterministic adapter paused after three slide updates.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-capture-provenance",
+      "text": "Capture provenance →",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-capture-region",
+      "text": "Slide 3 of the Halden investor deck",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-capture-mobile",
+      "text": "Slide 3 of 8 · Swipe to explore",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-capture-description",
+      "text": "Actual Studio capture of the eight-slide Halden investor deck with stacked revenue bars and Aira working",
+      "kind": "proven",
+      "receipt": "P09/report.md"
     }
   ],
   "blocked": [
     "X01",
     "X02",
-    "X03",
     "X04",
     "X05",
     "X06"

@@ -118,6 +118,9 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
     if (step.uses && !step.uses.startsWith("./") && !/@[a-f0-9]{40}$/.test(step.uses)) hits.push(`deploy-action-not-pinned: ${step.uses}`)
   }
   const key = steps.find(step => step.run?.includes('> "$HOME/.ssh/id_ed25519"'))
+  if (!key?.run?.includes('install -m 600 .github/ssh/railway-known-hosts "$HOME/.ssh/known_hosts"') || !key.run.includes("StrictHostKeyChecking yes")) hits.push("deploy-ssh-host-key-must-be-pinned")
+  const hostKeyValues = [...source.matchAll(/StrictHostKeyChecking(?:[\s=]|\\t)+([^\s\\'"]+)/gi)].map(match => match[1]?.toLowerCase())
+  if (/accept-new/i.test(source) || hostKeyValues.some(value => value !== "yes")) hits.push("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
   if (key?.if !== "always() && steps.railway.outputs.ready == 'true'") hits.push("deploy-ssh-key-must-install-after-pages-failure")
   const live = steps[verify]
   for (const command of ['--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", '--railway-project "$RAILWAY_PROJECT_ID"', "--railway-environment production", "--output-dir"]) {
@@ -129,4 +132,9 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
   if (!source.includes("npm run build --workspace @airdesign/site") || !steps[pages]?.run?.includes('--commit-hash "$EXPECT_SHA"') || !source.includes("--project-name airdesign")) hits.push("deploy-site-must-build-selected-commit")
   if (!steps.some(step => step.if === "always()" && step.uses?.startsWith("actions/upload-artifact@"))) hits.push("deploy-live-evidence-must-upload-on-failure")
   return hits
+}
+
+export function railwayKnownHostsHits(knownHosts: string): string[] {
+  const lines = knownHosts.split("\n").filter(line => line.trim() !== "")
+  return lines.length === 1 && /^ssh\.railway\.com ssh-ed25519 [A-Za-z0-9+/]{68}$/.test(lines[0] ?? "") ? [] : ["deploy-ssh-known-hosts-must-pin-one-railway-ed25519-key"]
 }

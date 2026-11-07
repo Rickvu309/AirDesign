@@ -3,7 +3,7 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { expect, it } from "vitest"
-import { deploymentWorkflowHits, ciCoverageHits, verifierBuildHits, workerLibraryHits } from "../../scripts/lint/ci-workflow-policy.ts"
+import { deploymentWorkflowHits, ciCoverageHits, verifierBuildHits, workerLibraryHits, railwayKnownHostsHits } from "../../scripts/lint/ci-workflow-policy.ts"
 import { requiresFullGate } from "../../scripts/gate/plan.ts"
 
 const scripts: Record<string, string> = JSON.parse(readFileSync("package.json", "utf8")).scripts
@@ -172,4 +172,24 @@ it("rejects the railway link step that a workspace token could not run in the fi
   const tokenOnKey = deploy.replace("          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}\n", "          RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}\n          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n")
   expect(tokenOnKey).not.toBe(deploy)
   expect(deploymentWorkflowHits(tokenOnKey, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
+})
+
+it("pins Railway's SSH host key that a fresh runner refused to trust in the first green-asset deploy", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  const unpinned = deploy.replace('          install -m 600 .github/ssh/railway-known-hosts "$HOME/.ssh/known_hosts"\n', "")
+  expect(unpinned).not.toBe(deploy)
+  expect(deploymentWorkflowHits(unpinned, railway)).toContain("deploy-ssh-host-key-must-be-pinned")
+  expect(deploymentWorkflowHits(deploy.replace("StrictHostKeyChecking yes", "StrictHostKeyChecking accept-new"), railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  expect(deploymentWorkflowHits(deploy.replace("StrictHostKeyChecking yes", "StrictHostKeyChecking no"), railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  for (const disabled of ["StrictHostKeyChecking  no\\n  StrictHostKeyChecking yes", "StrictHostKeyChecking=off\\n  StrictHostKeyChecking yes", "StrictHostKeyChecking\\tno\\n  StrictHostKeyChecking yes"]) {
+    const broken = deploy.replace("StrictHostKeyChecking yes", disabled)
+    expect(broken).not.toBe(deploy)
+    expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  }
+  const knownHosts = readFileSync(".github/ssh/railway-known-hosts", "utf8")
+  expect(railwayKnownHostsHits(knownHosts)).toEqual([])
+  expect(railwayKnownHostsHits("")).not.toEqual([])
+  expect(railwayKnownHostsHits(knownHosts.replace("ssh.railway.com", "*.railway.com"))).not.toEqual([])
+  expect(railwayKnownHostsHits(knownHosts + "evil.example ssh-ed25519 AAAA\n")).not.toEqual([])
 })

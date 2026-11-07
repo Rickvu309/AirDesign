@@ -14,6 +14,7 @@ import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 import {validateMcpMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
 import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
+import {classifyPageAssets} from "./site-assets.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
 export async function checkIdentity(base,route,sha){
@@ -40,15 +41,16 @@ export async function auditLinks(page,base){
   return checked
 }
 async function auditAssets(page){
-  const assets=await page.locator('script[src],link[rel="stylesheet"][href]').evaluateAll(nodes=>nodes.map(node=>node.src || node.href))
-  assets.push(...await page.evaluate(()=>performance.getEntriesByType("resource").map(entry=>entry.name).filter(name=>new URL(name).pathname.startsWith("/assets/"))))
-  assert.ok(assets.length,"page must load built assets")
-  for(const asset of new Set(assets)){
-    const url=new URL(asset);assert.match(url.pathname,/\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\./,"asset must have content hash")
-    const response=await fetch(url,{signal:AbortSignal.timeout(15000)});assert.equal(response.status,200)
+  const urls=await page.locator('script[src],link[rel="stylesheet"][href]').evaluateAll(nodes=>nodes.map(node=>node.src || node.href))
+  urls.push(...await page.evaluate(()=>performance.getEntriesByType("resource").map(entry=>entry.name).filter(name=>new URL(name).pathname.startsWith("/assets/"))))
+  const assets=classifyPageAssets(urls)
+  assert.deepEqual(assets.unhashed,[],`asset must have content hash: ${assets.unhashed.join(", ")}`)
+  assert.ok(assets.built.length,"page must load built assets")
+  for(const asset of assets.built){
+    const response=await fetch(asset,{signal:AbortSignal.timeout(15000)});assert.equal(response.status,200)
     assert.match(response.headers.get("cache-control") ?? "",/immutable/,"static asset missing immutable cache")
   }
-  return assets.map(asset=>new URL(asset).pathname)
+  return {built:assets.built.map(asset=>new URL(asset).pathname),platform:assets.platform}
 }
 function safeError(error){return String(error?.message ?? error).replace(/https?:\/\/[^\s"']+/g,value=>{try{const url=new URL(value);return url.origin+url.pathname}catch{return "[url]"}}).replace(/token[=:][^\s&]+/gi,"token=[redacted]").slice(0,1500)}
 export async function verifyLive(options){
