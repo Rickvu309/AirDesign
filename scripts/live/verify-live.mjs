@@ -60,7 +60,15 @@ export async function verifyLive(options){
   const created=[],paidCalls=[],browserErrors=[]
   let current="configuration",browser,context,page,signedSmoke=false
   async function step(name,run){current=name;const started=Date.now();try{const evidence=await run();assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){receipt.steps.push({name,status:"fail",error:safeError(error)});throw error}}
-  async function shot(name){const file=name+".png";await page.screenshot({path:path.join(output,file),fullPage:true});return file}
+  async function shot(name){
+    const file=name+".png",viewport=page.viewportSize()
+    const height=await page.evaluate(()=>document.documentElement.scrollHeight)
+    try{
+      await page.setViewportSize({width:viewport.width,height})
+      await page.screenshot({path:path.join(output,file),timeout:15000})
+      return file
+    }finally{await page.setViewportSize(viewport)}
+  }
   try{
     assert.match(sha,/^[a-f0-9]{40}$/,"--expect-sha must be a full commit sha")
     assert.ok(email,"--smoke-email required")
