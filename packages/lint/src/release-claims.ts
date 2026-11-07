@@ -1,3 +1,4 @@
+import {Window,type Element as ParsedElement} from "happy-dom"
 export type ExternalGate = "X01" | "X02" | "X03" | "X04" | "X05" | "X06"
 export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"external-passed";gate:ExternalGate;receipt:string}|{kind:"blocked";gate:string})
 export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-passed"}>,capabilities:string):boolean {
@@ -7,21 +8,25 @@ export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-pa
   return cells[1]===claim.gate && cells[2]==="passed" && cells[3]===receipt
  })
 }
-const metaTag=/<meta\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi
-const tagAttribute=/([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
 const browserChromeNames=new Set(["viewport","theme-color"])
 const browserChromeAttributes=new Set(["name","content","media"])
-function isBrowserChromeMeta(body:string):boolean{
- const attributes=[...body.matchAll(tagAttribute)].map(match=>({key:match[1]!.toLowerCase(),value:(match[2]??match[3]??match[4]??"").trim().toLowerCase()}))
- const names=attributes.filter(attribute=>attribute.key==="name")
- return names.length===1 && browserChromeNames.has(names[0]!.value) && attributes.every(attribute=>browserChromeAttributes.has(attribute.key))
+const copyAttributes=["alt","aria-label","content"] as const
+const inertElements=new Set(["SCRIPT","STYLE","TEMPLATE"])
+const htmlWindow=new Window()
+const htmlParser=new htmlWindow.DOMParser()
+function isBrowserChromeMeta(element:ParsedElement):boolean{
+ return element.tagName==="META" && browserChromeNames.has((element.getAttribute("name")??"").trim().toLowerCase()) && [...element.attributes].every(attribute=>browserChromeAttributes.has(attribute.name))
+}
+function htmlCopy(source:string):string[]{
+ const document=htmlParser.parseFromString(source,"text/html")
+ const texts:string[]=[]
+ const walker=document.createTreeWalker(document,htmlWindow.NodeFilter.SHOW_TEXT)
+ for(let node=walker.nextNode();node;node=walker.nextNode())if(!inertElements.has(node.parentElement?.tagName??""))texts.push(node.textContent??"")
+ const attributes=[...document.querySelectorAll("*")].filter(element=>!isBrowserChromeMeta(element)).flatMap(element=>copyAttributes.map(name=>element.getAttribute(name)??""))
+ return [...texts,...attributes]
 }
 export function publicCopy(source:string):string[]{
- const clean=source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
- const texts=clean.includes("<") ? [...clean.matchAll(/>([^<>]+)</g)].map(match=>match[1]!) : clean.split("\n")
- const copyBearing=clean.replace(metaTag,(tag,body:string)=>isBrowserChromeMeta(body)?"":tag)
- const attributes=[...copyBearing.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!)
- return [...texts,...attributes].map(text=>text.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim()).filter(Boolean)
+ return (source.includes("<") ? htmlCopy(source) : source.split("\n")).map(text=>text.replace(/\s+/g," ").trim()).filter(Boolean)
 }
 export function releaseClaimHits(source:string,claims:readonly PublicClaim[]=[],capabilities=""):string[]{
  const registered=new Set(claims.filter(claim=>claim.id && (claim.kind==="external-passed" ? passedExternalClaim(claim,capabilities) : claim.kind==="proven" ? /^P0[1-9]\/report\.md$/.test(claim.receipt) : /^X0[1-6]$/.test(claim.gate) && /pending|not yet|await|not available|unverified|blocked/i.test(claim.text))).map(claim=>claim.text))
