@@ -42,7 +42,7 @@ describe("studio access", () => {
     expect(document.querySelector('[data-screen="checking"]')).not.toBeNull()
   })
 
-  it.each(["pageshow", "visibilitychange"])("removes private data before %s session validation finishes", async (eventName) => {
+  it("removes private data before pageshow session validation finishes", async () => {
     const client = fakeClient({signedIn:true})
     await render(<AccessApp client={client} initialScreen="checking" />)
     await act(flush)
@@ -50,14 +50,34 @@ describe("studio access", () => {
     let finish: (value: Awaited<ReturnType<AccessClient["session"]>>) => void = () => { throw new Error("session-not-requested") }
     client.session = () => new Promise(resolve => { finish = resolve })
     await act(async () => {
-      if (eventName === "pageshow") window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
-      else document.dispatchEvent(new Event("visibilitychange"))
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
     })
     expect(document.querySelector(".ad-shell")).toBeNull()
     expect(document.querySelector('[data-screen="checking"]')).not.toBeNull()
     await act(async () => { finish({status:"signed-out"}); await flush() })
     expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
     expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(location.pathname).toBe("/")
+  })
+
+  it("keeps the signed-in workspace mounted across tab switches while the session is valid", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    const shell = document.querySelector(".ad-shell")
+    expect(shell).not.toBeNull()
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); await flush() })
+    expect(document.querySelector(".ad-shell")).toBe(shell)
+  })
+
+  it("clears private data on tab return when the session ended elsewhere", async () => {
+    const client = fakeClient({signedIn:true})
+    await render(<AccessApp client={client} initialScreen="checking" />)
+    await act(flush)
+    expect(document.querySelector(".ad-shell")).not.toBeNull()
+    client.session = async () => ({status:"signed-out"})
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); await flush() })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
     expect(location.pathname).toBe("/")
   })
 

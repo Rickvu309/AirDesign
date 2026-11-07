@@ -80,21 +80,24 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       generation += 1
       return concealPrivateState()
     }
-    const revalidate = async () => {
-      if (!conceal()) return
+    const revalidate = async (concealFirst: boolean) => {
+      if (concealFirst && !conceal()) return
+      if (!concealFirst) generation += 1
       const current = generation
       try {
         const result = await client.session()
         if (current !== generation) return
         if (result.status === "signed-in") {
+          if (!concealFirst) return
           setKind(result.kind ?? "home")
           setIntentToken(result.intentToken)
           setScreen("home")
           return
         }
       } catch {
-        if (current !== generation) return
+        if (current !== generation || !concealFirst) return
       }
+      if (!concealFirst && !concealPrivateState()) return
       history.replaceState(null, "", "/")
       setEmail("")
       setCode("")
@@ -104,11 +107,10 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       setScreen("signin")
     }
     const restore = (event: PageTransitionEvent) => {
-      if (event.persisted) void revalidate()
+      if (event.persisted) void revalidate(true)
     }
     const visibility = () => {
-      if (document.visibilityState === "hidden") conceal()
-      else void revalidate()
+      if (document.visibilityState === "visible") void revalidate(false)
     }
     window.addEventListener("pagehide", conceal)
     window.addEventListener("pageshow", restore)
