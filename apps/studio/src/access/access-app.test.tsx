@@ -140,6 +140,27 @@ describe("studio access", () => {
     expect(document.querySelector(".deck-card")).toBe(deck)
   })
 
+  it.each(["/settings/usage", "/settings/agents", "/settings/account", "/trash"])("searches decks from %s while preserving focus and the query", async (destination) => {
+    history.replaceState(null, "", destination)
+    const requests: string[] = []
+    vi.stubGlobal("fetch", async (input: string) => {
+      requests.push(input)
+      if (input === "/api/usage") return Response.json({ payments: { kind: "unavailable" }, used: 0, remaining: 10000, paid: 0, bonus: 0, autoReset: false, week: { zone: "UTC", resetsAt: 1804483200000 } })
+      if (input === "/api/usage/history") return Response.json({ items: [], nextCursor: null })
+      return Response.json(input.startsWith("/api/catalog") ? [{ id: "strategy", title: "Strategy", slides: 1, updated: Date.now(), deletedAt: null, generation: 1 }] : {})
+    })
+    await render(<AccessApp client={fakeClient()} initialScreen="home" />)
+    const search = document.querySelector<HTMLInputElement>('input[type="search"]')
+    search?.focus()
+    await act(async () => { setValue(search, "Strategy"); await flush() })
+    expect(location.pathname).toBe("/")
+    expect(document.querySelector("h1")?.textContent).toBe("All decks")
+    expect(document.querySelector(".deck-card")?.textContent).toContain("Strategy")
+    expect(requests.some(request => request.includes("search=Strategy") && !request.includes("trash=true"))).toBe(true)
+    expect(document.activeElement).toBe(search)
+    expect(search?.value).toBe("Strategy")
+  })
+
   it("keeps the discovery import action over a saved home session", async () => {
     await render(<AccessApp client={fakeClient({signedIn:true,kind:"home"})} initialScreen="checking" initialKind="import" />)
     await act(flush)

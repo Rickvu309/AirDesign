@@ -3,6 +3,12 @@ import { readFileSync } from "node:fs"
 const designCopyKeys = new Set(Object.entries(JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8"))).filter(([, value]) => typeof value === "string").map(([key]) => key))
 
 export function studioFoundationHits(file: string, source: string): { line: number; reason: string }[] {
+  if (file.endsWith("packages/ui/src/primitives/primitives.tsx")) {
+    const hits = []
+    if (/export function NavItem[\s\S]*?return <button/.test(source.split("export function Dropdown")[0] ?? "")) hits.push({ line: 1, reason: "studio-navigation-requires-native-links" })
+    if (/<span className="ad-tooltip"[^>]*tabIndex/.test(source)) hits.push({ line: 1, reason: "studio-tooltip-must-not-add-tab-stop" })
+    return hits
+  }
   if (/bench\/.*\.mjs$/.test(file)) {
     const hits = []
     for (const match of source.matchAll(/name\s*:\s*["'](?:\+ New deck|No decks yet)["']|getByLabel\(["']Search decks["']\)/g)) hits.push({ line: source.slice(0, match.index).split("\n").length, reason: "studio-browser-check-uses-designed-shell-accessible-names" })

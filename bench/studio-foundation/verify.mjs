@@ -9,7 +9,7 @@ const out=process.env.STUDIO_FOUNDATION_EVIDENCE ?? path.join(os.homedir(),"tmp/
 await mkdir(out,{recursive:true})
 const local=await stack(),browser=await chromium.launch({headless:true}),checks=[]
 try{
-  const {owner}=await seed(local,{seed:"empty-account",route:"/"})
+  const {owner}=await seed(local,{seed:"recents",code:"shellfix",route:"/"})
   const context=await browser.newContext({viewport:{width:1440,height:923},reducedMotion:"reduce"})
   await context.addCookies(owner.cookie.split("; ").map(pair=>{const index=pair.indexOf("=");return {name:pair.slice(0,index),value:pair.slice(index+1),url:local.origin}}))
   const page=await context.newPage(),errors=[]
@@ -40,19 +40,50 @@ try{
   assert.equal(await page.locator(":focus").textContent(),"All decks")
   await page.keyboard.press("Enter")
   await page.getByRole("heading",{name:"All decks",exact:true}).waitFor()
-  assert.equal(await page.getByRole("button",{name:"All decks",exact:true}).getAttribute("aria-current"),"page")
+  assert.equal(await page.getByRole("link",{name:"All decks",exact:true}).getAttribute("aria-current"),"page")
   await page.getByRole("button",{name:"List view",exact:true}).click()
   assert.equal(await page.getByRole("button",{name:"List view",exact:true}).getAttribute("aria-pressed"),"true")
-  await page.getByRole("button",{name:"Trash",exact:true}).click()
+  await page.getByRole("link",{name:"Trash",exact:true}).click()
   await page.getByRole("heading",{name:"Trash",exact:true}).waitFor()
-  await page.getByRole("button",{name:"Settings",exact:true}).click()
+  await page.getByRole("link",{name:"Settings",exact:true}).click()
   await page.getByRole("heading",{name:"Settings",exact:true}).waitFor()
-  await page.getByRole("button",{name:"Recents",exact:true}).click()
+  await page.getByRole("link",{name:"Recents",exact:true}).click()
   await page.getByRole("heading",{name:"Recents",exact:true}).waitFor()
   await page.keyboard.press("Control+k")
   await page.getByRole("dialog").waitFor()
   await page.keyboard.press("Escape")
   await capture("shell-1440")
+  for(const mobile of [false,true]){
+    const searchContext=await browser.newContext({viewport:mobile ? {width:390,height:844} : {width:1440,height:923},isMobile:mobile,hasTouch:mobile,reducedMotion:"reduce"})
+    try{
+      await searchContext.addCookies(owner.cookie.split("; ").map(pair=>{const index=pair.indexOf("=");return {name:pair.slice(0,index),value:pair.slice(index+1),url:local.origin}}))
+      const searchPage=await searchContext.newPage()
+      searchPage.on("pageerror",error=>errors.push(String(error)))
+      const field=searchPage.getByRole("searchbox",{name:"Search",exact:true})
+      for(const destination of ["/settings/usage","/settings/agents","/settings/account","/trash"]){
+        await searchPage.goto(local.origin+destination)
+        if(mobile)await field.tap();else await field.focus()
+        await field.pressSequentially("Strategy")
+        await searchPage.getByRole("heading",{name:"All decks",exact:true}).waitFor()
+        await searchPage.locator(".deck-card").filter({hasText:"Pricing Strategy Review"}).waitFor()
+        assert.equal(new URL(searchPage.url()).pathname,"/")
+        assert.equal(await field.inputValue(),"Strategy")
+        assert.equal(await field.evaluate(element=>element===document.activeElement),true)
+        assert.equal(await searchPage.locator(".deck-card").count(),1)
+        await capture(`search-${destination.split("/").at(-1)}-${mobile ? "touch-390" : "1440"}`,searchPage)
+      }
+      for(const [name,href] of [["Recents","/"],["All decks","/?browse=all"],["Trash","/trash"],["Settings","/settings/usage"]])assert.equal(await searchPage.getByRole("link",{name,exact:true}).getAttribute("href"),href)
+      if(!mobile){
+        const popup=searchContext.waitForEvent("page")
+        await searchPage.getByRole("link",{name:"Settings",exact:true}).click({modifiers:["Control"]})
+        const tab=await popup
+        await tab.waitForLoadState()
+        assert.equal(new URL(tab.url()).pathname,"/settings/usage")
+        await tab.close()
+        assert.equal(await field.inputValue(),"Strategy")
+      }
+    }finally{await searchContext.close()}
+  }
   await page.setViewportSize({width:390,height:844})
   await capture("shell-390")
   await page.getByLabel("Account menu",{exact:true}).click()
@@ -106,7 +137,7 @@ try{
   const search=phone.getByRole("searchbox",{name:"Search",exact:true})
   assert.ok(await search.evaluate(element=>parseFloat(getComputedStyle(element).fontSize)>=16),"touch search does not trigger input zoom")
   for(const name of ["Recents","All decks","Trash","Settings","New deck","Grid view","List view"]){
-    const bounds=await phone.getByRole("button",{name,exact:true}).boundingBox()
+    const bounds=await phone.getByRole(["Recents","All decks","Trash","Settings"].includes(name) ? "link" : "button",{name,exact:true}).boundingBox()
     assert.ok(bounds&&bounds.width>=44&&bounds.height>=44,`${name}: touch target`)
   }
   await capture("shell-touch-390",phone)

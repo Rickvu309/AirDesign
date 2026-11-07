@@ -11,11 +11,12 @@ type StudioShellProps = {
   search: string
   onSearch: (value: string) => void
   accountName?: string
+  onNavigate?: (href: string) => void
   onBrowse?: (browse: "recent" | "all") => void
   children: ReactNode
 }
 
-export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = "My account", search, onSearch, starredDecks = [], onBrowse, children }: StudioShellProps) {
+export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = "My account", search, onSearch, starredDecks = [], onBrowse, onNavigate, children }: StudioShellProps) {
   const editor=window.location.pathname.startsWith("/deck/")
   const path = window.location.pathname
   const [commandsOpen, setCommandsOpen] = useState(false)
@@ -41,10 +42,10 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = 
         <div className="ad-account"><Dropdown label="Account menu" trigger={<><Avatar name={accountName}/><span>{accountName}</span><Icon name="chevron"/></>}><a href="/settings/account">Account settings</a><button type="button" onClick={onSignOut}>{copy("access.sign_out")}</button></Dropdown></div>
         <SearchField value={search} onChange={onSearch}/>
         <nav aria-label="Workspace">
-          <NavItem label={copy("shell.recents")} icon="recent" href="/" selected={path === "/" && !window.location.search} onSelect={path === "/" && onBrowse ? () => onBrowse("recent") : undefined}/>
-          <NavItem label={copy("shell.all_decks")} icon="decks" href="/?browse=all" selected={window.location.search.includes("browse=all")} onSelect={path === "/" && onBrowse ? () => onBrowse("all") : undefined}/>
-          <NavItem label={copy("shell.trash")} icon="trash" href="/trash" selected={path === "/trash"}/>
-          <NavItem label={copy("shell.settings")} icon="settings" href="/settings/usage" selected={path.startsWith("/settings/")}/>
+          <NavItem label={copy("shell.recents")} icon="recent" href="/" selected={path === "/" && !window.location.search} onSelect={onBrowse ? () => onBrowse("recent") : undefined}/>
+          <NavItem label={copy("shell.all_decks")} icon="decks" href="/?browse=all" selected={window.location.search.includes("browse=all")} onSelect={onBrowse ? () => onBrowse("all") : undefined}/>
+          <NavItem label={copy("shell.trash")} icon="trash" href="/trash" selected={path === "/trash"} onSelect={onNavigate ? () => onNavigate("/trash") : undefined}/>
+          <NavItem label={copy("shell.settings")} icon="settings" href="/settings/usage" selected={path.startsWith("/settings/")} onSelect={onNavigate ? () => onNavigate("/settings/usage") : undefined}/>
         </nav>
         <details className="ad-starred" open><summary>{copy("shell.starred")}</summary>{starredDecks.length ? starredDecks.map(deck => <a key={deck.id} href={`/deck/${deck.id}`}><Icon name="decks"/>{deck.title}</a>) : <p>{copy("shell.starred_empty")}</p>}</details>
         <details className="ad-agent-card" open><summary aria-label="Bring your own agent"><span className="ad-agent-logos" aria-hidden="true"><span className="ad-agent-logo-codex"><AgentMark kind="codex"/></span><span className="ad-agent-logo-claude"><AgentMark kind="claude"/></span><span className="ad-agent-logo-brand"><BrandMark/></span><span className="ad-agent-logo-custom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m12 2 9 5v10l-9 5-9-5V7zm0 10L3 7m9 5 9-5m-9 5v10"/></svg></span><span><Icon name="plus"/></span></span><span className="ad-agent-collapse">−</span></summary><div className="ad-agent-description"><strong>{copy("shell.bring_agent")}</strong><p>{copy("shell.agent_hint")}</p></div><a className="ad-button ad-button-secondary ad-button-dialog" href="/settings/agents"><Icon name="plug"/>{copy("home.connect_agent")}</a></details>

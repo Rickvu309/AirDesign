@@ -409,6 +409,7 @@ body {
 .ad-tooltip { position:relative;display:inline-flex; }
 .ad-tooltip [role="tooltip"] { display:none;position:absolute;bottom:calc(100% + 6px);padding:6px 10px;border-radius:var(--radius-compact);background:var(--foreground);color:var(--card);white-space:nowrap;font-size:var(--text-helper); }
 .ad-tooltip:focus-within [role="tooltip"] { display:block; }
+.ad-tooltip [role="tooltip"][hidden] { display:none; }
 .ad-sidebar { position:sticky;top:0;height:100dvh;display:flex;flex-direction:column;gap:16px;padding:20px 12px 12px;background:var(--background);font-size:var(--text-body-small); }
 .ad-account { padding:0 8px 4px;font-weight:600; }
 .ad-account summary>span:nth-child(2) { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }

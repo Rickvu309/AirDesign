@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react"
+import { cloneElement, isValidElement, useState, useEffect, useId, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react"
 
 export type IconName = "search" | "recent" | "decks" | "trash" | "settings" | "grid" | "list" | "chevron" | "plug" | "mail" | "plus"
 const paths: Record<IconName, string> = {
@@ -39,7 +39,12 @@ export function SegmentedControl<T extends string>({ label, value, items, onChan
   return <div className="ad-segmented" role="group" aria-label={label}>{items.map(item => <button type="button" key={item.value} aria-label={item.label} aria-pressed={item.value === value} onClick={() => onChange(item.value)}>{item.icon ? <Icon name={item.icon}/> : item.label}</button>)}</div>
 }
 export function NavItem({ label, icon, href, selected, onSelect }: { label: string; icon: IconName; href: string; selected: boolean; onSelect?: () => void }) {
-  return <button type="button" className="ad-nav-item" onClick={onSelect ?? (() => window.location.assign(href))} aria-current={selected ? "page" : undefined}><Icon name={icon}/>{label}</button>
+  return <a href={href} className="ad-nav-item" onClick={event => {
+    if (onSelect && !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+      event.preventDefault()
+      onSelect()
+    }
+  }} aria-current={selected ? "page" : undefined}><Icon name={icon}/>{label}</a>
 }
 export function Dropdown({ label, trigger, children }: { label: string; trigger: ReactNode; children: ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null)
@@ -54,7 +59,14 @@ export function Dropdown({ label, trigger, children }: { label: string; trigger:
 }
 export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
   const id = useId()
-  return <span className="ad-tooltip" tabIndex={0} aria-describedby={id}>{children}<span role="tooltip" id={id}>{label}</span></span>
+  const [dismissed, setDismissed] = useState(false)
+  useEffect(() => {
+    const dismiss = (event: KeyboardEvent) => { if (event.key === "Escape") setDismissed(true) }
+    document.addEventListener("keydown", dismiss)
+    return () => document.removeEventListener("keydown", dismiss)
+  }, [])
+  const trigger = isValidElement<HTMLAttributes<HTMLElement>>(children) ? cloneElement(children, { "aria-describedby": [children.props["aria-describedby"], id].filter(Boolean).join(" ") }) : children
+  return <span className="ad-tooltip" onFocus={() => setDismissed(false)} onMouseEnter={() => setDismissed(false)}>{trigger}<span role="tooltip" id={id} hidden={dismissed}>{label}</span></span>
 }
 export function EmptyState({ title, body, children }: { title: string; body: string; children?: ReactNode }) {
   return <section className="ad-empty"><h2>{title}</h2><p>{body}</p>{children}</section>

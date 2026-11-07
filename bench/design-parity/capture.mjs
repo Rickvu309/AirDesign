@@ -54,8 +54,8 @@ export async function seed(stack,entry){
 export async function perform(page,step,stack,owner){
   switch(step.kind){
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
-    case "click":await page.getByRole("button",{name:step.name,exact:true}).first().click();break
-    case "keyboard-activate":await page.getByRole("button",{name:step.name,exact:true}).first().press("Enter");break
+    case "click":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().click();break
+    case "keyboard-activate":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().press("Enter");break
     case "dialog-click":await page.getByRole("dialog").getByRole("button",{name:step.name,exact:true}).click();break
     case "selector-click":await page.locator(step.selector).click();break
     case "hover":await page.getByRole("button",{name:step.name,exact:true}).hover();break
