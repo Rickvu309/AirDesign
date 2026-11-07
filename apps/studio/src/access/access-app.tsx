@@ -54,6 +54,7 @@ function replaceWithStudio(token: string): void {
 export function AccessApp({ client, initialScreen = "signin", initialKind = "home", initialIntent = null, route: requestedRoute = studioRoute }: { client: AccessClient; initialScreen?: Screen; initialKind?: IntentKind; initialIntent?: string | null; route?: AccessRoute }) {
   const [route, setRoute] = useState<AccessRoute>(() => routeAfterHandoff(requestedRoute))
   const [screen, setScreen] = useState<Screen>(initialScreen)
+  const [pathname, setPathname] = useState(window.location.pathname)
   const [homeSearch, setHomeSearch] = useState("")
   const [browse, setBrowse] = useState<"recent" | "all">(() => new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
   const [accountName, setAccountName] = useState("My account")
@@ -125,14 +126,27 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     }
   }, [client])
   useEffect(() => {
-    const syncBrowse = () => setBrowse(new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
+    const syncBrowse = () => {
+      setPathname(window.location.pathname)
+      setBrowse(new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
+    }
     window.addEventListener("popstate", syncBrowse)
     return () => window.removeEventListener("popstate", syncBrowse)
   }, [])
 
+  const navigateWorkspace = (href: string) => {
+    history.pushState(history.state, "", href)
+    setPathname(window.location.pathname)
+    setBrowse(new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
+  }
+
   const browseWorkspace = (next: "recent" | "all") => {
-    history.pushState(history.state, "", next === "all" ? "/?browse=all" : "/")
-    setBrowse(next)
+    navigateWorkspace(next === "all" ? "/?browse=all" : "/")
+  }
+
+  const searchWorkspace = (query: string) => {
+    setHomeSearch(query)
+    if (window.location.pathname !== "/") navigateWorkspace("/?browse=all")
   }
 
   const enterWorkspace = (nextKind: IntentKind, nextIntent: string, handoffToken: string | null) => {
@@ -316,8 +330,8 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     }
     return (
       <>
-        <StudioShell search={homeSearch} onSearch={setHomeSearch} onBrowse={browseWorkspace} accountName={accountName} intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace search={homeSearch} browse={browse} startImport={kind === "import"}/>}
+        <StudioShell search={homeSearch} onSearch={searchWorkspace} onBrowse={browseWorkspace} onNavigate={navigateWorkspace} accountName={accountName} intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
+          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace key={pathname === "/trash" ? "trash" : "decks"} search={homeSearch} browse={browse} startImport={kind === "import"}/>}
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}

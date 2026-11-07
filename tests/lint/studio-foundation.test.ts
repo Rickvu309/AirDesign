@@ -80,3 +80,13 @@ describe("Studio design foundation", () => {
     expect(studioFoundationHits(file, fixed.replace("box-sizing: border-box", "box-sizing: content-box"))).toContainEqual({ line: 1, reason: "studio-card-and-dialog-padding-requires-border-box-reset" })
   })
 })
+
+describe("shell semantics", () => {
+  it("rejects button navigation and an extra tooltip tab stop", () => {
+    const file = "packages/ui/src/primitives/primitives.tsx"
+    const fixed = readFileSync(file, "utf8")
+    expect(studioFoundationHits(file, fixed)).toEqual([])
+    const original = fixed.replace('<a href={href} className="ad-nav-item"', '<button className="ad-nav-item"').replace('<span className="ad-tooltip"', '<span className="ad-tooltip" tabIndex={0}')
+    expect(studioFoundationHits(file, original).map(hit => hit.reason)).toEqual(["studio-navigation-requires-native-links", "studio-tooltip-must-not-add-tab-stop"])
+  })
+})
