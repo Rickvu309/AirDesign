@@ -7,11 +7,16 @@ export function Toaster() {
     <SonnerToaster
       theme="light"
       position="top-center"
+      offset={12}
       toastOptions={{
         style: {
           background: "var(--foreground)",
           color: "var(--card)",
-          borderRadius: "10px",
+          borderRadius: "var(--radius-toast)",
+          boxShadow: "var(--shadow-toast)",
+          fontFamily: "var(--font-sans)",
+          minHeight: 40,
+          padding: "0 16px",
         },
       }}
     />

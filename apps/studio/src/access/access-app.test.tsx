@@ -21,6 +21,15 @@ afterEach(() => {
 })
 
 describe("studio access", () => {
+  it("explains account creation and links to the legal policies before asking for email", async () => {
+    await render(<AccessApp client={fakeClient()} />)
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
+    expect(document.body.textContent).toContain("New email? The same link creates your account.")
+    expect(document.querySelector('a[href="https://airdesign.app/terms/"]')?.textContent).toBe("Terms of Service")
+    expect(document.querySelector('a[href="https://airdesign.app/privacy/"]')?.textContent).toBe("Privacy Policy")
+    expect(document.querySelector('input[type="email"]')?.getAttribute("autocomplete")).toBe("email")
+  })
+
   it("keeps the discovery import action over a saved home session", async () => {
     await render(<AccessApp client={fakeClient({signedIn:true,kind:"home"})} initialScreen="checking" initialKind="import" />)
     await act(flush)
@@ -53,14 +62,14 @@ describe("studio access", () => {
     expect(document.querySelector(".agent-approval")).toBeNull()
   })
 
-  it("keeps a wrong code on the check screen and returns focus to the code", async () => {
+  it("offers recovery for a wrong code and keeps the same destination", async () => {
     const client = fakeClient()
     await render(<AccessApp client={client} />)
     await act(async () => {
       await flush()
     })
     const email = document.querySelector<HTMLInputElement>("input")
-    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")
+    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")
     await act(async () => {
       setValue(email, "ada@example.com")
       button?.click()
@@ -75,9 +84,9 @@ describe("studio access", () => {
       boxes[0]?.dispatchEvent(paste)
       await flush()
     })
-    expect(document.querySelector("[role=alert]")?.textContent).toBe("That code is not valid. Try again.")
-    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
-    expect(document.activeElement).toBe(document.querySelector(".ad-code-box"))
+    expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
+    await act(async () => { document.querySelector<HTMLButtonElement>(".ad-button-primary")?.click(); await flush() })
+    expect(document.querySelector<HTMLInputElement>("input[type=email]")?.value).toBe("ada@example.com")
   })
 
   it("clears the email when the person switches address", async () => {
@@ -89,13 +98,13 @@ describe("studio access", () => {
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     await act(async () => {
       ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Use a different email")?.click()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
     expect(document.querySelector("input")?.value).toBe("")
     expect(document.body.textContent).not.toContain("ada@example.com")
   })
@@ -106,10 +115,10 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    const trigger = [...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")
-    trigger?.focus()
+    const trigger = document.querySelector<HTMLElement>('[aria-label="Account menu"]')!
+    await act(async () => trigger.click())
     await act(async () => {
-      trigger?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")?.click()
     })
     expect(document.querySelector("[role=dialog]")).not.toBeNull()
     await act(async () => {
@@ -131,9 +140,9 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector('[aria-label="Workspace sidebar"]')).not.toBeNull()
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
-    expect(document.body.textContent).toContain("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
   })
 
   it("opens an email link into the saved intent", async () => {
@@ -144,7 +153,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
   })
 
@@ -161,14 +170,13 @@ describe("studio access", () => {
       await flush()
     })
     expect(document.querySelector("[data-link-status]")?.getAttribute("data-link-status")).toBe("link-used")
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
     await act(async () => {
       ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Send a new link")?.click()
     })
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
@@ -185,7 +193,7 @@ describe("studio access", () => {
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector(".ad-helper")?.textContent).toContain("Sign-in links work once")
     expect(document.querySelector(".ad-sign-in")).not.toBeNull()
   })
 
@@ -248,7 +256,7 @@ describe("studio access", () => {
       ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")?.click()
     })
     await act(async () => {
-      document.querySelector<HTMLButtonElement>("button.ad-button-danger")?.click()
+      document.querySelector<HTMLButtonElement>('[role="dialog"] button.ad-button-primary')?.click()
       await flush()
     })
     expect(document.querySelector("[data-screen=signin]")).not.toBeNull()
@@ -256,7 +264,7 @@ describe("studio access", () => {
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
@@ -283,7 +291,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
     root?.unmount()
     document.body.innerHTML = ""
@@ -292,7 +300,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
   })
 })
 
@@ -336,7 +344,7 @@ function fakeClient(options: { signedIn?: boolean; kind?: IntentKind; link?: Ver
       return { status: "check-email", resendAvailableAt: Date.now() + 30_000 }
     },
     async submitCode() {
-      return { status: "invalid-code", screen: "S22.01" }
+      return { status: "invalid-code", screen: "S29.01" }
     },
     async consumeLink() {
       return options.link ?? { status: "link-expired", screen: "S29.01", intentToken: "signed-intent", kind }
