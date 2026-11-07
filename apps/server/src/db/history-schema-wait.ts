@@ -20,8 +20,9 @@ export async function waitForHistorySchema(read: () => Promise<number>, expected
     const found = await read()
     if (found >= expected) return
     const ceiling = Math.min(policy.maxDelayMs, policy.firstDelayMs * 2 ** (attempt - 1))
-    const retryInMs = Math.round(ceiling / 2 + Math.random() * ceiling / 2)
-    if (clock() - started + retryInMs > policy.budgetMs) throw new HistorySchemaOutdated(expected, found)
+    const remainingMs = policy.budgetMs - (clock() - started)
+    if (remainingMs <= 0) throw new HistorySchemaOutdated(expected, found)
+    const retryInMs = Math.min(remainingMs, Math.round(ceiling / 2 + Math.random() * ceiling / 2))
     process.stderr.write(JSON.stringify({ event: "history-schema-waiting", expected, found, attempt, retryInMs }) + "\n")
     await pause(retryInMs)
   }

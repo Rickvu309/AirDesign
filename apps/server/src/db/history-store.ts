@@ -22,7 +22,7 @@ const historySchemaLock=639074220
 const historySchemaVersion=1
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate" } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy }, clock=Date.now) {
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate"; wait?: never } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy }, clock=Date.now) {
   if (driver.kind === "pglite" && driver.path && driver.path!=="memory://") await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? driver.client ?? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
