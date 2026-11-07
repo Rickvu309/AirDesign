@@ -1,23 +1,25 @@
 import {execFileSync} from "node:child_process"
 import {realpathSync} from "node:fs"
-import {mkdtemp,mkdir,rm,writeFile,copyFile,readFile} from "node:fs/promises"
+import {mkdtemp,rm,writeFile,readFile} from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import {expect,it} from "vitest"
-import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase,seedFiles,fixtureContentHash} from "./registry.ts"
+import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase,fixtureContentHash} from "./registry.ts"
 
 const fixtureRoot=path.join(os.homedir(),"tmp")
-function initFixtureRepo(cwd:string,git:(...args:string[])=>string){
+function initFixtureRepo(cwd:string,git:(...args:string[])=>string,scenario:"budget"|"identity"|"base"|"landed-lock"){
   const relative=path.relative(realpathSync(fixtureRoot),realpathSync(cwd))
   expect(relative!==""&&!relative.startsWith("..")&&!path.isAbsolute(relative),"fixture repo must live under the test temp dir").toBe(true)
-  git("init","-b","main")
+  git("init","-b","fixture-replay")
   expect(realpathSync(git("rev-parse","--show-toplevel").trim()),"fixture repo must be its own repository").toBe(realpathSync(cwd))
-  git("config","user.name","Design parity history fixture")
-  git("config","user.email","design-parity-history@example.invalid")
+  git("fetch",path.resolve(`bench/design-parity/fixtures/history/${scenario}.bundle`),"refs/heads/*:refs/heads/*")
+  git("checkout","reviewed")
+  git("update-ref","refs/heads/main","HEAD")
+  git("update-ref","refs/remotes/origin/main","HEAD")
 }
 
-it("refuses to give a fixture identity to a repository outside the test temp dir",()=>{
-  expect(()=>initFixtureRepo(process.cwd(),()=>{throw new Error("git must not run outside the temp dir")})).toThrow("fixture repo must live under the test temp dir")
+it("refuses to initialize a repository outside the test temp dir",()=>{
+  expect(()=>initFixtureRepo(process.cwd(),()=>{throw new Error("git must not run outside the temp dir")},"base")).toThrow("fixture repo must live under the test temp dir")
 })
 
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
@@ -26,26 +28,17 @@ it("keeps the merge-base ceiling after an unauthorized increase is committed",as
   const ci=process.env.CI
   try{
     process.env.CI="false"
-    initFixtureRepo(cwd,git)
-    await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
+    initFixtureRepo(cwd,git,"budget")
     const entries=await readRegistry(),entry=entries[0]!
-    const save=async(budget:number)=>{
-      await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify([{...entry,budget}]))
-      git("add",".");git("commit","--allow-empty","-m","Record budget")
-    }
-    await writeFile(path.join(cwd,"bench/design-parity/budget-baseline.json"),JSON.stringify(Object.fromEntries(entries.map(value=>[value.code,1]))))
-    await save(0.1)
-    git("update-ref","refs/remotes/origin/main","HEAD")
-    git("checkout","-b","feature")
-    await save(0.9)
+    git("checkout","increase")
     const baseline=await readBudgetBaseline(cwd,"main")
     expect(baseline[entry.code]).toBe(0.1)
     expect(()=>validateRegistry([{...entry,budget:0.9}],[entry.design.split("/").at(-1)!],baseline)).toThrow("budget-raised-without-reason")
-    await save(0.9)
+    git("checkout","repeated")
     expect((await readBudgetBaseline(cwd,"main"))[entry.code]).toBe(0.1)
     const previous=process.env.DESIGN_PARITY_BASE
     try{
-      process.env.DESIGN_PARITY_BASE=git("rev-parse","main").trim()
+      process.env.DESIGN_PARITY_BASE=git("rev-parse","reviewed").trim()
       expect((await readBudgetBaseline(cwd))[entry.code]).toBe(0.1)
     }finally{if(previous===undefined)delete process.env.DESIGN_PARITY_BASE;else process.env.DESIGN_PARITY_BASE=previous}
     await expect(readBudgetBaseline(cwd,"missing-base")).rejects.toThrow()
@@ -56,28 +49,16 @@ it("requires identity change reasons and refuses coverage loss even with a reaso
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-identity-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
-    initFixtureRepo(cwd,git)
-    await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
-    for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
-    const entries=(await readRegistry()).map(entry=>({...entry,scenarioChangedBecause:undefined})),first=entries[0]!
-    const commit=async(value:unknown)=>{
-      await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify(value))
-      await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(parseRegistry(value).map(scenarioIdentity)))
-      git("add",".");git("commit","-m","Record scenarios")
-    }
-    await commit(entries.map(entry=>entry.code===first.code ? {...entry,viewport:{width:1,height:1}} : entry))
-    git("update-ref","refs/remotes/origin/main","HEAD")
-    git("checkout","-b","feature")
-    git("commit","--allow-empty","-m","Advance feature")
+    initFixtureRepo(cwd,git,"identity")
+    const entries=(await readRegistry()).map(entry=>({...entry,scenarioChangedBecause:undefined}))
+    git("checkout","feature")
     await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(entries.map(scenarioIdentity)))
     await expect(validateIdentity(entries,cwd,"main")).rejects.toThrow("scenario-changed-without-reason")
     await expect(validateIdentity(entries.map(entry=>({...entry,scenarioChangedBecause:"Reviewed viewport restoration"})),cwd,"main")).resolves.toBeUndefined()
-    git("checkout","main")
-    const unreachable=entries.find(entry=>entry.status==="unreachable")!
-    await commit(entries.map(entry=>entry.code===unreachable.code ? {...entry,status:"reachable",steps:[]} : entry))
+    git("checkout","--force","coverage-reviewed")
+    git("update-ref","refs/heads/main","HEAD")
     git("update-ref","refs/remotes/origin/main","HEAD")
-    git("checkout","-b","coverage")
-    git("commit","--allow-empty","-m","Advance feature")
+    git("checkout","coverage")
     await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(entries.map(scenarioIdentity)))
     await expect(validateIdentity(entries.map(entry=>({...entry,scenarioChangedBecause:"Cannot remove coverage"})),cwd,"main")).rejects.toThrow("coverage-regressed")
   }finally{await rm(cwd,{recursive:true,force:true})}
@@ -88,16 +69,11 @@ it("rejects local HEAD and descendants and ignores every CI base override",async
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
   const previous={CI:process.env.CI,DESIGN_PARITY_BASE:process.env.DESIGN_PARITY_BASE,GITHUB_BASE_REF:process.env.GITHUB_BASE_REF}
   try{
-    initFixtureRepo(cwd,git)
-    git("commit","--allow-empty","-m","Reviewed ceiling")
-    const base=git("rev-parse","HEAD")
-    git("update-ref","refs/remotes/origin/main",base)
+    initFixtureRepo(cwd,git,"base")
+    const base=git("rev-parse","reviewed")
     git("update-ref","refs/remotes/origin/release",base)
-    git("checkout","-b","feature")
-    git("commit","--allow-empty","-m","Raise ceiling")
-    const feature=git("rev-parse","HEAD")
-    git("commit","--allow-empty","-m","Descendant")
-    const descendant=git("rev-parse","HEAD")
+    const feature=git("rev-parse","feature")
+    const descendant=git("rev-parse","descendant")
     git("checkout","--detach",feature)
     process.env.CI="false"
     process.env.DESIGN_PARITY_BASE="HEAD"
@@ -121,16 +97,9 @@ it("rejects co-edited seed, unreachable status and budget ceilings after the fir
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-landed-lock-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
-    initFixtureRepo(cwd,git)
-    await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
-    for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
+    initFixtureRepo(cwd,git,"landed-lock")
     const entries=await readRegistry(),entry=entries.find(value=>value.code==="S31.02")!
-    await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(entries.map(scenarioIdentity)))
-    await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify(entries.map(value=>({...value,budget:0.1}))))
-    git("add",".");git("commit","-m","First reviewed lock")
-    git("update-ref","refs/remotes/origin/main","HEAD")
-    git("checkout","-b","feature")
-    git("commit","--allow-empty","-m","Change after landing")
+    git("checkout","feature")
     for(const mutation of [{seed:"empty-account"},{status:"unreachable",reason:"bypass"}]){
       const next=parseRegistry(entries.map(value=>value===entry ? {...value,...mutation} : value))
       await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(next.map(scenarioIdentity)))
