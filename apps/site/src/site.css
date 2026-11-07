@@ -118,7 +118,7 @@ header nav a { text-decoration: none; }
 .capture-note { max-inline-size: none; font-size: 11px; line-height: 1.6; color: var(--site-subtle); margin-block: 20px 0; }
 .capture-note a { white-space: nowrap; }
 .agent-section { block-size: 840px; padding: 116px max(24px,calc((100% - 1248px)/2)) 0; border-block-end: 1px solid var(--border); }
-.agent-diagram { position: relative; display: grid; grid-template-columns: 250px 250px 200px 68px 480px; align-items: center; margin-block-start: 130px; min-block-size: 300px; }
+.agent-diagram { position: relative; display: grid; grid-template-columns: minmax(0,250fr) minmax(0,250fr) minmax(0,200fr) minmax(0,68fr) minmax(0,480fr); align-items: center; margin-block-start: 130px; min-block-size: 300px; }
 .agent-pills { display: grid; gap: 56px; grid-column: 1; z-index: 1; }
 .agent-pills a { display: flex; align-items: center; gap: 14px; block-size: 64px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--card); text-decoration: none; font-size: 16px; font-weight: 600; box-shadow: var(--site-card-shadow); }
 .agent-icon { display: grid; place-items: center; background: var(--muted); border-radius: 50%; inline-size: 44px; block-size: 44px; font-size: 28px; font-weight: 400; }
@@ -126,20 +126,20 @@ header nav a { text-decoration: none; }
 .claude-icon { color: var(--site-claude); }
 .agent-icon .own-agent-mark { fill: none; stroke: currentColor; stroke-width: 1.5; }
 .codex-icon { background: var(--foreground); color: var(--card); }
-.connection-lines { position: absolute; inset-inline-start: 250px; inline-size: calc(100% - 730px); block-size: 272px; overflow: visible; }
+.connection-lines { position: absolute; inset-inline-start: calc(100% * 250 / 1248); inline-size: calc(100% * 518 / 1248); block-size: 272px; overflow: visible; }
 .connection-lines path { stroke: var(--site-brand); stroke-width: 1.5; fill: none; }
 .agent-hub { grid-column: 3; background: var(--card); border: 1px solid var(--site-chart-pale); border-radius: 999px; padding: 20px; text-align: center; z-index: 1; box-shadow: var(--site-blue-shadow); }
 .agent-hub .brand { font-size: 20px; }
 .chart-card { position: relative; block-size: 270px; grid-column: 5; padding: 24px 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); box-shadow: var(--site-blue-shadow); color: var(--site-navy); }
 .chart-card strong { display: block; font-size: 19px; line-height: 1.25; letter-spacing: -.3px; }
 .chart-card small { display: block; font-size: 10px; line-height: 1.5; margin-block-start: 4px; }
-.sample-bars { position: absolute; inset-inline: 28px; inset-block-end: 38px; display: grid; grid-template-columns: repeat(5,48px); align-items: end; block-size: 140px; gap: 36px; padding-inline: 16px; }
+.sample-bars { position: absolute; inset-inline: 28px; inset-block-end: 38px; display: grid; grid-template-columns: repeat(5,minmax(0,48px)); align-items: end; block-size: 140px; gap: 36px; padding-inline: 16px; }
 .sample-bars i { block-size: 45%; background: linear-gradient(to top,var(--site-navy) 0 30%,var(--primary) 30% 70%,var(--site-chart-pale) 70%); }
 .sample-bars i:nth-child(2) { block-size: 51%; background: linear-gradient(to top,var(--site-navy) 0 38%,var(--primary) 38% 74%,var(--site-chart-pale) 74%); }
 .sample-bars i:nth-child(3) { block-size: 61.5%; background: linear-gradient(to top,var(--site-navy) 0 46%,var(--primary) 46% 78%,var(--site-chart-pale) 78%); }
 .sample-bars i:nth-child(4) { block-size: 75%; background: linear-gradient(to top,var(--site-navy) 0 52%,var(--primary) 52% 80%,var(--site-chart-pale) 80%); }
 .sample-bars i:nth-child(5) { block-size: 94.5%; background: linear-gradient(to top,var(--site-navy) 0 55.5%,var(--primary) 55.5% 81%,var(--site-chart-pale) 81%); }
-.bar-axis { position: absolute; inset-inline: 44px; inset-block-start: 238px; display: grid; grid-template-columns: repeat(5,48px); gap: 36px; text-align: center; font-size: 9px; }
+.bar-axis { position: absolute; inset-inline: 44px; inset-block-start: 238px; display: grid; grid-template-columns: repeat(5,minmax(0,48px)); gap: 36px; text-align: center; font-size: 9px; }
 .landing-pricing { block-size: 838px; padding: 116px 24px 0; }
 .price { inline-size: min(440px,100%); border-radius: 18px; border-color: var(--input); padding: 26px; box-shadow: var(--site-card-shadow); margin: 80px auto 0; background: var(--card); }
 .price-heading { display: flex; align-items: baseline; gap: 10px; }
