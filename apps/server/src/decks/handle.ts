@@ -1,3 +1,4 @@
+import {welcomeDeck} from "../../../../packages/catalog/src/welcome-deck.ts"
 import { applyTemplate } from "../../../../packages/brand/src/index.ts"
 import type { TemplateStore } from "../../../../packages/brand/src/template-store.ts"
 import { apply, id, themeId } from "../../../../packages/deck/src/index.ts"
@@ -36,15 +37,16 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
         return Response.json({entry,report:status.report},{status:201})
       }
       if(url.pathname==="/api/catalog" && request.method==="GET")return Response.json(await catalog.list(principal,url.searchParams.get("trash")==="true",url.searchParams.get("search") ?? ""))
-      if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),templates ? defaultDeck(templates.default(principal)) : undefined),{status:201})}
+      if(url.pathname==="/api/catalog" && request.method==="POST") {const body:unknown=await request.json();return Response.json(await catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),body&&typeof body==="object"&&"starter" in body&&body.starter==="welcome" ? welcomeDeck() : templates ? defaultDeck(templates.default(principal)) : undefined),{status:201})}
       if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const confirmed=body && typeof body==="object" && "decks" in body ? body.decks : null;if(!Array.isArray(confirmed))throw new Error("confirmation-snapshot-required");const targets=confirmed.map((value:unknown)=>{if(!value || typeof value!=="object" || !("id" in value) || typeof value.id!=="string" || !("generation" in value) || typeof value.generation!=="number" || !Number.isSafeInteger(value.generation))throw new Error("invalid-confirmation-snapshot");return {id:value.id,generation:value.generation}});const removed=await catalog.emptyTrash(principal,targets);await Promise.all(removed.map(changed));return Response.json({removed})}
-      const match=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(rename|duplicate|trash|restore|request|view))?$/.exec(url.pathname)
+      const match=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(star|rename|duplicate|trash|restore|request|view))?$/.exec(url.pathname)
       const deck=match?.[1];if(!deck)return Response.json({code:"not-found"},{status:404})
       if(!match[2] && request.method==="GET")return Response.json(await catalog.details(principal,deck))
       if(match[2]==="view" && request.method==="GET")return Response.json(await catalog.readDeleted(principal,deck))
       if(request.method!=="POST")return Response.json({code:"method-not-allowed"},{status:405})
       const body:unknown=await request.json()
       switch(match[2]) {
+        case "star": {if(!body || typeof body!=="object" || !("starred" in body) || typeof body.starred!=="boolean")throw new Error("invalid-starred");return Response.json(await catalog.star(principal,deck,body.starred))}
         case "rename":return Response.json(await catalog.rename(principal,deck,text(body,"title")))
         case "request":return Response.json(await catalog.pending(principal,deck,text(body,"pendingRequest")))
         case "duplicate": {const source=await history.read(principal,deck),entry=await catalog.details(principal,deck);return Response.json(await catalog.create(principal,text(body,"requestId"),`${entry.title} copy`,"",source.deck,await catalog.original(principal,deck) ?? undefined),{status:201})}

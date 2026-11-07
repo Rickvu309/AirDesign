@@ -14,8 +14,24 @@ export function studioFoundationHits(file: string, source: string): { line: numb
     if (/<span className="ad-tooltip"[^>]*tabIndex/.test(source)) hits.push({ line: 1, reason: "studio-tooltip-must-not-add-tab-stop" })
     return hits
   }
+  if (file.endsWith("packages/ui/src/toast/toaster.tsx")) return source.includes("mobileOffset=") && ["top","left","right","bottom"].every(edge=>source.includes(`env(safe-area-inset-${edge})`)) ? [] : [{line:1,reason:"studio-toasts-must-respect-phone-safe-areas"}]
+  if (file.endsWith("apps/studio/src/decks/decks.css")) {
+    const hits=[]
+    if (!source.includes('.home-new-deck .ad-menu { min-inline-size:179px;inset-block-start:calc(100% + 4px);inset-inline-start:auto;inset-inline-end:0;padding:3px;font-size:var(--text-body-small); }') || !source.includes('gap:8px;padding:6px 8px;line-height:20px;')) hits.push({line:1,reason:"studio-new-deck-menu-aligns-with-trigger-and-reference-row-spacing"})
+    if (!source.includes('.deck-starter .deck-preview { block-size:var(--deck-preview-height); }')) hits.push({line:1,reason:"studio-deck-starter-previews-need-intrinsic-height"})
+    if (!source.includes('line-height:44px;overflow:hidden;text-overflow:ellipsis;')) hits.push({line:1,reason:"studio-touch-deck-title-links-truncate-inside-their-tap-target"})
+    if (!source.includes('minmax(min(100%,320px),1fr)')) hits.push({line:1,reason:"studio-deck-grid-keeps-three-columns-at-1440"})
+    if (!source.includes('.workspace-home .deck-cover { display:block;inline-size:100%;aspect-ratio:auto;')) hits.push({line:1,reason:"studio-deck-covers-fill-card-without-inherited-aspect-sizing"})
+    if (!source.includes('.deck-card:has(.ad-dropdown[open]) { z-index:2; }') || !source.includes('gap:0;flex-wrap:nowrap;z-index:1;') || !source.includes('min-inline-size:160px;inset-inline-start:auto;inset-inline-end:0;')) hits.push({line:1,reason:"studio-deck-menus-must-fit-and-overlay-card-previews"})
+    if (/font-size:(?:12|13|14)px|border-radius:(?:8|12|16)px/.test(source)) hits.push({line:1,reason:"studio-decks-reuse-shared-type-and-radius-tokens"})
+    if (!source.includes("@media (pointer: coarse)") || !source.includes("@media (hover: hover) and (pointer: fine)") || !source.includes("min-inline-size:44px;min-block-size:44px") || !source.includes(".workspace-home .deck-list .deck-cover { min-block-size:44px;") || !source.includes("[data-sonner-toast] button")) hits.push({line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"})
+    if (!source.includes("[data-sonner-toaster] { left:calc(50% + 124px);") || !source.includes("[data-button] { background:transparent;color:inherit;")) hits.push({line:1,reason:"studio-deck-toast-must-center-over-content-with-plain-undo-action"})
+    return hits
+  }
   if (/bench\/.*\.mjs$/.test(file)) {
     const hits = []
+    if (source.includes('locator(".deck-card").waitFor()')) hits.push({line:1,reason:"studio-browser-waits-for-persisted-deck-rows"})
+    if (source.includes('getByLabel("New deck"')) hits.push({line:1,reason:"studio-browser-opens-deck-menu-by-button-role"})
     for (const match of source.matchAll(/name\s*:\s*["'](?:\+ New deck|No decks yet)["']|getByLabel\(["']Search decks["']\)/g)) hits.push({ line: source.slice(0, match.index).split("\n").length, reason: "studio-browser-check-uses-designed-shell-accessible-names" })
     return hits
   }
@@ -26,10 +42,18 @@ export function studioFoundationHits(file: string, source: string): { line: numb
   if (file.endsWith("packages/ui/src/code-entry/code-entry.tsx")) return source.includes("refs.current[0]?.focus({ preventScroll: true })") ? [] : [{ line: 1, reason: "studio-code-entry-initial-focus-preserves-access-header" }]
   if (file.endsWith("apps/studio/src/decks/workspace.tsx")) {
     const hits = ["trash.empty_title", "trash.empty_body", "trash.empty_action"].filter(key => !source.includes(`${key === "trash.empty_title" ? "fillCopy" : "copy"}("${key}"`)).map(key => ({ line: 1, reason: `studio-trash-dialog-requires-canonical-${key}` }))
+    if (source.includes("localeCompare")) hits.push({line:1,reason:"studio-decks-must-sort-by-last-edit"})
+    if (!source.includes("<DeckPreview entry={entry}/>")) hits.push({line:1,reason:"studio-deck-covers-require-real-slide-previews"})
+    if (!["Name","Edited","Created"].every(label=>source.includes(`${label}<Icon name="chevron"/>`))) hits.push({line:1,reason:"studio-deck-list-headings-use-designed-chevrons"})
     if (!source.includes('<Icon name="plus"/>New deck')) hits.push({ line: 1, reason: "studio-new-deck-uses-shared-plus-icon" })
     return hits
   }
-  if (file.endsWith("apps/studio/src/editor/workspace.css")) return /\.ad-shell \.home-new-deck>summary\s*\{[^}]*font-weight:500/.test(source) ? [] : [{ line: 1, reason: "studio-new-deck-uses-medium-signature-button-weight" }]
+  if (file.endsWith("apps/studio/src/editor/workspace.css")) {
+    const hits=[]
+    if (!/\.ad-shell \.home-new-deck>summary\s*\{[^}]*font-weight:500/.test(source)) hits.push({line:1,reason:"studio-new-deck-uses-medium-signature-button-weight"})
+    if (/@media\s*\(hover:\s*hover\)\s*\{/.test(source)) hits.push({line:1,reason:"studio-deck-hover-requires-a-fine-pointer"})
+    return hits
+  }
   if (!file.endsWith("packages/ui/src/tokens/tokens.css")) return []
   const hits: { line: number; reason: string }[] = []
   const colors = { accent: "#eef4fe", primary: "#4d94fb", "primary-top": "#93b8ef", "primary-edge": "#2d6fcd", "muted-foreground": "#666666", destructive: "#d93f3f", background: "#f5f5f2", foreground: "#222222", card: "#ffffff", border: "#eaeae7", input: "#d7d7d6", link: "#2d6fcd", "secondary-strong": "#444444", hint: "#909090", "destructive-top": "#f29a9a", "destructive-edge": "#b92f2f", "destructive-tint": "#fdf0f0", "expired-top": "#d9d9d7", "expired-bottom": "#a8a8a6", "violet-soft": "#b9a8ff" }
