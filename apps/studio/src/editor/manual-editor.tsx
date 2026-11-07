@@ -27,7 +27,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const [chatOpen,setChatOpen]=useState(false)
   const [designOpen,setDesignOpen]=useState(false),[imagesOpen,setImagesOpen]=useState(false)
   const {sync,entry,setEntry,error,setError,reconnect}=useDeck(deckId)
-  const [selection,setSelection]=useState<Id[]>([]),anchor=useRef<Id|null>(null)
+  const [requestedSelection,setSelection]=useState<Id[]>([]),anchor=useRef<Id|null>(null)
   const [phone,setPhone]=useState(()=>window.matchMedia("(max-width: 767px)").matches)
   const [request,setRequest]=useState(()=>sessionStorage.getItem("first-pending-request") ?? ""),[requestStatus,setRequestStatus]=useState("")
   const [paste,setPaste]=useState<PasteReview|null>(null),[pasteSource,setPasteSource]=useState(""),[showPaste,setShowPaste]=useState(false)
@@ -35,6 +35,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const [view,setView]=useState<"grid"|"single">("grid"),[zoom,setZoom]=useState(100),[menu,setMenu]=useState(false),[contextMenu,setContextMenu]=useState(false)
   const [changesOpen,setChangesOpen]=useState(false)
   const deck=sync?.deck,state=sync?.state
+  const survivingSelection=requestedSelection.filter(id=>deck?.slides.some(slide=>slide.id===id))
+  const selection=survivingSelection.length ? survivingSelection : deck?.slides[0] ? [deck.slides[0].id] : []
   const readonly=phone || state?.kind==="deleted" || state?.kind==="signed-out"
   useEffect(()=>{if(entry?.pendingRequest)setRequest(entry.pendingRequest)},[entry?.pendingRequest])
   useEffect(()=>{const media=window.matchMedia("(max-width: 767px)"),change=()=>setPhone(media.matches);media.addEventListener("change",change);return ()=>media.removeEventListener("change",change)},[])

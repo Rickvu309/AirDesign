@@ -105,3 +105,16 @@ it("browses and inserts native flowchart shapes through undoable commands",async
     await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides[0]?.elements).toHaveLength(1)
   }finally{await ui.close()}
 })
+
+it("keeps a surviving slide visible after insertion undo, redo and deletion",async()=>{
+  const ui=await editor();try{
+    await ui.click("Single slide view");await ui.click("+ New slide");await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();
+    expect(ui.container.querySelectorAll('.editor-slide:not([hidden])')).toHaveLength(1)
+    expect(ui.container.querySelector('.editor-slide:not([hidden]) [data-slide]')?.getAttribute("data-slide")).toBe("s0")
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides).toHaveLength(3)
+    await ui.click("Go to slide 3");await act(async()=>ui.container.querySelector(".studio-editor")!.dispatchEvent(new KeyboardEvent("keydown",{key:"Delete",bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides).toHaveLength(2)
+    expect(ui.container.querySelectorAll('.editor-slide:not([hidden])')).toHaveLength(1)
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides).toHaveLength(3)
+  }finally{await ui.close()}
+})
