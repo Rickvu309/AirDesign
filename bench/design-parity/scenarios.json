@@ -3359,7 +3359,7 @@
       },
       {
         "kind": "dialog-click",
-        "name": "Reset for $5"
+        "name": "Reset"
       },
       {
         "kind": "wait-text",
