@@ -41,19 +41,28 @@
     "verify:pr-06": "npm run verify:brand && npm run verify:assets",
     "verify:usage": "vitest run packages/usage/test apps/server/test/usage.test.ts apps/server/test/usage-postgres.test.ts",
     "build:mcp-renderer": "vite build --ssr packages/render/src/capture-document.tsx --outDir apps/server/dist --emptyOutDir false",
-    "verify:mcp": "npm run build:mcp-renderer && vitest run packages/access/test/oauth packages/tools/test apps/server/test/mcp",
+    "verify:mcp": "vitest run packages/access/test/oauth packages/tools/test apps/server/test/mcp",
     "verify:pr-07": "npm run verify:usage && npm run verify:mcp",
     "verify:agent": "vitest run packages/agent/test apps/server/test/agent apps/studio/src/chat tests/metered-tool-safety.test.ts",
     "verify:billing": "vitest run packages/usage/test/payments.test.ts apps/server/test/billing apps/server/test/account apps/studio/src/settings apps/studio/src/usage/usage-panel.test.tsx",
     "verify:pr-08": "npm run verify:agent && npm run verify:billing",
     "usage:reconcile": "node apps/server/src/billing/reconcile.ts",
     "verify:release": "vitest run bench/release tests/lint/release-claims.test.ts && node bench/release/replay.mjs && node bench/release/tool-replay.mjs && node bench/release/recovery.mjs",
-    "verify:site": "vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs && node bench/release/site-widths.mjs",
+    "verify:site": "vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs && node bench/release/site-widths.mjs",
     "verify:pr-09": "npm run verify:release && npm run verify:site",
-    "build": "node scripts/live/write-build-identity.mjs && npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer",
+    "build": "node scripts/live/write-build-identity.mjs && npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer && npm run build:deck && npm run build:ui",
     "verify:live": "node scripts/live/verify-live.mjs",
     "verify:live:local": "node scripts/live/local-proof.mjs",
-    "verify:design": "node bench/design-parity/run.mjs"
+    "verify:design": "node bench/design-parity/run.mjs",
+    "build:ui": "vite build --config packages/ui/vite.config.ts && node scripts/finish-ui-dist.mjs",
+    "gate:install": "node scripts/gate/run.ts install",
+    "gate:build": "node scripts/gate/run.ts build",
+    "gate:setup": "node scripts/gate/run.ts setup",
+    "gate:lint": "node scripts/gate/run.ts lint",
+    "gate:typecheck": "node scripts/gate/run.ts typecheck",
+    "gate:unit": "node scripts/gate/run.ts unit",
+    "gate:verify": "node scripts/gate/run.ts verify",
+    "gate": "node scripts/gate/run.ts all"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
@@ -71,7 +80,10 @@
     "vite": "8.3.6",
     "vitest": "5.1.0",
     "@tailwindcss/node": "^4.3.5",
-    "tailwindcss": "^4.3.5"
+    "tailwindcss": "^4.3.5",
+    "agent-browser": "0.38.2",
+    "yaml": "2.9.1",
+    "zod": "4.6.7"
   },
   "engines": {
     "node": ">=24"

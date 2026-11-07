@@ -13,6 +13,7 @@ import {libreOfficeFastCheck} from "../../packages/pptx/test/libreoffice.ts"
 import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 import {validateMcpMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
+import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
 export async function checkIdentity(base,route,sha){
@@ -175,8 +176,9 @@ export async function verifyLive(options){
   return receipt
 }
 if(import.meta.url===pathToFileURL(process.argv[1] ?? "").href){
-  const {values}=parseArgs({options:{"expect-sha":{type:"string"},"site-url":{type:"string",default:"https://airdesign.app"},"studio-url":{type:"string",default:"https://studio.airdesign.app"},"mcp-url":{type:"string",default:"https://mcp.airdesign.app"},"smoke-email":{type:"string"},"output-dir":{type:"string"},railway:{type:"boolean",default:false}}})
+  const {values}=parseArgs({options:{"expect-sha":{type:"string"},"site-url":{type:"string",default:"https://airdesign.app"},"studio-url":{type:"string",default:"https://studio.airdesign.app"},"mcp-url":{type:"string",default:"https://mcp.airdesign.app"},"smoke-email":{type:"string"},"output-dir":{type:"string"},railway:{type:"boolean",default:false},"railway-project":{type:"string"},"railway-environment":{type:"string"}}})
   const sha=values["expect-sha"] ?? "missing-sha",output=path.resolve(values["output-dir"] ?? path.join(os.homedir(),"tmp/airdesign-live-verify",sha+"-"+new Date().toISOString().replaceAll(":","-")))
-  const receipt=await verifyLive({sha,site:values["site-url"],studio:values["studio-url"],mcp:values["mcp-url"],email:values["smoke-email"],output,signInLink:async()=>{if(values.railway){const result=await promisify(execFile)("railway",["ssh","--service","web","--","node","apps/server/src/smoke/mint-link.ts",values["smoke-email"]],{timeout:60000,maxBuffer:8192});return result.stdout.trim()}if(process.stdin.isTTY)throw new Error("use --railway or provide a one-use link on stdin");let input="";for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw new Error("sign-in-input-too-large")}return input.trim()}})
+  const target=railwayTarget(values["railway-project"],values["railway-environment"])
+  const receipt=await verifyLive({sha,site:values["site-url"],studio:values["studio-url"],mcp:values["mcp-url"],email:values["smoke-email"],output,signInLink:async()=>{if(values.railway){const result=await promisify(execFile)("railway",railwaySshArguments(target,["node","apps/server/src/smoke/mint-link.ts",values["smoke-email"]]),{timeout:60000,maxBuffer:8192});return result.stdout.trim()}if(process.stdin.isTTY)throw new Error("use --railway or provide a one-use link on stdin");let input="";for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw new Error("sign-in-input-too-large")}return input.trim()}})
   if(receipt.status!=="pass"){process.stderr.write(`${receipt.failedStep}: ${receipt.error}\nreceipt: ${output}/receipt.json\n`);process.exitCode=1}else process.stdout.write(`pass: ${output}/receipt.json\n`)
 }

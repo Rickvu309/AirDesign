@@ -2,8 +2,6 @@ import { spawnSync } from "node:child_process"
 
 const steps = [
   ["node", ["scripts/verify-baseline.mjs"]],
-  ["npx", ["vite", "build", "--config", "packages/ui/vite.config.ts"]],
-  ["node", ["scripts/finish-ui-dist.mjs"]],
   ["npx", ["vitest", "run", "packages/ui", "apps/studio"]],
 ]
 for (const [command, args] of steps) {
