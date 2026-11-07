@@ -2381,8 +2381,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -2431,7 +2430,28 @@
         "height": 42
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-download"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -2862,6 +2882,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       }
     ],
     "metric": "local-oklab-v2",
@@ -2935,15 +2959,15 @@
       },
       {
         "kind": "click",
+        "name": "$25"
+      },
+      {
+        "kind": "click",
         "name": "Continue to payment"
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
-      },
-      {
-        "kind": "selector-click",
-        "selector": "button[aria-label=\"Close add credits\"]"
+        "text": "Waiting for your $25.00 payment. Finish in the new tab."
       }
     ],
     "metric": "local-oklab-v2",
@@ -3003,6 +3027,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
@@ -3165,7 +3193,7 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       }
     ],
     "metric": "local-oklab-v2",
@@ -3226,8 +3254,7 @@
     },
     "seed": "deck-limited",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
@@ -3277,7 +3304,29 @@
         "height": 444
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Minimum $10."
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3306,7 +3355,7 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       },
       {
         "kind": "dialog-click",
@@ -3314,7 +3363,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Pick up where you left off."
       }
     ],
     "metric": "local-oklab-v2",
@@ -3385,17 +3434,16 @@
   },
   {
     "surface": "studio",
-    "route": "/",
+    "route": "/settings/usage",
     "code": "S99.01",
     "design": "docs/design/v0.1/screens/S99.01-credits-errors-payment-failed.png",
     "viewport": {
       "width": 1470,
       "height": 923
     },
-    "seed": "signed-out",
+    "seed": "usage-active",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
@@ -3443,7 +3491,16 @@
         "height": 208
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "checkout-failed"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3461,6 +3518,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
