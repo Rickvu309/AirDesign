@@ -1,29 +1,59 @@
 import {readFile} from "node:fs/promises"
 import {execFileSync} from "node:child_process"
+import {isDeepStrictEqual} from "node:util"
 import {z} from "zod"
+import {surfaceTargets} from "./targets.ts"
 const namedStep=z.object({kind:z.enum(["click","keyboard-activate","dialog-click","hover"]),name:z.string().min(1)})
 const fieldStep=z.object({kind:z.enum(["fill","select"]),label:z.string().min(1),value:z.string()})
 const stepSchema=z.union([namedStep,fieldStep,z.object({kind:z.literal("wait-text"),text:z.string().min(1)}),z.object({kind:z.literal("selector-click"),selector:z.string().min(1)}),z.object({kind:z.literal("import"),outcome:z.enum(["queued","failed"])}),z.object({kind:z.literal("agent"),outcome:z.enum(["working","complete","failed","long-message","remote","limited"])}),z.object({kind:z.enum(["offline","pay","expire-payment","export-failed"])})])
-const common={code:z.string().regex(/^S[0-9]{2}\.[0-9]{2}$/),design:z.string(),viewport:z.object({width:z.number().int().positive(),height:z.number().int().positive()}),seed:z.enum(["signed-out","empty-account","recents","trash-with-items","deck-open","usage-active","usage-active-connected","deck-limited","deck-limited-with-credits","oauth-Claude","oauth-Codex"]),metric:z.literal("foreground-edges-v1"),target:z.number().min(0).max(1),budget:z.number().min(0).max(1),budgetRaisedBecause:z.string().optional()}
+const control=z.object({role:z.enum(["button","link","heading","textbox","combobox","spinbutton"]),name:z.string().min(1)})
+const assertions=z.object({copyKeys:z.array(z.string().min(1)),entryCopyKeys:z.array(z.string().min(1)).optional(),texts:z.array(z.string().min(1)),controls:z.array(control).min(1),probe:z.discriminatedUnion("kind",[z.object({kind:z.literal("fill"),label:z.string(),value:z.string()}),z.object({kind:z.literal("dialog"),open:z.string(),title:z.string(),close:z.string()}),z.object({kind:z.literal("view")}),z.object({kind:z.literal("navigate"),name:z.string(),path:z.string()}),z.object({kind:z.literal("expired")}),z.object({kind:z.literal("approval")})])}).refine(value=>value.copyKeys.length+(value.entryCopyKeys?.length??0)>0,"missing-copy-assertion")
+const common={code:z.string().regex(/^S[0-9]{2}\.[0-9]{2}$/),design:z.string(),viewport:z.object({width:z.number().int().positive(),height:z.number().int().positive()}),seed:z.enum(["signed-out","empty-account","recents","trash-with-items","deck-open","usage-active","usage-active-connected","deck-limited","deck-limited-with-credits","oauth-Claude","oauth-Codex"]),metric:z.literal("local-oklab-v2"),target:z.number().min(0).max(1),budget:z.number().min(0).max(1),budgetRaisedBecause:z.string().optional(),scenarioChangedBecause:z.string().optional(),assertions}
 const surface=z.discriminatedUnion("surface",[z.object({surface:z.literal("site"),route:z.string().startsWith("/")}),z.object({surface:z.literal("studio"),route:z.string().startsWith("/")})])
 const scenarioSchema=z.intersection(surface,z.discriminatedUnion("status",[z.object({...common,status:z.literal("reachable"),steps:z.array(stepSchema)}),z.object({...common,status:z.literal("unreachable"),reason:z.string().min(1)})]))
 export type Step=z.infer<typeof stepSchema>
 export type Scenario=z.infer<typeof scenarioSchema>
 export function parseRegistry(value:unknown):Scenario[]{return z.array(scenarioSchema).parse(value)}
 export async function readRegistry():Promise<Scenario[]> {
+  const calibration=z.object({metric:z.literal("local-oklab-v2"),targets:z.object({site:z.number(),studio:z.number()})}).parse(JSON.parse(await readFile(new URL("./calibration.json",import.meta.url),"utf8")))
+  if(calibration.targets.site!==surfaceTargets.site||calibration.targets.studio!==surfaceTargets.studio)throw new Error("target-calibration-mismatch")
   return parseRegistry(JSON.parse(await readFile(new URL("./scenarios.json",import.meta.url),"utf8")))
 }
-export async function readBudgetBaseline():Promise<Record<string,number>> {
+export function mergeBase(cwd=process.cwd(),target=process.env.DESIGN_PARITY_BASE??"origin/main"):string {
+  return execFileSync("git",["merge-base","HEAD",target],{cwd,encoding:"utf8",stdio:"pipe"}).trim()
+}
+function baseFile(file:string,cwd:string,target?:string):string|undefined {
+  const base=mergeBase(cwd,target)
+  const exists=execFileSync("git",["ls-tree","--name-only",base,"--",file],{cwd,encoding:"utf8"}).trim()
+  return exists ? execFileSync("git",["show",`${base}:${file}`],{cwd,encoding:"utf8"}) : undefined
+}
+export async function readBudgetBaseline(cwd=process.cwd(),target?:string):Promise<Record<string,number>> {
   const baseline:Record<string,number>=JSON.parse(await readFile(new URL("./budget-baseline.json",import.meta.url),"utf8"))
-  let source:string
-  try{source=execFileSync("git",["show","HEAD:bench/design-parity/scenarios.json"],{encoding:"utf8",stdio:["ignore","pipe","ignore"]})}catch{return baseline}
-  for(const entry of z.array(z.object({code:z.string(),metric:z.string().optional(),budget:z.number()})).parse(JSON.parse(source)).filter(entry=>entry.metric==="foreground-edges-v1"))baseline[entry.code]=Math.min(baseline[entry.code] ?? 1,entry.budget)
+  const source=baseFile("bench/design-parity/scenarios.json",cwd,target)
+  if(source)for(const entry of z.array(z.object({code:z.string(),metric:z.string().optional(),budget:z.number()})).parse(JSON.parse(source)).filter(entry=>entry.metric==="local-oklab-v2"))baseline[entry.code]=Math.min(baseline[entry.code]??1,entry.budget)
   return baseline
+}
+export function scenarioIdentity(entry:Scenario){
+  return {code:entry.code,seed:entry.seed,steps:entry.status==="reachable" ? entry.steps : [],viewport:entry.viewport,surface:entry.surface,route:entry.route,status:entry.status,assertions:entry.assertions}
+}
+export async function validateIdentity(entries:Scenario[],cwd=process.cwd(),target?:string):Promise<void>{
+  const lock=z.array(z.object({code:z.string()}).passthrough()).parse(JSON.parse(await readFile(new URL("./scenario-lock.json",import.meta.url),"utf8")))
+  if(!isDeepStrictEqual(entries.map(scenarioIdentity),lock))throw new Error("scenario-lock-mismatch")
+  const source=baseFile("bench/design-parity/scenario-lock.json",cwd,target)??baseFile("bench/design-parity/scenarios.json",cwd,target)
+  if(!source)return
+  const prior=z.array(z.object({code:z.string(),status:z.string()}).passthrough()).parse(JSON.parse(source))
+  for(const previous of prior){
+    const current=entries.find(entry=>entry.code===previous.code)
+    if(!current||previous.status==="reachable"&&current.status!=="reachable")throw new Error("coverage-regressed")
+    const identity=scenarioIdentity(current)
+    if(Object.entries(previous).some(([key,value])=>key in identity&&!isDeepStrictEqual(value,Reflect.get(identity,key)))&&!current.scenarioChangedBecause?.trim())throw new Error("scenario-changed-without-reason")
+  }
 }
 export function validateRegistry(entries:Scenario[],images:string[],baseline:Record<string,number>):void {
   if(new Set(entries.map(entry=>entry.code)).size!==entries.length)throw new Error("duplicate-screen")
   if(entries.length!==images.length||images.some(image=>!entries.some(entry=>entry.design.endsWith("/"+image))))throw new Error("screen-coverage")
   for(const entry of entries){
+    if(entry.target!==surfaceTargets[entry.surface])throw new Error("uncalibrated-target")
     if(!entry.design.split("/").at(-1)?.startsWith(entry.code+"-"))throw new Error("screen-image-mismatch")
     if(!entry.design.endsWith(".png")||!entry.design.startsWith("docs/design/v0.1/screens/"))throw new Error("invalid-design-path")
     if(!Number.isFinite(entry.budget)||entry.budget<0||entry.budget>1)throw new Error("invalid-budget")
@@ -43,5 +73,5 @@ export function selectScenarios(entries:Scenario[],only:string|undefined):Scenar
   return entries.filter(entry=>codes.includes(entry.code))
 }
 export function passesParity(entry:Scenario,score:number|undefined,strict:boolean):boolean {
-  return entry.status==="reachable"&&score!==undefined&&Number.isFinite(score)&&score<=entry.budget&&(!strict||score<=entry.target)
+  return entry.status==="reachable"&&score!==undefined&&Number.isFinite(score)&&score<=entry.budget&&(!strict||score<=surfaceTargets[entry.surface]&&entry.target===surfaceTargets[entry.surface])
 }

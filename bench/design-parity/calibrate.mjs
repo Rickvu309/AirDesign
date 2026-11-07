@@ -6,18 +6,18 @@ import sharp from "sharp"
 import {compile} from "@tailwindcss/node"
 import {chromium} from "playwright"
 import {compareDesign,metricVersion} from "./metric.mjs"
-const args=process.argv.slice(2),baseline=args[0],out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration-r2")
+const args=process.argv.slice(2),baseline=args[0],out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration")
 if(!baseline)throw new Error("usage: node bench/design-parity/calibrate.mjs BASELINE OUT")
 await fs.mkdir(out,{recursive:true})
-const editorOnly=args.includes("--editor-only")
+const editorOnly=args.includes("--editor-only"),referencesOnly=args.includes("--references-only")
 const entries=JSON.parse(await fs.readFile("bench/design-parity/scenarios.json","utf8")),results=editorOnly ? JSON.parse(await fs.readFile(path.join(out,"calibration.json"),"utf8")).results : []
-const summary=({score,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})=>({score,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})
+const summary=({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})=>({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})
 for(const entry of editorOnly ? [] : entries){
   const design=await fs.readFile(entry.design),meta=await sharp(design).metadata()
   const shifted=await sharp(design).extract({left:0,top:0,width:meta.width-1,height:meta.height-1}).extend({left:1,top:1,right:0,bottom:0,background:"#ffffff"}).blur(0.3).png().toBuffer()
   const reference=summary(await compareDesign(design,shifted))
   let measured
-  if(entry.status==="reachable")measured=summary(await compareDesign(design,await fs.readFile(path.join(baseline,entry.code,"capture.png"))))
+  if(!referencesOnly&&entry.status==="reachable")measured=summary(await compareDesign(design,await fs.readFile(path.join(baseline,entry.code,"capture.png"))))
   results.push({code:entry.code,surface:entry.surface,reference,measured})
   process.stdout.write(`${entry.code} reference=${reference.score} baseline=${measured?.score}\n`)
 }
@@ -50,6 +50,10 @@ try{
     }finally{await context.close()}
   }
 }finally{await browser.close()}
-const report={metric:metricVersion,results,editor}
+const targets=Object.fromEntries(["site","studio"].map(surface=>{
+  const faithful=[...results.filter(row=>row.surface===surface).map(row=>row.reference.score),...(surface==="studio" ? editor.map(row=>row.score) : [])]
+  return [surface,(Math.ceil(Math.max(...faithful)*100)+1)/100]
+}))
+const report={metric:metricVersion,targets,results,editor}
 await fs.writeFile(path.join(out,"calibration.json"),JSON.stringify(report,null,2)+"\n")
 process.stdout.write(JSON.stringify({editor,maximumShift:Math.max(...results.map(row=>row.reference.score))})+"\n")

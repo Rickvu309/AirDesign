@@ -1,0 +1,2125 @@
+[
+  {
+    "code": "S11.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1440,
+      "height": 923
+    },
+    "surface": "site",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [
+        "Clarity is the edge."
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "name": "Pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Pricing",
+        "path": "/pricing/"
+      }
+    }
+  },
+  {
+    "code": "S12.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "site",
+    "route": "/pricing/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [
+        "AirDesign is free."
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "name": "Pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Product",
+        "path": "/#product"
+      }
+    }
+  },
+  {
+    "code": "S21.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.sign_in_title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Continue"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      }
+    }
+  },
+  {
+    "code": "S22.01",
+    "seed": "signed-out",
+    "steps": [
+      {
+        "kind": "fill",
+        "label": "Email",
+        "value": "ada@halden.com"
+      },
+      {
+        "kind": "click",
+        "name": "Continue"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.check_title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Use a different email"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      }
+    }
+  },
+  {
+    "code": "S29.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/access/link?token=expired-design-parity-token",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.expired_title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Send a new link"
+        }
+      ],
+      "probe": {
+        "kind": "expired"
+      }
+    }
+  },
+  {
+    "code": "S31.01",
+    "seed": "empty-account",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "home.empty_title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S31.02",
+    "seed": "recents",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "Recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S31.03",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "Recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S31.04",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "All decks"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S31.05",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      },
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "All decks"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S32.01",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "+ New deck"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "button",
+          "name": "Blank deck"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S32.02",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "queued"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [
+        "Importing PowerPoint"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S32.03",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand",
+        "import.failed_title"
+      ],
+      "texts": [
+        "Unable to import this file"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S33.01",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Move to Trash"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Deck moved to Trash"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [
+        "Deck moved to Trash"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S33.02",
+    "seed": "trash-with-items",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/trash",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "heading",
+          "name": "Trash"
+        },
+        {
+          "role": "button",
+          "name": "Empty Trash"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S33.03",
+    "seed": "trash-with-items",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Empty Trash"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/trash",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.brand"
+      ],
+      "texts": [
+        "Empty Trash?"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Delete permanently"
+        },
+        {
+          "role": "button",
+          "name": "Cancel"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S41.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S41.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "hover",
+        "name": "+ New slide"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S41.03",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S41.04",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S42.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "working"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Working… You can steer or stop this run."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Stop"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S42.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Done. Review changes by slide."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Undo run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S42.03",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "remote"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Done. Review changes by slide."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Undo run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S42.04",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "long-message"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Done. Review changes by slide."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Undo run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      },
+      {
+        "kind": "click",
+        "name": "Choose template"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Choose a look"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Close picker"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Choose template"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.03",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Images"
+      },
+      {
+        "kind": "wait-text",
+        "text": "0.0 MB of 512 MB used"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "0.0 MB of 512 MB used"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.04",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.05",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.06",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S43.07",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S49.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "agent.resume"
+      ],
+      "texts": [
+        "Aira couldn’t finish. Changes so far stay."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S49.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "offline"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Reconnect"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S61.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [],
+      "texts": [
+        "Export your deck"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "name": "File format"
+        },
+        {
+          "role": "button",
+          "name": "Close export"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ]
+    }
+  },
+  {
+    "code": "S61.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "select",
+        "label": "File format",
+        "value": "pdf"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [],
+      "texts": [
+        "Export your deck"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "name": "File format"
+        },
+        {
+          "role": "button",
+          "name": "Close export"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ]
+    }
+  },
+  {
+    "code": "S61.03",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [],
+      "texts": [
+        "Export your deck"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "name": "File format"
+        },
+        {
+          "role": "button",
+          "name": "Close export"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ]
+    }
+  },
+  {
+    "code": "S69.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [],
+      "texts": [
+        "Export your deck"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "name": "File format"
+        },
+        {
+          "role": "button",
+          "name": "Close export"
+        },
+        {
+          "role": "button",
+          "name": "Retry export"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ]
+    }
+  },
+  {
+    "code": "S71.01",
+    "seed": "oauth-Claude",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "common.cancel"
+      ],
+      "texts": [
+        "Claude wants to use AirDesign"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Allow"
+        },
+        {
+          "role": "button",
+          "name": "Cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ]
+    }
+  },
+  {
+    "code": "S71.02",
+    "seed": "oauth-Claude",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Allow"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Ready to return to your agent"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [],
+      "texts": [
+        "Ready to return to your agent"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "name": "Return to Claude"
+        },
+        {
+          "role": "button",
+          "name": "Having trouble returning?"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ]
+    }
+  },
+  {
+    "code": "S71.03",
+    "seed": "oauth-Codex",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "common.cancel"
+      ],
+      "texts": [
+        "Codex wants to use AirDesign"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Allow"
+        },
+        {
+          "role": "button",
+          "name": "Cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ]
+    }
+  },
+  {
+    "code": "S81.01",
+    "seed": "usage-active",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S81.02",
+    "seed": "usage-active-connected",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/agents",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "agent.name"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "Connected agents"
+        },
+        {
+          "role": "button",
+          "name": "Disconnect"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S81.03",
+    "seed": "usage-active",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/account",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S91.01",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "pay.continue"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Continue to payment"
+        },
+        {
+          "role": "spinbutton",
+          "name": "Amount in USD"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S91.02",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Waiting for your $25.00 payment…"
+      },
+      {
+        "kind": "selector-click",
+        "selector": "button[aria-label=\"Close add credits\"]"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.title"
+      ],
+      "texts": [
+        "Waiting for your $25.00 payment…"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Commands"
+        },
+        {
+          "role": "button",
+          "name": "Cancel payment"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S91.03",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "pay"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "credits.title"
+      ],
+      "texts": [
+        "Payment received. Credits added."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Close add credits"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "code": "S92.01",
+    "seed": "deck-limited",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Aira paused at your usage limit. Changes so far stay."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S92.02",
+    "seed": "deck-limited-with-credits",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.reset_confirm_title"
+      ],
+      "texts": [
+        "Aira paused at your usage limit. Changes so far stay."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S92.03",
+    "seed": "deck-limited",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Slides"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S92.04",
+    "seed": "deck-limited-with-credits",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Reset for $5"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Usage reset. Resume when you’re ready."
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "shell.home"
+      ],
+      "texts": [
+        "Usage reset. Resume when you’re ready."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Export"
+        },
+        {
+          "role": "button",
+          "name": "Slide 3"
+        },
+        {
+          "role": "button",
+          "name": "Resume"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      }
+    }
+  },
+  {
+    "code": "S99.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "access.expired_title"
+      ],
+      "texts": [],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Send a new link"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      }
+    }
+  },
+  {
+    "code": "S99.02",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "expire-payment"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "credits.title"
+      ],
+      "texts": [
+        "This payment expired. Your balance is unchanged. Add credits to start again."
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "name": "Close add credits"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "title": "Sign out?",
+        "close": "Cancel"
+      }
+    }
+  }
+]

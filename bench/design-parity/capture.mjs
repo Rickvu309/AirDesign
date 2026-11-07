@@ -1,10 +1,10 @@
-import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
 import {scenario} from "../agent-account/fixture.mjs"
 import {OperationStore,operationId} from "../../packages/operations/src/index.ts"
 import {writeSavedPptx} from "../../packages/pptx/src/export-deck.ts"
 import {investorDeck} from "./investor-deck.ts"
 import {localFixture} from "./fixture-environment.ts"
+import {approvalRoute} from "./approval-fixture.ts"
 export async function stack(){return localFixture(()=>scenario({browserEnabled:true}))}
 export async function seed(stack,entry){
   stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
@@ -44,13 +44,10 @@ export async function seed(stack,entry){
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
     await usage.reserve(owner.personId,{id:"weekly-work",actor:"user-agent",request:"Prepare the investor update",units:6200})
     await usage.configure(owner.personId,{autoReset:true})
-    if(entry.seed==="usage-active-connected")await stack.fixture.authorize(owner.cookie,"Claude")
+    if(entry.seed==="usage-active-connected"){const {client}=await stack.fixture.authorize(owner.cookie,"Claude");await client.close()}
   }
   if(entry.seed.startsWith("oauth-")){
-    const name=entry.seed.slice(6),registered=await stack.request(null,"/oauth/register",{client_name:name,redirect_uris:["http://127.0.0.1:49199/callback"],token_endpoint_auth_method:"none"},201)
-    const params=new URLSearchParams({client_id:registered.client_id,redirect_uri:registered.redirect_uris[0],code_challenge:createHash("sha256").update("design-parity-verifier".repeat(3)).digest("base64url"),code_challenge_method:"S256",resource:stack.origin+"/mcp",scope:"decks",response_type:"code",state:"design-parity"})
-    const response=await fetch(stack.fixture.apiOrigin+"/oauth/authorize?"+params,{redirect:"manual"})
-    return {owner,route:new URL(response.headers.get("location"),stack.origin).pathname+new URL(response.headers.get("location"),stack.origin).search}
+    return {owner,route:await approvalRoute(stack.origin,stack.fixture.apiOrigin,entry.seed.slice(6))}
   }
   return {owner,route:entry.seed.startsWith("deck-") ? entry.route.replace("designparity","designparity"+entry.code.replaceAll(".","")) : entry.route}
 }

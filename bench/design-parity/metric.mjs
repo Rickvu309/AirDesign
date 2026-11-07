@@ -1,7 +1,7 @@
 import sharp from "sharp"
 import {PNG} from "pngjs"
 import pixelmatch from "pixelmatch"
-export const metricVersion="foreground-edges-v1"
+export const metricVersion="local-oklab-v2"
 const distance=(a,i,b,j)=>Math.max(Math.abs(a[i]-b[j]),Math.abs(a[i+1]-b[j+1]),Math.abs(a[i+2]-b[j+2]))
 function background(data){
   const counts=new Map()
@@ -23,6 +23,51 @@ function edges(image){
   const gray=i=>data[i]*0.2126+data[i+1]*0.7152+data[i+2]*0.0722
   for(let y=1;y<height-1;y++)for(let x=1;x<width-1;x++){const i=(y*width+x)*4;mask[y*width+x]=Number(Math.max(Math.abs(gray(i-4)-gray(i+4)),Math.abs(gray(i-width*4)-gray(i+width*4)))>32)}
   return mask
+}
+const linear=Array.from({length:256},(_,value)=>{const c=value/255;return c<=0.04045 ? c/12.92 : ((c+0.055)/1.055)**2.4})
+function labImage(image){
+  const cache=new Map(),result=new Float32Array(image.width*image.height*3)
+  for(let i=0;i<image.data.length;i+=4){
+    const key=image.data[i]*65536+image.data[i+1]*256+image.data[i+2]
+    let lab=cache.get(key)
+    if(!lab){
+      const r=linear[image.data[i]],g=linear[image.data[i+1]],b=linear[image.data[i+2]]
+      const l=Math.cbrt(0.4122214708*r+0.5363325363*g+0.0514459929*b),m=Math.cbrt(0.2119034982*r+0.6806995451*g+0.1073969566*b),s=Math.cbrt(0.0883024619*r+0.2817188376*g+0.6299787005*b)
+      lab=[0.2104542553*l+0.793617785*m-0.0040720468*s,1.9779984951*l-2.428592205*m+0.4505937099*s,0.0259040371*l+0.7827717662*m-0.808675766*s]
+      cache.set(key,lab)
+    }
+    result.set(lab,i/4*3)
+  }
+  return result
+}
+const labDistanceSquared=(a,i,b,j)=>{const l=a[i]-b[j],c=a[i+1]-b[j+1],h=a[i+2]-b[j+2];return l*l+c*c+h*h}
+function localFidelity(images,masks,width,height){
+  const labs=images.map(labImage),regions=Array.from({length:96},(_,index)=>({column:index%12,row:Math.floor(index/12),foreground:0,background:0,foregroundMisses:0,backgroundMisses:0}))
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const region=regions[Math.min(7,Math.floor(y/height*8))*12+Math.min(11,Math.floor(x/width*12))]
+    const active=images.map((image,k)=>x<image.width&&y<image.height&&masks[k][y*image.width+x])
+    const category=active.some(Boolean) ? "foreground" : "background"
+    region[category]++
+    const mismatch=Math.max(...images.map((image,k)=>{
+      if(x>=image.width||y>=image.height)return 1
+      const other=images[1-k],i=(y*image.width+x)*3
+      let closest=x<other.width&&y<other.height ? labDistanceSquared(labs[k],i,labs[1-k],(y*other.width+x)*3) : 1
+      if(closest<=0.025**2)return 0
+      for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+        const ox=x+dx,oy=y+dy
+        if(ox>=0&&oy>=0&&ox<other.width&&oy<other.height&&Boolean(masks[1-k][oy*other.width+ox])===Boolean(active[k])){
+          closest=Math.min(closest,labDistanceSquared(labs[k],i,labs[1-k],(oy*other.width+ox)*3))
+          if(closest<=0.025**2)return 0
+        }
+      }
+      return Math.min(1,(Math.sqrt(closest)-0.025)/0.1)
+    }))
+    region[category+"Misses"]+=mismatch
+  }
+  const loss=region=>{const floor=(region.foreground+region.background)*0.03;if(!floor)return 0;return Math.max(region.foregroundMisses/Math.max(floor,region.foreground),region.backgroundMisses/Math.max(floor,region.background))}
+  const total=regions.reduce((sum,region)=>Object.fromEntries(Object.keys(sum).map(key=>[key,sum[key]+region[key]])),{foreground:0,background:0,foregroundMisses:0,backgroundMisses:0})
+  const scored=regions.map(region=>({...region,score:loss(region)})),worstRegion=scored.reduce((a,b)=>a.score>=b.score ? a : b)
+  return {colorLoss:loss(total),localLoss:worstRegion.score,worstRegion,regions:scored}
 }
 export async function compareDesign(design,capture){
   const originals=await Promise.all([design,capture].map(async buffer=>PNG.sync.read(await sharp(buffer).ensureAlpha().png().toBuffer())))
@@ -53,5 +98,7 @@ export async function compareDesign(design,capture){
   const edgeLoss=precision+recall ? 1-2*precision*recall/(precision+recall) : 1
   const foregroundLoss=ink ? misses/ink : 0,sizeLoss=1-Math.min(originals[0].width,originals[1].width)*Math.min(originals[0].height,originals[1].height)/(width*height)
   const backgroundLoss=Math.max(0,distance(background(originals[0].data),0,background(originals[1].data),0)-32)/223
-  return {score:Math.max(foregroundLoss,edgeLoss,sizeLoss,backgroundLoss),backgroundLoss,foregroundLoss,edgeLoss,sizeLoss,ratio:pixels/(width*height),pixels,left,right,diff,comparison:{width,height,design:{width:originals[0].width,height:originals[0].height},capture:{width:originals[1].width,height:originals[1].height}}}
+  const fidelity=localFidelity(originals,masks,width,height)
+  const globalScore=Math.max(foregroundLoss,edgeLoss,sizeLoss,backgroundLoss,fidelity.colorLoss)
+  return {...fidelity,globalScore,score:Math.max(globalScore,fidelity.localLoss),backgroundLoss,foregroundLoss,edgeLoss,sizeLoss,ratio:pixels/(width*height),pixels,left,right,diff,comparison:{width,height,design:{width:originals[0].width,height:originals[0].height},capture:{width:originals[1].width,height:originals[1].height}}}
 }

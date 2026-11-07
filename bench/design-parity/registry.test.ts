@@ -1,8 +1,10 @@
 import {describe,it,expect} from "vitest"
-import {readdir} from "node:fs/promises"
+import {z} from "zod"
+import {readdir,readFile} from "node:fs/promises"
 import {parseRegistry,readRegistry,readBudgetBaseline,validateRegistry,ratchet,selectScenarios,passesParity} from "./registry.ts"
 import {investorDeck} from "./investor-deck.ts"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
+import {surfaceTargets} from "./targets.ts"
 import {localFixture} from "./fixture-environment.ts"
 describe("design parity contract",()=>{
   it("starts local fixtures safely after Vite sets production mode and restores the caller on failure",async()=>{
@@ -59,10 +61,32 @@ describe("design parity contract",()=>{
 })
 it("enforces release targets separately from regression ceilings and refuses missing coverage",async()=>{
   const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing=entries.find(entry=>entry.status==="unreachable")!
-  const scenario={...entry,budget:0.9,target:0.08}
+  const scenario={...entry,budget:0.9,target:surfaceTargets[entry.surface]}
   expect(passesParity(scenario,0.8,false)).toBe(true)
   expect(passesParity(scenario,0.8,true)).toBe(false)
   expect(passesParity(scenario,0.02,true)).toBe(true)
+  expect(passesParity({...scenario,target:1},0.8,true)).toBe(false)
   expect(passesParity(scenario,0.95,false)).toBe(false)
   expect(passesParity(missing,undefined,true)).toBe(false)
+})
+
+it("rejects target edits independently of regression budgets",async()=>{
+  const entries=await readRegistry()
+  for(const entry of entries){
+    expect(entry.target).toBe(surfaceTargets[entry.surface])
+    expect(()=>validateRegistry([{...entry,target:1}],[entry.design.split("/").at(-1)!],{[entry.code]:1})).toThrow("uncalibrated-target")
+  }
+})
+
+it("binds release thresholds to the committed faithful-reference calibration",async()=>{
+  const record=z.object({targets:z.object({site:z.number(),studio:z.number()}),results:z.array(z.object({surface:z.enum(["site","studio"]),reference:z.object({score:z.number()})})),editor:z.array(z.object({score:z.number()}))}).parse(JSON.parse(await readFile(new URL("./calibration.json",import.meta.url),"utf8")))
+  expect(surfaceTargets).toEqual(record.targets)
+  expect(record.results).toHaveLength(52)
+  expect(record.editor).toHaveLength(2)
+  for(const surface of ["site","studio"] as const){
+    const faithful=[...record.results.filter(row=>row.surface===surface).map(row=>row.reference.score),...(surface==="studio" ? record.editor.map(row=>row.score) : [])]
+    expect(record.targets[surface]).toBe((Math.ceil(Math.max(...faithful)*100)+1)/100)
+  }
+  for(const row of record.results)expect(row.reference.score).toBeLessThan(row.surface=== "site" ? surfaceTargets.site : surfaceTargets.studio)
+  for(const row of record.editor)expect(row.score).toBeLessThan(surfaceTargets.studio)
 })
