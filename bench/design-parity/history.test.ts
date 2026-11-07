@@ -1,9 +1,9 @@
 import {execFileSync} from "node:child_process"
-import {mkdtemp,mkdir,rm,writeFile} from "node:fs/promises"
+import {mkdtemp,mkdir,rm,writeFile,copyFile,readFile} from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import {expect,it} from "vitest"
-import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase} from "./registry.ts"
+import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase,seedFiles,fixtureContentHash} from "./registry.ts"
 
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-"))
@@ -41,6 +41,7 @@ it("requires identity change reasons and refuses coverage loss even with a reaso
   try{
     git("init","-b","main")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
+    for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=(await readRegistry()).map(entry=>({...entry,scenarioChangedBecause:undefined})),first=entries[0]!
     const commit=async(value:unknown)=>{
       await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify(value))
@@ -105,6 +106,7 @@ it("rejects co-edited seed, unreachable status and budget ceilings after the fir
   try{
     git("init","-b","main")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
+    for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=await readRegistry(),entry=entries.find(value=>value.code==="S31.02")!
     await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(entries.map(scenarioIdentity)))
     await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify(entries.map(value=>({...value,budget:0.1}))))
@@ -120,6 +122,13 @@ it("rejects co-edited seed, unreachable status and budget ceilings after the fir
     const reviewed=parseRegistry(entries.map(value=>value===entry ? {...value,seed:"empty-account",scenarioChangedBecause:"Reviewed a new seed change after landing"} : value))
     await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(reviewed.map(scenarioIdentity)))
     await expect(validateIdentity(reviewed,cwd,"main")).resolves.toBeUndefined()
+    const fixture=path.join(cwd,"bench/design-parity/capture.mjs")
+    await writeFile(fixture,(await readFile(fixture,"utf8")).replace("Project Atlas","Unreviewed title"))
+    const changedHash=fixtureContentHash(cwd)
+    await writeFile(path.join(cwd,"bench/design-parity/scenario-lock.json"),JSON.stringify(entries.map(value=>({...scenarioIdentity(value),fixtureContentHash:changedHash}))))
+    await expect(validateIdentity(entries,cwd,"main")).rejects.toThrow(/scenario=.*selector=seed:.*check=scenario-changed-without-reason.*expected=.*actual=/)
+    const reviewedFixture=entries.map(value=>({...value,scenarioChangedBecause:"Reviewed fixture title revision after landing"}))
+    await expect(validateIdentity(reviewedFixture,cwd,"main")).resolves.toBeUndefined()
     await writeFile(path.join(cwd,"bench/design-parity/budget-baseline.json"),JSON.stringify(Object.fromEntries(entries.map(value=>[value.code,1]))))
     await writeFile(path.join(cwd,"bench/design-parity/scenarios.json"),JSON.stringify(entries.map(value=>({...value,budget:1}))))
     const baseline=await readBudgetBaseline(cwd,"main")

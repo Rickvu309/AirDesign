@@ -1,3 +1,5 @@
+import {createHash} from "node:crypto"
+import {readFileSync} from "node:fs"
 import {readFile} from "node:fs/promises"
 import {execFileSync,spawnSync} from "node:child_process"
 import {isDeepStrictEqual} from "node:util"
@@ -38,12 +40,21 @@ export async function readBudgetBaseline(cwd=process.cwd(),target?:string):Promi
   if(source)for(const entry of z.array(z.object({code:z.string(),metric:z.string().optional(),budget:z.number()})).parse(JSON.parse(source)).filter(entry=>entry.metric==="local-oklab-v2"))baseline[entry.code]=Math.min(baseline[entry.code]??1,entry.budget)
   return baseline
 }
+export const seedFiles=["bench/design-parity/capture.mjs","bench/design-parity/investor-deck.ts","bench/design-parity/approval-fixture.ts","bench/design-parity/fixture-environment.ts","bench/design-parity/fixture-identifiers.ts","bench/agent-account/fixture.mjs","packages/deck/src/fixture.ts"]
+export function fixtureContentHash(cwd=process.cwd()){
+  const hash=createHash("sha256")
+  for(const file of seedFiles)hash.update(file).update("\0").update(readFileSync(`${cwd}/${file}`)).update("\0")
+  return hash.digest("hex")
+}
 export function scenarioIdentity(entry:Scenario){
-  return {code:entry.code,seed:entry.seed,steps:entry.status==="reachable" ? entry.steps : [],viewport:entry.viewport,surface:entry.surface,route:entry.route,status:entry.status,assertions:entry.assertions}
+  return {fixtureContentHash:fixtureContentHash(),code:entry.code,seed:entry.seed,steps:entry.status==="reachable" ? entry.steps : [],viewport:entry.viewport,surface:entry.surface,route:entry.route,status:entry.status,assertions:entry.assertions}
 }
 export async function validateIdentity(entries:Scenario[],cwd=process.cwd(),target?:string):Promise<void>{
   const lock=z.array(z.object({code:z.string()}).passthrough()).parse(JSON.parse(await readFile(`${cwd}/bench/design-parity/scenario-lock.json`,"utf8")))
-  if(!isDeepStrictEqual(entries.map(scenarioIdentity),lock))throw new Error("scenario-lock-mismatch")
+  const fixtureHash=fixtureContentHash(cwd)
+  const identities=entries.map(entry=>({...scenarioIdentity(entry),fixtureContentHash:fixtureHash}))
+  for(const [index,identity] of identities.entries())if(!isDeepStrictEqual(identity,lock[index]))throw new Error(`scenario=${identity.code} selector=seed:${identity.seed} check=scenario-lock-mismatch expected=${JSON.stringify(lock[index])} actual=${JSON.stringify(identity)}`)
+  if(identities.length!==lock.length)throw new Error(`scenario=registry selector=scenario-lock.json check=scenario-lock-mismatch expected=${lock.length} actual=${identities.length}`)
   const priorRegistry=baseFile("bench/design-parity/scenarios.json",cwd,target)
   const source=baseFile("bench/design-parity/scenario-lock.json",cwd,target)??priorRegistry
   if(!source)return
@@ -51,9 +62,9 @@ export async function validateIdentity(entries:Scenario[],cwd=process.cwd(),targ
   const prior=z.array(z.object({code:z.string(),status:z.string()}).passthrough()).parse(JSON.parse(source))
   for(const previous of prior){
     const current=entries.find(entry=>entry.code===previous.code)
-    if(!current||previous.status==="reachable"&&current.status!=="reachable")throw new Error("coverage-regressed")
-    const identity=scenarioIdentity(current)
-    if(Object.entries(previous).some(([key,value])=>key in identity&&!isDeepStrictEqual(value,Reflect.get(identity,key)))&&(!current.scenarioChangedBecause?.trim()||current.scenarioChangedBecause.trim()===priorReasons.get(current.code)))throw new Error("scenario-changed-without-reason")
+    if(!current||previous.status==="reachable"&&current.status!=="reachable")throw new Error(`scenario=${previous.code} selector=scenarios.json check=coverage-regressed expected=${previous.status} actual=${current?.status??"missing"}`)
+    const identity={...scenarioIdentity(current),fixtureContentHash:fixtureHash}
+    if(Object.entries(previous).some(([key,value])=>key in identity&&!isDeepStrictEqual(value,Reflect.get(identity,key)))&&(!current.scenarioChangedBecause?.trim()||current.scenarioChangedBecause.trim()===priorReasons.get(current.code)))throw new Error(`scenario=${current.code} selector=seed:${current.seed} check=scenario-changed-without-reason expected="fresh scenarioChangedBecause" actual=${JSON.stringify(current.scenarioChangedBecause??null)}`)
   }
 }
 export function validateRegistry(entries:Scenario[],images:string[],baseline:Record<string,number>):void {

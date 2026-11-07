@@ -50,7 +50,7 @@ try{
       await page.goto((entry.surface==="site" ? siteOrigin : local.origin)+setup.route,{waitUntil:"load"})
       if(entry.seed.startsWith("deck-"))await page.locator('.studio-editor[data-sync-state="saved"]').waitFor()
       else await page.waitForLoadState("networkidle")
-      await assertScenarioCopy(page,entry.assertions.entryCopyKeys??[])
+      await assertScenarioCopy(page,entry.assertions.entryCopyKeys??[],entry.code)
       await probeScenarioInteraction(page,entry)
       if(entry.assertions.probe.kind==="approval")await page.goto(local.origin+await approvalRoute(local.origin,local.fixture.apiOrigin,entry.seed.slice(6)),{waitUntil:"networkidle"})
       for(const step of entry.steps)await perform(page,step,local,setup.owner)
