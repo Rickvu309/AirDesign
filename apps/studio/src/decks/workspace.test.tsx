@@ -21,7 +21,9 @@ it("offers Recents and All decks with a per-deck Trash countdown",async()=>{
     await act(async()=>root.render(<Workspace key="trash"/>))
     expect(container.querySelector(".deck-card")?.textContent).toContain("29 days remaining")
     await click("Empty Trash")
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("Strategy")
+    expect(document.querySelector('[role="dialog"] h2')?.textContent).toBe("Delete 1 decks for good?")
+    expect(document.querySelector('[role="dialog"]')?.textContent).toContain("This can't be undone.")
+    expect(document.querySelector('[role="dialog"] .ad-button-danger')?.textContent).toBe("Delete for good")
   }finally{await act(async()=>root.unmount());container.remove();history.replaceState(null,"","/")}
 })
 

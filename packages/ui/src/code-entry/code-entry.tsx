@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import type { ClipboardEvent, KeyboardEvent } from "react"
 
 type CodeEntryProps = {
@@ -12,6 +12,7 @@ const length = 6
 
 export function CodeEntry({ label, value, onValueChange, error }: CodeEntryProps) {
   const refs = useRef<Array<HTMLInputElement | null>>([])
+  useEffect(() => { refs.current[0]?.focus({ preventScroll: true }) }, [])
   const digits = Array.from({ length }, (_, index) => value[index] ?? "")
   const errorId = "code-entry-error"
 
