@@ -1877,13 +1877,29 @@
     "target": 0.53,
     "assertions": {
       "copyKeys": [
-        "usage.title"
+        "shell.home"
       ],
       "texts": [],
       "controls": [
         {
           "role": "button",
           "name": "Commands"
+        },
+        {
+          "role": "heading",
+          "name": "Profile"
+        },
+        {
+          "role": "textbox",
+          "name": "Your name"
+        },
+        {
+          "role": "button",
+          "name": "Save name"
+        },
+        {
+          "role": "button",
+          "name": "Delete account"
         }
       ],
       "probe": {
