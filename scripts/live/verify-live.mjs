@@ -43,7 +43,7 @@ export async function auditLinks(page,base){
 async function auditAssets(page){
   const urls=await page.locator('script[src],link[rel="stylesheet"][href]').evaluateAll(nodes=>nodes.map(node=>node.src || node.href))
   urls.push(...await page.evaluate(()=>performance.getEntriesByType("resource").map(entry=>entry.name).filter(name=>new URL(name).pathname.startsWith("/assets/"))))
-  const assets=classifyPageAssets(urls,new URL(page.url()).origin)
+  const assets=classifyPageAssets(urls)
   assert.deepEqual(assets.unhashed,[],`asset must have content hash: ${assets.unhashed.join(", ")}`)
   assert.ok(assets.built.length,"page must load built assets")
   for(const asset of assets.built){
