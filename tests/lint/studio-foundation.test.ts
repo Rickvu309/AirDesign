@@ -5,6 +5,12 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
+  it("rejects a second shell icon implementation and accepts shared icons", () => {
+    const icons = "packages/ui/src/primitives/primitives.tsx"
+    expect(studioFoundationHits(icons, readFileSync(icons, "utf8"))).toEqual([])
+    expect(studioFoundationHits(icons, "export function Icon() {} const paths = {}"))
+      .toEqual([{ line: 1, reason: "studio-icons-use-the-shared-icon-module" }])
+  })
   it("rejects phone input zoom and undersized touch targets", () => {
     expect(studioFoundationHits(file, fixed.replace(".ad-field-input,.ad-search input,.ad-code-box { font-size:16px; }", "").replace("min-width:44px;min-height:44px;", ""))).toEqual([{ line: 1, reason: "studio-touch-controls-require-readable-inputs-targets-and-safe-area" }])
   })

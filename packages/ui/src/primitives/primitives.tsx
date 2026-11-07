@@ -1,22 +1,8 @@
 import { cloneElement, isValidElement, useState, useEffect, useId, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react"
 
-export type IconName = "search" | "recent" | "decks" | "trash" | "settings" | "grid" | "list" | "chevron" | "plug" | "mail" | "plus"
-const paths: Record<IconName, string> = {
-  search: "M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
-  recent: "M12 8v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
-  decks: "M7 7V3h14v14h-4M3 7h14v14H3z",
-  trash: "M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7",
-  settings: "M9 3h6l1 4 4 1v6l-4 1-1 4H9l-1-4-4-1V8l4-1zM15 11a3 3 0 1 1-6 0 3 3 0 0 1 6 0",
-  grid: "M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6z",
-  list: "M8 5h13M8 12h13M8 19h13M3 5h1M3 12h1M3 19h1",
-  chevron: "M7 10l5 5 5-5",
-  plug: "M9 3v5M15 3v5M6 8h12v5a6 6 0 0 1-12 0zM12 19v3",
-  mail: "M3 5h18v14H3zM3 6l9 7 9-7",
-  plus: "M12 4v16M4 12h16",
-}
-export function Icon({ name }: { name: IconName }) {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>
-}
+import { Icon, type IconName } from "../icon/icon.tsx"
+
+export { Icon, type IconName }
 export function BrandMark() {
   return <svg className="ad-brand-mark" width="42" height="42" viewBox="0 0 64 64" fill="none" role="img" aria-label="AirDesign"><path d="M13 57l19-50 19 50" stroke="var(--logo-ink)" strokeWidth="3.063" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 44l52-14" stroke="var(--logo-accent)" strokeWidth="2.188" strokeLinecap="round"/></svg>
 }

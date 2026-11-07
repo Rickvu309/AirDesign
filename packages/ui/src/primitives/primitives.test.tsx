@@ -2,6 +2,7 @@ import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { NavItem, Tooltip } from "./primitives.tsx"
+import { Icon } from "../index.ts"
 
 let root: Root | null = null
 
@@ -65,5 +66,17 @@ describe("tooltip", () => {
     act(() => trigger?.blur())
     act(() => trigger?.focus())
     expect(tooltip?.hidden).toBe(false)
+  })
+})
+
+
+describe("shared editor icons", () => {
+  it.each(["undo", "redo"] as const)("preserves the %s glyph through the public UI export", name => {
+    render(<Icon name={name}/>)
+    const icon = document.querySelector("svg")
+    expect(icon?.getAttribute("data-icon")).toBe(name)
+    expect(icon?.getAttribute("stroke-width")).toBe("1.5")
+    expect(icon?.getAttribute("aria-hidden")).toBe("true")
+    expect(icon?.querySelector("path")?.getAttribute("d")).toBeTruthy()
   })
 })

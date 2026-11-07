@@ -5,6 +5,7 @@ const designCopyKeys = new Set(Object.entries(JSON.parse(readFileSync("docs/desi
 export function studioFoundationHits(file: string, source: string): { line: number; reason: string }[] {
   if (file.endsWith("packages/ui/src/primitives/primitives.tsx")) {
     const hits = []
+    if (/export function Icon\b|const paths\b/.test(source)) hits.push({ line: 1, reason: "studio-icons-use-the-shared-icon-module" })
     if (/export function NavItem[\s\S]*?return <button/.test(source.split("export function Dropdown")[0] ?? "")) hits.push({ line: 1, reason: "studio-navigation-requires-native-links" })
     if (/<span className="ad-tooltip"[^>]*tabIndex/.test(source)) hits.push({ line: 1, reason: "studio-tooltip-must-not-add-tab-stop" })
     return hits
