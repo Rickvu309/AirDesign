@@ -6,7 +6,7 @@ import { fontReport } from "../../../../packages/render/src/fonts.ts"
 import type { ExportJob } from "../../../server/src/decks/export-store.ts"
 import { api } from "../decks/catalog-client.ts"
 
-type FailedExport=Extract<ExportJob,{kind:"failed"}>&{failure?:{kind:"limit"|"signal"|"exit"|"application"}}
+type FailedExport=Omit<Extract<ExportJob,{kind:"failed"}>,"failure">&{failure?:{kind:"limit"|"signal"|"exit"|"application"}}
 export function exportFailureMessage(job:FailedExport){return job.failure?.kind==="limit" ? copy("export.limit_failure") : job.failure?.kind==="signal" ? copy("export.interrupted_failure") : copy("export.failed")}
 
 export function ExportDialog({deck,seq,open,close,fix,disabled}:{deck:Deck;seq:number;open:boolean;close:()=>void;fix:(slide:Id)=>void;disabled:boolean}) {
