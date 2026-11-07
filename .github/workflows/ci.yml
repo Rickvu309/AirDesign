@@ -1,0 +1,210 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, ci-landing]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  AIRDESIGN_PG_HOST: 127.0.0.1
+  AIRDESIGN_PG_USER: postgres
+  VITEST_MAX_WORKERS: '2'
+
+jobs:
+  setup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    outputs:
+      heavy: ${{ steps.changes.outputs.heavy }}
+      verification: ${{ steps.matrix.outputs.verification }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ "$GITHUB_REF" == "refs/heads/main" || -z "$BASE_SHA" || "$BASE_SHA" =~ ^0+$ ]]; then
+            echo 'heavy=true' >> "$GITHUB_OUTPUT"
+          else
+            echo "heavy=$(git diff --name-only -z "$BASE_SHA" HEAD | node scripts/gate/run.ts changes)" >> "$GITHUB_OUTPUT"
+          fi
+      - id: matrix
+        run: echo "verification=$(node scripts/gate/run.ts matrix)" >> "$GITHUB_OUTPUT"
+      - if: steps.changes.outputs.heavy == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.changes.outputs.heavy == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: build
+        with:
+          path: |
+            build/version.json
+            apps/site/dist
+            apps/studio/dist
+            apps/worker/dist
+            apps/server/dist
+            packages/deck/dist
+            packages/ui/dist
+          key: build-${{ runner.os }}-${{ github.sha }}-${{ hashFiles('package-lock.json') }}
+      - if: steps.changes.outputs.heavy == 'true'
+        run: npm run gate:install
+      - if: steps.changes.outputs.heavy == 'true' && steps.build.outputs.cache-hit != 'true'
+        run: npm run gate:build
+      - if: steps.changes.outputs.heavy == 'true' && steps.browsers.outputs.cache-hit != 'true'
+        run: npx --no-install playwright install chromium
+      - if: steps.changes.outputs.heavy == 'true'
+        run: |
+          shopt -s nullglob
+          tar -cf "$RUNNER_TEMP/gate-build.tar" build/version.json node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/deck/dist packages/ui/dist
+      - if: steps.changes.outputs.heavy == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: gate-build
+          path: ${{ runner.temp }}/gate-build.tar
+          compression-level: 1
+          retention-days: 2
+          if-no-files-found: error
+
+  static:
+    needs: setup
+    if: needs.setup.outputs.heavy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [lint, typecheck]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/restore-gate
+      - run: npm run gate:${{ matrix.check }}
+
+  unit:
+    needs: setup
+    if: needs.setup.outputs.heavy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1/2, 2/2]
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/restore-gate
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx --no-install playwright install-deps chromium
+      - uses: ./.github/actions/prepare-worker
+      - run: npm run gate:unit -- ${{ matrix.shard }}
+
+  verification:
+    needs: setup
+    if: needs.setup.outputs.heavy == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.setup.outputs.verification) }}
+    services:
+      postgres:
+        image: ${{ matrix.postgres && 'postgres:17.6' || '' }}
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/restore-gate
+      - if: matrix.browser
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - if: matrix.browser
+        run: npx --no-install playwright install-deps chromium
+      - if: matrix.isolation
+        uses: ./.github/actions/prepare-worker
+      - if: matrix.libreoffice
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends libreoffice-impress
+          echo 'AIRDESIGN_SOFFICE=/usr/bin/libreoffice' >> "$GITHUB_ENV"
+      - run: npm run gate:verify -- ${{ matrix.name }}
+
+  design:
+    if: ${{ false }}
+    needs: setup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/restore-gate
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx --no-install playwright install-deps chromium
+      - run: npm run verify:design
+
+  gate:
+    if: always()
+    needs: [setup, static, unit, verification, design]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          node --input-type=module <<'JS'
+          const jobs = JSON.parse(process.env.RESULTS)
+          if (jobs.setup.result !== 'success') process.exit(1)
+          const expected = jobs.setup.outputs.heavy === 'true' ? 'success' : 'skipped'
+          for (const name of ['static', 'unit', 'verification']) {
+            if (jobs[name].result !== expected) process.exit(1)
+          }
+          if (!['success', 'skipped'].includes(jobs.design.result)) process.exit(1)
+          JS

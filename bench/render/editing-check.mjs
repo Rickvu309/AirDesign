@@ -74,10 +74,11 @@ try {
     deck.slides[0].elements[0].runs = [{ ...run, text: "Alpha ", color: "#ff0000" }, { ...run, text: "Beta", color: "#0000ff", bold: false }]
     await load(deck)
     await field.focus()
-    await field.evaluate(node => {
+    await field.evaluate(node => new Promise(resolve => {
+      document.addEventListener("selectionchange", () => resolve(), { once: true })
       const text = node.lastChild.firstChild
       document.getSelection().setBaseAndExtent(text, 0, text, 4)
-    })
+    }))
     if (action === "styled-html") await page.evaluate(() => document.execCommand("insertHTML", false, '<span style="color:green;font-size:70px">Pasted</span>'))
     else await field.evaluate((node, type) => {
       const data = new DataTransfer()
@@ -87,8 +88,8 @@ try {
     }, action)
     await page.keyboard.type("!")
     const changed = await parity(`caret-${action}`, "Alpha Pasted!")
-    assert.equal(changed.slides[0].elements[0].runs.at(-1).color, "#0000ff")
-    assert.equal(changed.slides[0].elements[0].runs.at(-1).bold, false)
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).color, "#0000ff", `caret-${action} preserves the selected color`)
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).bold, false, `caret-${action} preserves the selected weight`)
   }
   const styled = fixtureDeck(1)
   const run = styled.slides[0].elements[0].runs[0]

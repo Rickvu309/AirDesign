@@ -1,6 +1,7 @@
 import {it,expect,vi} from "vitest"
 import {spawn} from "node:child_process"
 import {once} from "node:events"
+import {createInterface} from "node:readline"
 import {mkdtemp,writeFile,readFile,rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
@@ -8,16 +9,17 @@ import {RemoteJournal} from "../src/remote-journal.ts"
 import {drainRemoteQueue} from "../src/remote-queue.ts"
 it("kills a crashed remote worker group and erases its persisted upload mapping after restart",async()=>{
  const root=await mkdtemp(path.join(os.homedir(),"tmp/remote-crash-")),program=path.join(root,"job.mjs")
- await writeFile(program,`import {spawn} from 'node:child_process';import {writeFileSync} from 'node:fs';const child=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});writeFileSync('ready',String(child.pid));setInterval(()=>{},1000)`)
+ await writeFile(program,`import {spawn} from 'node:child_process';import {writeFileSync,renameSync} from 'node:fs';const child=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});writeFileSync('ready.pending',String(child.pid));renameSync('ready.pending','ready');setInterval(()=>{},1000)`)
  const supervisor=spawn(process.execPath,["--input-type=module","-e",`
  import {OperationStore} from './packages/operations/src/index.ts';import {deliver} from './apps/worker/src/isolation.ts';import {RemoteJournal} from './apps/worker/src/remote-journal.ts';import {watch,readFileSync} from 'node:fs';
  const root=${JSON.stringify(root)},journal=new RemoteJournal(root),database=root+'/local.sqlite',store=new OperationStore(database),job=store.submit({personId:'deleted-owner'},'request',Buffer.from('private upload'));
  const lease='00000000-0000-4000-8000-000000000001';journal.save({id:'00000000-0000-4000-8000-000000000002',lease,queue:'import',database,directory:null,unit:null,pid:null,identity:null,mode:'container'});
  await deliver(store,job.id,root,${JSON.stringify(program)},process=>{journal.started(lease,process);if(!process.pid)return;const watcher=watch(process.directory,(_,file)=>{if(file==='ready'){watcher.close();globalThis.process.stdout.write(readFileSync(process.directory+'/ready','utf8')+'\\n')}})});
  `],{cwd:process.cwd(),env:{...process.env,AIRDESIGN_ISOLATION:"container"},stdio:["ignore","pipe","pipe"]})
+ const supervisorLines=createInterface({input:supervisor.stdout})
  let descendant=0
  try{
-  const [data]=await once(supervisor.stdout,"data",{signal:AbortSignal.timeout(10000)})
+  const [data]=await once(supervisorLines,"line",{signal:AbortSignal.timeout(10000)})
   descendant=Number.parseInt(data.toString(),10)
   expect(descendant).toBeGreaterThan(0)
   supervisor.kill("SIGKILL");await once(supervisor,"exit")
@@ -51,6 +53,7 @@ it("kills a crashed remote worker group and erases its persisted upload mapping 
    expect(journal.entries()).toEqual([])
   }finally{journal.close()}
  }finally{
+  supervisorLines.close()
   supervisor.kill("SIGKILL")
   if(descendant)try{process.kill(descendant,"SIGKILL")}catch{}
   await rm(root,{recursive:true,force:true});vi.unstubAllEnvs()

@@ -1,0 +1,17 @@
+name: Prepare isolated worker tests
+description: Provide the production systemd and Bubblewrap worker driver
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y --no-install-recommends bubblewrap dbus-user-session
+        sudo install -m 0755 "$(command -v node)" /usr/bin/node
+        sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+        sudo systemctl start "user@$(id -u).service"
+        export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+        export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+        echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> "$GITHUB_ENV"
+        echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+        systemd-run --user --scope --quiet -p MemoryMax=536870912 bwrap --unshare-all --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind-try /lib64 /lib64 --proc /proc --dev /dev /usr/bin/node --version

@@ -1,0 +1,22 @@
+[
+  {
+    "file": "apps/server/src/main.ts",
+    "revision": "f15c6ddac838be912b3f27510037ff5e2fe7d327",
+    "source": "import {localPaymentProvider} from \"../../../packages/usage/src/payments/provider.ts\"\n  const handleBilling=billingHandler(access,history,localPaymentProvider(process.env.AIRDESIGN_PAYMENT_FIXTURE_SECRET ?? \"dev-only-local-payment-fixture\"),publicOrigin)"
+  },
+  {
+    "file": "apps/server/src/billing/reconcile.ts",
+    "revision": "f15c6ddac838be912b3f27510037ff5e2fe7d327",
+    "source": "const provider=localPaymentProvider(process.env.AIRDESIGN_PAYMENT_FIXTURE_SECRET ?? \"dev-only-local-payment-fixture\")"
+  },
+  {
+    "file": "apps/worker/src/main.ts",
+    "revision": "f15c6ddac838be912b3f27510037ff5e2fe7d327",
+    "source": "const store = new OperationStore(database)\nconst images = new OperationStore(database+\".images\")"
+  },
+  {
+    "file": "package.json",
+    "revision": "f15c6ddac838be912b3f27510037ff5e2fe7d327",
+    "source": "{\"name\": \"airdesign\", \"scripts\": {\"probe:compat\": \"node --experimental-strip-types scripts/probe-compat.ts\", \"verify:contracts\": \"node scripts/verify-contracts.mjs\", \"verify:ui\": \"node scripts/verify-ui.mjs\", \"verify:access\": \"node scripts/verify-access.mjs\", \"verify:pr-01\": \"node scripts/verify-pr-01.mjs\", \"test\": \"vitest run\", \"typecheck\": \"tsc -p tsconfig.json --noEmit\", \"lint\": \"node --experimental-strip-types scripts/lint-sources.ts && oxlint .\", \"build:deck\": \"node scripts/build-deck.mjs\", \"probe:deck\": \"node scripts/probe-deck.mjs\", \"verify:deck\": \"node scripts/verify-deck.mjs\", \"verify:render\": \"node scripts/verify-render.mjs\", \"verify:pr-02\": \"npm run verify:deck && npm run verify:render\", \"verify:operations\": \"node scripts/verify-operations.mjs\", \"verify:pptx\": \"node scripts/verify-pptx.mjs\", \"verify:pr-03\": \"npm run verify:operations && npm run verify:pptx\", \"worker:once\": \"node apps/worker/src/main.ts\", \"pptx\": \"node packages/pptx/src/cli.ts\", \"operations\": \"node apps/server/src/operations/cli.ts\", \"verify:change-log\": \"node scripts/verify-change-log.mjs\", \"verify:history\": \"npm run verify:change-log\", \"verify:pr-04\": \"npm run verify:change-log && npm run verify:sync\", \"verify:sync\": \"node scripts/verify-sync.mjs\", \"verify:studio\": \"node scripts/verify-studio.mjs\", \"build:export-renderer\": \"vite build --ssr apps/worker/src/export/render.tsx --outDir apps/worker/dist\", \"verify:import-export\": \"node scripts/verify-import-export.mjs\", \"verify:pr-05\": \"npm run verify:studio && npm run verify:import-export\", \"verify:brand\": \"node scripts/verify-brand.mjs\", \"verify:assets\": \"node scripts/verify-assets.mjs\", \"verify:pr-06\": \"npm run verify:brand && npm run verify:assets\", \"verify:usage\": \"vitest run packages/usage/test apps/server/test/usage.test.ts apps/server/test/usage-postgres.test.ts\", \"build:mcp-renderer\": \"vite build --ssr packages/render/src/capture-document.tsx --outDir apps/server/dist --emptyOutDir false\", \"verify:mcp\": \"npm run build:mcp-renderer && vitest run packages/access/test/oauth packages/tools/test apps/server/test/mcp\", \"verify:pr-07\": \"npm run verify:usage && npm run verify:mcp\", \"verify:agent\": \"vitest run packages/agent/test apps/server/test/agent apps/studio/src/chat tests/metered-tool-safety.test.ts\", \"verify:billing\": \"vitest run packages/usage/test/payments.test.ts apps/server/test/billing apps/server/test/account apps/studio/src/settings apps/studio/src/usage/usage-panel.test.tsx\", \"verify:pr-08\": \"npm run verify:agent && npm run verify:billing\", \"usage:reconcile\": \"node apps/server/src/billing/reconcile.ts\", \"verify:release\": \"vitest run bench/release tests/lint/release-claims.test.ts && node bench/release/replay.mjs && node bench/release/tool-replay.mjs && node bench/release/recovery.mjs\", \"verify:site\": \"vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs\", \"verify:pr-09\": \"npm run verify:release && npm run verify:site\"}}"
+  }
+]
