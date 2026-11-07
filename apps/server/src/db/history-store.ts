@@ -16,12 +16,13 @@ import { setTimeout as pause } from "node:timers/promises"
 import { execute, executionMatches, initialHistory, type Command, type History, type Principal, type Receipt, type ExecutionIdentity, type Contribution, type RunState, commandId } from "../../../../packages/change-log/src/index.ts"
 import type { ChangeSet, Deck } from "../../../../packages/deck/src/index.ts"
 import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistoryIndex } from "./history-index.ts"
+import { waitForHistorySchema, workerHistorySchemaWait, type HistorySchemaWaitPolicy } from "./history-schema-wait.ts"
 
 const historySchemaLock=639074220
 const historySchemaVersion=1
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate" | "connect" }, clock=Date.now) {
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate" } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy }, clock=Date.now) {
   if (driver.kind === "pglite" && driver.path && driver.path!=="memory://") await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? driver.client ?? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
@@ -61,9 +62,8 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return result.rows[0]?.version ?? 0
   }
   try {
-    const version=await transaction(schemaVersion)
-    if(version<historySchemaVersion){
-      if(driver.kind==="postgres" && driver.schema==="connect")throw new Error("history-schema-outdated: start the web service to run database migrations before starting the worker")
+    if(driver.kind==="postgres" && driver.schema==="connect")await waitForHistorySchema(()=>transaction(schemaVersion),historySchemaVersion,driver.wait ?? workerHistorySchemaWait,clock)
+    else if(await transaction(schemaVersion)<historySchemaVersion){
       await transaction(async tx => {
         if(pool)await tx.query("SELECT pg_advisory_xact_lock($1)",[historySchemaLock])
         if(await schemaVersion(tx)>=historySchemaVersion)return

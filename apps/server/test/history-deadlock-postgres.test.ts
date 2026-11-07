@@ -34,6 +34,7 @@ async function databaseTest(work:(driver:{kind:"postgres";url:string},sql:pg.Cli
   }
 }
 const owner={personId:"owner"}
+const noWait={budgetMs:0,firstDelayMs:1,maxDelayMs:1}
 const patch=(name:string):Command=>({id:commandId(name),kind:"patch",target:id("s0"),fields:{notes:name},base:0,run:null})
 
 it("lets a save finish while a worker initializes history on another PostgreSQL connection",async()=>{
@@ -131,12 +132,12 @@ it("rejects missing or outdated schemas in worker mode without issuing DDL",asyn
       if(typeof args[0]==="string")statements.push(args[0])
       return Reflect.apply(original,this,args)
     })
-    await expect(createHistoryStore({...driver,schema:"connect"})).rejects.toThrow("history-schema-outdated: start the web service")
+    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow("history-schema-outdated: expected version 1, found 0")
     expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
     const store=await createHistoryStore(driver);stores.push(store)
     await sql.query("UPDATE schema_version SET version=0 WHERE name='history'")
     statements.length=0
-    await expect(createHistoryStore({...driver,schema:"connect"})).rejects.toThrow("history-schema-outdated: start the web service")
+    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow("history-schema-outdated: expected version 1, found 0")
     expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
     observed.mockRestore()
     const migrated=await createHistoryStore(driver);stores.push(migrated)
