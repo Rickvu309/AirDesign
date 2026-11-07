@@ -13,9 +13,10 @@ import {libreOfficeFastCheck} from "../../packages/pptx/test/libreoffice.ts"
 import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 import {validateMcpMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
+import {operationTracker} from "./operation-trace.ts"
+import {within} from "./bounded.ts"
 import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
 import {classifyPageAssets} from "./site-assets.ts"
-import {operationTracker} from "./operation-trace.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
 export async function checkIdentity(base,route,sha){
@@ -61,7 +62,7 @@ export async function verifyLive(options){
   const created=[],paidCalls=[],browserErrors=[]
   let current="configuration",browser,context,page,signedSmoke=false
   const operations=operationTracker(2000)
-  async function step(name,run,browserCheck=true){current=name;operations.begin();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){const traces=await operations.settled(),screenshot=page ? await shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:traces});throw error}}
+  async function step(name,run,browserCheck=true){current=name;operations.begin();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){const traces=await operations.settled(),screenshot=page ? await within(shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null),15000,null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:traces});throw error}}
   async function shot(name){
     const file=name+".png",viewport=page.viewportSize()
     const height=await page.evaluate(()=>document.documentElement.scrollHeight)
@@ -184,7 +185,7 @@ export async function verifyLive(options){
         return {decks:decks.length}
       },false)}catch{}
     }
-    await browser?.close();receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
+    await within(browser?.close().catch(error=>{receipt.browserCloseError=safeError(error)}) ?? Promise.resolve(),15000,undefined);receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
   }
   return receipt
 }
