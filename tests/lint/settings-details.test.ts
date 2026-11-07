@@ -19,6 +19,7 @@ const replacements:[string,string,string][]=[
  ["apps/studio/src/settings/account-panel.tsx","<NativeSelect ","<select "],
  ["apps/studio/src/settings/add-credits.tsx","<CloseIcon/>","×"],
  ["apps/studio/src/settings/add-credits.tsx","<ExternalLinkIcon/>",""],
+ ["packages/ui/src/tokens/tokens.css",".ad-external-link-icon{margin-inline-start:6px}",".ad-external-link-icon{margin-inline-start:0}"],
  ["apps/studio/src/agents/agents-panel.tsx",'<span className="settings-agent-tile agent-mark-aira"><AgentMark kind="aira"/></span>','<span className="settings-agent-tile"><BrandMark/></span>'],
  ["apps/studio/src/chat/chat-panel.tsx",'toast.success(copy("usage.reset_done"))','toast(copy("usage.reset_done"))'],
  ["packages/ui/src/toast/toaster.tsx",'className="ad-toaster"',""]

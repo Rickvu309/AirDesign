@@ -21,5 +21,6 @@ export function settingsDetailHits(file:string,source:string):{line:number;reaso
   if(/apps\/studio\/src\/(?:chat\/chat-panel|usage\/usage-panel)\.tsx$/.test(file))requireDetail(!source.includes('toast(copy("usage.reset_done"))'),"usage-reset-confirmation-needs-the-success-check")
   if(file.endsWith("packages/ui/src/toast/toaster.tsx"))requireDetail(source.includes('icons={{')&&source.includes('className="ad-toaster"'),"toasts-need-designed-icons-and-responsive-content-sizing")
   if(file.endsWith("packages/ui/src/tokens/tokens.css"))requireDetail(source.includes(".ad-toaster [data-sonner-toast][data-styled=true] [data-title]{font-weight:400;line-height:18px}"),"toast-title-must-override-sonner-weight-and-line-height-at-the-same-specificity")
+  if(file.endsWith("packages/ui/src/tokens/tokens.css"))requireDetail(source.includes(".ad-external-link-icon{margin-inline-start:6px}"),"external-payment-arrow-needs-the-designed-gap-after-its-label")
   return hits
 }
