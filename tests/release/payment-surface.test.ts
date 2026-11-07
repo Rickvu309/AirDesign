@@ -4,10 +4,14 @@ import {preview} from "vite"
 import {execFileSync} from "node:child_process"
 import path from "node:path"
 import {mcpFixture} from "../../apps/server/test/mcp/fixture.ts"
+import {withPrivateBuildFolder} from "./private-build-folder.ts"
 it("built Studio exposes allowance and balances without unfinished payments in a normal start",async()=>{
-  execFileSync("npm",["run","build","--workspace=@airdesign/studio"],{stdio:"pipe"})
-  const fixture=await mcpFixture(),browser=await chromium.launch({headless:true})
-  const studio=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port:0,proxy:{"/api":fixture.apiOrigin}}})
+  await withPrivateBuildFolder(outDir=>{execFileSync("npm",["run","build","--workspace=@airdesign/studio","--","--outDir",outDir,"--emptyOutDir"],{stdio:"pipe"})},async outDir=>{
+  const fixture=await mcpFixture()
+  try{
+  const browser=await chromium.launch({headless:true})
+  try{
+  const studio=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),build:{outDir},preview:{host:"127.0.0.1",port:0,proxy:{"/api":fixture.apiOrigin}}})
   try{
     const address=studio.httpServer.address();if(!address||typeof address==="string")throw new Error("missing-studio-port")
     const origin=`http://127.0.0.1:${address.port}`,owner=await fixture.signIn("release-payments@example.com"),context=await browser.newContext()
@@ -28,5 +32,8 @@ it("built Studio exposes allowance and balances without unfinished payments in a
     await page.goto(origin+"/settings/usage?payment=00000000-0000-0000-0000-000000000000")
     await page.getByText("Next reset:",{exact:false}).waitFor()
     expect(await page.locator("body").innerText()).not.toMatch(/Continue to payment|Waiting for your.*payment|Local (?:payment )?fixture/i)
-  }finally{await browser.close();await new Promise<void>(resolve=>studio.httpServer.close(()=>resolve()));await fixture.close()}
+  }finally{await new Promise<void>(resolve=>studio.httpServer.close(()=>resolve()))}
+  }finally{await browser.close()}
+  }finally{await fixture.close()}
+  })
 },60000)

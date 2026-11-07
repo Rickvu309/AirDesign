@@ -3,6 +3,7 @@ import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
 import {releaseClaimHits,publicAmountHits,type PublicClaim,sandboxDependencyHits,productCaptureHits} from "../packages/lint/src/release-claims.ts"
+import {sharedBuildOutputHits} from "../packages/lint/src/test-build-isolation.ts"
 import {recoverySafetyHits} from "./lint/recovery-safety.ts"
 import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
@@ -30,6 +31,7 @@ const files = await collect(repoRoot)
 const failures: string[] = ciCoverageHits(JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8")).scripts, await readFile(path.join(repoRoot, ".github/workflows/ci.yml"), "utf8"), await readFile(path.join(repoRoot, "vitest.config.ts"), "utf8"))
 failures.push(...deploymentWorkflowHits(await readFile(path.join(repoRoot, ".github/workflows/deploy.yml"), "utf8"), await readFile(path.join(repoRoot, ".railway/railway.ts"), "utf8")))
 failures.push(...railwayKnownHostsHits(await readFile(path.join(repoRoot, ".github/ssh/railway-known-hosts"), "utf8")))
+const capabilities=await readFile(path.join(repoRoot,"docs/release/capabilities.md"),"utf8")
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
@@ -38,8 +40,9 @@ for (const file of files) {
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
+  for (const hit of sharedBuildOutputHits(file,source)) failures.push(`${file}: ${hit}`)
   for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
-  if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims)]) failures.push(`${file}: ${hit}`)
+  if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims,capabilities)]) failures.push(`${file}: ${hit}`)
   if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
   for(const hit of recoverySafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of formSubmitButtonHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
