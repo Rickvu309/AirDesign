@@ -1,4 +1,4 @@
-import {parse,type DefaultTreeAdapterTypes} from "parse5"
+import {html,parse,type DefaultTreeAdapterTypes} from "parse5"
 export type ExternalGate = "X01" | "X02" | "X03" | "X04" | "X05" | "X06"
 export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"external-passed";gate:ExternalGate;receipt:string}|{kind:"blocked";gate:string})
 export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-passed"}>,capabilities:string):boolean {
@@ -21,18 +21,25 @@ function isBrowserChromeMeta(element:ParsedElement):boolean{
  const name=element.attrs.find(attribute=>attribute.name==="name")?.value.trim().toLowerCase()??""
  return element.tagName==="meta" && browserChromeNames.has(name) && element.attrs.every(attribute=>browserChromeAttributes.has(attribute.name))
 }
+const foreignCdata=/^\[CDATA\[([\s\S]*)\]\]$/
+function foreignCdataText(node:ParsedNode):string|undefined{
+ if(node.nodeName!=="#comment"||!("data" in node)||!("parentNode" in node)||!node.parentNode||!isElement(node.parentNode)||node.parentNode.namespaceURI===html.NS.HTML)return undefined
+ return foreignCdata.exec(node.data)?.[1]
+}
 function htmlCopy(source:string):string[]{
  const copy:string[]=[]
  const pending:ParsedNode[]=[parse(source,{scriptingEnabled:false})]
  for(let node=pending.pop();node;node=pending.pop()){
   if(node.nodeName==="#text"&&"value" in node)copy.push(node.value)
+  const cdata=foreignCdataText(node)
+  if(cdata!==undefined)copy.push(cdata)
   if(isElement(node)){
+   if(!isBrowserChromeMeta(node))for(const attribute of node.attrs)if(copyAttributes.has(attribute.name))copy.push(attribute.value)
    if(inertElements.has(node.tagName))continue
-   if(!isBrowserChromeMeta(node))copy.push(...node.attrs.filter(attribute=>copyAttributes.has(attribute.name)).map(attribute=>attribute.value))
    const frame=node.tagName==="iframe"?node.attrs.find(attribute=>attribute.name==="srcdoc"):undefined
    if(frame)pending.push(parse(frame.value,{scriptingEnabled:false}))
   }
-  if("childNodes" in node)pending.push(...[...node.childNodes].reverse())
+  if("childNodes" in node)for(let index=node.childNodes.length-1;index>=0;index--)pending.push(node.childNodes[index]!)
  }
  return copy
 }

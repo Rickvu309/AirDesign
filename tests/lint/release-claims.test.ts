@@ -1,7 +1,7 @@
 import {it,expect,vi} from "vitest"
 import http from "node:http"
 import https from "node:https"
-import {releaseClaimHits,publicAmountHits,retiredRouteHits,sandboxDependencyHits,productCaptureHits} from "../../packages/lint/src/release-claims.ts"
+import {publicCopy,releaseClaimHits,publicAmountHits,retiredRouteHits,sandboxDependencyHits,productCaptureHits} from "../../packages/lint/src/release-claims.ts"
 it("rejects unsupported public claims and retired routes",()=>{
  for(const original of ["lossless export","works in PowerPoint","supported Claude",'<a href="/share/deck">'])expect(releaseClaimHits(original).length).toBeGreaterThan(0)
  expect(releaseClaimHits("PPTX export.",[{id:"export",text:"PPTX export.",kind:"proven",receipt:"P03/report.md"}])).toEqual([])
@@ -21,8 +21,12 @@ it("treats browser chrome metadata as configuration, not public copy",()=>{
 })
 
 it("reads copy a browser renders inside srcdoc frames and SVG CDATA, but not comments",()=>{
- for(const [markup,copy] of [['<iframe srcdoc="<p>Unlimited decks</p>"></iframe>',"Unlimited decks"],[`<iframe srcdoc="<button aria-label='Unlimited decks'></button>"></iframe>`,"Unlimited decks"],[`<iframe srcdoc="<iframe srcdoc='&lt;p&gt;Unlimited decks&lt;/p&gt;'></iframe>"></iframe>`,"Unlimited decks"],["<svg><text><![CDATA[Unlimited decks]]></text></svg>","Unlimited decks"]] as const)expect(releaseClaimHits(markup),markup).toEqual([`unregistered-public-copy:${copy}`])
+ for(const [markup,copy] of [['<iframe srcdoc="<p>Unlimited decks</p>"></iframe>',"Unlimited decks"],[`<iframe srcdoc="<button aria-label='Unlimited decks'></button>"></iframe>`,"Unlimited decks"],[`<iframe srcdoc="<iframe srcdoc='&lt;p&gt;Unlimited decks&lt;/p&gt;'></iframe>"></iframe>`,"Unlimited decks"],["<svg><text><![CDATA[Unlimited decks]]></text></svg>","Unlimited decks"],["<math><mtext><![CDATA[Unlimited decks]]></mtext></math>","Unlimited decks"],['<script aria-label="Unlimited decks">const hidden="No limits"</script>',"Unlimited decks"],['<style content="Unlimited decks">p{color:red}</style>',"Unlimited decks"],['<template aria-label="Unlimited decks"><p>No limits</p></template>',"Unlimited decks"]] as const)expect(releaseClaimHits(markup),markup).toEqual([`unregistered-public-copy:${copy}`])
  for(const markup of ["<!--Unlimited decks--><p>Shown</p>","<![CDATA[Unlimited decks]]><p>Shown</p>"])expect(releaseClaimHits(markup),markup).toEqual(["unregistered-public-copy:Shown"])
+})
+
+it("reads very wide documents without exhausting the call stack",()=>{
+ expect(publicCopy("<i>Copy</i ignored>".repeat(150000))).toHaveLength(150000)
 })
 
 it("reads public copy without requesting any linked resource",()=>{
