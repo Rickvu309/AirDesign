@@ -10,6 +10,7 @@ import { operationsHandler } from "../../server/src/operations/handle.ts"
 import { randomBytes } from "node:crypto"
 import { readArchive, writeArchive } from "../../../packages/pptx/src/archive.ts"
 import { deliver } from "../src/isolation.ts"
+import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import { requireLocalUpload, rejectActiveSvg, inspectFont, fileLimits } from "../../../packages/files/src/index.ts"
 
 describe.each(["systemd","container"])("%s isolation",mode => {
@@ -135,6 +136,7 @@ it("denies loopback, metadata, private and public egress and enforces CPU limits
   expect(await deliver(store, job.id, root, path.resolve("apps/worker/test/fixtures/probe.ts"))).toBe(true)
   const status = store.status(owner, job.id)
   if (status.kind !== "ready") throw new Error("probe-not-ready")
+  expect(status.report.workerSha).toBe((await readBuildIdentity()).sha)
   expect(status.report.limits).toMatch(/Max cpu time\s+25\s+25/)
   expect(status.report.network).toHaveLength(4)
   expect(JSON.stringify(status.report.network)).not.toContain('"result":"connected"')

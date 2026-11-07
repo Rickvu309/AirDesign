@@ -16,7 +16,7 @@ export const execute=promisify(execFile)
 export const evidence=process.env.P08_EVIDENCE ?? path.join(os.homedir(),"tmp/airdesign-autopilot/P08")
 export const head=(await execute("git",["rev-parse","HEAD"])).stdout.trim()
 export async function save(file,value){await mkdir(path.dirname(path.join(evidence,file)),{recursive:true});await writeFile(path.join(evidence,file),typeof value==="string" ? value : JSON.stringify(value,null,2)+"\n")}
-export async function scenario({browserEnabled=false}={}){
+export async function scenario({browserEnabled=false,exposeInbox=true,realtime=false}={}){
   let gate=null
   const commits=[]
   const adapter=async function*(context,call,signal){
@@ -27,9 +27,9 @@ export async function scenario({browserEnabled=false}={}){
     }
   }
   const portProbe=createServer();await new Promise(resolve=>portProbe.listen(0,"127.0.0.1",resolve));const port=portProbe.address().port;await new Promise(resolve=>portProbe.close(resolve))
-  const browserOrigin=`http://127.0.0.1:${port}`,fixture=await mcpFixture({...browserEnabled ? {publicOrigin:browserOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")}),origin=fixture.origin,trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
+  const browserOrigin=`http://127.0.0.1:${port}`,fixture=await mcpFixture({exposeInbox,realtime,...browserEnabled ? {publicOrigin:browserOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")}),origin=fixture.origin,trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
   let vite
-  if(browserEnabled){process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin;vite=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port,strictPort:true,proxy:{"/api":fixture.apiOrigin,"/ws":{target:fixture.apiOrigin,ws:true},"/mcp":{target:fixture.apiOrigin,changeOrigin:false},"/oauth":fixture.apiOrigin}}})}
+  if(browserEnabled){process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin;vite=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port,strictPort:true,headers:{"x-content-type-options":"nosniff","referrer-policy":"no-referrer","cache-control":"public, max-age=31536000, immutable"},proxy:{"/version":fixture.apiOrigin,"/healthz":fixture.apiOrigin,"/.well-known":fixture.apiOrigin,"/api":fixture.apiOrigin,"/ws":{target:fixture.apiOrigin,ws:true},"/mcp":{target:fixture.apiOrigin,changeOrigin:false},"/oauth":fixture.apiOrigin}}})}
   const provider=localPaymentProvider("dev-only-local-payment-fixture")
   async function request(owner,url,body,expected=200){const response=await fixture.json(url,body,owner?.cookie ?? ""),value=await response.json();trace.push({url,method:body===undefined ? "GET" : "POST",body,status:response.status,value});assert.equal(response.status,expected,JSON.stringify(value));return value}
   async function webhook(event,forged=false){const signed=provider.sign(event),response=await fetch(fixture.apiOrigin+"/api/billing/webhook",{method:"POST",headers:{"x-payment-signature":forged ? "0".repeat(64) : signed.signature},body:signed.body}),value=await response.json();trace.push({url:"/api/billing/webhook",body:event,status:response.status,value});assert.equal(response.status,forged ? 400 : 200);return value}

@@ -126,3 +126,12 @@ it("rejects API responses that Chrome could cache after a deck is restored",()=>
  assert.equal(responseHeaderHits(original)[0]?.reason,"api-responses-require-no-store-for-deck-restore")
  assert.deepEqual(responseHeaderHits('headers["cache-control"] = "no-store"\n'+original),[])
 })
+
+it("rejects runtime imports of scripts and operator minting outside its CLI",()=>{
+  for(const file of ["/repo/apps/server/src/main.ts","/repo/packages/operations/src/index.ts"]){
+    assert.equal(importBoundaryHits(file,'import {readBuildIdentity} from "../../../scripts/live/build-identity.ts"',"/repo")[0]?.reason,"runtime-imports-scripts")
+    assert.equal(importBoundaryHits(file,'import {createOperatorSmoke} from "../../../packages/access/src/operator-smoke.ts"',"/repo")[0]?.reason,"operator-smoke-outside-cli")
+    assert.deepEqual(importBoundaryHits(file,'import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"',"/repo"),[])
+  }
+  assert.deepEqual(importBoundaryHits("/repo/apps/server/src/smoke/mint-link.ts",'import {createOperatorSmoke} from "../../../../packages/access/src/operator-smoke.ts"',"/repo"),[])
+})
