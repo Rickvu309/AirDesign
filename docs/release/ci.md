@@ -14,7 +14,7 @@ Individual steps use `npm run gate:install`, `npm run gate:build`, `npm run gate
 
 `setup → {static lint, static typecheck, unit 1/2, unit 2/2, verification groups} → gate`
 
-Setup restores the npm download cache, installs once, and builds the site, Studio, worker renderer, MCP renderer, deck package and UI package. The exact build is cached by commit and lockfile. One tar artifact preserves executable permissions and workspace symlinks in dependencies for all downstream jobs. It expires after two days. Chromium has its own lockfile-keyed cache. Each browser job installs only system libraries. There are no independent workspace installs or repeated application builds in verification scripts. The package-consumer test deliberately builds and installs a clean package to verify its published contract.
+Setup restores the npm download cache, installs once, and builds the site, Studio, worker renderer, MCP renderer, deck package and UI package. The exact build is cached by commit and lockfile. One tar artifact preserves executable permissions, workspace symlinks and dependencies nested inside workspaces for all downstream jobs. It expires after two days. Test jobs fetch full Git history because existing regression tests compare fixed code with historical mistakes. Chromium has its own lockfile-keyed cache. Each browser job installs only system libraries. There are no independent workspace installs or repeated application builds in verification scripts. The package-consumer test deliberately builds and installs a clean package to verify its published contract.
 
 | Verification group | PR scripts | Mean baseline seconds | Runtime inputs |
 | --- | --- | ---: | --- |

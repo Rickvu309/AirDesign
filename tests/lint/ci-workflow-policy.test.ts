@@ -27,6 +27,19 @@ it("rejects verifiers that rebuild the shared artifact", () => {
   expect(hits({ ...scripts, "verify:mcp": "npm run build:mcp-renderer && vitest run" }, workflow)).toContain("ci-verifier-rebuilds: verify:mcp")
 })
 
+it("rejects the runner mirror that stalled the real LibreOffice check", () => {
+  expect(hits(scripts, workflow.replace("https://archive.ubuntu.com/ubuntu/", "http://azure.archive.ubuntu.com/ubuntu/"))).toContain("ci-office-downloads-need-direct-mirror-and-bounded-network-waits")
+  expect(hits(scripts, workflow.replace("Acquire::https::Timeout=30", ""))).toContain("ci-office-downloads-need-direct-mirror-and-bounded-network-waits")
+})
+
+it("keeps nested workspace dependencies and regression history in every test job", () => {
+  for (const workspace of ["apps", "packages"]) {
+    expect(hits(scripts, workflow.replace(`${workspace}/*/node_modules`, ""))).toContain(`ci-artifact-missing-workspace-dependencies: ${workspace}`)
+  }
+  const shallow = workflow.replaceAll("fetch-depth: 0", "fetch-depth: 1")
+  for (const name of ["unit", "verification"]) expect(hits(scripts, shallow)).toContain(`ci-regression-history-unavailable: ${name}`)
+})
+
 it("skips only informational CI documentation and never skips empty or executable changes", () => {
   expect(requiresFullGate(["docs/release/ci.md"])).toBe(false)
   for (const files of [[], ["docs/design/v0.1/tokens.md"], ["docs/release/ci.md", "package.json"], ["apps/studio/src/main.tsx"], [".github/workflows/ci.yml"]]) {

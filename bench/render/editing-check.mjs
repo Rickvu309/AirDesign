@@ -87,8 +87,8 @@ try {
     }, action)
     await page.keyboard.type("!")
     const changed = await parity(`caret-${action}`, "Alpha Pasted!")
-    assert.equal(changed.slides[0].elements[0].runs.at(-1).color, "#0000ff")
-    assert.equal(changed.slides[0].elements[0].runs.at(-1).bold, false)
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).color, "#0000ff", `caret-${action} preserves the selected color`)
+    assert.equal(changed.slides[0].elements[0].runs.at(-1).bold, false, `caret-${action} preserves the selected weight`)
   }
   const styled = fixtureDeck(1)
   const run = styled.slides[0].elements[0].runs[0]
