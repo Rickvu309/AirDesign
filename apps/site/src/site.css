@@ -52,8 +52,8 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
 :root {
   --site-brand: var(--ring);
   --site-orb-top: #93b8ef;
-  --site-button-top: #5f769a;
-  --site-button-bottom: #3d75c6;
+  --site-button-top: #3370e6;
+  --site-button-bottom: #1e5ee6;
   --site-subtle: #666666;
   --site-navy: #102633;
   --site-claude: #d97757;
