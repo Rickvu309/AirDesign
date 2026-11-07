@@ -79,3 +79,16 @@ it("rejects the original Trash confirmation role",()=>{
  expect(deploymentRuntimeHits(file,'page.getByRole("alertdialog")')).not.toEqual([])
  expect(deploymentRuntimeHits(file,'page.getByRole("dialog",{name:"Move deck to Trash?",exact:true})')).toEqual([])
 })
+
+it("rejects dropping an export signal and the two-second Chromium lease",()=>{
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'journal.save(job);journal.started(lease,process);child.once("exit",resolve)')).toContain("export-exit-signal: preserve the child's signal and the enforced limit")
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'journal.save(job);journal.started(lease,process);child.once("exit",(code,signal)=>resolve({code,signal}))')).toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/decks/export-store.ts",'row.options.format==="pdf" ? 2000 : 30000')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/decks/export-store.ts",'row.options.format==="pdf" ? exportLimits.wallMs : 30000')).toEqual([])
+})
+
+it("rejects a zero PID fallback in export descendant cleanup",()=>{
+ const file="apps/worker/src/export/deliver.ts",journal="journal.save(job);journal.started(lease,process);"
+ expect(deploymentRuntimeHits(file,journal+"killExportDescendants(child.pid ?? 0)")).toContain("export-process-root: require a spawned child PID before scanning descendants")
+ expect(deploymentRuntimeHits(file,journal+"const pid=child.pid;if(pid)killExportDescendants(pid)")).toEqual([])
+})
