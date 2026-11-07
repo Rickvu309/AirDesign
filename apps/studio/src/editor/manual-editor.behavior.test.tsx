@@ -118,3 +118,23 @@ it("keeps a surviving slide visible after insertion undo, redo and deletion",asy
     await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides).toHaveLength(3)
   }finally{await ui.close()}
 })
+
+it("moves and resizes selected objects through history and exposes Aira attachment scope",async()=>{
+  const ui=await editor();try{
+    await ui.click("Shapes");await ui.click("Rectangle")
+    const element=ui.sync.deck.slides[0]!.elements.at(-1)!,original={...element.box}
+    expect(ui.button("Resize selected object")).toBeDefined()
+    await act(async()=>ui.container.querySelector(".studio-editor")!.dispatchEvent(new KeyboardEvent("keydown",{key:"ArrowRight",bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements.at(-1)!.box.x).toBe(original.x+1)
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements.at(-1)!.box).toEqual(original)
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:true,bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements.at(-1)!.box.x).toBe(original.x+1)
+    await act(async()=>ui.button("Resize selected object").dispatchEvent(new MouseEvent("pointerdown",{clientX:0,clientY:0,button:0,bubbles:true})))
+    await act(async()=>window.dispatchEvent(new MouseEvent("pointerup",{clientX:40,clientY:30,button:0,bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements.at(-1)!.box).toMatchObject({width:original.width+40,height:original.height+30})
+    expect(ui.commands.at(-1)).toMatchObject({kind:"patch",target:element.id})
+    await ui.click("Agent");expect(ui.container.querySelector(".aira-attachments")?.textContent).toContain("Rectangle")
+  }finally{await ui.close()}
+})
+

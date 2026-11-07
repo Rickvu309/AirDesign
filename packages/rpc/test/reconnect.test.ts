@@ -259,3 +259,21 @@ it("does not share an outbox read with a command whose lock arrives after the re
   expect(sent.map(command=>command.id)).toEqual(["available"])
  }finally{releaseRead();releaseLock();client.disconnected();vi.unstubAllGlobals()}
 })
+
+it("retains object geometry through offline history, reload and synchronization",async()=>{
+  const {outbox}=memory(),snapshot={deck:fixtureDeck(2),seq:0},client=new SyncClient("person",snapshot,outbox,()=>{})
+  const element=snapshot.deck.slides[0]!.elements[0]!,box={...element.box,x:element.box.x+10,width:element.box.width+40}
+  const move:Command={id:commandId("geometry"),kind:"patch",base:0,run:null,target:element.id,fields:{box}}
+  await client.enqueue(move)
+  expect(client.deck.slides[0]!.elements[0]!.box).toEqual(box)
+  await client.enqueue({id:commandId("geometry_undo"),kind:"undo",target:move.id})
+  expect(client.deck.slides[0]!.elements[0]!.box).toEqual(element.box)
+  await client.enqueue({id:commandId("geometry_redo"),kind:"redo",target:move.id})
+  const reload=new SyncClient("person",snapshot,outbox,()=>{});await reload.load()
+  expect(reload.deck.slides[0]!.elements[0]!.box).toEqual(box)
+  let server=initialHistory(snapshot.deck)
+  const sent:Command[]=[];reload.connected(command=>sent.push(command))
+  for(const command of sent){const result=execute(server,command);server=result.history;await reload.acknowledge(result.receipt)}
+  reload.receive({deck:server.deck,seq:server.seq,contributions:{history:server,applied:sent.map(command=>command.id)}})
+  expect(reload.queue).toEqual([]);expect(reload.deck.slides[0]!.elements[0]!.box).toEqual(box)
+})

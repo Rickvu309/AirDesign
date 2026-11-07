@@ -8,7 +8,7 @@ import { TemplatePanel } from "../templates/template-panel.tsx"
 import { useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
 import { AlertDialog,BrandMark,Icon,Button,toast } from "@airdesign/ui"
 import { commandId,type Command } from "../../../../packages/change-log/src/index.ts"
-import { flatten,type Element as DeckElement,type Id,type Run } from "../../../../packages/deck/src/index.ts"
+import { flatten,type Element as DeckElement,type Id,type Box,type Run } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
 import { deckAction } from "../decks/catalog-client.ts"
 import { clipboardSource,fitToolElement,newSlide,orderedSlides,reviewPaste,selectSlides,type SlideLayout,type PasteReview } from "./editor-model.ts"
@@ -28,6 +28,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const [designOpen,setDesignOpen]=useState(false),[imagesOpen,setImagesOpen]=useState(false)
   const {sync,entry,setEntry,error,setError,reconnect}=useDeck(deckId)
   const [requestedSelection,setSelection]=useState<Id[]>([]),anchor=useRef<Id|null>(null)
+  const [objectSelection,setObjectSelection]=useState<{slide:Id;element:Id}|null>(null)
   const [phone,setPhone]=useState(()=>window.matchMedia("(max-width: 767px)").matches)
   const [request,setRequest]=useState(()=>sessionStorage.getItem("first-pending-request") ?? ""),[requestStatus,setRequestStatus]=useState("")
   const [paste,setPaste]=useState<PasteReview|null>(null),[pasteSource,setPasteSource]=useState(""),[showPaste,setShowPaste]=useState(false)
@@ -37,6 +38,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const deck=sync?.deck,state=sync?.state
   const survivingSelection=requestedSelection.filter(id=>deck?.slides.some(slide=>slide.id===id))
   const selection=survivingSelection.length ? survivingSelection : deck?.slides[0] ? [deck.slides[0].id] : []
+  const selectedSlide=deck?.slides.find(slide=>slide.id===selection[0])
+  const selectedObject=objectSelection?.slide===selectedSlide?.id ? flatten(selectedSlide?.elements ?? []).find(element=>element.id===objectSelection?.element) : undefined
   const readonly=phone || state?.kind==="deleted" || state?.kind==="signed-out"
   useEffect(()=>{if(entry?.pendingRequest)setRequest(entry.pendingRequest)},[entry?.pendingRequest])
   useEffect(()=>{const media=window.matchMedia("(max-width: 767px)"),change=()=>setPhone(media.matches);media.addEventListener("change",change);return ()=>media.removeEventListener("change",change)},[])
@@ -45,7 +48,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
   useEffect(()=>()=>clearTimeout(hold.current),[])
   const history=useCallback((direction:"undo"|"redo")=>{const target=sync?.historyTarget(direction);if(target)send({id:commandId(crypto.randomUUID()),kind:direction,target})},[sync,send])
   useEffect(()=>{const key=(event:KeyboardEvent)=>{if(event.defaultPrevented)return;const field=event.target instanceof HTMLElement && event.target.closest('input,textarea,select,[contenteditable="true"]');if(!field&&(event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="z"){event.preventDefault();history(event.shiftKey ? "redo" : "undo")}};document.addEventListener("keydown",key);return ()=>document.removeEventListener("keydown",key)},[history])
-  function insertElement(element:DeckElement) {const slide=deck?.slides.find(slide=>slide.id===selection[0]) ?? deck?.slides[0];if(!slide)return;edit({changes:[{kind:"insert",parent:slide.id,index:slide.elements.length,value:fitToolElement(element,slide.size)}]});setSelection([slide.id]);setView("single")}
+  function insertElement(element:DeckElement) {const slide=deck?.slides.find(slide=>slide.id===selection[0]) ?? deck?.slides[0];if(!slide)return;edit({changes:[{kind:"insert",parent:slide.id,index:slide.elements.length,value:fitToolElement(element,slide.size)}]});setSelection([slide.id]);setObjectSelection({slide:slide.id,element:element.id});setView("single")}
+  function geometry(target:Id,box:Box) {if(sync)send({id:commandId(crypto.randomUUID()),kind:"patch",target,fields:{box},base:sync.seq,run:null})}
   function removeSlides() {edit({changes:selection.map(target=>({kind:"remove",target}))});editorRef.current?.focus()}
   function pasteSlides(source:string) {const review=reviewPaste(source);if(!deck)return;if(!review.accepted.length || review.refused.length){setPasteSource(source);setPaste(review);return}const target=commandId(crypto.randomUUID());send({id:target,kind:"edit",base:sync?.seq ?? 0,run:null,changes:{changes:review.accepted.map((slide,index)=>({kind:"insert",parent:deck.id,index:deck.slides.length+index,value:slide}))}});setSelection(review.accepted.map(slide=>slide.id));toast.success(`${review.accepted.length} ${review.accepted.length===1 ? "slide" : "slides"} pasted`,{action:{label:"Undo",onClick:()=>send({id:commandId(crypto.randomUUID()),kind:"undo",target})}})}
   async function readClipboard() {try{pasteSlides(await navigator.clipboard.readText())}catch{setShowPaste(true)}}
@@ -74,10 +78,12 @@ export function ManualEditor({deckId}:{deckId:string}) {
     if(event.defaultPrevented)return
     const field=event.target instanceof HTMLElement && !!event.target.closest('input,textarea,[contenteditable="true"]')
     if(!field && (event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="z"){event.preventDefault();history(event.shiftKey ? "redo" : "undo")}
+    else if(!field && selectedObject && ["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key) && !event.altKey){event.preventDefault();const distance=event.shiftKey ? 10 : 1;geometry(selectedObject.id,{...selectedObject.box,x:selectedObject.box.x+(event.key==="ArrowLeft" ? -distance : event.key==="ArrowRight" ? distance : 0),y:selectedObject.box.y+(event.key==="ArrowUp" ? -distance : event.key==="ArrowDown" ? distance : 0)})}
+    else if(!field && selectedObject && (event.key==="Delete"||event.key==="Backspace")){event.preventDefault();edit({changes:[{kind:"remove",target:selectedObject.id}]});setObjectSelection(null)}
     else if(!field && (event.key==="Delete"||event.key==="Backspace")){event.preventDefault();removeSlides()}
     else if(!field && event.altKey && (event.key==="ArrowLeft"||event.key==="ArrowRight")){event.preventDefault();reorder(event.key==="ArrowLeft" ? -1 : 1)}
     else if(!field && (event.metaKey||event.ctrlKey)&&event.key.toLowerCase()==="c"){event.preventDefault();void copySlides()}
-    else if(event.key==="Escape"){setMenu(false);setContextMenu(false);setTool("none")}
+    else if(event.key==="Escape"){setMenu(false);setContextMenu(false);setTool("none");setObjectSelection(null)}
   }}>
     <header className="editor-bar">
       <a className="editor-logo" href="/" aria-label="Home"><BrandMark/></a>
@@ -104,7 +110,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
     <div className="editor-slides" aria-label={section.name} style={{maxInlineSize:view==="single" ? `${800*zoom/100}px` : undefined,gridTemplateColumns:view==="grid" ? `repeat(auto-fill,minmax(min(100%,${300*zoom/100}px),${300*zoom/100}px))` : undefined}} onContextMenu={event=>{event.preventDefault();setContextMenu(true)}}>
       {section.slides.map(({slide,number})=><article key={slide.id} className="editor-slide" hidden={view==="single" && slide.id!==(selection[0] ?? deck?.slides[0]?.id)} data-selected={selection.includes(slide.id)} onContextMenu={()=>{if(!selection.includes(slide.id))setSelection([slide.id])}}>
         <button className="slide-select" type="button" aria-pressed={selection.includes(slide.id)} onDoubleClick={()=>{setSelection([slide.id]);setView("single")}} onClick={event=>select(slide.id,event)} aria-label={`Slide ${number}`}>{number}</button>
-        <SlidePreview slide={slide} themes={deck?.themes ?? []} {...(readonly || view==="grid" ? {} : {commitText:text,historyText:history})}/>
+        <SlidePreview slide={slide} themes={deck?.themes ?? []} {...(readonly || view==="grid" ? {} : {commitText:text,historyText:history,editing:{selected:selectedObject?.id ?? null,select:element=>setObjectSelection({slide:slide.id,element}),geometry}})}/>
         {flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=><p key={element.id} className="slide-disclosure">{element.support.kind==="kept" ? "Kept original · preview unavailable" : element.support.kind==="flagged" ? `Flagged: ${element.support.reason}` : ""}</p>)}
       </article>)}
     </div></section>)}
