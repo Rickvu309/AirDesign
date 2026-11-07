@@ -1,3 +1,4 @@
+import {seedStockImages} from "../editor/stock-fixture.mjs"
 import {clipboardSource} from "../../apps/studio/src/editor/editor-model.ts"
 import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
@@ -33,6 +34,7 @@ export async function seed(stack,entry){
     }
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
   }
+  if(entry.code==="S43.03")await seedStockImages(stack,owner)
   if(entry.seed.startsWith("deck-limited")){
     const usage=stack.fixture.history.usage
     await usage.reserve(owner.personId,{id:"fill"+entry.code,actor:"user-agent",request:"Prepare the next deck",units:10000})
