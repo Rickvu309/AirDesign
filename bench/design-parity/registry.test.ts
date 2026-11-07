@@ -1,6 +1,6 @@
 import {describe,it,expect} from "vitest"
 import {readdir} from "node:fs/promises"
-import {parseRegistry,readRegistry,readBudgetBaseline,validateRegistry,ratchet,selectScenarios} from "./registry.ts"
+import {parseRegistry,readRegistry,readBudgetBaseline,validateRegistry,ratchet,selectScenarios,passesParity} from "./registry.ts"
 import {investorDeck} from "./investor-deck.ts"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
 import {localFixture} from "./fixture-environment.ts"
@@ -56,4 +56,13 @@ describe("design parity contract",()=>{
     expect(selectScenarios(entries,"S11.01,S21.01").map(entry=>entry.code)).toEqual(["S11.01","S21.01"])
     expect(()=>selectScenarios(entries,"S00.00")).toThrow("unknown-screen")
   })
+})
+it("enforces release targets separately from regression ceilings and refuses missing coverage",async()=>{
+  const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing=entries.find(entry=>entry.status==="unreachable")!
+  const scenario={...entry,budget:0.9,target:0.08}
+  expect(passesParity(scenario,0.8,false)).toBe(true)
+  expect(passesParity(scenario,0.8,true)).toBe(false)
+  expect(passesParity(scenario,0.02,true)).toBe(true)
+  expect(passesParity(scenario,0.95,false)).toBe(false)
+  expect(passesParity(missing,undefined,true)).toBe(false)
 })

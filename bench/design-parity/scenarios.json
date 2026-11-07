@@ -9,9 +9,11 @@
       "height": 923
     },
     "seed": "signed-out",
-    "budget": 0.057688,
+    "budget": 0.820803,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.02
   },
   {
     "surface": "site",
@@ -23,9 +25,11 @@
       "height": 923
     },
     "seed": "signed-out",
-    "budget": 0.046018,
+    "budget": 0.941484,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.02
   },
   {
     "surface": "studio",
@@ -37,9 +41,11 @@
       "height": 923
     },
     "seed": "signed-out",
-    "budget": 0.027779,
+    "budget": 0.988679,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -51,7 +57,7 @@
       "height": 923
     },
     "seed": "signed-out",
-    "budget": 0.009769,
+    "budget": 0.947175,
     "status": "reachable",
     "steps": [
       {
@@ -63,7 +69,9 @@
         "kind": "click",
         "name": "Continue"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -75,9 +83,11 @@
       "height": 923
     },
     "seed": "signed-out",
-    "budget": 0.018286,
+    "budget": 0.995243,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -89,9 +99,11 @@
       "height": 923
     },
     "seed": "empty-account",
-    "budget": 0.02448,
+    "budget": 0.92409,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -103,9 +115,11 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.037443,
+    "budget": 0.953574,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -117,14 +131,16 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.041261,
+    "budget": 0.942527,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "List view"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -136,14 +152,16 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.038151,
+    "budget": 0.963219,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "All decks"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -155,7 +173,7 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.041774,
+    "budget": 0.943879,
     "status": "reachable",
     "steps": [
       {
@@ -166,7 +184,9 @@
         "kind": "click",
         "name": "List view"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -178,14 +198,16 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.038194,
+    "budget": 0.955839,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "+ New deck"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -197,14 +219,16 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.04017,
+    "budget": 0.951999,
     "status": "reachable",
     "steps": [
       {
         "kind": "import",
         "outcome": "queued"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -216,14 +240,16 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.041705,
+    "budget": 0.947122,
     "status": "reachable",
     "steps": [
       {
         "kind": "import",
         "outcome": "failed"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -235,7 +261,7 @@
       "height": 923
     },
     "seed": "recents",
-    "budget": 0.040069,
+    "budget": 0.945151,
     "status": "reachable",
     "steps": [
       {
@@ -250,7 +276,9 @@
         "kind": "wait-text",
         "text": "Deck moved to Trash"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -262,9 +290,11 @@
       "height": 923
     },
     "seed": "trash-with-items",
-    "budget": 0.02683,
+    "budget": 0.921601,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -276,14 +306,16 @@
       "height": 923
     },
     "seed": "trash-with-items",
-    "budget": 0.036659,
+    "budget": 0.72754,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "Empty Trash"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -295,14 +327,16 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.249592,
+    "budget": 0.835587,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "Slide 3"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -314,7 +348,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.249835,
+    "budget": 0.836293,
     "status": "reachable",
     "steps": [
       {
@@ -325,7 +359,9 @@
         "kind": "hover",
         "name": "+ New slide"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -339,7 +375,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor."
+    "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -353,7 +391,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist."
+    "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -365,7 +405,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.169428,
+    "budget": 0.840205,
     "status": "reachable",
     "steps": [
       {
@@ -380,7 +420,9 @@
         "kind": "agent",
         "outcome": "working"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -392,7 +434,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.176672,
+    "budget": 0.895059,
     "status": "reachable",
     "steps": [
       {
@@ -407,7 +449,9 @@
         "kind": "agent",
         "outcome": "complete"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -419,7 +463,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.181617,
+    "budget": 0.848187,
     "status": "reachable",
     "steps": [
       {
@@ -438,7 +482,9 @@
         "kind": "agent",
         "outcome": "remote"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -450,7 +496,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.173721,
+    "budget": 0.896126,
     "status": "reachable",
     "steps": [
       {
@@ -469,7 +515,9 @@
         "kind": "agent",
         "outcome": "long-message"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -481,7 +529,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.174572,
+    "budget": 0.917199,
     "status": "reachable",
     "steps": [
       {
@@ -500,7 +548,9 @@
         "kind": "click",
         "name": "Choose template"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -512,7 +562,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.175701,
+    "budget": 0.915668,
     "status": "reachable",
     "steps": [
       {
@@ -527,7 +577,9 @@
         "kind": "click",
         "name": "Design"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -539,8 +591,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.219073,
-    "budgetRaisedBecause": "Initial baseline readiness correction: await the real image quota response (512 MB) instead of capturing the transient zero quota; no product or design changed.",
+    "budget": 0.911293,
     "status": "reachable",
     "steps": [
       {
@@ -559,7 +610,9 @@
         "kind": "wait-text",
         "text": "0.0 MB of 512 MB used"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -573,7 +626,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "No Shapes tool or shapes browser exists in ManualEditor."
+    "reason": "No Shapes tool or shapes browser exists in ManualEditor.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -587,7 +642,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "No expanded shapes browser exists in ManualEditor."
+    "reason": "No expanded shapes browser exists in ManualEditor.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -601,7 +658,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "No Text toolbar panel exists in ManualEditor."
+    "reason": "No Text toolbar panel exists in ManualEditor.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -615,7 +674,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented."
+    "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -627,7 +688,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.168685,
+    "budget": 0.901258,
     "status": "reachable",
     "steps": [
       {
@@ -642,7 +703,9 @@
         "kind": "agent",
         "outcome": "failed"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -654,7 +717,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.184157,
+    "budget": 0.915915,
     "status": "reachable",
     "steps": [
       {
@@ -672,7 +735,9 @@
       {
         "kind": "offline"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -684,7 +749,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.28248,
+    "budget": 0.844544,
     "status": "reachable",
     "steps": [
       {
@@ -703,7 +768,9 @@
         "kind": "keyboard-activate",
         "name": "Export"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -715,7 +782,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.267059,
+    "budget": 0.804968,
     "status": "reachable",
     "steps": [
       {
@@ -739,7 +806,9 @@
         "label": "File format",
         "value": "pdf"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -753,7 +822,9 @@
     "seed": "deck-open",
     "budget": 0,
     "status": "unreachable",
-    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog."
+    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -765,7 +836,7 @@
       "height": 923
     },
     "seed": "deck-open",
-    "budget": 0.73667,
+    "budget": 0.891342,
     "status": "reachable",
     "steps": [
       {
@@ -787,7 +858,9 @@
       {
         "kind": "export-failed"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -799,9 +872,11 @@
       "height": 923
     },
     "seed": "oauth-Claude",
-    "budget": 0.018489,
+    "budget": 0.927027,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -813,7 +888,7 @@
       "height": 923
     },
     "seed": "oauth-Claude",
-    "budget": 0.013779,
+    "budget": 0.978112,
     "status": "reachable",
     "steps": [
       {
@@ -824,7 +899,9 @@
         "kind": "wait-text",
         "text": "Ready to return to your agent"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -836,9 +913,11 @@
       "height": 923
     },
     "seed": "oauth-Codex",
-    "budget": 0.01848,
+    "budget": 0.922744,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -850,9 +929,11 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.030602,
+    "budget": 0.952621,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -864,9 +945,11 @@
       "height": 923
     },
     "seed": "usage-active-connected",
-    "budget": 0.019952,
+    "budget": 0.933657,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -878,9 +961,11 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.023733,
+    "budget": 0.928401,
     "status": "reachable",
-    "steps": []
+    "steps": [],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -892,14 +977,16 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.060923,
+    "budget": 0.784706,
     "status": "reachable",
     "steps": [
       {
         "kind": "click",
         "name": "Add credits"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -911,7 +998,7 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.033209,
+    "budget": 0.949845,
     "status": "reachable",
     "steps": [
       {
@@ -924,13 +1011,15 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
+        "text": "Waiting for your $25.00 payment\u2026"
       },
       {
         "kind": "selector-click",
         "selector": "button[aria-label=\"Close add credits\"]"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -942,7 +1031,7 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.043671,
+    "budget": 0.896045,
     "status": "reachable",
     "steps": [
       {
@@ -956,7 +1045,9 @@
       {
         "kind": "pay"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -968,7 +1059,7 @@
       "height": 923
     },
     "seed": "deck-limited",
-    "budget": 0.156518,
+    "budget": 0.896566,
     "status": "reachable",
     "steps": [
       {
@@ -983,7 +1074,9 @@
         "kind": "agent",
         "outcome": "limited"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -995,7 +1088,7 @@
       "height": 923
     },
     "seed": "deck-limited-with-credits",
-    "budget": 0.126023,
+    "budget": 0.821695,
     "status": "reachable",
     "steps": [
       {
@@ -1014,7 +1107,9 @@
         "kind": "click",
         "name": "Reset usage"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -1028,7 +1123,9 @@
     "seed": "deck-limited",
     "budget": 0,
     "status": "unreachable",
-    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed."
+    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -1040,7 +1137,7 @@
       "height": 923
     },
     "seed": "deck-limited-with-credits",
-    "budget": 0.166431,
+    "budget": 0.887666,
     "status": "reachable",
     "steps": [
       {
@@ -1065,9 +1162,11 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Usage reset. Resume when you\u2019re ready."
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -1081,7 +1180,9 @@
     "seed": "signed-out",
     "budget": 0,
     "status": "unreachable",
-    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits."
+    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   },
   {
     "surface": "studio",
@@ -1093,7 +1194,7 @@
       "height": 923
     },
     "seed": "usage-active",
-    "budget": 0.040289,
+    "budget": 0.819733,
     "status": "reachable",
     "steps": [
       {
@@ -1107,6 +1208,8 @@
       {
         "kind": "expire-payment"
       }
-    ]
+    ],
+    "metric": "foreground-edges-v1",
+    "target": 0.12
   }
 ]

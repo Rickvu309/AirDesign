@@ -8,12 +8,12 @@ import {preview} from "vite"
 import {chromium} from "playwright"
 import sharp from "sharp"
 import {PNG} from "pngjs"
-import pixelmatch from "pixelmatch"
-import {readRegistry,readBudgetBaseline,validateRegistry,selectScenarios,ratchet} from "./registry.ts"
+import {compareDesign,metricVersion} from "./metric.mjs"
+import {readRegistry,readBudgetBaseline,validateRegistry,selectScenarios,ratchet,passesParity} from "./registry.ts"
 import {stack,seed,perform} from "./capture.mjs"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
 const args=process.argv.slice(2),option=name=>{const index=args.indexOf(name);return index<0 ? undefined : args[index+1]}
-if(args.some(arg=>arg.startsWith("--")&&!["--only","--out","--update-budgets","--skip-build"].includes(arg)))throw new Error("unknown-option")
+if(args.some(arg=>arg.startsWith("--")&&!["--only","--out","--update-budgets","--skip-build","--strict"].includes(arg)))throw new Error("unknown-option")
 for(const name of ["--out","--only"])if(args.includes(name)&&(!option(name)||option(name).startsWith("--")))throw new Error("missing-option-value")
 const head=execFileSync("git",["rev-parse","HEAD"],{encoding:"utf8"}).trim(),out=path.resolve(option("--out") ?? path.join(os.homedir(),"tmp/airdesign-design-parity",head))
 await mkdir(out,{recursive:true})
@@ -31,7 +31,7 @@ try{
   const siteAddress=site.httpServer.address(),siteOrigin=`http://127.0.0.1:${siteAddress.port}`
   browser=await chromium.launch({headless:true})
   for(const entry of selected){
-    if(entry.status==="unreachable"){results.push({...entry});continue}
+    if(entry.status==="unreachable"){results.push({...entry,...(args.includes("--strict") ? {passed:false} : {})});continue}
     const directory=path.join(out,entry.code);await mkdir(directory,{recursive:true})
     let context,page
     try{
@@ -53,15 +53,14 @@ try{
       const capture=await page.screenshot({animations:"disabled",caret:"hide",fullPage:entry.code==="S11.01"})
       await writeFile(path.join(directory,"capture.png"),capture)
       await copyFile(entry.design,path.join(directory,"design.png"))
-      const design=await readFile(entry.design),a=await sharp(design).metadata(),b=await sharp(capture).metadata(),width=Math.max(a.width,b.width),height=Math.max(a.height,b.height)
-      const pad=async(buffer,meta)=>PNG.sync.read(await sharp(buffer).ensureAlpha().extend({right:width-meta.width,bottom:height-meta.height,background:"#ffffff"}).png().toBuffer())
-      const left=await pad(design,a),right=await pad(capture,b),diff=new PNG({width,height})
-      const pixels=pixelmatch(left.data,right.data,diff.data,width,height,{threshold:0.1,includeAA:false}),ratio=pixels/(width*height)
+      const design=await readFile(entry.design)
+      const {score,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss,ratio,pixels,left,right,diff,comparison}=await compareDesign(design,capture)
+      const {width,height}=comparison
       await writeFile(path.join(directory,"diff.png"),PNG.sync.write(diff))
       await sharp({create:{width:width*2,height,channels:4,background:"#ffffff"}}).composite([{input:PNG.sync.write(left),left:0,top:0},{input:PNG.sync.write(right),left:width,top:0}]).png().toFile(path.join(directory,"side-by-side.png"))
       const fonts=await page.evaluate(()=>[...new Set([...document.querySelectorAll("h1,h2,button,p")].map(element=>getComputedStyle(element).fontFamily))])
-      results.push({...entry,ratio,pixels,comparison:{width,height,design:{width:a.width,height:a.height},capture:{width:b.width,height:b.height}},fonts,passed:ratio<=entry.budget,artifacts:{capture:`${entry.code}/capture.png`,design:`${entry.code}/design.png`,diff:`${entry.code}/diff.png`,sideBySide:`${entry.code}/side-by-side.png`}})
-      process.stdout.write(`${entry.code} ${ratio.toFixed(9)} ${ratio<=entry.budget ? "PASS" : "REGRESSION"}\n`)
+      results.push({...entry,score,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss,ratio,pixels,comparison,fonts,distanceToTarget:score-entry.target,passed:passesParity(entry,score,args.includes("--strict")),artifacts:{capture:`${entry.code}/capture.png`,design:`${entry.code}/design.png`,diff:`${entry.code}/diff.png`,sideBySide:`${entry.code}/side-by-side.png`}})
+      process.stdout.write(`${entry.code} ${score.toFixed(9)} raw=${ratio.toFixed(9)} ${results.at(-1).passed ? "PASS" : "REGRESSION"}\n`)
     }catch(error){if(page)await page.screenshot({animations:"disabled",caret:"hide"}).then(buffer=>writeFile(path.join(directory,"capture-error.png"),buffer)).catch(()=>undefined);results.push({...entry,status:"error",error:String(error),passed:false});process.stderr.write(`${entry.code} ${String(error)}\n`)}finally{if(local?.parityFinish){await local.parityFinish();delete local.parityFinish}await context?.close();await local?.close();local=undefined}
   }
 }finally{
@@ -73,13 +72,14 @@ try{
   if(originalTemp===undefined)delete process.env.TMPDIR;else process.env.TMPDIR=originalTemp
 }
 if(args.includes("--update-budgets")){
-  for(const result of results){if(typeof result.ratio!=="number")continue;const entry=entries.find(entry=>entry.code===result.code);entry.budget=ratchet(entry.budget,result.ratio);result.budget=entry.budget}
+  for(const result of results){if(typeof result.score!=="number")continue;const entry=entries.find(entry=>entry.code===result.code);entry.budget=ratchet(entry.budget,result.score);result.budget=entry.budget}
   await writeFile(new URL("./scenarios.json",import.meta.url),JSON.stringify(entries,null,2)+"\n")
 }
-results.sort((a,b)=>(b.ratio ?? -1)-(a.ratio ?? -1))
-const report={head,clock:"2026-11-06T03:00:00Z",pixelmatch:{threshold:0.1,includeAA:false,normalization:"white padding only; no resizing or masking"},results}
+results.sort((a,b)=>(b.score ?? -1)-(a.score ?? -1))
+const report={head,metric:metricVersion,strict:args.includes("--strict"),clock:"2026-11-06T03:00:00Z",pixelmatch:{threshold:0.1,includeAA:false,normalization:"white padding only; no resizing or masking"},results}
 await writeFile(path.join(out,"report.json"),JSON.stringify(report,null,2)+"\n")
-const cards=[...results].sort((a,b)=>(b.ratio ?? -1)-(a.ratio ?? -1)).map(entry=>`<article><h2>${entry.code} ${entry.ratio===undefined ? entry.status : (entry.ratio*100).toFixed(4)+"%"}</h2><p>${escape(entry.reason ?? entry.error ?? `${entry.seed} · budget ${entry.budget}`)}</p>${entry.artifacts ? `<p>Design left · product right · <a href="${entry.artifacts.diff}">pixel diff</a></p><a href="${entry.artifacts.sideBySide}"><img width="100%" src="${entry.artifacts.sideBySide}" alt="${entry.code} design left and product right"></a>` : ""}</article>`).join("\n")
-await writeFile(path.join(out,"report.html"),`<!doctype html><html lang="en"><meta charset="utf-8"><title>AirDesign parity ${head}</title><style>body{margin:24px;font-family:system-ui;background:#f5f5f5}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,680px),1fr));gap:24px}article{padding:16px;background:white;border:1px solid #ddd;border-radius:12px;min-width:0}img{display:block;height:auto}</style><h1>AirDesign design parity</h1><p>Product baseline ${head}. Worst ratios first. Unreachable entries remain coverage gaps.</p><main>${cards}</main></html>`)
+const table=`<table><thead><tr><th>Screen</th><th>Drift</th><th>Raw ratio</th><th>Budget</th><th>Target</th><th>Distance to target</th></tr></thead><tbody>${results.map(entry=>`<tr><td>${entry.code}</td><td>${entry.score?.toFixed(6) ?? entry.status}</td><td>${entry.ratio?.toFixed(6) ?? "—"}</td><td>${entry.budget}</td><td>${entry.target}</td><td>${entry.distanceToTarget?.toFixed(6) ?? "—"}</td></tr>`).join("")}</tbody></table>`
+const cards=[...results].sort((a,b)=>(b.score ?? -1)-(a.score ?? -1)).map(entry=>`<article><h2>${entry.code} ${entry.score===undefined ? entry.status : "drift "+entry.score.toFixed(6)}</h2><p>${escape(entry.reason ?? entry.error ?? `${entry.seed} · budget ${entry.budget} · target ${entry.target} · distance ${entry.distanceToTarget?.toFixed(6)} · raw ratio ${entry.ratio?.toFixed(6)}`)}</p>${entry.artifacts ? `<p>Design left · product right · <a href="${entry.artifacts.diff}">pixel diff</a></p><a href="${entry.artifacts.sideBySide}"><img width="100%" src="${entry.artifacts.sideBySide}" alt="${entry.code} design left and product right"></a>` : ""}</article>`).join("\n")
+await writeFile(path.join(out,"report.html"),`<!doctype html><html lang="en"><meta charset="utf-8"><title>AirDesign parity ${head}</title><style>body{margin:24px;font-family:system-ui;background:#f5f5f5}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,680px),1fr));gap:24px}article{padding:16px;background:white;border:1px solid #ddd;border-radius:12px;min-width:0}img{display:block;height:auto}</style><h1>AirDesign design parity</h1><p>Product baseline ${head}. Worst drift first. Drift is the maximum of tolerant foreground mismatch, edge loss, dimension loss and background color loss. Raw pixel ratio is secondary. Unreachable entries remain coverage gaps.</p>${table}<main>${cards}</main></html>`)
 process.stdout.write(`Report ${path.join(out,"report.html")}\n`)
 if(results.some(entry=>entry.passed===false))process.exitCode=1
