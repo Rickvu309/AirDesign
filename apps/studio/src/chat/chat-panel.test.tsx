@@ -37,7 +37,7 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     expect(requests).toEqual([])
     expect(document.activeElement).toBe(reset)
     await act(async()=>reset.click())
-    await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset for $5")!.click())
+    await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset"&&button.closest('[role="dialog"]'))!.click())
     expect(requests).toEqual([{url:"/api/usage/reset",body:{limitHit:"saved-hit"}}])
     expect(container.textContent).toContain("Pick up where you left off.")
     expect(container.querySelectorAll(".aira-usage-limit")).toHaveLength(1)
