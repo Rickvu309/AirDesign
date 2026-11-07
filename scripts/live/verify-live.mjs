@@ -167,15 +167,16 @@ export async function verifyLive(options){
     receipt.status="pass"
   }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error)}finally{
     if(receipt.status==="fail" && signedSmoke && created.length){
-      try{await step("failure-cleanup",async()=>{
+      const cleanup=await within(step("failure-cleanup",async()=>{
         for(const id of created){const response=await context.request.post(studio+`/api/catalog/${id}/trash`,{headers:{origin:studio},data:{},timeout:15000});assert.ok(response.ok(),"failure cleanup could not trash smoke deck")}
         const response=await context.request.get(studio+"/api/catalog?trash=true",{timeout:15000});assert.ok(response.ok())
         const decks=(await response.json()).filter(deck=>created.includes(deck.id)).map(({id,generation})=>({id,generation}))
         const removed=await context.request.delete(studio+"/api/catalog/trash",{headers:{origin:studio},data:{confirm:"empty-trash",decks},timeout:15000});assert.ok(removed.ok(),"failure cleanup could not empty smoke trash")
         return {decks:decks.length}
-      },false)}catch{}
+      },false).then(()=>"done",()=>"done"),60000,"timeout")
+      if(cleanup==="timeout")receipt.steps.push({name:"failure-cleanup",status:"fail",durationMs:60000,error:"cleanup-timeout",screenshot:null,operations:[]})
     }
-    await within(browser?.close().catch(error=>{receipt.browserCloseError=safeError(error)}) ?? Promise.resolve(),15000,undefined);receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
+    await within(browser?.close().catch(()=>{receipt.browserCloseError="browser-close-failed"}) ?? Promise.resolve(),15000,undefined);receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
   }
   return receipt
 }
