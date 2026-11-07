@@ -8,6 +8,9 @@ import {chromium} from "playwright"
 const root=path.resolve("apps/site/dist")
 const routes=["/","/pricing/","/agents/","/agents/claude/","/agents/codex/","/examples/","/status/"]
 const widths=[320,390,768,900,1024,1180,1280,1295,1296,1440,1920]
+const contrastWidths=[390,1440]
+const buttonStates=["normal","hover","press"]
+const signatureButtons={"/":3,"/pricing/":2}
 const types={".html":"text/html",".css":"text/css",".js":"text/javascript",".png":"image/png",".svg":"image/svg+xml",".woff2":"font/woff2",".json":"application/json",".txt":"text/plain"}
 const server=createServer(async(request,response)=>{
  const url=new URL(request.url,"http://site.local"),relative=url.pathname,file=path.resolve(root,"."+(relative.endsWith("/")?relative+"index.html":relative))
@@ -21,9 +24,11 @@ const evidenceDirectory=process.env.SITE_EVIDENCE_DIR
 if(evidenceDirectory)await mkdir(evidenceDirectory,{recursive:true})
 const luminance=rgb=>rgb.map(channel=>channel/255).map(channel=>channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4).reduce((sum,channel,index)=>sum+channel*[.2126,.7152,.0722][index],0)
 async function checkButtonContrast(page,route,width){
- for(const [index,button] of (await page.locator(".button").all()).entries()){
+ const buttons=await page.locator(".button").all()
+ assert.equal(buttons.length,signatureButtons[route],`${route} at ${width}px must render every signature button for the contrast check`)
+ for(const [index,button] of buttons.entries()){
   await button.scrollIntoViewIfNeeded()
-  for(const state of ["normal","hover","press"]){
+  for(const state of buttonStates){
    await page.mouse.move(0,0)
    if(state!=="normal")await button.hover()
    if(state==="press")await page.mouse.down()
@@ -71,7 +76,11 @@ try{
    await page.evaluate(()=>document.fonts.ready)
    const scrollWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
    if(scrollWidth>width)overflows.push({route,width,scrollWidth})
-   if((route==="/"||route==="/pricing/")&&(width===390||width===1440))await checkButtonContrast(page,route,width)
+   if(route in signatureButtons&&contrastWidths.includes(width))await checkButtonContrast(page,route,width)
+   if(route in signatureButtons&&width===390){
+    const smallTargets=await page.evaluate(()=>[...document.querySelectorAll("a[href],button,summary,[tabindex]:not([tabindex='-1'])")].map(element=>({element,box:element.getBoundingClientRect()})).filter(({element,box})=>element.checkVisibility()&&box.width>0&&box.bottom+scrollY>0).filter(({box})=>box.width<44||box.height<44).map(({element,box})=>`${element.textContent.trim()} ${box.width.toFixed(1)}x${box.height.toFixed(1)}`))
+    assert.deepEqual(smallTargets,[],`${route} at 390px needs 44px tap targets on every control`)
+   }
    if(route==="/"){
     const spacing=await page.evaluate(()=>{
      const section=document.querySelector(".product-section"),note=document.querySelector(".capture-note"),style=getComputedStyle(section)
@@ -131,6 +140,9 @@ try{
  }
 }finally{await browser.close();server.close()}
 assert.ok(focusedCapture,"focused capture check did not run")
+const expectedContrastSamples=Object.values(signatureButtons).reduce((sum,count)=>sum+count,0)*buttonStates.length*contrastWidths.length
+assert.equal(contrastEvidence.length,expectedContrastSamples,"every signature button state must be contrast checked")
+assert.ok(contrastEvidence.every(item=>Number.isFinite(item.minimum)),"every contrast sample must be measured")
 assert.deepEqual(overflows,[],`site pages wider than the viewport: ${JSON.stringify(overflows)}`)
 if(evidenceDirectory)await writeFile(path.join(evidenceDirectory,"checks.json"),JSON.stringify({contrastEvidence,layoutEvidence},null,2))
 console.log(JSON.stringify({contrastMinimum:Math.min(...contrastEvidence.map(item=>item.minimum)),contrastSamples:contrastEvidence.length,layoutEvidence,siteWidths:"pass",routes:routes.length,widths,focusedCapture}))

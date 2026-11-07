@@ -5,6 +5,12 @@ it("rejects unsupported public claims and retired routes",()=>{
  expect(releaseClaimHits("PPTX export.",[{id:"export",text:"PPTX export.",kind:"proven",receipt:"P03/report.md"}])).toEqual([])
 })
 
+it("treats browser chrome metadata as configuration, not public copy",()=>{
+ const head='<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#ffffff">'
+ expect(releaseClaimHits(head)).toEqual([])
+ expect(releaseClaimHits('<meta name="description" content="Unlimited decks">')).toEqual(["unregistered-public-copy:Unlimited decks"])
+})
+
 it("keeps archived worker dependencies inside the sandbox root",()=>{
  const original='await symlink(path.resolve("node_modules"),path.join(source,"node_modules"),"dir")'
  expect(sandboxDependencyHits("bench/release/trunk-review.mjs",original)).toHaveLength(1)

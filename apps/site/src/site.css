@@ -225,6 +225,8 @@ footer a { text-decoration: none; }
   .landing-page header a,.pricing-page header a,footer a,summary { min-block-size: 44px; min-inline-size: 44px; display: inline-flex; align-items: center; justify-content: center; }
   .landing-page header .button,.pricing-page header .button { min-block-size: 44px; }
   .nav-segments a { padding-inline: 10px; }
+  .hero .actions > a,.agent-hub .brand { min-block-size: 44px; }
+  .capture-note a { display: inline-block; padding-block: 14px; margin-block: -14px; }
 }
 
 .demo-workspace:focus-visible { outline: 3px solid var(--primary); outline-offset: 5px; }

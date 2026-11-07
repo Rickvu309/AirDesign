@@ -29,6 +29,13 @@ it("requires a real product capture and exported package examples",()=>{
  for(const file of ["studio-capture.png","examples/before.pptx","examples/after.pptx"])expect(readFileSync(`apps/site/public/${file}`).byteLength).toBeGreaterThan(1000)
 })
 
+it("tints mobile browser chrome to the white site surface in both color schemes",()=>{
+ for(const page of ["index.html","pricing/index.html","agents/index.html","agents/claude/index.html","agents/codex/index.html","examples/index.html","status/index.html"]){
+  const themes=[...parseSiteHtml(readFileSync(`apps/site/${page}`,"utf8")).querySelectorAll('meta[name="theme-color"]')].map(meta=>[meta.getAttribute("media"),meta.getAttribute("content")])
+  expect(themes,page).toEqual([["(prefers-color-scheme: light)","#ffffff"],["(prefers-color-scheme: dark)","#ffffff"]])
+ }
+})
+
 it("routes every public HTML page through the site build",()=>{
  expect(readdirSync("apps/site/public",{recursive:true}).filter(file=>String(file).endsWith(".html"))).toEqual([])
 })

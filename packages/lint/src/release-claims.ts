@@ -10,7 +10,8 @@ export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-pa
 export function publicCopy(source:string):string[]{
  const clean=source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
  const texts=clean.includes("<") ? [...clean.matchAll(/>([^<>]+)</g)].map(match=>match[1]!) : clean.split("\n")
- const attributes=[...clean.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!).filter(text=>!text.includes("width=device-width"))
+ const copyBearing=clean.replace(/<meta\b[^>]*\bname="(?:viewport|theme-color)"[^>]*>/gi,"")
+ const attributes=[...copyBearing.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!)
  return [...texts,...attributes].map(text=>text.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim()).filter(Boolean)
 }
 export function releaseClaimHits(source:string,claims:readonly PublicClaim[]=[],capabilities=""):string[]{
