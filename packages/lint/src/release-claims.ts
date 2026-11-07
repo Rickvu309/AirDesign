@@ -1,4 +1,4 @@
-import {Window,type Element as ParsedElement} from "happy-dom"
+import {parse,type DefaultTreeAdapterTypes} from "parse5"
 export type ExternalGate = "X01" | "X02" | "X03" | "X04" | "X05" | "X06"
 export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"external-passed";gate:ExternalGate;receipt:string}|{kind:"blocked";gate:string})
 export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-passed"}>,capabilities:string):boolean {
@@ -10,20 +10,31 @@ export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-pa
 }
 const browserChromeNames=new Set(["viewport","theme-color"])
 const browserChromeAttributes=new Set(["name","content","media"])
-const copyAttributes=["alt","aria-label","content"] as const
-const inertElements=new Set(["SCRIPT","STYLE","TEMPLATE"])
-const htmlWindow=new Window()
-const htmlParser=new htmlWindow.DOMParser()
+const copyAttributes=new Set(["alt","aria-label","content"])
+const inertElements=new Set(["script","style","template"])
+type ParsedNode=DefaultTreeAdapterTypes.Node
+type ParsedElement=DefaultTreeAdapterTypes.Element
+function isElement(node:ParsedNode):node is ParsedElement{
+ return "tagName" in node
+}
 function isBrowserChromeMeta(element:ParsedElement):boolean{
- return element.tagName==="META" && browserChromeNames.has((element.getAttribute("name")??"").trim().toLowerCase()) && [...element.attributes].every(attribute=>browserChromeAttributes.has(attribute.name))
+ const name=element.attrs.find(attribute=>attribute.name==="name")?.value.trim().toLowerCase()??""
+ return element.tagName==="meta" && browserChromeNames.has(name) && element.attrs.every(attribute=>browserChromeAttributes.has(attribute.name))
 }
 function htmlCopy(source:string):string[]{
- const document=htmlParser.parseFromString(source,"text/html")
- const texts:string[]=[]
- const walker=document.createTreeWalker(document,htmlWindow.NodeFilter.SHOW_TEXT)
- for(let node=walker.nextNode();node;node=walker.nextNode())if(!inertElements.has(node.parentElement?.tagName??""))texts.push(node.textContent??"")
- const attributes=[...document.querySelectorAll("*")].filter(element=>!isBrowserChromeMeta(element)).flatMap(element=>copyAttributes.map(name=>element.getAttribute(name)??""))
- return [...texts,...attributes]
+ const copy:string[]=[]
+ const pending:ParsedNode[]=[parse(source,{scriptingEnabled:false})]
+ for(let node=pending.pop();node;node=pending.pop()){
+  if(node.nodeName==="#text"&&"value" in node)copy.push(node.value)
+  if(isElement(node)){
+   if(inertElements.has(node.tagName))continue
+   if(!isBrowserChromeMeta(node))copy.push(...node.attrs.filter(attribute=>copyAttributes.has(attribute.name)).map(attribute=>attribute.value))
+   const frame=node.tagName==="iframe"?node.attrs.find(attribute=>attribute.name==="srcdoc"):undefined
+   if(frame)pending.push(parse(frame.value,{scriptingEnabled:false}))
+  }
+  if("childNodes" in node)pending.push(...[...node.childNodes].reverse())
+ }
+ return copy
 }
 export function publicCopy(source:string):string[]{
  return (source.includes("<") ? htmlCopy(source) : source.split("\n")).map(text=>text.replace(/\s+/g," ").trim()).filter(Boolean)

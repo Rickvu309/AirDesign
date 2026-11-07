@@ -1,4 +1,6 @@
-import {it,expect} from "vitest"
+import {it,expect,vi} from "vitest"
+import http from "node:http"
+import https from "node:https"
 import {releaseClaimHits,publicAmountHits,retiredRouteHits,sandboxDependencyHits,productCaptureHits} from "../../packages/lint/src/release-claims.ts"
 it("rejects unsupported public claims and retired routes",()=>{
  for(const original of ["lossless export","works in PowerPoint","supported Claude",'<a href="/share/deck">'])expect(releaseClaimHits(original).length).toBeGreaterThan(0)
@@ -16,6 +18,19 @@ it("treats browser chrome metadata as configuration, not public copy",()=>{
   expect(releaseClaimHits(`<meta name="description" data-name="${disguised}" content="Unlimited decks">`)).toEqual(["unregistered-public-copy:Unlimited decks"])
   expect(releaseClaimHits(`<meta property="og:description" data-name="${disguised}" content="Unlimited decks">`)).toEqual(["unregistered-public-copy:Unlimited decks"])
  }
+})
+
+it("reads copy a browser renders inside srcdoc frames and SVG CDATA, but not comments",()=>{
+ for(const [markup,copy] of [['<iframe srcdoc="<p>Unlimited decks</p>"></iframe>',"Unlimited decks"],[`<iframe srcdoc="<button aria-label='Unlimited decks'></button>"></iframe>`,"Unlimited decks"],[`<iframe srcdoc="<iframe srcdoc='&lt;p&gt;Unlimited decks&lt;/p&gt;'></iframe>"></iframe>`,"Unlimited decks"],["<svg><text><![CDATA[Unlimited decks]]></text></svg>","Unlimited decks"]] as const)expect(releaseClaimHits(markup),markup).toEqual([`unregistered-public-copy:${copy}`])
+ for(const markup of ["<!--Unlimited decks--><p>Shown</p>","<![CDATA[Unlimited decks]]><p>Shown</p>"])expect(releaseClaimHits(markup),markup).toEqual(["unregistered-public-copy:Shown"])
+})
+
+it("reads public copy without requesting any linked resource",()=>{
+ const requests=[vi.spyOn(http,"request"),vi.spyOn(http,"get"),vi.spyOn(https,"request"),vi.spyOn(https,"get"),vi.spyOn(globalThis,"fetch")]
+ try{
+  expect(releaseClaimHits('<link rel="stylesheet" href="https://example.invalid/style"><iframe src="https://example.invalid/frame" srcdoc="<link rel=stylesheet href=https://example.invalid/nested><p>Shown</p>"></iframe><img src="https://example.invalid/image" alt="Chart">').sort()).toEqual(["unregistered-public-copy:Chart","unregistered-public-copy:Shown"])
+  for(const request of requests)expect(request).not.toHaveBeenCalled()
+ }finally{for(const request of requests)request.mockRestore()}
 })
 
 it("keeps archived worker dependencies inside the sandbox root",()=>{
