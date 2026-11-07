@@ -136,3 +136,29 @@ it("rejects manual Railway deploys, disabled smoke checks, missing evidence and 
   ]) expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
   expect(deploymentWorkflowHits(deploy, railway.replace("checkSuites: true", "checkSuites: false"))).toContain("railway-source-must-wait-for-ci")
 })
+
+it("rejects deploy check-suite deadlocks and secrets inherited by installers", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
+  for (const trigger of ["push", "workflow_run"]) {
+    expect(deploymentWorkflowHits(deploy.replace("  deployment_status:", `  ${trigger}:`), railway)).toContain("deploy-trigger-must-be-deployment-status-only")
+    expect(deploymentWorkflowHits(deploy.replace("  deployment_status:", `  deployment_status:\n  ${trigger}:`), railway)).toContain("deploy-trigger-must-be-deployment-status-only")
+  }
+  for (const broken of [
+    deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:"),
+    deploy.replace("    env:\n      AIRDESIGN_LIBREOFFICE:", "    env:\n      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n      AIRDESIGN_LIBREOFFICE:"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secrets-must-be-step-scoped")
+  for (const command of ["npm ci", "npm install --global @railway/cli@5.71.0", "node scripts/live/wait-for-deploy.ts \"$EXPECT_SHA\""]) {
+    const broken = deploy.replace(`run: ${command}`, `env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
+    expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
+  }
+  for (const broken of [
+    deploy.replaceAll("state == 'success'", "state == 'in_progress'"),
+    deploy.replaceAll("airdesign / production", "preview"),
+    deploy.replaceAll("railway-app[bot]", "other-app[bot]"),
+    deploy.replace("cancel-in-progress: true", "cancel-in-progress: false"),
+    deploy.replace('"$latest" == "$EXPECT_SHA"', '"true" == "true"'),
+    deploy.replaceAll("github.event.deployment.sha", "github.sha"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
+})

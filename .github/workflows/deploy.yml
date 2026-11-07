@@ -1,28 +1,24 @@
 name: Deploy
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  deployment_status:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
-  group: production
-  cancel-in-progress: false
+  group: deploy-${{ github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'airdesign / production' && github.event.deployment.creator.login == 'railway-app[bot]' && 'production' || github.run_id }}
+  cancel-in-progress: true
 
 env:
-  EXPECT_SHA: ${{ github.event.workflow_run.head_sha }}
+  EXPECT_SHA: ${{ github.event.deployment.sha }}
 
 jobs:
   revision:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'airdesign / production' &&
+      github.event.deployment.creator.login == 'railway-app[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
@@ -43,11 +39,11 @@ jobs:
     timeout-minutes: 15
     environment: production
     env:
-      AIRDESIGN_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
+      AIRDESIGN_BUILD_SHA: ${{ github.event.deployment.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.deployment.sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -66,12 +62,11 @@ jobs:
     timeout-minutes: 35
     environment: production
     env:
-      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
       AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.deployment.sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -86,6 +81,7 @@ jobs:
           sudo apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends libreoffice-impress
       - run: npm install --global @railway/cli@5.71.0
       - env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
           RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
         run: |
@@ -95,11 +91,13 @@ jobs:
           railway link --project "$RAILWAY_PROJECT_ID" --environment production --service web
       - name: Wait for Railway commit
         run: node scripts/live/wait-for-deploy.ts "$EXPECT_SHA"
-      - run: npm run verify:live -- --expect-sha "$EXPECT_SHA" --smoke-email smoke@airdesign.app --railway --output-dir "$HOME/tmp/airdesign-live-verify/receipt"
+      - env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+        run: npm run verify:live -- --expect-sha "$EXPECT_SHA" --smoke-email smoke@airdesign.app --railway --output-dir "$HOME/tmp/airdesign-live-verify/receipt"
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: live-verification-${{ github.event.workflow_run.head_sha }}
+          name: live-verification-${{ github.event.deployment.sha }}
           path: ~/tmp/airdesign-live-verify/receipt
           if-no-files-found: warn
           retention-days: 14

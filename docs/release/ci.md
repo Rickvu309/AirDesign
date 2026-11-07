@@ -1,6 +1,6 @@
 # CI and production delivery
 
-Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate and then the production delivery workflow. Pushes to `ci-landing` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci-landing` from the push branch list after this branch lands.
+Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate. Railway waits for CI and emits a deployment status after deploying. Pushes to `ci-landing` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci-landing` from the push branch list after this branch lands.
 
 ## Run locally
 
@@ -38,11 +38,13 @@ Worker tests exercise both systemd/Bubblewrap and container drivers. Unit shards
 
 ## Deployment
 
-`deploy.yml` uses `workflow_run` after a successful `CI` push on `main`. Deployment secrets are available only after that gate, and the site builds from the exact source revision that passed CI. Every checkout and the live-check expectation use `github.event.workflow_run.head_sha`; `github.sha` would refer to a different revision in this event. A stale successful run whose SHA is no longer main is skipped. Production deployment runs are serialized and are not cancelled midway.
+`deploy.yml` runs only on `deployment_status`. The revision job accepts successful events from `railway-app[bot]` for `airdesign / production`. It checks the event SHA against current `main` before publishing. Every checkout, the site build identity, and the live-check expectation use `github.event.deployment.sha`.
+
+Only CI runs on push. The post-deploy workflow creates no push or workflow-run check suite for Railway to wait on. A newer successful production event cancels the older production run. Other status events have separate concurrency groups and cannot cancel production verification.
 
 The site job builds `apps/site` with `AIRDESIGN_BUILD_SHA` set to the verified commit, then publishes Cloudflare Pages project `airdesign`. Railway independently deploys `web` and `worker` from GitHub. `.railway/railway.ts` enables `checkSuites: true`; the coordinator must apply that configuration after merge. Keep Railway's GitHub integration enabled. No workflow calls `railway up`.
 
-The live job installs Chromium, LibreOffice Impress, and Railway CLI 5.71.0. It links to the production project, waits at most 20 minutes for Studio `/version` to report the expected commit, then runs the existing `verify:live` journey with `--expect-sha`, `--smoke-email smoke@airdesign.app`, and `--railway`. Worker identity is checked by the verifier's real import journey. A failed wait or journey fails the workflow. Receipt, screenshots, and export evidence upload even when the journey fails. There is no verification skip or automatic rollback.
+A success event can come from either Railway service. The live job installs Chromium, LibreOffice Impress, and Railway CLI 5.71.0. It links to the production project, waits at most 20 minutes for Studio `/version` to report the expected commit, then runs the existing `verify:live` journey with `--expect-sha`, `--smoke-email smoke@airdesign.app`, and `--railway`. Worker identity is checked by the verifier's real import journey. A failed wait or journey fails the workflow. Receipt, screenshots, and export evidence upload even when the journey fails. There is no verification skip or automatic rollback.
 
 Configure these secrets in GitHub's `production` environment before a main deployment:
 
@@ -53,7 +55,7 @@ Configure these secrets in GitHub's `production` environment before a main deplo
 | `RAILWAY_API_TOKEN` | Account or workspace API token with access to the production project and its registered SSH key |
 | `RAILWAY_SSH_PRIVATE_KEY` | Dedicated, unencrypted Ed25519 private key whose public key the coordinator registers with that Railway account or workspace |
 
-Set production environment variable `RAILWAY_PROJECT_ID` to the existing project's UUID. It is not a secret. Railway's project token `RAILWAY_TOKEN` cannot manage SSH keys; use `RAILWAY_API_TOKEN` for the key lookup and service resolution. The CLI uses native system SSH, so a token alone is insufficient. The workflow installs the key with owner-only permissions, derives its public key, and deletes both key files in its final cleanup step. It never prints the one-use smoke sign-in credential. See [Railway CLI tokens](https://docs.railway.com/cli) and [Railway SSH authentication](https://docs.railway.com/cli/ssh).
+Set production environment variable `RAILWAY_PROJECT_ID` to the existing project's UUID. It is not a secret. Railway's project token `RAILWAY_TOKEN` cannot manage SSH keys; use `RAILWAY_API_TOKEN` for the key lookup and service resolution. The CLI uses native system SSH, so a token alone is insufficient. The API token is present only in the Railway link and live-verification steps. The SSH private-key secret is present only in the key-installation and link step. Cloudflare credentials are present only in the Pages publish step. Dependency installation receives no deployment secrets. The workflow installs the key with owner-only permissions, derives its public key, and deletes both key files in its final cleanup step. It never prints the one-use smoke sign-in credential. See [Railway CLI tokens](https://docs.railway.com/cli) and [Railway SSH authentication](https://docs.railway.com/cli/ssh).
 
 No secrets, branch rules, live configuration, or deployments were changed during implementation. Production delivery remains unproved until the coordinator sets these inputs, applies the Railway configuration after merge, and observes a successful main workflow.
 
