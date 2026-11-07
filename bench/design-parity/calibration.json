@@ -2,7 +2,7 @@
   "metric": "local-oklab-v2",
   "targets": {
     "site": 0.02,
-    "studio": 0.53
+    "studio": 0.63
   },
   "results": [
     {
@@ -11,7 +11,7 @@
       "reference": {
         "score": 0.005892092899986285,
         "globalScore": 0.004826345668916154,
-        "colorLoss": 0.00009558566477849659,
+        "colorLoss": 9.558566477849659e-05,
         "localLoss": 0.005892092899986285,
         "worstRegion": {
           "column": 0,
@@ -231,7 +231,7 @@
       "reference": {
         "score": 0.001095002226543271,
         "globalScore": 0.00011461318051575464,
-        "colorLoss": 0.000051664610221729686,
+        "colorLoss": 5.1664610221729686e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -274,8 +274,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.000052485963143342746,
-        "colorLoss": 0.000052485963143342746,
+        "globalScore": 5.2485963143342746e-05,
+        "colorLoss": 5.2485963143342746e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -288,7 +288,7 @@
         },
         "ratio": 0.009579823261915817,
         "foregroundLoss": 0,
-        "edgeLoss": 0.00005013787916774426,
+        "edgeLoss": 5.013787916774426e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -318,8 +318,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.000052520793129638665,
-        "colorLoss": 0.000052520793129638665,
+        "globalScore": 5.2520793129638665e-05,
+        "colorLoss": 5.2520793129638665e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -362,8 +362,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005249145326107551,
-        "colorLoss": 0.00005249145326107551,
+        "globalScore": 5.249145326107551e-05,
+        "colorLoss": 5.249145326107551e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -376,7 +376,7 @@
         },
         "ratio": 0.00959677478792167,
         "foregroundLoss": 0,
-        "edgeLoss": 0.00004993757802740362,
+        "edgeLoss": 4.993757802740362e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -406,8 +406,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005252629053671799,
-        "colorLoss": 0.00005252629053671799,
+        "globalScore": 5.252629053671799e-05,
+        "colorLoss": 5.252629053671799e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -450,8 +450,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.000052714050074793396,
-        "colorLoss": 0.000052714050074793396,
+        "globalScore": 5.2714050074793396e-05,
+        "colorLoss": 5.2714050074793396e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -464,7 +464,7 @@
         },
         "ratio": 0.010305790788688172,
         "foregroundLoss": 0,
-        "edgeLoss": 0.00004758505829172144,
+        "edgeLoss": 4.758505829172144e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -494,8 +494,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005256364759078329,
-        "colorLoss": 0.00005256364759078329,
+        "globalScore": 5.256364759078329e-05,
+        "colorLoss": 5.256364759078329e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -508,7 +508,7 @@
         },
         "ratio": 0.010262306439368814,
         "foregroundLoss": 0,
-        "edgeLoss": 0.000047346243075674366,
+        "edgeLoss": 4.7346243075674366e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -538,8 +538,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005257170804945169,
-        "colorLoss": 0.00005257170804945169,
+        "globalScore": 5.257170804945169e-05,
+        "colorLoss": 5.257170804945169e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -552,7 +552,7 @@
         },
         "ratio": 0.010468672842918315,
         "foregroundLoss": 0,
-        "edgeLoss": 0.000046466242275000624,
+        "edgeLoss": 4.6466242275000624e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -582,8 +582,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005302735759056384,
-        "colorLoss": 0.00005302735759056384,
+        "globalScore": 5.302735759056384e-05,
+        "colorLoss": 5.302735759056384e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -596,7 +596,7 @@
         },
         "ratio": 0.009587930513483833,
         "foregroundLoss": 0,
-        "edgeLoss": 0.00004660918200882769,
+        "edgeLoss": 4.660918200882769e-05,
         "sizeLoss": 0,
         "backgroundLoss": 0
       },
@@ -626,8 +626,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.000052292950356571725,
-        "colorLoss": 0.000052292950356571725,
+        "globalScore": 5.2292950356571725e-05,
+        "colorLoss": 5.2292950356571725e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -851,7 +851,7 @@
       "reference": {
         "score": 0.0051669209969748,
         "globalScore": 0.0051669209969748,
-        "colorLoss": 0.000043416512304118695,
+        "colorLoss": 4.3416512304118695e-05,
         "localLoss": 0.000632107064626332,
         "worstRegion": {
           "column": 8,
@@ -895,7 +895,7 @@
       "reference": {
         "score": 0.005513439007580945,
         "globalScore": 0.005513439007580945,
-        "colorLoss": 0.000042898678674961426,
+        "colorLoss": 4.2898678674961426e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -939,7 +939,7 @@
       "reference": {
         "score": 0.004851425106124907,
         "globalScore": 0.004851425106124907,
-        "colorLoss": 0.00004408827701270525,
+        "colorLoss": 4.408827701270525e-05,
         "localLoss": 0.000632107064626332,
         "worstRegion": {
           "column": 8,
@@ -983,7 +983,7 @@
       "reference": {
         "score": 0.004151279332728186,
         "globalScore": 0.004151279332728186,
-        "colorLoss": 0.000042868619294535253,
+        "colorLoss": 4.2868619294535253e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -1027,7 +1027,7 @@
       "reference": {
         "score": 0.012384116078193452,
         "globalScore": 0.012384116078193452,
-        "colorLoss": 0.00006839484608074375,
+        "colorLoss": 6.839484608074375e-05,
         "localLoss": 0.0011033242356581713,
         "worstRegion": {
           "column": 2,
@@ -1071,7 +1071,7 @@
       "reference": {
         "score": 0.0061570035915855525,
         "globalScore": 0.0061570035915855525,
-        "colorLoss": 0.00004236959280238159,
+        "colorLoss": 4.236959280238159e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -1115,7 +1115,7 @@
       "reference": {
         "score": 0.004914730837393799,
         "globalScore": 0.004914730837393799,
-        "colorLoss": 0.00003948632504994203,
+        "colorLoss": 3.948632504994203e-05,
         "localLoss": 0.0005231674351783952,
         "worstRegion": {
           "column": 3,
@@ -1159,7 +1159,7 @@
       "reference": {
         "score": 0.005382436260623291,
         "globalScore": 0.005382436260623291,
-        "colorLoss": 0.00004272218288560098,
+        "colorLoss": 4.272218288560098e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -1183,7 +1183,7 @@
       "reference": {
         "score": 0.005422627983211359,
         "globalScore": 0.005422627983211359,
-        "colorLoss": 0.000036489112800611045,
+        "colorLoss": 3.6489112800611045e-05,
         "localLoss": 0.0005231674351783952,
         "worstRegion": {
           "column": 3,
@@ -1207,7 +1207,7 @@
       "reference": {
         "score": 0.0056181558482779614,
         "globalScore": 0.0056181558482779614,
-        "colorLoss": 0.00003631169790581226,
+        "colorLoss": 3.631169790581226e-05,
         "localLoss": 0.0005231674351783952,
         "worstRegion": {
           "column": 3,
@@ -1231,7 +1231,7 @@
       "reference": {
         "score": 0.00535101283964623,
         "globalScore": 0.00535101283964623,
-        "colorLoss": 0.0000426776049254625,
+        "colorLoss": 4.26776049254625e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -1255,7 +1255,7 @@
       "reference": {
         "score": 0.00554592720970537,
         "globalScore": 0.00554592720970537,
-        "colorLoss": 0.00004241133561675278,
+        "colorLoss": 4.241133561675278e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -1299,7 +1299,7 @@
       "reference": {
         "score": 0.006745414050056797,
         "globalScore": 0.006745414050056797,
-        "colorLoss": 0.0000644717438017251,
+        "colorLoss": 6.44717438017251e-05,
         "localLoss": 0.002516723500804223,
         "worstRegion": {
           "column": 5,
@@ -1431,7 +1431,7 @@
       "reference": {
         "score": 0.0052222161779904575,
         "globalScore": 0.0052222161779904575,
-        "colorLoss": 0.00006360685696726085,
+        "colorLoss": 6.360685696726085e-05,
         "localLoss": 0.002516723500804223,
         "worstRegion": {
           "column": 5,
@@ -1455,7 +1455,7 @@
       "reference": {
         "score": 0.005095270951648079,
         "globalScore": 0.005095270951648079,
-        "colorLoss": 0.00007188881919579433,
+        "colorLoss": 7.188881919579433e-05,
         "localLoss": 0.002518818152074139,
         "worstRegion": {
           "column": 5,
@@ -1630,8 +1630,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005266554254922892,
-        "colorLoss": 0.00005266554254922892,
+        "globalScore": 5.266554254922892e-05,
+        "colorLoss": 5.266554254922892e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -1674,8 +1674,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.000052483775372992455,
-        "colorLoss": 0.000052483775372992455,
+        "globalScore": 5.2483775372992455e-05,
+        "colorLoss": 5.2483775372992455e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -1719,7 +1719,7 @@
       "reference": {
         "score": 0.001095002226543271,
         "globalScore": 0.00010050251256277232,
-        "colorLoss": 0.00005240248005098448,
+        "colorLoss": 5.240248005098448e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -1806,8 +1806,8 @@
       "surface": "studio",
       "reference": {
         "score": 0.001095002226543271,
-        "globalScore": 0.00005281850343771028,
-        "colorLoss": 0.00005281850343771028,
+        "globalScore": 5.281850343771028e-05,
+        "colorLoss": 5.281850343771028e-05,
         "localLoss": 0.001095002226543271,
         "worstRegion": {
           "column": 0,
@@ -1895,7 +1895,7 @@
       "reference": {
         "score": 0.005608459426301393,
         "globalScore": 0.005608459426301393,
-        "colorLoss": 0.00004180188255143183,
+        "colorLoss": 4.180188255143183e-05,
         "localLoss": 0.0005213575039884755,
         "worstRegion": {
           "column": 8,
@@ -2007,7 +2007,7 @@
       "reference": {
         "score": 0.0054197482075312164,
         "globalScore": 0.0054197482075312164,
-        "colorLoss": 0.00006371231878091183,
+        "colorLoss": 6.371231878091183e-05,
         "localLoss": 0.0025170723673832085,
         "worstRegion": {
           "column": 5,
@@ -2118,44 +2118,44 @@
     {
       "code": "S41.01",
       "file": "ed3.jsx",
-      "score": 0.48931230282756866,
-      "globalScore": 0.07126246094579936,
-      "colorLoss": 0.055518362597440155,
-      "localLoss": 0.48931230282756866,
+      "score": 0.6124132137948803,
+      "globalScore": 0.07408975543550333,
+      "colorLoss": 0.05614155866035728,
+      "localLoss": 0.6124132137948803,
       "worstRegion": {
         "column": 2,
         "row": 0,
-        "foreground": 766,
-        "background": 13502,
-        "foregroundMisses": 374.8132239659176,
-        "backgroundMisses": 77.91755611336337,
-        "score": 0.48931230282756866
+        "foreground": 778,
+        "background": 13490,
+        "foregroundMisses": 476.4574803324169,
+        "backgroundMisses": 92.47296924276044,
+        "score": 0.6124132137948803
       },
-      "ratio": 0.00550334976894333,
-      "foregroundLoss": 0.05239932026002751,
-      "edgeLoss": 0.07126246094579936,
+      "ratio": 0.00480686315696376,
+      "foregroundLoss": 0.052711014459825706,
+      "edgeLoss": 0.07408975543550333,
       "sizeLoss": 0,
       "backgroundLoss": 0
     },
     {
       "code": "S42.01",
       "file": "ed1.jsx",
-      "score": 0.5106298562226023,
-      "globalScore": 0.10520932994622414,
-      "colorLoss": 0.09107086979037864,
-      "localLoss": 0.5106298562226023,
+      "score": 0.5165601315883301,
+      "globalScore": 0.10309760895124846,
+      "colorLoss": 0.09012297717808287,
+      "localLoss": 0.5165601315883301,
       "worstRegion": {
         "column": 0,
         "row": 0,
-        "foreground": 1593,
-        "background": 12675,
-        "foregroundMisses": 813.4333609626054,
-        "backgroundMisses": 16.359302567522036,
-        "score": 0.5106298562226023
+        "foreground": 1610,
+        "background": 12658,
+        "foregroundMisses": 831.6618118572115,
+        "backgroundMisses": 16.600440602208774,
+        "score": 0.5165601315883301
       },
-      "ratio": 0.014439015042636774,
-      "foregroundLoss": 0.10520932994622414,
-      "edgeLoss": 0.035384028355799235,
+      "ratio": 0.011878597592883308,
+      "foregroundLoss": 0.10309760895124846,
+      "edgeLoss": 0.03377091132580534,
       "sizeLoss": 0,
       "backgroundLoss": 0
     }

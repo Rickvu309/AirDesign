@@ -4,7 +4,7 @@ import {readdir,readFile} from "node:fs/promises"
 import {parseRegistry,readRegistry,readBudgetBaseline,validateRegistry,ratchet,selectScenarios,passesParity} from "./registry.ts"
 import {investorDeck} from "./investor-deck.ts"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
-import {surfaceTargets} from "./targets.ts"
+import {surfaceTargets,targetFor} from "./targets.ts"
 import {localFixture} from "./fixture-environment.ts"
 describe("design parity contract",()=>{
   it("starts local fixtures safely after Vite sets production mode and restores the caller on failure",async()=>{
@@ -61,10 +61,10 @@ describe("design parity contract",()=>{
 })
 it("enforces release targets separately from regression ceilings and refuses missing coverage",async()=>{
   const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing=entries.find(entry=>entry.status==="unreachable")!
-  const scenario={...entry,budget:0.9,target:surfaceTargets[entry.surface]}
+  const scenario={...entry,budget:0.9,target:targetFor(entry.code,entry.surface)}
   expect(passesParity(scenario,0.8,false)).toBe(true)
   expect(passesParity(scenario,0.8,true)).toBe(false)
-  expect(passesParity(scenario,0.02,true)).toBe(true)
+  expect(passesParity(scenario,scenario.target,true)).toBe(true)
   expect(passesParity({...scenario,target:1},0.8,true)).toBe(false)
   expect(passesParity(scenario,0.95,false)).toBe(false)
   expect(passesParity(missing,undefined,true)).toBe(false)
@@ -73,7 +73,7 @@ it("enforces release targets separately from regression ceilings and refuses mis
 it("rejects target edits independently of regression budgets",async()=>{
   const entries=await readRegistry()
   for(const entry of entries){
-    expect(entry.target).toBe(surfaceTargets[entry.surface])
+    expect(entry.target).toBe(targetFor(entry.code,entry.surface))
     expect(()=>validateRegistry([{...entry,target:1}],[entry.design.split("/").at(-1)!],{[entry.code]:1})).toThrow("uncalibrated-target")
   }
 })

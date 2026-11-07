@@ -27,6 +27,17 @@
         "kind": "navigate",
         "name": "Pricing",
         "path": "/pricing/"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "landing-hero",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -58,6 +69,17 @@
         "kind": "navigate",
         "name": "Product",
         "path": "/#product"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "pricing-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -87,6 +109,17 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -126,6 +159,17 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -153,6 +197,17 @@
       ],
       "probe": {
         "kind": "expired"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -183,6 +238,22 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -217,6 +288,28 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -256,6 +349,28 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -295,6 +410,28 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -338,6 +475,28 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -377,6 +536,22 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -414,6 +589,22 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -452,6 +643,22 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -497,6 +704,22 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -531,6 +754,28 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -572,6 +817,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -610,6 +866,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -652,6 +928,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -685,6 +981,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -718,6 +1034,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -750,7 +1086,7 @@
         "shell.home"
       ],
       "texts": [
-        "Working… You can steer or stop this run."
+        "Working\u2026 You can steer or stop this run."
       ],
       "controls": [
         {
@@ -768,6 +1104,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -818,6 +1174,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -872,6 +1248,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -926,6 +1322,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -980,6 +1396,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1030,6 +1466,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1080,6 +1536,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1113,6 +1589,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1146,6 +1642,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1179,6 +1695,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1212,6 +1748,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1244,7 +1800,7 @@
         "agent.resume"
       ],
       "texts": [
-        "Aira couldn’t finish. Changes so far stay."
+        "Aira couldn\u2019t finish. Changes so far stay."
       ],
       "controls": [
         {
@@ -1258,6 +1814,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1307,6 +1883,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1340,9 +1936,6 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [],
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "texts": [
         "Export your deck"
       ],
@@ -1358,6 +1951,20 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1396,9 +2003,6 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [],
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "texts": [
         "Export your deck"
       ],
@@ -1414,6 +2018,20 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1430,9 +2048,6 @@
     "status": "unreachable",
     "assertions": {
       "copyKeys": [],
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "texts": [
         "Export your deck"
       ],
@@ -1448,6 +2063,20 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1484,9 +2113,6 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [],
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "texts": [
         "Export your deck"
       ],
@@ -1506,6 +2132,20 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1524,9 +2164,6 @@
       "copyKeys": [
         "common.cancel"
       ],
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
       "texts": [
         "Claude wants to use AirDesign"
       ],
@@ -1542,6 +2179,20 @@
       ],
       "probe": {
         "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1567,9 +2218,6 @@
     "status": "reachable",
     "assertions": {
       "copyKeys": [],
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
       "texts": [
         "Ready to return to your agent"
       ],
@@ -1585,6 +2233,20 @@
       ],
       "probe": {
         "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1603,9 +2265,6 @@
       "copyKeys": [
         "common.cancel"
       ],
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
       "texts": [
         "Codex wants to use AirDesign"
       ],
@@ -1621,6 +2280,20 @@
       ],
       "probe": {
         "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1651,6 +2324,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1689,6 +2373,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1735,6 +2430,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1774,6 +2480,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1791,7 +2508,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
+        "text": "Waiting for your $25.00 payment\u2026"
       },
       {
         "kind": "selector-click",
@@ -1810,7 +2527,7 @@
         "usage.title"
       ],
       "texts": [
-        "Waiting for your $25.00 payment…"
+        "Waiting for your $25.00 payment\u2026"
       ],
       "controls": [
         {
@@ -1827,6 +2544,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1871,6 +2599,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1917,6 +2656,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -1958,15 +2717,26 @@
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "name": "Reset for $5"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "name": "Cancel"
         }
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -2000,6 +2770,17 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -2029,7 +2810,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Usage reset. Resume when you\u2019re ready."
       }
     ],
     "viewport": {
@@ -2044,7 +2825,7 @@
         "shell.home"
       ],
       "texts": [
-        "Usage reset. Resume when you’re ready."
+        "Usage reset. Resume when you\u2019re ready."
       ],
       "controls": [
         {
@@ -2062,6 +2843,26 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -2091,6 +2892,17 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   },
@@ -2135,6 +2947,17 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
     }
   }

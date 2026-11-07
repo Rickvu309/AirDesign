@@ -41,7 +41,10 @@ try{
     try{
       const page=await context.newPage()
       await page.setContent(`<style>${css} ${fonts} :root{${tokens}}body{margin:0}</style>${html}`)
-      await page.evaluate(()=>document.fonts.ready)
+      await page.evaluate(async()=>{
+        await Promise.all([document.fonts.load("400 14px Geist"),document.fonts.load("600 14px Geist")])
+        await document.fonts.ready
+      })
       const capture=await page.screenshot({animations:"disabled"})
       await fs.writeFile(path.join(out,`${code}-source.png`),capture)
       await fs.writeFile(path.join(out,`${code}-source.html`),`<style>${css} ${fonts} :root{${tokens}}body{margin:0}</style>${html}`)

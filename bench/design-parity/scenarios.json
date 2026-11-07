@@ -31,8 +31,20 @@
         "kind": "navigate",
         "name": "Pricing",
         "path": "/pricing/"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "landing-hero",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "site",
@@ -48,7 +60,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.02,
+    "target": 0.01,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -66,8 +78,20 @@
         "kind": "navigate",
         "name": "Product",
         "path": "/#product"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "pricing-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -83,7 +107,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "access.sign_in_title"
@@ -99,8 +123,20 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -126,7 +162,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "access.check_title"
@@ -142,8 +178,20 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -159,7 +207,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "access.expired_title"
@@ -173,8 +221,20 @@
       ],
       "probe": {
         "kind": "expired"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -190,7 +250,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "home.empty_title"
@@ -207,8 +267,25 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -224,7 +301,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -245,8 +322,31 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -267,7 +367,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -288,8 +388,31 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -310,7 +433,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -331,8 +454,31 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -357,7 +503,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -378,8 +524,31 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -400,7 +569,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -421,8 +590,25 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -443,7 +629,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -462,8 +648,25 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -484,7 +687,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand",
@@ -504,8 +707,25 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -534,7 +754,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -553,8 +773,25 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -570,7 +807,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -591,8 +828,31 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -613,7 +873,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "shell.brand"
@@ -636,8 +896,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -658,7 +930,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.63,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -678,8 +950,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -704,7 +997,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -724,8 +1017,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -741,7 +1055,7 @@
     "status": "unreachable",
     "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.03,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -761,8 +1075,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -778,7 +1113,7 @@
     "status": "unreachable",
     "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -798,8 +1133,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -834,7 +1190,7 @@
         "shell.home"
       ],
       "texts": [
-        "Working… You can steer or stop this run."
+        "Working\u2026 You can steer or stop this run."
       ],
       "controls": [
         {
@@ -852,8 +1208,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -882,7 +1259,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -906,8 +1283,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -940,7 +1338,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -964,8 +1362,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -998,7 +1417,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1022,8 +1441,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1056,7 +1496,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.03,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1080,8 +1520,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1110,7 +1571,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1134,8 +1595,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1168,7 +1650,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1188,8 +1670,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1205,7 +1708,7 @@
     "status": "unreachable",
     "reason": "No Shapes tool or shapes browser exists in ManualEditor.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1225,8 +1728,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1242,7 +1766,7 @@
     "status": "unreachable",
     "reason": "No expanded shapes browser exists in ManualEditor.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1262,8 +1786,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1279,7 +1824,7 @@
     "status": "unreachable",
     "reason": "No Text toolbar panel exists in ManualEditor.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1299,8 +1844,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1316,7 +1882,7 @@
     "status": "unreachable",
     "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1336,8 +1902,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1366,13 +1953,13 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "agent.resume"
       ],
       "texts": [
-        "Aira couldn’t finish. Changes so far stay."
+        "Aira couldn\u2019t finish. Changes so far stay."
       ],
       "controls": [
         {
@@ -1386,8 +1973,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1419,7 +2027,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1439,8 +2047,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1473,7 +2102,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [],
       "texts": [
@@ -1494,8 +2123,20 @@
       },
       "entryCopyKeys": [
         "shell.home"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1533,7 +2174,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [],
       "texts": [
@@ -1554,8 +2195,20 @@
       },
       "entryCopyKeys": [
         "shell.home"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1571,7 +2224,7 @@
     "status": "unreachable",
     "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [],
       "texts": [
@@ -1592,8 +2245,20 @@
       },
       "entryCopyKeys": [
         "shell.home"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1629,7 +2294,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [],
       "texts": [
@@ -1654,8 +2319,20 @@
       },
       "entryCopyKeys": [
         "shell.home"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1671,7 +2348,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.01,
     "assertions": {
       "copyKeys": [
         "common.cancel"
@@ -1694,8 +2371,20 @@
       },
       "entryCopyKeys": [
         "common.cancel"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1720,7 +2409,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.01,
     "assertions": {
       "copyKeys": [],
       "texts": [
@@ -1741,8 +2430,20 @@
       },
       "entryCopyKeys": [
         "common.cancel"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1758,7 +2459,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "common.cancel"
@@ -1781,8 +2482,20 @@
       },
       "entryCopyKeys": [
         "common.cancel"
-      ]
-    }
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1798,7 +2511,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "usage.title"
@@ -1815,8 +2528,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1832,7 +2557,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "agent.name"
@@ -1857,8 +2582,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1874,7 +2611,7 @@
     "status": "reachable",
     "steps": [],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -1907,8 +2644,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1929,7 +2678,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "pay.continue"
@@ -1950,8 +2699,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -1976,7 +2737,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
+        "text": "Waiting for your $25.00 payment\u2026"
       },
       {
         "kind": "selector-click",
@@ -1984,13 +2745,13 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "usage.title"
       ],
       "texts": [
-        "Waiting for your $25.00 payment…"
+        "Waiting for your $25.00 payment\u2026"
       ],
       "controls": [
         {
@@ -2007,8 +2768,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2036,7 +2809,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "credits.title"
@@ -2055,8 +2828,20 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2085,7 +2870,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -2105,8 +2890,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2139,7 +2945,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "usage.reset_confirm_title"
@@ -2150,17 +2956,29 @@
       "controls": [
         {
           "role": "button",
-          "name": "Export"
+          "name": "Reset for $5"
         },
         {
           "role": "button",
-          "name": "Slide 3"
+          "name": "Cancel"
         }
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2176,7 +2994,7 @@
     "status": "unreachable",
     "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "shell.home"
@@ -2196,8 +3014,20 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2234,17 +3064,17 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Usage reset. Resume when you\u2019re ready."
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.02,
     "assertions": {
       "copyKeys": [
         "shell.home"
       ],
       "texts": [
-        "Usage reset. Resume when you’re ready."
+        "Usage reset. Resume when you\u2019re ready."
       ],
       "controls": [
         {
@@ -2262,8 +3092,29 @@
       ],
       "probe": {
         "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2279,7 +3130,7 @@
     "status": "unreachable",
     "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "access.expired_title"
@@ -2295,8 +3146,20 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   },
   {
     "surface": "studio",
@@ -2324,7 +3187,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.53,
+    "target": 0.3,
     "assertions": {
       "copyKeys": [
         "credits.title"
@@ -2343,7 +3206,19 @@
         "open": "Sign out",
         "title": "Sign out?",
         "close": "Cancel"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
       }
-    }
+    },
+    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
   }
 ]
