@@ -127,10 +127,11 @@ describe("Studio design foundation", () => {
     const workspace = "apps/studio/src/decks/workspace.tsx"
     const source = readFileSync(workspace, "utf8")
     expect(studioFoundationHits(workspace, source.replace('<Icon name="plus"/>New deck', '+ New deck'))).toEqual([{ line: 1, reason: "studio-new-deck-uses-shared-plus-icon" }])
-    const styles = "apps/studio/src/editor/workspace.css"
+    const styles = "apps/studio/src/decks/decks.css"
     const css = readFileSync(styles, "utf8")
     expect(studioFoundationHits(styles, css)).toEqual([])
-    expect(studioFoundationHits(styles, css.replace("font-size:14px;font-weight:500", "font-size:14px;font-weight:600"))).toEqual([{ line: 1, reason: "studio-new-deck-uses-medium-signature-button-weight" }])
+    expect(studioFoundationHits(styles, css.replace("font-size:var(--text-body-small);font-weight:500", "font-size:var(--text-body-small);font-weight:600"))).toEqual([{ line: 1, reason: "studio-new-deck-uses-medium-signature-button-weight" }])
+    expect(studioFoundationHits(styles, css.replace("padding:8px 16px;background:var(--signature-gradient);", "padding:8px 16px;background:linear-gradient(var(--primary-top),var(--primary));"))).toEqual([{ line: 1, reason: "studio-new-deck-paints-the-shared-signature-gradient" }])
   })
   it("preserves the access header when focusing the code on a phone", () => {
     const code = "packages/ui/src/code-entry/code-entry.tsx"
