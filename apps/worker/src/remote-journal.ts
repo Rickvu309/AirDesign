@@ -4,6 +4,7 @@ import {rm,rmdir} from "node:fs/promises"
 import {spawn} from "node:child_process"
 import path from "node:path"
 import {z} from "zod"
+import {cleanContainerJob} from "./container-job-processes.ts"
 const ownership=z.object({id:z.string().uuid(),lease:z.string().uuid(),directory:z.string().nullable(),unit:z.string().nullable(),pid:z.number().nullable(),identity:z.string().nullable(),mode:z.enum(["container","systemd"])})
 const entry=z.discriminatedUnion("queue",[
  ownership.extend({queue:z.enum(["import","image"]),database:z.string()}),
@@ -27,8 +28,8 @@ export class RemoteJournal{
   this.save({...job,...process,identity:identity(process.pid)})
  }
  async clean(job:z.infer<typeof entry>){
-  if(job.mode==="container"&&job.pid&&(identity(job.pid)===null||job.identity===identity(job.pid))){
-   try{process.kill(-job.pid,"SIGKILL")}catch(error){if(!(error instanceof Error&&"code" in error&&error.code==="ESRCH"))throw error}
+  if(job.mode==="container"&&job.directory){
+   cleanContainerJob(job.directory)
   }
   if(job.mode==="systemd"&&job.unit)await new Promise<void>((resolve,reject)=>{
    const child=spawn("systemctl",["--user","kill","--signal=SIGKILL",job.unit ?? ""],{stdio:"ignore"})
