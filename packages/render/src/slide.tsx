@@ -31,6 +31,7 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
   useLayoutEffect(() => {
     const node = ref.current
     if (!node || !commit) return
+    let formattingRuns=element.runs
     const rememberStyle = () => {
       const anchor = node.ownerDocument.getSelection()?.anchorNode
       const span = anchor instanceof node.ownerDocument.defaultView!.Element ? anchor.closest("[data-run-style]") : anchor?.parentElement?.closest("[data-run-style]")
@@ -42,7 +43,8 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
       const selection=textSelection(node)
       if(!selection)return
       if(selection.start===selection.end){caretStyle.current={...caretStyle.current,[kind]:!caretStyle.current[kind]};return}
-      const runs=formatRuns(editableRuns(node,element.runs),kind,selection.start,selection.end)
+      const runs=formatRuns(editableRuns(node,formattingRuns),kind,selection.start,selection.end)
+      formattingRuns=runs
       canonicalChildren(node,runs);localRuns.current=JSON.stringify(runs);commit(element.id,runs)
     }
     const formatEvent=(event:Event)=>{if(event instanceof CustomEvent && ["bold","italic","underline"].includes(event.detail))format(event.detail)}

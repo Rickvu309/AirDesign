@@ -350,7 +350,7 @@
       },
       {
         "kind": "assert",
-        "selector": ".layout-choices .layout-choice:nth-child(6)"
+        "selector": ".contextual-insertion-slot"
       }
     ]
   },
@@ -369,7 +369,7 @@
     "steps": [
       {
         "kind": "click",
-        "name": "Slide 3"
+        "name": "Slide 2"
       },
       {
         "kind": "paste-slides",

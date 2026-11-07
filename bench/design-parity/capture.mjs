@@ -59,10 +59,16 @@ export async function perform(page,step,stack,owner){
   switch(step.kind){
     case "assert":await page.locator(step.selector).waitFor({state:"visible"});break
     case "hold":{
-      const button=page.getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.getByLabel("Choose slide layout",{exact:true}).waitFor();await page.mouse.up();break
+      const button=page.getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.locator(".contextual-insertion-slot").waitFor();await page.mouse.up();break
     }
     case "paste-slides":{
-      const deck=fixtureDeck(1,step.count),source=clipboardSource(deck,deck.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted`,{exact:true}).waitFor();break
+      const deck=fixtureDeck(1,step.count)
+      for(const [index,slide] of deck.slides.entries()){
+        const title=slide.elements.find(element=>element.kind==="text");title.runs=[{text:index===0 ? "Market share by region" : "Churn is down to 4%",font:"Geist",size:48,bold:true,color:"#1f1f1f"}];title.box={x:70.4,y:70.4,width:819.2,height:60}
+        const base={source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,kind:"shape",geometry:"rectangle"}
+        slide.elements=[title,...(index===0 ? [46,34,58,26].map((height,n)=>({...base,id:`pastebar${index}n${n}`,box:{x:70.4+n*116.8,y:470.4-height*3.2,width:83.2,height:height*3.2},fill:"#8a8a8a"})) : [180,150,164].map((width,n)=>({...base,id:`pasteline${index}n${n}`,box:{x:70.4,y:168+n*41.6,width:width*3.2,height:16},fill:"#d7d7d6"})))]
+      }
+      const source=clipboardSource(deck,deck.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted`,{exact:true}).waitFor();break
     }
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
     case "click":await page.getByRole("button",{name:step.name,exact:true}).first().click();break
@@ -95,6 +101,7 @@ export async function perform(page,step,stack,owner){
         await page.getByText("Your agent updated",{exact:false}).waitFor()
       }else{
         if(step.outcome==="long-message"){
+          await page.locator('.editor-slide:not([hidden]) [data-kind="group"]').click({position:{x:4,y:4}})
           await page.getByLabel("Message Aira",{exact:true}).fill("Make this chart tell the story faster. Lead with the Q3 number, then show the trend across all five quarters. Keep our Halden colors and label each bar with its value. Add one takeaway line under the title, revenue grew 39% year over year, and cut the source note down to a single line so the slide breathes.")
           break
         }
@@ -105,7 +112,7 @@ export async function perform(page,step,stack,owner){
           await page.getByText("Your weekly usage is used up. Changes so far stay. You can keep editing manually.",{exact:true}).waitFor()
           break
         }
-        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed")
+        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after")
         stack.parityFinish=async()=>{hold.release.resolve()}
         await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
         await page.getByRole("button",{name:"Send",exact:true}).click()

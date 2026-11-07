@@ -39,7 +39,7 @@ async function sample(s,session,owner,id,index,kind){
   await source.close()
   return {index,kind,run:start.id,request:text,scope:["s0e0"],seq,acceptedChanges:1,weightedUnits:3,firstCommittedChangeMs:edit.monotonic-startedAt,harnessReadDispatchMs:apply.start-startedAt,sharedApplyToolMs:apply.ack-apply.start,commitToActivityStreamMs:streamAt-edit.monotonic,commitToPaintMs:paint.wall-edit.wall,webhookRequestMs:ackAt-webhookStart,durableReceiptToAckMs:ackAt-paymentCommit.monotonic,verifiedCommitToResultPaintMs:paymentPaint.wall-paymentCommit.wall,payment:checkout.id,paint,paymentPaint}
 }
-async function install(s,session){await evaluate(s,session,'window.__airaPaints={};window.__airaObserver=new MutationObserver(()=>{const root=document.querySelector(".studio-editor"),seq=Number(root.dataset.seq);requestAnimationFrame(()=>requestAnimationFrame(()=>{window.__airaPaints[seq]={wall:Date.now(),text:document.querySelector(\'[aria-label="Text s0e0"]\')?.textContent}}))});window.__airaObserver.observe(document.querySelector(".studio-editor"),{attributes:true,attributeFilter:["data-seq"]});true')}
+async function install(s,session){await evaluate(s,session,'window.__airaPaints={};window.__airaObserver=new MutationObserver(()=>{const root=document.querySelector(".studio-editor"),seq=Number(root.dataset.seq);requestAnimationFrame(()=>requestAnimationFrame(()=>{window.__airaPaints[seq]={wall:Date.now(),text:document.querySelector(\'[data-text="s0e0"]\')?.textContent}}))});window.__airaObserver.observe(document.querySelector(".studio-editor"),{attributes:true,attributeFilter:["data-seq"]});true')}
 async function trial(kind,count,offset){
   const s=await scenario({browserEnabled:true}),session=`p08-perf-${kind}-${offset}-${process.pid}`
   try{

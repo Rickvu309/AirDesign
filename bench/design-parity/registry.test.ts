@@ -1,6 +1,8 @@
 import {describe,it,expect} from "vitest"
 import {readdir} from "node:fs/promises"
 import {parseRegistry,readRegistry,readBudgetBaseline,validateRegistry,ratchet,selectScenarios} from "./registry.ts"
+import {flatten} from "../../packages/deck/src/apply.ts"
+import {contentLabel} from "../../packages/deck/src/content-labels.ts"
 import {investorDeck} from "./investor-deck.ts"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
 import {localFixture} from "./fixture-environment.ts"
@@ -29,12 +31,32 @@ describe("design parity contract",()=>{
     expect(()=>parseRegistry([{...entry,status:"reachable",steps:[{kind:"paste-slides",count:0}]}])).toThrow()
   })
   it("seeds the design narrative with eight slides and the revenue chart labels",()=>{
-    const deck=investorDeck("parity"),copy=deck.slides.flatMap(slide=>slide.elements.flatMap(element=>element.kind==="text" ? element.runs.map(run=>run.text) : []))
+    const deck=investorDeck("parity"),copy=deck.slides.flatMap(slide=>flatten(slide.elements).flatMap(element=>element.kind==="text" ? element.runs.map(run=>run.text) : []))
     expect(deck.slides).toHaveLength(8)
     expect(deck.template).toEqual({id:"halden",version:1,family:"basic"})
     expect(copy).toContain("Revenue grew 39% year over year")
     expect(copy).toEqual(expect.arrayContaining(["$4.1M","$5.7M","Q3 24","Q3 25"]))
     expect(deck.slides[2]?.notes).toContain("two enterprise deals")
+  })
+  it("keeps native revenue bars on the design baseline with proportional heights and legible thumbnail titles",()=>{
+    const deck=investorDeck("parity"),elements=flatten(deck.slides[2]!.elements)
+    const baseline=elements.find(element=>element.id==="s2baseline")!
+    const chart=elements.find(element=>element.id==="s2chart")!
+    expect(contentLabel(chart)).toBe("Bar chart")
+    expect(chart.box).toEqual({x:67.2,y:160.8,width:825.6,height:322.8})
+    expect(baseline.box).toEqual({x:4.8,y:292.32,width:816,height:1.2})
+    expect(chart.kind==="group"&&chart.children.filter(element=>element.kind==="text")).toHaveLength(10)
+    for(const [index,value] of [4.1,4.6,5,5.4,5.7].entries()){
+      const bar=elements.find(element=>element.id===`s2bar${index}`)!
+      expect(bar.box.height).toBe(Math.round(value/5.7*210)*1.2)
+      expect(bar.box.y+bar.box.height).toBeCloseTo(baseline.box.y)
+      expect(chart.kind==="group"&&chart.children.some(element=>element.id===`s2value${index}`)).toBe(true)
+      expect(chart.kind==="group"&&chart.children.some(element=>element.id===`s2label${index}`)).toBe(true)
+    }
+    for(const index of [0,1,4,5,6,7]){
+      const title=deck.slides[index]!.elements.find(element=>element.kind==="text")!
+      expect(title.kind==="text"&&title.runs[0]?.size).toBe(60)
+    }
   })
   it("gives visible fixture records stable, distinct UUIDs across runs and screens",()=>{
     expect(fixtureIdentifier("S91.02",0)).toBe(fixtureIdentifier("S91.02",0))

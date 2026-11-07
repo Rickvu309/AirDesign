@@ -11,6 +11,7 @@ vi.mock("../../../../packages/render/src/fonts.ts",()=>({waitForFonts:()=>Promis
 vi.mock("../export/export-dialog.tsx",()=>({ExportDialog:()=>null}))
 
 it("uses the floating editor shell, switches views and exposes contextual actions",async()=>{
+  vi.stubGlobal("EventSource",class{close(){}})
   vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
   history.replaceState(null,"","/deck/example")
   const container=document.createElement("div");document.body.append(container)

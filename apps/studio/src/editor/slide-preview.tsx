@@ -1,3 +1,4 @@
+import {elementWithBox} from "./editor-model.ts"
 import {useLayoutEffect,useRef,useState} from "react"
 import {fontReport} from "../../../../packages/render/src/fonts.ts"
 import {flatten,type Box,type Id,type Element} from "../../../../packages/deck/src/index.ts"
@@ -31,7 +32,7 @@ export function SlidePreview({editing,onScale,...props}:Parameters<typeof Slide>
     dragCleanup.current=cleanup
     window.addEventListener("pointermove",move);window.addEventListener("pointerup",finish,{once:true});window.addEventListener("pointercancel",cancel,{once:true})
   }
-  function preview(elements:Element[]):Element[]{return elements.map(element=>draft&&element.id===selected?.id ? {...element,box:draft} : element.kind==="group" ? {...element,children:preview(element.children)} : element)}
+  function preview(elements:Element[]):Element[]{return elements.map(element=>draft&&element.id===selected?.id ? elementWithBox(element,draft) : element.kind==="group" ? {...element,children:preview(element.children)} : element)}
   function offset(elements:Element[],target:Id,x=0,y=0):{x:number;y:number}|null {for(const element of elements){if(element.id===target)return {x,y};if(element.kind==="group"){const found=offset(element.children,target,x+element.box.x,y+element.box.y);if(found)return found}}return null}
   const parent=selected ? offset(props.slide.elements,selected.id) : null,localBox=draft ?? selected?.box
   const visibleBox=localBox ? {...localBox,x:localBox.x+(parent?.x ?? 0),y:localBox.y+(parent?.y ?? 0)} : undefined

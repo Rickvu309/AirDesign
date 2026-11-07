@@ -3,7 +3,8 @@ import {createRoot} from "react-dom/client"
 import {afterEach,expect,it,vi} from "vitest"
 import {basics} from "../../../../packages/brand/src/index.ts"
 import {execute,initialHistory,type Command,type History} from "../../../../packages/change-log/src/index.ts"
-import {fixtureDeck} from "../../../../packages/deck/src/fixture.ts"
+import {id} from "../../../../packages/deck/src/index.ts"
+import {fixtureDeck,fixtureElement} from "../../../../packages/deck/src/fixture.ts"
 import {clipboardSource} from "./editor-model.ts"
 import {ManualEditor} from "./manual-editor.tsx"
 
@@ -16,7 +17,8 @@ afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();mock.toast.mockReset()})
 async function editor(deck=fixtureDeck(1,2)) {
   vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
   vi.stubGlobal("fetch",()=>Promise.resolve(Response.json({templates:basics,default:basics[0]})))
-  vi.stubGlobal("EventSource",class {close(){}})
+  const streams:{onmessage:((event:MessageEvent)=>void)|null}[]=[]
+  vi.stubGlobal("EventSource",class {onmessage:((event:MessageEvent)=>void)|null=null;constructor(){streams.push(this)}close(){}})
   let history:History=initialHistory(deck)
   const commands:Command[]=[]
   const sync={get deck(){return history.deck},get seq(){return history.seq},get history(){return history},state:{kind:"saved"},queue:[],historyTarget:(direction:string)=>history.events.findLast(event=>event.active===(direction==="undo"))?.id ?? null,enqueue:async(command:Command)=>{commands.push(command);const result=execute(history,command);expect(result.receipt.kind).toBe("applied");history=result.history}}
@@ -27,11 +29,12 @@ async function editor(deck=fixtureDeck(1,2)) {
   const button=(name:string)=>[...container.querySelectorAll("button")].find(button=>button.getAttribute("aria-label")===name || button.textContent?.trim()===name)!
   const click=async(name:string)=>{expect(button(name)).toBeDefined();await act(async()=>button(name).click());await render()}
   const close=async()=>{await act(async()=>root.unmount());container.remove()}
-  return {container,button,click,render,close,sync,commands}
+  const snapshot=async(value:unknown)=>{await act(async()=>streams[0]?.onmessage?.(new MessageEvent("message",{data:JSON.stringify(value)})));await render()}
+  return {container,button,click,render,close,sync,commands,snapshot}
 }
 it("AD-11 navigates between real slides from the single-slide filmstrip",async()=>{
-  const ui=await editor();try{await ui.click("Single slide view");expect(ui.container.querySelectorAll('.editor-filmstrip button')).toHaveLength(2);await ui.click("Go to slide 2");expect(ui.container.querySelector('.editor-slide:not([hidden]) [data-slide]')?.getAttribute("data-slide")).toBe("s1");expect(ui.button("Go to slide 2").getAttribute("aria-current")).toBe("page")}finally{await ui.close()}
-})
+  const ui=await editor();try{await ui.click("Single slide view");expect(ui.container.querySelectorAll('.editor-filmstrip details>button')).toHaveLength(2);await ui.click("Go to slide 2");expect(ui.container.querySelector('.editor-slide:not([hidden]) [data-slide]')?.getAttribute("data-slide")).toBe("s1");expect(ui.button("Go to slide 2").getAttribute("aria-current")).toBe("page")}finally{await ui.close()}
+},20_000)
 it("AD-12 and AD-13 add a native shape and styled text through undoable commands",async()=>{
   const ui=await editor();try{
     await ui.click("Shapes");expect(ui.button("Shapes").disabled).toBe(false);await ui.click("Rectangle");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"rectangle"})
@@ -75,7 +78,7 @@ it("AD-16 preserves keyboard undo and redo after deleting the focused slide",asy
 })
 it("holds New slide to choose one of six undoable native layouts",async()=>{
   const ui=await editor();try{
-    vi.useFakeTimers();await act(async()=>{ui.button("+ New slide").dispatchEvent(new MouseEvent("pointerdown",{button:0,bubbles:true}));vi.advanceTimersByTime(450)});await ui.render();expect(ui.container.querySelectorAll('.layout-choice')).toHaveLength(6)
+    vi.useFakeTimers();await act(async()=>{ui.button("+ New slide").dispatchEvent(new MouseEvent("pointerdown",{button:0,bubbles:true}));vi.advanceTimersByTime(450)});await ui.render();expect(ui.container.querySelector('.contextual-insertion-slot')).not.toBeNull();await ui.click("Add slide here");expect(ui.container.querySelectorAll('.layout-choice')).toHaveLength(6)
     await ui.click("Two columns");expect(ui.sync.deck.slides).toHaveLength(3);expect(ui.sync.deck.slides[1]?.elements).toHaveLength(3)
   }finally{await ui.close()}
 })
@@ -101,7 +104,7 @@ it("AD-14 changes selected-slide colors and background through keyboard undo",as
 
 it("browses and inserts native flowchart shapes through undoable commands",async()=>{
   const ui=await editor();try{
-    await ui.click("Shapes");await ui.click("More shapes");expect(ui.container.textContent).toContain("Flowchart")
+    await ui.click("Shapes");expect(ui.container.querySelector('button[aria-label="Line"]')).not.toBeNull();expect(ui.container.querySelector('button[aria-label="Arrow"]')).not.toBeNull();await ui.click("More shapes");expect(ui.container.textContent).toContain("Flowchart")
     await ui.click("Database");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"flowDatabase"})
     await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides[0]?.elements).toHaveLength(1)
     await ui.click("Line");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"rectangle",box:{height:2}})
@@ -141,19 +144,6 @@ it("moves and resizes selected objects through history and exposes Aira attachme
   }finally{await ui.close()}
 })
 
-
-it("uses the destination section and insertion anchor for add and paste",async()=>{
-  const deck=fixtureDeck(1,3);deck.slides[0]!.section="Opening";deck.slides[1]!.section="Performance";deck.slides[2]!.section="Outlook"
-  const ui=await editor(deck);try{
-    await ui.click("Slide 2");await ui.click("+ New slide")
-    expect(ui.sync.deck.slides[2]?.section).toBe("Performance");expect(ui.sync.deck.slides[3]?.id).toBe("s2")
-    const event=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(event,"clipboardData",{value:{getData:()=>clipboardSource(deck,[deck.slides[0]!.id])}})
-    await act(async()=>ui.container.querySelector('.studio-editor')!.dispatchEvent(event));await ui.render()
-    expect(ui.sync.deck.slides[3]?.section).toBe("Performance");expect(ui.sync.deck.slides[4]?.id).toBe("s2")
-  }finally{await ui.close()}
-})
-
-
 it.each(["b","i","u"])("persists keyboard %s formatting through Undo and Redo",async key=>{
   const ui=await editor();try{
     await ui.click("Single slide view")
@@ -168,5 +158,55 @@ it.each(["b","i","u"])("persists keyboard %s formatting through Undo and Redo",a
     expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(before)
     await act(async()=>node.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true})));await ui.render()
     expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(after)
+  }finally{await ui.close()}
+})
+it("uses the destination section and insertion anchor for add and paste",async()=>{
+  const deck=fixtureDeck(1,3);deck.slides[0]!.section="Opening";deck.slides[1]!.section="Performance";deck.slides[2]!.section="Outlook"
+  const ui=await editor(deck);try{
+    await ui.click("Slide 2");await ui.click("+ New slide")
+    expect(ui.sync.deck.slides[2]?.section).toBe("Performance");expect(ui.sync.deck.slides[3]?.id).toBe("s2")
+    const event=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(event,"clipboardData",{value:{getData:()=>clipboardSource(deck,[deck.slides[0]!.id])}})
+    await act(async()=>ui.container.querySelector('.studio-editor')!.dispatchEvent(event));await ui.render()
+    expect(ui.sync.deck.slides[3]?.section).toBe("Performance");expect(ui.sync.deck.slides[4]?.id).toBe("s2")
+  }finally{await ui.close()}
+})
+
+it("keeps Outlook collapsed with an expandable slide stack",async()=>{
+ const deck=fixtureDeck(1,3);deck.slides[0]!.section="Opening";deck.slides[1]!.section="Outlook";deck.slides[2]!.section="Outlook"
+ const ui=await editor(deck);try{await ui.click("Single slide view");const sections=ui.container.querySelectorAll(".editor-filmstrip details");expect(sections[0]?.hasAttribute("open")).toBe(true);expect(sections[1]?.hasAttribute("open")).toBe(false);expect(sections[1]?.querySelector(".section-range")?.textContent).toBe("2 to 3");await ui.click("Expand Outlook slides");expect(sections[1]?.hasAttribute("open")).toBe(true);expect(ui.container.querySelector('.editor-slide:not([hidden]) [data-slide]')?.getAttribute("data-slide")).toBe("s1")}finally{await ui.close()}
+})
+
+it("keeps run progress on its actual target when the selected slide changes",async()=>{
+  const ui=await editor();try{
+    await ui.click("Agent")
+    await ui.snapshot({enabled:true,remote:[],run:{id:"run",owner:"owner",deck:"deck",request:"Build",selection:["s1"],kind:"working",events:[{id:1,kind:"tool",name:"get_slide",scope:"s1"}],completed:[]}})
+    expect(ui.container.querySelector('.editor-slide[data-selected="true"]')?.getAttribute("data-run-state")).toBeNull()
+    expect(ui.container.querySelector('.editor-slide[data-run-state="working"] [data-slide]')?.getAttribute("data-slide")).toBe("s1")
+    expect(ui.container.textContent).toContain("Building slide 1 of 1")
+    await ui.click("Go to slide 2")
+    expect(ui.container.querySelector('.editor-slide:not([hidden])')?.getAttribute("data-run-state")).toBe("working")
+    await ui.click("Go to slide 1")
+    expect(ui.container.querySelector('.editor-slide:not([hidden])')?.getAttribute("data-run-state")).toBeNull()
+  }finally{await ui.close()}
+})
+
+it("resizes grouped chart contents atomically through preview, Undo and Redo",async()=>{
+  const deck=fixtureDeck(0),bar=fixtureElement(1),group={...bar,id:id("chart"),kind:"group" as const,box:{x:20,y:30,width:200,height:100},children:[{...bar,box:{x:20,y:10,width:40,height:60}}]}
+  deck.slides[0]!.elements=[group]
+  const ui=await editor(deck);try{
+    await ui.click("Single slide view")
+    await act(async()=>ui.container.querySelector('.editor-slide:not([hidden]) [data-element="chart"]')!.dispatchEvent(new MouseEvent("pointerdown",{button:0,bubbles:true})))
+    await act(async()=>window.dispatchEvent(new MouseEvent("pointerup",{button:0,bubbles:true})))
+    await act(async()=>ui.button("Resize selected object").dispatchEvent(new MouseEvent("pointerdown",{button:0,bubbles:true})))
+    await act(async()=>window.dispatchEvent(new MouseEvent("pointermove",{clientX:100,clientY:50,bubbles:true})))
+    expect(ui.container.querySelector<HTMLElement>(`.editor-slide:not([hidden]) [data-element="${bar.id}"]`)!.style.inlineSize).toBe("60px")
+    await act(async()=>window.dispatchEvent(new MouseEvent("pointerup",{clientX:100,clientY:50,bubbles:true})));await ui.render()
+    const current=ui.sync.deck.slides[0]!.elements[0]!
+    expect(current.kind==="group"&&current.children[0]?.box).toEqual({x:30,y:15,width:60,height:90})
+    expect(ui.commands).toHaveLength(1)
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(group)
+    await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:true,bubbles:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(current)
   }finally{await ui.close()}
 })

@@ -1,16 +1,23 @@
-import { id,parseDeck,flatten,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
+import { id,parseDeck,flatten,type Box,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
 export function nodeId() {return id(`n${crypto.randomUUID().replaceAll("-","").slice(0,30)}`)}
 export type SlideLayout="title"|"summary"|"chart"|"columns"|"table"|"next"
 export function fitToolElement(element:Element,size:Slide["size"]):Element {
-  const horizontal=size.width/960,vertical=size.height/540
+  return scaleElement(element,size.width/960,size.height/540)
+}
+function scaleElement(element:Element,horizontal:number,vertical:number):Element {
   const fitted={...element,box:{x:element.box.x*horizontal,y:element.box.y*vertical,width:element.box.width*horizontal,height:element.box.height*vertical}}
-  if(fitted.kind==="group")return {...fitted,children:fitted.children.map(child=>fitToolElement(child,size))}
+  if(fitted.kind==="group")return {...fitted,children:fitted.children.map(child=>scaleElement(child,horizontal,vertical))}
   if(fitted.kind==="text") {
     const scale=(run:typeof fitted.runs[number])=>({...run,size:run.size*Math.min(horizontal,vertical)})
     const [first,...rest]=fitted.runs
     return {...fitted,runs:[scale(first),...rest.map(scale)]}
   }
   return fitted
+}
+export function elementWithBox(element:Element,box:Box):Element {
+  if(element.kind!=="group")return {...element,box}
+  const scaled=scaleElement(element,element.box.width===0 ? 1 : box.width/element.box.width,element.box.height===0 ? 1 : box.height/element.box.height)
+  return {...scaled,box}
 }
 export function newSlide(deck?:Deck,layout:SlideLayout="title"):Slide {
   const theme=deck?.themes.find(theme=>theme.id===deck.template?.id),link=theme?.id ?? null

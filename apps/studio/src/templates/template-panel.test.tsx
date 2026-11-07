@@ -57,3 +57,8 @@ it("names the current background color after it changes",async()=>{
  const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(1);deck.slides[0]!.background="#123456"
  try{await act(async()=>root.render(<TemplatePanel deck={deck} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>));expect(container.querySelector(".background-color")?.textContent).toBe("#123456")}finally{await act(async()=>root.unmount());container.remove()}
 })
+
+it("names the design panel header after the selected slide without a duplicate title row",async()=>{
+ const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(1,3)
+ try{await act(async()=>root.render(<TemplatePanel deck={deck} selection={[deck.slides[2]!.id]} edit={()=>{}} disabled={false} close={()=>{}}/>));expect(container.querySelector(".template-panel>header h2")?.textContent).toBe("Slide 3");expect(container.querySelector(".design-slide-title")).toBeNull()}finally{await act(async()=>root.unmount());container.remove()}
+})

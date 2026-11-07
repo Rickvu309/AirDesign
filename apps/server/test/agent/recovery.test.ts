@@ -24,7 +24,7 @@ it("resumes stopped work with one identity, skips accepted scopes and keeps late
       let final=await stream.next();while(final.run?.id!==start.id||final.run.kind!=="complete")final=await stream.next()
       expect(final.run.completed).toEqual(["s0","s1"])
       expect(final.run.events.filter((event:{name?:string})=>event.name==="apply_changes")).toHaveLength(2)
-      expect((await f.history.read({personId:owner.personId},"deck")).deck.slides[1]?.notes).toBe("Saved request")
+      const completed=await f.history.read({personId:owner.personId},"deck");expect(completed.deck.slides[1]?.notes).toBe(fixtureDeck(2,2).slides[1]!.notes);expect(completed.deck.slides[1]?.elements.find(element=>element.kind==="text")).toMatchObject({runs:[expect.objectContaining({text:"Saved request"})]})
       await f.json("/api/aira?deck=deck",{action:"undo"},owner.cookie)
       const undone=await f.history.read({personId:owner.personId},"deck")
       expect(undone.deck.slides[0]?.notes).toBe("Keep later edit");expect(undone.deck.slides[1]?.notes).not.toBe("Saved request")
