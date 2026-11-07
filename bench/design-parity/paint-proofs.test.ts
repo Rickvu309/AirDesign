@@ -45,10 +45,10 @@ it("hashes actual geometry and viewBox instead of trusting a search label",async
     await page.locator("path").evaluate(element=>element.setAttribute("d",element.getAttribute("d")!.replaceAll("21","21.0")))
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     const before=await page.screenshot()
-    await page.locator("path").evaluate(element=>element.setAttribute("d","M21 21L16 16M17 10A7 7 0 1 1 3 10A7 7 0 0 1 17 10"))
+    await page.locator("path").evaluate(element=>element.setAttribute("d","M21 21L16 16M18 10A8 8 0 1 1 2 10A8 8 0 0 1 18 10"))
     expect(await page.screenshot()).toEqual(before)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
-    for(const mutation of ["document.querySelector('path').setAttribute('d','M2 2L16 16M16 2L2 16')","document.querySelector('svg').setAttribute('viewBox','0 0 20 20')","document.querySelector('path').setAttribute('transform','rotate(90 12 12)')","document.querySelector('path').style.d='path(\"M2 2L16 16M16 2L2 16\")'","document.querySelector('svg').style.transform='rotate(90deg)'"]){
+    for(const mutation of ["document.querySelector('path').setAttribute('d','M21 21L16 16M17 10A7 7 0 1 1 3 10A7 7 0 0 1 17 10')","document.querySelector('path').setAttribute('d','M2 2L16 16M16 2L2 16')","document.querySelector('svg').setAttribute('viewBox','0 0 20 20')","document.querySelector('path').setAttribute('transform','rotate(90 12 12)')","document.querySelector('path').style.d='path(\"M2 2L16 16M16 2L2 16\")'","document.querySelector('svg').style.transform='rotate(90deg)'"]){
       await page.setContent(content)
       await page.evaluate(mutation)
       await expect(assertScenarioDOM(page,entry)).rejects.toThrow(/scenario=S31.02.*selector=.*check=icon-geometry.*expected=.*actual=/)
