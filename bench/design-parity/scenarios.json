@@ -41,7 +41,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S11.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "site",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S12.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -131,7 +131,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S21.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -185,7 +185,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S22.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -228,7 +228,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S29.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S31.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S31.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S31.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S31.04: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S31.05: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S32.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S32.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S32.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -797,7 +797,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S33.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -870,7 +870,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S33.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -934,7 +934,7 @@
         "n": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S33.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -1013,7 +1013,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S41.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1085,7 +1085,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S41.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1148,7 +1148,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S41.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1213,7 +1213,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S41.04: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1304,7 +1304,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S42.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1384,7 +1384,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S42.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1468,7 +1468,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S42.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1552,7 +1552,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S42.04: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1635,7 +1635,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1715,7 +1715,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1794,7 +1794,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1857,7 +1857,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.04: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1919,7 +1919,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.05: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -1981,7 +1981,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.06: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2043,7 +2043,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S43.07: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2120,7 +2120,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S49.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2198,7 +2198,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S49.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2275,7 +2275,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S61.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2357,7 +2357,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S61.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2419,7 +2419,7 @@
         "file": "Q3 Investor Update.pptx"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S61.03: replay designed steps, status for the deck-open state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2525,7 +2525,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S69.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2589,7 +2589,7 @@
         "agent": "Claude"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S71.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2647,7 +2647,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S71.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2700,7 +2700,7 @@
         "agent": "Codex"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S71.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2748,7 +2748,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S81.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2802,7 +2802,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S81.02: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2864,7 +2864,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S81.03: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -2927,7 +2927,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S91.01: replay designed steps for the usage-active state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3009,7 +3009,7 @@
         "amount": "$25.00"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S91.02: replay designed steps for the usage-active state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -3076,7 +3076,7 @@
         "balance": "$40.00"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S91.03: replay designed steps for the usage-active state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3164,7 +3164,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Studio v3 integration for S92.01: refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets."
   },
   {
     "surface": "studio",
@@ -3230,7 +3230,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S92.02: replay designed steps for the deck-limited-with-credits state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3293,7 +3293,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S92.03: replay designed steps, status for the deck-limited state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3419,7 +3419,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S92.04: replay designed steps for the deck-limited-with-credits state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3480,7 +3480,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S99.01: replay designed seed, steps, route, status for the usage-active state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3568,7 +3568,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Studio v3 integration for S99.02: replay designed steps for the usage-active state; refresh the capture fixture hash after Decks starter, export download and payment failure adapters were replayed onto c270ae9; retain canonical assertions, calibrated targets and budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
