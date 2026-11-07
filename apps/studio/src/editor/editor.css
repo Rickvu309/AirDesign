@@ -164,3 +164,10 @@
 
 .editor-filmstrip .section-range { display:inline-flex;align-items:center;margin-inline-start:8px;block-size:20px;padding-inline:6px;border:1px solid var(--border);border-radius:5px;color:var(--muted-foreground);font-size:11px;font-weight:400;box-sizing:border-box; }
 .editor-filmstrip details[open] .section-range { display:none; }
+
+@media (width < 768px) {
+  .editor-bar,.studio-editor[data-view=single] .editor-bar { inset-block-start:calc(12px + env(safe-area-inset-top,0px));inset-inline-start:calc(12px + env(safe-area-inset-left,0px));inset-inline-end:calc(12px + env(safe-area-inset-right,0px));block-size:auto;min-block-size:56px; }
+  .editor-export,.studio-editor[data-view=single] .editor-export { inset-block-start:calc(76px + env(safe-area-inset-top,0px));inset-inline-start:calc(12px + env(safe-area-inset-left,0px));inset-inline-end:calc(12px + env(safe-area-inset-right,0px));block-size:auto;min-block-size:54px; }
+  .studio-editor,.studio-editor[data-view=single] { padding-block-start:calc(144px + env(safe-area-inset-top,0px)); }
+  .ad-editor-shell .aira-panel { inset-block-start:calc(138px + env(safe-area-inset-top,0px));padding-inline-start:calc(16px + env(safe-area-inset-left,0px));padding-inline-end:calc(16px + env(safe-area-inset-right,0px)); }
+}

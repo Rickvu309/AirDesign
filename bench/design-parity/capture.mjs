@@ -23,7 +23,9 @@ export async function seed(stack,entry){
       await stack.request(owner,"/api/decks",deck,201)
       await stack.request(owner,`/api/catalog/${id}/rename`,{title})
       if(entry.seed.startsWith("deck-")){
-        const name="Q3 board notes.txt",uploaded=await stack.request(owner,"/api/mcp/uploads",{requestId:`notes_${id}`,name,text:"Q3 investor update. Revenue: Q3 24 $4.1M, Q4 24 $4.6M, Q1 25 $5M, Q2 25 $5.4M, Q3 25 $5.7M. Revenue grew 39% year over year. Gross margin 71%. Two enterprise deals. Customers, Product, Hiring plan, Next quarter."},201)
+        const name="Q3 board notes.txt",uploadResponse=await fetch(stack.origin+"/api/mcp/uploads",{method:"POST",headers:{cookie:owner.cookie,origin:stack.origin,"content-type":"application/json"},body:JSON.stringify({requestId:`notes_${id}`,name,text:"Q3 investor update. Revenue: Q3 24 $4.1M, Q4 24 $4.6M, Q1 25 $5M, Q2 25 $5.4M, Q3 25 $5.7M. Revenue grew 39% year over year. Gross margin 71%. Two enterprise deals. Customers, Product, Hiring plan, Next quarter."})})
+        if(uploadResponse.status!==201)throw new Error("notes-upload-failed")
+        const uploaded=await uploadResponse.json()
         const {client}=await stack.fixture.authorize(owner.cookie,"Codex"),file=await client.callTool({name:"add_file",arguments:{sourceUrl:uploaded.sourceUrl,name,requestId:`ingest_${id}`}})
         stack.runSources.set(id,{fileId:JSON.parse(file.content.find(item=>item.type==="text").text).data.fileId,name})
       }

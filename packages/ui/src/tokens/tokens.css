@@ -478,3 +478,13 @@ body {
   .ad-search,.ad-button,.ad-button-link,.ad-icon-button,.ad-nav-item,.ad-menu a,.ad-menu button,.ad-account summary,.ad-segmented button,.ad-access-legal a,[role="button"] { min-width:44px;min-height:44px; }
   .ad-access-legal a { display:inline-flex;align-items:center;justify-content:center; }
 }
+
+.ad-editor-shell :is(button,a[href],select,summary,input,textarea,[role="button"]) { touch-action:manipulation;-webkit-tap-highlight-color:transparent; }
+.ad-editor-shell :is(button,a[href],summary,[role="button"]) { user-select:none;-webkit-user-select:none; }
+.ad-editor-shell :is(button,a[href],select,summary,[role="button"]):active { opacity:.8; }
+.ad-editor-shell :is(.aira-conversation,.editor-filmstrip,.editor-tool-panel,.image-panel,.editor-changes) { overscroll-behavior:contain; }
+@media (pointer:coarse) {
+  .ad-editor-shell :is(button,a[href],select,summary,input:not([type=hidden]),textarea,[role="button"]) { min-inline-size:44px;min-block-size:44px; }
+  .ad-editor-shell :is(input,textarea,select) { font-size:16px; }
+  .ad-editor-shell a[href] { display:inline-flex;align-items:center;justify-content:center; }
+}
