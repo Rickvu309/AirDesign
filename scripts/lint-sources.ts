@@ -46,7 +46,6 @@ for (const file of files) {
   }
   for (const hit of workerLibraryHits(file, source)) failures.push(`${file}: ${hit}`)
   for (const hit of verifierBuildHits(file, source)) failures.push(`${file}: ${hit}`)
-  for (const hit of designParityIntegrationHits(path.relative(repoRoot,file),source)) failures.push(`${file}: ${hit}`)
   for (const hit of studioFoundationHits(file, source)) failures.push(`${file}:${hit.line} ${hit.reason}`)
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)

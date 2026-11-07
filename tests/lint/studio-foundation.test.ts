@@ -11,6 +11,13 @@ describe("Studio design foundation", () => {
     expect(studioFoundationHits(icons, "export function Icon() {} const paths = {}"))
       .toEqual([{ line: 1, reason: "studio-icons-use-the-shared-icon-module" }])
   })
+  it("rejects canonical keys and values in supplemental copy", () => {
+    const supplemental = "packages/ui/src/copy/studio-foundation-copy.ts"
+    expect(studioFoundationHits(supplemental, readFileSync(supplemental, "utf8"))).toEqual([])
+    for (const source of ['  "access.continue_email": "Other",', '  "other.key": "Recents",']) {
+      expect(studioFoundationHits(supplemental, source)).toEqual([{ line: 1, reason: "studio-supplemental-copy-must-not-duplicate-canonical-copy" }])
+    }
+  })
   it("rejects phone input zoom and undersized touch targets", () => {
     expect(studioFoundationHits(file, fixed.replace(".ad-field-input,.ad-search input,.ad-code-box { font-size:16px; }", "").replace("min-width:44px;min-height:44px;", ""))).toEqual([{ line: 1, reason: "studio-touch-controls-require-readable-inputs-targets-and-safe-area" }])
   })

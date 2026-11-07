@@ -7,8 +7,13 @@ import { studioFoundationCopy } from "../src/copy/studio-foundation-copy.ts"
 describe("copy kit", () => {
   it("reads supplemental Studio labels without shadowing canonical copy", () => {
     expect(Object.keys(studioFoundationCopy).filter(key => key in copyKit)).toEqual([])
-    expect(copy("shell.recents")).toBe("Recents")
+    expect(copy("decks.recents")).toBe("Recents")
     expect(copy("access.check_title")).toBe(copyKit["access.check_title"])
+  })
+  it("keeps supplemental keys and values distinct from canonical copy", () => {
+    const canonicalKeys = new Set(Object.keys(copyKit))
+    const canonicalValues = new Set<string>(Object.values(copyKit))
+    expect(Object.entries(studioFoundationCopy).filter(([key, value]) => canonicalKeys.has(key) || canonicalValues.has(value))).toEqual([])
   })
   it("matches the design kit string keys", () => {
     const design = JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8")) as Record<string, unknown>
