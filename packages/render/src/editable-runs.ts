@@ -4,7 +4,7 @@ export function editableRuns(root: HTMLElement, styles: [Run, ...Run[]], fallbac
   function append(text: string, style: Run) {
     if (!text) return
     const last = runs.at(-1)
-    if (last && last.bold === style.bold && last.font === style.font && last.size === style.size && last.color === style.color) last.text += text
+    if (last && last.bold === style.bold && Boolean(last.italic) === Boolean(style.italic) && Boolean(last.underline) === Boolean(style.underline) && last.font === style.font && last.size === style.size && last.color === style.color) last.text += text
     else runs.push({ ...style, text })
   }
   function visit(node: Node, style: Run) {

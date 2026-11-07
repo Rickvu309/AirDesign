@@ -1,3 +1,4 @@
+import {formatRuns} from "../../../../packages/render/src/text-format.ts"
 import "./editor.css"
 import {slideSections} from "./slide-sections.ts"
 import {EditorIcon} from "./editor-icon.tsx"
@@ -104,6 +105,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
       <div className="editor-view" aria-label="Slide view"><button type="button" aria-label="Single slide view" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="slide"/></button><button type="button" aria-label="Grid view" aria-pressed={view==="grid"} onClick={()=>setView("grid")}><Icon name="grid"/></button></div>
     </header>
     <aside className="editor-export"><label><span className="sr-only">Zoom</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(Number(event.target.value))}>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={state?.kind!=="saved"||readonly||!deck?.slides.length} onClick={()=>setExportOpen(true)}>Export</Button></aside>
+    {view==="single" && selectedObject?.kind==="text" && <div className="text-format-toolbar" role="toolbar" aria-label="Text formatting">{(["bold","italic","underline"] as const).map(format=><button type="button" key={format} aria-label={format.charAt(0).toUpperCase()+format.slice(1)} aria-pressed={selectedObject.runs.every(run=>Boolean(run[format]))} onPointerDown={event=>event.preventDefault()} onClick={()=>{const field=document.activeElement;if(field instanceof HTMLElement && field.isContentEditable)field.dispatchEvent(new CustomEvent("airdesign-format",{detail:format}));else text(selectedObject.id,formatRuns(selectedObject.runs,format,0,selectedObject.runs.reduce((sum,run)=>sum+run.text.length,0)))}}>{format==="bold" ? "B" : format==="italic" ? "I" : "U"}</button>)}</div>}
     <FontReadiness/>
     <p role="status" className="editor-status">{state?.kind==="offline"||state?.kind==="retrying" ? labels[state.kind] : phone ? "Edit on a laptop · read-only viewing" : state ? labels[state.kind] : "Opening your saved deck…"}{selection.length>0 && state?.kind!=="offline" && state?.kind!=="retrying" ? ` · ${selection.length} selected` : ""}{(state?.kind==="offline"||state?.kind==="retrying")&&<Button size="compact" variant="secondary" onClick={reconnect}>Reconnect</Button>}</p>
     {error && <p role="alert">{error} <a href="/">Back to Home</a></p>}

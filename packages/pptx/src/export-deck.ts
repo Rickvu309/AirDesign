@@ -16,7 +16,7 @@ function addElement(slide:PptxGenJS.Slide,element:Element,assets:Record<string,s
   if(element.support.kind!=="native")return
   const box={x:(element.box.x+offset.x)/96,y:(element.box.y+offset.y)/96,w:element.box.width/96,h:element.box.height/96}
   if(element.kind==="group"){for(const child of element.children)addElement(slide,child,assets,{x:element.box.x+offset.x,y:element.box.y+offset.y});return}
-  if(element.kind==="text"){slide.addText(element.runs.map(run=>({text:run.text,options:{bold:run.bold,fontFace:run.font,fontSize:run.size*.75,color:run.color.slice(1)}})),{...box,margin:0,valign:"top"});return}
+  if(element.kind==="text"){slide.addText(element.runs.map(run=>({text:run.text,options:{bold:run.bold,italic:run.italic ?? false,underline:{style:run.underline ? "sng" : "none"},fontFace:run.font,fontSize:run.size*.75,color:run.color.slice(1)}})),{...box,margin:0,valign:"top"});return}
   if(element.kind==="image"){const data=assets[element.image.asset];if(!data)throw new Error("asset-not-found");slide.addImage({...box,data,objectName:element.id,altText:element.image.alt,rounding:element.image.mask==="ellipse"});return}
   const shape=shapeGeometry[element.geometry].preset
   slide.addShape(shape,{...box,...(element.geometry==="downTriangle" ? {rotate:180} : {}),fill:{color:element.fill.slice(1)},line:{color:element.fill.slice(1),transparency:100}})

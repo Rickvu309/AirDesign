@@ -12,7 +12,7 @@ function support(v: unknown): v is Support {
   return record(v) && (v.kind === "native" || (v.kind === "kept" && nullable(v.preview)) || (v.kind === "flagged" && typeof v.reason === "string" && nullable(v.preview)))
 }
 function box(v: unknown): v is Box { return record(v) && finite(v.x) && finite(v.y) && finite(v.width) && finite(v.height) && v.width >= 0 && v.height >= 0 }
-function run(v: unknown): v is Run { return record(v) && typeof v.text === "string" && typeof v.bold === "boolean" && typeof v.font === "string" && finite(v.size) && v.size > 0 && typeof v.color === "string" }
+function run(v: unknown): v is Run { return record(v) && typeof v.text === "string" && typeof v.bold === "boolean" && (v.italic === undefined || typeof v.italic === "boolean") && (v.underline === undefined || typeof v.underline === "boolean") && typeof v.font === "string" && finite(v.size) && v.size > 0 && typeof v.color === "string" }
 export function isImagePlacement(v: unknown): v is ImagePlacement {
   if (!record(v) || typeof v.asset !== "string" || !/^[a-f0-9]{64}$/.test(v.asset) || !record(v.crop) || !record(v.focal) || !["rectangle", "ellipse"].includes(String(v.mask)) || typeof v.alt !== "string" || v.alt.length > 2000) return false
   const c=v.crop,f=v.focal

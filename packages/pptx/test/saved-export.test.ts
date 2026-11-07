@@ -65,3 +65,11 @@ it("exports editable imported text colors and slide background while retaining k
   expect(result.parts.get("ppt/slides/slide1.xml")?.toString()).toContain('val="abcdef"')
   for(const [part,bytes] of original.parts)if(part.startsWith("ppt/charts/")||part.startsWith("ppt/media/"))expect(result.parts.get(part)).toEqual(bytes)
 })
+
+it("retains native bold, italic and underline through PowerPoint export and import",async()=>{
+ const deck=fixtureDeck(1),title=deck.slides[0]!.elements[0]!
+ if(title.kind!=="text")throw new Error("text-required")
+ title.runs=[{...title.runs[0],text:"Bold",bold:true},{...title.runs[0],text:"Italic",bold:false,italic:true},{...title.runs[0],text:"Underline",bold:false,underline:true}]
+ const reopened=importedDeck(await importPptx(await writeSavedPptx(deck,1,null,{}))),text=reopened.slides[0]!.elements.find(element=>element.kind==="text")
+ expect(text?.kind==="text"&&text.runs).toMatchObject([{text:"Bold",bold:true},{text:"Italic",italic:true},{text:"Underline",underline:true}])
+})

@@ -151,3 +151,20 @@ it("uses the destination section and insertion anchor for add and paste",async()
   }finally{await ui.close()}
 })
 
+
+it.each(["b","i","u"])("persists keyboard %s formatting through Undo and Redo",async key=>{
+  const ui=await editor();try{
+    await ui.click("Single slide view")
+    const node=ui.container.querySelector<HTMLElement>('.editor-slide:not([hidden]) [role="textbox"]')!
+    node.focus();const range=document.createRange();range.selectNodeContents(node);document.getSelection()!.removeAllRanges();document.getSelection()!.addRange(range)
+    const before=structuredClone(ui.sync.deck.slides[0]!.elements[0]!)
+    await act(async()=>node.dispatchEvent(new KeyboardEvent("keydown",{key,ctrlKey:true,bubbles:true,cancelable:true})));await ui.render()
+    const after=ui.sync.deck.slides[0]!.elements[0]!,format=key==="b" ? "bold" : key==="i" ? "italic" : "underline"
+    expect(after.kind==="text"&&after.runs.every(run=>Boolean(run[format]))).toBe(before.kind==="text"&&!before.runs.every(run=>Boolean(run[format])))
+    expect(ui.commands.at(-1)?.kind).toBe("patch")
+    await act(async()=>node.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true,cancelable:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(before)
+    await act(async()=>node.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,shiftKey:true,bubbles:true,cancelable:true})));await ui.render()
+    expect(ui.sync.deck.slides[0]!.elements[0]).toEqual(after)
+  }finally{await ui.close()}
+})

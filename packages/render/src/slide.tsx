@@ -1,3 +1,5 @@
+import {contentLabel} from "../../deck/src/content-labels.ts"
+import {formatRuns,textSelection,type TextFormat} from "./text-format.ts"
 import {shapeGeometry} from "../../deck/src/shape-geometry.ts"
 import { memo, useLayoutEffect, useRef } from "react"
 import type { CSSProperties, PointerEventHandler } from "react"
@@ -36,10 +38,18 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
       const run = element.runs.find(run => JSON.stringify({ ...run, text: "" }) === span.getAttribute("data-run-style"))
       if (run) caretStyle.current = run
     }
+    const format=(kind:TextFormat)=>{
+      const selection=textSelection(node)
+      if(!selection)return
+      if(selection.start===selection.end){caretStyle.current={...caretStyle.current,[kind]:!caretStyle.current[kind]};return}
+      const runs=formatRuns(editableRuns(node,element.runs),kind,selection.start,selection.end)
+      canonicalChildren(node,runs);localRuns.current=JSON.stringify(runs);commit(element.id,runs)
+    }
+    const formatEvent=(event:Event)=>{if(event instanceof CustomEvent && ["bold","italic","underline"].includes(event.detail))format(event.detail)}
     const interceptInput = (event: InputEvent) => {
       if (event.inputType === "historyUndo" || event.inputType === "historyRedo") { if (history) { event.preventDefault();history(event.inputType === "historyUndo" ? "undo" : "redo") };return }
       rememberStyle()
-      if (event.inputType.startsWith("format")) { event.preventDefault(); return }
+      if (event.inputType.startsWith("format")) { event.preventDefault();const kind=event.inputType==="formatBold" ? "bold" : event.inputType==="formatItalic" ? "italic" : event.inputType==="formatUnderline" ? "underline" : null;if(kind)format(kind);return }
       const transfer = event.dataTransfer
       if (event.inputType === "insertFromPaste" || event.inputType === "insertFromDrop" || event.inputType === "insertReplacementText" || transfer?.types.includes("text/html")) {
         event.preventDefault()
@@ -68,12 +78,14 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
       }
     }
     const interceptKey = (event: KeyboardEvent) => {
+      if((event.ctrlKey||event.metaKey)&&!event.altKey&&["b","i","u"].includes(event.key.toLowerCase())){event.preventDefault();format(event.key.toLowerCase()==="b" ? "bold" : event.key.toLowerCase()==="i" ? "italic" : "underline");return}
       if (history && (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "z") { event.preventDefault();history(event.shiftKey ? "redo" : "undo") }
     }
+    node.addEventListener("airdesign-format",formatEvent)
     node.addEventListener("keydown",interceptKey)
     node.ownerDocument.addEventListener("selectionchange", rememberStyle)
     node.addEventListener("beforeinput", interceptInput)
-    return () => { node.removeEventListener("keydown",interceptKey);node.removeEventListener("beforeinput", interceptInput); node.ownerDocument.removeEventListener("selectionchange", rememberStyle) }
+    return () => { node.removeEventListener("airdesign-format",formatEvent);node.removeEventListener("keydown",interceptKey);node.removeEventListener("beforeinput", interceptInput); node.ownerDocument.removeEventListener("selectionchange", rememberStyle) }
   }, [commit, element.runs, history])
   function save(node: HTMLDivElement) {
     const runs = editableRuns(node, element.runs, caretStyle.current)
@@ -81,8 +93,8 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     localRuns.current = JSON.stringify(runs)
     commit?.(element.id, runs)
   }
-  if(!commit)return <div key="readonly" data-text={element.id} data-theme-font={themeFont} style={{inlineSize:"100%",blockSize:"100%",whiteSpace:"pre-wrap",overflowWrap:"break-word",lineHeight:1.2,fontFamily:"Geist"}}>{element.runs.map((run,index)=><span key={index} style={{fontFamily:"Geist",fontSize:run.size,fontWeight:run.bold ? 600 : 400,color:run.color}}>{run.text}</span>)}</div>
-  return <div key="editable" ref={ref} data-text={element.id} data-theme-font={themeFont} role="textbox" aria-label={`Text ${element.id}`} aria-multiline contentEditable={element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
+  if(!commit)return <div key="readonly" data-text={element.id} data-theme-font={themeFont} style={{inlineSize:"100%",blockSize:"100%",whiteSpace:"pre-wrap",overflowWrap:"break-word",lineHeight:1.2,fontFamily:"Geist"}}>{element.runs.map((run,index)=><span key={index} style={{fontFamily:"Geist",fontSize:run.size,fontWeight:run.bold ? 600 : 400,fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color}}>{run.text}</span>)}</div>
+  return <div key="editable" ref={ref} data-text={element.id} data-theme-font={themeFont} role="textbox" aria-label={`Text · ${contentLabel(element)}`} aria-multiline contentEditable={element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
     event.preventDefault()
     if (composing.current) return
     const node = event.currentTarget
@@ -108,21 +120,21 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
   const theme = themes.find(t => t.id === (element.theme ?? inheritedTheme))
   let content
   if (element.support.kind !== "native") {
-    content = element.support.preview ? <img src={element.support.preview} alt={`${element.support.kind} object ${element.id}`} style={{ inlineSize: "100%", blockSize: "100%" }} /> : <div role="img" aria-label={`Preview unavailable for ${element.id}`}>Preview unavailable</div>
+    content = element.support.preview ? <img src={element.support.preview} alt={contentLabel(element)} style={{ inlineSize: "100%", blockSize: "100%" }} /> : <div role="img" aria-label={`Preview unavailable for ${contentLabel(element)}`}>Preview unavailable</div>
   } else {
     switch (element.kind) {
       case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} />); break
       case "text": content = <Text element={element} commit={commit} history={history} themeFont={theme?.font} />; break
       case "image": {const crop=element.image.crop;content=<div style={{position:"relative",inlineSize:"100%",blockSize:"100%",overflow:"hidden",borderRadius:element.image.mask==="ellipse" ? "50%" : 0}}><img draggable={false} src={imageSources?.[element.image.asset] ?? `/api/assets/${element.image.asset}/media`} alt={element.image.alt} style={{position:"absolute",maxInlineSize:"none",inlineSize:`${100/crop.width}%`,blockSize:`${100/crop.height}%`,insetInlineStart:`${-crop.x/crop.width*100}%`,insetBlockStart:`${-crop.y/crop.height*100}%`}}/></div>;break}
-      case "shape": content = <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={`${element.geometry} ${element.id}`} style={{pointerEvents:"none"}}><path d={shapeGeometry[element.geometry].path} fill={element.fill} style={{pointerEvents:"visiblePainted"}}/></svg>;break
+      case "shape": content = <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={contentLabel(element)} style={{pointerEvents:"none"}}><path d={shapeGeometry[element.geometry].path} fill={element.fill} style={{pointerEvents:"visiblePainted"}}/></svg>;break
       default: { const exhaustive: never = element; return exhaustive }
     }
   }
   return <div data-element={element.id} data-kind={element.kind} style={{ ...position(element), pointerEvents: element.kind === "shape" && element.support.kind === "native" ? "none" : undefined }} onPointerDown={pointerDown}>{content}</div>
 })
-export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources }: {imageSources?: Record<string,string>; historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
+export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources,label="Slide" }: {label?:string;imageSources?: Record<string,string>; historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
   const fonts = fontReport(slide, themes)
-  return <section aria-label={`Slide ${slide.id}`}>
+  return <section aria-label={label}>
     {fonts.missing.length > 0 && <p role="status" data-font-warning="">Missing fonts: {fonts.missing.join(", ")}. Using pinned Geist.</p>}
     <div data-slide={slide.id} data-version={slide.version} style={{ position: "relative", inlineSize: slide.size.width, blockSize: slide.size.height, background: slide.background ?? themes.find(t => t.id === slide.theme)?.background ?? "white", overflow: "clip" }}>
       {slide.elements.map(element => <Item key={element.id} element={element} commit={commitText} history={historyText} pointerDown={onPointerDown} themes={themes} inheritedTheme={slide.theme} imageSources={imageSources} />)}
