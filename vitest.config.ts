@@ -1,4 +1,5 @@
 import path from "node:path"
+import { MeasuredSequencer } from "./scripts/gate/unit-sharding.ts"
 import { defineConfig } from "vitest/config"
 
 export default defineConfig({
@@ -9,6 +10,7 @@ export default defineConfig({
     },
   },
   test: {
+    sequence: { sequencer: MeasuredSequencer },
     maxWorkers: Number(process.env.VITEST_MAX_WORKERS ?? 2),
     projects: [
       {
@@ -19,9 +21,8 @@ export default defineConfig({
           include: [
             "tests/**/*.test.ts",
             "bench/**/*.test.ts",
-            "packages/**/*.test.ts",
-            "apps/**/*.test.ts",
-            "packages/ui/test/**/*.test.mjs",
+            "packages/**/*.{test,spec}.{ts,mts,cts,js,mjs,cjs}",
+            "apps/**/*.{test,spec}.{ts,mts,cts,js,mjs,cjs}",
           ],
         },
       },
@@ -30,7 +31,7 @@ export default defineConfig({
           name: "dom",
           environment: "happy-dom",
           setupFiles: ["packages/ui/test/react-act.ts"],
-          include: ["packages/ui/**/*.test.tsx", "apps/studio/**/*.test.tsx"],
+          include: ["packages/**/*.{test,spec}.{tsx,jsx}", "apps/**/*.{test,spec}.{tsx,jsx}"],
         },
       },
     ],

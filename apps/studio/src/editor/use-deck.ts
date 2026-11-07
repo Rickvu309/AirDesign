@@ -1,3 +1,4 @@
+import { syncErrorCode,type SyncErrorCode } from "../../../../packages/rpc/src/sync-error.ts"
 import { useEffect,useRef,useState } from "react"
 import { SyncClient,parseSnapshot } from "../../../../packages/rpc/src/client.ts"
 import { indexedOutbox } from "../../../../packages/rpc/src/outbox.ts"
@@ -7,7 +8,8 @@ import type { DeckEntry } from "../../../../packages/catalog/src/index.ts"
 
 export function useDeck(deckId:string) {
   const client=useRef<SyncClient|null>(null),connection=useRef<ReturnType<typeof transport>|null>(null)
-  const [,render]=useState(0),[entry,setEntry]=useState<DeckEntry|null>(null),[error,setError]=useState("")
+  const [,render]=useState(0),[entry,setEntry]=useState<DeckEntry|null>(null),[error,setFailure]=useState<SyncErrorCode|null>(null),[opening,setOpening]=useState(0)
+  const setError=(failure:unknown)=>setFailure(failure==="" ? null : syncErrorCode(failure))
   useEffect(()=>{
     let stopped=false,frame:number|undefined,task:ReturnType<typeof setTimeout>|undefined
     function refresh() {
@@ -39,6 +41,6 @@ export function useDeck(deckId:string) {
     }
     void open()
     return ()=>{stopped=true;if(frame!==undefined)cancelAnimationFrame(frame);if(task!==undefined)clearTimeout(task);connection.current?.close()}
-  },[deckId])
-  return {sync:client.current,entry,setEntry,error,setError,reconnect:()=>connection.current?.reconnect()}
+  },[deckId,opening])
+  return {sync:client.current,entry,setEntry,error,setError,reconnect:()=>{if(connection.current)connection.current.reconnect();else {setError("");setOpening(value=>value+1)}}}
 }
