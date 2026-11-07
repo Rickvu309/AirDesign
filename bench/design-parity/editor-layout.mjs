@@ -27,7 +27,7 @@ try {
         await perform(page,step,local,setup.owner)
         if(before){const after=await page.locator('.editor-slide:not([hidden]) .slide-preview').boundingBox();assert.deepEqual(after,before,"Offline recovery controls moved the canvas");results.push({check:"Offline canvas position",passed:true})}
       }
-      if(entry.code==="S42.01")assert(await page.locator('.editor-slide[data-selected=true]>.slide-preview').evaluate(node=>getComputedStyle(node).boxShadow.includes('28px')),"Working slide has no visible status glow")
+      if(entry.code==="S42.01")assert(await page.locator('.editor-slide[data-run-state=working]>.slide-preview').evaluate(node=>getComputedStyle(node).boxShadow.includes('28px')),"Working slide has no visible status glow")
       if(entry.code==="S42.04"){
         const width=await page.locator('.aira-composer textarea').evaluate(node=>({input:node.getBoundingClientRect().width,panel:node.closest('.aira-composer').getBoundingClientRect().width}))
         assert(width.input>width.panel*.85,"Long prompt is squeezed beside the scope selector")

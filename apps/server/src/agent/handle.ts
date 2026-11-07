@@ -43,8 +43,8 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
           return tools.call({personId:data.owner,connection:data.id,airaRun:data.id},name,input)
         }
         for await(const event of runHarness(context,call,live.controller.signal,selectedAdapter)){
-          const item:ActivityContent=event.kind==="tool" ? {kind:"tool",name:event.name,...(event.scope ? {scope:event.scope} : {})} : {...event}
-          if(item.kind==="tool"&&item.name==="apply_changes"&&item.scope&&!data.completed.includes(item.scope))data.completed.push(item.scope)
+          const item:ActivityContent=event.kind==="tool" ? {kind:"tool",name:event.name,...(event.scope ? {scope:event.scope} : {}),...(event.scopes ? {scopes:event.scopes} : {}),...(event.fileName ? {fileName:event.fileName} : {}),...(event.brandApplied ? {brandApplied:true} : {})} : {...event}
+          if(item.kind==="tool"&&item.name==="apply_changes")for(const scope of item.scopes ?? (item.scope ? [item.scope] : []))if(!data.completed.includes(scope))data.completed.push(scope)
           append(data,item);await save(data)
         }
         if(data.kind==="working")data.kind="complete"

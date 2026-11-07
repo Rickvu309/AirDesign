@@ -1,6 +1,8 @@
 import "./editor.css"
 import {slideSections} from "./slide-sections.ts"
 import {EditorIcon} from "./editor-icon.tsx"
+import {useAiraSnapshot} from "../chat/use-aira-snapshot.ts"
+import {runSlideStates} from "./run-progress.ts"
 import {ChatPanel} from "../chat/chat-panel.tsx"
 import {airaRequest} from "../chat/aira-client.ts"
 import { ImagePanel } from "../images/image-panel.tsx"
@@ -24,6 +26,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const editorRef=useRef<HTMLElement>(null)
   const [tool,setTool]=useState<EditorTool>("none")
   const hold=useRef<ReturnType<typeof setTimeout>|undefined>(undefined),held=useRef(false)
+  const {snapshot}=useAiraSnapshot(deckId)
+  const run=snapshot?.run ?? null
   const [chatOpen,setChatOpen]=useState(false)
   const [designOpen,setDesignOpen]=useState(false),[imagesOpen,setImagesOpen]=useState(false)
   const {sync,entry,setEntry,error,setError,reconnect}=useDeck(deckId)
@@ -40,6 +44,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const selection=survivingSelection.length ? survivingSelection : deck?.slides[0] ? [deck.slides[0].id] : []
   const selectedSlide=deck?.slides.find(slide=>slide.id===selection[0])
   const selectedObject=objectSelection?.slide===selectedSlide?.id ? flatten(selectedSlide?.elements ?? []).find(element=>element.id===objectSelection?.element) : undefined
+  const runStates=deck ? runSlideStates(deck,run) : new Map()
   const readonly=phone || state?.kind==="deleted" || state?.kind==="signed-out"
   useEffect(()=>{if(entry?.pendingRequest)setRequest(entry.pendingRequest)},[entry?.pendingRequest])
   useEffect(()=>{const media=window.matchMedia("(max-width: 767px)"),change=()=>setPhone(media.matches);media.addEventListener("change",change);return ()=>media.removeEventListener("change",change)},[])
@@ -100,15 +105,15 @@ export function ManualEditor({deckId}:{deckId:string}) {
     {!phone && <nav className="editor-dock" aria-label="Design tools"><button type="button" aria-label="Select slides" aria-pressed={view==="grid"} onClick={()=>setView("grid")}><EditorIcon name="cursor"/></button><button type="button" aria-label="Edit slide text" aria-pressed={tool==="text"} onClick={()=>{setTool(tool==="text" ? "none" : "text");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="text"/></button><button type="button" aria-label="Shapes" aria-pressed={tool==="shapes"} onClick={()=>{setTool(tool==="shapes" ? "none" : "shapes");setImagesOpen(false);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="shape"/></button><button type="button" aria-label="Images" aria-pressed={imagesOpen} onClick={()=>{setImagesOpen(!imagesOpen);setDesignOpen(false);setTool("none");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="image"/></button><button type="button" aria-label="Actions" aria-pressed={tool==="actions"} onClick={()=>{setTool(tool==="actions" ? "none" : "actions");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="actions"/></button><span className="dock-divider"/><button type="button" aria-pressed={chatOpen} onClick={()=>{setChatOpen(!chatOpen);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id]);setDesignOpen(false);setImagesOpen(false)}}>Agent</button><button type="button" aria-pressed={designOpen} onClick={()=>{setDesignOpen(!designOpen);setImagesOpen(false);setTool("none");setChatOpen(false);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>Design</button></nav>}
     {!readonly && deck && <EditorTools key={tool} tool={tool} close={()=>setTool("none")} insert={insertElement} addSlide={addSlide} deck={deck}/>}
     {phone && <Button size="compact" variant="secondary" onClick={()=>setChatOpen(!chatOpen)}>View Aira</Button>}
-    {chatOpen && deck && <ChatPanel title={entry?.title} deck={deck} selection={selectedObject&&selectedSlide ? [selectedSlide.id,selectedObject.id] : selection} detach={()=>setObjectSelection(null)} readonly={readonly} connected={state?.kind!=="offline" && state?.kind!=="retrying"} close={()=>setChatOpen(false)}/>}
+    {chatOpen && deck && <ChatPanel snapshot={snapshot} title={entry?.title} deck={deck} selection={selectedObject&&selectedSlide ? [selectedSlide.id,selectedObject.id] : selection} detach={()=>setObjectSelection(null)} readonly={readonly} connected={state?.kind!=="offline" && state?.kind!=="retrying"} close={()=>setChatOpen(false)}/>}
     {imagesOpen && deck && <ImagePanel deck={deck} slideId={selection[0]} disabled={readonly||state?.kind!=="saved"} close={()=>setImagesOpen(false)}/>}
     {designOpen && deck && <TemplatePanel key={selection.join(",")} deck={deck} selection={selection} edit={edit} disabled={readonly||state?.kind!=="saved"} close={()=>setDesignOpen(false)}/>}
     {!deck?.slides.length && !readonly && <section className="editor-first-request"><h2>What would you like to make?</h2><p>Describe your deck, or add a slide and start editing.</p><label htmlFor="first-request">Your first request</label><textarea id="first-request" value={request} onChange={event=>{setRequest(event.target.value);sessionStorage.setItem("first-pending-request",event.target.value)}}/><Button size="dialog" variant="primary" onClick={()=>void saveRequest()} disabled={!request.trim()}>Build with Aira</Button><p role="status">{requestStatus || (entry?.pendingRequest ? "Your request is saved. Send it to Aira when ready." : "Aira uses weekly usage. You can also edit by hand.")}</p></section>}
-    {view==="single" && deck && <nav className="editor-filmstrip" aria-label="Slide navigation">{slideSections(deck.slides).map(section=><details key={section.slides[0]!.slide.id} open><summary>{section.name}</summary>{section.slides.map(({slide,number})=><button type="button" key={slide.id} aria-label={`Go to slide ${number}`} aria-current={selection[0]===slide.id ? "page" : undefined} onClick={()=>setSelection([slide.id])}><span>{number}</span><SlidePreview slide={slide} themes={deck.themes}/></button>)}</details>)}</nav>}
+    {view==="single" && deck && <nav className="editor-filmstrip" aria-label="Slide navigation">{slideSections(deck.slides).map(section=><details key={section.slides[0]!.slide.id} open><summary>{section.name}</summary>{section.slides.map(({slide,number})=><button type="button" key={slide.id} aria-label={`Go to slide ${number}`} aria-current={selection[0]===slide.id ? "page" : undefined} onClick={()=>setSelection([slide.id])}><span>{number}</span><SlidePreview slide={slide} themes={deck.themes}/>{runStates.get(slide.id)==="queued"&&<span className="slide-queued">Queued</span>}</button>)}</details>)}</nav>}
 
     {slideSections(deck?.slides ?? []).map(section=><section className="editor-section" key={section.slides[0]!.slide.id} aria-label={`${section.name} section`}><h2>{section.name}</h2>
     <div className="editor-slides" aria-label={section.name} style={{maxInlineSize:view==="single" ? `${800*zoom/100}px` : undefined,gridTemplateColumns:view==="grid" ? `repeat(auto-fill,minmax(min(100%,${300*zoom/100}px),${300*zoom/100}px))` : undefined}} onContextMenu={event=>{event.preventDefault();setContextMenu(true)}}>
-      {section.slides.map(({slide,number})=><article key={slide.id} className="editor-slide" hidden={view==="single" && slide.id!==(selection[0] ?? deck?.slides[0]?.id)} data-selected={selection.includes(slide.id)} onContextMenu={()=>{if(!selection.includes(slide.id))setSelection([slide.id])}}>
+      {section.slides.map(({slide,number})=><article key={slide.id} className="editor-slide" data-run-state={runStates.get(slide.id)} hidden={view==="single" && slide.id!==(selection[0] ?? deck?.slides[0]?.id)} data-selected={selection.includes(slide.id)} onContextMenu={()=>{if(!selection.includes(slide.id))setSelection([slide.id])}}>
         <button className="slide-select" type="button" aria-pressed={selection.includes(slide.id)} onDoubleClick={()=>{setSelection([slide.id]);setView("single")}} onClick={event=>select(slide.id,event)} aria-label={`Slide ${number}`}>{number}</button>
         <SlidePreview slide={slide} themes={deck?.themes ?? []} {...(readonly || view==="grid" ? {} : {commitText:text,historyText:history,editing:{selected:selectedObject?.id ?? null,select:element=>setObjectSelection({slide:slide.id,element}),geometry}})}/>
         {flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=><p key={element.id} className="slide-disclosure">{element.support.kind==="kept" ? "Kept original · preview unavailable" : element.support.kind==="flagged" ? `Flagged: ${element.support.reason}` : ""}</p>)}
