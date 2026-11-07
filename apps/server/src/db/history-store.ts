@@ -22,7 +22,7 @@ const historySchemaLock=639074220
 export const historySchemaVersion=1
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate"; wait?: never } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy }, clock=Date.now) {
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate"; wait?: never } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy; signal?: AbortSignal }, clock=Date.now) {
   if (driver.kind === "pglite" && driver.path && driver.path!=="memory://") await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? driver.client ?? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
@@ -62,7 +62,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     return result.rows[0]?.version ?? 0
   }
   try {
-    if(driver.kind==="postgres" && driver.schema==="connect")await waitForHistorySchema(()=>transaction(schemaVersion),historySchemaVersion,driver.wait ?? workerHistorySchemaWait,clock)
+    if(driver.kind==="postgres" && driver.schema==="connect")await waitForHistorySchema(()=>transaction(schemaVersion),historySchemaVersion,driver.wait ?? workerHistorySchemaWait,clock,driver.signal)
     else if(await transaction(schemaVersion)<historySchemaVersion){
       await transaction(async tx => {
         if(pool)await tx.query("SELECT pg_advisory_xact_lock($1)",[historySchemaLock])
