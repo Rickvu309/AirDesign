@@ -29,15 +29,15 @@ npm run verify:live -- --expect-sha "$EXPECTED_SHA" --site-url "$SITE_ORIGIN" --
 
 A custom operator can pipe a link to stdin instead of `--railway`; mint it only when the runner reaches sign-in. Prefer `--railway` so the two-minute lifetime starts after the public-page checks. Never pass a link as a command-line argument.
 
-The first line of stderr names the failed step. Exit zero requires `status: "pass"` in `receipt.json`, matching site, Studio, and completed-import worker SHAs, and every named step passing. Receipts include the import workerSha, timestamps, checked links, screenshot paths, and allowedBrowserExceptions, never the sign-in URL or cookies. Evidence defaults to `~/tmp/airdesign-live-verify/<sha>-<timestamp>/`. Keep it with the release record. Review screenshots and both exports; a failed journey is a release failure. Fix the cause or roll back, then rerun the complete check.
+The first line of stderr names the failed step and error, followed by the last failed operation’s kind and reason when available. Exit zero requires `status: "pass"` in `receipt.json`, matching site, Studio, and completed-import worker SHAs, and every named step passing. Receipts include the import workerSha, timestamps, checked links, screenshot paths, and allowedBrowserExceptions, never the sign-in URL or cookies. Each failed step records its duration, error, screenshot filename (null if no page exists or capture fails), and operations seen during that step, waiting at most two seconds for in-flight operation reads and 15 seconds for the screenshot. Failure cleanup gets 60 seconds and records `cleanup-timeout` if it overruns; a failed browser close records `browser-close-failed`. receipt.json is written in every case. Operation traces contain only id, a known kind, attempts, and for failed operations a reason. A reason keeps only its hyphenated code and exit code, such as `isolated-export-failed:1`; any other text is marked `(details omitted)`. Read full diagnostics in the Railway logs. Evidence defaults to `~/tmp/airdesign-live-verify/<sha>-<timestamp>/`. Keep it with the release record. Review screenshots and both exports; a failed journey is a release failure. Fix the cause or roll back, then rerun the complete check.
 
 The journey blocks paid Aira requests, checks its entry point, creates a blank deck, imports the preservation fixture, saves and reloads a title, exports PPTX and PDF, opens the PPTX with LibreOffice, then moves both decks to Trash and empties it. It refuses a nonempty account before creating anything. On an interrupted run, inspect and clean only that dedicated account before retrying.
 
-For a production-free rehearsal with deliberate wrong-SHA, broken-link, stale-worker, and Studio script-error failures:
+For a production-free rehearsal with deliberate wrong-SHA, broken-link, stale-worker, Studio script-error, and export failures:
 
 ```sh
 npm run build
 npm run verify:live:local
 ```
 
-The rehearsal uses the isolated PostgreSQL/browser fixture and removes its database and temporary worker storage. It never deploys or accesses production.
+The rehearsal checks the deliberate export failure’s step, operation reason, and PNG screenshot, plus a null screenshot for the wrong-SHA failure. It uses the isolated PostgreSQL/browser fixture and removes its database and temporary worker storage. It never deploys or accesses production.

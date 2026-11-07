@@ -13,6 +13,8 @@ import {libreOfficeFastCheck} from "../../packages/pptx/test/libreoffice.ts"
 import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 import {validateMcpMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
+import {operationTracker} from "./operation-trace.ts"
+import {within} from "./bounded.ts"
 import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
 import {classifyPageAssets} from "./site-assets.ts"
 
@@ -59,7 +61,8 @@ export async function verifyLive(options){
   const receipt={expectedSha:sha,startedAt:new Date().toISOString(),origins:{site,studio,mcp},status:"running",allowedBrowserExceptions:[],steps:[]}
   const created=[],paidCalls=[],browserErrors=[]
   let current="configuration",browser,context,page,signedSmoke=false
-  async function step(name,run){current=name;const started=Date.now();try{const evidence=await run();assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){receipt.steps.push({name,status:"fail",error:safeError(error)});throw error}}
+  const operations=operationTracker(2000)
+  async function step(name,run,browserCheck=true){current=name;operations.begin();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){const traces=await operations.settled(),screenshot=page ? await within(shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null),15000,null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:traces});throw error}}
   async function shot(name){
     const file=name+".png",viewport=page.viewportSize()
     const height=await page.evaluate(()=>document.documentElement.scrollHeight)
@@ -94,6 +97,7 @@ export async function verifyLive(options){
     })
     context.on("requestfailed",request=>browserErrors.push({kind:"request",path:new URL(request.url()).pathname,error:safeError(request.failure()?.errorText)}))
     context.on("response",response=>{if(response.status()>=400)browserErrors.push({kind:"http",status:response.status(),path:new URL(response.url()).pathname})})
+    context.on("response",response=>operations.observe(response.request().method(),new URL(response.url()).pathname,response.headers()["content-type"],()=>response.json()))
     page=await context.newPage()
     for(const route of sitePages)await step("site-page:"+route,async()=>{
         const response=await page.goto(site+route,{waitUntil:"networkidle"});assert.equal(response.status(),200)
@@ -171,17 +175,18 @@ export async function verifyLive(options){
     await step("no-paid-agent-calls",async()=>{assert.deepEqual(paidCalls,[],"unexpected Aira mutation was blocked")})
     receipt.browserErrors=browserErrors
     receipt.status="pass"
-  }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error);if(page && !["smoke-sign-in","configuration"].includes(current))await shot("failure").catch(()=>undefined)}finally{
+  }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error)}finally{
     if(receipt.status==="fail" && signedSmoke && created.length){
-      try{
+      const cleanup=await within(step("failure-cleanup",async()=>{
         for(const id of created){const response=await context.request.post(studio+`/api/catalog/${id}/trash`,{headers:{origin:studio},data:{},timeout:15000});assert.ok(response.ok(),"failure cleanup could not trash smoke deck")}
         const response=await context.request.get(studio+"/api/catalog?trash=true",{timeout:15000});assert.ok(response.ok())
         const decks=(await response.json()).filter(deck=>created.includes(deck.id)).map(({id,generation})=>({id,generation}))
         const removed=await context.request.delete(studio+"/api/catalog/trash",{headers:{origin:studio},data:{confirm:"empty-trash",decks},timeout:15000});assert.ok(removed.ok(),"failure cleanup could not empty smoke trash")
-        receipt.steps.push({name:"failure-cleanup",status:"pass",evidence:{decks:decks.length}})
-      }catch(error){receipt.steps.push({name:"failure-cleanup",status:"fail",error:safeError(error)})}
+        return {decks:decks.length}
+      },false).then(()=>"done",()=>"done"),60000,"timeout")
+      if(cleanup==="timeout")receipt.steps.push({name:"failure-cleanup",status:"fail",durationMs:60000,error:"cleanup-timeout",screenshot:null,operations:[]})
     }
-    await browser?.close();receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
+    await within(browser?.close().catch(()=>{receipt.browserCloseError="browser-close-failed"}) ?? Promise.resolve(),15000,undefined);receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
   }
   return receipt
 }
@@ -190,5 +195,6 @@ if(import.meta.url===pathToFileURL(process.argv[1] ?? "").href){
   const sha=values["expect-sha"] ?? "missing-sha",output=path.resolve(values["output-dir"] ?? path.join(os.homedir(),"tmp/airdesign-live-verify",sha+"-"+new Date().toISOString().replaceAll(":","-")))
   const target=railwayTarget(values["railway-project"],values["railway-environment"])
   const receipt=await verifyLive({sha,site:values["site-url"],studio:values["studio-url"],mcp:values["mcp-url"],email:values["smoke-email"],output,signInLink:async()=>{if(values.railway){const result=await promisify(execFile)("railway",railwaySshArguments(target,["node","apps/server/src/smoke/mint-link.ts",values["smoke-email"]]),{timeout:60000,maxBuffer:8192});return result.stdout.trim()}if(process.stdin.isTTY)throw new Error("use --railway or provide a one-use link on stdin");let input="";for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw new Error("sign-in-input-too-large")}return input.trim()}})
-  if(receipt.status!=="pass"){process.stderr.write(`${receipt.failedStep}: ${receipt.error}\nreceipt: ${output}/receipt.json\n`);process.exitCode=1}else process.stdout.write(`pass: ${output}/receipt.json\n`)
+  const failedOperation=receipt.steps.find(step=>step.name===receipt.failedStep)?.operations?.findLast(operation=>operation.kind==="failed")
+  if(receipt.status!=="pass"){process.stderr.write(`${receipt.failedStep}: ${receipt.error.replace(/^.*/,line=>line+(failedOperation ? `; ${failedOperation.kind}: ${failedOperation.reason ?? "unknown"}` : ""))}\nreceipt: ${output}/receipt.json\n`);process.exitCode=1}else process.stdout.write(`pass: ${output}/receipt.json\n`)
 }
