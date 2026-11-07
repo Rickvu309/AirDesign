@@ -1,3 +1,4 @@
+import {mobileAuditFailures} from "./mobile-audit-checks.ts"
 import assert from "node:assert/strict"
 import {mkdir,writeFile} from "node:fs/promises"
 import path from "node:path"
@@ -15,30 +16,7 @@ const context=await browser.newContext({viewport:{width:desktop?1440:390,height:
 const page=await context.newPage()
 async function audit(name){
  await page.evaluate(()=>document.fonts.ready)
- const failures=await page.evaluate(viewportWidth=>{
-  const hits=[]
-  if(document.documentElement.scrollWidth>viewportWidth)hits.push("horizontal overflow: "+document.documentElement.scrollWidth)
-  const visible=element=>{const r=element.getBoundingClientRect(),s=getComputedStyle(element);return r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none"&&!element.closest("[inert]")}
-  for(const element of document.querySelectorAll("input,textarea,select")){
-   if(visible(element)&&parseFloat(getComputedStyle(element).fontSize)<16)hits.push("small input: "+(element.getAttribute("aria-label")||element.id||element.outerHTML.slice(0,100)))
-  }
-  for(const element of document.querySelectorAll("button,a,[role=button],summary")){
-   if(!visible(element))continue
-   const rect=element.getBoundingClientRect(),style=getComputedStyle(element)
-   const label=element.textContent.trim().slice(0,55)||element.getAttribute("aria-label")
-   let width=rect.width,height=rect.height
-   for(const pseudo of ["::before","::after"]){
-    const s=getComputedStyle(element,pseudo)
-    if(s.content!=="none"&&s.position==="absolute"){const pixels=value=>parseFloat(value)||0;width=Math.max(width,pixels(s.width),rect.width-pixels(s.left)-pixels(s.right));height=Math.max(height,pixels(s.height),rect.height-pixels(s.top)-pixels(s.bottom))}
-   }
-   if(width<43.9||height<43.9)hits.push("small target: "+label+" "+Math.round(width)+"x"+Math.round(height))
-   if(style.touchAction!=="manipulation")hits.push("touch action: "+label)
-  }
-  for(const element of document.querySelectorAll("p")){
-   if(visible(element)&&getComputedStyle(element).userSelect==="none")hits.push("unselectable paragraph: "+element.textContent.slice(0,50))
-  }
-  return hits
- },page.viewportSize().width)
+ const failures=await page.evaluate(mobileAuditFailures,page.viewportSize().width)
  results.push({name,failures})
  if(evidence){await mkdir(evidence,{recursive:true});await page.screenshot({path:path.join(evidence,name+".png"),fullPage:true,animations:"disabled"})}
 }

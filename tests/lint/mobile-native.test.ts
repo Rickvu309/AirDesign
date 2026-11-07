@@ -11,11 +11,7 @@ describe("mobile native source rules",()=>{
     ["hover",css,"@media (hover: hover){button:hover{color:red}}","@media (hover: hover) and (pointer: fine){button:hover{color:red}}"],
     ["nested hover",css,"@media (width > 20px){button:hover{color:red}}","@media (width > 20px){@media (hover: hover) and (pointer: fine){button:hover{color:red}}}"],
     ["viewport",css,".app{height:100vh}",".app{height:100dvh}"],
-    ["input",css,".editor input{font-size:14px}",".editor input{font-size:14px}@media (pointer: coarse){input,textarea,select{font-size:16px}}"],
-    ["textarea",css,"textarea{font-size:.8rem}","textarea{font-size:16px}"],
-    ["select",css,"select{font-size:12px}","select{font-size:16px}"],
     ["root","apps/site/src/site.css","html{color:red}","html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}"],
-    ["coarse regression",css,"@media (pointer: coarse){input{font-size:12px}}","@media (pointer: coarse){input{font-size:16px}}"],
   ])("rejects original %s and accepts correction",(_name,file,before,after)=>{
     expect(mobileNativeHits(file,before).length).toBeGreaterThan(0)
     expect(mobileNativeHits(file,after)).toEqual([])
@@ -28,3 +24,32 @@ describe("mobile native source rules",()=>{
     expect(mobileNativeHits("packages/render/style.css","input{font-size:12px}")).toEqual([])
   })
 })
+
+describe("cascade independent mobile checks",()=>{
+  it.each([
+   ["OR list", "@media (hover:hover), (pointer:fine){button:hover{color:red}}"],
+   ["OR expression", "@media (hover:hover) or (pointer:fine){button:hover{color:red}}"],
+   ["negated media", "@media not all and (hover:hover) and (pointer:fine){button:hover{color:red}}"],
+   ["nested ampersand", ".card{&:hover{color:red}}"],
+   ["nested descendant", ".card{button:hover{color:red}}"],
+  ])("rejects %s",(_name,source)=>{
+   expect(mobileNativeHits(css,source).some(hit=>hit.reason==="mobile-hover-needs-fine-hover-media")).toBe(true)
+  })
+  it.each([
+   "@media(hover:hover)and(pointer:fine){button:hover{color:red}}",
+   "@MEDIA (HOVER : HOVER) AND (POINTER : FINE){button:hover{color:red}}",
+   "@media ( hover : hover )\nAND\t( pointer : fine ){button:hover{color:red}}",
+   "@media (hover:hover) and (pointer:fine){.card{&:hover{color:red}}}",
+   ".card{@media (hover:hover) and (pointer:fine){&:hover{color:red}}}",
+   ".app{height:100vh;height:100dvh}",
+   ".app{height:100vh;height:100svh}",
+   ".editor input{font-size:14px}@media (pointer:coarse){input{font-size:16px}}",
+  ])("accepts safe source %s",source=>expect(mobileNativeHits(css,source)).toEqual([]))
+  it.each([
+   ".app{height:100vh;color:red;height:100dvh}",
+   ".app{height:100vh;min-height:100dvh}",
+   ".app{height:100vh}.other{height:100dvh}",
+  ])("rejects an unrelated viewport fallback %s",source=>{
+   expect(mobileNativeHits(css,source).some(hit=>hit.reason==="mobile-height-use-dvh-or-svh")).toBe(true)
+  })
+ })

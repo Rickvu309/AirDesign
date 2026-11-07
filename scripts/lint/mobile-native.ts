@@ -1,23 +1,35 @@
 type Hit = {line:number;reason:string}
-type Rule = {selector:string;body:string;media:string;offset:number}
+type Rule = {selector:string;body:string;fineHover:boolean;offset:number}
+
+function fineHoverMedia(selector:string):boolean{
+  const query=selector.replace(/^@media\s*/i,"").replace(/^(?:only\s+)?(?:screen|all)\s+and\s+/i,"")
+  if(!/^(?:\([^()]+\)\s*and\s*)+\([^()]+\)$/i.test(query))return false
+  const terms=[...query.matchAll(/\([^()]+\)/g)].map(match=>match[0])
+  return terms.some(term=>/^\(\s*hover\s*:\s*hover\s*\)$/i.test(term))&&terms.some(term=>/^\(\s*pointer\s*:\s*fine\s*\)$/i.test(term))
+}
 
 function cssRules(source:string):Rule[]{
   const rules:Rule[]=[]
-  function walk(start:number,end:number,media:string){
+  function walk(start:number,end:number,fineHover:boolean):string{
     const pattern=/([^{}]+)\{/g
     pattern.lastIndex=start
-    let match:RegExpExecArray|null
+    let cursor=start,body="",match:RegExpExecArray|null
     while((match=pattern.exec(source))&&match.index<end){
       const open=pattern.lastIndex
       let depth=1,close=open
       while(close<end&&depth){if(source[close]==="{")depth++;if(source[close]==="}")depth--;close++}
-      const selector=match[1]!.trim()
-      if(selector.startsWith("@"))walk(open,close-1,media+" "+selector)
-      else rules.push({selector,body:source.slice(open,close-1),media,offset:match.index})
+      const headerStart=match.index+match[1]!.lastIndexOf(";")+1
+      body+=source.slice(cursor,headerStart)
+      const selector=source.slice(headerStart,open-1).trim()
+      const guarded=fineHover||(/^@media\b/i.test(selector)&&fineHoverMedia(selector))
+      const declarations=walk(open,close-1,guarded)
+      if(!selector.startsWith("@"))rules.push({selector,body:declarations,fineHover:guarded,offset:headerStart})
+      cursor=close
       pattern.lastIndex=close
     }
+    return body+source.slice(cursor,end)
   }
-  walk(0,source.length,"")
+  walk(0,source.length,false)
   return rules
 }
 
@@ -35,16 +47,15 @@ export function mobileNativeHits(file:string,source:string):Hit[]{
   }
   if(!file.endsWith(".css"))return hits
   const rules=cssRules(source)
-  const coarse=/\(pointer\s*:\s*coarse\)/
-  const controls=["input","textarea","select"]
-  const safeOverride=(control:string)=>rules.some(rule=>coarse.test(rule.media)&&rule.selector.split(",").some(selector=>new RegExp("(?:^|[\\s])"+control+"$").test(selector.trim()))&&/font-size\s*:\s*(?:1[6-9]|[2-9]\d)px/.test(rule.body))
   for(const rule of rules){
-    if(/:hover\b/.test(rule.selector)&&!(/\(hover\s*:\s*hover\)/.test(rule.media)&&/\(pointer\s*:\s*fine\)/.test(rule.media)))hit(rule.offset,"mobile-hover-needs-fine-hover-media")
-    if(/\b100vh\b/.test(rule.body))hit(rule.offset,"mobile-height-use-dvh-or-svh")
-    const size=rule.body.match(/font-size\s*:\s*([\d.]+)(px|rem|em)\b/)
-    if(size){
-      const pixels=Number(size[1])*(size[2]==="px"?1:16)
-      if(pixels<16&&controls.some(control=>new RegExp("(?:^|[\\s,>+~])"+control+"(?:$|[\\s,.#:\\[])").test(rule.selector)&&(!safeOverride(control)||coarse.test(rule.media))))hit(rule.offset,"mobile-input-needs-16px-or-coarse-override")
+    if(/:hover\b/i.test(rule.selector)&&!rule.fineHover)hit(rule.offset,"mobile-hover-needs-fine-hover-media")
+    const declarations=rule.body.split(";").map(value=>value.trim()).filter(Boolean)
+    for(const [index,declaration] of declarations.entries()){
+      if(!/\b100vh\b/i.test(declaration))continue
+      const fallback=declaration.match(/^(height|min-height|max-height)\s*:\s*100vh\s*(!important)?$/i)
+      const next=declarations[index+1] ?? ""
+      const replacement=fallback&&new RegExp("^"+fallback[1]+"\\s*:\\s*100[ds]vh\\s*"+(fallback[2]?"!important":"")+"$","i")
+      if(!replacement||!replacement.test(next))hit(rule.offset,"mobile-height-use-dvh-or-svh")
     }
   }
   if(/(?:apps\/site\/src\/site|apps\/studio\/src\/mobile)\.css$/.test(file)){

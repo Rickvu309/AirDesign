@@ -524,11 +524,22 @@ button, [role="button"], summary {
 @media (pointer: coarse) {
   :root body input, :root body textarea, :root body select { font-size: 16px; }
   button, a, [role="button"], summary {
+    position: relative;
     min-inline-size: 44px;
     min-block-size: 44px;
     box-sizing: border-box;
   }
+  button::after, a::after, [role="button"]::after, summary::after {
+    content: "";
+    position: absolute;
+    inline-size: 44px;
+    block-size: 44px;
+    inset-inline-start: calc(50% - 22px);
+    inset-block-start: calc(50% - 22px);
+    pointer-events: auto;
+  }
   a { display: inline-block; align-content: center; }
+  p > a { margin-block: 1px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   button, a, [role="button"], summary { transition: opacity var(--motion-micro); }
