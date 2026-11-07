@@ -1,17 +1,30 @@
 import {execFileSync} from "node:child_process"
+import {realpathSync} from "node:fs"
 import {mkdtemp,mkdir,rm,writeFile,copyFile,readFile} from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import {expect,it} from "vitest"
 import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase,seedFiles,fixtureContentHash} from "./registry.ts"
 
+const fixtureRoot=path.join(os.homedir(),"tmp")
+function initFixtureRepo(cwd:string,git:(...args:string[])=>string){
+  const relative=path.relative(realpathSync(fixtureRoot),realpathSync(cwd))
+  expect(relative!==""&&!relative.startsWith("..")&&!path.isAbsolute(relative),"fixture repo must live under the test temp dir").toBe(true)
+  git("init","-b","main")
+  expect(realpathSync(git("rev-parse","--show-toplevel").trim()),"fixture repo must be its own repository").toBe(realpathSync(cwd))
+  git("config","user.name","Design parity history fixture")
+  git("config","user.email","design-parity-history@example.invalid")
+}
+
+it("refuses to give a fixture identity to a repository outside the test temp dir",()=>{
+  expect(()=>initFixtureRepo(process.cwd(),()=>{throw new Error("git must not run outside the temp dir")})).toThrow("fixture repo must live under the test temp dir")
+})
+
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
-    git("init","-b","main")
-    git("config","user.name","Design parity history fixture")
-    git("config","user.email","design-parity-history@example.invalid")
+    initFixtureRepo(cwd,git)
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     const entries=await readRegistry(),entry=entries[0]!
     const save=async(budget:number)=>{
@@ -41,9 +54,7 @@ it("requires identity change reasons and refuses coverage loss even with a reaso
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-identity-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
-    git("init","-b","main")
-    git("config","user.name","Design parity history fixture")
-    git("config","user.email","design-parity-history@example.invalid")
+    initFixtureRepo(cwd,git)
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=(await readRegistry()).map(entry=>({...entry,scenarioChangedBecause:undefined})),first=entries[0]!
@@ -75,9 +86,7 @@ it("rejects local HEAD and descendants and ignores every CI base override",async
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
   const previous={CI:process.env.CI,DESIGN_PARITY_BASE:process.env.DESIGN_PARITY_BASE,GITHUB_BASE_REF:process.env.GITHUB_BASE_REF}
   try{
-    git("init","-b","main")
-    git("config","user.name","Design parity history fixture")
-    git("config","user.email","design-parity-history@example.invalid")
+    initFixtureRepo(cwd,git)
     git("commit","--allow-empty","-m","Reviewed ceiling")
     const base=git("rev-parse","HEAD")
     git("update-ref","refs/remotes/origin/main",base)
@@ -110,9 +119,7 @@ it("rejects co-edited seed, unreachable status and budget ceilings after the fir
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-landed-lock-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
-    git("init","-b","main")
-    git("config","user.name","Design parity history fixture")
-    git("config","user.email","design-parity-history@example.invalid")
+    initFixtureRepo(cwd,git)
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=await readRegistry(),entry=entries.find(value=>value.code==="S31.02")!
