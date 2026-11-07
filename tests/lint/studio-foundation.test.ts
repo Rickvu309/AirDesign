@@ -61,9 +61,11 @@ describe("Studio design foundation", () => {
     }
   })
   it("rejects ambiguous waits that include both starter cards",()=>{
-    const file="bench/studio/browser-check.mjs",source=readFileSync(file,"utf8")
-    expect(studioFoundationHits(file,source)).toEqual([])
-    expect(studioFoundationHits(file,source.replace('locator("article.deck-card").waitFor()','locator(".deck-card").waitFor()'))).toEqual([{line:1,reason:"studio-browser-waits-for-persisted-deck-rows"}])
+    for(const file of ["bench/studio/browser-check.mjs","bench/release/mobile-audit.mjs"]){
+      const source=readFileSync(file,"utf8")
+      expect(studioFoundationHits(file,source)).toEqual([])
+      expect(studioFoundationHits(file,source.replace('locator("article.deck-card").waitFor()','locator(".deck-card").waitFor()'))).toEqual([{line:1,reason:"studio-browser-waits-for-persisted-deck-rows"}])
+    }
   })
   it("rejects repeated Decks type and radius literals when shared tokens exist",()=>{
     const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")

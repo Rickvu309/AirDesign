@@ -33,7 +33,7 @@ try{
    const owner=await stack.fixture.signIn("mobile-audit@example.com")
    await context.addCookies(owner.cookie.split("; ").map(pair=>{const i=pair.indexOf("=");return {name:pair.slice(0,i),value:pair.slice(i+1),url:stack.origin}}))
    await stack.deck(owner,"mobile-audit-deck")
-   await page.goto(stack.origin);await page.locator(".deck-card").waitFor();await audit("studio-home")
+   await page.goto(stack.origin);await page.locator("article.deck-card").waitFor();await audit("studio-home")
    await page.goto(stack.origin+"/settings/account");await page.getByRole("button",{name:"Save name",exact:true}).waitFor();await page.waitForFunction(()=>!document.querySelector('.settings-row button')?.disabled);await audit("studio-settings")
    await page.goto(stack.origin+"/deck/mobile-audit-deck");await page.locator('[data-sync-state="saved"]').waitFor();await audit("studio-editor")
    if(!desktop)await page.setViewportSize({width:1440,height:844})
