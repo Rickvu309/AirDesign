@@ -24,12 +24,12 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     await act(async()=>send({enabled:true,run:{...run,kind:"stopped"},remote:[]}))
     expect(container.textContent).toContain("Resume")
     const requests:unknown[]=[]
-    vi.stubGlobal("fetch",async(url:string,init:RequestInit)=>{requests.push({url,body:JSON.parse(String(init.body))});return Response.json({kind:"reset"})})
+    vi.stubGlobal("fetch",async(url:string,init:RequestInit)=>{if(url==="/api/usage")return Response.json({paid:1000,bonus:0,payments:{kind:"configured"}});requests.push({url,body:JSON.parse(String(init.body))});return Response.json({kind:"reset"})})
     await act(async()=>send({enabled:true,run:{...run,kind:"limited",events:[{id:2,kind:"limit",limit:{kind:"out-of-usage",usage:{hit:"saved-hit",paid:0,week:{resetsAt:1804483200000}}}}]},remote:[]}))
-    expect(container.querySelector('[role="alert"]')?.textContent).toContain("weekly usage")
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain("this week's limit")
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe(new Date(1804483200000).toISOString())
     expect(requests).toEqual([])
-    const reset=[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset usage")!
+    const reset=[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset")!
     reset.focus();await act(async()=>reset.click())
     expect(requests).toEqual([])
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain("$5")
@@ -39,10 +39,35 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     await act(async()=>reset.click())
     await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset for $5")!.click())
     expect(requests).toEqual([{url:"/api/usage/reset",body:{limitHit:"saved-hit"}}])
-    expect(document.activeElement).toBe(reset)
+    expect(container.textContent).toContain("Pick up where you left off.")
+    expect(container.querySelectorAll(".aira-usage-limit")).toHaveLength(1)
+    expect(container.querySelector(".aira-usage-limit")?.textContent).not.toContain("this week’s limit")
+    const resume=[...container.querySelectorAll("button")].find(button=>button.textContent==="Resume")!
+    expect(document.activeElement).toBe(resume)
+    expect(requests).toHaveLength(1)
+    await act(async()=>resume.click())
+    expect(requests).toHaveLength(2)
+    expect(requests[1]).toMatchObject({url:expect.stringContaining("/api/aira/resume?deck=")})
     input.focus()
     await act(async()=>streams[0]?.onerror?.())
     expect([...container.querySelectorAll('[role="alert"]')].some(alert=>alert.textContent?.includes("Reconnecting"))).toBe(true)
     expect(document.activeElement).toBe(input)
   }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
+})
+
+it.each(["configured","unavailable"])("keeps an insufficient-credit request saved with payments %s",async(kind)=>{
+  const streams:Stream[]=[],requests:string[]=[]
+  class Stream{onmessage:((event:MessageEvent)=>void)|null=null;onerror:(()=>void)|null=null;constructor(){streams.push(this)}close(){}}
+  vi.stubGlobal("EventSource",Stream)
+  vi.stubGlobal("fetch",async(url:string)=>{requests.push(url);return Response.json({paid:200,bonus:0,payments:{kind}})})
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  try{
+    await act(async()=>root.render(<ChatPanel deck={fixtureDeck(2,2)} selection={[]} readonly={false} close={()=>{}}/>))
+    await act(async()=>streams[0]?.onmessage?.(new MessageEvent("message",{data:JSON.stringify({enabled:true,remote:[],run:{id:"saved",kind:"limited",request:"Polish this deck",events:[{id:1,kind:"limit",limit:{usage:{hit:"saved-hit",week:{resetsAt:1804483200000}}}}]}})})))
+    await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Reset")!.click())
+    expect(requests).toEqual(["/api/usage"])
+    if(kind==="configured"){expect(container.querySelector<HTMLDialogElement>("dialog")?.open).toBe(true);expect(container.textContent).toContain("$12.00");expect(container.textContent).toContain("Minimum $10.")}
+    else{expect(document.body.textContent).toContain("Buying credits is not available yet");expect([...container.querySelectorAll("button")].some(button=>button.textContent==="Continue to payment")).toBe(false)}
+    expect(container.textContent).toContain("Polish this deck")
+  }finally{await act(async()=>root.unmount());container.remove();sessionStorage.clear();vi.unstubAllGlobals()}
 })
