@@ -12,10 +12,12 @@ import { PGlite } from "@electric-sql/pglite"
 import pg from "pg"
 import { createHash, randomUUID } from "node:crypto"
 import { mkdir } from "node:fs/promises"
+import { setTimeout as pause } from "node:timers/promises"
 import { execute, executionMatches, initialHistory, type Command, type History, type Principal, type Receipt, type ExecutionIdentity, type Contribution, type RunState, commandId } from "../../../../packages/change-log/src/index.ts"
 import type { ChangeSet, Deck } from "../../../../packages/deck/src/index.ts"
 import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistoryIndex } from "./history-index.ts"
 
+const historySchemaLock=639074220
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
 export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string }, clock=Date.now) {
@@ -33,24 +35,36 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     if (closed) throw new Error("database-closed")
     if (local) return local.transaction(work)
     if (!pool) throw new Error("database-closed")
-    const client = await pool.connect()
-    try {
-      await client.query("BEGIN")
-      const tx: Transaction = { query: async <R>(sql: string, params?: unknown[]) => {
-        const result = await client.query(sql, params)
-        return { rows: result.rows.map(row => row as R), affectedRows: result.rowCount ?? 0, fields: [] }
-      } }
-      const result = await work(tx)
-      await client.query("COMMIT")
-      return result
-    } catch (error) { await client.query("ROLLBACK"); throw error } finally { client.release() }
+    for (let attempt=0;;attempt++) {
+      const client = await pool.connect()
+      try {
+        await client.query("BEGIN")
+        const tx: Transaction = { query: async <R>(sql: string, params?: unknown[]) => {
+          const result = await client.query(sql, params)
+          return { rows: result.rows.map(row => row as R), affectedRows: result.rowCount ?? 0, fields: [] }
+        } }
+        const result = await work(tx)
+        await client.query("COMMIT")
+        return result
+      } catch (error) {
+        await client.query("ROLLBACK")
+        if (attempt>=3 || !error || typeof error!=="object" || !("code" in error) || (error.code!=="40P01" && error.code!=="40001")) throw error
+      } finally { client.release() }
+      await pause(20*2**attempt+Math.floor(Math.random()*20))
+    }
   }
-  await transaction(async tx => { await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
-    await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
-    await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
-    await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
-    await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-    await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx) })
+  try {
+    await transaction(async tx => {
+      if(pool)await tx.query("SELECT pg_advisory_xact_lock($1)",[historySchemaLock])
+      await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
+      if(pool)await tx.query("LOCK TABLE editing_deck IN ACCESS EXCLUSIVE MODE")
+      await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
+      await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
+      await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
+      await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
+      await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx)
+    })
+  } catch(error) { await local?.close();await pool?.end();await Promise.all(connections);throw error }
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
     await lockRetainedAccount(tx,principal.personId)
     const result = await tx.query<{ state: History; deleted: boolean }>("SELECT state, deleted FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE", [deckId, principal.personId])

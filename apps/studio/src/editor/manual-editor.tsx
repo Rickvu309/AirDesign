@@ -1,9 +1,10 @@
+import { EditorErrorNotice } from "./editor-error-notice.tsx"
 import {ChatPanel} from "../chat/chat-panel.tsx"
 import {airaRequest} from "../chat/aira-client.ts"
 import { ImagePanel } from "../images/image-panel.tsx"
 import { TemplatePanel } from "../templates/template-panel.tsx"
 import { useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
-import { AlertDialog,Button } from "@airdesign/ui"
+import { AlertDialog,Button,copy } from "@airdesign/ui"
 import { commandId,type Command } from "../../../../packages/change-log/src/index.ts"
 import { flatten,type Id,type Run } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
@@ -70,8 +71,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
     </header>
     <aside className="editor-export"><label><span className="sr-only">Zoom</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(Number(event.target.value))}>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={state?.kind!=="saved"||readonly||!deck?.slides.length} onClick={()=>setExportOpen(true)}>Export</Button></aside>
     <FontReadiness/>
-    <p role="status" className="editor-status">{phone ? "Edit on a laptop · read-only viewing" : state ? labels[state.kind] : "Opening your saved deck…"}{selection.length>0 ? ` · ${selection.length} selected` : ""}</p>
-    {error && <p role="alert">{error} <a href="/">Back to Home</a></p>}
+    <p role="status" className="editor-status">{phone ? "Edit on a laptop · read-only viewing" : error && state?.kind==="pending" ? copy("editor.save_failed_title") : state ? labels[state.kind] : "Opening your saved deck…"}{selection.length>0 ? ` · ${selection.length} selected` : ""}</p>
+    {error && <EditorErrorNotice saving={sync!==null} retry={reconnect}/>}
     {(state?.kind==="offline"||state?.kind==="retrying") && <Button size="compact" variant="secondary" onClick={reconnect}>Reconnect</Button>}
     {state?.kind==="deleted" && <Button size="compact" variant="secondary" onClick={()=>void deckAction(deckId,"restore").then(()=>location.reload()).catch(failure=>setError(String(failure)))}>Restore deck</Button>}
     {contextMenu && <nav className="editor-context editor-menu" aria-label="Slide actions">{actions()}<button type="button" onClick={()=>setContextMenu(false)}>Close menu</button></nav>}

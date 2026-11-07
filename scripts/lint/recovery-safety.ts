@@ -20,5 +20,7 @@ export function recoverySafetyHits(file:string,source:string){
   if(normalized.endsWith("/apps/server/src/rpc/websocket.ts") && /store\.commitSnapshot\(/.test(source))reject("batch-reconnect-admission-and-snapshot-instead-of-per-command-transactions")
   if(normalized.endsWith("/packages/rpc/src/client.ts") && source.slice(source.indexOf("private async send(")).includes("await this.outbox.read(this.key)"))reject("coalesce-concurrent-outbox-reads-under-command-locks")
   if(normalized.endsWith("/packages/rpc/src/client.ts") && source.includes("void read.work.finally("))reject("share-outbox-reads-only-before-the-read-starts-to-preserve-lock-freshness")
+  if(/\/apps\/studio\/src\/editor\/.*\.tsx$/.test(normalized) && !normalized.endsWith(".test.tsx") && /\{(?:error|failure)(?:\.message)?\}/.test(source))reject("render-reviewed-error-copy-instead-of-raw-errors")
+  if(/\/apps\/server\/src\/(?:rpc\/websocket|commands\/handle)\.ts$/.test(normalized) && /error\.message/.test(source))reject("map-sync-failures-to-typed-public-codes")
   return hits
 }
