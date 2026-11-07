@@ -13,15 +13,26 @@ export async function seed(stack,entry){
   await stack.request(owner,`/api/people/${owner.personId}/profile`,{displayName:"Ada Lovelace"})
   if(["recents","trash-with-items","deck-open","deck-limited","deck-limited-with-credits"].includes(entry.seed)){
     await stack.request(owner,"/api/templates",{id:"halden",version:1,name:"Halden",font:"Geist",background:"#ffffff",foreground:"#102633",accent:"#1e6f8c",fontRight:"installed",families:[{id:"basic",name:"Basic",master:null,layouts:["Blank"]}]},201)
-    const titles=entry.seed==="recents" ? ["Project Atlas","Q3 Investor Update","FY26 Operating Plan","Pricing Strategy Review","Board Pack, October","Germany Market Sizing"] : entry.seed==="trash-with-items" ? ["Old pitch draft","Brightwater kickoff","Scratchpad copy"] : ["Q3 Investor Update"]
+    const recentTitles=["Project Atlas","Q3 Investor Update","FY26 Operating Plan","Pricing Strategy Review","Board Pack, October","Germany Market Sizing"]
+    const titles=entry.seed==="trash-with-items" ? [...recentTitles.slice(0,3),"Old pitch draft","Brightwater kickoff","Scratchpad copy"] : entry.seed==="recents" ? recentTitles.filter(title=>!["S32.02","S32.03"].includes(entry.code)||title!=="Project Atlas") : ["Q3 Investor Update"]
+    const created=["2026-10-30","2026-10-21","2026-09-12","2026-09-03","2026-08-28","2026-08-04"]
     for(const [index,title] of titles.entries()){
       const id=index===0&&entry.seed.startsWith("deck-") ? "designparity"+entry.code.replaceAll(".","") : "parity"+entry.code.replaceAll(".","")+index
-      const deck=investorDeck(id)
-      const age=entry.seed==="trash-with-items" ? [2,7,21][index] : [0,1/12,1,7,21,30][index]
-      stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
+      const deck=investorDeck(id),position=recentTitles.indexOf(title),trashed=entry.seed==="trash-with-items"&&position<0,catalogFixture=!entry.seed.startsWith("deck-")
+      if(catalogFixture){
+        const cover=deck.slides[0]
+        for(const element of cover.elements){
+          if(element.kind==="text")element.runs[0].text=title
+        }
+        cover.notes=title+" overview"
+      }
+      if(catalogFixture)stack.fixture.advance(Date.parse(created[position<0 ? index : position]+"T03:00:00Z")-stack.fixture.now())
       await stack.request(owner,"/api/decks",deck,201)
+      const age=!catalogFixture ? 0 : trashed ? [2,7,21][index-3] : [0,1/12,1,7,21,30][position]
+      stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
       await stack.request(owner,`/api/catalog/${id}/rename`,{title})
-      if(entry.seed==="trash-with-items")await stack.request(owner,`/api/catalog/${id}/trash`,{})
+      if(catalogFixture&&position>=0&&position<3)await stack.request(owner,`/api/catalog/${id}/star`,{starred:true})
+      if(trashed)await stack.request(owner,`/api/catalog/${id}/trash`,{})
     }
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
   }
