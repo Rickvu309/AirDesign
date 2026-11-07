@@ -7,6 +7,7 @@ import { RenderFixture } from "./render/render-fixture.tsx"
 import "./editor/workspace.css"
 import "./decks/decks.css"
 import "../../../packages/ui/src/tokens/tokens.css"
+import "./mobile.css"
 
 const root = document.getElementById("root")
 if (root) {
