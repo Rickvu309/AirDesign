@@ -18,9 +18,10 @@ import type { ChangeSet, Deck } from "../../../../packages/deck/src/index.ts"
 import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistoryIndex } from "./history-index.ts"
 
 const historySchemaLock=639074220
+const historySchemaVersion=1
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
-export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string }, clock=Date.now) {
+export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate" | "connect" }, clock=Date.now) {
   if (driver.kind === "pglite" && driver.path && driver.path!=="memory://") await mkdir(driver.path, { recursive: true })
   const local = driver.kind === "pglite" ? driver.client ?? new PGlite(driver.path) : null
   const pool = driver.kind === "postgres" ? new pg.Pool({connectionString:driver.url,max:4}) : null
@@ -53,17 +54,30 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       await pause(20*2**attempt+Math.floor(Math.random()*20))
     }
   }
+  async function schemaVersion(tx:Transaction) {
+    const table=await tx.query<{name:string|null}>("SELECT to_regclass('schema_version')::text AS name")
+    if(!table.rows[0]?.name)return 0
+    const result=await tx.query<{version:number}>("SELECT version FROM schema_version WHERE name='history'")
+    return result.rows[0]?.version ?? 0
+  }
   try {
-    await transaction(async tx => {
-      if(pool)await tx.query("SELECT pg_advisory_xact_lock($1)",[historySchemaLock])
-      await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
-      if(pool)await tx.query("LOCK TABLE editing_deck IN ACCESS EXCLUSIVE MODE")
-      await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
-      await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
-      await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
-      await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
-      await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx)
-    })
+    const version=await transaction(schemaVersion)
+    if(version<historySchemaVersion){
+      if(driver.kind==="postgres" && driver.schema==="connect")throw new Error("history-schema-outdated: start the web service to run database migrations before starting the worker")
+      await transaction(async tx => {
+        if(pool)await tx.query("SELECT pg_advisory_xact_lock($1)",[historySchemaLock])
+        if(await schemaVersion(tx)>=historySchemaVersion)return
+        await tx.query("CREATE TABLE IF NOT EXISTS schema_version (name text PRIMARY KEY, version integer NOT NULL)")
+        await tx.query("CREATE TABLE IF NOT EXISTS editing_deck (id text PRIMARY KEY, owner text NOT NULL, state jsonb NOT NULL, deleted boolean NOT NULL DEFAULT false)")
+        if(pool)await tx.query("LOCK TABLE editing_deck IN ACCESS EXCLUSIVE MODE")
+        await tx.query("CREATE TABLE IF NOT EXISTS editing_receipt (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload text NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,id))")
+        await tx.query("CREATE TABLE IF NOT EXISTS editing_event (deck text NOT NULL REFERENCES editing_deck(id), seq integer NOT NULL, command jsonb NOT NULL, receipt jsonb NOT NULL, PRIMARY KEY(deck,seq))")
+        await tx.query("CREATE UNIQUE INDEX IF NOT EXISTS editing_event_command ON editing_event(deck,((command->>'id')))")
+        await tx.query("CREATE TABLE IF NOT EXISTS editing_run_credential (token text PRIMARY KEY, deck text NOT NULL REFERENCES editing_deck(id), run text NOT NULL)")
+        await initializeAccountDeletion(tx);await initializeAgents(tx);await initializeOwnedFiles(tx); await initializeToolSnapshots(tx); await initializeOAuth(tx); await initializeUsage(tx); await initializeHistoryIndex(tx); await initializeCatalog(tx);await initializeExports(tx);await initializeAssets(tx);await initializeTemplateSources(tx)
+        await tx.query("INSERT INTO schema_version(name,version) VALUES('history',$1) ON CONFLICT(name) DO UPDATE SET version=EXCLUDED.version",[historySchemaVersion])
+      })
+    }
   } catch(error) { await local?.close();await pool?.end();await Promise.all(connections);throw error }
   async function owned(tx: Transaction, principal: Principal, deckId: string) {
     await lockRetainedAccount(tx,principal.personId)

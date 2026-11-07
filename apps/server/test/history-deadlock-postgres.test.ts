@@ -41,6 +41,7 @@ it("lets a save finish while a worker initializes history on another PostgreSQL 
     const first=await createHistoryStore(driver);stores.push(first)
     const deck=fixtureDeck(2)
     await first.create(owner,deck)
+    await sql.query("UPDATE schema_version SET version=0 WHERE name='history'")
     await sql.query("BEGIN")
     await sql.query("SELECT state FROM editing_deck WHERE id=$1 FOR UPDATE",[deck.id])
     let unblock:(()=>void)|undefined
@@ -66,6 +67,80 @@ it("lets a save finish while a worker initializes history on another PostgreSQL 
     expect(deadlocks).toBe(0)
     expect((await sql.query("SELECT count(*)::integer AS count FROM editing_event WHERE deck=$1",[deck.id])).rows).toEqual([{count:1}])
     observed.mockRestore()
+  })
+},30_000)
+
+it("opens current schemas without DDL and lets a save finish during twenty worker cycles",async()=>{
+  await databaseTest(async(driver,sql,stores)=>{
+    await sql.query("ALTER DATABASE "+(await sql.query("SELECT current_database() AS name")).rows[0].name+" SET lock_timeout='50ms'")
+    const first=await createHistoryStore(driver);stores.push(first)
+    const deck=fixtureDeck(2);await first.create(owner,deck)
+    let releaseSave:()=>void=()=>undefined
+    let saveStarted:()=>void=()=>undefined
+    const saveGate=new Promise<void>(resolve=>{releaseSave=resolve})
+    const savingStarted=new Promise<void>(resolve=>{saveStarted=resolve})
+    const statements:string[]=[]
+    const original=pg.Client.prototype.query
+    const observed=vi.spyOn(pg.Client.prototype,"query")
+    observed.mockImplementation(function(this:pg.Client,...args:Parameters<typeof original>){
+      if(typeof args[0]==="string")statements.push(args[0])
+      const result=Reflect.apply(original,this,args)
+      if(typeof args[0]==="string" && args[0].startsWith("INSERT INTO editing_event"))return Promise.resolve(result).then(async value=>{saveStarted();await saveGate;return value})
+      return result
+    })
+    const saving=first.commit(owner,deck.id,patch("worker_cycles"))
+    await savingStarted
+    try {
+      for(let cycle=0;cycle<20;cycle++){
+        const worker=await createHistoryStore({...driver,schema:"connect"})
+        await worker.close()
+      }
+      const current=await createHistoryStore({...driver,schema:"migrate"});await current.close()
+      releaseSave()
+      await expect(saving).resolves.toMatchObject({kind:"applied",seq:1})
+      expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
+      expect(statements.filter(sql=>sql.includes("pg_advisory"))).toEqual([])
+      expect((await first.read(owner,deck.id)).deck.slides[0]?.notes).toBe("worker_cycles")
+    } finally {releaseSave();await saving;observed.mockRestore()}
+  })
+},30_000)
+
+it("runs a schema version once when two web services start together",async()=>{
+  await databaseTest(async(driver,sql,stores)=>{
+    let migrations=0
+    const original=pg.Client.prototype.query
+    const observed=vi.spyOn(pg.Client.prototype,"query")
+    observed.mockImplementation(function(this:pg.Client,...args:Parameters<typeof original>){
+      if(typeof args[0]==="string" && args[0].startsWith("CREATE TABLE IF NOT EXISTS editing_deck"))migrations++
+      return Reflect.apply(original,this,args)
+    })
+    const opened=await Promise.all([createHistoryStore({...driver,schema:"migrate"}),createHistoryStore({...driver,schema:"migrate"})])
+    stores.push(...opened)
+    expect(migrations).toBe(1)
+    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:1}])
+    observed.mockRestore()
+  })
+},30_000)
+
+it("rejects missing or outdated schemas in worker mode without issuing DDL",async()=>{
+  await databaseTest(async(driver,sql,stores)=>{
+    const statements:string[]=[]
+    const original=pg.Client.prototype.query
+    const observed=vi.spyOn(pg.Client.prototype,"query")
+    observed.mockImplementation(function(this:pg.Client,...args:Parameters<typeof original>){
+      if(typeof args[0]==="string")statements.push(args[0])
+      return Reflect.apply(original,this,args)
+    })
+    await expect(createHistoryStore({...driver,schema:"connect"})).rejects.toThrow("history-schema-outdated: start the web service")
+    expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
+    const store=await createHistoryStore(driver);stores.push(store)
+    await sql.query("UPDATE schema_version SET version=0 WHERE name='history'")
+    statements.length=0
+    await expect(createHistoryStore({...driver,schema:"connect"})).rejects.toThrow("history-schema-outdated: start the web service")
+    expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
+    observed.mockRestore()
+    const migrated=await createHistoryStore(driver);stores.push(migrated)
+    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:1}])
   })
 },30_000)
 
