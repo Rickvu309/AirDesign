@@ -76,6 +76,14 @@
   --radius-toast: 10px;
   --shadow-toast: 0 8px 24px rgb(0 0 0 / 20%);
   --motion-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  --working-blue: #4d94fb;
+  --working-edge-light: #a9c8ff;
+  --working-edge-purple: #b9a8ff;
+  --working-blue-glow: #4d94fb59;
+  --working-light-glow: #93b8ef47;
+  --working-purple-glow: #b39dff47;
+  --working-sweep-blue: #4d94fb26;
+  --working-sweep-purple: #8b7bff1a;
   --motion-panel: 280ms cubic-bezier(0.32, 0.72, 0, 1);
   --text-page: 26px;
   --text-dialog: 17px;
