@@ -104,6 +104,8 @@ it("browses and inserts native flowchart shapes through undoable commands",async
     await ui.click("Shapes");await ui.click("More shapes");expect(ui.container.textContent).toContain("Flowchart")
     await ui.click("Database");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"flowDatabase"})
     await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"z",ctrlKey:true,bubbles:true})));await ui.render();expect(ui.sync.deck.slides[0]?.elements).toHaveLength(1)
+    await ui.click("Line");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"rectangle",box:{height:2}})
+    await ui.click("Arrow");expect(ui.sync.deck.slides[0]?.elements.at(-1)).toMatchObject({kind:"shape",geometry:"rightArrow"})
   }finally{await ui.close()}
 })
 

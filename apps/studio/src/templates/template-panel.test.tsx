@@ -4,10 +4,10 @@ import { expect,it,vi } from "vitest"
 import { basics } from "../../../../packages/brand/src/index.ts"
 import { fixtureDeck } from "../../../../packages/deck/src/fixture.ts"
 import { TemplatePanel } from "./template-panel.tsx"
-vi.mock("../decks/catalog-client.ts",()=>({api:async()=>({templates:[...basics],default:basics[0]})}))
+vi.mock("../decks/catalog-client.ts",()=>({api:async(path:string)=>path==="/api/assets" ? {assets:[{id:"saved_background",width:1600,height:900}]} : {templates:[...basics],default:basics[0]}}))
 it("keeps the template gallery in a picker and returns to the design controls after selection",async()=>{
   const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
-  const button=(label:string)=>[...container.querySelectorAll("button")].find(button=>button.textContent===label)!
+  const button=(label:string)=>[...container.querySelectorAll("button")].find(button=>button.getAttribute("aria-label")===label || button.textContent===label)!
   try{
     await act(async()=>root.render(<TemplatePanel deck={fixtureDeck(1)} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>))
     expect(container.querySelector('[aria-label="Template picker"]')).toBeNull()
@@ -42,3 +42,18 @@ it("focuses search and restores the trigger after Escape and outside dismissal",
   }finally{await act(async()=>root.unmount());container.remove()}
 })
 
+it("inserts a saved image as one background change and keeps foreground content",async()=>{
+ const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(1),edit=vi.fn()
+ try{
+  await act(async()=>root.render(<TemplatePanel deck={deck} selection={[deck.slides[0]!.id]} edit={edit} disabled={false} close={()=>{}}/>))
+  const tab=[...container.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button=>button.textContent==="Image")!
+  await act(async()=>tab.click())
+  await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Use background image 1"]')!.click())
+  expect(edit).toHaveBeenCalledWith({changes:[expect.objectContaining({kind:"insert",parent:deck.slides[0]!.id,index:0,value:expect.objectContaining({kind:"image",image:expect.objectContaining({asset:"saved_background"})})})]})
+ }finally{await act(async()=>root.unmount());container.remove()}
+})
+
+it("names the current background color after it changes",async()=>{
+ const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(1);deck.slides[0]!.background="#123456"
+ try{await act(async()=>root.render(<TemplatePanel deck={deck} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>));expect(container.querySelector(".background-color")?.textContent).toBe("#123456")}finally{await act(async()=>root.unmount());container.remove()}
+})

@@ -7,6 +7,8 @@ export function slideBackground(slide:Slide) {
 
 export function backgroundChanges(deck:Deck,selection:Id[],color:string):ChangeSet {
   return {changes:deck.slides.filter(slide=>selection.includes(slide.id)).map(slide=>{
+    const first=slide.elements[0]
+    if(first?.kind==="image"&&first.box.x===0&&first.box.y===0&&first.box.width===slide.size.width&&first.box.height===slide.size.height)return {kind:"set",target:slide.id,value:{...slide,background:color,elements:slide.elements.slice(1)}}
     const background=slideBackground(slide)
     if(background)return {kind:"set",target:background.id,value:{...background,fill:color}}
     return {kind:"set",target:slide.id,value:{...slide,background:color}}
