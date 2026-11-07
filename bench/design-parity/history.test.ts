@@ -7,7 +7,7 @@ import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseR
 
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
@@ -37,7 +37,7 @@ it("keeps the merge-base ceiling after an unauthorized increase is committed",as
 
 it("requires identity change reasons and refuses coverage loss even with a reason",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-identity-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
@@ -68,7 +68,7 @@ it("requires identity change reasons and refuses coverage loss even with a reaso
 
 it("rejects local HEAD and descendants and ignores every CI base override",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-base-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
   const previous={CI:process.env.CI,DESIGN_PARITY_BASE:process.env.DESIGN_PARITY_BASE,GITHUB_BASE_REF:process.env.GITHUB_BASE_REF}
   try{
     git("init","-b","main")
@@ -102,7 +102,7 @@ it("rejects local HEAD and descendants and ignores every CI base override",async
 
 it("rejects co-edited seed, unreachable status and budget ceilings after the first reviewed lock lands",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-landed-lock-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})

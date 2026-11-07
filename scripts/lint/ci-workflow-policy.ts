@@ -2,7 +2,7 @@ import { parse } from "yaml"
 import { z } from "zod"
 import { unitShards, verificationShards } from "../gate/plan.ts"
 
-const stepSchema = z.object({ run: z.string().optional(), uses: z.string().optional(), if: z.string().optional(), env: z.record(z.string(), z.string()).optional(), with: z.object({ ref: z.string().optional() }).optional() })
+const stepSchema = z.object({ run: z.string().optional(), uses: z.string().optional(), if: z.string().optional(), env: z.record(z.string(), z.string()).optional(), with: z.object({ ref: z.string().optional(), "fetch-depth": z.number().optional() }).optional() })
 const jobSchema = z.object({
   steps: z.array(stepSchema).optional(),
   env: z.record(z.string(), z.string()).optional(),
@@ -39,6 +39,10 @@ export function ciCoverageHits(scripts: Record<string, string>, source: string, 
   }
   if (scripts.gate !== "node scripts/gate/run.ts all") hits.push("ci-local-gate-script-drift")
   if (jobs.gate?.if !== "always()") hits.push("ci-final-gate-must-always-run")
+  for (const name of ["unit", "design"]) {
+    const checkout = jobs[name]?.steps?.find(step => step.uses?.startsWith("actions/checkout@"))
+    if (checkout?.with?.["fetch-depth"] !== 0) hits.push(`ci-merge-base-history-missing: ${name}`)
+  }
   const matrix = jobs.unit?.strategy?.matrix
   if (typeof matrix !== "object" || JSON.stringify(matrix.shard) !== JSON.stringify(unitShards)) hits.push("ci-unit-shards-incomplete")
   if (!jobs.unit?.steps?.some(step => step.run === "npm run gate:unit -- ${{ matrix.shard }}")) hits.push("ci-unit-shards-not-executed")
