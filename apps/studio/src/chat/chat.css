@@ -23,9 +23,10 @@
 .aira-composer-actions .aira-mic { border:0;background:transparent;color:var(--muted-foreground);display:grid;place-items:center;inline-size:28px;block-size:28px; }
 .aira-attachments { grid-column:1 / -1;display:flex;flex-wrap:wrap;gap:6px; }
 .aira-attachments:has(button) { padding-block-end:10px; }
+.aira-attachments svg { inline-size:12px;block-size:12px;flex:none; }
 .aira-attachments button { display:flex;align-items:center;gap:4px;block-size:24px;max-inline-size:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;border-radius:6px;background:var(--muted);color:var(--muted-foreground);padding:0 6px 0 8px;font:inherit;font-size:12px; }
 .aira-composer:has(textarea:not(:placeholder-shown)) { padding:12px;grid-template-columns:28px minmax(0,1fr) auto;row-gap:10px; }
-.aira-composer:has(textarea:not(:placeholder-shown)) textarea { grid-column:1 / -1;grid-row:2;mask-image:linear-gradient(to bottom,black calc(100% - 32px),transparent); }
+.aira-composer:has(textarea:not(:placeholder-shown)) textarea { grid-column:1 / -1;grid-row:2;padding:0;mask-image:linear-gradient(to bottom,black calc(100% - 32px),transparent); }
 .aira-composer:has(textarea:not(:placeholder-shown)) .aira-attach,.aira-composer:has(textarea:not(:placeholder-shown)) .aira-composer-actions { grid-row:3; }
 .aira-composer:has(textarea:not(:placeholder-shown)) .aira-mic { display:none; }
 .aira-panel>p { margin:0;line-height:1.5; }.aira-panel [role=alert] { color:var(--destructive); }
@@ -67,3 +68,7 @@
 .editor-dock .editor-navigation-menu>div button[aria-pressed=true] { background:transparent;color:inherit; }
 
 .aira-composer:not(:has(textarea:not(:placeholder-shown))) .aira-attach { order:-1; }
+
+.aira-composer:has(textarea:not(:placeholder-shown)) .aira-attachments { padding:0; }
+.aira-close:focus-visible { position:static;clip-path:none;overflow:visible; }
+@media (width < 768px) { .aira-panel>header .aira-close { position:static;clip-path:none;overflow:visible;inline-size:44px;block-size:44px;font-size:20px; } }

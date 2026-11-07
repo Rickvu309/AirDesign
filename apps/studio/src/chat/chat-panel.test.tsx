@@ -70,6 +70,8 @@ it("shows separate slide and bar chart attachment chips without labelling icons 
     const chips=[...container.querySelectorAll(".aira-attachments button")]
     expect(chips.map(chip=>chip.textContent)).toEqual(["Slide 1 ×","Bar chart ×"])
     expect(chips[1]?.getAttribute("aria-label")).toBe("Remove Bar chart")
+    expect(chips[0]?.querySelector("svg")).toBeNull()
+    expect(chips[1]?.querySelector("svg")).not.toBeNull()
     await act(async()=>chips[1]!.dispatchEvent(new MouseEvent("click",{bubbles:true})))
     expect(container.querySelectorAll(".aira-attachments button")).toHaveLength(1)
   }finally{await act(async()=>root.unmount());container.remove()}
@@ -94,5 +96,35 @@ it("keeps activity compact and scope chips inside the composer, and loads real u
     expect(container.querySelector('a[aria-label="Manage usage and credits"]')?.getAttribute("title")).toBe("Credits $12.00")
     await act(async()=>container.querySelector<HTMLButtonElement>('.aira-composer .aira-attachments button')?.click())
     expect(container.querySelector(".aira-attachments button")).toBeNull()
+  }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
+})
+
+it("keeps the designed composer prompts and Undo label across real run states",async()=>{
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  const deck=fixtureDeck(1),base={id:"run",owner:"owner",deck:"deck",request:"Refine",selection:["s0"],completed:["s0"],events:[]}
+  try{
+    await act(async()=>root.render(<ChatPanel deck={deck} selection={["s0"]} readonly={false} close={()=>{}} snapshot={{enabled:true,remote:[],run:null}}/>))
+    expect(container.querySelector("textarea")?.placeholder).toBe("Ask Aira")
+    await act(async()=>root.render(<ChatPanel deck={deck} selection={["s0"]} readonly={false} close={()=>{}} snapshot={{enabled:true,remote:[],run:{...base,kind:"working"}}}/>))
+    expect(container.querySelector("textarea")?.placeholder).toBe("Add to the request")
+    await act(async()=>root.render(<ChatPanel deck={deck} selection={["s0"]} readonly={false} close={()=>{}} snapshot={{enabled:true,remote:[],run:{...base,kind:"complete"}}}/>))
+    expect(container.querySelector(".aira-run-actions button")?.textContent).toBe("Undo")
+  }finally{await act(async()=>root.unmount());container.remove()}
+})
+
+it("dismisses usage with Escape from its trigger and outside pointer, restoring keyboard focus",async()=>{
+  const container=document.createElement("div");document.body.append(container);const root=createRoot(container)
+  vi.stubGlobal("fetch",async()=>Response.json({used:0,paid:0,bonus:0,week:{resetsAt:1804483200000}}))
+  try{
+    await act(async()=>root.render(<ChatPanel deck={fixtureDeck(1)} selection={[]} readonly={false} close={()=>{}} snapshot={{enabled:true,remote:[],run:null}}/>))
+    const usage=container.querySelector<HTMLButtonElement>('button[aria-label="Usage"]')!
+    usage.focus();await act(async()=>usage.click())
+    expect(usage.getAttribute("aria-expanded")).toBe("true")
+    await act(async()=>usage.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})))
+    expect(container.querySelector('[aria-label="Usage details"]')).toBeNull()
+    expect(document.activeElement).toBe(usage)
+    await act(async()=>usage.click())
+    await act(async()=>document.body.dispatchEvent(new Event("pointerdown",{bubbles:true})))
+    expect(container.querySelector('[aria-label="Usage details"]')).toBeNull()
   }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
 })
