@@ -1,0 +1,26 @@
+{
+  "head": "a768e2fca4b595d1421e53de9b3e180ec6a9336f",
+  "kind": "actual-built-studio",
+  "adapter": "deterministic-local",
+  "template": "Halden",
+  "deck": "site_investor_capture",
+  "slides": 8,
+  "acceptedChanges": 3,
+  "state": "working after the third accepted slide change",
+  "viewport": {
+    "width": 1440,
+    "height": 900,
+    "deviceScaleFactor": 2
+  },
+  "refresh": "heavy --label site-capture -- node bench/release/site-capture.mjs --publish",
+  "fixture": "bench/release/site-investor-deck.ts",
+  "fixtureSource": "design-parity/bench/design-parity/investor-deck.ts",
+  "fixtureSha256": "5be1c476478c1ab086cd26d2376c3ee82de7394db88bd30a3a8474356d74fa2e",
+  "mobileCrop": {
+    "x": 91.1875,
+    "y": 177.5,
+    "width": 960,
+    "height": 540.875
+  },
+  "sha256": "7529632b8a8904b8a470a634088266c28705308e3a1065b23f85eb46a1d68886"
+}

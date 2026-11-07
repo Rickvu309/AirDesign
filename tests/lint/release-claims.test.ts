@@ -36,3 +36,11 @@ it("requires evidence or an explicit unverified external gate for registered cop
  for(const amount of ["Reset for $15","Buy 100 credits","Includes 10,000 units"] )expect(publicAmountHits(amount)).not.toEqual([])
  expect(publicAmountHits("Includes {{allowance}} units for {{freePrice}}" )).toEqual([])
 })
+
+it("requires passed matrix evidence for an external claim",()=>{
+ const text="Aira built in",claim={id:"aira-built-in",text,kind:"external-passed",gate:"X03",receipt:"P09/external/X03/results/report.md"} as const
+ const matrix="| X03 | passed | P09/external/X03/results/report.md | Claude only |"
+ expect(releaseClaimHits(text,[claim],matrix)).toEqual([])
+ for(const invalid of ["",matrix.replace("passed","pending"),matrix.replace("X03","X04"),matrix.replace("report.md","other.md")])expect(releaseClaimHits(text,[claim],invalid)).not.toEqual([])
+ expect(releaseClaimHits(text,[{...claim,receipt:"P03/report.md"}],matrix)).not.toEqual([])
+})

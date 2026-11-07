@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto"
 import {Window} from "happy-dom"
 import {renderSiteTerms} from "../../../scripts/site-terms.ts"
 import {it,expect} from "vitest"
@@ -9,7 +10,7 @@ function parseSiteHtml(html:string){const document=new Window().document;documen
 it("registers public copy independently of decorative icons",()=>{
  const registry:{claims:PublicClaim[]}=JSON.parse(renderSiteTerms(readFileSync("apps/site/content/claims.json","utf8")))
  for(const page of ["index.html","pricing/index.html","status/index.html"]){
-  expect(releaseClaimHits(renderSiteTerms(readFileSync(`apps/site/${page}`,"utf8")),registry.claims)).toEqual([])
+  expect(releaseClaimHits(renderSiteTerms(readFileSync(`apps/site/${page}`,"utf8")),registry.claims,readFileSync("docs/release/capabilities.md","utf8"))).toEqual([])
  }
 })
 it("keeps each discovery intent at the sign-in boundary",()=>{
@@ -36,10 +37,34 @@ it("keeps reset prices in Settings",()=>{
  const pricing=readFileSync("apps/site/pricing/index.html","utf8")
  expect(pricing).not.toMatch(/reset consumes \$\d|reset costs \$\d/)
 })
-it("preserves the landing chart, real capture, outline and agent diagram",()=>{
+it("preserves the landing chart, real capture and agent diagram",()=>{
  const landing=readFileSync("apps/site/index.html","utf8"),pricing=readFileSync("apps/site/pricing/index.html","utf8")
- for(const feature of ["finance-chart","deck-checks","studio-demo","demo-rail","agent-diagram"])expect(landing).toContain(feature)
+ for(const feature of ["finance-chart","deck-checks","studio-demo","agent-diagram"])expect(landing).toContain(feature)
  expect(pricing).toContain("usage-details")
+})
+it("restores accepted X03 copy while identifying the illustrative build state",()=>{
+ const registry=JSON.parse(readFileSync("apps/site/content/claims.json","utf8"))
+ expect(registry.blocked).not.toContain("X03")
+ expect(parseSiteHtml(readFileSync("apps/site/status/index.html","utf8")).querySelector("article")?.textContent).not.toContain("paid models")
+ const landing=parseSiteHtml(readFileSync("apps/site/index.html","utf8"))
+ expect(landing.querySelector("#product .lead")?.textContent).toBe("Drop in your notes. Watch the deck build itself.")
+ expect(landing.querySelector(".capture-callout")?.textContent?.trim()).toBe("Building slide 3 of 8. Coffee optional.")
+ expect(landing.querySelector("#capture-description")?.textContent).toContain("Illustrative build state")
+ for(const file of ["index.html","pricing/index.html"]){
+  const document=parseSiteHtml(readFileSync(`apps/site/${file}`,"utf8"))
+  expect([...document.querySelectorAll(".price li")].map(row=>row.textContent?.trim())).toContain("Aira built in")
+ }
+})
+it("serves a focused mobile capture from the same eight-slide Studio run",()=>{
+ const document=parseSiteHtml(readFileSync("apps/site/index.html","utf8"))
+ expect(document.querySelector("#product picture source")?.getAttribute("srcset")).toBe("/studio-capture-mobile.png")
+ expect(document.querySelector("#product picture source")?.getAttribute("media")).toBe("(max-width: 899.98px)")
+ expect(document.querySelector(".demo-rail")).toBeNull()
+ expect(document.querySelector(".capture-note a")?.getAttribute("href")).toBe("/studio-capture.json")
+ const provenance=JSON.parse(readFileSync("apps/site/public/studio-capture.json","utf8"))
+ expect(provenance).toMatchObject({kind:"actual-built-studio",adapter:"deterministic-local",template:"Halden",slides:8,acceptedChanges:3,viewport:{deviceScaleFactor:2}})
+ expect(provenance.sha256).toBe(createHash("sha256").update(readFileSync("apps/site/public/studio-capture.png")).digest("hex"))
+ expect(provenance.fixtureSha256).toBe(createHash("sha256").update(readFileSync("bench/release/site-investor-deck.ts")).digest("hex"))
 })
 
 it("leads pricing with the free plan and keeps accounting behind a disclosure",()=>{
