@@ -57,6 +57,8 @@ A preload rejects fetch, WebSocket construction, socket connections, HTTP and HT
 
 The worker only needs database access and the authenticated web job endpoint. Import, image, and export children receive neither credential. Never describe this mode as equivalent to hostile-code sandboxing.
 
+Process ownership in container mode has a defined boundary. It guarantees that no export or Chromium process outlives its job after normal exit, crash, CPU, memory or wall-clock limits, cancellation, or worker restart, and that cleaning one job never signals another job's processes. Job code runs as the same Unix user as the worker, its guardian and the subreapers, so a payload that gains arbitrary code execution can signal those supervisors: it can stop the worker, fail concurrent jobs, or leave a detached process behind. Containing that case needs a separate job user started by a privileged launcher, or the systemd and bubblewrap mode, which Railway does not provide. Treat any such event as a security incident, not an export failure.
+
 ## Verify and roll back
 
 Before deployment run the root build, tests, type check, lint, and `verify:pr-01` through `verify:pr-09`. P03 operation tests execute under both isolation modes. Rehearse sign-in against a local mail mock, fixture import, saved edits, PPTX and PDF export through the worker, and OAuth authorization and revocation. Keep proof with the release record.
