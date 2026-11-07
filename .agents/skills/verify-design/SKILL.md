@@ -52,7 +52,7 @@ Run the history and DOM behavior tests with the metric tests. They reproduce a c
 
 ## Independent pixel and structure gates
 
-Before capture, each scenario checks its locked `assertions.structure` contract. Icons declare a stable `data-icon` name and a region selector. Text roles declare a selector, a role from tokens.md, a design text color and a minimum contrast. The landing hero follows components.md: Newsreader regular at 104px. Pricing uses its 48px Geist heading from S12.01. Copy comes from copy-kit.json; required controls retain their accessible role and name. The shared Icon component exposes its name on the SVG. A required icon must contain painted geometry.
+Before capture, each scenario checks its locked `assertions.structure` contract. Icons declare a stable `data-icon` name and a region selector. Text roles declare a selector, a role from tokens.md, a design text color and a minimum contrast. The landing hero follows components.md: Newsreader regular at 104px. Pricing uses its 52px semibold Geist heading from S12.01 and the design generator. A test reads every role's size and weight from the generator, so the table cannot drift from the handoff. Copy comes from copy-kit.json; required controls retain their accessible role and name. The shared Icon component exposes its name on the SVG. A required icon must contain painted geometry.
 
 Rendering checks require nonzero size, full viewport containment and a material paint difference when the element is hidden. Every required control must own the element at its center according to `document.elementFromPoint`. Transparent substitute DOM over a design bitmap fails before capture. A successful click alone does not prove that a control was visible.
 
