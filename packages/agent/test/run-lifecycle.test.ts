@@ -6,6 +6,7 @@ import {localAdapter} from "../src/local-adapter.ts"
 
 function sharedTools(){
   const deck=fixtureDeck(1,2),writes:unknown[]=[]
+  deck.slides[1]!.notes="Presenter’s private notes"
   const call:AgentTools=async(name,input)=>{
     const args=z.object({slideId:z.string().optional()}).parse(input)
     if(name==="apply_changes")writes.push(input)
@@ -21,7 +22,7 @@ it("resumes through SDK tools without repeating completed scopes and retains req
   for await(const event of runHarness(context,first.call,signal,localAdapter))events.push(event)
   expect(events.filter(event=>event.kind==="tool"&&event.name==="apply_changes")).toMatchObject([{scope:"s1"}])
   expect(first.writes).toHaveLength(1)
-  expect(first.writes[0]).toMatchObject({changes:[{target:"s1",value:{notes:"A clearer story"}}]})
+  expect(first.writes[0]).toMatchObject({changes:[{target:"s1",value:{notes:"Presenter’s private notes",elements:[expect.objectContaining({runs:[expect.objectContaining({text:context.request})]})]}}]})
   const replay=sharedTools()
   for await(const event of runHarness(context,replay.call,signal,localAdapter))expect(event).toBeDefined()
   expect(replay.writes).toEqual(first.writes)

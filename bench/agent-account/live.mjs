@@ -32,7 +32,7 @@ try{
     return {scope:run.selection,changedScopes:["s0"],used:(await usage(owner)).used,refund:refunded,receiptCount:audit.length,immutable:true}
   })
   await lane(3,async(owner,id)=>{
-    const run=await s.run(owner,id,"Refine the whole deck"),saved=await read(owner,id);assert.ok(saved.deck.slides.every(slide=>slide.notes==="Refine the whole deck"));assert.equal(run.events.filter(event=>event.name==="apply_changes").length,2)
+    const run=await s.run(owner,id,"Refine the whole deck"),saved=await read(owner,id);assert.ok(saved.deck.slides.every(slide=>slide.elements[0].runs[0].text==="Refine the whole deck"&&slide.notes==="Canonical render fixture"));assert.equal(run.events.filter(event=>event.name==="apply_changes").length,2)
     const payment=await checkout(owner),forged=await s.webhook({id:"lane3-forged",payment:payment.id,cents:1000,kind:"paid"},true);assert.equal(forged.code,"invalid-signature");assert.equal((await usage(owner)).paid,0);return {run:run.id,intended:saved.deck.slides.map(slide=>slide.id),used:(await usage(owner)).used,forged}
   })
   await lane(4,async(owner,id)=>{
@@ -48,7 +48,7 @@ try{
     return {run:started.id,secondSessionSameOwner:tab.personId===owner.personId,steer,humanMs,stale,remote:activity.remote,pendingReturn:returned,paid:(await usage(owner)).paid}
   })
   await lane(5,async(owner,id)=>{
-    const source=await s.stream(owner,id),hold=s.hold();await s.request(owner,`/api/aira?deck=${id}`,{action:"send",text:"Keep the accepted first change"},202);await hold.entered.promise;const stopped=await s.request(owner,`/api/aira?deck=${id}`,{action:"stop"});assert.equal(stopped.kind,"stopped");hold.release.resolve();await s.until(source,value=>value.run?.kind==="stopped");const saved=await read(owner,id);assert.equal(saved.deck.slides[0].notes,"Keep the accepted first change");assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,3)
+    const source=await s.stream(owner,id),hold=s.hold();await s.request(owner,`/api/aira?deck=${id}`,{action:"send",text:"Keep the accepted first change"},202);await hold.entered.promise;const stopped=await s.request(owner,`/api/aira?deck=${id}`,{action:"stop"});assert.equal(stopped.kind,"stopped");hold.release.resolve();await s.until(source,value=>value.run?.kind==="stopped");const saved=await read(owner,id);assert.equal(saved.deck.slides[0].elements[0].runs[0].text,"Keep the accepted first change");assert.equal(saved.deck.slides[0].notes,"Canonical render fixture");assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,3)
     const payment=await checkout(owner);s.fixture.advance(31*60000);assert.equal((await s.request(owner,`/api/billing/payments/${payment.id}`)).kind,"expired");assert.equal((await usage(owner)).paid,0)
     const race=await checkout(owner);await Promise.all([s.request(owner,`/api/billing/payments/${race.id}`,{}),settle(race,"lane5-race"),settle(race,"lane5-race")]);assert.equal((await s.request(owner,`/api/billing/payments/${race.id}`)).kind,"paid");assert.equal((await usage(owner)).paid,1000)
     return {stopped,acceptedSlides:1,used:3,expired:payment.id,race:race.id,paid:1000}
@@ -61,7 +61,7 @@ try{
   })
   await lane(7,async(owner,id)=>{
     await s.fixture.history.usage.reserve(owner.personId,{id:"lane7-almost",actor:"user-agent",request:"Existing workload",units:9998})
-    const run=await s.run(owner,id,"Keep this request at the usage limit"),saved=await read(owner,id);assert.equal(run.kind,"limited");assert.equal(run.events.filter(event=>event.name==="apply_changes").length,1);assert.equal(saved.deck.slides[0].notes,run.request);assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,10001)
+    const run=await s.run(owner,id,"Keep this request at the usage limit"),saved=await read(owner,id);assert.equal(run.kind,"limited");assert.equal(run.events.filter(event=>event.name==="apply_changes").length,1);assert.equal(saved.deck.slides[0].elements[0].runs[0].text,run.request);assert.equal(saved.deck.slides[0].notes,"Canonical render fixture");assert.equal(saved.deck.slides[1].notes,"Canonical render fixture");assert.equal((await usage(owner)).used,10001)
     const manual=await command(owner,id,{kind:"patch",base:saved.seq,run:null,target:"s0e0",fields:{box:{x:50,y:40,width:800,height:60}}});assert.equal(manual.kind,"applied")
     const payments=await Promise.all([checkout(owner),checkout(owner,2500),checkout(owner,3000)]);assert.equal(new Set(payments.map(payment=>payment.id)).size,1);await settle(payments[0],"lane7-paid");const fresh=await checkout(owner);assert.notEqual(fresh.id,payments[0].id)
     return {run:run.id,savedRequest:run.request,atomicChanges:1,used:10001,manual:manual.kind,pendingIds:payments.map(payment=>payment.id),nextPayment:fresh.id,paid:(await usage(owner)).paid}

@@ -30,14 +30,21 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     if(signal.aborted)return
     if(context.completed?.includes(id))continue
     const result=await call("get_slide",{deckId:context.deckId,slideId:id})
-    yield {kind:"tool",name:"get_slide",result}
+    yield {kind:"tool",name:"get_slide",result,scope:id}
     const data=read(result),slide=data.items[0]
     if(!isSlide(slide))throw new Error("invalid-slide-response")
     const attached=flatten(slide.elements).filter(element=>selected.has(element.id))
     if(selected.has(id))found.add(id)
     for(const element of attached)found.add(element.id)
     if(selected.size&&!selected.has(id)&&!attached.length)continue
-    const value:Slide={...slide,notes:context.request}
+    let updatedTitle=false
+    const update=(element:Element):Element=>{
+      if(element.kind==="group")return {...element,children:element.children.map(update)}
+      if(element.kind!=="text"||updatedTitle)return element
+      updatedTitle=true
+      return {...element,runs:[{...element.runs[0],text:context.request}]}
+    }
+    const value:Slide={...slide,elements:slide.elements.map(update)}
     const changes=attached.length ? attached.map(element=>{
       const updated:Element=element.kind==="text" ? {...element,runs:[{...element.runs[0],text:context.request}]} : element
       return {kind:"set" as const,target:element.id,value:updated}
