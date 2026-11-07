@@ -1,3 +1,4 @@
+import {exportLimits} from "../../../packages/operations/src/export-failure.ts"
 import {spawn, type ChildProcess} from "node:child_process"
 import path from "node:path"
 
@@ -8,7 +9,8 @@ export function isolationMode(): "systemd" | "container" {
 }
 
 export function spawnContainerJob(directory:string, program:string,started?:(pid:number)=>void): ChildProcess {
-  const child = spawn("prlimit",["--cpu=25",program.endsWith("/export/entry.ts") ? "--as=4398046511104" : "--as=8589934592","--data=805306368","--fsize=524288000","--nofile=256","--",process.execPath,"--max-old-space-size=256","--disable-proto=throw","--import",path.join(import.meta.dirname,"container-network.ts"),path.join(import.meta.dirname,"container-entry.ts"),program,String(process.pid)],{
+  const exporting=program.endsWith("/export/entry.ts")
+  const child = spawn("prlimit",[...(exporting ? [`--cpu=${exportLimits.cpuSeconds}:${exportLimits.cpuSeconds+1}`] : ["--cpu=25","--as=8589934592","--data=805306368"]),"--fsize=524288000","--nofile=256","--",process.execPath,"--max-old-space-size=256","--disable-proto=throw","--import",path.join(import.meta.dirname,"container-network.ts"),path.join(import.meta.dirname,"container-entry.ts"),program,String(process.pid)],{
     cwd:directory, detached:true, stdio:["pipe","ignore","pipe"],
     env:{PATH:process.env.PATH,HOME:directory,TMPDIR:directory,AIRDESIGN_JOB_DIRECTORY:directory,PLAYWRIGHT_BROWSERS_PATH:process.env.PLAYWRIGHT_BROWSERS_PATH},
   })

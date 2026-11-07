@@ -1,5 +1,6 @@
+import {exportFailureMessage} from "./export-failure-message.ts"
 import { useEffect,useRef,useState } from "react"
-import { Button } from "@airdesign/ui"
+import { Button, copy } from "@airdesign/ui"
 import type { Deck,Id } from "../../../../packages/deck/src/index.ts"
 import { flatten } from "../../../../packages/deck/src/index.ts"
 import { fontReport } from "../../../../packages/render/src/fonts.ts"
@@ -36,7 +37,7 @@ export function ExportDialog({deck,seq,open,close,fix,disabled}:{deck:Deck;seq:n
     <fieldset><legend>When</legend><label><input type="radio" name="timing" checked={timing==="now"} onChange={()=>setTiming("now")}/>Export now · saved version {seq}</label><label><input type="radio" name="timing" checked={timing==="after-run"} onChange={()=>setTiming("after-run")}/>After the current run finishes</label></fieldset>
     {issues.length>0 && <section className="export-review"><h3>Review before exporting</h3><p>{issues.length} slides have kept objects or font substitutions. Original objects stay in PowerPoint. PDF uses the available preview; objects without one show “Preview unavailable”.</p><ul>{issues.map(slide=><li key={slide.id}>Slide {deck.slides.indexOf(slide)+1}: {fontReport(slide,deck.themes).missing.join(", ") || "Kept or flagged objects"} <Button size="compact" variant="secondary" onClick={()=>{close();fix(slide.id)}}>Fix slide {deck.slides.indexOf(slide)+1}</Button></li>)}</ul></section>}
     <Button size="dialog" variant="primary" disabled={disabled||busy||!deck.slides.length} onClick={()=>void submit(issues.length>0)}>{issues.length ? "Export anyway" : "Create export"}</Button>
-    <p role="status">{job ? job.kind==="ready" ? `Your ${job.format.toUpperCase()} is ready · saved version ${job.seq}. Available for 7 days.` : job.kind==="waiting" ? "Waiting for the current run to finish. You can close this tab." : job.kind==="queued" ? "Export queued. You can close this tab and return here." : job.kind==="running" ? "Creating your export…" : job.kind==="failed" ? `Export failed: ${job.reason}. Your deck is safe.` : job.kind==="expired" ? "This download expired. Create a new export." : "Export cancelled. Your deck is safe." : ""}</p>
+    <p role="status">{job ? job.kind==="ready" ? `Your ${job.format.toUpperCase()} is ready · saved version ${job.seq}. Available for 7 days.` : job.kind==="waiting" ? "Waiting for the current run to finish. You can close this tab." : job.kind==="queued" ? "Export queued. You can close this tab and return here." : job.kind==="running" ? "Creating your export…" : job.kind==="failed" ? `${copy("export.failed")} ${exportFailureMessage(job.failure)}` : job.kind==="expired" ? "This download expired. Create a new export." : "Export cancelled. Your deck is safe." : ""}</p>
     {job?.kind==="ready" && <a className="workspace-download" href={`/api/catalog/export-jobs/${job.id}/artifact`} download>Download {job.format.toUpperCase()}</a>}
     {job && ["waiting","queued","running"].includes(job.kind) && <Button size="compact" variant="secondary" onClick={()=>void action("cancel")}>Cancel export</Button>}
     {job?.kind==="failed" && job.attempts<3 && <Button size="compact" variant="secondary" onClick={()=>void action("retry")}>Retry export</Button>}

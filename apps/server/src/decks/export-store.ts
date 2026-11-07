@@ -1,3 +1,4 @@
+import { decodeExportFailure, type ExportFailure } from "../../../../packages/operations/src/export-failure.ts"
 import { captureTemplateSources } from "../templates/source-store.ts"
 import { ownedDeckAssets } from "../images/store.ts"
 import { randomUUID,createHash } from "node:crypto"
@@ -10,7 +11,7 @@ import type { AssetProvenance } from "../../../../packages/files/src/assets/prov
 
 export type SavedVersion={deck:Deck;seq:number;source:string|null;title:string;assets?:Record<string,string>;provenance?:Record<string,AssetProvenance>;templates?:Record<string,string>}
 export type ExportJob={id:string;deck:string;format:ExportOptions["format"];attempts:number;options:ExportOptions;diagnostics:string[]}&(
-  {kind:"waiting"|"queued"|"running"|"cancelled"|"expired"}|{kind:"failed";reason:string}|{kind:"ready";seq:number;sha256:string;expires:number;report:Record<string,unknown>}
+  {kind:"waiting"|"queued"|"running"|"cancelled"|"expired"}|{kind:"failed";reason:string;failure:ExportFailure}|{kind:"ready";seq:number;sha256:string;expires:number;report:Record<string,unknown>}
 )
 type Row={id:string;owner:string;deck:string;options:ExportOptions;snapshot:SavedVersion|null;state:ExportJob["kind"];attempts:number;diagnostics:string[];lease:string|null;deadline:number|null;reason:string|null;result:Uint8Array|null;sha:string|null;expires:number|null;report:Record<string,unknown>}
 const resultLife=7*86400000
@@ -22,7 +23,7 @@ export async function initializeExports(tx:CatalogSql) {
 function exposed(row:Row):ExportJob {
   const base={id:row.id,deck:row.deck,format:row.options.format,attempts:row.attempts,options:row.options,diagnostics:row.diagnostics}
   if(row.state==="ready"){if(!row.snapshot || !row.sha || row.expires===null)throw new Error("invalid-export-result");return {...base,kind:"ready",seq:row.snapshot.seq,sha256:row.sha,expires:Number(row.expires),report:row.report}}
-  if(row.state==="failed")return {...base,kind:"failed",reason:row.reason ?? "export-failed"}
+  if(row.state==="failed")return {...base,kind:"failed",reason:row.reason ?? "export-failed",failure:decodeExportFailure(row.reason ?? "export-failed")}
   return {...base,kind:row.state}
 }
 function valid(options:ExportOptions) {
@@ -58,7 +59,8 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
     async cancel(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(["waiting","queued","running"].includes(row.state))await tx.query("UPDATE deck_export SET state='cancelled',result=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
     async retry(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="failed"||row.attempts>=3)throw new Error("export-retry-unavailable");await tx.query("UPDATE deck_export SET state='queued',reason=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
     async claim(){await transaction(async tx=>{
-      await tx.query("UPDATE deck_export SET state=CASE WHEN attempts<3 THEN 'queued' ELSE 'failed' END,reason='worker-deadline-exceeded',diagnostics=diagnostics || '[\"worker-deadline-exceeded\"]'::jsonb,lease=NULL WHERE state='running' AND deadline<=$1",[clock()])
+      const failure=JSON.stringify({kind:"limit",limit:"wall-clock",signal:null} satisfies ExportFailure)
+      await tx.query("UPDATE deck_export SET state=CASE WHEN attempts<3 THEN 'queued' ELSE 'failed' END,reason=$2,diagnostics=diagnostics || $3::jsonb,lease=NULL WHERE state='running' AND deadline<=$1",[clock(),failure,JSON.stringify([failure])])
       await tx.query("UPDATE deck_export SET state='expired',result=NULL WHERE state='ready' AND expires<=$1",[clock()])
       });return transaction(async tx=>{
       const waiting=(await tx.query<Row>("SELECT e.* FROM deck_export e JOIN editing_deck d ON d.id=e.deck WHERE e.state='waiting' ORDER BY d.id,e.id FOR UPDATE OF d SKIP LOCKED LIMIT 100")).rows
@@ -71,6 +73,6 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
       return {id:row.id,lease,deadline,options:row.options,snapshot:row.snapshot}
     })},
     async complete(id:string,lease:string,result:Buffer,report:Record<string,unknown>){return transaction(async tx=>{const changed=await tx.query<{id:string}>("UPDATE deck_export SET state='ready',result=$3,report=$4,sha=$5,expires=$6,lease=NULL WHERE id=$1 AND lease=$2 AND state='running' AND deadline>$7 RETURNING id",[id,lease,result,JSON.stringify(report),createHash("sha256").update(result).digest("hex"),clock()+resultLife,clock()]);return changed.rows.length===1})},
-    async fail(id:string,lease:string,reason:string){return transaction(async tx=>{await tx.query("UPDATE deck_export SET state='failed',reason=$3,diagnostics=diagnostics || $4::jsonb,lease=NULL WHERE id=$1 AND lease=$2 AND state='running'",[id,lease,reason,JSON.stringify([reason])])})},
+    async fail(id:string,lease:string,failure:string|ExportFailure){const reason=typeof failure === "string" ? failure : JSON.stringify(failure);return transaction(async tx=>{await tx.query("UPDATE deck_export SET state='failed',reason=$3,diagnostics=diagnostics || $4::jsonb,lease=NULL WHERE id=$1 AND lease=$2 AND state='running'",[id,lease,reason,JSON.stringify([reason])])})},
   }
 }

@@ -1,5 +1,8 @@
 export function deploymentRuntimeHits(file:string,source:string): string[] {
   const normalized=file.replaceAll("\\","/")
+  if(normalized.endsWith("apps/worker/src/export/deliver.ts") && /killExportDescendants\([^)]*\?\?\s*0\)/.test(source))return ["export-process-root: require a spawned child PID before scanning descendants"]
+  if(normalized.endsWith("apps/worker/src/export/deliver.ts") && /child\.once\(["']exit["'],\s*resolve\)/.test(source))return ["export-exit-signal: preserve the child's signal and the enforced limit"]
+  if(normalized.endsWith("apps/server/src/decks/export-store.ts") && /format===?["']pdf["']\s*\?\s*2000/.test(source))return ["export-lease: use the shared PDF wall-clock budget including Chromium startup"]
   if (/apps\/worker\/src\/(isolation|export\/deliver)\.ts$/.test(normalized) && source.includes('spawn("systemd-run"') && !source.includes('isolationMode() === "container"')) return ["worker-isolation-mode: select the configured container or systemd driver"]
   if (normalized.endsWith("apps/server/src/main.ts") && /mail:\s*inbox[,\n]/.test(source)) return ["production-mail: select the configured mail adapter at startup"]
   if (normalized.endsWith("bench/sync/local-stack.mjs") && source.includes('AIRDESIGN_EXPOSE_INBOX:"1"') && !source.includes('NODE_ENV:"test"')) return ["fixture-environment: set NODE_ENV to test before exposing the fixture inbox"]
