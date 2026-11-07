@@ -1,4 +1,4 @@
-import {useEffect,useState} from "react"
+import {useEffect,useRef,useState} from "react"
 import {AlertDialog,Button,TextField,SegmentedControl,StatusTile,Icon,Dropdown,toast,copy,fillCopy} from "@airdesign/ui"
 import type {DeckEntry} from "../../../../packages/catalog/src/index.ts"
 import {ImportCard} from "../import/import-card.tsx"
@@ -17,6 +17,8 @@ function Home({startImport,search,browse}:{startImport:boolean;search:string;bro
   const [decks,setDecks]=useState<DeckEntry[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState("")
   const [rename,setRename]=useState<DeckEntry|null>(null),[name,setName]=useState(""),[confirm,setConfirm]=useState<DeckEntry|"all"|null>(null)
   const [confirmedTrash,setConfirmedTrash]=useState<DeckEntry[]>([]),[busy,setBusy]=useState(false),[status,setStatus]=useState("")
+  const renamePending=useRef(false)
+  function submitRename(){if(!rename||!name.trim()||name.trim().length>200||busy||renamePending.current)return;renamePending.current=true;void run(async()=>{await deckAction(rename.id,"rename",{title:name.trim()});setRename(null)},"Deck renamed").finally(()=>{renamePending.current=false})}
   async function refresh(){setDecks(await listDecks(trash,search));window.dispatchEvent(new Event("catalog-changed"))}
   useEffect(()=>{let stopped=false;setLoading(true);void listDecks(trash,search).then(value=>{if(!stopped){setDecks(value);setError("")}}).catch(failure=>{if(!stopped)setError(String(failure))}).finally(()=>{if(!stopped)setLoading(false)});return ()=>{stopped=true}},[trash,search])
   async function run(action:()=>Promise<unknown>,message:string){setBusy(true);setError("");try{await action();await refresh();setStatus(message)}catch(failure){setError(String(failure))}finally{setBusy(false)}}
@@ -41,7 +43,7 @@ function Home({startImport,search,browse}:{startImport:boolean;search:string;bro
         <div className="deck-card-actions">{trash ? <Button size="compact" variant="secondary" disabled={busy} onClick={()=>void run(()=>deckAction(entry.id,"restore"),"Deck restored")}>Restore</Button> : <><button className="deck-star" type="button" aria-label={`${entry.starred ? "Unstar" : "Star"} ${entry.title}`} aria-pressed={Boolean(entry.starred)} disabled={busy} onClick={()=>void run(()=>deckAction(entry.id,"star",{starred:!entry.starred}),entry.starred ? "Deck unstarred" : "Deck starred")}><Icon name="star"/></button><Dropdown label={`Actions for ${entry.title}`} trigger={<Icon name="more"/>}><button type="button" disabled={busy} onClick={()=>{setRename(entry);setName(entry.title)}}>Rename</button><button type="button" disabled={busy} onClick={()=>void run(()=>deckAction(entry.id,"duplicate",{requestId:crypto.randomUUID()}),"Independent copy created")}>Duplicate</button><button type="button" disabled={busy} onClick={()=>setConfirm(entry)}>Move to Trash</button></Dropdown></>}</div>
       </article>)}
     </div>
-    <AlertDialog open={rename!==null} title="Rename deck" body={<TextField label="Deck name" value={name} enterKeyHint="done" onChange={event=>setName(event.target.value)}/>} onClose={()=>setRename(null)} secondary={{label:"Cancel"}} primary={{label:"Save name",onClick:()=>{if(rename&&name.trim()&&!busy)void run(async()=>{await deckAction(rename.id,"rename",{title:name});setRename(null)},"Deck renamed")}}}/>
+    <AlertDialog open={rename!==null} title="Rename deck" body={<TextField label="Deck name" value={name} enterKeyHint="done" onKeyDown={event=>{if(event.key==="Enter"&&!event.nativeEvent.isComposing&&event.keyCode!==229){event.preventDefault();submitRename()}}} onChange={event=>setName(event.target.value)}/>} onClose={()=>setRename(null)} secondary={{label:"Cancel"}} primary={{label:"Save name",onClick:submitRename}}/>
     <AlertDialog icon={confirm==="all" ? <StatusTile kind="error"/> : undefined} open={confirm!==null} title={confirm==="all" ? fillCopy("trash.empty_title",{n:String(confirmedTrash.length)}) : "Move deck to Trash?"} body={confirm==="all" ? copy("trash.empty_body") : "You can restore this deck from Trash for 30 days."} onClose={()=>setConfirm(null)} secondary={{label:"Cancel"}} primary={{label:confirm==="all" ? copy("trash.empty_action") : "Move to Trash",danger:true,onClick:()=>{const target=confirm;if(target&&!busy)void run(async()=>{if(target==="all")await api("/api/catalog/trash",{confirm:"empty-trash",decks:confirmedTrash.map(({id,generation})=>({id,generation}))},"DELETE");else await move(target);setConfirm(null)},target==="all" ? "Trash emptied" : "Deck moved to Trash")}}}/>
   </section>
 }
