@@ -144,7 +144,7 @@
 
 .contextual-insertion { position:relative;align-self:start;aspect-ratio:16/9;margin-block-start:0; }
 .contextual-insertion>.editor-tool-layouts { position:absolute;inset:calc(100% + 12px) auto auto 50%;translate:-50% 0;inline-size:min(620px,90vi);box-sizing:border-box;margin:0; }
-.contextual-insertion-slot { display:block;position:absolute;inset:0;inline-size:100%;border:2px dashed var(--muted-foreground);border-radius:2px;background:var(--border);color:var(--primary-foreground);cursor:pointer; }
+.contextual-insertion-slot { display:block;position:absolute;inset:0;inline-size:100%;border:2px dashed var(--insertion-border);border-radius:2px;background:var(--border);color:var(--primary-foreground);cursor:pointer; }
 .contextual-insertion-slot span { position:absolute;inset-inline-start:-30px;inset-block-start:calc(50% - 14px);display:grid;place-items:center;inline-size:28px;block-size:28px;border-radius:50%;background:var(--primary);font-size:22px; }
 .aira-attachments { display:flex;flex-wrap:wrap;gap:6px;padding-inline:16px; }
 .aira-attachments button { border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--muted-foreground);font:inherit;font-size:12px;padding:4px 8px;max-inline-size:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
@@ -183,3 +183,9 @@
 .editor-zoom select { position:absolute;inset:0;inline-size:100%;block-size:100%;opacity:0; }
 .editor-zoom:focus-within { outline:2px solid var(--ring);outline-offset:2px;border-radius:4px; }
 @media (pointer:coarse) { .editor-zoom { min-inline-size:44px;min-block-size:44px; } }
+
+@media (hover: hover) and (pointer: fine) { .studio-editor[data-view=grid]:has([data-new-slide]:hover) .editor-slide[data-selected=true]::after { content:"";position:absolute;inset-inline-end:-17px;inset-block-start:calc(50% - 18px);inline-size:2px;block-size:36px;background:var(--primary);pointer-events:none; } }
+[data-sonner-toast].ad-powerpoint-paste { width:max-content !important;gap:10px !important;padding:0 6px 0 14px !important;min-height:40px;margin-inline:auto;right:0; }
+.ad-powerpoint-paste [data-icon] { width:16px;height:16px;margin:0; }
+.ad-powerpoint-paste [data-title] { font-size:13px;font-weight:400;white-space:nowrap; }
+[data-sonner-toast].ad-powerpoint-paste [data-button] { height:28px !important;margin:0 !important;padding:0 10px !important;border-radius:7px;background:transparent !important;color:var(--primary-foreground) !important;font-size:13px;font-weight:500; }

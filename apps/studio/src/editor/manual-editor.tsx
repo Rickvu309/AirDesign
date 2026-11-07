@@ -1,3 +1,4 @@
+import {copyKit} from "../../../../packages/ui/src/copy/copy-kit.ts"
 import "./editor.css"
 import {slideSections} from "./slide-sections.ts"
 import {EditorIcon} from "./editor-icon.tsx"
@@ -62,14 +63,14 @@ export function ManualEditor({deckId}:{deckId:string}) {
     else if(sync)send({id:commandId(crypto.randomUUID()),kind:"patch",target,fields:{box},base:sync.seq,run:null})
   }
   function removeSlides() {edit({changes:selection.map(target=>({kind:"remove",target}))});editorRef.current?.focus()}
-  function insertSlides(slides:Slide[],message:string) {
+  function insertSlides(slides:Slide[],message:string,powerPoint=false) {
     if(!deck || !sync)return
     const slot=insertionAnchor(deck,selection),target=commandId(crypto.randomUUID())
     send({id:target,kind:"edit",base:sync.seq,run:null,changes:{changes:slides.map((slide,index)=>({kind:"insert",parent:deck.id,index:slot.index+index,value:{...slide,section:slot.section ?? slide.section}}))}})
     setSelection(slides.map(slide=>slide.id));anchor.current=slides.at(-1)?.id ?? null
-    toast.success(message,{action:{label:"Undo",onClick:()=>send({id:commandId(crypto.randomUUID()),kind:"undo",target})}})
+    toast.success(message,{...(powerPoint ? {className:"ad-powerpoint-paste",icon:<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>} : {}),action:{label:"Undo",onClick:()=>send({id:commandId(crypto.randomUUID()),kind:"undo",target})}})
   }
-  function pasteSlides(source:string) {const review=reviewPaste(source);if(!deck)return;if(!review.accepted.length || review.refused.length){setPasteSource(source);setPaste(review);return}insertSlides(review.accepted,`${review.accepted.length} ${review.accepted.length===1 ? "slide" : "slides"} pasted`)}
+  function pasteSlides(source:string) {const review=reviewPaste(source);if(!deck)return;if(!review.accepted.length || review.refused.length){setPasteSource(source);setPaste(review);return}insertSlides(review.accepted,review.origin==="powerpoint" ? copyKit["import.pasted"].replace("{n}",String(review.accepted.length)) : `${review.accepted.length} ${review.accepted.length===1 ? "slide" : "slides"} pasted`,review.origin==="powerpoint")}
   async function readClipboard() {try{pasteSlides(await navigator.clipboard.readText())}catch{setShowPaste(true)}}
   async function copySlides() {if(!deck || !selection.length)return;try{await navigator.clipboard.writeText(clipboardSource(deck,selection))}catch{setError("Clipboard unavailable. Allow clipboard access and try again.")}}
   function select(target:Id,event:MouseEvent) {if(!deck)return;setSelection(current=>selectSlides(deck,current,target,anchor.current,event.shiftKey,event.ctrlKey||event.metaKey));if(!event.shiftKey)anchor.current=target}
@@ -77,7 +78,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
   async function saveRequest() {try{setEntry(await deckAction(deckId,"request",{pendingRequest:request}));await airaRequest(deckId,"send",{text:request,selection:[]});sessionStorage.removeItem("first-pending-request");setRequestStatus("Aira is working. You can keep editing.");setChatOpen(true)}catch(failure){setError(String(failure))}}
   function addSlide(layout:SlideLayout="title") {if(deck)insertSlides([newSlide(deck,layout)],"Slide added")}
   function reorder(direction:-1|1) {if(!deck)return;const order=orderedSlides(deck,selection,direction);edit({changes:order.map((target,index)=>({kind:"move",target,parent:deck.id,index}))})}
-  function insertPaste() {if(!paste?.accepted.length)return;insertSlides(paste.accepted,`${paste.accepted.length} slides pasted`);setPaste(null);setShowPaste(false)}
+  function insertPaste() {if(!paste?.accepted.length)return;insertSlides(paste.accepted,paste.origin==="powerpoint" ? copyKit["import.pasted"].replace("{n}",String(paste.accepted.length)) : `${paste.accepted.length} slides pasted`,paste.origin==="powerpoint");setPaste(null);setShowPaste(false)}
   async function recover(item:Extract<Pending,{kind:"rejected"}>) {
     if(!sync || !item.restore || readonly || (item.command.kind!=="edit" && item.command.kind!=="patch"))return
     const suffix=crypto.randomUUID()
@@ -107,7 +108,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
     <header className="editor-bar">
       <a className="editor-logo" href="/" aria-label="Home"><BrandMark/></a>
       <div className="deck-menu"><button type="button" className="deck-name" aria-expanded={menu} onClick={()=>setMenu(!menu)}>{entry?.title ?? "Opening deck…"}⌄</button>{menu && <nav aria-label="Deck menu" className="editor-menu" onClick={()=>setMenu(false)}><a href="/">Back to Home</a>{actions()}</nav>}</div>
-      <Button size="compact" variant="secondary" disabled={!deck||readonly} title="Click to add a slide. Hold or press Down to choose a layout." onContextMenu={event=>{event.preventDefault();setTool("layouts")}} onKeyDown={event=>{if(event.key==="ArrowDown"){event.preventDefault();setTool("layouts")}}} onPointerDown={event=>{if(event.button!==0)return;held.current=false;hold.current=setTimeout(()=>{held.current=true;setTool("layouts")},450)}} onPointerUp={()=>clearTimeout(hold.current)} onPointerCancel={()=>clearTimeout(hold.current)} onPointerLeave={()=>clearTimeout(hold.current)} onClick={()=>{if(!held.current)addSlide()}}>+ New slide</Button>
+      <Button data-new-slide size="compact" variant="secondary" disabled={!deck||readonly} title="Click to add a slide. Hold or press Down to choose a layout." onContextMenu={event=>{event.preventDefault();setTool("layouts")}} onKeyDown={event=>{if(event.key==="ArrowDown"){event.preventDefault();setTool("layouts")}}} onPointerDown={event=>{if(event.button!==0)return;held.current=false;hold.current=setTimeout(()=>{held.current=true;setTool("layouts")},450)}} onPointerUp={()=>clearTimeout(hold.current)} onPointerCancel={()=>clearTimeout(hold.current)} onPointerLeave={()=>clearTimeout(hold.current)} onClick={()=>{if(!held.current)addSlide()}}>+ New slide</Button>
       <div className="editor-view" aria-label="Slide view"><button type="button" aria-label="Single slide view" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="slide"/></button><button type="button" aria-label="Grid view" aria-pressed={view==="grid"} onClick={()=>setView("grid")}><Icon name="grid"/></button></div>
     </header>
     <aside className="editor-export"><label className="editor-zoom"><span data-zoom-value>{fitZoom}%</span><span aria-hidden="true" className="editor-zoom-chevron">⌄</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(event.target.value==="fit" ? "fit" : Number(event.target.value))}><option value="fit">{fitZoom}%</option>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={state?.kind!=="saved"||readonly||!deck?.slides.length} onClick={()=>setExportOpen(true)}>Export</Button></aside>
