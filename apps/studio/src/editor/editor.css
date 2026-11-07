@@ -204,3 +204,44 @@
 .editor-navigation-menu>div button>span { inline-size:12px; }
 .studio-editor[data-navigation=hand] .editor-section { cursor:grab;touch-action:none;user-select:none; }
 .studio-editor[data-navigation=hand] .editor-section:active { cursor:grabbing; }
+
+.editor-tool-panel { --shape-fill:var(--primary);--shape-edge:var(--primary-edge); }
+.editor-tool-text header,.editor-tool-shapes[data-expanded=true] header { justify-content:flex-start;gap:4px;block-size:40px;margin:-12px -4px 0; }
+.editor-tool-text header h2,.editor-tool-shapes[data-expanded=true] header h2 { font-size:14px;font-weight:600; }
+.editor-tool-panel header svg { inline-size:16px;block-size:16px; }
+.editor-tool-text .tool-add-text { display:flex;justify-content:center;align-items:center;gap:6px;block-size:32px;margin:0 0 12px;font-weight:500; }
+.tool-add-text svg { inline-size:14px;block-size:14px; }
+.editor-tool-text>p { border-block-start:1px solid var(--border);margin:0 -12px 8px;padding:12px 12px 0;font-weight:500; }
+.editor-tool-text .text-style { line-height:1.5;color:var(--foreground); }
+.editor-tool-text .text-style[data-style=Title] { letter-spacing:-.6px;line-height:1.1; }
+.text-style[data-style="Header 1"] { letter-spacing:-.3px; }
+.editor-tool-text .text-style[data-style=Note] { color:var(--muted-foreground); }
+.shape-choices svg { fill:var(--shape-fill);stroke:var(--shape-edge); }
+.shape-lines svg { fill:none;stroke:var(--foreground);stroke-width:1.6;stroke-linecap:round; }
+.editor-tool-shapes:not([data-expanded=true]) { padding:6px;gap:2px;box-shadow:0 0 0 1px color-mix(in oklch,var(--foreground) 8%,transparent),0 12px 32px color-mix(in oklch,var(--foreground) 12%,transparent);border:0; }
+.editor-tool-shapes:not([data-expanded=true]) .shape-choices { gap:2px; }
+.editor-tool-shapes:not([data-expanded=true]) .shape-choices button { inline-size:36px;block-size:36px;border-radius:7px; }
+.editor-tool-shapes:not([data-expanded=true]) .shape-choices svg { inline-size:26px;block-size:26px; }
+.editor-tool-shapes:not([data-expanded=true]) .shape-lines { padding-inline-end:9px;margin-inline-end:3px;position:relative;border:0; }
+.editor-tool-shapes:not([data-expanded=true]) .shape-lines::after,.editor-tool-shapes:not([data-expanded=true]) .more-shapes::before { content:"";position:absolute;inset-inline-end:3px;block-size:24px;inline-size:1px;background:var(--border); }
+.editor-tool-shapes:not([data-expanded=true]) .shape-lines svg { inline-size:22px;block-size:22px; }
+.editor-tool-shapes:not([data-expanded=true]) .more-shapes { position:relative;display:flex;align-items:center;block-size:32px;padding-inline:22px 10px;font-size:12px;font-weight:500;white-space:nowrap; }
+.editor-tool-shapes:not([data-expanded=true]) .more-shapes::before { inset-inline:8px auto; }
+.tool-search { display:flex;align-items:center;gap:8px;block-size:36px;border-radius:8px;background:var(--muted);padding-inline:10px; }
+.tool-search>svg { flex:none;inline-size:15px;block-size:15px;color:var(--muted-foreground); }
+.editor-tool-panel .tool-search>input { border:0;padding:0;background:transparent;outline:0;block-size:100%; }
+.tool-search:focus-within { outline:2px solid var(--ring);outline-offset:2px; }
+.editor-tool-actions { display:flex;flex-direction:column;gap:4px; }
+.editor-tool-actions p { margin:4px 0 0;font-size:12px; }
+.editor-action { block-size:36px;padding:0 8px;gap:10px; }
+.editor-action>svg { flex:none;inline-size:17px;block-size:17px; }
+@media (pointer:coarse) { .editor-tool-panel button,.editor-tool-panel .tool-search { min-block-size:44px; }.editor-tool-panel button { min-inline-size:44px; }.editor-tool-panel input { font-size:16px; } }
+
+.editor-tool-shapes:not([data-expanded=true]),.editor-tool-actions { inset-block-end:72px; }
+.editor-tool-shapes[data-expanded=true] .tool-search { block-size:32px; }
+.editor-tool-shapes[data-expanded=true] .shape-choices { grid-template-columns:repeat(3,68px);gap:6px; }
+.editor-tool-shapes[data-expanded=true] .shape-choices button { inline-size:68px;block-size:68px; }
+.editor-tool-shapes[data-expanded=true] .shape-choices svg { inline-size:30px;block-size:30px; }
+.editor-tool-shapes[data-expanded=true] .shape-lines svg { inline-size:26px;block-size:26px; }
+.editor-tool-shapes[data-expanded=true]>p { display:flex;align-items:center;gap:4px;block-size:28px;margin:8px 0 0;font-weight:600;color:var(--foreground); }
+.editor-tool-shapes[data-expanded=true]>p>svg { inline-size:12px;block-size:12px; }
