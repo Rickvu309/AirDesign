@@ -60,12 +60,12 @@ async function assertStructure(page:Page,entry:Scenario){
       reference.append(referencePath)
       document.body.append(reference)
       try{
-        return {canonicalPath:getComputedStyle(referencePath).getPropertyValue("d"),actual:{viewBox:element.getAttribute("viewBox"),transform:getComputedStyle(element).transform,parts:[...element.querySelectorAll("*")].map(part=>({tag:part.tagName,paintedPath:getComputedStyle(part).getPropertyValue("d"),transform:getComputedStyle(part).transform,attributes:[...part.attributes].filter(attribute=>["d","cx","cy","r","x","y","width","height","x1","x2","y1","y2","points","transform"].includes(attribute.name)).map(attribute=>[attribute.name,attribute.value]).sort()}))}}
+        return {canonicalPath:getComputedStyle(referencePath).getPropertyValue("d"),actual:{viewBox:element.getAttribute("viewBox"),transform:getComputedStyle(element).transform,parts:[...element.querySelectorAll("*")].map(part=>({tag:part.tagName,paintedPath:getComputedStyle(part).getPropertyValue("d"),transform:getComputedStyle(part).transform,attributes:[...part.attributes].filter(attribute=>["cx","cy","r","x","y","width","height","x1","x2","y1","y2","points","transform"].includes(attribute.name)).map(attribute=>[attribute.name,attribute.value]).sort()}))}}
       }finally{reference.remove()}
     },path)
     const tokens=(value:string)=>value.match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?/g)?.map(token=>/^[a-zA-Z]$/.test(token) ? token : Number(token))??[]
     const hash=(value:typeof geometry.actual)=>createHash("sha256").update(JSON.stringify({viewBox:tokens(value.viewBox??""),transform:value.transform,parts:value.parts.map(part=>({...part,attributes:part.attributes.map(([name,value])=>[name,tokens(value??"")])}))})).digest("hex")
-    const expected=hash({viewBox:"0 0 24 24",transform:"none",parts:[{tag:"path",paintedPath:geometry.canonicalPath,transform:"none",attributes:[["d",path]]}]})
+    const expected=hash({viewBox:"0 0 24 24",transform:"none",parts:[{tag:"path",paintedPath:geometry.canonicalPath,transform:"none",attributes:[]}]})
     const actual=hash(geometry.actual)
     if(actual!==expected)throw failure(locator.toString(),"icon-geometry",expected,actual)
   }

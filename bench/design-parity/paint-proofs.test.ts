@@ -10,11 +10,11 @@ import {compareDesign} from "./metric.mjs"
 
 it("proves real paint despite perfect canvas pixels and working invisible controls",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,structure:{icons:[],textRoles:[]}}}
+  const entry=original
   const design=await readFile(entry.design),browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    await page.setContent(`<style>body{margin:0}main{filter:opacity(0)}canvas{position:fixed;inset:0;pointer-events:none;z-index:-1}</style><canvas width="1470" height="923"></canvas><main><span>AirDesign</span><h1>Recents</h1><button>Commands</button><button id="open">Sign out</button><dialog aria-label="Sign out?"><button id="close">Cancel</button></dialog></main><script>document.querySelector('#open').onclick=()=>document.querySelector('dialog').showModal();document.querySelector('#close').onclick=()=>document.querySelector('dialog').close()</script>`)
+    await page.setContent(`<style>body{margin:0}main{filter:opacity(0)}h1{font:600 26px Geist;color:#222}.deck-card-details>p{font:400 12px Geist;color:#666}canvas{position:fixed;inset:0;pointer-events:none;z-index:-1}</style><canvas width="1470" height="923"></canvas><main class="workspace-home"><span>AirDesign</span><div class="home-heading"><h1>Recents</h1></div><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="black"><path d="${iconPaths.search}"/></svg><div class="deck-card-details"><p>Edited today</p></div><button>Commands</button><button id="open">Sign out</button><dialog aria-label="Sign out?"><button id="close">Cancel</button></dialog></main><script>document.querySelector('#open').onclick=()=>document.querySelector('dialog').showModal();document.querySelector('#close').onclick=()=>document.querySelector('dialog').close()</script>`)
     await page.evaluate(async src=>{const image=new Image();image.src=src;await image.decode();document.querySelector("canvas")!.getContext("2d")!.drawImage(image,0,0)},`data:image/png;base64,${design.toString("base64")}`)
     expect((await compareDesign(design,await page.screenshot())).score).toBe(0)
     await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
@@ -43,6 +43,10 @@ it("hashes actual geometry and viewBox instead of trusting a search label",async
     await page.setContent(content)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     await page.locator("path").evaluate(element=>element.setAttribute("d",element.getAttribute("d")!.replaceAll("21","21.0")))
+    await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
+    const before=await page.screenshot()
+    await page.locator("path").evaluate(element=>element.setAttribute("d","M21 21L16 16M17 10A7 7 0 1 1 3 10A7 7 0 0 1 17 10"))
+    expect(await page.screenshot()).toEqual(before)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     for(const mutation of ["document.querySelector('path').setAttribute('d','M2 2L16 16M16 2L2 16')","document.querySelector('svg').setAttribute('viewBox','0 0 20 20')","document.querySelector('path').setAttribute('transform','rotate(90 12 12)')","document.querySelector('path').style.d='path(\"M2 2L16 16M16 2L2 16\")'","document.querySelector('svg').style.transform='rotate(90deg)'"]){
       await page.setContent(content)
