@@ -333,10 +333,14 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
 
   if (screen === "expired") {
     return <main className="ad-sign-in" data-screen="expired" data-link-status={linkStatus}>
+      <section className="ad-access-error">
       <BrandMark/>
+      <div className="ad-access-error-copy">
       <h1 className="ad-title">{copy("access.expired_title")}</h1>
       <p className="ad-helper">{copy("access.expiry_hint")}</p>
+      </div>
       <Button variant="primary" size="dialog" onClick={() => { setCode(""); setScreen("signin") }}>{copy("access.send_new")}</Button>
+      </section>
     </main>
   }
 
