@@ -2,7 +2,7 @@
 
 ## Configure the services
 
-Build the root Dockerfile with Node 24. The image builds Studio, the public site, the PDF renderer, and the MCP capture renderer. Its runtime installs production npm dependencies, Playwright Chromium, browser system libraries, and util-linux. Run as the image's unprivileged node user.
+Build the root Dockerfile with Node 24. The image builds Studio, the public site, the PDF renderer, and the MCP capture renderer. Its runtime installs production npm dependencies, Playwright Chromium, browser system libraries, util-linux, and Debian tini. Run as the image's unprivileged node user.
 
 `.railway/railway.ts` is the source of truth for both services: GitHub source, build, start command, health check, domains, volumes and non-secret variables. Secrets (`DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_CLAUDE_KEY`, `RESEND_API_KEY`) are marked `preserve()` and live only in Railway. Change service configuration in that file and run `railway config plan`, then `railway config apply`, from a checkout linked to the project. Both services use the same image. Do not scale either service beyond one replica in this release.
 
@@ -45,6 +45,8 @@ Startup applies existing idempotent account and deck schema initialization. Depl
 
 `AIRDESIGN_ISOLATION=systemd` preserves systemd user scopes and bubblewrap network and filesystem namespaces. Use it on hosts that provide those facilities.
 
+Container mode runs each job beneath its own `tini -s -g --` child subreaper, installed by the runtime Docker stage. Detached and double-forked descendants reparent to that subreaper even if they clear or forge environment variables. Ownership follows kernel ancestry and the subreaper PID start time. Cleanup freezes descendants, kills them deepest first, rescans until empty, and then kills the subreaper. Every signal rechecks the target start time. RSS monitoring and restart recovery use the same ancestry. The supervisor cleans up after payload exit or worker death. `AIRDESIGN_JOB_DIRECTORY` routes job files only; it grants no process ownership. The entrypoint still drops privileges before starting the worker.
+
 Container mode uses a separate process group for each job, private job and temporary directories, prlimit CPU, address-space, data-segment, file-size and descriptor limits, V8 heap limits, a wall-clock kill, cancellation checks, and recursive cleanup. Imports and images have an 8 GiB virtual-address ceiling. Chromium export requires a larger virtual-address ceiling of 4 TiB because Chromium reserves large virtual ranges. Both have a 768 MiB data-segment limit; virtual limits do not equal resident-memory guarantees. Job environments exclude service credentials. Existing archive, SVG, font, size, and image validation remains in place.
 
 A preload rejects fetch, WebSocket construction, socket connections, HTTP and HTTPS requests, TLS, UDP, and DNS calls in job code. PDF Chromium additionally runs offline and aborts routed requests. This is application-level network denial, not a kernel network namespace. Code execution through a compromised native parser or a newly spawned executable can bypass JavaScript guards. Container mode also lacks per-job filesystem namespaces, cgroup RSS enforcement, and systemd accounting. It is weaker than systemd plus bubblewrap. The Railway service container is the remaining OS boundary; use separate worker credentials and no public worker port.
@@ -69,7 +71,7 @@ One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: un
 
 Worker artifact completion uses an authenticated binary PUT to `/internal/worker` with queue, operation ID and lease query parameters, followed by a separate JSON completion report. Uploads spool to private disk in bounded chunks and reject more than 500 MiB as they arrive; reports are limited to 8 MiB. The existing SQLite artifact commit still reads the accepted artifact once into a Buffer. Public upload limits are unchanged. Abandoned upload files are removed when the web process starts.
 
-The worker journals export scratch and process-group ownership on its persistent jobs volume before rendering. On restart it kills abandoned groups, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.
+The worker journals export scratch and the job subreaper PID with its start-time identity on its persistent jobs volume before rendering. On restart it kills abandoned descendants, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.
 
 ## Verify the deployed commit and journey
 

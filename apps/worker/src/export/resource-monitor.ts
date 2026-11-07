@@ -1,9 +1,13 @@
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import type { ChildProcess } from "node:child_process"
+import { containerJobRoot } from "../container-process.ts"
 import { containerJobProcesses } from "../container-job-processes.ts"
 
-export function residentBytes(directory: string): number {
-  return containerJobProcesses(directory).reduce((total, member) => total + member.residentBytes, 0)
+export function residentBytes(child: ChildProcess): number {
+  const root = containerJobRoot(child)
+  if (!root) return 0
+  return containerJobProcesses(root).reduce((total, member) => total + member.residentBytes, 0)
 }
 
 export async function scopeOomKilled(unit: string): Promise<boolean> {
