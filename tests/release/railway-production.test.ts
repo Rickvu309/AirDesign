@@ -58,9 +58,13 @@ it("bounds the wait and keeps a receipt with both observed services", async () =
 
 it("does not accept a previous success or a different commit", async () => {
   const sim = simulatedRailway("worker")
-  sim.railway.deployments = async service => [{ id: `${service}-old`, meta: { commitHash: sha }, status: "SUCCESS" }, { id: `${service}-new`, meta: { commitHash: old }, status: "SUCCESS" }]
+  let studioChecks = 0
+  sim.railway.studio = async () => { studioChecks += 1 }
+  sim.railway.deployments = async service => sim.deployed.some(value => value.service === service)
+    ? [{ id: `${service}-old`, meta: { commitHash: sha }, status: "SUCCESS" }, { id: `${service}-new`, meta: { commitHash: old }, status: "SUCCESS" }]
+    : [{ id: `${service}-old`, meta: { commitHash: sha }, status: "SUCCESS" }]
   await expect(deployProduction(sha, sim.railway, 20)).rejects.toThrow("railway-deployment-timeout")
-  expect(sim.reachedStudio()).toBe(false)
+  expect(studioChecks).toBe(0)
 })
 
 it("retains failure evidence when the deployment request or Studio check fails", async () => {
