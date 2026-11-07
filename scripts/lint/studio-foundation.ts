@@ -3,6 +3,11 @@ import { readFileSync } from "node:fs"
 const designCopyKeys = new Set(Object.entries(JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8"))).filter(([, value]) => typeof value === "string").map(([key]) => key))
 
 export function studioFoundationHits(file: string, source: string): { line: number; reason: string }[] {
+  if (/bench\/.*\.mjs$/.test(file)) {
+    const hits = []
+    for (const match of source.matchAll(/name\s*:\s*["'](?:\+ New deck|No decks yet)["']|getByLabel\(["']Search decks["']\)/g)) hits.push({ line: source.slice(0, match.index).split("\n").length, reason: "studio-browser-check-uses-designed-shell-accessible-names" })
+    return hits
+  }
   if (/packages\/ui\/src\/copy\/copy-kit\.(json|ts)$/.test(file)) {
     const keys = file.endsWith(".json") ? Object.entries(JSON.parse(source)).filter(([, value]) => typeof value === "string").map(([key]) => key) : [...source.matchAll(/^\s*"([^"]+)":\s*"/gm)].map(match => match[1] ?? "")
     return keys.filter(key => !designCopyKeys.has(key)).map(key => ({ line: source.slice(0, source.indexOf(`"${key}"`)).split("\n").length, reason: "studio-supplemental-copy-belongs-in-studio-foundation-copy" }))
@@ -30,6 +35,7 @@ export function studioFoundationHits(file: string, source: string): { line: numb
   if (!source.includes("width:min(442px,100%);padding:40px") || !source.includes('.ad-sign-in[data-screen="signin"] .ad-field-input { height:46px; }') || !source.includes(".ad-sign-in .ad-check-card { text-align:center;justify-items:center;row-gap:22px; }")) hits.push({ line: 1, reason: "studio-access-cards-match-reference-width-field-height-and-row-gaps" })
   if (!source.includes(".ad-dialog-copy { display:grid;gap:8px; }")) hits.push({ line: 1, reason: "studio-dialog-groups-title-and-body-with-8px-gap" })
   if (!source.includes(".ad-access-error { display:flex;width:min(360px,100%);flex-direction:column;align-items:center;gap:20px; }") || !source.includes(".ad-access-error .ad-brand-mark { width:44px;height:44px; }") || !source.includes(".ad-access-error-copy { display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center; }") || !source.includes('font-size:var(--text-module);font-weight:500;letter-spacing:normal;line-height:normal;')) hits.push({ line: 1, reason: "studio-expired-link-uses-generator-mark-spacing-and-medium-title" })
+  if (!source.includes(".ad-field-input,.ad-search input,.ad-code-box { font-size:16px; }") || !source.includes("@media (pointer: coarse)") || !source.includes('.ad-access-legal a,[role="button"] { min-width:44px;min-height:44px; }') || !source.includes("touch-action:manipulation;-webkit-tap-highlight-color:transparent;") || !source.includes("@media (hover: hover) and (pointer: fine)") || !source.includes("env(safe-area-inset-bottom, 0px)")) hits.push({ line: 1, reason: "studio-touch-controls-require-readable-inputs-targets-and-safe-area" })
   if (!source.includes(".ad-code-box:focus { border:2px solid var(--ring);outline:0; }")) hits.push({ line: 1, reason: "studio-code-focus-stays-inside-designed-box" })
   if (!source.includes('.ad-sign-in[data-screen="check"]>.ad-button-link { color:var(--muted-foreground);font-size:var(--text-body-small);display:inline-flex;align-items:center;gap:6px; }')) hits.push({ line: 1, reason: "studio-check-email-back-link-uses-secondary-body-size" })
   if (!/\.ad-sidebar\s*\{[^}]*font-size:\s*var\(--text-body-small\)/.test(source)) hits.push({ line: 1, reason: "studio-sidebar-uses-design-body-size-13px" })

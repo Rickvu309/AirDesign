@@ -62,7 +62,7 @@ export async function perform(page,step,stack,owner){
     case "fill":await page.getByLabel(step.label,{exact:true}).fill(step.value);break
     case "select":await page.getByLabel(step.label,{exact:true}).selectOption(step.value);break
     case "import":{
-      await page.getByRole("button",{name:"+ New deck",exact:true}).click()
+      await page.getByRole("button",{name:"New deck",exact:true}).click()
       await page.getByRole("button",{name:"Import PowerPoint",exact:true}).click()
       const response=page.waitForResponse(response=>response.url().endsWith("/api/operations")&&response.request().method()==="POST")
       await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles({name:"Brightwater board review.pptx",mimeType:"application/vnd.openxmlformats-officedocument.presentationml.presentation",buffer:await writeSavedPptx(fixtureDeck(1,6),0,null,{})})

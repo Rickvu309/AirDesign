@@ -5,6 +5,16 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
+  it("rejects phone input zoom and undersized touch targets", () => {
+    expect(studioFoundationHits(file, fixed.replace(".ad-field-input,.ad-search input,.ad-code-box { font-size:16px; }", "").replace("min-width:44px;min-height:44px;", ""))).toEqual([{ line: 1, reason: "studio-touch-controls-require-readable-inputs-targets-and-safe-area" }])
+  })
+  it("rejects obsolete shell browser locators and accepts the designed names", () => {
+    const browser = "bench/studio/browser-check.mjs"
+    const source = readFileSync(browser, "utf8")
+    expect(studioFoundationHits(browser, source)).toEqual([])
+    const original = source.replace('name:"Your first deck starts here"', 'name:"No decks yet"').replace('name:"New deck"', 'name:"+ New deck"').replaceAll('getByRole("searchbox",{name:"Search",exact:true})', 'getByLabel("Search decks")')
+    expect(studioFoundationHits(browser, original).map(hit => hit.reason)).toEqual(Array(5).fill("studio-browser-check-uses-designed-shell-accessible-names"))
+  })
   it("keeps supplemental labels out of the exact canonical copy kit", () => {
     for (const suffix of ["ts", "json"]) {
       const copyFile = `packages/ui/src/copy/copy-kit.${suffix}`

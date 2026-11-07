@@ -361,7 +361,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   return <main className="ad-sign-in" data-screen="signin">
     <header className="ad-access-header"><BrandMark/><h1 className="ad-title">{copy("access.account_context")}</h1></header>
     <form className="ad-card" onSubmit={event => { event.preventDefault(); void onContinue() }}>
-      <TextField label={copy("access.email_label")} placeholder={copy("access.email_placeholder")} type="email" autoComplete="email" value={email} error={emailError} onChange={event => setEmail(event.target.value)}/>
+      <TextField label={copy("access.email_label")} placeholder={copy("access.email_placeholder")} type="email" inputMode="email" enterKeyHint="go" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={email} error={emailError} onChange={event => setEmail(event.target.value)}/>
       <Button variant="primary" size="sign-in" type="submit" aria-label={copy("access.continue")}>{copy("access.continue_email")}</Button>
       <p className="ad-access-note">{copy("access.new_account")}</p>
     </form>
