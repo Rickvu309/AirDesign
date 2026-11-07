@@ -1,8 +1,32 @@
 import { id,parseDeck,flatten,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
 export function nodeId() {return id(`n${crypto.randomUUID().replaceAll("-","").slice(0,30)}`)}
-export function newSlide(deck?:Deck):Slide {
+export type SlideLayout="title"|"summary"|"chart"|"columns"|"table"|"next"
+export function fitToolElement(element:Element,size:Slide["size"]):Element {
+  const horizontal=size.width/960,vertical=size.height/540
+  const fitted={...element,box:{x:element.box.x*horizontal,y:element.box.y*vertical,width:element.box.width*horizontal,height:element.box.height*vertical}}
+  if(fitted.kind==="group")return {...fitted,children:fitted.children.map(child=>fitToolElement(child,size))}
+  if(fitted.kind==="text") {
+    const scale=(run:typeof fitted.runs[number])=>({...run,size:run.size*Math.min(horizontal,vertical)})
+    const [first,...rest]=fitted.runs
+    return {...fitted,runs:[scale(first),...rest.map(scale)]}
+  }
+  return fitted
+}
+export function newSlide(deck?:Deck,layout:SlideLayout="title"):Slide {
   const theme=deck?.themes.find(theme=>theme.id===deck.template?.id),link=theme?.id ?? null
-  return {...(deck?.template?.layout ? {layout:{template:deck.template.id,version:deck.template.version,family:deck.template.family,...deck.template.layout}} : {}),id:nodeId(),version:0,size:deck?.slides[0]?.size ?? {width:960,height:540},elements:[{id:nodeId(),kind:"text",box:{x:64,y:64,width:832,height:100},source:{kind:"created"},support:{kind:"native"},theme:link,placeholder:null,overlap:null,runs:[{text:"Add your title",bold:true,font:theme?.font ?? "Geist",size:40,color:theme?.foreground ?? "#172333"}]}],notes:"",theme:link,source:{kind:"created"}}
+  const ink=theme?.foreground ?? "#172333",font=theme?.font ?? "Geist"
+  const base=()=>({id:nodeId(),source:{kind:"created"},support:{kind:"native"},theme:link,placeholder:null,overlap:null} as const)
+  const text=(value:string,x:number,y:number,width:number,size=22,bold=false):Element=>({...base(),kind:"text",box:{x,y,width,height:size*3},runs:[{text:value,bold,font,size,color:ink}]})
+  const elements:Element[]=[text(layout==="next" ? "Next steps" : layout==="summary" ? "Executive summary" : "Add your title",64,64,832,40,true)]
+  if(layout==="summary" || layout==="next")elements.push(text("1. Add your first point\n2. Add your next point\n3. Add your final point",64,180,832))
+  if(layout==="columns")elements.push(text("First idea\nAdd supporting detail",64,180,384),text("Second idea\nAdd supporting detail",512,180,384))
+  if(layout==="chart") {
+    for(const [index,height] of [100,160,210,260].entries())elements.push({...base(),kind:"shape",geometry:"rectangle",fill:ink,box:{x:96+index*130,y:440-height,width:90,height}})
+    elements.push(text("Add your takeaway",670,180,226))
+  }
+  if(layout==="table")for(let row=0;row<4;row++)for(let column=0;column<3;column++)elements.push(text(row===0 ? "Header" : "Value",64+column*280,180+row*64,260,20,row===0))
+  const size=deck?.slides[0]?.size ?? {width:960,height:540}
+  return {...(deck?.template?.layout ? {layout:{template:deck.template.id,version:deck.template.version,family:deck.template.family,...deck.template.layout}} : {}),id:nodeId(),version:0,size,elements:elements.map(element=>fitToolElement(element,size)),notes:"",theme:link,source:{kind:"created"}}
 }
 export function selectSlides(deck:Deck,selection:Id[],target:Id,anchor:Id|null,shift:boolean,toggle:boolean):Id[] {
   const ids=deck.slides.map(slide=>slide.id),start=ids.indexOf(anchor ?? target),end=ids.indexOf(target)
@@ -29,4 +53,12 @@ export function reviewPaste(source:string):PasteReview {
     })
   }catch(error){refused.push(error instanceof Error ? error.message : "Invalid slide data")}
   return {source,accepted,refused}
+}
+
+export function clipboardSource(deck:Deck,selection:Id[]) {
+  const detached=(element:Element):Element=>{
+    const base={...element,theme:null}
+    return base.kind==="group" ? {...base,children:base.children.map(detached)} : base
+  }
+  return JSON.stringify({slides:deck.slides.filter(slide=>selection.includes(slide.id)).map(slide=>({...slide,theme:null,elements:slide.elements.map(detached)}))})
 }

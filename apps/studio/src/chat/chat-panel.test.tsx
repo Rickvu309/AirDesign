@@ -13,6 +13,10 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     const run={id:"aira_stable",owner:"owner",deck:"deck",request:"A long message ".repeat(100),selection:["s0"],kind:"working",events:[{id:1,kind:"tool",name:"apply_changes",scope:"s0"}]}
     const send=(value:unknown)=>streams[0]?.onmessage?.(new MessageEvent("message",{data:JSON.stringify(value)}))
     await act(async()=>send({enabled:true,run,remote:[]}))
+    expect([...container.querySelectorAll("option")].map(option=>option.textContent)).toContain("Slide 1")
+    expect(container.textContent).not.toContain("s0e0")
+    expect(container.textContent).not.toContain("aira_stable")
+    expect(container.querySelector(".aira-activity")?.textContent).toBe("✓ Updated Slide 1")
     const input=container.querySelector("textarea")!;input.focus();expect(document.activeElement).toBe(input)
     await act(async()=>send({enabled:true,run,remote:[]}))
     expect(container.querySelectorAll(".aira-activity")).toHaveLength(1)
@@ -21,6 +25,8 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     await act(async()=>send({enabled:true,run:{...run,kind:"failed"},remote:[]}))
     expect(container.querySelector('[role="status"]')?.textContent).toContain("Changes so far stay")
     expect(container.textContent).toContain("Resume")
+    expect(container.querySelector(".aira-failure-card .aira-run-actions")?.textContent).toContain("Resume")
+    expect(container.querySelector(".aira-failure-card strong")?.textContent).toContain("Unable to finish this run")
     await act(async()=>send({enabled:true,run:{...run,kind:"stopped"},remote:[]}))
     expect(container.textContent).toContain("Resume")
     const requests:unknown[]=[]
@@ -44,5 +50,9 @@ it("replaces duplicate stream snapshots, exposes status and failures and keeps c
     await act(async()=>streams[0]?.onerror?.())
     expect([...container.querySelectorAll('[role="alert"]')].some(alert=>alert.textContent?.includes("Reconnecting"))).toBe(true)
     expect(document.activeElement).toBe(input)
+    await act(async()=>root.render(<ChatPanel deck={fixtureDeck(2,2)} selection={["s0"]} readonly={false} connected={false} close={()=>{}}/>))
+    expect(container.querySelector<HTMLTextAreaElement>("textarea")?.disabled).toBe(true)
+    expect(container.querySelector("textarea")?.getAttribute("placeholder")).toBe("Waits for connection")
+    expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true)
   }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
 })

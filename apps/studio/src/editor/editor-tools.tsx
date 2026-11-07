@@ -1,0 +1,29 @@
+import {useState} from "react"
+import {shapeGeometry,type Deck,type Element,type ShapeGeometry} from "../../../../packages/deck/src/index.ts"
+import {nodeId,type SlideLayout} from "./editor-model.ts"
+
+export type EditorTool="none"|"shapes"|"text"|"actions"|"layouts"
+const styles=[{name:"Title",size:40,bold:true},{name:"Header 1",size:30,bold:true},{name:"Header 2",size:24,bold:true},{name:"Header 3",size:20,bold:true},{name:"Body 1",size:20,bold:false},{name:"Body 2",size:18,bold:false},{name:"Body 3",size:17,bold:false},{name:"Note",size:16,bold:false}]
+const layouts=[{id:"title",name:"Title"},{id:"summary",name:"Executive summary"},{id:"chart",name:"Chart and takeaway"},{id:"columns",name:"Two columns"},{id:"table",name:"Table"},{id:"next",name:"Next steps"}] satisfies {id:SlideLayout;name:string}[]
+const shapeKeys=["rectangle","ellipse","diamond","triangle","downTriangle","pill","pentagon","octagon","plus","leftArrow","rightArrow","chevron","star","bubble"] satisfies ShapeGeometry[]
+const flowKeys=Object.keys(shapeGeometry).filter((key):key is ShapeGeometry=>key.startsWith("flow")&&key in shapeGeometry)
+export function EditorTools({tool,close,insert,addSlide,deck}:{tool:EditorTool;close:()=>void;insert:(element:Element)=>void;addSlide:(layout:SlideLayout)=>void;deck:Deck}) {
+  const [expanded,setExpanded]=useState(false),[query,setQuery]=useState("")
+  if(tool==="none")return null
+  const base=()=>({id:nodeId(),box:{x:96,y:160,width:160,height:160},theme:null,source:{kind:"created"},support:{kind:"native"},placeholder:null,overlap:null} satisfies Partial<Element>)
+  const ink=deck.themes[0]?.foreground ?? "#102633"
+  function text(style:typeof styles[number]) {insert({...base(),kind:"text",box:{x:96,y:120,width:600,height:style.size*2.5},runs:[{text:style.name==="Body 1" ? "Add your text" : style.name,bold:style.bold,size:style.size,font:"Geist",color:ink}]})}
+  function shape(geometry:ShapeGeometry) {insert({...base(),kind:"shape",geometry,fill:ink})}
+  function action(name:"Chart"|"Table"|"Icon") {
+    const children:Element[]=name==="Chart" ? [80,120,180].map((height,index)=>({...base(),kind:"shape",geometry:"rectangle",fill:ink,box:{x:index*80,y:200-height,width:56,height}})) : name==="Table" ? Array.from({length:9},(_,index)=>({...base(),kind:"text",box:{x:index%3*100,y:Math.floor(index/3)*48,width:96,height:44},runs:[{text:Math.floor(index/3)===0 ? "Header" : "Value",bold:Math.floor(index/3)===0,font:"Geist",size:18,color:ink}]})) : [{...base(),kind:"shape",geometry:"star",fill:ink,box:{x:0,y:0,width:72,height:72}}]
+    insert({...base(),kind:"group",box:{x:96,y:160,width:name==="Table" ? 300 : 240,height:200},children});close()
+  }
+  const tiles=(keys:ShapeGeometry[])=><div className="shape-choices">{keys.filter(key=>shapeGeometry[key].name.toLowerCase().includes(query.toLowerCase())).map(key=><button key={key} type="button" aria-label={shapeGeometry[key].name} title={shapeGeometry[key].name} onClick={()=>shape(key)}><svg viewBox="0 0 100 100" aria-hidden="true"><path d={shapeGeometry[key].path} fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/></svg></button>)}</div>
+  return <aside className={`editor-tool-panel editor-tool-${tool}`} data-expanded={expanded} aria-label={tool==="layouts" ? "Choose slide layout" : tool==="text" ? "Text" : tool==="shapes" ? "Shapes browser" : "Actions picker"}>
+    <header><h2>{tool==="layouts" ? "Add slide" : tool==="text" ? "Text" : tool==="shapes" ? "Shapes" : "Actions"}</h2><button type="button" aria-label="Close tool" onClick={close}>×</button></header>
+    {tool==="text" && <><button type="button" aria-label="Add text box" className="tool-add-text" onClick={()=>text(styles[4]!)}>T&nbsp; Add text box</button><p>{deck.template?.id ? deck.template.id.charAt(0).toUpperCase()+deck.template.id.slice(1) : "Text"} styles</p>{styles.map(style=><button type="button" className="text-style" key={style.name} style={{fontSize:style.size*.75,fontWeight:style.bold ? 600 : 400}} onClick={()=>text(style)}>{style.name}</button>)}</>}
+    {tool==="shapes" && <>{expanded && <><input aria-label="Search shapes" placeholder="Search shapes" enterKeyHint="search" value={query} onChange={event=>setQuery(event.target.value)}/><p>Lines</p><div className="shape-choices"><button type="button" aria-label="Line" onClick={()=>insert({...base(),kind:"shape",geometry:"rectangle",fill:ink,box:{x:96,y:160,width:280,height:2}})}>╱</button></div><p>Basic</p></>}{tiles(expanded ? shapeKeys : shapeKeys.slice(0,10))}{expanded&&<><p>Flowchart</p>{tiles(flowKeys)}</>}<button type="button" className="more-shapes" onClick={()=>setExpanded(!expanded)}>{expanded ? "Fewer shapes" : "More shapes"}</button></>}
+    {tool==="layouts" && <><div className="layout-choices">{layouts.map(layout=><button type="button" className="layout-choice" key={layout.id} onClick={()=>{addSlide(layout.id);close()}}><span className={`layout-sample layout-${layout.id}`} aria-hidden="true"><i/><i/><i/></span>{layout.name}</button>)}</div></>}
+    {tool==="actions" && <><input aria-label="Search actions" placeholder="Search actions" enterKeyHint="search" value={query} onChange={event=>setQuery(event.target.value)}/><p>Insert</p>{(["Chart","Table","Icon"] as const).filter(name=>name.toLowerCase().includes(query.toLowerCase())).map(name=><button type="button" aria-label={name} className="editor-action" key={name} onClick={()=>action(name)}><span aria-hidden="true">{name==="Chart" ? "▥" : name==="Table" ? "▦" : "◇"}</span>{name}<span aria-hidden="true">↵</span></button>)}<p>Image</p><button type="button" className="editor-action" disabled title="Background removal is not available yet">Remove background</button><button type="button" className="editor-action" disabled title="Resolution enhancement is not available yet">Boost resolution</button></>}
+  </aside>
+}

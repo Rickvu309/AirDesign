@@ -8,6 +8,7 @@ import {formSubmitButtonHits} from "./lint/form-submit-button.ts"
 import {imagePipelineSafetyHits} from "./lint/image-pipeline-safety.ts"
 import {meteredToolSafetyHits} from "./lint/metered-tool-safety.ts"
 import { editorStackingHits } from "./lint/editor-stacking.ts"
+import { editorLayoutHits } from "./lint/editor-layout.ts"
 import { viewportPanelSizingHits } from "./lint/viewport-panel-sizing.ts"
 import { historyQuerySafetyHits } from "./lint/history-query-safety.ts"
 import { operationSafetyHits } from "./lint/operation-safety.ts"
@@ -48,6 +49,7 @@ for (const file of files) {
     failures.push(`${path.relative(repoRoot, file)}:${hit.line} comment`)
   }
   for (const hit of editorStackingHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
+  for (const hit of editorLayoutHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   for (const hit of imagePipelineSafetyHits(file,source)) failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for (const hit of viewportPanelSizingHits(file, source)) failures.push(`${path.relative(repoRoot, file)}:${hit.line} ${hit.reason}`)
   if (file.endsWith(".css")) {

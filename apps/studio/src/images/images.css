@@ -1,4 +1,4 @@
-.image-panel{box-sizing:border-box;position:fixed;inset-block:64px 0;inset-inline-start:0;inline-size:min(320px,100vi);z-index:20;overflow:auto;background:var(--background);border-inline-end:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:16px;overscroll-behavior:contain}
+.image-panel{box-sizing:border-box;position:fixed;inset-block:56px 0;inset-inline-start:0;inline-size:min(248px,100vi);z-index:20;overflow:auto;background:var(--background);border-inline-end:1px solid var(--border);padding:16px;display:flex;flex-direction:column;gap:16px;overscroll-behavior:contain}
 .image-panel>*{flex-shrink:0}
 .image-panel header{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .image-panel h2,.image-panel h3,.image-panel p{margin:0}
