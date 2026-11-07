@@ -55,6 +55,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const [route, setRoute] = useState<AccessRoute>(() => routeAfterHandoff(requestedRoute))
   const [screen, setScreen] = useState<Screen>(initialScreen)
   const [homeSearch, setHomeSearch] = useState("")
+  const [browse, setBrowse] = useState<"recent" | "all">(() => new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
   const [accountName, setAccountName] = useState("My account")
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
@@ -123,6 +124,16 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       document.removeEventListener("visibilitychange", visibility)
     }
   }, [client])
+  useEffect(() => {
+    const syncBrowse = () => setBrowse(new URLSearchParams(window.location.search).get("browse") === "all" ? "all" : "recent")
+    window.addEventListener("popstate", syncBrowse)
+    return () => window.removeEventListener("popstate", syncBrowse)
+  }, [])
+
+  const browseWorkspace = (next: "recent" | "all") => {
+    history.pushState(history.state, "", next === "all" ? "/?browse=all" : "/")
+    setBrowse(next)
+  }
 
   const enterWorkspace = (nextKind: IntentKind, nextIntent: string, handoffToken: string | null) => {
     setKind(nextKind)
@@ -305,8 +316,8 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     }
     return (
       <>
-        <StudioShell search={homeSearch} onSearch={setHomeSearch} accountName={accountName} intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
-          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace search={homeSearch} startImport={kind === "import"}/>}
+        <StudioShell search={homeSearch} onSearch={setHomeSearch} onBrowse={browseWorkspace} accountName={accountName} intentLabel={copy(intentCopy[kind])} showIntent={kind !== "home"} onSignOut={() => setConfirmSignOut(true)}>
+          {window.location.pathname.startsWith("/settings/") ? <section className="settings-page"><h1>Settings</h1><nav className="settings-tabs" aria-label="Settings"><a href="/settings/usage" aria-current={window.location.pathname==="/settings/usage" ? "page" : undefined}>Usage</a><a href="/settings/agents" aria-current={window.location.pathname==="/settings/agents" ? "page" : undefined}>Agents</a><a href="/settings/account" aria-current={window.location.pathname==="/settings/account" ? "page" : undefined}>Account</a></nav>{window.location.pathname==="/settings/agents" ? <AgentsPanel/> : window.location.pathname==="/settings/account" ? <AccountPanel client={client}/> : <UsagePanel/>}</section> : <Workspace search={homeSearch} browse={browse} startImport={kind === "import"}/>}
         </StudioShell>
         <AlertDialog
           open={confirmSignOut}
@@ -339,7 +350,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         <div className="ad-email-apps"><a className="ad-button ad-button-secondary ad-button-dialog" href="https://outlook.live.com/mail/" target="_blank" rel="noreferrer"><MailProviderMark provider="outlook"/>{copy("access.open_outlook")}</a><a className="ad-button ad-button-secondary ad-button-dialog" href="https://mail.google.com/" target="_blank" rel="noreferrer"><MailProviderMark provider="gmail"/>{copy("access.open_gmail")}</a></div>
         <p className="ad-access-note">{copy("access.resend_prompt")} <Button variant="link" size="compact" disabled={secondsLeft > 0} onClick={() => void onResend()}>{secondsLeft > 0 ? fillCopy("access.resend_wait", { n: String(secondsLeft) }) : copy("access.resend")}</Button></p>
       </section>
-      <Button variant="link" size="compact" onClick={() => { setEmail(""); setCode(""); setScreen("signin") }}>{copy("access.different_email")}</Button>
+      <Button variant="link" size="compact" onClick={() => { setEmail(""); setCode(""); setScreen("signin") }}><span aria-hidden="true">←</span>{copy("access.different_email")}</Button>
     </main>
   }
 

@@ -11,10 +11,11 @@ type StudioShellProps = {
   search: string
   onSearch: (value: string) => void
   accountName?: string
+  onBrowse?: (browse: "recent" | "all") => void
   children: ReactNode
 }
 
-export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = "My account", search, onSearch, starredDecks = [], children }: StudioShellProps) {
+export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = "My account", search, onSearch, starredDecks = [], onBrowse, children }: StudioShellProps) {
   const editor=window.location.pathname.startsWith("/deck/")
   const path = window.location.pathname
   const [commandsOpen, setCommandsOpen] = useState(false)
@@ -40,8 +41,8 @@ export function StudioShell({ intentLabel, showIntent, onSignOut, accountName = 
         <div className="ad-account"><Dropdown label="Account menu" trigger={<><Avatar name={accountName}/><span>{accountName}</span><Icon name="chevron"/></>}><a href="/settings/account">Account settings</a><button type="button" onClick={onSignOut}>{copy("access.sign_out")}</button></Dropdown></div>
         <SearchField value={search} onChange={onSearch}/>
         <nav aria-label="Workspace">
-          <NavItem label={copy("shell.recents")} icon="recent" href="/" selected={path === "/" && !window.location.search}/>
-          <NavItem label={copy("shell.all_decks")} icon="decks" href="/?browse=all" selected={window.location.search.includes("browse=all")}/>
+          <NavItem label={copy("shell.recents")} icon="recent" href="/" selected={path === "/" && !window.location.search} onSelect={path === "/" && onBrowse ? () => onBrowse("recent") : undefined}/>
+          <NavItem label={copy("shell.all_decks")} icon="decks" href="/?browse=all" selected={window.location.search.includes("browse=all")} onSelect={path === "/" && onBrowse ? () => onBrowse("all") : undefined}/>
           <NavItem label={copy("shell.trash")} icon="trash" href="/trash" selected={path === "/trash"}/>
           <NavItem label={copy("shell.settings")} icon="settings" href="/settings/usage" selected={path.startsWith("/settings/")}/>
         </nav>

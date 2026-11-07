@@ -117,6 +117,29 @@ describe("studio access", () => {
     expect(document.querySelector('input[type="email"]')?.getAttribute("autocomplete")).toBe("email")
   })
 
+  it("switches browse routes without losing loaded decks or list mode", async () => {
+    const requests: string[] = []
+    vi.stubGlobal("fetch", async (input: string) => {
+      requests.push(input)
+      return Response.json(input.startsWith("/api/catalog") ? [{ id: "example", title: "Strategy", slides: 1, updated: Date.now(), deletedAt: null, generation: 1 }] : { name: "Ada" })
+    })
+    await render(<AccessApp client={fakeClient({ signedIn: true })} initialScreen="checking" />)
+    await act(flush)
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="List view"]')?.click())
+    const deck = document.querySelector(".deck-card")
+    expect(deck?.textContent).toContain("Strategy")
+    const catalogRequests = requests.filter(request => request.startsWith("/api/catalog")).length
+    await act(async () => [...document.querySelectorAll<HTMLButtonElement>(".ad-nav-item")].find(button => button.textContent === "All decks")?.click())
+    expect(location.search).toBe("?browse=all")
+    expect(document.querySelector("h1")?.textContent).toBe("All decks")
+    expect(document.querySelector(".deck-card")).toBe(deck)
+    expect(document.querySelector('[aria-label="List view"]')?.getAttribute("aria-pressed")).toBe("true")
+    expect(requests.filter(request => request.startsWith("/api/catalog"))).toHaveLength(catalogRequests)
+    await act(async () => { history.replaceState(history.state, "", "/"); window.dispatchEvent(new PopStateEvent("popstate")) })
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
+    expect(document.querySelector(".deck-card")).toBe(deck)
+  })
+
   it("keeps the discovery import action over a saved home session", async () => {
     await render(<AccessApp client={fakeClient({signedIn:true,kind:"home"})} initialScreen="checking" initialKind="import" />)
     await act(flush)
@@ -156,7 +179,7 @@ describe("studio access", () => {
       await flush()
     })
     const email = document.querySelector<HTMLInputElement>("input")
-    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")
+    const button = document.querySelector<HTMLButtonElement>("button.ad-button-primary")
     await act(async () => {
       setValue(email, "ada@example.com")
       button?.click()
@@ -165,6 +188,7 @@ describe("studio access", () => {
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
     const boxes = [...document.querySelectorAll<HTMLInputElement>(".ad-code-box")]
     expect(boxes[0]?.autocomplete).toBe("one-time-code")
+    expect(document.activeElement).toBe(boxes[0])
     await act(async () => {
       const paste = new Event("paste", { bubbles: true, cancelable: true })
       Object.defineProperty(paste, "clipboardData", { value: { getData: () => "000000" } })
@@ -189,7 +213,7 @@ describe("studio access", () => {
       await flush()
     })
     await act(async () => {
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Use a different email")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Use a different email"))?.click()
     })
     expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
     expect(document.querySelector("input")?.value).toBe("")

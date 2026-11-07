@@ -62,7 +62,8 @@
     "gate:typecheck": "node scripts/gate/run.ts typecheck",
     "gate:unit": "node scripts/gate/run.ts unit",
     "gate:verify": "node scripts/gate/run.ts verify",
-    "gate": "node scripts/gate/run.ts all"
+    "gate": "node scripts/gate/run.ts all",
+    "verify:studio-foundation": "node bench/studio-foundation/verify.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

@@ -65,8 +65,8 @@ export function AlertDialog({ open, title, body, icon, onClose, primary, seconda
       <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} tabIndex={-1} className="ad-dialog">
         {icon ? <div className="ad-dialog-head">{icon}</div> : null}
         <button type="button" aria-label="Close" className="ad-dialog-close ad-icon-button" onClick={() => onCloseRef.current()}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-        <h2 id={titleId} className="ad-dialog-title">{title}</h2>
-        <div id={bodyId} className="ad-dialog-body">{body}</div>
+        <div className="ad-dialog-copy"><h2 id={titleId} className="ad-dialog-title">{title}</h2>
+        <div id={bodyId} className="ad-dialog-body">{body}</div></div>
         <div className="ad-dialog-actions">
           {secondary ? <button type="button" className="ad-button ad-button-secondary ad-button-dialog" onClick={() => onCloseRef.current()}>{secondary.label}</button> : null}
           {primary ? <button type="button" className={`ad-button ad-button-dialog ${primary.danger ? "ad-button-danger" : "ad-button-primary"}`} onClick={primary.onClick}>{primary.label}</button> : null}

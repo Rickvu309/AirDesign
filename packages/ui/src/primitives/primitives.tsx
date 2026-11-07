@@ -38,8 +38,8 @@ export function SearchField({ value, onChange, label = "Search" }: { value: stri
 export function SegmentedControl<T extends string>({ label, value, items, onChange }: { label: string; value: T; items: readonly { value: T; label: string; icon?: IconName }[]; onChange: (value: T) => void }) {
   return <div className="ad-segmented" role="group" aria-label={label}>{items.map(item => <button type="button" key={item.value} aria-label={item.label} aria-pressed={item.value === value} onClick={() => onChange(item.value)}>{item.icon ? <Icon name={item.icon}/> : item.label}</button>)}</div>
 }
-export function NavItem({ label, icon, href, selected }: { label: string; icon: IconName; href: string; selected: boolean }) {
-  return <button type="button" className="ad-nav-item" onClick={() => window.location.assign(href)} aria-current={selected ? "page" : undefined}><Icon name={icon}/>{label}</button>
+export function NavItem({ label, icon, href, selected, onSelect }: { label: string; icon: IconName; href: string; selected: boolean; onSelect?: () => void }) {
+  return <button type="button" className="ad-nav-item" onClick={onSelect ?? (() => window.location.assign(href))} aria-current={selected ? "page" : undefined}><Icon name={icon}/>{label}</button>
 }
 export function Dropdown({ label, trigger, children }: { label: string; trigger: ReactNode; children: ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null)
