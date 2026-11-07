@@ -1,0 +1,106 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  EXPECT_SHA: ${{ github.event.workflow_run.head_sha }}
+
+jobs:
+  revision:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+    steps:
+      - id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          latest=$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)
+          echo "current=$([[ "$latest" == "$EXPECT_SHA" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+  site:
+    needs: revision
+    if: needs.revision.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: gate-build
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/gate-build
+      - run: tar -xf "$RUNNER_TEMP/gate-build/gate-build.tar" apps/site/dist
+      - env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.158.0 pages deploy apps/site/dist --project-name airdesign --branch main --commit-hash "$EXPECT_SHA"
+
+  railway:
+    needs: revision
+    if: needs.revision.outputs.current == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [web, worker]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          SERVICE: ${{ matrix.service }}
+        run: npx --yes @railway/cli@5.71.0 up --service "$SERVICE" --environment production --message "$EXPECT_SHA"
+
+  live:
+    if: ${{ false }}
+    needs: [site, railway]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - run: mkdir -p "$HOME/tmp"
+      - run: npm ci
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npm run verify:live -- --expect-sha "$EXPECT_SHA"
