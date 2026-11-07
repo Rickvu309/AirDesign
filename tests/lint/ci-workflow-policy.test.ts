@@ -176,6 +176,11 @@ it("pins Railway's SSH host key that a fresh runner refused to trust in the firs
   expect(deploymentWorkflowHits(unpinned, railway)).toContain("deploy-ssh-host-key-must-be-pinned")
   expect(deploymentWorkflowHits(deploy.replace("StrictHostKeyChecking yes", "StrictHostKeyChecking accept-new"), railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
   expect(deploymentWorkflowHits(deploy.replace("StrictHostKeyChecking yes", "StrictHostKeyChecking no"), railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  for (const disabled of ["StrictHostKeyChecking  no\\n  StrictHostKeyChecking yes", "StrictHostKeyChecking=off\\n  StrictHostKeyChecking yes", "StrictHostKeyChecking\\tno\\n  StrictHostKeyChecking yes"]) {
+    const broken = deploy.replace("StrictHostKeyChecking yes", disabled)
+    expect(broken).not.toBe(deploy)
+    expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  }
   const knownHosts = readFileSync(".github/ssh/railway-known-hosts", "utf8")
   expect(railwayKnownHostsHits(knownHosts)).toEqual([])
   expect(railwayKnownHostsHits("")).not.toEqual([])

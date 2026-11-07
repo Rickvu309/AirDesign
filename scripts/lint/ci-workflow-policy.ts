@@ -115,7 +115,8 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
   }
   const key = steps.find(step => step.run?.includes('> "$HOME/.ssh/id_ed25519"'))
   if (!key?.run?.includes('install -m 600 .github/ssh/railway-known-hosts "$HOME/.ssh/known_hosts"') || !key.run.includes("StrictHostKeyChecking yes")) hits.push("deploy-ssh-host-key-must-be-pinned")
-  if (/StrictHostKeyChecking[ =](?:no|accept-new|off)\b|accept-new/i.test(source)) hits.push("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
+  const hostKeyValues = [...source.matchAll(/StrictHostKeyChecking(?:[\s=]|\\t)+([^\s\\'"]+)/gi)].map(match => match[1]?.toLowerCase())
+  if (/accept-new/i.test(source) || hostKeyValues.some(value => value !== "yes")) hits.push("deploy-ssh-host-key-must-not-be-trusted-on-first-use")
   if (key?.if !== "always() && steps.railway.outputs.ready == 'true'") hits.push("deploy-ssh-key-must-install-after-pages-failure")
   const live = steps[verify]
   for (const command of ['--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", '--railway-project "$RAILWAY_PROJECT_ID"', "--railway-environment production", "--output-dir"]) {
