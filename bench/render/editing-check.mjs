@@ -74,10 +74,11 @@ try {
     deck.slides[0].elements[0].runs = [{ ...run, text: "Alpha ", color: "#ff0000" }, { ...run, text: "Beta", color: "#0000ff", bold: false }]
     await load(deck)
     await field.focus()
-    await field.evaluate(node => {
+    await field.evaluate(node => new Promise(resolve => {
+      document.addEventListener("selectionchange", () => resolve(), { once: true })
       const text = node.lastChild.firstChild
       document.getSelection().setBaseAndExtent(text, 0, text, 4)
-    })
+    }))
     if (action === "styled-html") await page.evaluate(() => document.execCommand("insertHTML", false, '<span style="color:green;font-size:70px">Pasted</span>'))
     else await field.evaluate((node, type) => {
       const data = new DataTransfer()

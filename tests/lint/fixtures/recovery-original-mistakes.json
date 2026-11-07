@@ -100,5 +100,11 @@
     "reason": "regression-tests-need-committed-fixtures-not-local-git-history",
     "revision": "0e7778f",
     "source": "    const original=execFileSync(\"git\",[\"show\",`f15c6ddac838be912b3f27510037ff5e2fe7d327:${file}`],{encoding:\"utf8\"})"
+  },
+  {
+    "file": "bench/render/editing-check.mjs",
+    "reason": "await-selectionchange-before-command-insertion-in-browser-fixtures",
+    "revision": "8ac9c1e",
+    "source": "    await field.evaluate(node => {\n      const text = node.lastChild.firstChild\n      document.getSelection().setBaseAndExtent(text, 0, text, 4)\n    })"
   }
 ]
