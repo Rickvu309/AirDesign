@@ -12,7 +12,23 @@ export const shapeGeometry={
   octagon:{name:"Octagon",preset:"octagon",path:"M30 0H70L100 30V70L70 100H30L0 70V30Z"},
   chevron:{name:"Chevron",preset:"chevron",path:"M0 0H60L100 50L60 100H0L40 50Z"},
   pill:{name:"Pill",preset:"roundRect",path:"M25 0H75Q100 0 100 25V75Q100 100 75 100H25Q0 100 0 75V25Q0 0 25 0Z"},
-  downTriangle:{name:"Down triangle",preset:"triangle",path:"M0 0H100L50 100Z"}
+  downTriangle:{name:"Down triangle",preset:"triangle",path:"M0 0H100L50 100Z"},
+  flowData:{name:"Data",preset:"flowChartInputOutput",path:"M25 0H100L75 100H0Z"},
+  flowStoredData:{name:"Stored data",preset:"flowChartOnlineStorage",path:"M15 0H100Q70 50 100 100H15Q-15 50 15 0Z"},
+  flowDatabase:{name:"Database",preset:"flowChartMagneticDisk",path:"M5 15C5-5 95-5 95 15V85C95 105 5 105 5 85ZM5 15C5 35 95 35 95 15"},
+  flowDrum:{name:"Magnetic drum",preset:"flowChartMagneticDrum",path:"M15 5H85C105 5 105 95 85 95H15C-5 95-5 5 15 5ZM85 5C65 5 65 95 85 95"},
+  flowOfflineStorage:{name:"Offline storage",preset:"flowChartOfflineStorage",path:"M0 0H100L50 100Z"},
+  flowDisplay:{name:"Display",preset:"flowChartDisplay",path:"M20 5H80Q100 50 80 95H20L0 50Z"},
+  flowDocument:{name:"Document",preset:"flowChartDocument",path:"M5 5H95V80C65 65 35 100 5 80Z"},
+  flowDocuments:{name:"Multiple documents",preset:"flowChartMultidocument",path:"M25 0H100V70H85V15H25ZM10 20H85V85C60 70 35 105 10 85Z"},
+  flowProcess:{name:"Predefined process",preset:"flowChartPredefinedProcess",path:"M0 5H100V95H0ZM20 5V95M80 5V95"},
+  flowPreparation:{name:"Preparation",preset:"flowChartPreparation",path:"M25 0H75L100 50L75 100H25L0 50Z"},
+  flowManualOperation:{name:"Manual operation",preset:"flowChartManualOperation",path:"M0 5H100L75 95H25Z"},
+  flowManualInput:{name:"Manual input",preset:"flowChartManualInput",path:"M0 25L100 0V100H0Z"},
+  flowAlternateProcess:{name:"Alternate process",preset:"flowChartAlternateProcess",path:"M20 0H80Q100 0 100 20V80Q100 100 80 100H20Q0 100 0 80V20Q0 0 20 0Z"},
+  flowInternalStorage:{name:"Internal storage",preset:"flowChartInternalStorage",path:"M0 0H100V100H0ZM0 25H100M25 0V100"},
+  flowSummingJunction:{name:"Summing junction",preset:"flowChartSummingJunction",path:"M50 0A50 50 0 1 1 50 100A50 50 0 1 1 50 0ZM50 0V100M0 50H100"},
+  flowOr:{name:"Or junction",preset:"flowChartOr",path:"M50 0A50 50 0 1 1 50 100A50 50 0 1 1 50 0ZM15 15L85 85M85 15L15 85"}
 } as const
 
 export type ShapeGeometry=keyof typeof shapeGeometry

@@ -1,8 +1,9 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import ts from "typescript"
 import { spawnSync } from "node:child_process"
-for (const name of ["model", "parse", "apply", "index", "jsx", "fixture"]) {
-  const source = await readFile(`packages/deck/src/${name}.ts`, "utf8")
+for (const file of (await readdir("packages/deck/src")).filter(name => name.endsWith(".ts"))) {
+  const name = file.slice(0, -3)
+  const source = await readFile(`packages/deck/src/${file}`, "utf8")
   const result = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.ESNext } })
   await mkdir("packages/deck/dist", { recursive: true })
   await writeFile(`packages/deck/dist/${name}.js`, result.outputText.replaceAll('.ts"', '.js"'))

@@ -1,6 +1,10 @@
 import { spawnSync } from "node:child_process"
 import assert from "node:assert/strict"
 import { fromJsx, toJsx } from "../packages/deck/dist/jsx.js"
+import { isShapeGeometry, shapeGeometry } from "../packages/deck/dist/index.js"
+assert.ok(Object.keys(shapeGeometry).length > 0)
+for (const geometry of Object.keys(shapeGeometry)) assert.equal(isShapeGeometry(geometry), true)
+assert.equal(isShapeGeometry("unsupported"), false)
 const { fixtureDeck } = await import("../packages/deck/src/fixture.ts")
 const deck = fixtureDeck(3)
 const adapter = { toJsx: value => ({ type: "Deck", props: { value } }), fromJsx: node => node.props.value }
