@@ -1,6 +1,7 @@
 import {it,expect} from "vitest"
 import {spawn} from "node:child_process"
 import {once} from "node:events"
+import {createInterface} from "node:readline"
 import {mkdtemp,mkdir,cp,symlink,readFile,writeFile,rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
@@ -26,10 +27,11 @@ it("erases a PDF lease and its process group after SIGKILL during page.pdf and r
  await deliverExport({claim:async()=>recovery?null:job,active:async()=>true,complete:async()=>true,fail:async()=>{if(recovery&&existsSync(root+'/'+job.id+'/'+job.lease))throw new Error('ack-before-cleanup')}},root);watcher.close();if(recovery)process.stdout.write('recovered\\n');`
  const env={...process.env,AIRDESIGN_ISOLATION:"container",PLAYWRIGHT_BROWSERS_PATH:process.env.PLAYWRIGHT_BROWSERS_PATH ?? path.join(os.homedir(),".cache/ms-playwright")}
  const supervisor=spawn(process.execPath,["--input-type=module","-e",program],{env,stdio:["ignore","pipe","pipe"]})
+ const supervisorLines=createInterface({input:supervisor.stdout})
  let stderr="";supervisor.stderr.on("data",chunk=>{stderr=(stderr+chunk).slice(-3000)})
  let pid:number|null=null
  try{
-  const [marker]=await once(supervisor.stdout,"data",{signal:AbortSignal.timeout(25000)}).catch(error=>{throw new Error(String(error)+stderr)})
+  const [marker]=await once(supervisorLines,"line",{signal:AbortSignal.timeout(25000)}).catch(error=>{throw new Error(String(error)+stderr)})
   expect(marker.toString().trim()).toBe("pdf-active")
   const exit=once(supervisor,"exit");supervisor.kill("SIGKILL");await exit
   const journal=new RemoteJournal(scratch)
@@ -39,13 +41,14 @@ it("erases a PDF lease and its process group after SIGKILL during page.pdf and r
   pid=ownership.pid
   expect(await readFile(path.join(ownership.directory,"input.json"),"utf8")).toContain(job.id)
   const restarted=spawn(process.execPath,["--input-type=module","-e",program,"recover"],{env,stdio:["ignore","pipe","pipe"]})
+  const restartedLines=createInterface({input:restarted.stdout})
   const restartedExit=once(restarted,"exit")
-  const [recovered]=await once(restarted.stdout,"data",{signal:AbortSignal.timeout(10000)})
+  const [recovered]=await once(restartedLines,"line",{signal:AbortSignal.timeout(10000)})
   expect(recovered.toString().trim()).toBe("recovered")
   expect((await restartedExit)[0]).toBe(0)
   await expect(readFile(path.join(ownership.directory,"input.json"))).rejects.toThrow()
   const after=new RemoteJournal(scratch);try{expect(after.entries()).toEqual([])}finally{after.close()}
   const stat=await readFile(`/proc/${pid}/stat`,"utf8").catch(()=>"")
   expect(stat===""||stat.split(") ")[1]?.startsWith("Z")).toBe(true)
- }finally{supervisor.kill("SIGKILL");if(pid)try{process.kill(-pid,"SIGKILL")}catch{};await rm(root,{recursive:true,force:true})}
+ }finally{supervisorLines.close();supervisor.kill("SIGKILL");if(pid)try{process.kill(-pid,"SIGKILL")}catch{};await rm(root,{recursive:true,force:true})}
 },45000)

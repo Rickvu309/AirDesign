@@ -11,7 +11,7 @@ export function editableRuns(root: HTMLElement, styles: [Run, ...Run[]], fallbac
     if (node.nodeType === 3) { append(node.textContent ?? "", style); return }
     if (!(node instanceof root.ownerDocument.defaultView!.HTMLElement)) return
     const index = node.dataset.runStyle
-    const inherited = styles.find(run => JSON.stringify({ ...run, text: "" }) === index) ?? style
+    const inherited = styles.find(run => JSON.stringify({ ...run, text: "" }) === index) ?? fallback
     if (node.tagName === "BR") { if (node.nextSibling || (node.previousSibling && node.previousSibling.nodeName !== "BR")) append("\n", inherited); return }
     const siblings = [...node.parentNode!.childNodes].filter(child => child.nodeName === "DIV" || child.nodeName === "P" || child.nodeName === "BR" || Boolean(child.textContent))
     const previous = siblings[siblings.indexOf(node) - 1]

@@ -2,7 +2,7 @@ import { parse } from "yaml"
 import { z } from "zod"
 import { unitShards, verificationShards } from "../gate/plan.ts"
 
-const stepSchema = z.object({ run: z.string().optional(), uses: z.string().optional(), if: z.string().optional() })
+const stepSchema = z.object({ run: z.string().optional(), uses: z.string().optional(), if: z.string().optional(), with: z.object({ "fetch-depth": z.number().optional() }).optional() })
 const jobSchema = z.object({
   steps: z.array(stepSchema).optional(),
   if: z.string().optional(),
@@ -15,6 +15,15 @@ export function ciCoverageHits(scripts: Record<string, string>, source: string, 
   const workflow = workflowSchema.parse(parse(source))
   const jobs = workflow.jobs
   const hits: string[] = []
+  const office = jobs.verification?.steps?.find(step => step.if === "matrix.libreoffice")?.run ?? ""
+  if (!office.includes("https://archive.ubuntu.com/ubuntu/") || !office.includes("Acquire::https::Timeout=30")) hits.push("ci-office-downloads-need-direct-mirror-and-bounded-network-waits")
+  const artifact = jobs.setup?.steps?.find(step => step.run?.includes('tar -cf "$RUNNER_TEMP/gate-build.tar"'))?.run ?? ""
+  for (const workspace of ["apps", "packages"]) {
+    if (!artifact.includes(`${workspace}/*/node_modules`)) hits.push(`ci-artifact-missing-workspace-dependencies: ${workspace}`)
+  }
+  for (const name of ["unit", "verification"]) {
+    if (!jobs[name]?.steps?.some(step => step.uses?.startsWith("actions/checkout@") && step.with?.["fetch-depth"] === 0)) hits.push(`ci-regression-history-unavailable: ${name}`)
+  }
   const covered = verificationShards.flatMap(group => [...group.scripts])
   for (const name of Object.keys(scripts).filter(name => /^verify:pr-\d+$/.test(name))) {
     if (covered.filter(value => value === name).length !== 1) hits.push(`ci-verification-not-covered: ${name}`)
