@@ -1,12 +1,16 @@
 import {readFile} from "node:fs/promises"
 import {expect,it} from "vitest"
-import {fixtureContentHash} from "./registry.ts"
+import {fixtureContentHash,readRegistry,validateIdentity} from "./registry.ts"
 import {textRoleSizes} from "./dom-assertions.ts"
 
 it("keeps every committed fixture receipt current",async()=>{
   const lock=JSON.parse(await readFile("bench/design-parity/scenario-lock.json","utf8"))
   expect(lock).toHaveLength(52)
   for(const entry of lock)expect(entry.fixtureContentHash,entry.code).toBe(fixtureContentHash())
+})
+
+it("keeps every committed scenario identity aligned with its registry",async()=>{
+  await validateIdentity(await readRegistry())
 })
 
 it("derives every traced role size and weight from its design generator classes",async()=>{
