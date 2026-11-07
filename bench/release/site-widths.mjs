@@ -19,7 +19,8 @@ try{
  for(const width of widths){
   const page=await browser.newPage({viewport:{width,height:900}})
   for(const route of routes){
-   await page.goto(origin+route,{waitUntil:"load"})
+   const response=await page.goto(origin+route,{waitUntil:"load"})
+   assert.equal(response?.status(),200,`${route} did not load`)
    await page.evaluate(()=>document.fonts.ready)
    const scrollWidth=await page.evaluate(()=>document.documentElement.scrollWidth)
    if(scrollWidth>width)overflows.push({route,width,scrollWidth})
