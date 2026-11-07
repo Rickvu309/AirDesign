@@ -1,3 +1,4 @@
+import { ciCoverageHits, verifierBuildHits, workerLibraryHits } from "./lint/ci-workflow-policy.ts"
 import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
@@ -26,10 +27,12 @@ const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css", ".html",
 const skipped = new Set(["node_modules", "dist", "coverage", "docs", "fixtures"])
 
 const files = await collect(repoRoot)
-const failures: string[] = []
+const failures: string[] = ciCoverageHits(JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8")).scripts, await readFile(path.join(repoRoot, ".github/workflows/ci.yml"), "utf8"), await readFile(path.join(repoRoot, "vitest.config.ts"), "utf8"))
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for (const hit of workerLibraryHits(file, source)) failures.push(`${file}: ${hit}`)
+  for (const hit of verifierBuildHits(file, source)) failures.push(`${file}: ${hit}`)
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
