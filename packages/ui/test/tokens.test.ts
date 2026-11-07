@@ -4,7 +4,29 @@ import { describe, expect, it } from "vitest"
 
 const root = path.resolve("packages/ui")
 
+function luminance(hex: string): number {
+  const channels = [1, 3, 5].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255).map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4)
+  return (channels[0] ?? 0) * 0.2126 + (channels[1] ?? 0) * 0.7152 + (channels[2] ?? 0) * 0.0722
+}
+
 describe("tokens", () => {
+  it("keeps the signature button label at WCAG AA against both shared gradient stops", async () => {
+    const css = await readFile(path.join(root, "src/tokens/tokens.css"), "utf8")
+    const color = (name: string) => {
+      const value = css.match(new RegExp(`--${name}: (#[a-f0-9]{6});`, "i"))?.[1]
+      if (!value) throw new Error(`Missing color token: ${name}`)
+      return value
+    }
+    const label = luminance(color("primary-foreground"))
+    for (const stop of ["signature-top", "signature-bottom"]) {
+      const background = luminance(color(stop))
+      expect((Math.max(label, background) + 0.05) / (Math.min(label, background) + 0.05)).toBeGreaterThanOrEqual(4.5)
+    }
+    expect(css).toMatch(/\.ad-button-primary\s*\{[^}]*background: var\(--signature-gradient\)/)
+    for (const file of ["apps/site/src/site.css", "apps/studio/src/editor/workspace.css"]) {
+      expect(await readFile(file, "utf8")).toContain("background:var(--signature-gradient)".replace("background:", file.includes("site") ? "background: " : "background:"))
+    }
+  })
   it("keeps light semantic tokens and reduced motion in one stylesheet", async () => {
     const css = await readFile(path.join(root, "src/tokens/tokens.css"), "utf8")
     expect(css).toContain("--motion-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1)")
