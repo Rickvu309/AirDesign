@@ -57,7 +57,7 @@ it("reclaims expired leases without accepting a stale result and bounds crash re
     const entry=await store.catalog.create(person,"lease","Lease","",fixtureDeck(2))
     const job=await store.exports.submit(person,"lease",entry.id,{format:"pdf",slides:[],timing:"now",expectedSeq:0,allowIssues:false})
     const first=await store.exports.claim();if(!first)throw new Error("claim-required")
-    expect(first.deadline-now).toBe(2000)
+    expect(first.deadline-now).toBe(60000)
     now=first.deadline
     expect(await store.exports.complete(job.id,first.lease,Buffer.from("late"),{})).toBe(false)
     const second=await store.exports.claim();if(!second)throw new Error("claim-required")
