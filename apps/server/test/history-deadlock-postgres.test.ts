@@ -49,7 +49,7 @@ it("lets a save finish while a worker initializes history on another PostgreSQL 
     const original=pg.Client.prototype.query
     const observed=vi.spyOn(pg.Client.prototype,"query")
     observed.mockImplementation(function(this:pg.Client,...args:Parameters<typeof original>){
-      const result=Reflect.apply(original,this,args)
+      const result:unknown=Reflect.apply(original,this,args)
       if(result instanceof Promise)void result.catch((error:unknown)=>{if(error && typeof error==="object" && "code" in error && error.code==="40P01")deadlocks++})
       const query=args[0]
       if(typeof query==="string" && (query.startsWith("ALTER TABLE editing_deck") || query.startsWith("LOCK TABLE editing_deck")))unblock?.()
