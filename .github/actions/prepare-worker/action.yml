@@ -1,12 +1,12 @@
 name: Prepare isolated worker tests
-description: Provide the production systemd and Bubblewrap worker driver
+description: Provide the production systemd, Bubblewrap and container worker drivers
 runs:
   using: composite
   steps:
     - shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get install -y --no-install-recommends bubblewrap dbus-user-session
+        sudo apt-get install -y --no-install-recommends bubblewrap dbus-user-session tini
         sudo install -m 0755 "$(command -v node)" /usr/bin/node
         sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
         sudo systemctl start "user@$(id -u).service"
