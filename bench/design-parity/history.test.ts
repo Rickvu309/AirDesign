@@ -23,7 +23,9 @@ it("refuses to give a fixture identity to a repository outside the test temp dir
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
+  const ci=process.env.CI
   try{
+    process.env.CI="false"
     initFixtureRepo(cwd,git)
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     const entries=await readRegistry(),entry=entries[0]!
@@ -47,7 +49,7 @@ it("keeps the merge-base ceiling after an unauthorized increase is committed",as
       expect((await readBudgetBaseline(cwd))[entry.code]).toBe(0.1)
     }finally{if(previous===undefined)delete process.env.DESIGN_PARITY_BASE;else process.env.DESIGN_PARITY_BASE=previous}
     await expect(readBudgetBaseline(cwd,"missing-base")).rejects.toThrow()
-  }finally{await rm(cwd,{recursive:true,force:true})}
+  }finally{if(ci===undefined)delete process.env.CI;else process.env.CI=ci;await rm(cwd,{recursive:true,force:true})}
 })
 
 it("requires identity change reasons and refuses coverage loss even with a reason",async()=>{
