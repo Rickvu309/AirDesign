@@ -51,7 +51,7 @@ switch (command) {
   case "unit":
     await prepareTests()
     if (!unitShards.some(value => value === shard)) throw new Error(`Unknown unit shard: ${shard}`)
-    npm(["test", "--", `--shard=${shard}`])
+    npm(["test", "--", `--shard=${shard}`, "--reporter=verbose"])
     break
   case "verify":
     await prepareTests()

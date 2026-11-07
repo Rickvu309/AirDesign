@@ -9,7 +9,7 @@ export default defineRailway(() => {
   const workerVolume = volume("worker-volume", { alerts: volumeAlerts, allowOnlineResize: true, region, sizeMB: 5000 });
   const webVolume = volume("web-volume", { alerts: volumeAlerts, allowOnlineResize: true, region, sizeMB: 5000 });
   const databaseVolume = volume("postgres-volume-7MuZ", { alerts: volumeAlerts, allowOnlineResize: true, region, sizeMB: 5000 });
-  const source = github("Rickvu309/AirDesign", { branch: "main", checkSuites: true });
+  const source = github("Rickvu309/AirDesign", { branch: "main", checkSuites: false });
   const build = { buildEnvironment: "V3", builder: "DOCKERFILE", dockerfilePath: "Dockerfile" } as const;
 
   const web = service("web", {

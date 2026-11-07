@@ -1,86 +1,69 @@
 name: Deploy
 
 on:
-  deployment_status:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-${{ github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'airdesign / production' && github.event.deployment.creator.login == 'railway-app[bot]' && 'production' || github.run_id }}
-  cancel-in-progress: true
+  group: production
+  cancel-in-progress: false
 
 env:
-  EXPECT_SHA: ${{ github.event.deployment.sha }}
+  EXPECT_SHA: ${{ github.event.workflow_run.head_sha }}
 
 jobs:
-  revision:
+  production:
     if: >-
-      github.event.deployment_status.state == 'success' &&
-      github.event.deployment.environment == 'airdesign / production' &&
-      github.event.deployment.creator.login == 'railway-app[bot]'
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    outputs:
-      current: ${{ steps.current.outputs.current }}
-    steps:
-      - id: current
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          latest=$(gh api "repos/$REPOSITORY/commits/main" --jq .sha)
-          echo "current=$([[ "$latest" == "$EXPECT_SHA" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-
-  site:
-    needs: revision
-    if: needs.revision.outputs.current == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    environment: production
+    timeout-minutes: 60
+    environment: airdesign / production
     env:
-      AIRDESIGN_BUILD_SHA: ${{ github.event.deployment.sha }}
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          ref: ${{ github.event.deployment.sha }}
-          persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: '24'
-          cache: npm
-      - run: npm ci
-      - run: npm run build --workspace @airdesign/site
-      - env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler@4.158.0 pages deploy apps/site/dist --project-name airdesign --branch main --commit-hash "$EXPECT_SHA"
-
-  live:
-    needs: site
-    runs-on: ubuntu-24.04
-    timeout-minutes: 35
-    environment: production
-    env:
+      AIRDESIGN_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
       AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          ref: ${{ github.event.deployment.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
           cache: npm
-      - run: mkdir -p "$HOME/tmp"
+      - run: mkdir -p "$HOME/tmp/airdesign-live-verify/receipt"
       - run: npm ci
+      - run: npm run build --workspace @airdesign/site
+      - run: npm install --prefix "$HOME/tmp/release-tools" --no-save wrangler@4.158.0 @railway/cli@5.71.0
+      - run: echo "$HOME/tmp/release-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npx --no-install playwright install --with-deps chromium
       - run: |
           printf '%s\n' 'https://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt > /dev/null
           sudo apt-get update -qq
           sudo apt-get -o Acquire::Retries=3 -o Acquire::https::Timeout=30 install -y --no-install-recommends libreoffice-impress
-      - run: npm install --global @railway/cli@5.71.0
-      - env:
+      - name: Deploy both Railway services and await their commit
+        id: railway
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+        run: node scripts/release/railway-production.ts
+      - name: Publish Pages
+        if: steps.railway.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: '"$HOME/tmp/release-tools/node_modules/.bin/wrangler" pages deploy apps/site/dist --project-name airdesign --branch main --commit-hash "$EXPECT_SHA"'
+      - name: Link Railway SSH
+        if: always() && steps.railway.outputs.ready == 'true'
+        env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
           RAILWAY_SSH_PRIVATE_KEY: ${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}
           RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
@@ -89,15 +72,15 @@ jobs:
           (umask 077; printf '%s\n' "$RAILWAY_SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519")
           ssh-keygen -y -f "$HOME/.ssh/id_ed25519" > "$HOME/.ssh/id_ed25519.pub"
           railway link --project "$RAILWAY_PROJECT_ID" --environment production --service web
-      - name: Wait for Railway commit
-        run: node scripts/live/wait-for-deploy.ts "$EXPECT_SHA"
-      - env:
+      - name: Verify live
+        if: always() && steps.railway.outputs.ready == 'true'
+        env:
           RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
         run: npm run verify:live -- --expect-sha "$EXPECT_SHA" --smoke-email smoke@airdesign.app --railway --output-dir "$HOME/tmp/airdesign-live-verify/receipt"
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: live-verification-${{ github.event.deployment.sha }}
+          name: live-verification-${{ github.event.workflow_run.head_sha }}
           path: ~/tmp/airdesign-live-verify/receipt
           if-no-files-found: warn
           retention-days: 14

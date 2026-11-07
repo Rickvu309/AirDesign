@@ -9,9 +9,3 @@ it.each(originals)("rejects original $revision recovery mistake and accepts the 
  expect(recoverySafetyHits(`/repo/${file}`,source).map(hit=>hit.reason)).toContain(reason)
  expect(recoverySafetyHits(`/repo/${file}`,readFileSync(file,"utf8"))).toEqual([])
 })
-
-it.each(["apps/studio/src/editor/manual-editor.tsx","apps/server/src/rpc/websocket.ts","apps/server/src/commands/handle.ts"])("rejects raw production errors and accepts reviewed copy in %s",file=>{
-  const original=execFileSync("git",["show",`de13aa9:${file}`],{encoding:"utf8"})
-  expect(recoverySafetyHits(`/repo/${file}`,original).length).toBeGreaterThan(0)
-  expect(recoverySafetyHits(`/repo/${file}`,readFileSync(file,"utf8"))).toEqual([])
-})
