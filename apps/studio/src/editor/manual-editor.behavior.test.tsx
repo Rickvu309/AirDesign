@@ -50,6 +50,20 @@ it("AD-15 pastes clipboard slides and the toast undoes only that paste after a l
     await act(async()=>options.action.onClick());await ui.render();expect(ui.commands.at(-1)).toMatchObject({kind:"undo",target:paste});expect(ui.sync.deck.slides).toHaveLength(3)
   }finally{await ui.close()}
 })
+it("keeps grid previews static and enables text editing in single-slide view",async()=>{
+  const ui=await editor();try{
+    expect(ui.container.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+    await ui.click("Single slide view");expect(ui.container.querySelector('.editor-slide:not([hidden]) [contenteditable="true"]')).not.toBeNull()
+    await ui.click("Grid view");expect(ui.container.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+  }finally{await ui.close()}
+})
+it("opens and closes the change history from the deck menu",async()=>{
+  const ui=await editor();try{
+    await ui.click("Single slide view");await ui.click("Strategy⌄");await ui.click("Review changes")
+    expect(ui.container.querySelector<HTMLDetailsElement>(".editor-changes")?.open).toBe(true)
+    await ui.click("Strategy⌄");await ui.click("Review changes");expect(ui.container.querySelector<HTMLDetailsElement>(".editor-changes")?.open).toBe(false)
+  }finally{await ui.close()}
+})
 it("AD-16 preserves keyboard undo and redo after deleting the focused slide",async()=>{
   const ui=await editor();try{
     await ui.click("Slide 1");ui.button("Slide 1").focus();await act(async()=>ui.button("Slide 1").dispatchEvent(new KeyboardEvent("keydown",{key:"Delete",bubbles:true})));await ui.render();expect(ui.sync.deck.slides).toHaveLength(1)

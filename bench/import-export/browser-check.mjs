@@ -39,6 +39,7 @@ export async function runImportExport(browser,stack,output) {
     await link.click();await page.locator('[data-sync-state="saved"]').waitFor()
     await expect(page.locator(".slide-disclosure").first()).toContainText("Kept original")
     await expect(page.locator("[data-font-warning]").first()).toContainText("Missing fonts")
+    await page.getByRole("button",{name:"Single slide view",exact:true}).click()
     const title=page.getByRole("textbox",{name:"Text s0t0",exact:true})
     await title.fill("Edited imported title")
     await page.locator('[data-sync-state="saved"]').waitFor()
