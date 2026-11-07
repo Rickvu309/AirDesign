@@ -6,10 +6,11 @@ import os from "node:os"
 import {execFileSync} from "node:child_process"
 import {releaseClaimHits,retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 async function walk(root){const results=[];for(const item of await readdir(root,{withFileTypes:true})){const file=path.join(root,item.name);if(item.isDirectory())results.push(...await walk(file));else results.push(file)}return results}
+const capabilities=await readFile("docs/release/capabilities.md","utf8")
 const claims=JSON.parse(renderSiteTerms(await readFile("apps/site/content/claims.json","utf8"))).claims
 const root="apps/site/dist",files=await walk(root),links=[]
 for(const file of files.filter(file=>/\.(html|txt)$/.test(file))){
- const source=await readFile(file,"utf8");assert.deepEqual(releaseClaimHits(source,claims),[],file)
+ const source=await readFile(file,"utf8");assert.deepEqual(releaseClaimHits(source,claims,capabilities),[],file)
  for(const match of source.matchAll(/(?:href|src)="([^"#]+)(?:#[^"]*)?"/g)){
   const href=match[1];if(!href.startsWith("/"))continue
   if(href.split("?")[0]==="/studio"){links.push({href,status:"Studio deployment route; discovery intent covered by behavior test"});continue}

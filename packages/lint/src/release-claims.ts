@@ -1,12 +1,20 @@
-export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"blocked";gate:string})
+export type ExternalGate = "X01" | "X02" | "X03" | "X04" | "X05" | "X06"
+export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"external-passed";gate:ExternalGate;receipt:string}|{kind:"blocked";gate:string})
+export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-passed"}>,capabilities:string):boolean {
+ const receipt=`P09/external/${claim.gate}/results/report.md`
+ return claim.receipt===receipt && capabilities.split("\n").some(line=>{
+  const cells=line.split("|").map(cell=>cell.trim())
+  return cells[1]===claim.gate && cells[2]==="passed" && cells[3]===receipt
+ })
+}
 export function publicCopy(source:string):string[]{
  const clean=source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
  const texts=clean.includes("<") ? [...clean.matchAll(/>([^<>]+)</g)].map(match=>match[1]!) : clean.split("\n")
  const attributes=[...clean.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!).filter(text=>!text.includes("width=device-width"))
  return [...texts,...attributes].map(text=>text.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim()).filter(Boolean)
 }
-export function releaseClaimHits(source:string,claims:readonly PublicClaim[]=[]):string[]{
- const registered=new Set(claims.filter(claim=>claim.id && (claim.kind==="proven" ? /^P0[1-9]\/report\.md$/.test(claim.receipt) : /^X0[1-6]$/.test(claim.gate) && /pending|not yet|await|not available|unverified|blocked/i.test(claim.text))).map(claim=>claim.text))
+export function releaseClaimHits(source:string,claims:readonly PublicClaim[]=[],capabilities=""):string[]{
+ const registered=new Set(claims.filter(claim=>claim.id && (claim.kind==="external-passed" ? passedExternalClaim(claim,capabilities) : claim.kind==="proven" ? /^P0[1-9]\/report\.md$/.test(claim.receipt) : /^X0[1-6]$/.test(claim.gate) && /pending|not yet|await|not available|unverified|blocked/i.test(claim.text))).map(claim=>claim.text))
  return [...retiredRouteHits(source),...publicCopy(source).filter(text=>!registered.has(text)).map(text=>`unregistered-public-copy:${text}`)]
 }
 
