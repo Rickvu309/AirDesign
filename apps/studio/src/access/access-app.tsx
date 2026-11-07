@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useEffect, useEffectEvent, useState } from "react"
+import { flushSync } from "react-dom"
 import { AlertDialog, Button, CodeEntry, TextField, copy, fillCopy, toast } from "@airdesign/ui"
 import type { AccessClient, IntentKind } from "@airdesign/access/client"
 import { readAccessLinkToken } from "@airdesign/access/client"
@@ -9,7 +10,7 @@ import "../settings/settings.css"
 import { Workspace } from "../decks/workspace.tsx"
 import { StudioShell } from "../shell/studio-shell.tsx"
 
-type Screen = "checking" | "signin" | "check" | "expired" | "home"
+type Screen = "revalidating" | "checking" | "signin" | "check" | "expired" | "home"
 type LinkStatus = "link-expired" | "link-used"
 
 const intentCopy: Record<IntentKind, "shell.home" | "home.new_deck" | "home.import" | "home.connect_agent"> = {
@@ -63,6 +64,64 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const [resendAvailableAt, setResendAvailableAt] = useState(0)
   const [now, setNow] = useState(() => Date.now())
   const [confirmSignOut, setConfirmSignOut] = useState(false)
+
+  const concealPrivateState = useEffectEvent(() => {
+    if (screen !== "home" && screen !== "checking" && screen !== "revalidating") return false
+    flushSync(() => {
+      setScreen("revalidating")
+      setConfirmSignOut(false)
+    })
+    return true
+  })
+
+  useEffect(() => {
+    let generation = 0
+    const conceal = () => {
+      generation += 1
+      return concealPrivateState()
+    }
+    const revalidate = async (concealFirst: boolean) => {
+      if (concealFirst && !conceal()) return
+      if (!concealFirst) generation += 1
+      const current = generation
+      try {
+        const result = await client.session()
+        if (current !== generation) return
+        if (result.status === "signed-in") {
+          if (!concealFirst) return
+          setKind(result.kind ?? "home")
+          setIntentToken(result.intentToken)
+          setScreen("home")
+          return
+        }
+      } catch {
+        if (current !== generation || !concealFirst) return
+      }
+      if (!concealFirst && !concealPrivateState()) return
+      history.replaceState(null, "", "/")
+      setEmail("")
+      setCode("")
+      setIntentToken(null)
+      setKind("home")
+      setRoute(studioRoute)
+      setScreen("signin")
+    }
+    const restore = (event: PageTransitionEvent) => {
+      if (event.persisted) void revalidate(true)
+    }
+    const visibility = () => {
+      if (document.visibilityState === "visible") void revalidate(false)
+    }
+    window.addEventListener("pagehide", conceal)
+    window.addEventListener("pageshow", restore)
+    document.addEventListener("visibilitychange", visibility)
+    return () => {
+      generation += 1
+      window.removeEventListener("pagehide", conceal)
+      window.removeEventListener("pageshow", restore)
+      document.removeEventListener("visibilitychange", visibility)
+    }
+  }, [client])
 
   const enterWorkspace = (nextKind: IntentKind, nextIntent: string, handoffToken: string | null) => {
     setKind(nextKind)
@@ -128,7 +187,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   }, [client, route])
 
   useEffect(() => {
-    if (route.kind !== "studio" || screen !== "checking") {
+    if (route.kind !== "studio" || screen !== "checking" || document.visibilityState === "hidden") {
       return
     }
     let cancel = false
@@ -230,7 +289,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     setScreen("signin")
   }
 
-  if (screen === "checking") {
+  if (screen === "checking" || screen === "revalidating") {
     return <main className="ad-sign-in" data-screen="checking" />
   }
 

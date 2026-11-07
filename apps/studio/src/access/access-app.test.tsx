@@ -21,6 +21,93 @@ afterEach(() => {
 })
 
 describe("studio access", () => {
+  it("preserves the email sign-in flow when switching tabs", async () => {
+    await render(<AccessApp client={fakeClient()} />)
+    const field = document.querySelector<HTMLInputElement>('input[type="email"]')
+    await act(async () => {
+      setValue(field, "ada@example.com")
+      document.dispatchEvent(new Event("visibilitychange"))
+    })
+    expect(document.querySelector('input[type="email"]')).toBe(field)
+    expect(field?.value).toBe("ada@example.com")
+    expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
+  })
+
+  it("conceals private content before the page enters the back/forward cache", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    expect(document.querySelector(".ad-shell")).not.toBeNull()
+    await act(async () => { window.dispatchEvent(new Event("pagehide")) })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(document.querySelector('[data-screen="checking"]')).not.toBeNull()
+  })
+
+  it("removes private data before pageshow session validation finishes", async () => {
+    const client = fakeClient({signedIn:true})
+    await render(<AccessApp client={client} initialScreen="checking" />)
+    await act(flush)
+    expect(document.querySelector(".ad-shell")).not.toBeNull()
+    let finish: (value: Awaited<ReturnType<AccessClient["session"]>>) => void = () => { throw new Error("session-not-requested") }
+    client.session = () => new Promise(resolve => { finish = resolve })
+    await act(async () => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
+    })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(document.querySelector('[data-screen="checking"]')).not.toBeNull()
+    await act(async () => { finish({status:"signed-out"}); await flush() })
+    expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(location.pathname).toBe("/")
+  })
+
+  it("keeps the signed-in workspace mounted across tab switches while the session is valid", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    const shell = document.querySelector(".ad-shell")
+    expect(shell).not.toBeNull()
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); await flush() })
+    expect(document.querySelector(".ad-shell")).toBe(shell)
+  })
+
+  it("clears private data on tab return when the session ended elsewhere", async () => {
+    const client = fakeClient({signedIn:true})
+    await render(<AccessApp client={client} initialScreen="checking" />)
+    await act(flush)
+    expect(document.querySelector(".ad-shell")).not.toBeNull()
+    client.session = async () => ({status:"signed-out"})
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); await flush() })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
+    expect(location.pathname).toBe("/")
+  })
+
+  it("keeps a valid session on the restored private route", async () => {
+    history.replaceState(null, "", "/settings/agents")
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    await act(async () => { window.dispatchEvent(new Event("pagehide")) })
+    await act(async () => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
+      await flush()
+    })
+    expect(document.body.textContent).toContain("Connected agents")
+    expect(location.pathname).toBe("/settings/agents")
+    expect(document.querySelector(".ad-shell")).not.toBeNull()
+  })
+
+  it("keeps private content concealed when session validation fails", async () => {
+    const client = fakeClient({signedIn:true})
+    await render(<AccessApp client={client} initialScreen="checking" />)
+    await act(flush)
+    client.session = async () => { throw new Error("offline") }
+    await act(async () => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
+      await flush()
+    })
+    expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
+    expect(document.querySelector(".ad-shell")).toBeNull()
+  })
+
   it("keeps the discovery import action over a saved home session", async () => {
     await render(<AccessApp client={fakeClient({signedIn:true,kind:"home"})} initialScreen="checking" initialKind="import" />)
     await act(flush)
