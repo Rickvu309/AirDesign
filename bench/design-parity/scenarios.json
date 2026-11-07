@@ -1,0 +1,1112 @@
+[
+  {
+    "surface": "site",
+    "route": "/",
+    "code": "S11.01",
+    "design": "docs/design/v0.1/screens/S11.01-discover-landing-default.png",
+    "viewport": {
+      "width": 1440,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.057688,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "site",
+    "route": "/pricing/",
+    "code": "S12.01",
+    "design": "docs/design/v0.1/screens/S12.01-discover-pricing-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.046018,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S21.01",
+    "design": "docs/design/v0.1/screens/S21.01-access-sign-in-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.027779,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S22.01",
+    "design": "docs/design/v0.1/screens/S22.01-access-verify-email-check-inbox.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.009769,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "fill",
+        "label": "Email",
+        "value": "ada@halden.com"
+      },
+      {
+        "kind": "click",
+        "name": "Continue"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/access/link?token=expired-design-parity-token",
+    "code": "S29.01",
+    "design": "docs/design/v0.1/screens/S29.01-access-errors-link-expired.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.018286,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.01",
+    "design": "docs/design/v0.1/screens/S31.01-decks-browse-empty-first-visit.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "empty-account",
+    "budget": 0.02448,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.02",
+    "design": "docs/design/v0.1/screens/S31.02-decks-browse-recents-grid.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.037443,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.03",
+    "design": "docs/design/v0.1/screens/S31.03-decks-browse-recents-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.041261,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.04",
+    "design": "docs/design/v0.1/screens/S31.04-decks-browse-all-decks-grid.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.038151,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.05",
+    "design": "docs/design/v0.1/screens/S31.05-decks-browse-all-decks-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.041774,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      },
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.01",
+    "design": "docs/design/v0.1/screens/S32.01-decks-new-deck-menu-open.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.038194,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "+ New deck"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.02",
+    "design": "docs/design/v0.1/screens/S32.02-decks-new-deck-importing.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.04017,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "queued"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.03",
+    "design": "docs/design/v0.1/screens/S32.03-decks-new-deck-import-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.041705,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "failed"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S33.01",
+    "design": "docs/design/v0.1/screens/S33.01-decks-trash-deck-moved-toast.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.040069,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Move to Trash"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Deck moved to Trash"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/trash",
+    "code": "S33.02",
+    "design": "docs/design/v0.1/screens/S33.02-decks-trash-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "trash-with-items",
+    "budget": 0.02683,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/trash",
+    "code": "S33.03",
+    "design": "docs/design/v0.1/screens/S33.03-decks-trash-empty-trash-confirm.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "trash-with-items",
+    "budget": 0.036659,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Empty Trash"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.01",
+    "design": "docs/design/v0.1/screens/S41.01-editor-grid-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.249592,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.02",
+    "design": "docs/design/v0.1/screens/S41.02-editor-grid-add-slide-hover.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.249835,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "hover",
+        "name": "+ New slide"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.03",
+    "design": "docs/design/v0.1/screens/S41.03-editor-grid-add-slide-hold.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.04",
+    "design": "docs/design/v0.1/screens/S41.04-editor-grid-slides-pasted.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.01",
+    "design": "docs/design/v0.1/screens/S42.01-editor-agent-working.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.169428,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "working"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.02",
+    "design": "docs/design/v0.1/screens/S42.02-editor-agent-run-complete.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.176672,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.03",
+    "design": "docs/design/v0.1/screens/S42.03-editor-agent-own-agent-editing.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.181617,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "remote"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.04",
+    "design": "docs/design/v0.1/screens/S42.04-editor-agent-long-message.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.173721,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "long-message"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.01",
+    "design": "docs/design/v0.1/screens/S43.01-editor-tools-template-picker.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.174572,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      },
+      {
+        "kind": "click",
+        "name": "Choose template"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.02",
+    "design": "docs/design/v0.1/screens/S43.02-editor-tools-design-panel.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.175701,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.03",
+    "design": "docs/design/v0.1/screens/S43.03-editor-tools-images.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.219073,
+    "budgetRaisedBecause": "Initial baseline readiness correction: await the real image quota response (512 MB) instead of capturing the transient zero quota; no product or design changed.",
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Images"
+      },
+      {
+        "kind": "wait-text",
+        "text": "0.0 MB of 512 MB used"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.04",
+    "design": "docs/design/v0.1/screens/S43.04-editor-tools-shapes.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "No Shapes tool or shapes browser exists in ManualEditor."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.05",
+    "design": "docs/design/v0.1/screens/S43.05-editor-tools-shapes-expanded.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "No expanded shapes browser exists in ManualEditor."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.06",
+    "design": "docs/design/v0.1/screens/S43.06-editor-tools-text.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "No Text toolbar panel exists in ManualEditor."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.07",
+    "design": "docs/design/v0.1/screens/S43.07-editor-tools-actions.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S49.01",
+    "design": "docs/design/v0.1/screens/S49.01-editor-errors-agent-run-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.168685,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "failed"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S49.02",
+    "design": "docs/design/v0.1/screens/S49.02-editor-errors-offline.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.184157,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "offline"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.01",
+    "design": "docs/design/v0.1/screens/S61.01-export-export-powerpoint-options.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.28248,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.02",
+    "design": "docs/design/v0.1/screens/S61.02-export-export-pdf-options.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.267059,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "select",
+        "label": "File format",
+        "value": "pdf"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.03",
+    "design": "docs/design/v0.1/screens/S61.03-export-export-downloaded-toast.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S69.01",
+    "design": "docs/design/v0.1/screens/S69.01-export-errors-export-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.73667,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-failed"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.01",
+    "design": "docs/design/v0.1/screens/S71.01-agents-connect-approve-claude.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Claude",
+    "budget": 0.018489,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.02",
+    "design": "docs/design/v0.1/screens/S71.02-agents-connect-claude-connected.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Claude",
+    "budget": 0.013779,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Allow"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Ready to return to your agent"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.03",
+    "design": "docs/design/v0.1/screens/S71.03-agents-connect-approve-codex.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Codex",
+    "budget": 0.01848,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S81.01",
+    "design": "docs/design/v0.1/screens/S81.01-settings-settings-usage-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.030602,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/agents",
+    "code": "S81.02",
+    "design": "docs/design/v0.1/screens/S81.02-settings-settings-agents-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active-connected",
+    "budget": 0.019952,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/account",
+    "code": "S81.03",
+    "design": "docs/design/v0.1/screens/S81.03-settings-settings-account-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.023733,
+    "status": "reachable",
+    "steps": []
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.01",
+    "design": "docs/design/v0.1/screens/S91.01-credits-add-credits-amount.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.060923,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.02",
+    "design": "docs/design/v0.1/screens/S91.02-credits-add-credits-waiting-for-payment.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.033209,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Waiting for your $25.00 payment…"
+      },
+      {
+        "kind": "selector-click",
+        "selector": "button[aria-label=\"Close add credits\"]"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.03",
+    "design": "docs/design/v0.1/screens/S91.03-credits-add-credits-credits-added.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.043671,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "pay"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.01",
+    "design": "docs/design/v0.1/screens/S92.01-credits-out-of-usage-limit-reached.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited",
+    "budget": 0.156518,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.02",
+    "design": "docs/design/v0.1/screens/S92.02-credits-out-of-usage-confirm-reset.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited-with-credits",
+    "budget": 0.126023,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.03",
+    "design": "docs/design/v0.1/screens/S92.03-credits-out-of-usage-add-credits-first.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.04",
+    "design": "docs/design/v0.1/screens/S92.04-credits-out-of-usage-reset-complete.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited-with-credits",
+    "budget": 0.166431,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Reset for $5"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Usage reset. Resume when you’re ready."
+      }
+    ]
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S99.01",
+    "design": "docs/design/v0.1/screens/S99.01-credits-errors-payment-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0,
+    "status": "unreachable",
+    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S99.02",
+    "design": "docs/design/v0.1/screens/S99.02-credits-errors-payment-expired.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.040289,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "expire-payment"
+      }
+    ]
+  }
+]
