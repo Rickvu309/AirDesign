@@ -101,7 +101,7 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
   for (const [index, step] of steps.entries()) {
     const run = step.run ?? ""
     const allowed = run.includes("pages deploy") ? ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
-      : run.includes("railway link --project") ? ["RAILWAY_API_TOKEN", "RAILWAY_SSH_PRIVATE_KEY"]
+      : run.includes('> "$HOME/.ssh/id_ed25519"') ? ["RAILWAY_SSH_PRIVATE_KEY"]
       : run === "node scripts/release/railway-production.ts" || run.startsWith("npm run verify:live ") ? ["RAILWAY_API_TOKEN"] : []
     for (const [name, value] of Object.entries(step.env ?? {})) {
       if (value.includes("secrets.") && !allowed.includes(name)) hits.push(`deploy-secret-not-consumed-by-step: ${name}`)
@@ -110,16 +110,17 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
     if (index > controller && /npm (?:ci|install)|playwright install|apt-get/.test(run)) hits.push("deploy-installers-must-precede-deployment")
     if (step.uses?.startsWith("actions/checkout@") && step.with?.ref !== "${{ github.event.workflow_run.head_sha }}") hits.push("deploy-checkout-must-use-ci-sha")
     if (/\brailway(?:\/cli@[^ ]+)? up\b/.test(run)) hits.push("deploy-must-build-from-github")
+    if (/\brailway link\b/.test(run)) hits.push("deploy-railway-link-needs-account-token")
     if (step.uses && !step.uses.startsWith("./") && !/@[a-f0-9]{40}$/.test(step.uses)) hits.push(`deploy-action-not-pinned: ${step.uses}`)
   }
-  const link = steps.find(step => step.run?.includes("railway link --project"))
-  if (link?.if !== "always() && steps.railway.outputs.ready == 'true'") hits.push("deploy-ssh-link-must-run-after-pages-failure")
+  const key = steps.find(step => step.run?.includes('> "$HOME/.ssh/id_ed25519"'))
+  if (key?.if !== "always() && steps.railway.outputs.ready == 'true'") hits.push("deploy-ssh-key-must-install-after-pages-failure")
   const live = steps[verify]
-  for (const command of ['--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", "--output-dir"]) {
+  for (const command of ['--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", '--railway-project "$RAILWAY_PROJECT_ID"', "--railway-environment production", "--output-dir"]) {
     if (!live?.run?.includes(command)) hits.push(`deploy-live-command-required: ${command}`)
   }
   if (live?.if !== "always() && steps.railway.outputs.ready == 'true'" || steps[pages]?.if !== "steps.railway.outputs.ready == 'true'") hits.push("deploy-live-must-follow-both-services-even-if-pages-fails")
-  if (steps[controller]?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || live?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || !steps.some(step => step.env?.RAILWAY_SSH_PRIVATE_KEY === "${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}" && step.run?.includes("railway link --project"))) hits.push("deploy-railway-credentials-required")
+  if (steps[controller]?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || live?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || live?.env?.RAILWAY_PROJECT_ID !== "${{ vars.RAILWAY_PROJECT_ID }}" || key?.env?.RAILWAY_SSH_PRIVATE_KEY !== "${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}") hits.push("deploy-railway-credentials-required")
   if (!source.includes("playwright install --with-deps chromium") || !source.includes("libreoffice-impress") || !source.includes("AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice")) hits.push("deploy-live-needs-browser-and-office")
   if (!source.includes("npm run build --workspace @airdesign/site") || !steps[pages]?.run?.includes('--commit-hash "$EXPECT_SHA"') || !source.includes("--project-name airdesign")) hits.push("deploy-site-must-build-selected-commit")
   if (!steps.some(step => step.if === "always()" && step.uses?.startsWith("actions/upload-artifact@"))) hits.push("deploy-live-evidence-must-upload-on-failure")
