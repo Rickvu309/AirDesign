@@ -1,5 +1,5 @@
 import { it, expect, describe, vi } from "vitest"
-import { mkdtemp, rm } from "node:fs/promises"
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises"
 import { randomUUID } from "node:crypto"
 import os from "node:os"
 import path from "node:path"
@@ -59,3 +59,25 @@ it.each(["systemd", "container"])("records a %s memory-limit kill", async mode =
     expect(await store.exports.status(person, job.id)).toMatchObject({ kind: "failed", failure: { kind: "limit", limit: "memory", signal: expect.stringMatching(/^SIG(KILL|TERM)$/) } })
   } finally { exportLimits.memoryBytes = original; await store.close(); await rm(root, { recursive: true, force: true }); vi.unstubAllEnvs() }
 }, 20000)
+
+it.each(["SIGKILL", "SIGTERM"] as const)("records %s encoded by the systemd export runner", async signal => {
+  const root = await mkdtemp(path.join(os.homedir(), "tmp/export-encoded-signal-"))
+  const commands = path.join(root, "commands")
+  const store = await createHistoryStore({ kind: "pglite" })
+  const person = { personId: "export-encoded-signal-person" }
+  try {
+    await mkdir(commands)
+    await writeFile(path.join(commands, "systemd-run"), `#!/bin/sh\nexit ${128 + os.constants.signals[signal]}\n`, { mode: 0o700 })
+    await writeFile(path.join(commands, "systemctl"), "#!/bin/sh\nprintf 'oom-kill\\n'\n", { mode: 0o700 })
+    vi.stubEnv("AIRDESIGN_ISOLATION", "systemd")
+    vi.stubEnv("PATH", `${commands}:${process.env.PATH}`)
+    const deck = await store.catalog.create(person, randomUUID(), "Encoded signal", "", fixtureDeck(1, 1))
+    const job = await store.exports.submit(person, randomUUID(), deck.id, { format: "pdf", timing: "now", slides: [], expectedSeq: 0, allowIssues: true })
+    await deliverExport(store.exports, root)
+    expect(await store.exports.status(person, job.id)).toMatchObject({ kind: "failed", failure: { kind: "limit", limit: "memory", signal } })
+  } finally {
+    vi.unstubAllEnvs()
+    await store.close()
+    await rm(root, { recursive: true, force: true })
+  }
+})

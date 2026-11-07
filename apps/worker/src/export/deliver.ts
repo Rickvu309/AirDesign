@@ -47,8 +47,8 @@ export async function deliverExport(store:ReturnType<typeof exportStore>,root:st
     exited=true;kill();await killed;clearTimeout(timer);clearInterval(resources);clearInterval(cancellation)
     failure ??= containerJobFailure(child)
     if(code!==0 || failure){
-      const limitSignal=exitSignal ?? (code===128+os.constants.signals.SIGXCPU ? "SIGXCPU" : code===128+os.constants.signals.SIGXFSZ ? "SIGXFSZ" : null)
-      failure??=isolationMode()==="systemd" && await scopeOomKilled(unit) ? {kind:"limit",limit:"memory",signal:exitSignal} : limitSignal==="SIGXCPU" ? {kind:"limit",limit:"cpu",signal:limitSignal} : limitSignal==="SIGXFSZ" ? {kind:"limit",limit:"file-size",signal:limitSignal} : exitSignal ? {kind:"signal",signal:exitSignal} : {kind:"exit",code:code ?? 1,diagnostic:diagnostic.slice(-200)}
+      const limitSignal=exitSignal ?? Object.entries(os.constants.signals).find(([,number])=>code===128+number)?.[0] ?? null
+      failure??=isolationMode()==="systemd" && await scopeOomKilled(unit) ? {kind:"limit",limit:"memory",signal:limitSignal} : limitSignal==="SIGXCPU" ? {kind:"limit",limit:"cpu",signal:limitSignal} : limitSignal==="SIGXFSZ" ? {kind:"limit",limit:"file-size",signal:limitSignal} : exitSignal ? {kind:"signal",signal:exitSignal} : {kind:"exit",code:code ?? 1,diagnostic:diagnostic.slice(-200)}
       const bytes=await readFile(path.join(directory,"failure.json")).catch(()=>null)
       if(bytes && bytes.length<=1024 && failure.kind==="exit"){
         const value:unknown=JSON.parse(bytes.toString())

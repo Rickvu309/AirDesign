@@ -84,8 +84,10 @@ it("recovers a crashed systemd runner and kills its detached descendants", async
     runner.kill("SIGKILL")
     await exit
     await journal.clean(job)
-    const stat = await readFile(`/proc/${pid}/stat`, "utf8").catch(() => "")
-    expect(stat === "" || stat.split(") ")[1]?.startsWith("Z")).toBe(true)
+    await expect.poll(async () => {
+      const stat = await readFile(`/proc/${pid}/stat`, "utf8").catch(() => "")
+      return stat === "" || stat.split(") ")[1]?.startsWith("Z")
+    }, { timeout: 2000 }).toBe(true)
   } finally {
     runner.kill("SIGKILL")
     await journal.clean(job)
