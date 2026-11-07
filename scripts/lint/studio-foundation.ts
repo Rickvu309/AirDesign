@@ -1,4 +1,12 @@
+import { readFileSync } from "node:fs"
+
+const designCopyKeys = new Set(Object.entries(JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8"))).filter(([, value]) => typeof value === "string").map(([key]) => key))
+
 export function studioFoundationHits(file: string, source: string): { line: number; reason: string }[] {
+  if (/packages\/ui\/src\/copy\/copy-kit\.(json|ts)$/.test(file)) {
+    const keys = file.endsWith(".json") ? Object.entries(JSON.parse(source)).filter(([, value]) => typeof value === "string").map(([key]) => key) : [...source.matchAll(/^\s*"([^"]+)":\s*"/gm)].map(match => match[1] ?? "")
+    return keys.filter(key => !designCopyKeys.has(key)).map(key => ({ line: source.slice(0, source.indexOf(`"${key}"`)).split("\n").length, reason: "studio-supplemental-copy-belongs-in-studio-foundation-copy" }))
+  }
   if (file.endsWith("packages/ui/src/code-entry/code-entry.tsx")) return source.includes("refs.current[0]?.focus({ preventScroll: true })") ? [] : [{ line: 1, reason: "studio-code-entry-initial-focus-preserves-access-header" }]
   if (file.endsWith("apps/studio/src/decks/workspace.tsx")) {
     const hits = ["trash.empty_title", "trash.empty_body", "trash.empty_action"].filter(key => !source.includes(`${key === "trash.empty_title" ? "fillCopy" : "copy"}("${key}"`)).map(key => ({ line: 1, reason: `studio-trash-dialog-requires-canonical-${key}` }))
