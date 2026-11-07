@@ -1,3 +1,5 @@
+export const workerShutdownDeadlineMs = 2000
+
 export function workerShutdown(stopChild?: (signal: NodeJS.Signals) => void) {
   const controller = new AbortController()
   let deadline: ReturnType<typeof setTimeout> | undefined
@@ -5,9 +7,9 @@ export function workerShutdown(stopChild?: (signal: NodeJS.Signals) => void) {
     if (controller.signal.aborted) return
     controller.abort()
     deadline = setTimeout(() => {
-      process.stderr.write("worker-shutdown-deadline-exceeded:2000ms\n")
+      process.stderr.write(`worker-shutdown-deadline-exceeded:${workerShutdownDeadlineMs}ms\n`)
       process.exit(1)
-    }, 2000)
+    }, workerShutdownDeadlineMs)
     stopChild?.(signal)
   }
   const terminate = () => stop("SIGTERM")

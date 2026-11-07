@@ -47,6 +47,7 @@ export default defineRailway(() => {
       NODE_ENV: "production",
       AIRDESIGN_ROLE: "worker",
       AIRDESIGN_ISOLATION: "container",
+      RAILWAY_DEPLOYMENT_DRAINING_SECONDS: "5",
       AIRDESIGN_OPERATIONS_PATH: "/data/operations.sqlite",
       AIRDESIGN_WORKER_TEMP: "/data/jobs",
       AIRDESIGN_WORKER_API_ORIGIN: "http://web.railway.internal:8080",
