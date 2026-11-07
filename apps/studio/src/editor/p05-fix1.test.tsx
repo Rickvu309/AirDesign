@@ -16,7 +16,7 @@ it("uses the floating editor shell, switches views and exposes contextual action
   const container=document.createElement("div");document.body.append(container)
   const root=createRoot(container)
   try{
-    await act(async()=>root.render(<StudioShell intentLabel="" showIntent={false} onSignOut={()=>{}}><ManualEditor deckId="example"/></StudioShell>))
+    await act(async()=>root.render(<StudioShell search="" onSearch={() => undefined} intentLabel="" showIntent={false} onSignOut={()=>{}}><ManualEditor deckId="example"/></StudioShell>))
     expect(container.querySelector(".ad-topbar")).toBeNull()
     expect(container.querySelector('.editor-dock[aria-label="Design tools"]')).not.toBeNull()
     expect(container.querySelector(".editor-section h2")?.textContent).toBe("Slides")

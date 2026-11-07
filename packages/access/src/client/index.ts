@@ -9,7 +9,7 @@ export type CheckEmailResult =
 
 export type VerifyResult =
   | { status: "signed-in"; personId: string; intentToken: string; kind: IntentKind }
-  | { status: "invalid-code"; screen: "S22.01" }
+  | { status: "invalid-code"; screen: "S29.01" }
   | { status: "link-expired" | "link-used"; screen: "S29.01"; intentToken: string | null; kind: IntentKind | null }
   | { status: "intent-rejected" | "guard-rejected" }
 

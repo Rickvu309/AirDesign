@@ -1,4 +1,6 @@
 import { deploymentWorkflowHits, ciCoverageHits, verifierBuildHits, workerLibraryHits } from "./lint/ci-workflow-policy.ts"
+import {designParityIntegrationHits} from "./lint/design-parity-integration.ts"
+import { studioFoundationHits } from "./lint/studio-foundation.ts"
 import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
@@ -39,6 +41,8 @@ for (const file of files) {
   }
   for (const hit of workerLibraryHits(file, source)) failures.push(`${file}: ${hit}`)
   for (const hit of verifierBuildHits(file, source)) failures.push(`${file}: ${hit}`)
+  for (const hit of designParityIntegrationHits(path.relative(repoRoot,file),source)) failures.push(`${file}: ${hit}`)
+  for (const hit of studioFoundationHits(file, source)) failures.push(`${file}:${hit.line} ${hit.reason}`)
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)
   for(const hit of releaseRuntimeHits(file,source))failures.push(`${file}: ${hit}`)
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)

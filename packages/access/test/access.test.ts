@@ -57,14 +57,14 @@ describe("access", () => {
     expect(rejected.json.status).toBe("intent-rejected")
   })
 
-  it("stays on the check screen for a wrong code and signs in with the same intent", async () => {
+  it("offers recovery for a wrong code and preserves a still-valid challenge", async () => {
     const jar = client()
     const issued = await jar.call("/api/access/intent", { kind: "import" })
     await jar.call("/api/access/email", { email: "code@example.com", intent: issued.json.token })
     const message = inbox.read("code@example.com")[0]
     const wrong = await jar.call("/api/access/code", { email: "code@example.com", code: "000000", intent: issued.json.token })
     const session = await jar.call("/api/session", undefined, "GET")
-    expect(wrong.json).toMatchObject({ status: "invalid-code", screen: "S22.01" })
+    expect(wrong.json).toMatchObject({ status: "invalid-code", screen: "S29.01" })
     expect(session.json.status).toBe("signed-out")
     const right = await jar.call("/api/access/code", { email: "code@example.com", code: message?.code, intent: issued.json.token })
     expect(right.json).toMatchObject({ status: "signed-in", intentToken: issued.json.token, kind: "import" })
@@ -72,6 +72,18 @@ describe("access", () => {
     expect(signedIn.json.status).toBe("signed-in")
     expect(signedIn.json.email).toBe("code@example.com")
     expect(signedIn.json.displayName).toBe("code")
+  })
+
+  it("offers recovery for an expired code and preserves its import intent", async () => {
+    const jar = client()
+    const issued = await jar.call("/api/access/intent", { kind: "import" })
+    await jar.call("/api/access/email", { email: "expired-code@example.com", intent: issued.json.token })
+    const message = inbox.read("expired-code@example.com")[0]
+    now += 16 * 60 * 1000
+    const expired = await jar.call("/api/access/code", { email: "expired-code@example.com", code: message?.code, intent: issued.json.token })
+    expect(expired.json).toMatchObject({ status: "link-expired", screen: "S29.01", kind: "import" })
+    expect(expired.json.intentToken).toEqual(expect.any(String))
+    expect((await jar.call("/api/session", undefined, "GET")).json.status).toBe("signed-out")
   })
 
   it("uses a link once and refuses a replay", async () => {
