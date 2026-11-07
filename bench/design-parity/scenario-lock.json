@@ -248,7 +248,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -299,7 +301,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -361,7 +365,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -423,7 +429,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -489,7 +497,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -551,7 +561,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -605,7 +617,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -660,7 +674,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -722,7 +738,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -773,7 +791,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -887,11 +907,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -950,11 +974,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1004,11 +1032,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1058,11 +1090,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1129,11 +1165,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1200,11 +1240,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1275,11 +1319,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1350,11 +1398,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1425,11 +1477,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1496,11 +1552,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1567,11 +1627,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1621,11 +1685,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1675,11 +1743,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1729,11 +1801,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1783,11 +1859,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1850,11 +1930,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1920,11 +2004,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -2707,11 +2795,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -2897,11 +2989,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [

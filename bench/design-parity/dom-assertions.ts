@@ -9,7 +9,20 @@ import type {Scenario} from "./registry.ts"
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
 }
-export async function assertRendered(locator:Locator,control=false){
+type IconInk={path:string,size:number,color:string}
+function inkPixels(pixels:Buffer){
+  const colors=new Map<number,number>()
+  for(let index=0;index<pixels.length;index+=4){
+    const key=(pixels[index]!>>3)*1024+(pixels[index+1]!>>3)*32+(pixels[index+2]!>>3)
+    colors.set(key,(colors.get(key)??0)+1)
+  }
+  const dominant=[...colors].sort((a,b)=>b[1]-a[1])[0]![0]
+  const background=[(dominant>>10)*8+4,((dominant>>5)&31)*8+4,(dominant&31)*8+4]
+  let ink=0
+  for(let index=0;index<pixels.length;index+=4)if(background.some((channel,offset)=>Math.abs(pixels[index+offset]!-channel)>=32))ink++
+  return ink
+}
+export async function assertRendered(locator:Locator,control=false,icon?:IconInk){
   const selector=locator.toString(),page=locator.page()
   const box=await locator.boundingBox(),viewport=page.viewportSize()
   if(!box||box.width<=0||box.height<=0||box.x<0||box.y<0||viewport&&(box.x+box.width>viewport.width||box.y+box.height>viewport.height))throw failure(selector,"required-rendered-element","positive box inside viewport",box)
@@ -34,10 +47,16 @@ export async function assertRendered(locator:Locator,control=false){
     await element.dispose()
   }
   const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
-  let changed=0
-  for(let index=0;index<left.length;index+=4)if(Math.max(Math.abs(left[index]!-right[index]!),Math.abs(left[index+1]!-right[index+1]!),Math.abs(left[index+2]!-right[index+2]!))>=32)changed++
-  const minimum=Math.max(4,Math.ceil(clip.width*clip.height*0.002))
-  if(changed<minimum)throw failure(selector,"required-rendered-element:paint",{minimumChangedPixels:minimum,channelDelta:32},{changedPixels:changed,box})
+  const beforeInk=inkPixels(left),afterInk=inkPixels(right)
+  const estimate=icon ? inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer()) : await locator.evaluate(element=>{
+    const style=getComputedStyle(element),size=parseFloat(style.fontSize)
+    const text=element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement ? element.value||element.placeholder : element.textContent??""
+    const textArea=[...text.replace(/\s/g,"")].length*size*size*0.18
+    const iconArea=[...element.querySelectorAll("svg[data-icon]")].reduce((area,svg)=>{const box=svg.getBoundingClientRect();return area+box.width*box.height*0.2},0)
+    return textArea+iconArea
+  })
+  const ownership=beforeInk>0 ? (beforeInk-afterInk)/beforeInk : 0
+  if(ownership<0.8||estimate<=0||beforeInk<estimate/4||beforeInk>estimate*4)throw failure(selector,"required-rendered-element:ink-ownership",{minimumOwnership:0.8,minimumInk:estimate/4,maximumInk:estimate*4},{beforeInk,afterInk,ownership,box})
 }
 async function visible(page:Page,text:string){
   const candidates=[page.getByText(text,{exact:true}),page.getByRole("link",{name:text,exact:true}),page.getByRole("button",{name:text,exact:true})]
@@ -50,9 +69,15 @@ async function assertStructure(page:Page,entry:Scenario){
   for(const icon of entry.assertions.structure.icons){
     const locator=page.locator(icon.region).locator(`svg[data-icon="${icon.name}"]`).first()
     if(!await locator.count())throw failure(locator.toString(),"required-icon",1,0)
-    await assertRendered(locator)
     const path=Reflect.get(iconPaths,icon.name)
     if(typeof path!=="string")throw failure(locator.toString(),"icon-geometry","registered icon name",icon.name)
+    const expectedColor={ink:"rgb(34, 34, 34)","gray.600":"rgb(102, 102, 102)","gray.500":"rgb(144, 144, 144)"}[icon.color]
+    const appearance=await locator.evaluate(element=>{
+      const box=element.getBoundingClientRect()
+      return {width:box.width,height:box.height,parts:[...element.querySelectorAll("path")].map(part=>{const style=getComputedStyle(part);return {stroke:style.stroke,fill:style.fill,width:style.strokeWidth,opacity:style.opacity,strokeOpacity:style.strokeOpacity}})}
+    })
+    if(appearance.width!==icon.size||appearance.height!==icon.size)throw failure(locator.toString(),"icon-size",icon.size,appearance)
+    if(appearance.parts.some(part=>part.stroke!==expectedColor||part.fill!=="none"||part.width!=="1.5px"||part.opacity!=="1"||part.strokeOpacity!=="1"))throw failure(locator.toString(),"icon-color",expectedColor,appearance)
     const geometry=await locator.evaluate((element,expectedPath)=>{
       const reference=document.createElementNS("http://www.w3.org/2000/svg","svg"),referencePath=document.createElementNS("http://www.w3.org/2000/svg","path")
       reference.setAttribute("style","position:fixed;inset:0;width:0;height:0;visibility:hidden!important")
@@ -68,6 +93,7 @@ async function assertStructure(page:Page,entry:Scenario){
     const expected=hash({viewBox:"0 0 24 24",transform:"none",parts:[{tag:"path",paintedPath:geometry.canonicalPath,transform:"none",attributes:[]}]})
     const actual=hash(geometry.actual)
     if(actual!==expected)throw failure(locator.toString(),"icon-geometry",expected,actual)
+    await assertRendered(locator,false,{path,size:icon.size,color:expectedColor})
   }
   for(const text of entry.assertions.structure.textRoles){
     const locators=page.locator(text.selector)

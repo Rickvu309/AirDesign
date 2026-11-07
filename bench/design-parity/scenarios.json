@@ -272,7 +272,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -285,7 +287,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -327,7 +329,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -346,7 +350,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -393,7 +397,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -412,7 +418,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -459,7 +465,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -478,7 +486,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -529,7 +537,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -548,7 +558,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -595,7 +605,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -608,7 +620,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -653,7 +665,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -666,7 +680,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -712,7 +726,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -725,7 +741,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -778,7 +794,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -791,7 +809,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -833,7 +851,9 @@
         "icons": [
           {
             "region": ".workspace-home",
-            "name": "search"
+            "name": "search",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -852,7 +872,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -955,11 +975,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -972,7 +996,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1022,11 +1046,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1039,7 +1067,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1080,11 +1108,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1097,7 +1129,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1138,11 +1170,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1155,7 +1191,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1213,11 +1249,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1230,7 +1270,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1288,11 +1328,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1305,7 +1349,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1367,11 +1411,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1384,7 +1432,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1446,11 +1494,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1463,7 +1515,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1525,11 +1577,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1542,7 +1598,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1600,11 +1656,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1617,7 +1677,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1675,11 +1735,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1692,7 +1756,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1733,11 +1797,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1750,7 +1818,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1791,11 +1859,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1808,7 +1880,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1849,11 +1921,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1866,7 +1942,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1907,11 +1983,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1924,7 +2004,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -1978,11 +2058,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -1995,7 +2079,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -2052,11 +2136,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -2069,7 +2157,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -2895,11 +2983,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -2912,7 +3004,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",
@@ -3097,11 +3189,15 @@
         "icons": [
           {
             "region": ".studio-editor",
-            "name": "undo"
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
           },
           {
             "region": ".studio-editor",
-            "name": "redo"
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
           }
         ],
         "textRoles": [
@@ -3114,7 +3210,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Reviewed round 4 structure contracts from tokens.md, components.md and screen generators; per-screen pixel targets use independently recomputed design references."
+    "scenarioChangedBecause": "Declare 16px ink icon role tokens so canonical geometry cannot pass with the wrong rendered size or color."
   },
   {
     "surface": "studio",

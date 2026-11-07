@@ -5,12 +5,12 @@ import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
 import {readRegistry} from "./registry.ts"
 it("rejects transparent bitmap substitute DOM, missing and swapped icons, wrong fonts and low contrast",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
-  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:["Recents"],controls:[{role:"button",name:"Commands"}],structure:{icons:[{region:"main",name:"search"}],textRoles:[{selector:"time",role:"helper",color:"gray.500",minimumContrast:3}]}}} satisfies typeof original
+  const entry={...original,assertions:{...original.assertions,copyKeys:[],texts:["Recents"],controls:[{role:"button",name:"Commands"}],structure:{icons:[{region:"main",name:"search",size:16,color:"ink" as const}],textRoles:[{selector:"time",role:"helper",color:"gray.500",minimumContrast:3}]}}} satisfies typeof original
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
     page.setDefaultTimeout(500)
-    const content=`<style>body{background:white}time{font:400 12px Geist;color:#909090}</style><main><h1>Recents</h1><button>Commands</button><svg data-icon="search" viewBox="0 0 24 24" width="16" height="16"><path d="${iconPaths.search}" stroke="black" fill="none"/></svg><time>Edited today</time></main>`
+    const content=`<style>body{background:white}time{font:400 12px Geist;color:#909090}</style><main><h1>Recents</h1><button>Commands</button><svg data-icon="search" viewBox="0 0 24 24" width="16" height="16"><path d="${iconPaths.search}" stroke="#222" stroke-width="1.5" fill="none"/></svg><time>Edited today</time></main>`
     await page.setContent(content)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     for(const [name,mutation] of [
