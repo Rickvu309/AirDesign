@@ -58,8 +58,9 @@ export async function verifyLive(options){
   await mkdir(output,{recursive:true,mode:0o700})
   const receipt={expectedSha:sha,startedAt:new Date().toISOString(),origins:{site,studio,mcp},status:"running",allowedBrowserExceptions:[],steps:[]}
   const created=[],paidCalls=[],browserErrors=[]
-  let current="configuration",browser,context,page,signedSmoke=false
-  async function step(name,run){current=name;const started=Date.now();try{const evidence=await run();assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){receipt.steps.push({name,status:"fail",error:safeError(error)});throw error}}
+  let current="configuration",browser,context,page,signedSmoke=false,operations=new Map()
+  const pendingOperations=new Set()
+  async function step(name,run,browserCheck=true){current=name;operations=new Map();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){await Promise.all(pendingOperations);const screenshot=page ? await shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:[...operations.values()]});throw error}}
   async function shot(name){
     const file=name+".png",viewport=page.viewportSize()
     const height=await page.evaluate(()=>document.documentElement.scrollHeight)
@@ -94,6 +95,18 @@ export async function verifyLive(options){
     })
     context.on("requestfailed",request=>browserErrors.push({kind:"request",path:new URL(request.url()).pathname,error:safeError(request.failure()?.errorText)}))
     context.on("response",response=>{if(response.status()>=400)browserErrors.push({kind:"http",status:response.status(),path:new URL(response.url()).pathname})})
+    context.on("response",response=>{
+      const pathname=new URL(response.url()).pathname
+      if(response.request().method()!=="GET" || !response.headers()["content-type"]?.includes("application/json") || !/^\/api\/(operations\/[^/]+|catalog\/[^/]+\/exports|catalog\/export-jobs\/[^/]+\/[^/]+)$/.test(pathname))return
+      const seen=operations,read=response.json().then(value=>{
+        for(const operation of Array.isArray(value) ? value : [value]){
+          if(!operation || typeof operation.id!=="string" || typeof operation.kind!=="string")continue
+          const trace={id:operation.id,kind:operation.kind,...typeof operation.reason==="string" ? {reason:safeError(operation.reason)} : {},...typeof operation.attempts==="number" ? {attempts:operation.attempts} : {}}
+          seen.delete(trace.id);seen.set(trace.id,trace)
+        }
+      }).catch(()=>undefined)
+      pendingOperations.add(read);void read.finally(()=>pendingOperations.delete(read))
+    })
     page=await context.newPage()
     for(const route of sitePages)await step("site-page:"+route,async()=>{
         const response=await page.goto(site+route,{waitUntil:"networkidle"});assert.equal(response.status(),200)
@@ -171,15 +184,15 @@ export async function verifyLive(options){
     await step("no-paid-agent-calls",async()=>{assert.deepEqual(paidCalls,[],"unexpected Aira mutation was blocked")})
     receipt.browserErrors=browserErrors
     receipt.status="pass"
-  }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error);if(page && !["smoke-sign-in","configuration"].includes(current))await shot("failure").catch(()=>undefined)}finally{
+  }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error)}finally{
     if(receipt.status==="fail" && signedSmoke && created.length){
-      try{
+      try{await step("failure-cleanup",async()=>{
         for(const id of created){const response=await context.request.post(studio+`/api/catalog/${id}/trash`,{headers:{origin:studio},data:{},timeout:15000});assert.ok(response.ok(),"failure cleanup could not trash smoke deck")}
         const response=await context.request.get(studio+"/api/catalog?trash=true",{timeout:15000});assert.ok(response.ok())
         const decks=(await response.json()).filter(deck=>created.includes(deck.id)).map(({id,generation})=>({id,generation}))
         const removed=await context.request.delete(studio+"/api/catalog/trash",{headers:{origin:studio},data:{confirm:"empty-trash",decks},timeout:15000});assert.ok(removed.ok(),"failure cleanup could not empty smoke trash")
-        receipt.steps.push({name:"failure-cleanup",status:"pass",evidence:{decks:decks.length}})
-      }catch(error){receipt.steps.push({name:"failure-cleanup",status:"fail",error:safeError(error)})}
+        return {decks:decks.length}
+      },false)}catch{}
     }
     await browser?.close();receipt.finishedAt=new Date().toISOString();await writeFile(path.join(output,"receipt.json"),JSON.stringify(receipt,null,2)+"\n",{mode:0o600})
   }
@@ -190,5 +203,6 @@ if(import.meta.url===pathToFileURL(process.argv[1] ?? "").href){
   const sha=values["expect-sha"] ?? "missing-sha",output=path.resolve(values["output-dir"] ?? path.join(os.homedir(),"tmp/airdesign-live-verify",sha+"-"+new Date().toISOString().replaceAll(":","-")))
   const target=railwayTarget(values["railway-project"],values["railway-environment"])
   const receipt=await verifyLive({sha,site:values["site-url"],studio:values["studio-url"],mcp:values["mcp-url"],email:values["smoke-email"],output,signInLink:async()=>{if(values.railway){const result=await promisify(execFile)("railway",railwaySshArguments(target,["node","apps/server/src/smoke/mint-link.ts",values["smoke-email"]]),{timeout:60000,maxBuffer:8192});return result.stdout.trim()}if(process.stdin.isTTY)throw new Error("use --railway or provide a one-use link on stdin");let input="";for await(const chunk of process.stdin){input+=chunk;if(input.length>8192)throw new Error("sign-in-input-too-large")}return input.trim()}})
-  if(receipt.status!=="pass"){process.stderr.write(`${receipt.failedStep}: ${receipt.error}\nreceipt: ${output}/receipt.json\n`);process.exitCode=1}else process.stdout.write(`pass: ${output}/receipt.json\n`)
+  const failedOperation=receipt.steps.find(step=>step.name===receipt.failedStep)?.operations?.findLast(operation=>operation.kind==="failed")
+  if(receipt.status!=="pass"){process.stderr.write(`${receipt.failedStep}: ${receipt.error.replace(/^.*/,line=>line+(failedOperation ? `; ${failedOperation.kind}: ${failedOperation.reason ?? "unknown"}` : ""))}\nreceipt: ${output}/receipt.json\n`);process.exitCode=1}else process.stdout.write(`pass: ${output}/receipt.json\n`)
 }
