@@ -98,7 +98,7 @@ header nav a { text-decoration: none; }
 .chart-callout,.capture-callout { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 999px; box-shadow: var(--site-blue-shadow),var(--site-pill-shadow); padding: 5px 20px 5px 5px; font-size: 14px; font-weight: 600; }
 .chart-callout { position: absolute; z-index: 2; inset-inline-start: calc(81.94% - 126px); inset-block-start: 192px; inline-size: 252px; white-space: nowrap; }
 .chart-callout::after { content: ""; position: absolute; inset-inline-start: 50%; inset-block-start: 100%; block-size: 148px; inline-size: 1px; background: var(--site-brand); }
-.check-orb { display: grid; place-items: center; inline-size: 42px; block-size: 42px; flex: none; border-radius: 50%; background: var(--signature-gradient); color: var(--card); font-size: 19px; font-weight: 400; }
+.check-orb { display: grid; place-items: center; inline-size: 42px; block-size: 42px; flex: none; border-radius: 50%; background: linear-gradient(var(--site-button-top),var(--site-brand)); color: var(--card); font-size: 19px; font-weight: 400; }
 .chart-axis { position: absolute; inset: auto 6.67% 8px; display: flex; justify-content: space-between; color: var(--site-subtle); font: 11px/1 monospace; }
 .chart-disclosure { position: absolute; inset: auto 24px 28px auto; font-size: 10px; color: var(--site-subtle); }
 .deck-checks { display: flex; overflow: hidden; white-space: nowrap; block-size: 40px; border-block: 1px solid var(--border); font: 11px/1 monospace; letter-spacing: .5px; }
