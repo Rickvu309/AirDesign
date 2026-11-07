@@ -42,3 +42,24 @@
 .template-card[data-tone=dark] .template-sample { background:var(--template-dark)!important; }
 .template-card[aria-pressed=true] .template-sample { outline:0; }
 @media (pointer:coarse) { .template-panel .template-search input { font-size:16px; }.template-picker .template-search { min-block-size:44px; }.template-picker>.sr-only:focus-visible { position:static;inline-size:auto;block-size:44px;clip-path:none;margin:8px; } }
+
+.template-panel { padding:0; }
+.template-panel>header { margin:0; }
+.design-section { display:flex;flex-direction:column;gap:12px;padding:16px;border-block-end:1px solid var(--muted); }
+.design-section:last-of-type { border-block-end:0; }
+.design-section>h3,.design-section-heading h3 { margin:0;font-size:13px;font-weight:600; }
+.design-section-heading { display:flex;align-items:center;justify-content:space-between;block-size:16px; }
+.design-section-heading>button { display:flex;align-items:center;justify-content:center;inline-size:28px;block-size:28px;border:0;padding:4px;border-radius:6px;color:var(--muted-foreground);background:transparent;cursor:pointer; }
+.design-section-heading svg { inline-size:16px;block-size:16px;stroke-width:3; }
+.design-section .template-current { display:flex;inline-size:100%;gap:12px;padding:8px;border-radius:10px;background:var(--card);color:var(--foreground);text-align:start;font-size:13px;font-weight:500;cursor:pointer; }
+.template-colors { inline-size:40px;block-size:40px;flex:none;border-radius:6px; }
+.template-colors>span { flex:1;inline-size:auto;block-size:100%; }
+.template-current small { font-size:12px;font-weight:400;margin-block-start:2px; }
+.template-current>svg { inline-size:14px;block-size:14px;color:var(--muted-foreground); }
+.template-panel .background-color { margin:0; }
+.background-images { margin:0; }
+.template-management { position:fixed;z-index:31;inset-block-start:104px;inset-inline-end:16px;inline-size:min(328px,calc(100vi - 32px));box-sizing:border-box;max-block-size:calc(100dvb - 120px);overflow:auto;overscroll-behavior:contain;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:var(--shadow-card); }
+.template-management>header h2 { margin:0;font-size:14px; }
+.template-management>header button { background:transparent;border:0;padding:8px;cursor:pointer;color:var(--muted-foreground); }
+.template-panel>.template-offer,.template-panel>p { margin-inline:16px; }
+@media (pointer:coarse) { .design-section-heading { min-block-size:44px; }.design-section-heading>button,.template-management>header button { min-inline-size:44px;min-block-size:44px; }.background-tabs { min-block-size:48px; }.background-tabs>button,.template-palette>label,.template-panel .background-color { min-block-size:44px; }.template-management input,.template-management select { font-size:16px; } }

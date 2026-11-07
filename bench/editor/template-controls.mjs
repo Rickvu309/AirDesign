@@ -28,6 +28,15 @@ try{
   await trigger.click();await page.locator(".editor-notes").click();assert.equal(await picker.count(),0)
   await trigger.click();await search.fill("Dark");await picker.getByRole("button",{name:"Dark slides",exact:true}).click();assert.equal(await picker.count(),0);assert.equal(await trigger.evaluate(element=>element===document.activeElement),true)
   await trigger.click();await search.fill("");await page.screenshot({path:path.join(out,"picker.png"),animations:"disabled"})
+  await page.keyboard.press("Escape")
+  const panel=page.getByLabel("Design panel",{exact:true})
+  results.design=await panel.evaluate(element=>{const header=element.querySelector(":scope>header"),section=element.querySelector(".design-section"),swatch=element.querySelector(".template-colors"),style=getComputedStyle(section);return {headerHeight:header.getBoundingClientRect().height,padding:style.padding,gap:style.gap,swatchWidth:swatch.getBoundingClientRect().width,swatchHeight:swatch.getBoundingClientRect().height,strips:[...swatch.children].map(child=>({width:child.getBoundingClientRect().width,color:getComputedStyle(child).backgroundColor})),mist:element.querySelector('[aria-label="Mist color"]').value}})
+  assert.equal(results.design.headerHeight,48);assert.equal(results.design.padding,"16px");assert.equal(results.design.gap,"12px");assert.equal(results.design.swatchWidth,40);assert.equal(results.design.swatchHeight,40)
+  assert.equal(results.design.strips.length,3);assert.ok(Math.abs(results.design.strips[0].width-results.design.strips[2].width)<.02)
+  const manage=page.getByRole("button",{name:"Manage template",exact:true})
+  await manage.click();await page.getByLabel("Template options",{exact:true}).getByRole("button",{name:"Apply to deck",exact:true}).waitFor()
+  await page.keyboard.press("Escape");assert.equal(await page.getByLabel("Template options",{exact:true}).count(),0);assert.equal(await manage.evaluate(element=>element===document.activeElement),true)
+  await page.screenshot({path:path.join(out,"design.png"),animations:"disabled"})
   results.behavior="filters names; Escape, outside pointer and selection dismiss; focus returns to trigger"
   await writeFile(path.join(out,"results.json"),JSON.stringify(results,null,2));await context.close()
 }finally{await browser.close();await local.close()}

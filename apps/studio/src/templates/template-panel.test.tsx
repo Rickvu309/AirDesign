@@ -15,7 +15,7 @@ it("keeps the template gallery in a picker and returns to the design controls af
     expect(container.querySelector('[aria-label="Template picker"]')).not.toBeNull()
     await act(async()=>button("Dark slides").click())
     expect(container.querySelector('[aria-label="Template picker"]')).toBeNull()
-    expect(container.querySelector('[aria-label="Design panel"]')?.textContent).toContain("Dark slides · v1")
+    expect(container.querySelector(".template-current")?.textContent).toContain("Dark slides")
   }finally{await act(async()=>root.unmount());container.remove()}
 })
 it("uses a native deck color for Mist instead of duplicating the white background",async()=>{
@@ -77,5 +77,22 @@ it("filters template cards by their look name without version metadata",async()=
   await act(async()=>container.querySelector<HTMLButtonElement>(".template-card")!.click())
   expect(container.querySelector(".template-picker")).toBeNull()
   expect(document.activeElement).toBe(container.querySelector('[aria-label="Choose template"]'))
+ }finally{await act(async()=>root.unmount());container.remove()}
+})
+
+it("keeps template management in the section heading and previews native Mist",async()=>{
+ const container=document.createElement("div");document.body.append(container);const root=createRoot(container),deck=fixtureDeck(2)
+ try{
+  await act(async()=>root.render(<TemplatePanel deck={deck} selection={[]} edit={()=>{}} disabled={false} close={()=>{}}/>))
+  const manage=container.querySelector<HTMLButtonElement>('[aria-label="Manage template"]')!
+  expect(manage).not.toBeNull()
+  expect(container.querySelector(".template-colors>span:last-child")?.getAttribute("style")).toContain("#b4ccea")
+  expect(container.querySelector(".template-management")).toBeNull()
+  await act(async()=>manage.click())
+  expect(container.querySelector(".template-management")?.textContent).toContain("Apply to deck")
+  await act(async()=>document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true})))
+  expect(container.querySelector(".template-management")).toBeNull();expect(document.activeElement).toBe(manage)
+  await act(async()=>manage.click());await act(async()=>document.body.dispatchEvent(new Event("pointerdown",{bubbles:true})))
+  expect(container.querySelector(".template-management")).toBeNull()
  }finally{await act(async()=>root.unmount());container.remove()}
 })
