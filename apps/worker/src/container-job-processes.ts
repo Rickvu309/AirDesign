@@ -20,15 +20,16 @@ function matches(member: ProcessIdentity) {
   return stat(member.pid)?.[19] === member.identity
 }
 
-function signal(member: ProcessIdentity, value: NodeJS.Signals) {
+export function signalContainerProcess(member: ProcessIdentity, value: NodeJS.Signals) {
   if (!matches(member)) return
   try { process.kill(member.pid, value) } catch (error) {
     if (!(error instanceof Error && "code" in error && error.code === "ESRCH")) throw error
   }
 }
 
-export function containerJobProcesses(root: ProcessIdentity): JobProcess[] {
+export function containerJobProcesses(root: ProcessIdentity, excludedRoots: readonly ProcessIdentity[] = []): JobProcess[] {
   const visited = new Set<number>()
+  const excluded = new Map(excludedRoots.map(member => [member.pid, member.identity]))
   function visit(parent: ProcessIdentity): JobProcess[] {
     if (!matches(parent)) return []
     const members: JobProcess[] = []
@@ -42,6 +43,7 @@ export function containerJobProcesses(root: ProcessIdentity): JobProcess[] {
         if (!pid || visited.has(pid)) continue
         const fields = stat(pid)
         if (!fields?.[19] || Number(fields[1]) !== parent.pid) continue
+        if (excluded.get(pid) === fields[19]) continue
         visited.add(pid)
         members.push(...visit({ pid, identity: fields[19] }))
         if (fields[0] !== "Z" && fields[0] !== "X") members.push({ pid, parent: parent.pid, identity: fields[19], residentBytes: Number(fields[21]) * 4096 })
@@ -54,13 +56,13 @@ export function containerJobProcesses(root: ProcessIdentity): JobProcess[] {
 
 export function cleanContainerJob(root: ProcessIdentity, terminateRoot = true): void {
   const deadline = Date.now() + 5000
-  if (terminateRoot) signal(root, "SIGSTOP")
+  if (terminateRoot) signalContainerProcess(root, "SIGSTOP")
   for (;;) {
     const members = containerJobProcesses(root).filter(member => member.pid !== process.pid)
     if (!members.length) break
-    for (const member of members) signal(member, "SIGSTOP")
-    for (const member of members) signal(member, "SIGKILL")
+    for (const member of members) signalContainerProcess(member, "SIGSTOP")
+    for (const member of members) signalContainerProcess(member, "SIGKILL")
     if (Date.now() > deadline) throw new Error("container-job-cleanup-failed")
   }
-  if (terminateRoot) signal(root, "SIGKILL")
+  if (terminateRoot) signalContainerProcess(root, "SIGKILL")
 }

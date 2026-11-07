@@ -1,7 +1,7 @@
 import { exportLimits, type ExportFailure } from "../../../../packages/operations/src/export-failure.ts"
 import {residentBytes,scopeOomKilled} from "./resource-monitor.ts"
 import {RemoteJournal} from "../remote-journal.ts"
-import {isolationMode, spawnContainerJob, killContainerJob} from "../container-process.ts"
+import {isolationMode, spawnContainerJob, killContainerJob, containerJobFailure} from "../container-process.ts"
 import { spawn } from "node:child_process"
 import { mkdir,writeFile,readFile,rm,rmdir } from "node:fs/promises"
 import path from "node:path"
@@ -41,7 +41,8 @@ export async function deliverExport(store:ReturnType<typeof exportStore>,root:st
     cancellation=setInterval(()=>{if(checking)return;checking=true;void store.active(job.id,job.lease).then(active=>{if(!active&&!exited){failure??={kind:"application",code:"export-cancelled"};kill()}}).catch(()=>{if(!exited){failure??={kind:"application",code:"export-lease-check-failed"};kill()}}).finally(()=>{checking=false})},50)
     const {code,signal}=await new Promise<{code:number|null;signal:NodeJS.Signals|null}>((resolve,reject)=>{child.once("error",reject);child.once("exit",(code,signal)=>resolve({code,signal}))})
     exited=true;kill();await killed;clearTimeout(timer);clearInterval(resources);clearInterval(cancellation)
-    if(code!==0){
+    failure ??= containerJobFailure(child)
+    if(code!==0 || failure){
       const limitSignal=signal ?? (code===128+os.constants.signals.SIGXCPU ? "SIGXCPU" : code===128+os.constants.signals.SIGXFSZ ? "SIGXFSZ" : null)
       failure??=isolationMode()==="systemd" && await scopeOomKilled(unit) ? {kind:"limit",limit:"memory",signal} : limitSignal==="SIGXCPU" ? {kind:"limit",limit:"cpu",signal:limitSignal} : limitSignal==="SIGXFSZ" ? {kind:"limit",limit:"file-size",signal:limitSignal} : signal ? {kind:"signal",signal} : {kind:"exit",code:code ?? 1,diagnostic:diagnostic.slice(-200)}
       const bytes=await readFile(path.join(directory,"failure.json")).catch(()=>null)

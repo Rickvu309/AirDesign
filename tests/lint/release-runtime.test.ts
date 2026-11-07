@@ -9,3 +9,9 @@ it("rejects original payment defaults and missing renderer startup checks and ac
     expect(releaseRuntimeHits(file,readFileSync(file,"utf8"))).toEqual([])
   }
 })
+
+it("validates the renderer before queues in the shared worker cycle", () => {
+ const file = "apps/worker/src/worker-cycle.ts"
+ expect(releaseRuntimeHits(file, "new OperationStore(database)")).not.toEqual([])
+ expect(releaseRuntimeHits(file, readFileSync(file, "utf8"))).toEqual([])
+})

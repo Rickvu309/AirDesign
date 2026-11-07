@@ -12,6 +12,7 @@ export function exportFailureMessage(failure: ExportFailure): string {
       }
     case "signal": return fillCopy("export.failed_signal", { signal: failure.signal })
     case "exit": return fillCopy("export.failed_exit", { code: String(failure.code) })
+    case "isolation":
     case "application": return copy("export.failed_application")
   }
 }
