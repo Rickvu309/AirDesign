@@ -1,3 +1,4 @@
+import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {isolationMode, spawnContainerJob, killContainerJob} from "./container-process.ts"
 import { spawn } from "node:child_process"
 import { mkdir, writeFile, readFile, rm, rmdir } from "node:fs/promises"
@@ -46,7 +47,7 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     if (reportBytes.length > 8 * 1024 * 1024) throw new Error("report-limit")
     const report: unknown = JSON.parse(reportBytes.toString("utf8"))
     if (!report || typeof report !== "object" || Array.isArray(report)) throw new Error("invalid-worker-report")
-    return store.complete(id, claimed.lease, result, Object.fromEntries(Object.entries(report)))
+    return store.complete(id, claimed.lease, result, {...Object.fromEntries(Object.entries(report)),workerSha:(await readBuildIdentity()).sha})
   } catch (error) {
     store.fail(id, claimed.lease, error instanceof Error ? error.message : "worker-failed")
     return false

@@ -1,4 +1,4 @@
-import {readBuildIdentity} from "../../../scripts/live/build-identity.ts"
+import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {access as accessFile} from "node:fs/promises"
 import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
 import {workerHandler} from "./worker/handle.ts"

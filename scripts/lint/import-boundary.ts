@@ -40,6 +40,9 @@ function boundaryReason(relativeFile: string, filePath: string, specifier: strin
   if (inPackage && (specifier.startsWith("apps/") || specifier.includes("/apps/"))) {
     return "package-imports-app"
   }
+  const resolvedSpecifier = specifier.startsWith(".") ? path.relative(repoRoot,path.resolve(path.dirname(filePath),specifier)).split(path.sep).join("/") : specifier
+  if(product && /^(?:apps|packages)\/[^/]+\/src\//.test(relativeFile) && resolvedSpecifier.startsWith("scripts/"))return "runtime-imports-scripts"
+  if(product && /^(?:apps|packages)\/[^/]+\/src\//.test(relativeFile) && !/\.test\.[cm]?[jt]sx?$/.test(relativeFile) && /\/operator-smoke(?:\.[cm]?[jt]s)?$/.test(resolvedSpecifier) && relativeFile!=="apps/server/src/smoke/mint-link.ts")return "operator-smoke-outside-cli"
   if (specifier.startsWith(".")) {
     const resolved = path.normalize(path.join(path.dirname(filePath), specifier))
     const relativeResolved = path.relative(repoRoot, resolved).split(path.sep).join("/")

@@ -29,11 +29,11 @@ npm run verify:live -- --expect-sha "$EXPECTED_SHA" --site-url "$SITE_ORIGIN" --
 
 A custom operator can pipe a link to stdin instead of `--railway`; mint it only when the runner reaches sign-in. Prefer `--railway` so the two-minute lifetime starts after the public-page checks. Never pass a link as a command-line argument.
 
-The first line of stderr names the failed step. Exit zero requires `status: "pass"` in `receipt.json`, matching site and Studio SHAs, and every named step passing. Receipts include timestamps, checked links and screenshot paths, never the sign-in URL or cookies. Evidence defaults to `~/tmp/airdesign-live-verify/<sha>-<timestamp>/`. Keep it with the release record. Review screenshots and both exports; a failed journey is a release failure. Fix the cause or roll back, then rerun the complete check.
+The first line of stderr names the failed step. Exit zero requires `status: "pass"` in `receipt.json`, matching site, Studio, and completed-import worker SHAs, and every named step passing. Receipts include the import workerSha, timestamps, checked links, screenshot paths, and allowedBrowserExceptions, never the sign-in URL or cookies. Evidence defaults to `~/tmp/airdesign-live-verify/<sha>-<timestamp>/`. Keep it with the release record. Review screenshots and both exports; a failed journey is a release failure. Fix the cause or roll back, then rerun the complete check.
 
 The journey blocks paid Aira requests, checks its entry point, creates a blank deck, imports the preservation fixture, saves and reloads a title, exports PPTX and PDF, opens the PPTX with LibreOffice, then moves both decks to Trash and empties it. It refuses a nonempty account before creating anything. On an interrupted run, inspect and clean only that dedicated account before retrying.
 
-For a production-free rehearsal with deliberate wrong-SHA and broken-link failures:
+For a production-free rehearsal with deliberate wrong-SHA, broken-link, stale-worker, and Studio script-error failures:
 
 ```sh
 npm run build

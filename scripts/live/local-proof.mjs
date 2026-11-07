@@ -12,8 +12,8 @@ await mkdir(root,{recursive:true})
 let broken=false,stack,site
 try{
   stack=await scenario({browserEnabled:true,exposeInbox:false,realtime:true})
-  await execute(process.execPath,["node_modules/vite/bin/vite.js","build","apps/site"],{env:{...process.env,AIRDESIGN_STUDIO_ORIGIN:stack.origin},maxBuffer:1000000})
-  const siteRoot=path.resolve("apps/site/dist")
+  await execute(process.execPath,["node_modules/vite/bin/vite.js","build","apps/site","--outDir",path.join(root,"site")],{env:{...process.env,AIRDESIGN_STUDIO_ORIGIN:stack.origin},maxBuffer:1000000})
+  const siteRoot=path.join(root,"site")
   site=createServer(async(request,response)=>{
     try{
       const url=new URL(request.url,"http://localhost"),filename=path.resolve(siteRoot,"."+url.pathname+(url.pathname.endsWith("/") ? "index.html" : ""))
@@ -30,11 +30,19 @@ try{
   broken=true
   const bad=await verifyLive({...base,output:path.join(root,"broken-link")});assert.equal(bad.status,"fail");assert.equal(bad.failedStep,"site-page:/");assert.match(bad.error,/broken link/)
   broken=false
+  const studioFailure=await verifyLive({...base,output:path.join(root,"studio-error"),configureContext:async context=>context.addInitScript(({origin})=>{if(location.origin===origin)throw new Error("deliberate-studio-script-error")},{origin:stack.origin})});assert.equal(studioFailure.status,"fail");assert.equal(studioFailure.failedStep,"studio-sign-in");assert.match(studioFailure.error,/deliberate-studio-script-error/)
+  const mismatch=await verifyLive({...base,output:path.join(root,"stale-worker"),configureContext:async context=>context.route("**/api/operations/*",async route=>{
+    if(route.request().method()!=="GET"){await route.continue();return}
+    const response=await route.fetch(),operation=await response.json()
+    if(operation.kind==="ready")operation.report={...operation.report,workerSha:"f".repeat(40)}
+    await route.fulfill({response,json:operation})
+  })});assert.equal(mismatch.status,"fail");assert.equal(mismatch.failedStep,"import-powerpoint");assert.match(mismatch.error,/worker commit/)
   const passed=await verifyLive({...base,output:path.join(root,"pass")});assert.equal(passed.status,"pass",passed.failedStep+": "+passed.error)
-  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,pass:path.join(root,"pass/receipt.json")},null,2))
+  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,studioError:studioFailure.failedStep,staleWorker:mismatch.failedStep,pass:path.join(root,"pass/receipt.json")},null,2))
   process.stdout.write(`pass: ${root}/proof.json\n`)
 }finally{
   if(site){site.closeAllConnections();await new Promise(resolve=>site.close(resolve))}
   if(stack)await stack.close()
   await rm(path.join(root,"worker"),{recursive:true,force:true})
+  await rm(path.join(root,"site"),{recursive:true,force:true})
 }

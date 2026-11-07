@@ -12,6 +12,7 @@ import {importPptx} from "../../packages/pptx/src/index.ts"
 import {libreOfficeFastCheck} from "../../packages/pptx/test/libreoffice.ts"
 import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
 import {validateMcpMetadata} from "./mcp-metadata.ts"
+import {checkWorkerIdentity} from "./worker-identity.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
 export async function checkIdentity(base,route,sha){
@@ -52,10 +53,10 @@ function safeError(error){return String(error?.message ?? error).replace(/https?
 export async function verifyLive(options){
   const {sha,site,studio,mcp,email,signInLink,output}=options
   await mkdir(output,{recursive:true,mode:0o700})
-  const receipt={expectedSha:sha,startedAt:new Date().toISOString(),origins:{site,studio,mcp},status:"running",steps:[]}
-  const created=[],paidCalls=[]
+  const receipt={expectedSha:sha,startedAt:new Date().toISOString(),origins:{site,studio,mcp},status:"running",allowedBrowserExceptions:[],steps:[]}
+  const created=[],paidCalls=[],browserErrors=[]
   let current="configuration",browser,context,page,signedSmoke=false
-  async function step(name,run){current=name;const started=Date.now();try{const evidence=await run();receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){receipt.steps.push({name,status:"fail",error:safeError(error)});throw error}}
+  async function step(name,run){current=name;const started=Date.now();try{const evidence=await run();assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){receipt.steps.push({name,status:"fail",error:safeError(error)});throw error}}
   async function shot(name){const file=name+".png";await page.screenshot({path:path.join(output,file),fullPage:true});return file}
   try{
     assert.match(sha,/^[a-f0-9]{40}$/,"--expect-sha must be a full commit sha")
@@ -75,21 +76,22 @@ export async function verifyLive(options){
     browser=await chromium.launch({headless:true,...process.env.AIRDESIGN_CHROME_PATH ? {executablePath:process.env.AIRDESIGN_CHROME_PATH} : {}})
     context=await browser.newContext({viewport:{width:1440,height:1000},acceptDownloads:true})
     await context.route("**/api/aira**",async route=>{if(route.request().method()==="POST"){paidCalls.push(route.request().method());await route.abort("blockedbyclient");return}await route.continue()})
+    await options.configureContext?.(context)
+    context.on("page",opened=>{
+      opened.on("pageerror",error=>browserErrors.push({kind:"script",error:safeError(error)}))
+      opened.on("console",message=>{if(message.type()==="error")browserErrors.push({kind:"console",error:safeError(message.text())})})
+    })
+    context.on("requestfailed",request=>browserErrors.push({kind:"request",path:new URL(request.url()).pathname,error:safeError(request.failure()?.errorText)}))
+    context.on("response",response=>{if(response.status()>=400)browserErrors.push({kind:"http",status:response.status(),path:new URL(response.url()).pathname})})
     page=await context.newPage()
     for(const route of sitePages)await step("site-page:"+route,async()=>{
-      const errors=[]
-      const onError=error=>errors.push(safeError(error)),onConsole=message=>{if(message.type()==="error")errors.push(message.text())},onFailed=request=>errors.push("request failed: "+new URL(request.url()).pathname),onResponse=response=>{if(response.status()>=400)errors.push(`HTTP ${response.status()} ${new URL(response.url()).pathname}`)}
-      page.on("pageerror",onError);page.on("console",onConsole);page.on("requestfailed",onFailed);page.on("response",onResponse)
-      try{
         const response=await page.goto(site+route,{waitUntil:"networkidle"});assert.equal(response.status(),200)
         await expect(page.locator("h1")).toBeVisible()
         await page.locator("img").evaluateAll(nodes=>Promise.all(nodes.map(image=>{image.loading="eager";return image.decode()})))
         const links=await auditLinks(page,site)
         const assets=await auditAssets(page)
         const screenshot=await shot("site"+(route==="/" ? "-landing" : route.replaceAll("/","-")))
-        assert.deepEqual(errors,[],"browser errors")
         return {links,assets,screenshot}
-      }finally{page.off("pageerror",onError);page.off("console",onConsole);page.off("requestfailed",onFailed);page.off("response",onResponse)}
     })
     await step("studio-sign-in",async()=>{await page.goto(studio);await expect(page.getByRole("textbox",{name:/email/i})).toBeVisible();return {assets:await auditAssets(page),screenshot:await shot("studio-sign-in")}})
     await step("smoke-sign-in",async()=>{
@@ -113,10 +115,11 @@ export async function verifyLive(options){
       await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles(path.resolve("fixtures/pptx/preservation.pptx"))
       if(options.runWorker){await expect(page.getByRole("status").filter({hasText:"Import queued"})).toBeVisible();await options.runWorker()}
       await expect(page.locator(".import-report")).toBeVisible({timeout:120000})
+      const workerIdentity=checkWorkerIdentity(JSON.parse(await page.locator(".import-report pre").textContent()),sha)
       await page.getByRole("button",{name:"Keep and open deck",exact:true}).click()
       const link=page.getByRole("link",{name:"Open imported deck",exact:true});await link.waitFor();created.push((await link.getAttribute("href")).split("/").at(-1))
       await link.click();await page.locator('[data-sync-state="saved"]').waitFor()
-      return {screenshot:await shot("imported-deck")}
+      return {...workerIdentity,screenshot:await shot("imported-deck")}
     })
     const title="Live verification "+sha.slice(0,12)
     await step("edit-title-and-reload",async()=>{
@@ -155,8 +158,9 @@ export async function verifyLive(options){
       return {screenshot:await shot("empty-trash")}
     })
     await step("no-paid-agent-calls",async()=>{assert.deepEqual(paidCalls,[],"unexpected Aira mutation was blocked")})
+    receipt.browserErrors=browserErrors
     receipt.status="pass"
-  }catch(error){receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error);if(page && !["smoke-sign-in","configuration"].includes(current))await shot("failure").catch(()=>undefined)}finally{
+  }catch(error){receipt.browserErrors=browserErrors;receipt.status="fail";receipt.failedStep=current;receipt.error=safeError(error);if(page && !["smoke-sign-in","configuration"].includes(current))await shot("failure").catch(()=>undefined)}finally{
     if(receipt.status==="fail" && signedSmoke && created.length){
       try{
         for(const id of created){const response=await context.request.post(studio+`/api/catalog/${id}/trash`,{headers:{origin:studio},data:{},timeout:15000});assert.ok(response.ok(),"failure cleanup could not trash smoke deck")}
