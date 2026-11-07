@@ -21,6 +21,20 @@ afterEach(() => {
 })
 
 describe("studio access", () => {
+  it("preserves the search query when a returning session is still signed in", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    await act(async () => { setValue(document.querySelector<HTMLInputElement>('input[type="search"]'), "Strategy"); await flush() })
+    await act(async () => { window.dispatchEvent(new Event("pagehide")) })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    await act(async () => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
+      await flush()
+    })
+    expect(document.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe("Strategy")
+  })
+
+
   it("preserves the email sign-in flow when switching tabs", async () => {
     await render(<AccessApp client={fakeClient()} />)
     const field = document.querySelector<HTMLInputElement>('input[type="email"]')
