@@ -15,6 +15,7 @@ import {validateMcpMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
 import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
 import {classifyPageAssets} from "./site-assets.ts"
+import {operationTracker} from "./operation-trace.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
 export async function checkIdentity(base,route,sha){
@@ -58,9 +59,9 @@ export async function verifyLive(options){
   await mkdir(output,{recursive:true,mode:0o700})
   const receipt={expectedSha:sha,startedAt:new Date().toISOString(),origins:{site,studio,mcp},status:"running",allowedBrowserExceptions:[],steps:[]}
   const created=[],paidCalls=[],browserErrors=[]
-  let current="configuration",browser,context,page,signedSmoke=false,operations=new Map()
-  const pendingOperations=new Set()
-  async function step(name,run,browserCheck=true){current=name;operations=new Map();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){await Promise.all(pendingOperations);const screenshot=page ? await shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:[...operations.values()]});throw error}}
+  let current="configuration",browser,context,page,signedSmoke=false
+  const operations=operationTracker(2000)
+  async function step(name,run,browserCheck=true){current=name;operations.begin();const started=Date.now();try{const evidence=await run();if(browserCheck)assert.deepEqual(browserErrors,[],"browser errors");receipt.steps.push({name,status:"pass",durationMs:Date.now()-started,...evidence===undefined ? {} : {evidence}})}catch(error){const traces=await operations.settled(),screenshot=page ? await shot("failure-"+name.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")).catch(()=>null) : null;receipt.steps.push({name,status:"fail",durationMs:Date.now()-started,error:safeError(error),screenshot,operations:traces});throw error}}
   async function shot(name){
     const file=name+".png",viewport=page.viewportSize()
     const height=await page.evaluate(()=>document.documentElement.scrollHeight)
@@ -95,18 +96,7 @@ export async function verifyLive(options){
     })
     context.on("requestfailed",request=>browserErrors.push({kind:"request",path:new URL(request.url()).pathname,error:safeError(request.failure()?.errorText)}))
     context.on("response",response=>{if(response.status()>=400)browserErrors.push({kind:"http",status:response.status(),path:new URL(response.url()).pathname})})
-    context.on("response",response=>{
-      const pathname=new URL(response.url()).pathname
-      if(response.request().method()!=="GET" || !response.headers()["content-type"]?.includes("application/json") || !/^\/api\/(operations\/[^/]+|catalog\/[^/]+\/exports|catalog\/export-jobs\/[^/]+\/[^/]+)$/.test(pathname))return
-      const seen=operations,read=response.json().then(value=>{
-        for(const operation of Array.isArray(value) ? value : [value]){
-          if(!operation || typeof operation.id!=="string" || typeof operation.kind!=="string")continue
-          const trace={id:operation.id,kind:operation.kind,...typeof operation.reason==="string" ? {reason:safeError(operation.reason)} : {},...typeof operation.attempts==="number" ? {attempts:operation.attempts} : {}}
-          seen.delete(trace.id);seen.set(trace.id,trace)
-        }
-      }).catch(()=>undefined)
-      pendingOperations.add(read);void read.finally(()=>pendingOperations.delete(read))
-    })
+    context.on("response",response=>operations.observe(response.request().method(),new URL(response.url()).pathname,response.headers()["content-type"],()=>response.json()))
     page=await context.newPage()
     for(const route of sitePages)await step("site-page:"+route,async()=>{
         const response=await page.goto(site+route,{waitUntil:"networkidle"});assert.equal(response.status(),200)
