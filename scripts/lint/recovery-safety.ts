@@ -2,7 +2,10 @@ export function recoverySafetyHits(file:string,source:string){
   const normalized=file.replaceAll("\\","/"),hits:{line:number;reason:string}[]=[]
   const reject=(reason:string)=>hits.push({line:1,reason})
   if(normalized.endsWith(".test.ts")&&/expect\([^\n]*pg_stat_activity[^\n]*\)\.toBe\((?:0|"0")\)/.test(source))reject("prove-postgres-release-with-unforced-drop-not-immediate-backend-count")
-  if(normalized.endsWith("/apps/worker/test/export-recovery.test.ts")&&/once\(\w+\.stdout,\s*["']data["']/.test(source))reject("read-process-protocols-as-lines-not-stdout-chunks")
+  if(/\/apps\/worker\/test\/(?:export|remote)-recovery\.test\.ts$/.test(normalized)&&/once\(\w+\.stdout,\s*["']data["']/.test(source))reject("read-process-protocols-as-lines-not-stdout-chunks")
+  if(normalized.endsWith("/apps/worker/test/remote-recovery.test.ts")&&/writeFileSync\(['"]ready['"],/.test(source))reject("publish-ready-marker-atomically-before-notifying-supervisor")
+  if(normalized.endsWith("/apps/studio/src/access/link-route.browser.test.ts")&&!source.includes('await mkdir(path.join(evidence, "lane-10"), { recursive: true })'))reject("create-link-route-screenshot-directory-before-browser-evidence")
+  if(/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(normalized)&&/\bexecFileSync\(["']git["'],\s*\[["']show["']/.test(source))reject("regression-tests-need-committed-fixtures-not-local-git-history")
   if(normalized.endsWith("/vitest.config.ts")&&!source.includes("maxWorkers: Number(process.env.VITEST_MAX_WORKERS ?? 2)"))reject("bound-test-workers-to-heavy-memory-budget")
   if(normalized.endsWith("/packages/access/src/create-access.ts")){
     const start=source.indexOf("async function deleteAccount("),end=source.indexOf("async function readPerson(",start),deletion=source.slice(start,end)
