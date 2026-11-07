@@ -937,7 +937,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -2278,7 +2278,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 495,
         "top": 341,
@@ -2360,7 +2360,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 495,
         "top": 317,
@@ -2906,7 +2906,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 515,
         "top": 240,
@@ -3051,7 +3051,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3205,7 +3205,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3269,7 +3269,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 515,
         "top": 240,
@@ -3435,7 +3435,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3510,7 +3510,7 @@
     "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,

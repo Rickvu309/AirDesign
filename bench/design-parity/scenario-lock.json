@@ -873,7 +873,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -2142,7 +2142,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 495,
         "top": 341,
@@ -2220,7 +2220,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 495,
         "top": 317,
@@ -2730,7 +2730,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 515,
         "top": 240,
@@ -2867,7 +2867,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3013,7 +3013,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3073,7 +3073,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 515,
         "top": 240,
@@ -3231,7 +3231,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,
@@ -3302,7 +3302,7 @@
     "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
     "component": {
       "kind": "dialog",
-      "selector": "dialog[open]",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
       "designBox": {
         "left": 535,
         "top": 358,

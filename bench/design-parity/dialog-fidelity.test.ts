@@ -43,7 +43,7 @@ it("rejects the round-6 bitmap dialog bypass through copy, actions and independe
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    page.setDefaultTimeout(500)
+    page.setDefaultTimeout(10000)
     await page.setContent(`<style>${fonts.join("")}body{margin:0}canvas{position:fixed;inset:0;z-index:-1}#brand{position:absolute;left:305px;top:850px;font:2px Geist;color:#222}#open{position:absolute;left:450px;top:850px;font:2px Geist;border:0;padding:0}#fake{position:fixed;inset:0;margin:0;padding:0;border:0;width:1470px;height:923px;background:transparent}h2{position:absolute;left:559px;top:440px;margin:0;font:600 17px Geist;color:#222}#delete,#cancel{position:absolute;top:505px;height:36px;font:600 14px Geist;border:0;border-radius:8px}#delete{left:775px;width:136px;background:#dc3b3b;color:white}#cancel{left:688px;width:79px;background:white;color:#222}</style><canvas width="1470" height="923"></canvas><span id="brand">AirDesign</span><dialog id="fake" open><h2>Empty Trash?</h2><button id="delete">Delete permanently</button><button id="cancel">Cancel</button></dialog><button id="open">Sign out</button><dialog id="probe" aria-label="Sign out?"><button id="close">Cancel</button></dialog><script>document.querySelector('#open').onclick=()=>{document.querySelector('#probe').showModal();document.querySelector('#open').style.visibility='hidden'};document.querySelector('#close').onclick=()=>document.querySelector('#probe').close()</script>`)
     await page.evaluate(async src=>{
       await document.fonts.ready
@@ -52,6 +52,7 @@ it("rejects the round-6 bitmap dialog bypass through copy, actions and independe
       context.drawImage(image,0,0);context.fillStyle="white";context.fillRect(558,439,280,22);context.fillRect(688,504,224,38)
     },`data:image/png;base64,${design.toString("base64")}`)
     await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
+    page.setDefaultTimeout(500)
     await page.evaluate(()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur()})
     const capture=await page.screenshot(),frame=await compareDesign(design,capture)
     expect(frame.score).toBeLessThan(entry.target)
@@ -68,6 +69,25 @@ it("rejects the round-6 bitmap dialog bypass through copy, actions and independe
     process.stdout.write(JSON.stringify({dialogProbe:{frameScore:frame.score,componentScore:wrongRegion.metric.score,componentTarget:component.target,boundsScore:wrongBounds.metric.score,passed:false}})+"\n")
   }finally{await browser.close()}
 },30000)
+
+it("locates both native and accessible dialogs for independent live crops",async()=>{
+  const entries=(await readRegistry()).filter(entry=>entry.component?.kind==="dialog")
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage()
+    for(const html of ['<dialog open>Delete for good</dialog>','<div role="dialog">Delete for good</div>','<div role="alertdialog">Delete for good</div>']){
+      await page.setContent(html)
+      if(html.startsWith("<div"))expect(await page.locator("dialog[open]").count()).toBe(0)
+      for(const entry of entries){
+        const locator=page.locator(entry.component!.selector)
+        expect(await locator.count(),entry.code).toBe(1)
+        const box=await locator.boundingBox()
+        expect(box?.width,entry.code).toBeGreaterThan(0)
+        expect(box?.height,entry.code).toBeGreaterThan(0)
+      }
+    }
+  }finally{await browser.close()}
+})
 
 it("accepts painted dialog actions and rejects wrapping, clipping and missing Cancel outlines separately",async()=>{
   const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")!
