@@ -4,7 +4,11 @@
 
 Build the root Dockerfile with Node 24. The image builds Studio, the public site, the PDF renderer, and the MCP capture renderer. Its runtime installs production npm dependencies, Playwright Chromium, browser system libraries, and util-linux. Run as the image's unprivileged node user.
 
-Use `railway.json` for `web` and `railway.worker.json` for `worker`. Both services use the same image. Do not scale either service beyond one replica in this release.
+`.railway/railway.ts` is the source of truth for both services: GitHub source, build, start command, health check, domains, volumes and non-secret variables. Secrets (`DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_CLAUDE_KEY`, `RESEND_API_KEY`) are marked `preserve()` and live only in Railway. Change service configuration in that file and run `railway config plan`, then `railway config apply`, from a checkout linked to the project. Both services use the same image. Do not scale either service beyond one replica in this release.
+
+## Deploy from GitHub
+
+Both services deploy from `Rickvu309/AirDesign` branch `main` through the Railway GitHub integration with wait-for-CI (`checkSuites`) on. A push to `main` builds `web` and `worker` from that commit only after its GitHub checks pass; a failed check skips the deploy. Railway passes `RAILWAY_GIT_COMMIT_SHA` to the Docker build, so `/version` reports the deployed commit with no manual variable. Do not set `AIRDESIGN_BUILD_SHA` on Railway; it would override the real commit. Use `railway up` only for an emergency deploy of a commit that is already on `main`.
 
 | Service | Command | Storage | Health check |
 | --- | --- | --- | --- |
@@ -59,7 +63,7 @@ Railway mounts volumes as root. Both services start through `scripts/docker/entr
 
 ## Service role
 
-One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: unset or `web` runs `node apps/server/src/main.ts`, `worker` runs `node apps/worker/src/service.ts`. The entrypoint execs Node directly so SIGTERM reaches the app. Set `AIRDESIGN_ROLE=worker` on the worker service. Railway may ignore an uploaded `railway.json` start command, so the role variable is the source of truth.
+One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: unset or `web` runs `node apps/server/src/main.ts`, `worker` runs `node apps/worker/src/service.ts`. The entrypoint execs Node directly so SIGTERM reaches the app. Set `AIRDESIGN_ROLE=worker` on the worker service. The role is declared in `.railway/railway.ts`.
 
 Worker artifact completion uses an authenticated binary PUT to `/internal/worker` with queue, operation ID and lease query parameters, followed by a separate JSON completion report. Uploads spool to private disk in bounded chunks and reject more than 500 MiB as they arrive; reports are limited to 8 MiB. The existing SQLite artifact commit still reads the accepted artifact once into a Buffer. Public upload limits are unchanged. Abandoned upload files are removed when the web process starts.
 
@@ -67,7 +71,7 @@ The worker journals export scratch and process-group ownership on its persistent
 
 ## Verify the deployed commit and journey
 
-Expose the image build identity by supplying Docker build argument `AIRDESIGN_BUILD_SHA` or Railway's `RAILWAY_GIT_COMMIT_SHA`. An optional `AIRDESIGN_BUILD_TIME` fixes the UTC build timestamp. The build writes the identity once; web `/version` and site `/version.json` serve that identity. Build the Pages artifact from the same commit. A runtime environment change cannot relabel an old artifact.
+Expose the image build identity through Railway's `RAILWAY_GIT_COMMIT_SHA` (GitHub deploys) or, outside Railway, Docker build argument `AIRDESIGN_BUILD_SHA`. An optional `AIRDESIGN_BUILD_TIME` fixes the UTC build timestamp. The build writes the identity once; web `/version` and site `/version.json` serve that identity. Build the Pages artifact from the same commit. A runtime environment change cannot relabel an old artifact.
 
 Set `AIRDESIGN_SMOKE_EMAILS` on the web service to a dedicated smoke email, or a comma-separated allowlist. Leave it unset to disable operator minting. The CLI reuses `AIRDESIGN_DATABASE_URL` (or `DATABASE_URL`), `AIRDESIGN_SECRET`, and `AIRDESIGN_PUBLIC_ORIGIN`; it needs no additional secret. Do not add a public mint endpoint or enable the inbox. The smoke account must start empty.
 
