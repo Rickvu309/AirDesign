@@ -7,9 +7,11 @@ import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseR
 
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
+    git("config","user.name","Design parity history fixture")
+    git("config","user.email","design-parity-history@example.invalid")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     const entries=await readRegistry(),entry=entries[0]!
     const save=async(budget:number)=>{
@@ -37,9 +39,11 @@ it("keeps the merge-base ceiling after an unauthorized increase is committed",as
 
 it("requires identity change reasons and refuses coverage loss even with a reason",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-identity-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
+    git("config","user.name","Design parity history fixture")
+    git("config","user.email","design-parity-history@example.invalid")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=(await readRegistry()).map(entry=>({...entry,scenarioChangedBecause:undefined})),first=entries[0]!
@@ -68,10 +72,12 @@ it("requires identity change reasons and refuses coverage loss even with a reaso
 
 it("rejects local HEAD and descendants and ignores every CI base override",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-base-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}}).trim()
   const previous={CI:process.env.CI,DESIGN_PARITY_BASE:process.env.DESIGN_PARITY_BASE,GITHUB_BASE_REF:process.env.GITHUB_BASE_REF}
   try{
     git("init","-b","main")
+    git("config","user.name","Design parity history fixture")
+    git("config","user.email","design-parity-history@example.invalid")
     git("commit","--allow-empty","-m","Reviewed ceiling")
     const base=git("rev-parse","HEAD")
     git("update-ref","refs/remotes/origin/main",base)
@@ -102,9 +108,11 @@ it("rejects local HEAD and descendants and ignores every CI base override",async
 
 it("rejects co-edited seed, unreachable status and budget ceilings after the first reviewed lock lands",async()=>{
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-landed-lock-"))
-  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,EMAIL:"design-parity-history@example.invalid",TMPDIR:path.join(os.homedir(),"tmp")}})
+  const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe",env:{...process.env,TMPDIR:path.join(os.homedir(),"tmp")}})
   try{
     git("init","-b","main")
+    git("config","user.name","Design parity history fixture")
+    git("config","user.email","design-parity-history@example.invalid")
     await mkdir(path.join(cwd,"bench/design-parity"),{recursive:true})
     for(const file of seedFiles){await mkdir(path.dirname(path.join(cwd,file)),{recursive:true});await copyFile(file,path.join(cwd,file))}
     const entries=await readRegistry(),entry=entries.find(value=>value.code==="S31.02")!
