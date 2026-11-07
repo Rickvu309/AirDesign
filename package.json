@@ -51,7 +51,8 @@
     "verify:site": "vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs",
     "verify:pr-09": "npm run verify:release && npm run verify:site",
     "build": "npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer",
-    "verify:design": "node bench/design-parity/run.mjs"
+    "verify:design": "node bench/design-parity/run.mjs",
+    "verify:studio-foundation": "node bench/studio-foundation/verify.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",
