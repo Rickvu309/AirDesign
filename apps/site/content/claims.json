@@ -286,7 +286,7 @@
     },
     {
       "id": "public-047",
-      "text": "Import a PowerPoint →",
+      "text": "Import a PowerPoint",
       "kind": "proven",
       "receipt": "P03/report.md"
     },
@@ -691,6 +691,264 @@
       "text": "Actual AirDesign Studio capture with an editable slide canvas and Aira panel",
       "kind": "proven",
       "receipt": "P05/report.md"
+    },
+    {
+      "id": "site-design-116",
+      "text": "AirDesign — Clarity is the edge.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-117",
+      "text": "Agents",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-118",
+      "text": "So clear the CEO puts the phone down.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-119",
+      "text": "✓",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-120",
+      "text": "A clearer quarter.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-121",
+      "text": "Q3 24",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-122",
+      "text": "Q4 24",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-123",
+      "text": "Q1 25",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-124",
+      "text": "Q2 25",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-125",
+      "text": "Q3 25",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-126",
+      "text": "GOOD DECK",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-127",
+      "text": "ACTION TITLES",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-128",
+      "text": "8/8",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-129",
+      "text": "HARD-DEFECT CHECKS",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-130",
+      "text": "Review",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-131",
+      "text": "SO WHAT",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-132",
+      "text": "Clear",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-133",
+      "text": "SAVED VERSIONS",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-134",
+      "text": "SLIDES",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-135",
+      "text": "8",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-136",
+      "text": "IMPORT ISSUE FLAGS",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-137",
+      "text": "Make slides like magic.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-138",
+      "text": "Review changes by slide.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-139",
+      "text": "Bring any agent.",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-141",
+      "text": "Claude",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-143",
+      "text": "Codex",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-145",
+      "text": "Your agent",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-146",
+      "text": "FY21",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-147",
+      "text": "FY22",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-148",
+      "text": "FY23",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-149",
+      "text": "FY24",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-150",
+      "text": "FY25E",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-151",
+      "text": "with weekly usage",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-152",
+      "text": "Built-in agent",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-153",
+      "text": "Agent connection guides",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-154",
+      "text": "PowerPoint import and export",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-155",
+      "text": "Usage resets every week",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-156",
+      "text": "Paid resets are not available for public use.",
+      "kind": "blocked",
+      "gate": "X06"
+    },
+    {
+      "id": "site-design-157",
+      "text": "Illustrated deck review checks",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-158",
+      "text": "AirDesign is free",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-159",
+      "text": "This page is served by the AirDesign site build. Windows/Mac PowerPoint, screen readers, paid models, human calibration, remote clients and payment provider acceptance are pending.",
+      "kind": "blocked",
+      "gate": "X01"
+    },
+    {
+      "id": "site-design-160",
+      "text": "Site build",
+      "kind": "proven",
+      "receipt": "P09/report.md"
+    },
+    {
+      "id": "site-design-161",
+      "text": "Site build identity",
+      "kind": "proven",
+      "receipt": "P09/report.md"
     }
   ],
   "blocked": [

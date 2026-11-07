@@ -34,7 +34,7 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
   }
   return {
     async list(principal:Principal,trash=false,search="") {return transaction(async tx=>{
-      const result=await tx.query<Row>("SELECT * FROM editing_deck WHERE owner=$1 AND deleted=$2 AND strpos(lower(title||' '||(state->'deck'->'slides')::text),lower($3))>0 ORDER BY updated_at DESC,id",[principal.personId,trash,search])
+      const result=await tx.query<Row>("SELECT * FROM editing_deck WHERE owner=$1 AND deleted=$2 AND strpos(lower(title||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].elements.** ? (@.kind == \"text\").runs[*].text') AS content(value)),'')||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].notes') AS notes(value)),'')),lower($3))>0 ORDER BY updated_at DESC,id",[principal.personId,trash,search])
       return result.rows.map(entry)
     })},
     async create(principal:Principal,request:string,name:string,pendingRequest="",source?:Deck,original?:CatalogSource) {return transaction(async tx=>{

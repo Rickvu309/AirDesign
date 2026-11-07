@@ -4,8 +4,12 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@airdesign/ui": ["packages/ui/src/index.ts"],
-      "@airdesign/access/client": ["packages/access/src/client/index.ts"]
+      "@airdesign/ui": [
+        "packages/ui/src/index.ts"
+      ],
+      "@airdesign/access/client": [
+        "packages/access/src/client/index.ts"
+      ]
     }
   },
   "include": [
@@ -15,7 +19,11 @@
     "apps/**/*.tsx",
     "scripts/**/*.ts",
     "tests/**/*.ts",
-    "bench/**/*.ts"
+    "bench/**/*.ts",
+    ".railway/**/*.ts"
   ],
-  "exclude": ["**/dist/**", "**/node_modules/**"]
+  "exclude": [
+    "**/dist/**",
+    "**/node_modules/**"
+  ]
 }

@@ -14,6 +14,7 @@ export type ExportJob={id:string;deck:string;format:ExportOptions["format"];atte
 )
 type Row={id:string;owner:string;deck:string;options:ExportOptions;snapshot:SavedVersion|null;state:ExportJob["kind"];attempts:number;diagnostics:string[];lease:string|null;deadline:number|null;reason:string|null;result:Uint8Array|null;sha:string|null;expires:number|null;report:Record<string,unknown>}
 const resultLife=7*86400000
+export const pdfExportDeadlineMs=60000
 export async function initializeExports(tx:CatalogSql) {
   await tx.query("CREATE TABLE IF NOT EXISTS deck_export(id text PRIMARY KEY,owner text NOT NULL,request text NOT NULL,deck text NOT NULL REFERENCES editing_deck(id) ON DELETE CASCADE,options jsonb NOT NULL,snapshot jsonb,state text NOT NULL,attempts integer NOT NULL DEFAULT 0,diagnostics jsonb NOT NULL DEFAULT '[]',lease text,deadline double precision,reason text,result bytea,sha text,expires double precision,report jsonb NOT NULL DEFAULT '{}',UNIQUE(owner,request))")
   await tx.query("ALTER TABLE deck_export ADD COLUMN IF NOT EXISTS created double precision NOT NULL DEFAULT 0")
@@ -65,7 +66,7 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
       const row=(await tx.query<Row>("SELECT * FROM deck_export WHERE state='queued' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1")).rows[0]
       if(!row)return null
       if(!row.snapshot)throw new Error("saved-version-required")
-      const lease=randomUUID(),deadline=clock()+(row.options.format==="pdf" ? 2000 : 30000)
+      const lease=randomUUID(),deadline=clock()+(row.options.format==="pdf" ? pdfExportDeadlineMs : 30000)
       await tx.query("UPDATE deck_export SET state='running',lease=$2,deadline=$3,attempts=attempts+1 WHERE id=$1",[row.id,lease,deadline])
       return {id:row.id,lease,deadline,options:row.options,snapshot:row.snapshot}
     })},

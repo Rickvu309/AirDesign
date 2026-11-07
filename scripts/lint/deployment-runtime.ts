@@ -17,5 +17,10 @@ export function deploymentRuntimeHits(file:string,source:string): string[] {
   if(normalized.endsWith("Dockerfile")&&source.includes("npm run start:"))return ["container-direct-node: entrypoint must exec node directly"]
   if(/railway(?:\.worker)?\.json$/.test(normalized)&&source.includes("npm run start:"))return ["container-direct-node: start the role-selecting entrypoint"]
   if(normalized.endsWith("scripts/docker/entrypoint.sh")&&(!source.includes('exec node "$entry"')||!source.includes("--no-new-privs --bounding-set=-all --inh-caps=-all")))return ["container-direct-node: exec node with privilege restrictions"]
+  if(normalized.endsWith("apps/server/src/runtime/studio.ts") && source.includes("max-age=3600"))return ["immutable-studio-assets: cache content-hashed assets for one year with immutable"]
+  if(normalized.endsWith("scripts/live/local-proof.mjs") && !source.includes('AIRDESIGN_WORKER_API_ORIGIN:""'))return ["local-smoke-worker: clear the remote worker origin before launching the local worker"]
+  if(normalized.endsWith("scripts/live/verify-live.mjs") && source.includes('promisify(execFile)(process.env.AIRDESIGN_LIBREOFFICE'))return ["live-libreoffice-check: reuse libreOfficeFastCheck for fresh-profile initialization and PDF validation"]
+  if(normalized.endsWith("scripts/live/verify-live.mjs") && source.includes('await doc.destroy()'))return ["live-pdf-lifecycle: destroy the PDF loading task instead of the document proxy"]
+  if(normalized.endsWith("scripts/live/verify-live.mjs") && source.includes('getByRole("alertdialog")'))return ["live-trash-dialog: locate the shared confirmation by its dialog role and accessible name"]
   return []
 }

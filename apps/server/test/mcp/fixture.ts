@@ -11,16 +11,17 @@ import {StreamableHTTPClientTransport} from "@modelcontextprotocol/sdk/client/st
 import {startServer} from "../../src/main.ts"
 import {createHistoryStore} from "../../src/db/history-store.ts"
 import type {PaymentProvider} from "../../../../packages/usage/src/payments/provider.ts"
-export async function mcpFixture(options:{paymentProvider?:PaymentProvider;publicOrigin?:string;agentAdapter?:AgentAdapter|"configured"}={}){
+export async function mcpFixture(options:{realtime?:boolean;exposeInbox?:boolean;paymentProvider?:PaymentProvider;publicOrigin?:string;agentAdapter?:AgentAdapter|"configured"}={}){
   const database=`airdesign_p07_mcp_${randomBytes(6).toString("hex")}`,host=process.env.AIRDESIGN_PG_HOST ?? "/home/quan/.local/pg/sock",user=process.env.AIRDESIGN_PG_USER ?? "quan"
   const admin=new pg.Client({host,user,database:"postgres"});await admin.connect();await admin.query(`CREATE DATABASE ${database}`)
   const probe=createServer();await new Promise<void>(resolve=>probe.listen(0,"127.0.0.1",resolve));const address=probe.address();if(!address||typeof address==="string")throw new Error("port-missing");const port=address.port;await new Promise<void>(resolve=>probe.close(()=>resolve()))
   const apiOrigin=`http://127.0.0.1:${port}`,origin=options.publicOrigin ?? apiOrigin,url=`postgresql://${user}@/${database}?host=${host}`,previous={database:process.env.AIRDESIGN_DATABASE_URL,inbox:process.env.AIRDESIGN_EXPOSE_INBOX}
   let now=Date.parse("2026-11-06T03:00:00Z")
-  process.env.AIRDESIGN_DATABASE_URL=url;process.env.AIRDESIGN_EXPOSE_INBOX="1"
+  process.env.AIRDESIGN_DATABASE_URL=url;process.env.AIRDESIGN_EXPOSE_INBOX=options.exposeInbox===false ? "0" : "1"
   const directory=await mkdtemp(path.join(os.homedir(),"tmp/airdesign-p07-")),operationsPath=path.join(directory,"operations.sqlite")
-  const history=await createHistoryStore({kind:"postgres",url},()=>now)
-  const server=await startServer(port,{paymentProvider:options.paymentProvider,agentAdapter:options.agentAdapter==="configured" ? undefined : options.agentAdapter ?? localAdapter,publicOrigin:origin,clock:()=>now,operationsPath,templatesPath:path.join(directory,"templates.sqlite")})
+  const clock=()=>options.realtime ? Date.now() : now
+  const history=await createHistoryStore({kind:"postgres",url},clock)
+  const server=await startServer(port,{paymentProvider:options.paymentProvider,agentAdapter:options.agentAdapter==="configured" ? undefined : options.agentAdapter ?? localAdapter,publicOrigin:origin,clock,operationsPath,templatesPath:path.join(directory,"templates.sqlite")})
   const clients:Client[]=[]
   async function json(path:string,body?:unknown,cookie=""){
     return fetch(apiOrigin+path,{method:body===undefined ? "GET" : "POST",headers:{origin,cookie,"content-type":"application/json"},body:body===undefined ? undefined : JSON.stringify(body),redirect:"manual"})

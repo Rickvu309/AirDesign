@@ -54,3 +54,28 @@ it("rejects the original export, JSON transfer and npm signal boundaries",()=>{
  expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec "$@"')).not.toEqual([])
  expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec node "$entry"; --no-new-privs --bounding-set=-all --inh-caps=-all')).toEqual([])
 })
+
+it("rejects the original mutable asset caching and accepts immutable content hashes",()=>{
+ const file="apps/server/src/runtime/studio.ts"
+ expect(deploymentRuntimeHits(file,'"cache-control": pathname.startsWith("/assets/") ? "public, max-age=3600" : "no-store"')).not.toEqual([])
+ expect(deploymentRuntimeHits(file,'"cache-control": hashedAsset ? "public, max-age=31536000, immutable" : "no-store"')).toEqual([])
+})
+it("rejects inherited remote worker routing in the local live-verification rehearsal",()=>{
+ expect(deploymentRuntimeHits("scripts/live/local-proof.mjs",'env:{...process.env,AIRDESIGN_DATABASE_URL:localDatabase}')).not.toEqual([])
+ expect(deploymentRuntimeHits("scripts/live/local-proof.mjs",'env:{...process.env,AIRDESIGN_WORKER_API_ORIGIN:"",AIRDESIGN_DATABASE_URL:localDatabase}')).toEqual([])
+})
+it("rejects the original live LibreOffice check that missed fresh-profile initialization",()=>{
+ const file="scripts/live/verify-live.mjs"
+ expect(deploymentRuntimeHits(file,'await promisify(execFile)(process.env.AIRDESIGN_LIBREOFFICE ?? fallback,args)')).not.toEqual([])
+ expect(deploymentRuntimeHits(file,'await libreOfficeFastCheck(file,directory,process.env.AIRDESIGN_LIBREOFFICE ?? fallback)')).toEqual([])
+})
+it("rejects PDF cleanup through the document proxy",()=>{
+ const file="scripts/live/verify-live.mjs"
+ expect(deploymentRuntimeHits(file,'finally{await doc.destroy()}')).not.toEqual([])
+ expect(deploymentRuntimeHits(file,'finally{await documentTask.destroy()}')).toEqual([])
+})
+it("rejects the original Trash confirmation role",()=>{
+ const file="scripts/live/verify-live.mjs"
+ expect(deploymentRuntimeHits(file,'page.getByRole("alertdialog")')).not.toEqual([])
+ expect(deploymentRuntimeHits(file,'page.getByRole("dialog",{name:"Move deck to Trash?",exact:true})')).toEqual([])
+})

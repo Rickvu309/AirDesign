@@ -1,22 +1,18 @@
 import { createHash, randomBytes, randomInt } from "node:crypto"
-import { mkdir } from "node:fs/promises"
-import path from "node:path"
 import { and, desc, eq, gt, sql } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/pglite"
-import { drizzle as drizzlePg } from "drizzle-orm/node-postgres"
 import { PGlite } from "@electric-sql/pglite"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import pg from "pg"
 import { accessLinkPath } from "./access-link.ts"
 import { accessPolicy } from "./access-policy.ts"
 import { decodePathSegment } from "./decode-path-segment.ts"
-import { dropDisposableSchemaSql } from "./disposable-schema.ts"
 import { issueIntent, readIntent, usableIntent, type SignedIntent } from "./intent-token.ts"
 import { isIntentKind, type IntentKind } from "./intent-kinds.ts"
 import type { MailAdapter } from "./memory-inbox.ts"
 import { mutationRejection } from "./mutation-guard.ts"
-import { accessSchemaSql, accessTables, applicationSchemaName } from "./schema.ts"
+import { accessTables } from "./schema.ts"
+import {openDatabase} from "./access-database.ts"
 import { headerCookies, intentCookieName, intentSetCookie, readRequestCookie, sessionSetCookie } from "./session-cookie.ts"
 
 export type AccessDriver = { kind: "pglite"; dataDir?: string; client?: PGlite } | { kind: "postgres"; url: string }
@@ -231,52 +227,6 @@ async function route(
   return json(404, { status: "not-found" })
 }
 
-async function openDatabase(driver: AccessDriver): Promise<{ db: Database; tables: Tables; close: () => Promise<void> }> {
-  if (driver.kind === "pglite") {
-    if (driver.dataDir && driver.dataDir !== "memory://") await mkdir(path.dirname(driver.dataDir), { recursive: true, mode: 0o700 })
-    const schemaName = driver.dataDir ? applicationSchemaName : `ns_${randomBytes(8).toString("hex")}`
-    const tables = accessTables(schemaName)
-    const client = driver.client ?? await PGlite.create(driver.dataDir)
-    await client.exec(accessSchemaSql(schemaName, driver.dataDir ? "stable" : "disposable"))
-    const db = drizzle(client, { schema: tables })
-    let closed = false
-    return {
-      db,
-      tables,
-      async close() {
-        if (closed) {
-          return
-        }
-        closed = true
-        if (!driver.dataDir) await client.exec(dropDisposableSchemaSql(schemaName))
-        if (!driver.client) await client.close()
-      },
-    }
-  }
-  const tables = accessTables(applicationSchemaName)
-  const pool = new pg.Pool({ connectionString: driver.url })
-  const connections = new Set<Promise<void>>()
-  pool.on("connect", client => {
-    const ended = new Promise<void>(resolve => client.once("end", resolve))
-    connections.add(ended)
-    void ended.then(() => connections.delete(ended))
-  })
-  await pool.query(accessSchemaSql(applicationSchemaName, "stable"))
-  const db = drizzlePg(pool, { schema: tables }) as unknown as Database
-  let closed = false
-  return {
-    db,
-    tables,
-    async close() {
-      if (closed) {
-        return
-      }
-      closed = true
-      await pool.end()
-      await Promise.all(connections)
-    },
-  }
-}
 
 function issueIntentResponse(options: CreateAccessOptions, body: Record<string, unknown>): Response {
   if ([...redirectKeys].some((key) => key in body)) {

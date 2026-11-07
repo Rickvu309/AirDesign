@@ -48,13 +48,14 @@
     "verify:pr-08": "npm run verify:agent && npm run verify:billing",
     "usage:reconcile": "node apps/server/src/billing/reconcile.ts",
     "verify:release": "vitest run bench/release tests/lint/release-claims.test.ts && node bench/release/replay.mjs && node bench/release/tool-replay.mjs && node bench/release/recovery.mjs",
-    "verify:site": "vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs",
+    "verify:site": "vite build apps/site && vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs && node bench/release/site-widths.mjs",
     "verify:pr-09": "npm run verify:release && npm run verify:site",
-    "build": "npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer",
+    "build": "node scripts/live/write-build-identity.mjs && npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer",
+    "verify:live": "node scripts/live/verify-live.mjs",
+    "verify:live:local": "node scripts/live/local-proof.mjs",
     "verify:design": "node bench/design-parity/run.mjs"
   },
   "devDependencies": {
-    "@tailwindcss/node": "^4.3.5",
     "@types/node": "24.10.1",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
@@ -65,10 +66,12 @@
     "pdfjs-dist": "6.5.438",
     "pixelmatch": "^8.0.0",
     "pngjs": "^7.0.0",
-    "tailwindcss": "^4.3.5",
+    "railway": "^3.16.0",
     "typescript": "5.9.3",
     "vite": "8.3.6",
-    "vitest": "5.1.0"
+    "vitest": "5.1.0",
+    "@tailwindcss/node": "^4.3.5",
+    "tailwindcss": "^4.3.5"
   },
   "engines": {
     "node": ">=24"
@@ -77,7 +80,7 @@
     "image-size": "2.0.4"
   },
   "dependencies": {
-    "sharp": "^0.35.5",
-    "playwright": "^1.64.1"
+    "playwright": "^1.64.1",
+    "sharp": "^0.35.5"
   }
 }
