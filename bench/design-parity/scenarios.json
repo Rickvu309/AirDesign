@@ -1,0 +1,3523 @@
+[
+  {
+    "surface": "site",
+    "route": "/",
+    "code": "S11.01",
+    "design": "docs/design/v0.1/screens/S11.01-discover-landing-default.png",
+    "viewport": {
+      "width": 1440,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.990737,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "landing.hero"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "site.pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Pricing",
+        "path": "/pricing/"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "landing-hero",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "site",
+    "route": "/pricing/",
+    "code": "S12.01",
+    "design": "docs/design/v0.1/screens/S12.01-discover-pricing-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.998818,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.01,
+    "assertions": {
+      "copyKeys": [
+        "pricing.heading"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "site.pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Product",
+        "path": "/#product"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "pricing-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S21.01",
+    "design": "docs/design/v0.1/screens/S21.01-access-sign-in-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.999786,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "access.entry_title",
+        "access.email_label",
+        "access.continue_email"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.continue_email"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S22.01",
+    "design": "docs/design/v0.1/screens/S22.01-access-verify-email-check-inbox.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 0.985556,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "fill",
+        "label": "Email",
+        "value": "ada@halden.com"
+      },
+      {
+        "kind": "click",
+        "name": "Continue"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "access.check_title"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.different_email"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/access/link?token=expired-design-parity-token",
+    "code": "S29.01",
+    "design": "docs/design/v0.1/screens/S29.01-access-errors-link-expired.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "access.expired_title",
+        "access.send_new"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.send_new"
+        }
+      ],
+      "probe": {
+        "kind": "expired"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.01",
+    "design": "docs/design/v0.1/screens/S31.01-decks-browse-empty-first-visit.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "empty-account",
+    "budget": 0.995608,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.02",
+    "design": "docs/design/v0.1/screens/S31.02-decks-browse-recents-grid.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.988844,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.03",
+    "design": "docs/design/v0.1/screens/S31.03-decks-browse-recents-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.996345,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.04",
+    "design": "docs/design/v0.1/screens/S31.04-decks-browse-all-decks-grid.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.98887,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S31.05",
+    "design": "docs/design/v0.1/screens/S31.05-decks-browse-all-decks-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.996345,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      },
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.01",
+    "design": "docs/design/v0.1/screens/S32.01-decks-new-deck-menu-open.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.978054,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "+ New deck"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "button",
+          "nameKey": "decks.blank"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.02",
+    "design": "docs/design/v0.1/screens/S32.02-decks-new-deck-importing.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.988844,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "queued"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents",
+        "decks.importing"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "current": "14",
+        "total": "24"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S32.03",
+    "design": "docs/design/v0.1/screens/S32.03-decks-new-deck-import-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.988844,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "failed"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.recents",
+        "decks.import_failed"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S33.01",
+    "design": "docs/design/v0.1/screens/S33.01-decks-trash-deck-moved-toast.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "recents",
+    "budget": 0.971683,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Move to Trash"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Deck moved to Trash"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.trashed",
+        "common.undo"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "deck": "Pricing Strategy Review"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 697,
+        "top": 11,
+        "width": 324,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/trash",
+    "code": "S33.02",
+    "design": "docs/design/v0.1/screens/S33.02-decks-trash-list.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "trash-with-items",
+    "budget": 0.971683,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "decks.trash"
+      ],
+      "controls": [
+        {
+          "role": "heading",
+          "nameKey": "decks.trash"
+        },
+        {
+          "role": "button",
+          "nameKey": "trash.empty_open"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/trash",
+    "code": "S33.03",
+    "design": "docs/design/v0.1/screens/S33.03-decks-trash-empty-trash-confirm.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "trash-with-items",
+    "budget": 0.992506,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Empty Trash"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "trash.empty_title",
+        "trash.empty_body",
+        "trash.empty_action",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "trash.empty_action"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ],
+        "dialogActions": {
+          "primaryKey": "trash.empty_action",
+          "cancelKey": "common.cancel"
+        }
+      },
+      "copyValues": {
+        "n": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.01",
+    "design": "docs/design/v0.1/screens/S41.01-editor-grid-default.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.5,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.02",
+    "design": "docs/design/v0.1/screens/S41.02-editor-grid-add-slide-hover.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "hover",
+        "name": "+ New slide"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.03",
+    "design": "docs/design/v0.1/screens/S41.03-editor-grid-add-slide-hold.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor.",
+    "metric": "local-oklab-v2",
+    "target": 0.03,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S41.04",
+    "design": "docs/design/v0.1/screens/S41.04-editor-grid-slides-pasted.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.new_slide",
+        "import.pasted",
+        "common.undo"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "n": "2",
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 584,
+        "top": 11,
+        "width": 302,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.01",
+    "design": "docs/design/v0.1/screens/S42.01-editor-agent-working.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "working"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.53,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.stop"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.02",
+    "design": "docs/design/v0.1/screens/S42.02-editor-agent-run-complete.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.03",
+    "design": "docs/design/v0.1/screens/S42.03-editor-agent-own-agent-editing.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "remote"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S42.04",
+    "design": "docs/design/v0.1/screens/S42.04-editor-agent-long-message.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "long-message"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.01",
+    "design": "docs/design/v0.1/screens/S43.01-editor-tools-template-picker.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      },
+      {
+        "kind": "click",
+        "name": "Choose template"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.03,
+    "assertions": {
+      "copyKeys": [
+        "editor.templates"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.close_picker"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.02",
+    "design": "docs/design/v0.1/screens/S43.02-editor-tools-design-panel.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999481,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.choose_template"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.03",
+    "design": "docs/design/v0.1/screens/S43.03-editor-tools-images.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Images"
+      },
+      {
+        "kind": "wait-text",
+        "text": "0.0 MB of 512 MB used"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.images"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.04",
+    "design": "docs/design/v0.1/screens/S43.04-editor-tools-shapes.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "No Shapes tool or shapes browser exists in ManualEditor.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.05",
+    "design": "docs/design/v0.1/screens/S43.05-editor-tools-shapes-expanded.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "No expanded shapes browser exists in ManualEditor.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.shapes"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.06",
+    "design": "docs/design/v0.1/screens/S43.06-editor-tools-text.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "No Text toolbar panel exists in ManualEditor.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.text"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S43.07",
+    "design": "docs/design/v0.1/screens/S43.07-editor-tools-actions.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.actions"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S49.01",
+    "design": "docs/design/v0.1/screens/S49.01-editor-errors-agent-run-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "failed"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "agent.failed_title",
+        "agent.failed_body",
+        "agent.resume"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S49.02",
+    "design": "docs/design/v0.1/screens/S49.02-editor-errors-offline.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "offline"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "editor.offline"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.01",
+    "design": "docs/design/v0.1/screens/S61.01-export-export-powerpoint-options.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "editor.export"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 495,
+        "top": 341,
+        "width": 480,
+        "height": 241
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.02",
+    "design": "docs/design/v0.1/screens/S61.02-export-export-pdf-options.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "select",
+        "label": "File format",
+        "value": "pdf"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "editor.export"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 495,
+        "top": 317,
+        "width": 480,
+        "height": 289
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S61.03",
+    "design": "docs/design/v0.1/screens/S61.03-export-export-downloaded-toast.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "export.downloaded"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "file": "Q3 Investor Update.pptx"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 540,
+        "top": 11,
+        "width": 278,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S69.01",
+    "design": "docs/design/v0.1/screens/S69.01-export-errors-export-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-open",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-failed"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "export.failed",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.retry"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 487,
+        "top": 11,
+        "width": 384,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.01",
+    "design": "docs/design/v0.1/screens/S71.01-agents-connect-approve-claude.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Claude",
+    "budget": 0.967088,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.01,
+    "assertions": {
+      "copyKeys": [
+        "oauth.approve_title",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "oauth.allow"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "agent": "Claude"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.02",
+    "design": "docs/design/v0.1/screens/S71.02-agents-connect-claude-connected.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Claude",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Allow"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Ready to return to your agent"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.01,
+    "assertions": {
+      "copyKeys": [
+        "oauth.connected"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "oauth.return_claude"
+        },
+        {
+          "role": "button",
+          "nameKey": "oauth.return_help"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/agents/approve",
+    "code": "S71.03",
+    "design": "docs/design/v0.1/screens/S71.03-agents-connect-approve-codex.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "oauth-Codex",
+    "budget": 0.969738,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "oauth.approve_title",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "oauth.allow"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "agent": "Codex"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S81.01",
+    "design": "docs/design/v0.1/screens/S81.01-settings-settings-usage-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "usage.title",
+        "credits.title",
+        "auto.title"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/agents",
+    "code": "S81.02",
+    "design": "docs/design/v0.1/screens/S81.02-settings-settings-agents-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active-connected",
+    "budget": 0.980139,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "agent.name"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "settings.connected_agents"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.disconnect"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/account",
+    "code": "S81.03",
+    "design": "docs/design/v0.1/screens/S81.03-settings-settings-account-tab.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 0.982311,
+    "status": "reachable",
+    "steps": [],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "settings.profile"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "settings.profile"
+        },
+        {
+          "role": "textbox",
+          "nameKey": "settings.your_name"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.save_name"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.delete_account"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.01",
+    "design": "docs/design/v0.1/screens/S91.01-credits-add-credits-amount.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel",
+        "pay.new_tab"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "pay.continue"
+        },
+        {
+          "role": "spinbutton",
+          "nameKey": "credits.amount_label"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.02",
+    "design": "docs/design/v0.1/screens/S91.02-credits-add-credits-waiting-for-payment.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Waiting for your $25.00 payment…"
+      },
+      {
+        "kind": "selector-click",
+        "selector": "button[aria-label=\"Close add credits\"]"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "pay.waiting",
+        "pay.open",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "amount": "$25.00"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S91.03",
+    "design": "docs/design/v0.1/screens/S91.03-credits-add-credits-credits-added.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "pay"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "pay.added_title",
+        "pay.added_body",
+        "common.done"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.done"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "amount": "$25.00",
+        "balance": "$40.00"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.01",
+    "design": "docs/design/v0.1/screens/S92.01-credits-out-of-usage-limit-reached.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "usage.limit_title",
+        "usage.limit_body",
+        "usage.reset_action"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.02",
+    "design": "docs/design/v0.1/screens/S92.02-credits-out-of-usage-confirm-reset.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited-with-credits",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "usage.reset_confirm_title",
+        "usage.reset_confirm_body",
+        "usage.reset_action",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "usage.reset_action"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.03",
+    "design": "docs/design/v0.1/screens/S92.03-credits-out-of-usage-add-credits-first.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "code": "S92.04",
+    "design": "docs/design/v0.1/screens/S92.04-credits-out-of-usage-reset-complete.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "deck-limited-with-credits",
+    "budget": 0.999605,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Reset for $5"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Usage reset. Resume when you’re ready."
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.02,
+    "assertions": {
+      "copyKeys": [
+        "usage.reset_done",
+        "agent.resume_line",
+        "agent.resume"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.resume"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/",
+    "code": "S99.01",
+    "design": "docs/design/v0.1/screens/S99.01-credits-errors-payment-failed.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "signed-out",
+    "budget": 1,
+    "status": "unreachable",
+    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "pay.failed_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "surface": "studio",
+    "route": "/settings/usage",
+    "code": "S99.02",
+    "design": "docs/design/v0.1/screens/S99.02-credits-errors-payment-expired.png",
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "seed": "usage-active",
+    "budget": 1,
+    "status": "reachable",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "expire-payment"
+      }
+    ],
+    "metric": "local-oklab-v2",
+    "target": 0.3,
+    "assertions": {
+      "copyKeys": [
+        "pay.expired_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  }
+]

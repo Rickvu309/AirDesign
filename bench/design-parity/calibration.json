@@ -1,0 +1,2628 @@
+{
+  "metric": "local-oklab-v2",
+  "targets": {
+    "site": 0.02,
+    "studio": 0.53
+  },
+  "results": [
+    {
+      "code": "S11.01",
+      "surface": "site",
+      "reference": {
+        "score": 0.005892092899986285,
+        "globalScore": 0.004826345668916154,
+        "colorLoss": 0.00009558566477849659,
+        "localLoss": 0.005892092899986285,
+        "worstRegion": {
+          "column": 0,
+          "row": 1,
+          "foreground": 5476,
+          "background": 53324,
+          "foregroundMisses": 32.265100720324895,
+          "backgroundMisses": 0,
+          "score": 0.005892092899986285
+        },
+        "ratio": 0.016340681277607884,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.004826345668916154,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9907366730620163,
+        "globalScore": 0.8208022053517804,
+        "colorLoss": 0.8061107549579594,
+        "localLoss": 0.9907366730620163,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1858,
+          "background": 57062,
+          "foregroundMisses": 1840.7887385492263,
+          "backgroundMisses": 25.313217080397568,
+          "score": 0.9907366730620163
+        },
+        "ratio": 0.05768737965794541,
+        "foregroundLoss": 0.8208022053517804,
+        "edgeLoss": 0.779469167215686,
+        "sizeLoss": 0.0017838939857288683,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S12.01",
+      "surface": "site",
+      "reference": {
+        "score": 0,
+        "globalScore": 0,
+        "colorLoss": 0,
+        "localLoss": 0,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 633,
+          "background": 13635,
+          "foregroundMisses": 0,
+          "backgroundMisses": 0,
+          "score": 0
+        },
+        "ratio": 0.01058512245634982,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.99881710171797,
+        "globalScore": 0.9414831324846058,
+        "colorLoss": 0.9189978379077324,
+        "localLoss": 0.99881710171797,
+        "worstRegion": {
+          "column": 4,
+          "row": 1,
+          "foreground": 1223,
+          "background": 12922,
+          "foregroundMisses": 1221.5533154010773,
+          "backgroundMisses": 32.82139587402345,
+          "score": 0.99881710171797
+        },
+        "ratio": 0.046017496922929516,
+        "foregroundLoss": 0.9414831324846058,
+        "edgeLoss": 0.8211983159396885,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S21.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.000990705336588666,
+        "globalScore": 0.00010664591737346031,
+        "colorLoss": 0.00010664591737346031,
+        "localLoss": 0.000990705336588666,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.000990705336588666
+        },
+        "ratio": 0.00609370508766887,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.999785173701353,
+        "globalScore": 0.9886786658421902,
+        "colorLoss": 0.9817307295383384,
+        "localLoss": 0.999785173701353,
+        "worstRegion": {
+          "column": 7,
+          "row": 3,
+          "foreground": 2605,
+          "background": 11425,
+          "foregroundMisses": 2604.4403774920247,
+          "backgroundMisses": 158.42566769192024,
+          "score": 0.999785173701353
+        },
+        "ratio": 0.027778391963502628,
+        "foregroundLoss": 0.9819153410356003,
+        "edgeLoss": 0.9886786658421902,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S22.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.000990705336588666,
+        "globalScore": 0.00010590134308595072,
+        "colorLoss": 0.00010590134308595072,
+        "localLoss": 0.000990705336588666,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.000990705336588666
+        },
+        "ratio": 0.006472534842756171,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9855558983652069,
+        "globalScore": 0.9471741764900298,
+        "colorLoss": 0.4083182837264753,
+        "localLoss": 0.9855558983652069,
+        "worstRegion": {
+          "column": 5,
+          "row": 2,
+          "foreground": 1324,
+          "background": 12828,
+          "foregroundMisses": 1304.876009435534,
+          "backgroundMisses": 261.33938092341475,
+          "score": 0.9855558983652069
+        },
+        "ratio": 0.009768501116589648,
+        "foregroundLoss": 0.9471741764900298,
+        "edgeLoss": 0.9249080682299841,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S29.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.000901171522979971,
+        "globalScore": 0.000901171522979971,
+        "colorLoss": 0,
+        "localLoss": 0,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 0,
+          "score": 0
+        },
+        "ratio": 0.002037131212181514,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.000901171522979971,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9952426916712631,
+        "colorLoss": 0.6886069767874395,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 4,
+          "row": 5,
+          "foreground": 924,
+          "background": 13344,
+          "foregroundMisses": 924,
+          "backgroundMisses": 704.5711321421337,
+          "score": 1
+        },
+        "ratio": 0.018285537400225527,
+        "foregroundLoss": 0.9952426916712631,
+        "edgeLoss": 0.9097085755475343,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S31.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00011461318051575464,
+        "colorLoss": 0.000051664610221729686,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.005042710475306049,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00011461318051575464,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9956076235377396,
+        "globalScore": 0.9240890127185128,
+        "colorLoss": 0.9065255495014751,
+        "localLoss": 0.9956076235377396,
+        "worstRegion": {
+          "column": 10,
+          "row": 1,
+          "foreground": 3741,
+          "background": 10404,
+          "foregroundMisses": 3724.568119654684,
+          "backgroundMisses": 629.1752379864437,
+          "score": 0.9956076235377396
+        },
+        "ratio": 0.024479477598189872,
+        "foregroundLoss": 0.9039881831610044,
+        "edgeLoss": 0.9240890127185128,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S31.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.000052485963143342746,
+        "colorLoss": 0.000052485963143342746,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.009579823261915817,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00005013787916774426,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9888432244220724,
+        "globalScore": 0.9536187136469658,
+        "colorLoss": 0.907670265941448,
+        "localLoss": 0.9888432244220724,
+        "worstRegion": {
+          "column": 11,
+          "row": 1,
+          "foreground": 1177,
+          "background": 12853,
+          "foregroundMisses": 1163.8684751447793,
+          "backgroundMisses": 593.9031606469565,
+          "score": 0.9888432244220724
+        },
+        "ratio": 0.03746508354154229,
+        "foregroundLoss": 0.9092218628543473,
+        "edgeLoss": 0.9536187136469658,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S31.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.000052520793129638665,
+        "colorLoss": 0.000052520793129638665,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.009956441948393659,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9963447759354457,
+        "globalScore": 0.9425653092328672,
+        "colorLoss": 0.9250351737696436,
+        "localLoss": 0.9963447759354457,
+        "worstRegion": {
+          "column": 11,
+          "row": 3,
+          "foreground": 807,
+          "background": 13223,
+          "foregroundMisses": 804.0502341799047,
+          "backgroundMisses": 797.7999458329521,
+          "score": 0.9963447759354457
+        },
+        "ratio": 0.041282862007208085,
+        "foregroundLoss": 0.9425653092328672,
+        "edgeLoss": 0.9249708916055287,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S31.04",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005249145326107551,
+        "colorLoss": 0.00005249145326107551,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.00959677478792167,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00004993757802740362,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9888697203100111,
+        "globalScore": 0.9632299626646479,
+        "colorLoss": 0.9078775646947977,
+        "localLoss": 0.9888697203100111,
+        "worstRegion": {
+          "column": 11,
+          "row": 1,
+          "foreground": 1177,
+          "background": 12853,
+          "foregroundMisses": 1163.899660804883,
+          "backgroundMisses": 615.3111748317223,
+          "score": 0.9888697203100111
+        },
+        "ratio": 0.038152725879084026,
+        "foregroundLoss": 0.9114403768718583,
+        "edgeLoss": 0.9632299626646479,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S31.05",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005252629053671799,
+        "colorLoss": 0.00005252629053671799,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.00997265645152969,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9963447759354457,
+        "globalScore": 0.9438888524805034,
+        "colorLoss": 0.923480097435389,
+        "localLoss": 0.9963447759354457,
+        "worstRegion": {
+          "column": 11,
+          "row": 3,
+          "foreground": 807,
+          "background": 13223,
+          "foregroundMisses": 804.0502341799047,
+          "backgroundMisses": 797.7999458329521,
+          "score": 0.9963447759354457
+        },
+        "ratio": 0.04177666732998725,
+        "foregroundLoss": 0.9438888524805034,
+        "edgeLoss": 0.9238702970430703,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S32.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.000052714050074793396,
+        "colorLoss": 0.000052714050074793396,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010305790788688172,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00004758505829172144,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9780535777700484,
+        "globalScore": 0.9558791456049224,
+        "colorLoss": 0.8799580259363473,
+        "localLoss": 0.9780535777700484,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 643,
+          "background": 13625,
+          "foregroundMisses": 628.8884505061411,
+          "backgroundMisses": 371.22051555340886,
+          "score": 0.9780535777700484
+        },
+        "ratio": 0.0382153728230187,
+        "foregroundLoss": 0.8681429799282067,
+        "edgeLoss": 0.9558791456049224,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S32.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005256364759078329,
+        "colorLoss": 0.00005256364759078329,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010262306439368814,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.000047346243075674366,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9888432244220724,
+        "globalScore": 0.9519986119141413,
+        "colorLoss": 0.9052509043561701,
+        "localLoss": 0.9888432244220724,
+        "worstRegion": {
+          "column": 11,
+          "row": 1,
+          "foreground": 1177,
+          "background": 12853,
+          "foregroundMisses": 1163.8684751447793,
+          "backgroundMisses": 593.9031606469565,
+          "score": 0.9888432244220724
+        },
+        "ratio": 0.040168483428040774,
+        "foregroundLoss": 0.9083615346591125,
+        "edgeLoss": 0.9519986119141413,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S32.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005257170804945169,
+        "colorLoss": 0.00005257170804945169,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010468672842918315,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.000046466242275000624,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9888432244220724,
+        "globalScore": 0.9471214619387707,
+        "colorLoss": 0.9134872604375359,
+        "localLoss": 0.9888432244220724,
+        "worstRegion": {
+          "column": 11,
+          "row": 1,
+          "foreground": 1177,
+          "background": 12853,
+          "foregroundMisses": 1163.8684751447793,
+          "backgroundMisses": 593.9031606469565,
+          "score": 0.9888432244220724
+        },
+        "ratio": 0.041703702065875106,
+        "foregroundLoss": 0.9164673297242856,
+        "edgeLoss": 0.9471214619387707,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S33.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005302735759056384,
+        "colorLoss": 0.00005302735759056384,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.009587930513483833,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00004660918200882769,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9716821777155413,
+        "globalScore": 0.9518409616321825,
+        "colorLoss": 0.9105007453454893,
+        "localLoss": 0.9716821777155413,
+        "worstRegion": {
+          "column": 1,
+          "row": 7,
+          "foreground": 3334,
+          "background": 10696,
+          "foregroundMisses": 3239.5883805036146,
+          "backgroundMisses": 509.918129876309,
+          "score": 0.9716821777155413
+        },
+        "ratio": 0.03828170488130247,
+        "foregroundLoss": 0.9231671176394795,
+        "edgeLoss": 0.9518409616321825,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 697,
+          "top": 11,
+          "width": 324,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 54,
+            "background": 108,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S33.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.000052292950356571725,
+        "colorLoss": 0.000052292950356571725,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.009233422513100581,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9716821777155413,
+        "globalScore": 0.9216001593665605,
+        "colorLoss": 0.8762724407560959,
+        "localLoss": 0.9716821777155413,
+        "worstRegion": {
+          "column": 1,
+          "row": 7,
+          "foreground": 3334,
+          "background": 10696,
+          "foregroundMisses": 3239.5883805036146,
+          "backgroundMisses": 509.918129876309,
+          "score": 0.9716821777155413
+        },
+        "ratio": 0.026829843530044736,
+        "foregroundLoss": 0.8743216424594742,
+        "edgeLoss": 0.9216001593665605,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S33.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.020649884319209916,
+        "colorLoss": 0.020649884319209916,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 6,
+          "row": 0,
+          "foreground": 123,
+          "background": 14145,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.012849256712435787,
+        "foregroundLoss": 0.020649884319209916,
+        "edgeLoss": 0.0053836950948555895,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9925058164149623,
+        "globalScore": 0.7275393236736655,
+        "colorLoss": 0.4397493966588455,
+        "localLoss": 0.9925058164149623,
+        "worstRegion": {
+          "column": 1,
+          "row": 7,
+          "foreground": 3218,
+          "background": 10812,
+          "foregroundMisses": 3193.8837172233484,
+          "backgroundMisses": 99.36924739987268,
+          "score": 0.9925058164149623
+        },
+        "ratio": 0.03665804349908978,
+        "foregroundLoss": 0.4143845987454034,
+        "edgeLoss": 0.7275393236736655,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S41.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.006835584657993499,
+        "globalScore": 0.006835584657993499,
+        "colorLoss": 0.00012211985507936204,
+        "localLoss": 0.001051818122066157,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 829,
+          "background": 13439,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001051818122066157
+        },
+        "ratio": 0.013171335706546975,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.006835584657993499,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8355868366834257,
+        "colorLoss": 0.8336868692177869,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 9,
+          "row": 4,
+          "foreground": 14030,
+          "background": 0,
+          "foregroundMisses": 14030,
+          "backgroundMisses": 0,
+          "score": 1
+        },
+        "ratio": 0.24959132081868501,
+        "foregroundLoss": 0.8283801938393628,
+        "edgeLoss": 0.8355868366834257,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S41.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.006768525760538879,
+        "globalScore": 0.006768525760538879,
+        "colorLoss": 0.00012217152401950373,
+        "localLoss": 0.001051818122066157,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 829,
+          "background": 13439,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001051818122066157
+        },
+        "ratio": 0.013228086467523088,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.006768525760538879,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8362928728206804,
+        "colorLoss": 0.8338430110057773,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 9,
+          "row": 4,
+          "foreground": 14030,
+          "background": 0,
+          "foregroundMisses": 14030,
+          "backgroundMisses": 0,
+          "score": 1
+        },
+        "ratio": 0.2498345383657255,
+        "foregroundLoss": 0.8285537623843053,
+        "edgeLoss": 0.8362928728206804,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S41.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.010502354118686608,
+        "globalScore": 0.010502354118686608,
+        "colorLoss": 0.00012226436479717908,
+        "localLoss": 0.001051818122066157,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 829,
+          "background": 13439,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001051818122066157
+        },
+        "ratio": 0.013276729976931185,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.010502354118686608,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S41.04",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0059107286404219694,
+        "globalScore": 0.0059107286404219694,
+        "colorLoss": 0.00014865151514871033,
+        "localLoss": 0.002250122595357613,
+        "worstRegion": {
+          "column": 6,
+          "row": 0,
+          "foreground": 6132,
+          "background": 8136,
+          "foregroundMisses": 0,
+          "backgroundMisses": 18.306997435829537,
+          "score": 0.002250122595357613
+        },
+        "ratio": 0.01638917755617957,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0059107286404219694,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 584,
+          "top": 11,
+          "width": 302,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 51,
+            "background": 105,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S42.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0051669209969748,
+        "globalScore": 0.0051669209969748,
+        "colorLoss": 0.000043416512304118695,
+        "localLoss": 0.000632107064626332,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 2711,
+          "background": 11557,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.000632107064626332
+        },
+        "ratio": 0.01950309918116759,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0051669209969748,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.8527581547643703,
+        "colorLoss": 0.8527581547643703,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 149.9781668301873,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.16942755433701107,
+        "foregroundLoss": 0.8402048260862119,
+        "edgeLoss": 0.834008314882169,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S42.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.005513439007580945,
+        "globalScore": 0.005513439007580945,
+        "colorLoss": 0.000042898678674961426,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.018839041575460087,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.005513439007580945,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.905632605918876,
+        "colorLoss": 0.905632605918876,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 249.58723202307638,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.1766710151015986,
+        "foregroundLoss": 0.8950587109590323,
+        "edgeLoss": 0.8339360687718429,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S42.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.004851425106124907,
+        "globalScore": 0.004851425106124907,
+        "colorLoss": 0.00004408827701270525,
+        "localLoss": 0.000632107064626332,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 2711,
+          "background": 11557,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.000632107064626332
+        },
+        "ratio": 0.019707254516107636,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.004851425106124907,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.8623321933391271,
+        "colorLoss": 0.8623321933391271,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 149.9781668301873,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.18067894546767785,
+        "foregroundLoss": 0.8495863993082182,
+        "edgeLoss": 0.8406423766965783,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S42.04",
+      "surface": "studio",
+      "reference": {
+        "score": 0.004151279332728186,
+        "globalScore": 0.004151279332728186,
+        "colorLoss": 0.000042868619294535253,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.026576307662826777,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.004151279332728186,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.8989447568084263,
+        "colorLoss": 0.8989447568084263,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 249.58723202307638,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.17171379927919164,
+        "foregroundLoss": 0.8976862060787971,
+        "edgeLoss": 0.7558596048040411,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.012384116078193452,
+        "globalScore": 0.012384116078193452,
+        "colorLoss": 0.00006839484608074375,
+        "localLoss": 0.0011033242356581713,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 1872,
+          "background": 12396,
+          "foregroundMisses": 0,
+          "backgroundMisses": 13.67680722521869,
+          "score": 0.0011033242356581713
+        },
+        "ratio": 0.01995268313175758,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.012384116078193452,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8922337552365911,
+        "colorLoss": 0.8922337552365911,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 4,
+          "row": 1,
+          "foreground": 654,
+          "background": 13491,
+          "foregroundMisses": 654,
+          "backgroundMisses": 369.02414138843824,
+          "score": 1
+        },
+        "ratio": 0.16419100684694246,
+        "foregroundLoss": 0.8540052411643884,
+        "edgeLoss": 0.8650705940420551,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0061570035915855525,
+        "globalScore": 0.0061570035915855525,
+        "colorLoss": 0.00004236959280238159,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.018189724427148973,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0061570035915855525,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9994807670064121,
+        "globalScore": 0.9260139246347291,
+        "colorLoss": 0.9260139246347291,
+        "localLoss": 0.9994807670064121,
+        "worstRegion": {
+          "column": 8,
+          "row": 4,
+          "foreground": 10725,
+          "background": 3420,
+          "foregroundMisses": 10719.43122614377,
+          "backgroundMisses": 186.81161624138883,
+          "score": 0.9994807670064121
+        },
+        "ratio": 0.17517559569873453,
+        "foregroundLoss": 0.9152991440633855,
+        "edgeLoss": 0.8680657035264387,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.004914730837393799,
+        "globalScore": 0.004914730837393799,
+        "colorLoss": 0.00003948632504994203,
+        "localLoss": 0.0005231674351783952,
+        "worstRegion": {
+          "column": 3,
+          "row": 0,
+          "foreground": 302,
+          "background": 13850,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.245868977220774,
+          "score": 0.0005231674351783952
+        },
+        "ratio": 0.01837176907599443,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.004914730837393799,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9464915049814574,
+        "colorLoss": 0.9464915049814574,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 9,
+          "row": 3,
+          "foreground": 2092,
+          "background": 11938,
+          "foregroundMisses": 2092,
+          "backgroundMisses": 140.61022995806658,
+          "score": 1
+        },
+        "ratio": 0.2190726778251929,
+        "foregroundLoss": 0.9112924206947041,
+        "edgeLoss": 0.853986278266258,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.04",
+      "surface": "studio",
+      "reference": {
+        "score": 0.005382436260623291,
+        "globalScore": 0.005382436260623291,
+        "colorLoss": 0.00004272218288560098,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.019744842682468438,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.005382436260623291,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.05",
+      "surface": "studio",
+      "reference": {
+        "score": 0.005422627983211359,
+        "globalScore": 0.005422627983211359,
+        "colorLoss": 0.000036489112800611045,
+        "localLoss": 0.0005231674351783952,
+        "worstRegion": {
+          "column": 3,
+          "row": 0,
+          "foreground": 302,
+          "background": 13850,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.245868977220774,
+          "score": 0.0005231674351783952
+        },
+        "ratio": 0.018147714123569254,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.005422627983211359,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.06",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0056181558482779614,
+        "globalScore": 0.0056181558482779614,
+        "colorLoss": 0.00003631169790581226,
+        "localLoss": 0.0005231674351783952,
+        "worstRegion": {
+          "column": 3,
+          "row": 0,
+          "foreground": 302,
+          "background": 13850,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.245868977220774,
+          "score": 0.0005231674351783952
+        },
+        "ratio": 0.01807548588232693,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0056181558482779614,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S43.07",
+      "surface": "studio",
+      "reference": {
+        "score": 0.00535101283964623,
+        "globalScore": 0.00535101283964623,
+        "colorLoss": 0.0000426776049254625,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.020632218217731296,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00535101283964623,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S49.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.00554592720970537,
+        "globalScore": 0.00554592720970537,
+        "colorLoss": 0.00004241133561675278,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.01931663239510322,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00554592720970537,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.9079582485949373,
+        "colorLoss": 0.9079582485949373,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 249.58723202307638,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.16868463528423286,
+        "foregroundLoss": 0.9012579594227633,
+        "edgeLoss": 0.8444677247846557,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S49.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.006745414050056797,
+        "globalScore": 0.006745414050056797,
+        "colorLoss": 0.0000644717438017251,
+        "localLoss": 0.002516723500804223,
+        "worstRegion": {
+          "column": 5,
+          "row": 0,
+          "foreground": 6937,
+          "background": 7215,
+          "foregroundMisses": 0,
+          "backgroundMisses": 18.158160058302467,
+          "score": 0.002516723500804223
+        },
+        "ratio": 0.018646678606437157,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.006745414050056797,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9493710143086374,
+        "colorLoss": 0.9493710143086374,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 9,
+          "row": 3,
+          "foreground": 1484,
+          "background": 12546,
+          "foregroundMisses": 1484,
+          "backgroundMisses": 162.82655542309146,
+          "score": 1
+        },
+        "ratio": 0.18582336509901903,
+        "foregroundLoss": 0.9317076743845354,
+        "edgeLoss": 0.9423852948347996,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 534,
+          "top": 11,
+          "width": 290,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 48,
+            "background": 102,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S61.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.036561745275870416,
+        "colorLoss": 0.009303772851030727,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 232,
+          "background": 14036,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.01929378468613881,
+        "foregroundLoss": 0.009303772851030727,
+        "edgeLoss": 0.036561745275870416,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8559134143396742,
+        "colorLoss": 0.691020614435054,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 7,
+          "row": 1,
+          "foreground": 4514,
+          "background": 9516,
+          "foregroundMisses": 4514,
+          "backgroundMisses": 2260.6864892858243,
+          "score": 1
+        },
+        "ratio": 0.28128993742675834,
+        "foregroundLoss": 0.6978965228709557,
+        "edgeLoss": 0.8559134143396742,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 495,
+          "top": 341,
+          "width": 480,
+          "height": 241
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 130,
+            "background": 1110,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S61.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.03620153899780987,
+        "colorLoss": 0.008717391779703638,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 232,
+          "background": 14036,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.019982164046550364,
+        "foregroundLoss": 0.008717391779703638,
+        "edgeLoss": 0.03620153899780987,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8140970257068607,
+        "colorLoss": 0.6394655662064601,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 7,
+          "row": 1,
+          "foreground": 4514,
+          "background": 9516,
+          "foregroundMisses": 4514,
+          "backgroundMisses": 2260.6864892858243,
+          "score": 1
+        },
+        "ratio": 0.2658692079215218,
+        "foregroundLoss": 0.6476868492775107,
+        "edgeLoss": 0.8140970257068607,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 495,
+          "top": 317,
+          "width": 480,
+          "height": 289
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 163,
+            "background": 1317,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S61.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0052222161779904575,
+        "globalScore": 0.0052222161779904575,
+        "colorLoss": 0.00006360685696726085,
+        "localLoss": 0.002516723500804223,
+        "worstRegion": {
+          "column": 5,
+          "row": 0,
+          "foreground": 6937,
+          "background": 7215,
+          "foregroundMisses": 0,
+          "backgroundMisses": 18.158160058302467,
+          "score": 0.002516723500804223
+        },
+        "ratio": 0.019457403763238772,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0052222161779904575,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 540,
+          "top": 11,
+          "width": 278,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 51,
+            "background": 93,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S69.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.005095270951648079,
+        "globalScore": 0.005095270951648079,
+        "colorLoss": 0.00007188881919579433,
+        "localLoss": 0.002518818152074139,
+        "worstRegion": {
+          "column": 5,
+          "row": 0,
+          "foreground": 6943,
+          "background": 7209,
+          "foregroundMisses": 0,
+          "backgroundMisses": 18.158160058302467,
+          "score": 0.002518818152074139
+        },
+        "ratio": 0.0196534518466108,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.005095270951648079,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9938495144399929,
+        "colorLoss": 0.9938495144399929,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 6,
+          "row": 1,
+          "foreground": 9840,
+          "background": 4305,
+          "foregroundMisses": 683.4456040130409,
+          "backgroundMisses": 4305,
+          "score": 1
+        },
+        "ratio": 0.7392700525497307,
+        "foregroundLoss": 0.3642439146113723,
+        "edgeLoss": 0.9077705624713541,
+        "sizeLoss": 0,
+        "backgroundLoss": 0.07174887892376682
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 487,
+          "top": 11,
+          "width": 384,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 60,
+            "background": 132,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S71.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0,
+        "globalScore": 0,
+        "colorLoss": 0,
+        "localLoss": 0,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 0,
+          "score": 0
+        },
+        "ratio": 0.006249216913200816,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9670876248129323,
+        "globalScore": 0.9270260039020413,
+        "colorLoss": 0.7215274447074841,
+        "localLoss": 0.9670876248129323,
+        "worstRegion": {
+          "column": 6,
+          "row": 2,
+          "foreground": 4603,
+          "background": 9665,
+          "foregroundMisses": 4451.504337013927,
+          "backgroundMisses": 38.658522939246666,
+          "score": 0.9670876248129323
+        },
+        "ratio": 0.018488218689425934,
+        "foregroundLoss": 0.9270260039020413,
+        "edgeLoss": 0.6334483060130256,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S71.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0,
+        "globalScore": 0,
+        "colorLoss": 0,
+        "localLoss": 0,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 0,
+          "score": 0
+        },
+        "ratio": 0.0008991679011799736,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9781114564636869,
+        "colorLoss": 0.5321480938549126,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 4,
+          "row": 4,
+          "foreground": 2104,
+          "background": 12041,
+          "foregroundMisses": 2104,
+          "backgroundMisses": 21.991130810354786,
+          "score": 1
+        },
+        "ratio": 0.013778642551278366,
+        "foregroundLoss": 0.9781114564636869,
+        "edgeLoss": 0.7463507569941396,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S71.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.00017583963425360505,
+        "globalScore": 0.00017583963425360505,
+        "colorLoss": 0,
+        "localLoss": 0,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 0,
+          "background": 14268,
+          "foregroundMisses": 0,
+          "backgroundMisses": 0,
+          "score": 0
+        },
+        "ratio": 0.006428313470566991,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00017583963425360505,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9697378526852096,
+        "globalScore": 0.9227432829738306,
+        "colorLoss": 0.7181742858982816,
+        "localLoss": 0.9697378526852096,
+        "worstRegion": {
+          "column": 6,
+          "row": 2,
+          "foreground": 4701,
+          "background": 9567,
+          "foregroundMisses": 4558.73764547317,
+          "backgroundMisses": 37.52342745377258,
+          "score": 0.9697378526852096
+        },
+        "ratio": 0.018479374414988096,
+        "foregroundLoss": 0.9227432829738306,
+        "edgeLoss": 0.6157632920995617,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S81.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005266554254922892,
+        "colorLoss": 0.00005266554254922892,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010563011770255232,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9526203406358761,
+        "colorLoss": 0.9353174830999114,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 5,
+          "row": 2,
+          "foreground": 1586,
+          "background": 12566,
+          "foregroundMisses": 1586,
+          "backgroundMisses": 160.17246554709226,
+          "score": 1
+        },
+        "ratio": 0.03060192657778171,
+        "foregroundLoss": 0.9526203406358761,
+        "edgeLoss": 0.9261219181596968,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S81.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.000052483775372992455,
+        "colorLoss": 0.000052483775372992455,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010936682365253794,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9801380688663425,
+        "globalScore": 0.9336566663868772,
+        "colorLoss": 0.9122515006751587,
+        "localLoss": 0.9801380688663425,
+        "worstRegion": {
+          "column": 5,
+          "row": 4,
+          "foreground": 507,
+          "background": 13523,
+          "foregroundMisses": 496.9300009152356,
+          "backgroundMisses": 202.43154617452345,
+          "score": 0.9801380688663425
+        },
+        "ratio": 0.01995120908601794,
+        "foregroundLoss": 0.9199551996949766,
+        "edgeLoss": 0.9336566663868772,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S81.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00010050251256277232,
+        "colorLoss": 0.00005240248005098448,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.010830551071999765,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.00010050251256277232,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9823108506005924,
+        "globalScore": 0.928400507295121,
+        "colorLoss": 0.9136911705597303,
+        "localLoss": 0.9823108506005924,
+        "worstRegion": {
+          "column": 4,
+          "row": 2,
+          "foreground": 526,
+          "background": 13742,
+          "foregroundMisses": 516.6955074159116,
+          "backgroundMisses": 265.60398398789926,
+          "score": 0.9823108506005924
+        },
+        "ratio": 0.023732136408192748,
+        "foregroundLoss": 0.9198913926540385,
+        "edgeLoss": 0.928400507295121,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S91.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.010338508350333668,
+        "colorLoss": 0.010338508350333668,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 123,
+          "background": 14145,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.01647025007185973,
+        "foregroundLoss": 0.010338508350333668,
+        "edgeLoss": 0.003930518574869923,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.7847055351272997,
+        "colorLoss": 0.35626589394355795,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 5,
+          "row": 1,
+          "foreground": 3050,
+          "background": 10980,
+          "foregroundMisses": 3050,
+          "backgroundMisses": 103.73630827099016,
+          "score": 1
+        },
+        "ratio": 0.06092231041929231,
+        "foregroundLoss": 0.34530873027932296,
+        "edgeLoss": 0.7847055351272997,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 515,
+          "top": 240,
+          "width": 440,
+          "height": 444
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 174,
+            "background": 1898,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S91.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.001095002226543271,
+        "globalScore": 0.00005281850343771028,
+        "colorLoss": 0.00005281850343771028,
+        "localLoss": 0.001095002226543271,
+        "worstRegion": {
+          "column": 0,
+          "row": 0,
+          "foreground": 1359,
+          "background": 12909,
+          "foregroundMisses": 0,
+          "backgroundMisses": 14.135383742447084,
+          "score": 0.001095002226543271
+        },
+        "ratio": 0.011986202931876976,
+        "foregroundLoss": 0,
+        "edgeLoss": 0,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.9498556171792639,
+        "colorLoss": 0.9277080660675299,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 5,
+          "row": 2,
+          "foreground": 1586,
+          "background": 12566,
+          "foregroundMisses": 1586,
+          "backgroundMisses": 160.17246554709226,
+          "score": 1
+        },
+        "ratio": 0.033242679520345514,
+        "foregroundLoss": 0.9498556171792639,
+        "edgeLoss": 0.9186786890138666,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S91.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.019037159070108,
+        "colorLoss": 0.019037159070108,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 123,
+          "background": 14145,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.013940050559768869,
+        "foregroundLoss": 0.019037159070108,
+        "edgeLoss": 0.00461412517675075,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8953422397634828,
+        "colorLoss": 0.5169137807023193,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 5,
+          "row": 2,
+          "foreground": 1586,
+          "background": 12566,
+          "foregroundMisses": 1586,
+          "backgroundMisses": 74.70133146660726,
+          "score": 1
+        },
+        "ratio": 0.04366934205968411,
+        "foregroundLoss": 0.48992701338203737,
+        "edgeLoss": 0.8953422397634828,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S92.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.005608459426301393,
+        "globalScore": 0.005608459426301393,
+        "colorLoss": 0.00004180188255143183,
+        "localLoss": 0.0005213575039884755,
+        "worstRegion": {
+          "column": 8,
+          "row": 0,
+          "foreground": 256,
+          "background": 14012,
+          "foregroundMisses": 0,
+          "backgroundMisses": 7.305261345886518,
+          "score": 0.0005213575039884755
+        },
+        "ratio": 0.019500151089688313,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.005608459426301393,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.9037096594465316,
+        "colorLoss": 0.9037096594465316,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 249.58723202307638,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.1565178617492501,
+        "foregroundLoss": 0.8965659145190011,
+        "edgeLoss": 0.8470369896602212,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      }
+    },
+    {
+      "code": "S92.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.02565374096754547,
+        "colorLoss": 0.011795453424725086,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 177,
+          "background": 14091,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.02005144419631341,
+        "foregroundLoss": 0.011795453424725086,
+        "edgeLoss": 0.02565374096754547,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8216944474451195,
+        "colorLoss": 0.7036888173830318,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 8,
+          "row": 2,
+          "foreground": 1898,
+          "background": 12370,
+          "foregroundMisses": 1898,
+          "backgroundMisses": 82.88628314398137,
+          "score": 1
+        },
+        "ratio": 0.1260220664647224,
+        "foregroundLoss": 0.6954894056697131,
+        "edgeLoss": 0.8216944474451195,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 69,
+            "background": 815,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S92.03",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.021833826560790692,
+        "colorLoss": 0.0082508364664896,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 177,
+          "background": 14091,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.023168313912780715,
+        "foregroundLoss": 0.0082508364664896,
+        "edgeLoss": 0.021833826560790692,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 515,
+          "top": 240,
+          "width": 440,
+          "height": 444
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 173,
+            "background": 1899,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S92.04",
+      "surface": "studio",
+      "reference": {
+        "score": 0.0054197482075312164,
+        "globalScore": 0.0054197482075312164,
+        "colorLoss": 0.00006371231878091183,
+        "localLoss": 0.0025170723673832085,
+        "worstRegion": {
+          "column": 5,
+          "row": 0,
+          "foreground": 6938,
+          "background": 7214,
+          "foregroundMisses": 0,
+          "backgroundMisses": 18.158160058302467,
+          "score": 0.0025170723673832085
+        },
+        "ratio": 0.01948541063229192,
+        "foregroundLoss": 0,
+        "edgeLoss": 0.0054197482075312164,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 0.9996046688463491,
+        "globalScore": 0.8992590528093422,
+        "colorLoss": 0.8992590528093422,
+        "localLoss": 0.9996046688463491,
+        "worstRegion": {
+          "column": 1,
+          "row": 1,
+          "foreground": 9232,
+          "background": 4798,
+          "foregroundMisses": 9228.350302789495,
+          "backgroundMisses": 249.58723202307638,
+          "score": 0.9996046688463491
+        },
+        "ratio": 0.16643008232545456,
+        "foregroundLoss": 0.8876653015569467,
+        "edgeLoss": 0.8448034444024581,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "toast",
+        "selector": "[data-sonner-toast]",
+        "designBox": {
+          "left": 534,
+          "top": 11,
+          "width": 290,
+          "height": 42
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 52,
+            "background": 98,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S99.01",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.01921099974299666,
+        "colorLoss": 0.01921099974299666,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 123,
+          "background": 14145,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.013922362010893198,
+        "foregroundLoss": 0.01921099974299666,
+        "edgeLoss": 0.00467254502976866,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    },
+    {
+      "code": "S99.02",
+      "surface": "studio",
+      "reference": {
+        "score": 0.2873563218390805,
+        "globalScore": 0.01937218568790696,
+        "colorLoss": 0.01937218568790696,
+        "localLoss": 0.2873563218390805,
+        "worstRegion": {
+          "column": 2,
+          "row": 0,
+          "foreground": 123,
+          "background": 14145,
+          "foregroundMisses": 123,
+          "backgroundMisses": 0,
+          "score": 0.2873563218390805
+        },
+        "ratio": 0.013696833012728385,
+        "foregroundLoss": 0.01937218568790696,
+        "edgeLoss": 0.0047769473765312265,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "measured": {
+        "score": 1,
+        "globalScore": 0.8217946173190283,
+        "colorLoss": 0.4744575913464859,
+        "localLoss": 1,
+        "worstRegion": {
+          "column": 5,
+          "row": 2,
+          "foreground": 1586,
+          "background": 12566,
+          "foregroundMisses": 1586,
+          "backgroundMisses": 74.70133146660726,
+          "score": 1
+        },
+        "ratio": 0.04031367693339524,
+        "foregroundLoss": 0.4571939688218758,
+        "edgeLoss": 0.8217946173190283,
+        "sizeLoss": 0,
+        "backgroundLoss": 0
+      },
+      "component": {
+        "kind": "dialog",
+        "selector": "dialog[open]",
+        "designBox": {
+          "left": 535,
+          "top": 358,
+          "width": 400,
+          "height": 208
+        },
+        "target": 0.01,
+        "reference": {
+          "score": 0,
+          "globalScore": 0,
+          "colorLoss": 0,
+          "localLoss": 0,
+          "worstRegion": {
+            "column": 0,
+            "row": 0,
+            "foreground": 67,
+            "background": 817,
+            "foregroundMisses": 0,
+            "backgroundMisses": 0,
+            "score": 0
+          },
+          "ratio": 0,
+          "foregroundLoss": 0,
+          "edgeLoss": 0,
+          "sizeLoss": 0,
+          "backgroundLoss": 0
+        }
+      }
+    }
+  ],
+  "editor": [
+    {
+      "code": "S41.01",
+      "file": "ed3.jsx",
+      "score": 0.48931230282756866,
+      "globalScore": 0.07126246094579936,
+      "colorLoss": 0.055518362597440155,
+      "localLoss": 0.48931230282756866,
+      "worstRegion": {
+        "column": 2,
+        "row": 0,
+        "foreground": 766,
+        "background": 13502,
+        "foregroundMisses": 374.8132239659176,
+        "backgroundMisses": 77.91755611336337,
+        "score": 0.48931230282756866
+      },
+      "ratio": 0.00550334976894333,
+      "foregroundLoss": 0.05239932026002751,
+      "edgeLoss": 0.07126246094579936,
+      "sizeLoss": 0,
+      "backgroundLoss": 0
+    },
+    {
+      "code": "S42.01",
+      "file": "ed1.jsx",
+      "score": 0.5106298562226023,
+      "globalScore": 0.10520932994622414,
+      "colorLoss": 0.09107086979037864,
+      "localLoss": 0.5106298562226023,
+      "worstRegion": {
+        "column": 0,
+        "row": 0,
+        "foreground": 1593,
+        "background": 12675,
+        "foregroundMisses": 813.4333609626054,
+        "backgroundMisses": 16.359302567522036,
+        "score": 0.5106298562226023
+      },
+      "ratio": 0.014439015042636774,
+      "foregroundLoss": 0.10520932994622414,
+      "edgeLoss": 0.035384028355799235,
+      "sizeLoss": 0,
+      "backgroundLoss": 0
+    }
+  ]
+}

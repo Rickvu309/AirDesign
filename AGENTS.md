@@ -11,6 +11,7 @@ AirDesign makes logical, consulting-quality decks for executives. Start from an 
 
 ## Read for your task
 
+- Screen, style, font or copy changes: [verify-design](.agents/skills/verify-design/SKILL.md).
 - Any change: the matching section of [CODING_STANDARDS.md](CODING_STANDARDS.md).
 - PR body: the `/pr` skill.
 - v0.1 delivery order: [the nine-PR plan](docs/planning/v0.1/delivery/autopilot-plan.md).

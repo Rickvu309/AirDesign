@@ -4,7 +4,7 @@ import {airaRequest} from "../chat/aira-client.ts"
 import { ImagePanel } from "../images/image-panel.tsx"
 import { TemplatePanel } from "../templates/template-panel.tsx"
 import { useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
-import { AlertDialog,Button,copy } from "@airdesign/ui"
+import { AlertDialog,Button,copy,Icon } from "@airdesign/ui"
 import { commandId,type Command } from "../../../../packages/change-log/src/index.ts"
 import { flatten,type Id,type Run } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
@@ -47,8 +47,8 @@ export function ManualEditor({deckId}:{deckId:string}) {
     try{await sync.recover(item.command.id,[{id:commandId(`restore_${suffix}`),kind:"undo",target:item.restore},{...item.command,id:commandId(`retry_${suffix}`),base:sync.seq}])}catch(failure){setError(String(failure))}
   }
   const actions=()=> <>
-    <button type="button" disabled={readonly||!sync?.historyTarget("undo")} onPointerDown={event=>event.preventDefault()} onClick={()=>history("undo")}>Undo</button>
-    <button type="button" disabled={readonly||!sync?.historyTarget("redo")} onPointerDown={event=>event.preventDefault()} onClick={()=>history("redo")}>Redo</button>
+    <button type="button" disabled={readonly||!sync?.historyTarget("undo")} onPointerDown={event=>event.preventDefault()} onClick={()=>history("undo")}><Icon name="undo"/>Undo</button>
+    <button type="button" disabled={readonly||!sync?.historyTarget("redo")} onPointerDown={event=>event.preventDefault()} onClick={()=>history("redo")}><Icon name="redo"/>Redo</button>
     <button type="button" disabled={readonly||!selection.length} onClick={()=>reorder(-1)}>Move earlier</button>
     <button type="button" disabled={readonly||!selection.length} onClick={()=>reorder(1)}>Move later</button>
     <button type="button" disabled={readonly||!selection.length} onClick={()=>edit({changes:selection.map(target=>({kind:"remove",target}))})}>Delete slides</button>
