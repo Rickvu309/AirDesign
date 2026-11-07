@@ -203,7 +203,8 @@ describe("studio access", () => {
     history.replaceState(null, "", "/settings/agents")
     await render(<AccessApp client={fakeClient({ signedIn: true, kind: "connect-agent" })} initialScreen="checking" />)
     await act(flush)
-    expect(document.body.textContent).toContain("Connected agents")
+    expect(document.querySelector("h1")?.textContent).toBe("Settings")
+    expect(document.body.textContent).toContain("MCP server")
     expect(document.querySelector(".agent-approval")).toBeNull()
   })
 
