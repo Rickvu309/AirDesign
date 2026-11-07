@@ -7,10 +7,19 @@ export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-pa
   return cells[1]===claim.gate && cells[2]==="passed" && cells[3]===receipt
  })
 }
+const metaTag=/<meta\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi
+const tagAttribute=/([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
+const browserChromeNames=new Set(["viewport","theme-color"])
+const browserChromeAttributes=new Set(["name","content","media"])
+function isBrowserChromeMeta(body:string):boolean{
+ const attributes=[...body.matchAll(tagAttribute)].map(match=>({key:match[1]!.toLowerCase(),value:(match[2]??match[3]??match[4]??"").trim().toLowerCase()}))
+ const names=attributes.filter(attribute=>attribute.key==="name")
+ return names.length===1 && browserChromeNames.has(names[0]!.value) && attributes.every(attribute=>browserChromeAttributes.has(attribute.key))
+}
 export function publicCopy(source:string):string[]{
  const clean=source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
  const texts=clean.includes("<") ? [...clean.matchAll(/>([^<>]+)</g)].map(match=>match[1]!) : clean.split("\n")
- const copyBearing=clean.replace(/<meta\b[^>]*\sname="(?:viewport|theme-color)"[^>]*>/gi,"")
+ const copyBearing=clean.replace(metaTag,(tag,body:string)=>isBrowserChromeMeta(body)?"":tag)
  const attributes=[...copyBearing.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!)
  return [...texts,...attributes].map(text=>text.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim()).filter(Boolean)
 }

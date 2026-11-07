@@ -9,6 +9,7 @@ it("treats browser chrome metadata as configuration, not public copy",()=>{
  const head='<meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" media="(prefers-color-scheme: dark)" content="#ffffff">'
  expect(releaseClaimHits(head)).toEqual([])
  expect(releaseClaimHits('<meta name="description" content="Unlimited decks">')).toEqual(["unregistered-public-copy:Unlimited decks"])
+ for(const disguised of [`<meta name="description" data-note=' name="theme-color"' content="Unlimited decks">`,`<meta property="og:description" data-note=' name="viewport"' content="Unlimited decks">`,'<meta name="description" name="theme-color" content="Unlimited decks">','<meta property="og:description" name="theme-color" content="Unlimited decks">','<meta itemprop="description" name="theme-color" content="Unlimited decks">','<meta content="Unlimited decks" name="theme-color" data-note=">" property="og:description">'])expect(releaseClaimHits(disguised),disguised).toEqual(["unregistered-public-copy:Unlimited decks"])
  for(const disguised of ["viewport","theme-color"]){
   expect(releaseClaimHits(`<meta name="description" data-name="${disguised}" content="Unlimited decks">`)).toEqual(["unregistered-public-copy:Unlimited decks"])
   expect(releaseClaimHits(`<meta property="og:description" data-name="${disguised}" content="Unlimited decks">`)).toEqual(["unregistered-public-copy:Unlimited decks"])
