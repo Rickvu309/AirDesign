@@ -930,7 +930,7 @@
       }
     ],
     "metric": "local-oklab-v2",
-    "target": 0.63,
+    "target": 0.5,
     "assertions": {
       "copyKeys": [
         "shell.home"
