@@ -92,6 +92,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
         if (current !== generation) return
         if (result.status === "signed-in") {
           if (!concealFirst) return
+          setAccountName(result.displayName || result.email)
           setKind(result.kind ?? "home")
           setIntentToken(result.intentToken)
           setScreen("home")
@@ -102,6 +103,9 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       }
       if (!concealFirst && !concealPrivateState()) return
       history.replaceState(null, "", "/")
+      setAccountName("My account")
+      setHomeSearch("")
+      setPathname("/")
       setEmail("")
       setCode("")
       setIntentToken(null)
