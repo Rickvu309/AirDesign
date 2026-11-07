@@ -7,6 +7,8 @@ import {resolveCopy,type Scenario} from "./registry.ts"
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
 }
+export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
+
 type IconInk={path:string,size:number,color:string}
 function inkPixels(pixels:Buffer){
   const colors=new Map<number,number>()
@@ -81,7 +83,45 @@ export async function assertDialogActions(page:Page,entry:Scenario){
     if(style.background!==expected.background||style.color!==expected.color||style.borders.some(color=>color!==expected.border)||style.widths.some(width=>width!=="1px")||style.styles.some(border=>border!=="solid")||style.height!==36||style.radius!=="8px")throw failure(button.toString(),`dialog-action-${kind}-tokens`,expected,style)
   }
 }
+async function assertComponentContent(page:Page,entry:Scenario){
+  if(!entry.component)return
+  const locator=page.locator(entry.component.selector)
+  if(await locator.count()!==1)throw failure(entry.component.selector,"component-must-be-unique",1,await locator.count())
+  const violations=await locator.evaluate(component=>{
+    const box=component.getBoundingClientRect(),outside:string[]=[],rasters:{tag:string,share:number}[]=[]
+    const visible=(element:Element)=>{
+      for(let node:Element|null=element;node;node=node.parentElement){
+        const style=getComputedStyle(node)
+        if(style.display==="none"||style.visibility!=="visible"||Number(style.opacity)===0)return false
+      }
+      return true
+    }
+    const contained=(rect:DOMRect)=>rect.width<=0||rect.height<=0||rect.left>=box.left-1&&rect.top>=box.top-1&&rect.right<=box.right+1&&rect.bottom<=box.bottom+1
+    const walker=document.createTreeWalker(component,NodeFilter.SHOW_TEXT)
+    while(walker.nextNode()){
+      const node=walker.currentNode,parent=node.parentElement
+      if(!node.textContent?.trim()||!parent||!visible(parent)||["SCRIPT","STYLE"].includes(parent.tagName))continue
+      const range=document.createRange();range.selectNodeContents(node)
+      if([...range.getClientRects()].some(rect=>!contained(rect)))outside.push(node.textContent.trim())
+    }
+    for(const element of component.querySelectorAll("button,input,textarea,select,a[href],[role=button],[role=link],[role=textbox],[tabindex]")){
+      if(visible(element)&&!contained(element.getBoundingClientRect()))outside.push(element.outerHTML.slice(0,160))
+    }
+    for(const element of [component,...component.querySelectorAll("*")]){
+      if(!visible(element))continue
+      const style=getComputedStyle(element)
+      if(!["IMG","CANVAS"].includes(element.tagName)&&style.backgroundImage==="none")continue
+      const rect=element.getBoundingClientRect()
+      const share=Math.max(0,Math.min(rect.right,box.right)-Math.max(rect.left,box.left))*Math.max(0,Math.min(rect.bottom,box.bottom)-Math.max(rect.top,box.top))/(box.width*box.height)
+      if(share>0.1)rasters.push({tag:element.tagName,share})
+    }
+    return {outside,rasters}
+  })
+  if(violations.outside.length)throw failure(entry.component.selector,"component-content-outside","visible text and controls inside component",violations.outside)
+  if(violations.rasters.length)throw failure(entry.component.selector,"component-raster-coverage",{maximumShare:0.1},violations.rasters)
+}
 async function assertStructure(page:Page,entry:Scenario){
+  await assertComponentContent(page,entry)
   await assertDialogActions(page,entry)
   for(const icon of entry.assertions.structure.icons){
     const locator=page.locator(icon.region).locator(`svg[data-icon="${icon.name}"]`).first()
@@ -126,7 +166,7 @@ async function assertStructure(page:Page,entry:Scenario){
         }
         return {family:style.fontFamily,size:parseFloat(style.fontSize),weight:Number(style.fontWeight),color:style.color,background}
       })
-      const sizes={"landing-hero":[104,104,400],"pricing-title":[48,48,600],"page-title":[26,26,600],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}[text.role]
+      const sizes=textRoleSizes[text.role]
       if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(text.selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
       const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144]}[text.color]
       const channels=(color:string)=>color.match(/[\d.]+/g)?.map(Number)??[]

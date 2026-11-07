@@ -37,7 +37,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S12.01",
@@ -77,7 +77,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S21.01",
@@ -119,7 +119,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S22.01",
@@ -169,7 +169,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S29.01",
@@ -208,7 +208,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S31.01",
@@ -256,7 +256,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S31.02",
@@ -314,7 +314,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S31.03",
@@ -377,7 +377,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S31.04",
@@ -440,7 +440,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S31.05",
@@ -507,7 +507,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S32.01",
@@ -564,7 +564,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S32.02",
@@ -622,7 +622,7 @@
         "total": "24"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S32.03",
@@ -676,7 +676,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S33.01",
@@ -741,7 +741,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -810,7 +810,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S33.03",
@@ -870,7 +870,7 @@
         "n": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -945,7 +945,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S41.02",
@@ -1013,7 +1013,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S41.03",
@@ -1072,7 +1072,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S41.04",
@@ -1133,7 +1133,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1220,7 +1220,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S42.02",
@@ -1296,7 +1296,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S42.03",
@@ -1376,7 +1376,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S42.04",
@@ -1456,7 +1456,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.01",
@@ -1535,7 +1535,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.02",
@@ -1611,7 +1611,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.03",
@@ -1686,7 +1686,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.04",
@@ -1745,7 +1745,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.05",
@@ -1803,7 +1803,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.06",
@@ -1861,7 +1861,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S43.07",
@@ -1919,7 +1919,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S49.01",
@@ -1992,7 +1992,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S49.02",
@@ -2066,7 +2066,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2139,7 +2139,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2217,7 +2217,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2276,7 +2276,7 @@
         "file": "Q3 Investor Update.pptx"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2357,7 +2357,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2417,7 +2417,7 @@
         "agent": "Claude"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S71.02",
@@ -2471,7 +2471,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S71.03",
@@ -2520,7 +2520,7 @@
         "agent": "Codex"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S81.01",
@@ -2564,7 +2564,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S81.02",
@@ -2614,7 +2614,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S81.03",
@@ -2672,7 +2672,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S91.01",
@@ -2727,7 +2727,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2805,7 +2805,7 @@
         "amount": "$25.00"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S91.03",
@@ -2864,7 +2864,7 @@
         "balance": "$40.00"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2948,7 +2948,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998"
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
   },
   {
     "code": "S92.02",
@@ -3010,7 +3010,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3070,7 +3070,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3170,7 +3170,7 @@
         "slide": "3"
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3228,7 +3228,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3299,7 +3299,7 @@
         ]
       }
     },
-    "fixtureContentHash": "ff7eaec74d566e64390be1e5a205a3eb4bf080c32d8f18e99cfd90cb9a98a998",
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
