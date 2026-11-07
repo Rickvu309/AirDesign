@@ -41,7 +41,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S11.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S11.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "site",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S12.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S12.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -131,7 +131,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S21.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S21.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S31.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S31.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S31.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S31.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.05: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S31.05: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S32.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S32.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S32.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -797,7 +797,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -870,7 +870,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -934,7 +934,7 @@
         "n": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -1013,7 +1013,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S41.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1085,7 +1085,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S41.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1148,7 +1148,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S41.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1213,7 +1213,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S41.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1304,7 +1304,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S42.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1384,7 +1384,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S42.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1468,7 +1468,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S42.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1552,7 +1552,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S42.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1635,7 +1635,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1715,7 +1715,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1794,7 +1794,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1857,7 +1857,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1919,7 +1919,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.05: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.05: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -1981,7 +1981,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.06: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.06: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2043,7 +2043,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S43.07: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.07: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2120,7 +2120,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S49.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2198,7 +2198,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S49.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2275,7 +2275,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S61.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2357,7 +2357,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S61.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2420,7 +2420,7 @@
         "file": "Q3 Investor Update.pptx"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S61.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2505,7 +2505,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S69.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S69.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2569,7 +2569,7 @@
         "agent": "Claude"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S71.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2627,7 +2627,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S71.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2680,7 +2680,7 @@
         "agent": "Codex"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S71.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2728,7 +2728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S81.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2782,7 +2782,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S81.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2844,7 +2844,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S81.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -2903,7 +2903,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S91.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2985,7 +2985,7 @@
         "amount": "$25.00"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S91.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -3048,7 +3048,7 @@
         "balance": "$40.00"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S91.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3136,7 +3136,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S92.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
   },
   {
     "surface": "studio",
@@ -3202,7 +3202,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S92.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3266,7 +3266,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S92.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3370,7 +3370,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S92.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3432,7 +3432,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S99.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3507,7 +3507,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S99.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
