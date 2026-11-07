@@ -1,6 +1,6 @@
 export type PublicClaim = {id:string;text:string} & ({kind:"proven";receipt:string}|{kind:"blocked";gate:string})
 export function publicCopy(source:string):string[]{
- const clean=source.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
+ const clean=source.replace(/<meta\b(?=[^>]*\bname=["'](?:theme-color|color-scheme)["'])[^>]*>/gi,"").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"")
  const texts=clean.includes("<") ? [...clean.matchAll(/>([^<>]+)</g)].map(match=>match[1]!) : clean.split("\n")
  const attributes=[...clean.matchAll(/(?:alt|aria-label|content)="([^"]+)"/g)].map(match=>match[1]!).filter(text=>!text.includes("width=device-width"))
  return [...texts,...attributes].map(text=>text.replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim()).filter(Boolean)

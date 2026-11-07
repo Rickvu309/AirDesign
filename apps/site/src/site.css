@@ -66,9 +66,9 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
 .brand { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 14px; }
 .brand .brand-mark { inline-size: 22px; block-size: 22px; margin: 0; fill: none; stroke: var(--foreground); stroke-width: 3.063; stroke-linecap: round; stroke-linejoin: round; }
 .brand-mark .brand-crossbar { stroke: var(--site-brand-accent); stroke-width: 2.188; }
-.button { background: var(--signature-gradient); border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro); }
+.button { background: var(--signature-gradient); border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro), opacity var(--motion-micro); }
 .button:active { transform: translateY(1px); }
-@media (hover: hover) { .button:hover { background: var(--signature-gradient); filter: brightness(.96); } }
+@media (hover: hover) and (pointer: fine) { .button:hover { background: var(--signature-gradient); filter: brightness(.96); } }
 .landing-page main { max-inline-size: none; padding: 0; }
 .landing-page h1,.landing-page h2 { font-family: var(--site-serif); letter-spacing: -.04em; font-weight: 400; }
 .landing-page h1 { font-size: clamp(58px,7.23vw,104px); letter-spacing: -3.4px; line-height: 1; max-inline-size: none; margin: 0; }
@@ -205,4 +205,16 @@ footer a { text-decoration: none; }
   .pricing-intro { padding-block-start: 64px; }
   .pricing-page .lead { font-size: 16px; }
   .price { padding: 24px; }
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+@media (pointer: coarse) {
+  :root body input, :root body textarea, :root body select { font-size: 16px; }
+}
+
+@media (pointer: coarse) {
+  :root body header .button { min-block-size: 44px; }
 }
