@@ -3,7 +3,7 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { expect, it } from "vitest"
-import { ciCoverageHits, verifierBuildHits, workerLibraryHits } from "../../scripts/lint/ci-workflow-policy.ts"
+import { deploymentWorkflowHits, ciCoverageHits, verifierBuildHits, workerLibraryHits } from "../../scripts/lint/ci-workflow-policy.ts"
 import { requiresFullGate } from "../../scripts/gate/plan.ts"
 
 const scripts: Record<string, string> = JSON.parse(readFileSync("package.json", "utf8")).scripts
@@ -33,6 +33,7 @@ it("rejects the runner mirror that stalled the real LibreOffice check", () => {
 })
 
 it("keeps nested workspace dependencies in every test job", () => {
+  expect(hits(scripts, workflow.replaceAll("build/version.json", ""))).toContain("ci-artifact-missing-build-identity")
   for (const workspace of ["apps", "packages"]) {
     expect(hits(scripts, workflow.replace(`${workspace}/*/node_modules`, ""))).toContain(`ci-artifact-missing-workspace-dependencies: ${workspace}`)
   }
@@ -114,4 +115,24 @@ it("keeps project npm installer permissions out of inherited CLI flags", () => {
   } finally {
     rmSync(directory, { recursive: true, force: true })
   }
+})
+
+it("rejects manual Railway deploys, disabled smoke checks, missing evidence and bypassed CI", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
+  for (const broken of [
+    deploy.replace("  live:\n", "  live:\n    if: ${{ false }}\n"),
+    deploy.replace("node scripts/live/wait-for-deploy.ts", "echo skipped"),
+    deploy.replace("npm run verify:live", "echo skipped"),
+    deploy.replace("npm run verify:live", "npx --yes @railway/cli@5.71.0 up"),
+    deploy.replace("--smoke-email smoke@airdesign.app", ""),
+    deploy.replace("libreoffice-impress", ""),
+    deploy.replace("--with-deps chromium", ""),
+    deploy.replace("secrets.RAILWAY_API_TOKEN", "secrets.RAILWAY_TOKEN"),
+    deploy.replace("secrets.RAILWAY_SSH_PRIVATE_KEY", ""),
+    deploy.replace("actions/upload-artifact@", "actions/missing-artifact@"),
+    deploy.replace("AIRDESIGN_BUILD_SHA:", "MISSING_BUILD_SHA:"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
+  expect(deploymentWorkflowHits(deploy, railway.replace("checkSuites: true", "checkSuites: false"))).toContain("railway-source-must-wait-for-ci")
 })

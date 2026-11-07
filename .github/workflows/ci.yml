@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, ci]
+    branches: [main, ci-landing]
   workflow_dispatch:
 
 permissions:
@@ -56,6 +56,7 @@ jobs:
         id: build
         with:
           path: |
+            build/version.json
             apps/site/dist
             apps/studio/dist
             apps/worker/dist
@@ -72,7 +73,7 @@ jobs:
       - if: steps.changes.outputs.heavy == 'true'
         run: |
           shopt -s nullglob
-          tar -cf "$RUNNER_TEMP/gate-build.tar" node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/deck/dist packages/ui/dist
+          tar -cf "$RUNNER_TEMP/gate-build.tar" build/version.json node_modules apps/*/node_modules packages/*/node_modules apps/*/dist packages/deck/dist packages/ui/dist
       - if: steps.changes.outputs.heavy == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:

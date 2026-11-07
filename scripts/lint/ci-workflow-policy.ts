@@ -18,6 +18,7 @@ export function ciCoverageHits(scripts: Record<string, string>, source: string, 
   const office = jobs.verification?.steps?.find(step => step.if === "matrix.libreoffice")?.run ?? ""
   if (!office.includes("https://archive.ubuntu.com/ubuntu/") || !office.includes("Acquire::https::Timeout=30")) hits.push("ci-office-downloads-need-direct-mirror-and-bounded-network-waits")
   const artifact = jobs.setup?.steps?.find(step => step.run?.includes('tar -cf "$RUNNER_TEMP/gate-build.tar"'))?.run ?? ""
+  if (!artifact.includes("build/version.json")) hits.push("ci-artifact-missing-build-identity")
   for (const workspace of ["apps", "packages"]) {
     if (!artifact.includes(`${workspace}/*/node_modules`)) hits.push(`ci-artifact-missing-workspace-dependencies: ${workspace}`)
   }
@@ -66,4 +67,25 @@ export function verifierBuildHits(file: string, source: string): string[] {
 export function workerLibraryHits(file: string, source: string): string[] {
   if (!/apps\/worker\/src\/(?:isolation|export\/deliver)\.ts$/.test(file.replaceAll("\\", "/"))) return []
   return source.replaceAll(/\s/g, "").includes('"--ro-bind-try","/lib64","/lib64"') ? [] : ["worker-linux-loader-missing: mount optional /lib64 for x64 isolated processes"]
+}
+
+export function deploymentWorkflowHits(source: string, railway: string): string[] {
+  const { jobs } = workflowSchema.parse(parse(source))
+  const hits: string[] = []
+  const site = jobs.site?.steps?.map(step => step.run ?? "").join("\n") ?? ""
+  const live = jobs.live?.steps?.map(step => step.run ?? "").join("\n") ?? ""
+  if (Object.values(jobs).some(job => job.steps?.some(step => /\brailway(?:\/cli@[^ ]+)? up\b/.test(step.run ?? "")))) hits.push("deploy-railway-source-owned: Railway deploys from GitHub")
+  if (jobs.live?.if || jobs.live?.needs !== "site" || !live.includes("node scripts/live/wait-for-deploy.ts")) hits.push("deploy-live-required-after-site-and-railway-identity")
+  for (const command of ["npm run verify:live", '--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", "--output-dir"]) {
+    if (!live.includes(command)) hits.push(`deploy-live-command-required: ${command}`)
+  }
+  if (!live.includes("playwright install --with-deps chromium") || !live.includes("libreoffice-impress") || !source.includes("AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice")) hits.push("deploy-live-needs-browser-and-office")
+  if (!live.includes("railway link --project") || !source.includes("secrets.RAILWAY_API_TOKEN") || !source.includes("secrets.RAILWAY_SSH_PRIVATE_KEY")) hits.push("deploy-live-needs-linked-railway-ssh-credentials")
+  if (!jobs.live?.steps?.some(step => step.if === "always()" && step.uses?.startsWith("actions/upload-artifact@"))) hits.push("deploy-live-evidence-must-upload-on-failure")
+  if (!site.includes("npm run build --workspace @airdesign/site") || !source.includes("AIRDESIGN_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}") || !site.includes("--project-name airdesign")) hits.push("deploy-site-must-build-selected-commit")
+  if (!/checkSuites:\s*true/.test(railway) || /checkSuites:\s*false/.test(railway)) hits.push("railway-source-must-wait-for-ci")
+  for (const job of Object.values(jobs)) for (const step of job.steps ?? []) {
+    if (step.uses && !step.uses.startsWith("./") && !/@[a-f0-9]{40}$/.test(step.uses)) hits.push(`deploy-action-not-pinned: ${step.uses}`)
+  }
+  return hits
 }

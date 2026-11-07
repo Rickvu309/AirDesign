@@ -1,6 +1,6 @@
 # CI and production delivery
 
-Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate and then the production delivery workflow. Pushes to `ci` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci` from the push branch list after this branch lands.
+Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate and then the production delivery workflow. Pushes to `ci-landing` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci-landing` from the push branch list after this branch lands.
 
 ## Run locally
 
@@ -28,7 +28,7 @@ These baseline sums guide grouping. They exclude CI runtime setup and the new Li
 
 The shared plan is `scripts/gate/plan.ts`. CI derives its verification matrix from that plan, and local execution reads the same plan. Vitest discovers `test` and `spec` files across every workspace, including TypeScript, JSX and JavaScript module extensions, across two shards. `scripts/gate/unit-sharding.ts` greedily balances the recorded baseline durations in `scripts/gate/unit-durations.json`; unknown files receive a one-second estimate and are always included. Refresh the estimates from a passing Vitest results cache after material suite changes. The baseline hash split estimated 200.0 versus 129.0 seconds of test work; the measured split estimates 164.5 seconds each before worker startup overhead. The lint policy rejects omitted PR verifiers, filtered workspace discovery, incomplete shards and unpinned actions; mutation tests demonstrate those failures.
 
-Only changes exclusively to this informational guide can skip heavy work on pull requests or the temporary `ci` branch. Design and planning documentation is test input and always runs the full gate. Pushes to `main` always build, ensuring deployment has an artifact. `gate` runs even when other jobs fail or are skipped and rejects unexpected skips. Require the check named `gate` in the main branch ruleset after the coordinator lands the workflow. No branch rules are configured by this change.
+Only changes exclusively to this informational guide can skip heavy work on pull requests or the temporary `ci-landing` branch. Design and planning documentation is test input and always runs the full gate. Pushes to `main` always build. `gate` runs even when other jobs fail or are skipped and rejects unexpected skips. Require the check named `gate` in the main branch ruleset after the coordinator lands the workflow. No branch rules are configured by this change.
 
 The project npm configuration permits the required native installer scripts for `agent-browser`, esbuild, workerd and the Railway CLI. This makes installation independent of a developer's global npm configuration. The gate clears npm's inherited installer-policy environment flag before starting child npm commands, so npm reads the project configuration directly. A subprocess regression test proves that the original inherited flag fails and the corrected environment preserves other inputs.
 
@@ -38,27 +38,28 @@ Worker tests exercise both systemd/Bubblewrap and container drivers. Unit shards
 
 ## Deployment
 
-`deploy.yml` uses `workflow_run` after a successful `CI` push on `main`. This separates deployment secrets from pull request code and consumes the exact artifact that passed CI. Every checkout and the live-check expectation use `github.event.workflow_run.head_sha`; `github.sha` would refer to a different revision in this event. A stale successful run whose SHA is no longer main is skipped. Production deployment runs are serialized and are not cancelled midway.
+`deploy.yml` uses `workflow_run` after a successful `CI` push on `main`. Deployment secrets are available only after that gate, and the site builds from the exact source revision that passed CI. Every checkout and the live-check expectation use `github.event.workflow_run.head_sha`; `github.sha` would refer to a different revision in this event. A stale successful run whose SHA is no longer main is skipped. Production deployment runs are serialized and are not cancelled midway.
 
-The site job uploads the verified `apps/site/dist` to Cloudflare Pages project `airdesign`. Parallel Railway jobs deploy services `web` and `worker` in environment `production` from the same verified checkout. The services must already exist, have their runtime variables and persistent volumes, and select `railway.json` for web and `railway.worker.json` for worker. See [Railway setup](deploy-railway.md). Disable duplicate automatic Railway GitHub deployments when this workflow takes over.
+The site job builds `apps/site` with `AIRDESIGN_BUILD_SHA` set to the verified commit, then publishes Cloudflare Pages project `airdesign`. Railway independently deploys `web` and `worker` from GitHub. `.railway/railway.ts` enables `checkSuites: true`; the coordinator must apply that configuration after merge. Keep Railway's GitHub integration enabled. No workflow calls `railway up`.
 
-Railway runs attached `up`, without `--detach` or `--ci`, because those options return before runtime deployment success. The attached command waits for the terminal deployment result and fails the job on failure. [Railway CLI behavior](https://docs.railway.com/cli/up). Cloudflare uses the documented direct upload command. [Cloudflare Pages CI upload](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/).
+The live job installs Chromium, LibreOffice Impress, and Railway CLI 5.71.0. It links to the production project, waits at most 20 minutes for Studio `/version` to report the expected commit, then runs the existing `verify:live` journey with `--expect-sha`, `--smoke-email smoke@airdesign.app`, and `--railway`. Worker identity is checked by the verifier's real import journey. A failed wait or journey fails the workflow. Receipt, screenshots, and export evidence upload even when the journey fails. There is no verification skip or automatic rollback.
 
-The coordinator must configure these production environment secrets before enabling delivery:
+Configure these secrets in GitHub's `production` environment before a main deployment:
 
 | Secret | Scope |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Token permitted to deploy the existing Pages project |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Pages Edit for the account owning existing project `airdesign` |
 | `CLOUDFLARE_ACCOUNT_ID` | Account owning Pages project `airdesign` |
-| `RAILWAY_TOKEN` | Railway project token scoped to environment `production`, covering `web` and `worker` |
+| `RAILWAY_API_TOKEN` | Account or workspace API token with access to the production project and its registered SSH key |
+| `RAILWAY_SSH_PRIVATE_KEY` | Dedicated, unencrypted Ed25519 private key whose public key the coordinator registers with that Railway account or workspace |
 
-No secret, branch rule or deployment was configured or run while implementing CI. Production remains unverified until credentials are configured and a main deployment succeeds.
+Set production environment variable `RAILWAY_PROJECT_ID` to the existing project's UUID. It is not a secret. Railway's project token `RAILWAY_TOKEN` cannot manage SSH keys; use `RAILWAY_API_TOKEN` for the key lookup and service resolution. The CLI uses native system SSH, so a token alone is insufficient. The workflow installs the key with owner-only permissions, derives its public key, and deletes both key files in its final cleanup step. It never prints the one-use smoke sign-in credential. See [Railway CLI tokens](https://docs.railway.com/cli) and [Railway SSH authentication](https://docs.railway.com/cli/ssh).
+
+No secrets, branch rules, live configuration, or deployments were changed during implementation. Production delivery remains unproved until the coordinator sets these inputs, applies the Railway configuration after merge, and observes a successful main workflow.
 
 ## Enable the pending checks
 
 The `design` job in `.github/workflows/ci.yml` is explicitly disabled with `if: ${{ false }}`. In the PR that lands `verify:design`, replace that expression with `needs.setup.outputs.heavy == 'true'`. It already restores the shared build and Chromium. Add any further runtime inputs required by the design script. The final gate already depends on this job and rejects failures.
-
-The `live` job in `.github/workflows/deploy.yml` is explicitly disabled with `if: ${{ false }}`. In the PR that lands `verify:live`, replace it with `needs.site.result == 'success' && needs.railway.result == 'success'`. Supply the live script's documented environment and secret names in that job, then verify the workflow on main. It installs Chromium and runs `npm run verify:live -- --expect-sha "$EXPECT_SHA"` after both Railway services and Pages succeed. There is no script-existence guard. A live-check failure fails deployment verification without automatically rolling back production.
 
 ## Measurements
 
