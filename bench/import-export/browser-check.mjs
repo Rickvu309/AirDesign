@@ -17,7 +17,7 @@ export async function runImportExport(browser,stack,output) {
   let page=await context.newPage()
   try {
     await page.goto(stack.origin)
-    await page.getByRole("button",{name:"+ New deck",exact:true}).click()
+    await page.getByRole("button",{name:"New deck",exact:true}).click()
     await page.getByLabel("New deck",{exact:true}).getByRole("button",{name:"Import PowerPoint",exact:true}).click()
     await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles({name:"broken.pptx",mimeType:"application/vnd.openxmlformats-officedocument.presentationml.presentation",buffer:Buffer.from([0x50,0x4b,3,4,0,0,0,0])})
     await expect(page.getByRole("status").filter({hasText:"Import queued"})).toBeVisible()

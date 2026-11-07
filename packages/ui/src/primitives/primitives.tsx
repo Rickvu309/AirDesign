@@ -33,7 +33,7 @@ export function Avatar({ name }: { name: string }) {
   return <span className="ad-avatar" aria-hidden="true">{name.split(/\s+/).map(word => word[0]).slice(0, 2).join("")}</span>
 }
 export function SearchField({ value, onChange, label = "Search" }: { value: string; onChange: (value: string) => void; label?: string }) {
-  return <label className="ad-search"><Icon name="search"/><input aria-label={label} placeholder={label} type="search" value={value} onChange={event => onChange(event.target.value)}/></label>
+  return <label className="ad-search"><Icon name="search"/><input aria-label={label} placeholder={label} type="search" enterKeyHint="search" autoCapitalize="none" autoCorrect="off" value={value} onChange={event => onChange(event.target.value)}/></label>
 }
 export function SegmentedControl<T extends string>({ label, value, items, onChange }: { label: string; value: T; items: readonly { value: T; label: string; icon?: IconName }[]; onChange: (value: T) => void }) {
   return <div className="ad-segmented" role="group" aria-label={label}>{items.map(item => <button type="button" key={item.value} aria-label={item.label} aria-pressed={item.value === value} onClick={() => onChange(item.value)}>{item.icon ? <Icon name={item.icon}/> : item.label}</button>)}</div>

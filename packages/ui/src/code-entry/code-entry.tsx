@@ -55,6 +55,9 @@ export function CodeEntry({ label, value, onValueChange, error }: CodeEntryProps
             }}
             className="ad-code-box"
             inputMode="numeric"
+            enterKeyHint="done"
+            autoCapitalize="none"
+            autoCorrect="off"
             autoComplete={index === 0 ? "one-time-code" : "off"}
             aria-label={`${label} ${index + 1}`}
             value={digit}
