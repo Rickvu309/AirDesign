@@ -17,6 +17,9 @@ export function studioFoundationHits(file: string, source: string): { line: numb
   if (file.endsWith("packages/ui/src/toast/toaster.tsx")) return source.includes("mobileOffset=") && ["top","left","right","bottom"].every(edge=>source.includes(`env(safe-area-inset-${edge})`)) ? [] : [{line:1,reason:"studio-toasts-must-respect-phone-safe-areas"}]
   if (file.endsWith("apps/studio/src/decks/decks.css")) {
     const hits=[]
+    if (/\.workspace-home \.deck-card-details p(?:\s*[,{])/.test(source) || !source.includes('.workspace-home .deck-card-details .import-filename { display:block;margin:0;font-size:var(--text-body);color:var(--foreground);')) hits.push({line:1,reason:"studio-import-filename-keeps-card-title-typography"})
+    if (!source.includes('.workspace-home .import-card { position:relative;') || !source.includes('.import-diagnostics,.import-cancel { position:absolute;')) hits.push({line:1,reason:"studio-import-recovery-controls-stay-within-card-height"})
+    if (!source.includes('.import-diagnostics pre { position:absolute;') || !source.includes('.import-diagnostics>summary { min-inline-size:44px;min-block-size:44px;')) hits.push({line:1,reason:"studio-import-details-preserve-header-and-touch-target"})
     if (!source.includes('.home-new-deck .ad-menu { min-inline-size:179px;inset-block-start:calc(100% + 4px);inset-inline-start:auto;inset-inline-end:0;padding:3px;font-size:var(--text-body-small); }') || !source.includes('gap:8px;padding:6px 8px;line-height:20px;')) hits.push({line:1,reason:"studio-new-deck-menu-aligns-with-trigger-and-reference-row-spacing"})
     if (!source.includes('.deck-starter .deck-preview { block-size:var(--deck-preview-height); }')) hits.push({line:1,reason:"studio-deck-starter-previews-need-intrinsic-height"})
     if (!source.includes('line-height:44px;overflow:hidden;text-overflow:ellipsis;')) hits.push({line:1,reason:"studio-touch-deck-title-links-truncate-inside-their-tap-target"})

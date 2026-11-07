@@ -5,18 +5,37 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
-  it("rejects a second shell icon implementation and accepts shared icons", () => {
-    const icons = "packages/ui/src/primitives/primitives.tsx"
-    expect(studioFoundationHits(icons, readFileSync(icons, "utf8"))).toEqual([])
-    expect(studioFoundationHits(icons, "export function Icon() {} const paths = {}"))
-      .toEqual([{ line: 1, reason: "studio-icons-use-the-shared-icon-module" }])
-  })
   it("rejects canonical keys and values in supplemental copy", () => {
     const supplemental = "packages/ui/src/copy/studio-foundation-copy.ts"
     expect(studioFoundationHits(supplemental, readFileSync(supplemental, "utf8"))).toEqual([])
     for (const source of ['  "access.continue_email": "Other",', '  "other.key": "Recents",']) {
       expect(studioFoundationHits(supplemental, source)).toEqual([{ line: 1, reason: "studio-supplemental-copy-must-not-duplicate-canonical-copy" }])
     }
+  })
+
+  it("rejects a second shell icon implementation and accepts shared icons", () => {
+    const icons = "packages/ui/src/primitives/primitives.tsx"
+    expect(studioFoundationHits(icons, readFileSync(icons, "utf8"))).toEqual([])
+    expect(studioFoundationHits(icons, "export function Icon() {} const paths = {}"))
+      .toEqual([{ line: 1, reason: "studio-icons-use-the-shared-icon-module" }])
+  })
+  it("rejects the metadata selector overriding import filename typography",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace(".deck-card-details p:not(.import-filename)",".deck-card-details p"))).toEqual([{line:1,reason:"studio-import-filename-keeps-card-title-typography"}])
+  })
+  it("rejects inherited gray import filenames",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source.replace("font-size:var(--text-body);color:var(--foreground);","font-size:var(--text-body);"))).toEqual([{line:1,reason:"studio-import-filename-keeps-card-title-typography"}])
+  })
+  it("rejects diagnostics shifting the filename or undersized touch targets",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    for(const original of [source.replace(".import-diagnostics pre { position:absolute;",".import-diagnostics pre { position:static;"),source.replace(".import-diagnostics>summary { min-inline-size:44px;min-block-size:44px;",".import-diagnostics>summary { min-block-size:44px;")]) expect(studioFoundationHits(file,original)).toEqual([{line:1,reason:"studio-import-details-preserve-header-and-touch-target"}])
+  })
+  it("rejects recovery controls adding a row to the import card",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace('.import-diagnostics,.import-cancel { position:absolute;','.import-diagnostics,.import-cancel { position:static;'))).toEqual([{line:1,reason:"studio-import-recovery-controls-stay-within-card-height"}])
   })
   it("rejects the inherited start-aligned and oversized New deck menu",()=>{
     const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
@@ -77,7 +96,7 @@ describe("Studio design foundation", () => {
     expect(studioFoundationHits(toaster,toasterSource.replace("env(safe-area-inset-top)","0px"))).toEqual([{line:1,reason:"studio-toasts-must-respect-phone-safe-areas"}])
     expect(studioFoundationHits(decks,decksSource)).toEqual([])
     expect(studioFoundationHits(decks,decksSource.replace("left:calc(50% + 124px)","left:50%").replace("[data-button] { background:transparent;color:inherit;","[data-button] {"))).toEqual([{line:1,reason:"studio-deck-toast-must-center-over-content-with-plain-undo-action"}])
-    expect(studioFoundationHits(decks,decksSource.replaceAll("min-inline-size:44px;min-block-size:44px",""))).toEqual([{line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"}])
+    expect(studioFoundationHits(decks,decksSource.replaceAll("min-inline-size:44px;min-block-size:44px",""))).toEqual([{line:1,reason:"studio-import-details-preserve-header-and-touch-target"},{line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"}])
     expect(studioFoundationHits(decks,decksSource.replace(".workspace-home .deck-list .deck-cover { min-block-size:44px;",".workspace-home .deck-list .deck-cover {"))).toEqual([{line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"}])
   })
   it("rejects phone input zoom and undersized touch targets", () => {
