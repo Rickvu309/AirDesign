@@ -39,3 +39,13 @@ it("rejects an icon submit button without a stable accessible name",()=>{
   expect(editorLayoutHits(file,source.replace(' aria-label={working ? "Steer" : "Send"}',""))).toMatchObject([{reason:"aira-icon-submit-needs-an-explicit-accessible-name"}])
   expect(editorLayoutHits(file,source)).toEqual([])
 })
+
+it.each([
+ ["apps/studio/src/editor/manual-editor.tsx","event.patches.map(patch=>patch.id)"],
+ ["apps/studio/src/editor/manual-editor.tsx","JSON.stringify(item.command,null,2)"],
+ ["packages/render/src/slide.tsx",'aria-label={`Text ${element.id}`}'],
+ ["apps/studio/src/images/image-panel.tsx",'aria-label={`Place ${image.provenance.kind} image ${image.id.slice(0,8)}`}']
+])("rejects the original internal identifier or payload display in %s",(file,source)=>{
+ expect(editorLayoutHits(file,source)).toMatchObject([{reason:"editor-content-labels-must-not-expose-internal-identifiers-or-command-payloads"}])
+ expect(editorLayoutHits(file,readFileSync(file,"utf8"))).toEqual([])
+})

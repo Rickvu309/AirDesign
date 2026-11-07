@@ -6,5 +6,9 @@ export function editorLayoutHits(file:string,source:string):{line:number;reason:
   if(file.endsWith("apps/studio/src/editor/editor.css") && !/\.slide-canvas\s*\{[^}]*position\s*:\s*absolute/.test(source))return [{line:1,reason:"scaled-slide-canvas-must-not-affect-thumbnail-layout"}]
   if(file.endsWith("apps/studio/src/chat/chat.css") && !/\.aira-panel\s*\{[^}]*inset-block\s*:\s*56px 0[^}]*z-index\s*:\s*25/.test(source))return [{line:1,reason:"aira-must-leave-export-and-zoom-above-the-panel"}]
   if(file.endsWith("apps/studio/src/chat/chat-panel.tsx") && /<Button type="submit"(?! aria-label=)/.test(source))return [{line:1,reason:"aira-icon-submit-needs-an-explicit-accessible-name"}]
+  if(/(?:apps\/studio\/src\/(?:editor|images)|packages\/render\/src)\//.test(file)){
+    const match=/event\.patches\.map\(patch\s*=>\s*patch\.id\)|JSON\.stringify\(item\.command|aria-label=\{`[^`]*\$\{(?:element|image)\.id\b/.exec(source)
+    if(match)return [{line:source.slice(0,match.index).split("\n").length,reason:"editor-content-labels-must-not-expose-internal-identifiers-or-command-payloads"}]
+  }
   return []
 }
