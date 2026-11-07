@@ -1,0 +1,104 @@
+[
+  {
+    "file": "packages/access/src/create-access.ts",
+    "reason": "persist-deletion-job-and-revoke-sessions-before-owned-purge",
+    "revision": "accaae1",
+    "source": "async function deleteAccount(\n  options: CreateAccessOptions,\n  auth: SessionApi,\n  db: Database,\n  tables: Tables,\n  secure: boolean,\n  request: Request,\n  body: Record<string, unknown>,\n): Promise<Response> {\n  const loaded = await loadSession(auth, request)\n  if (!loaded.user) {\n    return json(401, { status: \"signed-out\" }, loaded.cookies)\n  }\n  if (body.confirm !== \"delete-account\") {\n    return json(400, { status: \"confirmation-required\" }, loaded.cookies)\n  }\n  const user = loaded.user\n  const started = user.freeUsageWeekStartedAt ? new Date(user.freeUsageWeekStartedAt) : new Date(options.clock())\n  await db.insert(tables.tombstone).values({\n    emailHash: sha256(normalizeEmail(user.email)),\n    freeUsageWeekStartedAt: started,\n    deletedAt: new Date(options.clock()),\n  }).onConflictDoNothing()\n  await options.deleteOwnedData?.(user.id)\n  await db.delete(tables.challenge).where(eq(tables.challenge.email,normalizeEmail(user.email)))\n  await db.delete(tables.sendWindow).where(eq(tables.sendWindow.email,normalizeEmail(user.email)))\n  const context = await auth.$context\n  await context.internalAdapter.deleteUserSessions(user.id)\n  await context.internalAdapter.deleteUser(user.id)\n  const cleared = [\n    await sessionSetCookie(options.secret, \"\", secure, 0),\n    intentSetCookie(\"\", secure, 0),\n  ]\n  return json(200, { status: \"deleted\" }, cleared)\n}\n\n"
+  },
+  {
+    "file": "apps/server/src/agent/handle.ts",
+    "reason": "resume-failed-stopped-and-limited-runs",
+    "revision": "accaae1",
+    "source": "        if(body.action===\"resume\"&&active?.kind===\"failed\"){active.kind=\"working\";launch(active);await save(active);return Response.json({id:active.id,kind:active.kind},{status:202})}\n  async function stop(live:LiveRun){live.data.kind=\"stopped\";live.controller.abort();await live.task;await closeRun(live.data);await save(live.data)}"
+  },
+  {
+    "file": "packages/agent/src/local-adapter.ts",
+    "reason": "preserve-typed-usage-limit-before-generic-tool-refusal",
+    "revision": "accaae1",
+    "source": "    if(write.isError)throw new Error(\"change-refused\")\n    if(write.isError)throw new Error(\"change-refused\")"
+  },
+  {
+    "file": "apps/server/src/main.ts",
+    "reason": "share-memory-database-during-server-bootstrap",
+    "revision": "accaae1",
+    "source": "  const access = await createAccess({\n    driver: databaseUrl === undefined ? { kind: \"pglite\", dataDir: extras.accessPath ?? process.env.AIRDESIGN_ACCESS_PATH ?? path.join(os.homedir(), \".local/share/airdesign/access\") } : { kind: \"postgres\", url: databaseUrl },\n    secret,\n    mail: inbox,"
+  },
+  {
+    "file": "apps/studio/src/access/access-app.test.tsx",
+    "reason": "access-workspace-tests-need-fetch-fixture",
+    "revision": "accaae1",
+    "source": "    vi.stubGlobal(\"fetch\", async (input: string) => {\n    vi.stubGlobal(\"fetch\", async () => Response.json([]))"
+  },
+  {
+    "file": "vitest.config.ts",
+    "reason": "bound-test-workers-to-heavy-memory-budget",
+    "revision": "accaae1",
+    "source": "import { defineConfig } from \"vitest/config\"\nexport default defineConfig({\n          testTimeout: 20_000,"
+  },
+  {
+    "file": "apps/server/test/history-postgres.test.ts",
+    "reason": "prove-postgres-release-with-unforced-drop-not-immediate-backend-count",
+    "revision": "accaae1",
+    "source": "    expect((await admin.query(\"SELECT count(*)::integer AS connections FROM pg_stat_activity WHERE datname=$1\",[database])).rows[0]?.connections).toBe(0)"
+  },
+  {
+    "file": "apps/server/test/commands-authenticated.test.ts",
+    "reason": "prove-postgres-release-with-unforced-drop-not-immediate-backend-count",
+    "revision": "accaae1",
+    "source": "    expect((await admin.query<{count:string}>(\"SELECT count(*) FROM pg_stat_activity WHERE datname=$1\",[database])).rows[0]?.count).toBe(\"0\")"
+  },
+  {
+    "file": "apps/server/src/rpc/websocket.ts",
+    "reason": "batch-reconnect-admission-and-snapshot-instead-of-per-command-transactions",
+    "revision": "26c883d",
+    "source": "            const committed=await store.commitSnapshot(current,deck,parseCommand(JSON.parse(data.toString())),identity,base)"
+  },
+  {
+    "file": "packages/rpc/src/client.ts",
+    "reason": "coalesce-concurrent-outbox-reads-under-command-locks",
+    "revision": "26c883d",
+    "source": "private async send(command: Command) {\n    const epoch=this.connectionEpoch\n    const deliver=async()=>{\n      if(epoch!==this.connectionEpoch || !this.online || this.blocked)return\n      if(!(await this.outbox.read(this.key)"
+  },
+  {
+    "file": "packages/rpc/src/client.ts",
+    "reason": "share-outbox-reads-only-before-the-read-starts-to-preserve-lock-freshness",
+    "revision": "214362b",
+    "source": "        void read.work.finally(()=>{if(this.reading===read)this.reading=null}).catch(()=>{})"
+  },
+  {
+    "file": "apps/worker/test/export-recovery.test.ts",
+    "reason": "read-process-protocols-as-lines-not-stdout-chunks",
+    "revision": "ad44379",
+    "source": "  const [marker]=await once(supervisor.stdout,\"data\",{signal:AbortSignal.timeout(25000)}).catch(error=>{throw new Error(String(error)+stderr)})"
+  },
+  {
+    "file": "apps/worker/test/remote-recovery.test.ts",
+    "reason": "publish-ready-marker-atomically-before-notifying-supervisor",
+    "revision": "0e7778f",
+    "source": " await writeFile(program,`import {spawn} from 'node:child_process';import {writeFileSync} from 'node:fs';const child=spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});writeFileSync('ready',String(child.pid));setInterval(()=>{},1000)`)"
+  },
+  {
+    "file": "apps/worker/test/remote-recovery.test.ts",
+    "reason": "read-process-protocols-as-lines-not-stdout-chunks",
+    "revision": "0e7778f",
+    "source": "  const [data]=await once(supervisor.stdout,\"data\",{signal:AbortSignal.timeout(10000)})"
+  },
+  {
+    "file": "apps/studio/src/access/link-route.browser.test.ts",
+    "reason": "create-link-route-screenshot-directory-before-browser-evidence",
+    "revision": "0e7778f",
+    "source": "const evidence = path.join(process.env.HOME ?? \"\", \"tmp/airdesign-autopilot/P01\")\n    await browser([\"screenshot\", path.join(evidence, \"lane-10/desktop-link.png\")])\n    await browser([\"screenshot\", path.join(evidence, \"lane-10/desktop-link-expired.png\")])\n    await browser([\"screenshot\", path.join(evidence, \"lane-10/phone-link-expired.png\")])\n    await browser([\"screenshot\", path.join(evidence, \"lane-10/phone-link.png\")])"
+  },
+  {
+    "file": "tests/lint/recovery-safety.test.ts",
+    "reason": "regression-tests-need-committed-fixtures-not-local-git-history",
+    "revision": "0e7778f",
+    "source": " const original=execFileSync(\"git\",[\"show\",`ad44379:${file}`],{encoding:\"utf8\"})\n  const original=execFileSync(\"git\",[\"show\",`accaae1:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`214362b:${file}`],{encoding:\"utf8\"})"
+  },
+  {
+    "file": "tests/lint/release-runtime.test.ts",
+    "reason": "regression-tests-need-committed-fixtures-not-local-git-history",
+    "revision": "0e7778f",
+    "source": "    const original=execFileSync(\"git\",[\"show\",`f15c6ddac838be912b3f27510037ff5e2fe7d327:${file}`],{encoding:\"utf8\"})"
+  }
+]

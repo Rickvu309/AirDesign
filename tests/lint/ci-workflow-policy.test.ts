@@ -32,12 +32,10 @@ it("rejects the runner mirror that stalled the real LibreOffice check", () => {
   expect(hits(scripts, workflow.replace("Acquire::https::Timeout=30", ""))).toContain("ci-office-downloads-need-direct-mirror-and-bounded-network-waits")
 })
 
-it("keeps nested workspace dependencies and regression history in every test job", () => {
+it("keeps nested workspace dependencies in every test job", () => {
   for (const workspace of ["apps", "packages"]) {
     expect(hits(scripts, workflow.replace(`${workspace}/*/node_modules`, ""))).toContain(`ci-artifact-missing-workspace-dependencies: ${workspace}`)
   }
-  const shallow = workflow.replaceAll("fetch-depth: 0", "fetch-depth: 1")
-  for (const name of ["unit", "verification"]) expect(hits(scripts, shallow)).toContain(`ci-regression-history-unavailable: ${name}`)
 })
 
 it("skips only informational CI documentation and never skips empty or executable changes", () => {

@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process"
+import { mkdir } from "node:fs/promises"
 import { createServer } from "node:net"
 import path from "node:path"
 import { afterAll, describe, expect, it } from "vitest"
@@ -27,6 +28,7 @@ describe("browser link route", () => {
   })
 
   it("signs in from a link, reloads that url, and recovers a day-old intent on a phone", async () => {
+    await mkdir(path.join(evidence, "lane-10"), { recursive: true })
     const studioPort = await freePort()
     process.env.AIRDESIGN_EXPOSE_INBOX = "1"
     api = await startServer(0, { operationsPath: ":memory:", historyPath: "memory://", accessPath: "memory://", clock: () => now, publicOrigin: `http://127.0.0.1:${studioPort}` })
