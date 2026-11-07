@@ -23,7 +23,7 @@ describe("tokens", () => {
       expect((Math.max(label, background) + 0.05) / (Math.min(label, background) + 0.05)).toBeGreaterThanOrEqual(4.5)
     }
     expect(css).toMatch(/\.ad-button-primary\s*\{[^}]*background: var\(--signature-gradient\)/)
-    for (const file of ["apps/site/src/site.css", "apps/studio/src/editor/workspace.css"]) {
+    for (const file of ["apps/site/src/site.css", "apps/studio/src/decks/decks.css"]) {
       expect(await readFile(file, "utf8")).toMatch(/background:\s*var\(--signature-gradient\)/)
     }
   })
