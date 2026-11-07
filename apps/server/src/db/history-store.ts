@@ -19,7 +19,7 @@ import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistor
 import { waitForHistorySchema, workerHistorySchemaWait, type HistorySchemaWaitPolicy } from "./history-schema-wait.ts"
 
 const historySchemaLock=639074220
-const historySchemaVersion=1
+export const historySchemaVersion=1
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
 export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate"; wait?: never } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy }, clock=Date.now) {
