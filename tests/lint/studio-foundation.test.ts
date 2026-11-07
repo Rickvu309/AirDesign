@@ -5,6 +5,68 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
+  it("rejects the inherited start-aligned and oversized New deck menu",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    const original=source.replace('.home-new-deck .ad-menu { min-inline-size:179px;inset-block-start:calc(100% + 4px);inset-inline-start:auto;inset-inline-end:0;padding:3px;font-size:var(--text-body-small); }','.home-new-deck .ad-menu { min-inline-size:179px; }').replace('gap:8px;padding:6px 8px;line-height:20px;','gap:8px;')
+    expect(studioFoundationHits(file,original)).toEqual([{line:1,reason:"studio-new-deck-menu-aligns-with-trigger-and-reference-row-spacing"}])
+  })
+  it("rejects starter previews that collapse or overlap the next card",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace('.deck-starter .deck-preview { block-size:var(--deck-preview-height); }',""))).toEqual([{line:1,reason:"studio-deck-starter-previews-need-intrinsic-height"}])
+  })
+  it("rejects card menus that overflow the phone or sit behind native previews",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    for(const rule of ['.workspace-home .deck-card:has(.ad-dropdown[open]) { z-index:2; }','z-index:1;','.deck-card-actions .ad-menu { z-index:20;min-inline-size:160px;inset-inline-start:auto;inset-inline-end:0; }'])expect(studioFoundationHits(file,source.replace(rule,""))).toEqual([{line:1,reason:"studio-deck-menus-must-fit-and-overlay-card-previews"}])
+  })
+  it("rejects treating the New deck summary as the menu container",()=>{
+    for(const file of ["bench/import-export/browser-check.mjs","bench/templates-images/live.mjs"]){
+      const source=readFileSync(file,"utf8")
+      expect(studioFoundationHits(file,source)).toEqual([])
+      expect(studioFoundationHits(file,source.replace('page.getByRole("button",{name:"Import PowerPoint",exact:true})','page.getByLabel("New deck",{exact:true}).getByRole("button",{name:"Import PowerPoint",exact:true})'))).toEqual([{line:1,reason:"studio-browser-opens-deck-menu-by-button-role"}])
+    }
+  })
+  it("rejects ambiguous waits that include both starter cards",()=>{
+    const file="bench/studio/browser-check.mjs",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace('locator("article.deck-card").waitFor()','locator(".deck-card").waitFor()'))).toEqual([{line:1,reason:"studio-browser-waits-for-persisted-deck-rows"}])
+  })
+  it("rejects repeated Decks type and radius literals when shared tokens exist",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    for(const [token,literal] of [["font-size:var(--text-body-small)","font-size:13px"],["border-radius:var(--radius-card)","border-radius:12px"]] as const)expect(studioFoundationHits(file,source.replace(token,literal))).toContainEqual({line:1,reason:"studio-decks-reuse-shared-type-and-radius-tokens"})
+  })
+  it("rejects inherited aspect sizing that offsets and overflows deck covers",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace("inline-size:100%;aspect-ratio:auto;", ""))).toEqual([{line:1,reason:"studio-deck-covers-fill-card-without-inherited-aspect-sizing"}])
+  })
+  it("rejects touch title links that clip without an ellipsis",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace("line-height:44px;overflow:hidden;text-overflow:ellipsis;", ""))).toEqual([{line:1,reason:"studio-touch-deck-title-links-truncate-inside-their-tap-target"}])
+  })
+  it("rejects inherited card hover effects without a fine pointer",()=>{
+    const file="apps/studio/src/editor/workspace.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace("@media (hover: hover) and (pointer: fine)","@media (hover:hover)"))).toEqual([{line:1,reason:"studio-deck-hover-requires-a-fine-pointer"}])
+  })
+  it("rejects a grid minimum that drops a column at the desktop checkpoint",()=>{
+    const file="apps/studio/src/decks/decks.css",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    expect(studioFoundationHits(file,source.replace("min(100%,320px)","min(100%,354px)"))).toEqual([{line:1,reason:"studio-deck-grid-keeps-three-columns-at-1440"}])
+  })
+  it("rejects toasts outside phone safe areas and undersized Decks controls",()=>{
+    const toaster="packages/ui/src/toast/toaster.tsx",toasterSource=readFileSync(toaster,"utf8"),decks="apps/studio/src/decks/decks.css",decksSource=readFileSync(decks,"utf8")
+    expect(studioFoundationHits(toaster,toasterSource)).toEqual([])
+    expect(studioFoundationHits(toaster,toasterSource.replace("env(safe-area-inset-top)","0px"))).toEqual([{line:1,reason:"studio-toasts-must-respect-phone-safe-areas"}])
+    expect(studioFoundationHits(decks,decksSource)).toEqual([])
+    expect(studioFoundationHits(decks,decksSource.replace("left:calc(50% + 124px)","left:50%").replace("[data-button] { background:transparent;color:inherit;","[data-button] {"))).toEqual([{line:1,reason:"studio-deck-toast-must-center-over-content-with-plain-undo-action"}])
+    expect(studioFoundationHits(decks,decksSource.replaceAll("min-inline-size:44px;min-block-size:44px",""))).toEqual([{line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"}])
+    expect(studioFoundationHits(decks,decksSource.replace(".workspace-home .deck-list .deck-cover { min-block-size:44px;",".workspace-home .deck-list .deck-cover {"))).toEqual([{line:1,reason:"studio-deck-and-undo-controls-require-touch-targets-and-pointer-scoped-hover"}])
+  })
   it("rejects phone input zoom and undersized touch targets", () => {
     expect(studioFoundationHits(file, fixed.replace(".ad-field-input,.ad-search input,.ad-code-box { font-size:16px; }", "").replace("min-width:44px;min-height:44px;", ""))).toEqual([{ line: 1, reason: "studio-touch-controls-require-readable-inputs-targets-and-safe-area" }])
   })
@@ -12,7 +74,7 @@ describe("Studio design foundation", () => {
     const browser = "bench/studio/browser-check.mjs"
     const source = readFileSync(browser, "utf8")
     expect(studioFoundationHits(browser, source)).toEqual([])
-    const original = source.replace('name:"Your first deck starts here"', 'name:"No decks yet"').replace('name:"New deck"', 'name:"+ New deck"').replaceAll('getByRole("searchbox",{name:"Search",exact:true})', 'getByLabel("Search decks")')
+    const original = source.replace('name:"Scratchpad Your first draft"', 'name:"No decks yet"').replace('name:"New deck"', 'name:"+ New deck"').replaceAll('getByRole("searchbox",{name:"Search",exact:true})', 'getByLabel("Search decks")')
     expect(studioFoundationHits(browser, original).map(hit => hit.reason)).toEqual(Array(5).fill("studio-browser-check-uses-designed-shell-accessible-names"))
   })
   it("keeps supplemental labels out of the exact canonical copy kit", () => {
@@ -79,4 +141,12 @@ describe("Studio design foundation", () => {
   it("rejects the original content-box sizing that overflowed phone access cards", () => {
     expect(studioFoundationHits(file, fixed.replace("box-sizing: border-box", "box-sizing: content-box"))).toContainEqual({ line: 1, reason: "studio-card-and-dialog-padding-requires-border-box-reset" })
   })
+})
+
+it("rejects alphabetical Decks ordering and invented title covers",()=>{
+  const file="apps/studio/src/decks/workspace.tsx",source=readFileSync(file,"utf8")
+  expect(studioFoundationHits(file,source)).toEqual([])
+  expect(studioFoundationHits(file,source.replace('Name<Icon name="chevron"/>','Name'))).toEqual([{line:1,reason:"studio-deck-list-headings-use-designed-chevrons"}])
+  expect(studioFoundationHits(file,source.replace("b.updated-a.updated","a.title.localeCompare(b.title)"))).toEqual([{line:1,reason:"studio-decks-must-sort-by-last-edit"}])
+  expect(studioFoundationHits(file,source.replace("<DeckPreview entry={entry}/>","<strong>{entry.title}</strong>"))).toEqual([{line:1,reason:"studio-deck-covers-require-real-slide-previews"}])
 })

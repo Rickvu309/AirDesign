@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode } from "react"
 
-export type IconName = "search" | "recent" | "decks" | "trash" | "settings" | "grid" | "list" | "chevron" | "plug" | "mail" | "plus"
+export type IconName = "search" | "recent" | "decks" | "trash" | "settings" | "grid" | "list" | "chevron" | "plug" | "mail" | "plus" | "star" | "more" | "file" | "upload"
 const paths: Record<IconName, string> = {
   search: "M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   recent: "M12 8v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0",
@@ -13,6 +13,10 @@ const paths: Record<IconName, string> = {
   plug: "M9 3v5M15 3v5M6 8h12v5a6 6 0 0 1-12 0zM12 19v3",
   mail: "M3 5h18v14H3zM3 6l9 7 9-7",
   plus: "M12 4v16M4 12h16",
+  star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z",
+  more: "M5 12h.01M12 12h.01M19 12h.01",
+  file: "M14 2H5v20h14V7zm0 0v6h5",
+  upload: "M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5",
 }
 export function Icon({ name }: { name: IconName }) {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>
@@ -50,7 +54,7 @@ export function Dropdown({ label, trigger, children }: { label: string; trigger:
     document.addEventListener("pointerdown", dismiss)
     return () => document.removeEventListener("pointerdown", dismiss)
   }, [])
-  return <details ref={ref} className="ad-dropdown" onClick={event => { if (event.target instanceof Element && event.target.closest(".ad-menu a,.ad-menu button")) { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }} onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }}><summary aria-label={label}>{trigger}</summary><div className="ad-menu">{children}</div></details>
+  return <details ref={ref} className="ad-dropdown" onClick={event => { if (event.target instanceof Element && event.target.closest(".ad-menu a,.ad-menu button")) { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }} onKeyDown={event => { if (event.key === "Escape") { event.currentTarget.open = false; event.currentTarget.querySelector("summary")?.focus() } }}><summary role="button" aria-label={label}>{trigger}</summary><div className="ad-menu">{children}</div></details>
 }
 export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
   const id = useId()

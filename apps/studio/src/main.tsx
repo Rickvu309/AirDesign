@@ -5,6 +5,7 @@ import { AccessApp, readAccessRoute } from "./access/access-app.tsx"
 import { SyncFixture } from "./sync/sync-fixture.tsx"
 import { RenderFixture } from "./render/render-fixture.tsx"
 import "./editor/workspace.css"
+import "./decks/decks.css"
 import "../../../packages/ui/src/tokens/tokens.css"
 
 const root = document.getElementById("root")

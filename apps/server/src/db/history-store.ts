@@ -131,7 +131,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       return transaction(async tx => {
         await lockRetainedAccount(tx,principal.personId)
         await ownedDeckAssets(tx,principal,deck);await captureTemplateSources(tx,principal,deck)
-        await tx.query("INSERT INTO editing_deck(id,owner,state) VALUES ($1,$2,$3)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck))])
+        await tx.query("INSERT INTO editing_deck(id,owner,state,updated_at,created_at) VALUES ($1,$2,$3,$4,$4)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck)),clock()])
         return { deck, seq: 0 }
       })
     },

@@ -5,10 +5,10 @@ import { initialHistory, type History, type Principal } from "../../change-log/s
 export type CatalogSql = { query<R>(sql:string,params?:unknown[]):Promise<{rows:R[]}> }
 export type CatalogTransaction = <T>(work:(tx:CatalogSql)=>Promise<T>)=>Promise<T>
 export type CatalogSource={bytes:Buffer;report:Record<string,unknown>}
-export type DeckEntry = { id:string;title:string;updated:number;deletedAt:number|null;generation:number;pendingRequest:string;slides:number }
-type Row = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History;deleted:boolean;trash_generation:number}
+export type DeckEntry = { id:string;title:string;updated:number;deletedAt:number|null;generation:number;pendingRequest:string;slides:number;starred:boolean;created:number;preview:{slide:Deck["slides"][number];themes:Deck["themes"]}|null }
+type Row = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History;deleted:boolean;trash_generation:number;starred:boolean;created_at:number}
 const day=24*60*60*1000
-function entry(row:Row):DeckEntry {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,generation:Number(row.trash_generation),slides:row.state.deck.slides.length}}
+function entry(row:Row):DeckEntry {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,generation:Number(row.trash_generation),slides:row.state.deck.slides.length,starred:row.starred,created:Number(row.created_at),preview:row.state.deck.slides[0] ? {slide:row.state.deck.slides[0],themes:row.state.deck.themes} : null}}
 function title(value:string) {const text=value.trim();if(!text || text.length>200)throw new Error("invalid-deck-title");return text}
 function newId() {return id(`d${randomUUID().replaceAll("-","").slice(0,30)}`)}
 export async function initializeCatalog(tx:CatalogSql) {
@@ -18,6 +18,9 @@ export async function initializeCatalog(tx:CatalogSql) {
   await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS pending_request text NOT NULL DEFAULT ''")
   await tx.query("UPDATE editing_deck SET deleted_at=updated_at WHERE deleted=true AND deleted_at IS NULL")
   await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS trash_generation integer NOT NULL DEFAULT 0")
+  await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS starred boolean NOT NULL DEFAULT false")
+  await tx.query("ALTER TABLE editing_deck ADD COLUMN IF NOT EXISTS created_at double precision NOT NULL DEFAULT 0")
+  await tx.query("UPDATE editing_deck SET created_at=updated_at WHERE created_at=0")
   await tx.query("CREATE INDEX IF NOT EXISTS catalog_owner_updated ON editing_deck(owner,updated_at DESC)")
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_source(deck text PRIMARY KEY REFERENCES editing_deck(id) ON DELETE CASCADE,bytes bytea NOT NULL,report jsonb NOT NULL)")
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_request(owner text NOT NULL, request text NOT NULL, input jsonb NOT NULL, deck text NOT NULL, PRIMARY KEY(owner,request))")
@@ -46,7 +49,7 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
       if(canonical(prior.input)!==canonical(input))throw new Error("request-id-payload-conflict")
       if(prior.deck!==deckId)return entry(await owned(tx,principal,prior.deck))
       const deck=source ? parseDeck({...source,id:deckId}) : {id:deckId,version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
-      await tx.query("INSERT INTO editing_deck(id,owner,state,title,updated_at,pending_request) VALUES ($1,$2,$3,$4,$5,$6)",[deckId,principal.personId,JSON.stringify(initialHistory(deck)),input.name,clock(),pendingRequest])
+      await tx.query("INSERT INTO editing_deck(id,owner,state,title,updated_at,created_at,pending_request) VALUES ($1,$2,$3,$4,$5,$5,$6)",[deckId,principal.personId,JSON.stringify(initialHistory(deck)),input.name,clock(),pendingRequest])
       if(original)await tx.query("INSERT INTO catalog_source(deck,bytes,report) VALUES($1,$2,$3)",[deckId,original.bytes,JSON.stringify(original.report)])
       return entry(await owned(tx,principal,deckId))
     })},
@@ -54,6 +57,7 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
     async details(principal:Principal,deck:string) {return transaction(async tx=>entry(await owned(tx,principal,deck)))},
     async readDeleted(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);return {deck:row.state.deck,seq:row.state.seq,deleted:row.deleted}})},
     async rename(principal:Principal,deck:string,name:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");await tx.query("UPDATE editing_deck SET title=$2,updated_at=$3 WHERE id=$1",[deck,title(name),clock()]);return entry(await owned(tx,principal,deck))})},
+    async star(principal:Principal,deck:string,starred:boolean) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");await tx.query("UPDATE editing_deck SET starred=$2 WHERE id=$1",[deck,starred]);return entry(await owned(tx,principal,deck))})},
     async pending(principal:Principal,deck:string,text:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");if(text.length>20000)throw new Error("request-too-long");await tx.query("UPDATE editing_deck SET pending_request=$2 WHERE id=$1",[deck,text]);return entry(await owned(tx,principal,deck))})},
     async trash(principal:Principal,deck:string) {return transaction(async tx=>{
       const row=await owned(tx,principal,deck)
