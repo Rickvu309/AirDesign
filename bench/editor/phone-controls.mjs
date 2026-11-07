@@ -26,6 +26,7 @@ try{
       const phone=await mobile.newPage();await phone.goto(local.origin+setup.route)
       await phone.locator('.studio-editor[data-sync-state="saved"]').waitFor()
       if(code!=="S41.01")await phone.getByRole("button",{name:"View Aira",exact:true}).click()
+      if(code==="S49.02"){await perform(phone,{kind:"offline"},local,setup.owner);assert.equal(await phone.locator(".editor-status:not([data-font-state])").textContent(),"You're offline. Edits are saved on this device.")}
       const controls=await phone.locator('.studio-editor :is(button,a[href],select,summary,input:not([type=hidden]),textarea,[role=button])').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).map(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return {name:node.getAttribute("aria-label")??node.textContent?.trim().slice(0,70),width:r.width,height:r.height,font:s.fontSize,touch:s.touchAction,tap:s.webkitTapHighlightColor,input:node.matches('input,textarea,select')}}))
       await phone.screenshot({path:path.join(out,code+"-phone.png"),animations:"disabled"})
       results.push({code,controls})
