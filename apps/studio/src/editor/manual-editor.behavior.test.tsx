@@ -44,6 +44,7 @@ it("AD-15 pastes clipboard slides and the toast undoes only that paste after a l
   const ui=await editor();try{
     const event=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(event,"clipboardData",{value:{getData:()=>clipboardSource(fixtureDeck(1,2),[fixtureDeck(1,2).slides[0]!.id])}})
     await act(async()=>ui.container.querySelector('.studio-editor')!.dispatchEvent(event));await ui.render();expect(ui.sync.deck.slides).toHaveLength(3)
+    expect(ui.sync.deck.slides[1]?.id).not.toBe("s1")
     expect(mock.toast).toHaveBeenCalledWith("1 slide pasted",expect.objectContaining({action:expect.objectContaining({label:"Undo"})}))
     const paste=ui.commands[0]!.id;await ui.click("+ New slide");expect(ui.sync.deck.slides).toHaveLength(4)
     const options=mock.toast.mock.calls[0]![1] as {action:{onClick:()=>void}}
@@ -75,7 +76,7 @@ it("AD-16 preserves keyboard undo and redo after deleting the focused slide",asy
 it("holds New slide to choose one of six undoable native layouts",async()=>{
   const ui=await editor();try{
     vi.useFakeTimers();await act(async()=>{ui.button("+ New slide").dispatchEvent(new MouseEvent("pointerdown",{button:0,bubbles:true}));vi.advanceTimersByTime(450)});await ui.render();expect(ui.container.querySelectorAll('.layout-choice')).toHaveLength(6)
-    await ui.click("Two columns");expect(ui.sync.deck.slides).toHaveLength(3);expect(ui.sync.deck.slides.at(-1)?.elements).toHaveLength(3)
+    await ui.click("Two columns");expect(ui.sync.deck.slides).toHaveLength(3);expect(ui.sync.deck.slides[1]?.elements).toHaveLength(3)
   }finally{await ui.close()}
 })
 it("inserts Chart, Table and Icon as native grouped elements",async()=>{
@@ -135,6 +136,18 @@ it("moves and resizes selected objects through history and exposes Aira attachme
     expect(ui.sync.deck.slides[0]!.elements.at(-1)!.box).toMatchObject({width:original.width+40,height:original.height+30})
     expect(ui.commands.at(-1)).toMatchObject({kind:"patch",target:element.id})
     await ui.click("Agent");expect(ui.container.querySelector(".aira-attachments")?.textContent).toContain("Rectangle")
+  }finally{await ui.close()}
+})
+
+
+it("uses the destination section and insertion anchor for add and paste",async()=>{
+  const deck=fixtureDeck(1,3);deck.slides[0]!.section="Opening";deck.slides[1]!.section="Performance";deck.slides[2]!.section="Outlook"
+  const ui=await editor(deck);try{
+    await ui.click("Slide 2");await ui.click("+ New slide")
+    expect(ui.sync.deck.slides[2]?.section).toBe("Performance");expect(ui.sync.deck.slides[3]?.id).toBe("s2")
+    const event=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(event,"clipboardData",{value:{getData:()=>clipboardSource(deck,[deck.slides[0]!.id])}})
+    await act(async()=>ui.container.querySelector('.studio-editor')!.dispatchEvent(event));await ui.render()
+    expect(ui.sync.deck.slides[3]?.section).toBe("Performance");expect(ui.sync.deck.slides[4]?.id).toBe("s2")
   }finally{await ui.close()}
 })
 

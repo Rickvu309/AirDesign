@@ -7,13 +7,13 @@ import {ChatPanel} from "../chat/chat-panel.tsx"
 import {airaRequest} from "../chat/aira-client.ts"
 import { ImagePanel } from "../images/image-panel.tsx"
 import { TemplatePanel } from "../templates/template-panel.tsx"
-import { useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
+import { Fragment,useCallback,useEffect,useRef,useState,type MouseEvent } from "react"
 import { AlertDialog,BrandMark,Icon,Button,toast } from "@airdesign/ui"
 import { commandId,type Command } from "../../../../packages/change-log/src/index.ts"
-import { flatten,type Element as DeckElement,type Id,type Box,type Run } from "../../../../packages/deck/src/index.ts"
+import { flatten,type Element as DeckElement,type Id,type Box,type Slide,type Run } from "../../../../packages/deck/src/index.ts"
 import type { Pending } from "../../../../packages/rpc/src/outbox.ts"
 import { deckAction } from "../decks/catalog-client.ts"
-import { clipboardSource,fitToolElement,newSlide,orderedSlides,reviewPaste,selectSlides,type SlideLayout,type PasteReview } from "./editor-model.ts"
+import { insertionAnchor,clipboardSource,fitToolElement,newSlide,orderedSlides,reviewPaste,selectSlides,type SlideLayout,type PasteReview } from "./editor-model.ts"
 import { ExportDialog } from "../export/export-dialog.tsx"
 import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
 import { FontReadiness } from "../templates/font-readiness.tsx"
@@ -56,15 +56,22 @@ export function ManualEditor({deckId}:{deckId:string}) {
   function insertElement(element:DeckElement) {const slide=deck?.slides.find(slide=>slide.id===selection[0]) ?? deck?.slides[0];if(!slide)return;edit({changes:[{kind:"insert",parent:slide.id,index:slide.elements.length,value:fitToolElement(element,slide.size)}]});setSelection([slide.id]);setObjectSelection({slide:slide.id,element:element.id});setView("single")}
   function geometry(target:Id,box:Box) {if(sync)send({id:commandId(crypto.randomUUID()),kind:"patch",target,fields:{box},base:sync.seq,run:null})}
   function removeSlides() {edit({changes:selection.map(target=>({kind:"remove",target}))});editorRef.current?.focus()}
-  function pasteSlides(source:string) {const review=reviewPaste(source);if(!deck)return;if(!review.accepted.length || review.refused.length){setPasteSource(source);setPaste(review);return}const target=commandId(crypto.randomUUID());send({id:target,kind:"edit",base:sync?.seq ?? 0,run:null,changes:{changes:review.accepted.map((slide,index)=>({kind:"insert",parent:deck.id,index:deck.slides.length+index,value:slide}))}});setSelection(review.accepted.map(slide=>slide.id));toast.success(`${review.accepted.length} ${review.accepted.length===1 ? "slide" : "slides"} pasted`,{action:{label:"Undo",onClick:()=>send({id:commandId(crypto.randomUUID()),kind:"undo",target})}})}
+  function insertSlides(slides:Slide[],message:string) {
+    if(!deck || !sync)return
+    const slot=insertionAnchor(deck,selection),target=commandId(crypto.randomUUID())
+    send({id:target,kind:"edit",base:sync.seq,run:null,changes:{changes:slides.map((slide,index)=>({kind:"insert",parent:deck.id,index:slot.index+index,value:{...slide,section:slot.section ?? slide.section}}))}})
+    setSelection(slides.map(slide=>slide.id));anchor.current=slides.at(-1)?.id ?? null
+    toast.success(message,{action:{label:"Undo",onClick:()=>send({id:commandId(crypto.randomUUID()),kind:"undo",target})}})
+  }
+  function pasteSlides(source:string) {const review=reviewPaste(source);if(!deck)return;if(!review.accepted.length || review.refused.length){setPasteSource(source);setPaste(review);return}insertSlides(review.accepted,`${review.accepted.length} ${review.accepted.length===1 ? "slide" : "slides"} pasted`)}
   async function readClipboard() {try{pasteSlides(await navigator.clipboard.readText())}catch{setShowPaste(true)}}
   async function copySlides() {if(!deck || !selection.length)return;try{await navigator.clipboard.writeText(clipboardSource(deck,selection))}catch{setError("Clipboard unavailable. Allow clipboard access and try again.")}}
   function select(target:Id,event:MouseEvent) {if(!deck)return;setSelection(current=>selectSlides(deck,current,target,anchor.current,event.shiftKey,event.ctrlKey||event.metaKey));if(!event.shiftKey)anchor.current=target}
   const text=useCallback((target:Id,runs:[Run,...Run[]])=>{if(sync)send({id:commandId(crypto.randomUUID()),kind:"patch",target,fields:{runs:runs.map(run=>({...run}))},base:sync.seq,run:null})},[sync,send])
   async function saveRequest() {try{setEntry(await deckAction(deckId,"request",{pendingRequest:request}));await airaRequest(deckId,"send",{text:request,selection:[]});sessionStorage.removeItem("first-pending-request");setRequestStatus("Aira is working. You can keep editing.");setChatOpen(true)}catch(failure){setError(String(failure))}}
-  function addSlide(layout:SlideLayout="title") {if(!deck)return;const slide=newSlide(deck,layout);edit({changes:[{kind:"insert",parent:deck.id,index:deck.slides.length,value:slide}]});setSelection([slide.id]);anchor.current=slide.id}
+  function addSlide(layout:SlideLayout="title") {if(deck)insertSlides([newSlide(deck,layout)],"Slide added")}
   function reorder(direction:-1|1) {if(!deck)return;const order=orderedSlides(deck,selection,direction);edit({changes:order.map((target,index)=>({kind:"move",target,parent:deck.id,index}))})}
-  function insertPaste() {if(!deck || !paste)return;edit({changes:paste.accepted.map((slide,index)=>({kind:"insert",parent:deck.id,index:deck.slides.length+index,value:slide}))});setSelection(paste.accepted.map(slide=>slide.id));setPaste(null);setShowPaste(false)}
+  function insertPaste() {if(!paste?.accepted.length)return;insertSlides(paste.accepted,`${paste.accepted.length} slides pasted`);setPaste(null);setShowPaste(false)}
   async function recover(item:Extract<Pending,{kind:"rejected"}>) {
     if(!sync || !item.restore || readonly || (item.command.kind!=="edit" && item.command.kind!=="patch"))return
     const suffix=crypto.randomUUID()
@@ -103,7 +110,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
     {state?.kind==="deleted" && <Button size="compact" variant="secondary" onClick={()=>void deckAction(deckId,"restore").then(()=>location.reload()).catch(failure=>setError(String(failure)))}>Restore deck</Button>}
     {contextMenu && <nav className="editor-context editor-menu" aria-label="Slide actions">{actions()}<button type="button" onClick={()=>setContextMenu(false)}>Close menu</button></nav>}
     {!phone && <nav className="editor-dock" aria-label="Design tools"><button type="button" aria-label="Select slides" aria-pressed={view==="grid"} onClick={()=>setView("grid")}><EditorIcon name="cursor"/></button><button type="button" aria-label="Edit slide text" aria-pressed={tool==="text"} onClick={()=>{setTool(tool==="text" ? "none" : "text");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="text"/></button><button type="button" aria-label="Shapes" aria-pressed={tool==="shapes"} onClick={()=>{setTool(tool==="shapes" ? "none" : "shapes");setImagesOpen(false);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="shape"/></button><button type="button" aria-label="Images" aria-pressed={imagesOpen} onClick={()=>{setImagesOpen(!imagesOpen);setDesignOpen(false);setTool("none");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="image"/></button><button type="button" aria-label="Actions" aria-pressed={tool==="actions"} onClick={()=>{setTool(tool==="actions" ? "none" : "actions");setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}><EditorIcon name="actions"/></button><span className="dock-divider"/><button type="button" aria-pressed={chatOpen} onClick={()=>{setChatOpen(!chatOpen);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id]);setDesignOpen(false);setImagesOpen(false)}}>Agent</button><button type="button" aria-pressed={designOpen} onClick={()=>{setDesignOpen(!designOpen);setImagesOpen(false);setTool("none");setChatOpen(false);setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>Design</button></nav>}
-    {!readonly && deck && <EditorTools key={tool} tool={tool} close={()=>setTool("none")} insert={insertElement} addSlide={addSlide} deck={deck}/>}
+    {!readonly && deck && (tool!=="layouts"||!deck.slides.length) && <EditorTools key={tool} tool={tool} close={()=>setTool("none")} insert={insertElement} addSlide={addSlide} deck={deck}/>}
     {phone && <Button size="compact" variant="secondary" onClick={()=>setChatOpen(!chatOpen)}>View Aira</Button>}
     {chatOpen && deck && <ChatPanel snapshot={snapshot} title={entry?.title} deck={deck} selection={selectedObject&&selectedSlide ? [selectedSlide.id,selectedObject.id] : selection} detach={()=>setObjectSelection(null)} readonly={readonly} connected={state?.kind!=="offline" && state?.kind!=="retrying"} close={()=>setChatOpen(false)}/>}
     {imagesOpen && deck && <ImagePanel deck={deck} slideId={selection[0]} disabled={readonly||state?.kind!=="saved"} close={()=>setImagesOpen(false)}/>}
@@ -113,11 +120,11 @@ export function ManualEditor({deckId}:{deckId:string}) {
 
     {slideSections(deck?.slides ?? []).map(section=><section className="editor-section" key={section.slides[0]!.slide.id} aria-label={`${section.name} section`}><h2>{section.name}</h2>
     <div className="editor-slides" aria-label={section.name} style={{maxInlineSize:view==="single" ? `${800*zoom/100}px` : undefined,gridTemplateColumns:view==="grid" ? `repeat(auto-fill,minmax(min(100%,${300*zoom/100}px),${300*zoom/100}px))` : undefined}} onContextMenu={event=>{event.preventDefault();setContextMenu(true)}}>
-      {section.slides.map(({slide,number})=><article key={slide.id} className="editor-slide" data-run-state={runStates.get(slide.id)} hidden={view==="single" && slide.id!==(selection[0] ?? deck?.slides[0]?.id)} data-selected={selection.includes(slide.id)} onContextMenu={()=>{if(!selection.includes(slide.id))setSelection([slide.id])}}>
+      {section.slides.map(({slide,number})=><Fragment key={slide.id}><article className="editor-slide" data-run-state={runStates.get(slide.id)} hidden={view==="single" && slide.id!==(selection[0] ?? deck?.slides[0]?.id)} data-selected={selection.includes(slide.id)} onContextMenu={()=>{if(!selection.includes(slide.id))setSelection([slide.id])}}>
         <button className="slide-select" type="button" aria-pressed={selection.includes(slide.id)} onDoubleClick={()=>{setSelection([slide.id]);setView("single")}} onClick={event=>select(slide.id,event)} aria-label={`Slide ${number}`}>{number}</button>
         <SlidePreview slide={slide} themes={deck?.themes ?? []} {...(readonly || view==="grid" ? {} : {commitText:text,historyText:history,editing:{selected:selectedObject?.id ?? null,select:element=>setObjectSelection({slide:slide.id,element}),geometry}})}/>
         {flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=><p key={element.id} className="slide-disclosure">{element.support.kind==="kept" ? "Kept original · preview unavailable" : element.support.kind==="flagged" ? `Flagged: ${element.support.reason}` : ""}</p>)}
-      </article>)}
+      </article>{tool==="layouts" && deck && deck.slides[insertionAnchor(deck,selection).index-1]?.id===slide.id && <div className="contextual-insertion"><EditorTools tool="layouts" close={()=>setTool("none")} insert={insertElement} addSlide={layout=>{addSlide(layout);setTool("none")}} deck={deck}/></div>}</Fragment>)}
     </div></section>)}
 
     {!readonly && view==="single" && deck && selection.length===1 && <label className="sr-only" htmlFor="speaker-notes">Speaker notes</label>}{!readonly && view==="single" && deck && selection.length===1 && <textarea className="editor-notes" id="speaker-notes" aria-label="Speaker notes" placeholder="Add speaker notes" value={deck.slides.find(slide=>selection.includes(slide.id))?.notes ?? ""} onChange={event=>{const target=selection[0];if(sync && target)send({id:commandId(crypto.randomUUID()),kind:"patch",target,fields:{notes:event.target.value},base:sync.seq,run:null})}}/>}

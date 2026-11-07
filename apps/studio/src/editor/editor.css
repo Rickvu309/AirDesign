@@ -140,3 +140,6 @@
 .editor-filmstrip details>button>span { padding-block-start:6px;text-align:center; }
 .editor-filmstrip details>button { position:relative; }
 .slide-queued { position:absolute;inset:8px 0 8px 28px;display:grid;place-items:center;background:var(--muted);color:var(--muted-foreground);border-radius:8px; }
+
+.contextual-insertion { position:relative;min-block-size:280px;grid-column:1/-1; }
+.contextual-insertion>.editor-tool-layouts { position:relative;inset:auto;inline-size:100%;max-inline-size:620px;box-sizing:border-box;margin:16px auto; }

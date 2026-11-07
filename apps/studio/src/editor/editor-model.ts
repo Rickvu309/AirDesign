@@ -62,3 +62,8 @@ export function clipboardSource(deck:Deck,selection:Id[]) {
   }
   return JSON.stringify({slides:deck.slides.filter(slide=>selection.includes(slide.id)).map(slide=>({...slide,theme:null,elements:slide.elements.map(detached)}))})
 }
+
+export function insertionAnchor(deck:Deck,selection:Id[]) {
+  const selected=deck.slides.findLast(slide=>selection.includes(slide.id)) ?? deck.slides.at(-1)
+  return {index:selected ? deck.slides.indexOf(selected)+1 : 0,section:selected?.section}
+}
