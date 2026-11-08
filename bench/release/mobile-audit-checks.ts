@@ -2,7 +2,7 @@ export function mobileAuditFailures(viewportWidth:number){
   const hits:string[]=[]
   if(document.documentElement.scrollWidth>viewportWidth)hits.push("horizontal overflow: "+document.documentElement.scrollWidth)
   const modal=document.querySelector("dialog:modal")
-  const visible=(element:Element)=>{const r=element.getBoundingClientRect(),s=getComputedStyle(element);return r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none"&&!element.closest("[inert]")&&(!modal||modal.contains(element))}
+  const visible=(element:Element)=>{const r=element.getBoundingClientRect(),s=getComputedStyle(element);return element.checkVisibility()&&r.width>0&&r.height>0&&s.visibility!=="hidden"&&s.display!=="none"&&!element.closest("[inert]")&&(!modal||modal.contains(element))}
   const positions=[...document.querySelectorAll("*")].filter(element=>element.scrollHeight>element.clientHeight||element.scrollWidth>element.clientWidth).map(element=>({element,top:element.scrollTop,left:element.scrollLeft}))
   const scrollX=window.scrollX,scrollY=window.scrollY
   try{

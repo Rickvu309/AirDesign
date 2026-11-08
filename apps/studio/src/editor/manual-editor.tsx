@@ -30,6 +30,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
   const [changesOpen,setChangesOpen]=useState(false)
   const deck=sync?.deck,state=sync?.state
   const readonly=phone || state?.kind==="deleted" || state?.kind==="signed-out"
+  const exportDisabled=state?.kind!=="saved"||!deck?.slides.length
   useEffect(()=>{if(entry?.pendingRequest)setRequest(entry.pendingRequest)},[entry?.pendingRequest])
   useEffect(()=>{const media=window.matchMedia("(max-width: 767px)"),change=()=>setPhone(media.matches);media.addEventListener("change",change);return ()=>media.removeEventListener("change",change)},[])
   const send=useCallback((command:Command)=>{if(!sync || readonly)return;void sync.enqueue(command).catch(failure=>setError(String(failure)))},[sync,readonly,setError])
@@ -69,7 +70,7 @@ export function ManualEditor({deckId}:{deckId:string}) {
       <Button size="compact" variant="secondary" disabled={!deck||readonly} onClick={addSlide}>+ New slide</Button>
       <div className="editor-view" aria-label="Slide view"><button type="button" aria-label="Single slide view" aria-pressed={view==="single"} onClick={()=>{setView("single");if(!selection.length && deck?.slides[0])setSelection([deck.slides[0].id])}}>▣</button><button type="button" aria-label="Grid view" aria-pressed={view==="grid"} onClick={()=>setView("grid")}>⊞</button></div>
     </header>
-    <aside className="editor-export"><label><span className="sr-only">Zoom</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(Number(event.target.value))}>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={state?.kind!=="saved"||readonly||!deck?.slides.length} onClick={()=>setExportOpen(true)}>Export</Button></aside>
+    <aside className="editor-export"><label><span className="sr-only">Zoom</span><select aria-label="Zoom" value={zoom} onChange={event=>setZoom(Number(event.target.value))}>{[50,75,100,125,150].map(value=><option key={value} value={value}>{value}%</option>)}</select></label><Button size="compact" variant="primary" disabled={exportDisabled} onClick={()=>setExportOpen(true)}>Export</Button></aside>
     <FontReadiness/>
     <p role="status" className="editor-status">{phone ? "Edit on a laptop · read-only viewing" : error && state?.kind==="pending" ? copy("editor.save_failed_title") : state ? labels[state.kind] : "Opening your saved deck…"}{selection.length>0 ? ` · ${selection.length} selected` : ""}</p>
     {error && <EditorErrorNotice saving={sync!==null} retry={reconnect}/>}
@@ -95,6 +96,6 @@ export function ManualEditor({deckId}:{deckId:string}) {
     {sync?.queue.filter(item=>item.kind==="rejected").map(item=><section key={item.command.id} role="alert"><p>Change needs attention. {item.kind==="rejected" ? item.code : ""}. The original change is kept on this device.</p>{item.restore && <Button size="compact" variant="primary" disabled={readonly||state?.kind==="offline"||state?.kind==="retrying"} onClick={()=>void recover(item)}>Restore deleted slide and retry</Button>}<details><summary>Original change</summary><pre>{JSON.stringify(item.command,null,2)}</pre></details><Button size="compact" variant="secondary" onClick={()=>void sync.dismiss(item.command.id)}>Discard change</Button></section>)}
     {showPaste && <section className="paste-review"><h2>Paste slides</h2><label htmlFor="paste-source">Original slide JSON</label><textarea id="paste-source" aria-label="Original slide JSON" value={pasteSource} onChange={event=>setPasteSource(event.target.value)}/><Button size="dialog" variant="secondary" onClick={()=>setPaste(reviewPaste(pasteSource))}>Review paste</Button><Button size="dialog" variant="secondary" onClick={()=>setShowPaste(false)}>Close paste</Button></section>}
     <AlertDialog open={paste!==null} title="Review your paste" body={paste ? `${paste.accepted.length} slides accepted. ${paste.refused.join(" ") || "No slides refused."} Your original paste stays in the field.` : ""} onClose={()=>setPaste(null)} secondary={{label:"Cancel"}} {...(paste?.accepted.length ? {primary:{label:"Insert accepted slides",onClick:insertPaste}} : {})}/>
-    {deck && sync && <ExportDialog disabled={readonly||state?.kind!=="saved"} deck={deck} seq={sync.seq} open={exportOpen} close={()=>setExportOpen(false)} fix={slide=>{setSelection([slide]);requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>('.editor-slide[data-selected="true"] .slide-select')?.focus())}}/>}
+    {deck && sync && <ExportDialog disabled={exportDisabled} deck={deck} seq={sync.seq} open={exportOpen} close={()=>setExportOpen(false)} fix={slide=>{setSelection([slide]);requestAnimationFrame(()=>document.querySelector<HTMLButtonElement>('.editor-slide[data-selected="true"] .slide-select')?.focus())}}/>}
   </section>
 }
