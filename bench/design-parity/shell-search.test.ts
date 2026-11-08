@@ -76,7 +76,7 @@ it("dismisses Ctrl and Meta K palettes and restores Search focus and value",asyn
 it("owns every shared Search icon contract in the actual sidebar SearchField",async()=>{
   const entries=await readRegistry(),icons=entries.flatMap(entry=>entry.assertions.structure.icons.filter(icon=>icon.name==="search"))
   expect(icons).toHaveLength(10)
-  expect(icons).toEqual(Array.from({length:10},()=>({region:".ad-sidebar .ad-search",name:"search",size:16,color:"ink"})))
+  expect(icons).toEqual(Array.from({length:10},()=>({region:".ad-sidebar .ad-search",name:"search",size:16,color:"gray.500"})))
 })
 
 it.each(["present","missing","wrong"])("finds the actual Shell SearchField icon and rejects %s icon gaps",async state=>{
@@ -111,6 +111,7 @@ it.each([
   ["wrong-name","required-icon"],
   ["wrong-size","icon-size"],
   ["wrong-color","icon-color"],
+  ["wrong-ink","icon-color"],
   ["wrong-stroke","icon-color"],
   ["wrong-geometry","icon-geometry"]
 ])("retains strict Search SVG checks in a canonical contract fixture: %s",async(state,check)=>{
@@ -119,15 +120,37 @@ it.each([
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    await page.setContent(`<style>body{background:white;color:#222}input{font:14px Geist}</style><aside class="ad-sidebar"><label class="ad-search"><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24"><path d="${iconPaths.search}" stroke="#222" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="search" aria-label="Search" placeholder="Search"/></label></aside><main class="workspace-home"></main>`)
+    await page.setContent(`<style>body{background:white;color:#222}input{font:14px Geist}</style><aside class="ad-sidebar"><label class="ad-search"><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24"><path d="${iconPaths.search}" stroke="#909090" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="search" aria-label="Search" placeholder="Search"/></label></aside><main class="workspace-home"></main>`)
     const icon=page.locator('svg[data-icon="search"]')
     if(state==="missing")await icon.evaluate(element=>element.remove())
     if(state==="wrong-name")await icon.evaluate(element=>element.setAttribute("data-icon","trash"))
     if(state==="wrong-size")await icon.evaluate(element=>element.setAttribute("width","24"))
     if(state==="wrong-color")await icon.locator("path").evaluate(element=>element.style.stroke="rgb(255, 0, 0)")
+    if(state==="wrong-ink")await icon.locator("path").evaluate(element=>element.style.stroke="rgb(34, 34, 34)")
     if(state==="wrong-stroke")await icon.locator("path").evaluate(element=>element.setAttribute("stroke-width","1.6"))
     if(state==="wrong-geometry")await icon.locator("path").evaluate(element=>element.setAttribute("d","M2 2L14 14M14 2L2 14"))
     if(state==="canonical")await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     else await expect(assertScenarioDOM(page,entry)).rejects.toThrow(check)
+  }finally{await browser.close()}
+})
+
+it.each([{width:1470,height:923},{width:390,height:844}])("preserves the declared Search SVG size under actual Shell CSS at $width",async viewport=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport})
+    await page.setContent('<div id="root"></div>')
+    await page.addStyleTag({content:shellStyles})
+    await page.addScriptTag({content:shellScript})
+    await page.getByRole("searchbox",{name:"Search",exact:true}).waitFor()
+    const icon=page.locator('.ad-sidebar .ad-search svg[data-icon="search"]')
+    const appearance=await icon.evaluate(element=>{
+      const box=element.getBoundingClientRect(),path=element.querySelector("path")!
+      return {width:box.width,height:box.height,stroke:getComputedStyle(path).stroke}
+    })
+    expect(appearance).toEqual({width:16,height:16,stroke:"rgb(144, 144, 144)"})
+    const search=page.getByRole("searchbox",{name:"Search",exact:true})
+    await search.fill("long query retained while the icon keeps its declared dimensions")
+    expect(await search.inputValue()).toBe("long query retained while the icon keeps its declared dimensions")
+    expect(await icon.boundingBox()).toMatchObject({width:16,height:16})
   }finally{await browser.close()}
 })

@@ -243,7 +243,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -295,7 +295,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -358,7 +358,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -421,7 +421,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -488,7 +488,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -551,7 +551,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -605,7 +605,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -663,7 +663,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -729,7 +729,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -795,7 +795,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
