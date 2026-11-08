@@ -285,7 +285,7 @@ it("requires actual vector paint for accessible icon-only controls",async()=>{
   const {resolveCopy}=await import("./registry.ts")
   const name=resolveCopy(control.nameKey)
   for(const mutation of ["none","missing","hidden","transparent","raster"]){
-   await page.setContent(`<button aria-label="${name}" style="width:44px;height:44px;background:white"><svg width="16" height="16" viewBox="0 0 24 24" stroke="black" fill="none"><path d="M4 4l16 16M20 4L4 20"/></svg></button>`)
+   await page.setContent(`<button aria-label="${name}" style="width:44px;height:44px;background:white;transform:translate(.3px,.4px)"><svg width="16" height="16" viewBox="0 0 24 24" stroke="black" fill="none"><path d="M4 4l16 16M20 4L4 20"/></svg></button>`)
    await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
    if(mutation==="none")continue
    await page.locator("svg").evaluate((element,mutation)=>{if(mutation==="missing")element.remove();else if(mutation==="hidden")element.style.visibility="hidden";else if(mutation==="transparent")element.style.opacity="0";else element.innerHTML='<image href="data:image/svg+xml,%3Csvg/%3E" width="16" height="16"/>'},mutation)

@@ -252,13 +252,14 @@ async function assertControlPaint(locator:Locator){
   if(!await locator.evaluate(element=>{const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"hit-test",true,false)
   const svg=locator.locator("svg")
   if(await svg.count()!==1||!await svg.isVisible()||!await svg.evaluate(element=>element.querySelectorAll("path").length>0&&!element.querySelector("image,use,foreignObject,text")))throw failure(locator.toString(),"required-control-vector","one painted inline vector",await svg.count())
-  const saved=await svg.getAttribute("style"),before=await svg.screenshot({animations:"disabled"})
+  const rect=await svg.boundingBox()
+  if(!rect)throw failure(locator.toString(),"required-control-vector","attached vector",null)
+  const clip={x:Math.floor(rect.x),y:Math.floor(rect.y),width:Math.ceil(rect.x+rect.width)-Math.floor(rect.x),height:Math.ceil(rect.y+rect.height)-Math.floor(rect.y)}
+  const saved=await svg.getAttribute("style"),before=await locator.page().screenshot({clip,animations:"disabled"})
   let after:Buffer
   try{
     await svg.evaluate(element=>element.style.setProperty("opacity","0","important"))
-    const rect=await svg.boundingBox()
-    if(!rect)throw failure(locator.toString(),"required-control-vector","attached vector",null)
-    after=await locator.page().screenshot({clip:rect,animations:"disabled"})
+    after=await locator.page().screenshot({clip,animations:"disabled"})
   }finally{await svg.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},saved)}
   const left=await sharp(before).removeAlpha().raw().toBuffer(),right=await sharp(after).removeAlpha().raw().toBuffer()
   if(left.length!==right.length||!left.some((value,index)=>Math.abs(value-(right[index]??value))>16))throw failure(locator.toString(),"required-control-vector","owned visible vector ink","no differential vector ink")
