@@ -684,7 +684,11 @@
     "steps": [
       {
         "kind": "selector-click",
-        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) summary[aria-label=\"Actions for Pricing Strategy Review\"]"
+      },
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .ad-menu button:text-is(\"Move to Trash\")"
       },
       {
         "kind": "dialog-click",

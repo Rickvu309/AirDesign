@@ -745,7 +745,11 @@
     "steps": [
       {
         "kind": "selector-click",
-        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) summary[aria-label=\"Actions for Pricing Strategy Review\"]"
+      },
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .ad-menu button:text-is(\"Move to Trash\")"
       },
       {
         "kind": "dialog-click",
@@ -797,7 +801,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits.",
+    "scenarioChangedBecause": "Open the visible Pricing Strategy Review card Actions menu before its Move to Trash action, retain real confirmation and completion wait, and require sidebar Search; design, state, viewport and parity limits remain unchanged.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
