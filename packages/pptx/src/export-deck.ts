@@ -185,7 +185,7 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
       if(baseline.slides.find(old=>old.source.kind==="original" && slide.source.kind==="original" && old.source.part===slide.source.part)?.notes===slide.notes)continue
       const source=slide.source
       const rel=original.report.relationships.find(rel=>rel.part===source.part && rel.type.endsWith("/notesSlide"))
-      if(rel){const bytes=parts.get(rel.target);if(bytes){const parsed=parseXml(bytes),texts=parsed.nodes.filter(node=>node.local==="t" && node.uri.endsWith("/drawingml/2006/main"));let xml=parsed.xml;for(const [index,node] of [...texts.entries()].reverse()){xml=xml.slice(0,node.openEnd)+(index===0 ? escapeXml(slide.notes) : "")+xml.slice(node.closeStart)}parts.set(rel.target,Buffer.from(xml))}}
+      if(rel){const bytes=parts.get(rel.target);if(bytes){const texts=parseXml(bytes).nodes.filter(node=>node.local==="t" && node.uri==="http://schemas.openxmlformats.org/drawingml/2006/main");for(let index=texts.length-1;index>=0;index--)parts.set(rel.target,patchText({...original,parts},rel.target,index,index===0 ? slide.notes : "").parts.get(rel.target)!)}}
       else if(slide.notes){
         const notesPart=`${prefix}ppt/notesSlides/notesSlide${slideIndex+1}.xml`,notesRel=`${prefix}ppt/notesSlides/_rels/notesSlide${slideIndex+1}.xml.rels`
         const notes=parseXml(native.get(`ppt/notesSlides/_rels/notesSlide${slideIndex+1}.xml.rels`) ?? Buffer.alloc(0));let xml=notes.xml

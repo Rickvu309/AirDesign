@@ -44,6 +44,20 @@ it("adds notes to an original slide with a reciprocal relationship to that slide
   expect(result.report.relationships.find(rel=>rel.part===note!.target && rel.type.endsWith("/slide"))?.target).toBe("ppt/slides/slide1.xml")
 })
 
+it("expands an empty notes text node while preserving unrelated source parts",async()=>{
+  const original=await createNativePresentation([{title:"Original",table:{headers:["Year"],rows:[["2026"]]},chart:{name:"Value",labels:["A"],values:[3]},notes:"Existing note"}])
+  const target=original.report.relationships.find(rel=>rel.part==="ppt/slides/slide1.xml" && rel.type.endsWith("/notesSlide"))!.target
+  const parts=new Map(original.parts)
+  parts.set(target,Buffer.from(parts.get(target)!.toString().replace(/<a:t\b([^>]*)>[\s\S]*?<\/a:t>/,"<a:t$1/>")))
+  const source=await exportPptx({...original,parts}),deck=importedDeck(await importPptx(source))
+  expect(deck.slides[0]!.notes.trim()).toBe("")
+  deck.slides[0]!.notes="Expanded note & detail"
+  const result=await importPptx(await writeSavedPptx(deck,1,source,{}))
+  expect(importedDeck(result).slides[0]!.notes.trim()).toBe("Expanded note & detail")
+  expect(result.parts.get(target)?.toString()).toContain("<a:t>Expanded note &amp; detail</a:t>")
+  for(const [name,bytes] of parts)if(![target,"[Content_Types].xml"].includes(name))expect(result.parts.get(name),name).toEqual(bytes)
+})
+
 it("exports every editor shape as editable PowerPoint geometry",async()=>{
   for(const geometry of Object.keys(shapeGeometry).filter((key):key is ShapeGeometry=>key in shapeGeometry)){
     const deck=fixtureDeck(2),shape=deck.slides[0]!.elements[1]!
