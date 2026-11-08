@@ -132,3 +132,16 @@ it("preserves slide parts and relationships through reorder and generated slide 
   const repeat=await importPptx(await writeSavedPptx(importedDeck(result),3,await exportPptx(result),{}))
   for(const [name,bytes] of result.parts)if(name!=="airdesign/saved-version.json")expect(repeat.parts.get(name),name).toEqual(bytes)
 })
+
+it("exports stored decks without semantic metadata while retaining stable source object identities",async()=>{
+  const original=await createNativePresentation([{title:"Legacy",notes:"",table:{headers:["Year"],rows:[["2026"]]},chart:{name:"Value",labels:["A"],values:[3]}}])
+  const deck=importedDeck(original),objects=deck.slides[0]!.elements.filter(element=>element.source.kind==="original" && element.source.objectId.startsWith("graphicFrame:"))
+  expect(objects.map(element=>element.source.kind==="original" && element.source.objectType).sort()).toEqual(["chart","table"])
+  for(const element of objects){
+    if(element.source.kind!=="original")throw new Error("original-source-required")
+    expect(element.source.objectId).toMatch(/^graphicFrame:/)
+    delete element.source.objectType
+  }
+  const exported=await importPptx(await writeSavedPptx(deck,1,await exportPptx(original),{}))
+  for(const [name,bytes] of original.parts)if(name!=="[Content_Types].xml")expect(exported.parts.get(name),name).toEqual(bytes)
+})
