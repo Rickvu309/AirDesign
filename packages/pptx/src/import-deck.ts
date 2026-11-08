@@ -10,6 +10,29 @@ function content(xml:string) {
   return value
 }
 function within(parent:XmlNode,child:XmlNode) {return child.start>parent.start && child.end<parent.end}
+function notesBody(bytes:Buffer):string {
+  const {xml,nodes}=parseXml(bytes),root=nodes[0]
+  const drawingByPresentation=new Map([["http://schemas.openxmlformats.org/presentationml/2006/main","http://schemas.openxmlformats.org/drawingml/2006/main"],["http://purl.oclc.org/ooxml/presentationml/main","http://purl.oclc.org/ooxml/drawingml/main"]])
+  const drawing=root && drawingByPresentation.get(root.uri)
+  if(!root || root.local!=="notes" || !drawing)return ""
+  const children=new Map<XmlNode,XmlNode[]>(),stack:XmlNode[]=[]
+  for(const node of nodes){
+    let parent=stack.at(-1)
+    while(parent && !within(parent,node)){stack.pop();parent=stack.at(-1)}
+    if(parent){const siblings=children.get(parent) ?? [];siblings.push(node);children.set(parent,siblings)}
+    stack.push(node)
+  }
+  const elements=(parent:XmlNode,uri:string,local:string)=>(children.get(parent) ?? []).filter(node=>node.uri===uri && node.local===local)
+  const presentation=root.uri
+  const shapes=elements(root,presentation,"cSld").flatMap(slide=>elements(slide,presentation,"spTree")).flatMap(tree=>elements(tree,presentation,"sp"))
+  const bodies=shapes.filter(shape=>elements(shape,presentation,"nvSpPr").flatMap(properties=>elements(properties,presentation,"nvPr")).flatMap(properties=>elements(properties,presentation,"ph")).some(placeholder=>placeholder.attributes.type==="body"))
+  return bodies.flatMap(shape=>elements(shape,presentation,"txBody")).flatMap(body=>elements(body,drawing,"p")).map(paragraph=>(children.get(paragraph) ?? []).map(run=>{
+    if(run.uri!==drawing)return ""
+    if(run.local==="br")return "\n"
+    if(run.local!=="r" && run.local!=="fld")return ""
+    return elements(run,drawing,"t").map(text=>content(xml.slice(text.openEnd,text.closeStart))).join("")
+  }).join("")).join("\n")
+}
 export function importedDeck(presentation:Presentation):Deck {
   const main=presentation.parts.get("ppt/presentation.xml");if(!main)throw new Error("presentation-required")
   const document=parseXml(main),size=document.nodes.find(node=>node.local==="sldSz")
@@ -43,7 +66,7 @@ export function importedDeck(presentation:Presentation):Deck {
     }
     for(const [objectIndex,node] of objects.entries())elements.push({id:id(`s${index}k${objectIndex}`),kind:"shape",geometry:"rectangle",fill:"#ffffff",box:box(node),source:{...source,objectId:`${node.local}:${objectIndex}`},support:{kind:"kept",preview:null},theme:null,placeholder:null,overlap:null})
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null
-    const notes=notesBytes ? (()=>{const parsed=parseXml(notesBytes);return parsed.nodes.filter(node=>node.local==="t" && node.uri.endsWith("/drawingml/2006/main")).map(node=>content(parsed.xml.slice(node.openEnd,node.closeStart))).join("\n")})() : ""
+    const notes=notesBytes ? notesBody(notesBytes) : ""
     return {id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
   })
   return parseDeck({id:id("imported"),version:0,slides,themes:[]})
