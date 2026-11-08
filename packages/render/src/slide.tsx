@@ -1,3 +1,5 @@
+import { flatten } from "../../deck/src/apply.ts"
+import { KeptContent, preservationLabel } from "./kept-content.tsx"
 import {contentLabel} from "../../deck/src/content-labels.ts"
 import {formatRuns,textSelection,type TextFormat} from "./text-format.ts"
 import {shapeGeometry} from "../../deck/src/shape-geometry.ts"
@@ -122,7 +124,7 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
   const theme = themes.find(t => t.id === (element.theme ?? inheritedTheme))
   let content
   if (element.support.kind !== "native") {
-    content = element.support.preview ? <img src={element.support.preview} alt={contentLabel(element)} style={{ inlineSize: "100%", blockSize: "100%" }} /> : <div role="img" aria-label={`Preview unavailable for ${contentLabel(element)}`}>Preview unavailable</div>
+    content = <KeptContent element={element} />
   } else {
     switch (element.kind) {
       case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} />); break
@@ -141,5 +143,8 @@ export function Slide({ slide, themes = [], commitText, onPointerDown, historyTe
     <div data-slide={slide.id} data-version={slide.version} style={{ position: "relative", inlineSize: slide.size.width, blockSize: slide.size.height, background: slide.background ?? themes.find(t => t.id === slide.theme)?.background ?? "white", overflow: "clip" }}>
       {slide.elements.map(element => <Item key={element.id} element={element} commit={commitText} history={historyText} pointerDown={onPointerDown} themes={themes} inheritedTheme={slide.theme} imageSources={imageSources} />)}
     </div>
+    {flatten(slide.elements).some(element=>element.support.kind!=="native") && <aside data-import-content-report="" aria-label="Imported content report" style={{inlineSize:slide.size.width,background:"var(--muted, #f5f5f5)",color:"var(--foreground, #171717)",fontFamily:"Geist, sans-serif",fontSize:14,padding:12}}>
+      {flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=><p key={element.id} data-preservation={element.id} style={{marginBlock:8}}>{preservationLabel(element)} · {element.id}{element.box.width<160 || element.box.height<48 || element.box.x<0 || element.box.y<0 || element.box.x+element.box.width>slide.size.width || element.box.y+element.box.height>slide.size.height ? " · Original placement is small or outside the slide" : ""}</p>)}
+    </aside>}
   </section>
 }

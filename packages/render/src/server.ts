@@ -16,7 +16,7 @@ export async function snapshot({ deck, slideId, origin, format = "png" }: { deck
     await page.getByRole("button", { name: "Load saved deck" }).click()
     await page.waitForFunction(version => document.querySelector("[data-slide]")?.getAttribute("data-version") === String(version) && document.querySelector("[data-ready=true]"), slide.version)
     if (format === "pdf") return await page.pdf({ width: `${slide.size.width}px`, height: `${slide.size.height}px`, printBackground: true })
-    return await page.locator("[data-slide]").screenshot({ animations: "disabled" })
+    return await page.locator("[data-slide]").locator("..").screenshot({ animations: "disabled" })
   } finally { await browser.close() }
 }
 export function thumbnailCache<T>(limit = 100) {

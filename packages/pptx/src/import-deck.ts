@@ -68,7 +68,23 @@ export function importedDeck(presentation:Presentation,progress?:(value:{complet
       const capable=spans.every(node=>presentation.report.capabilities.some(item=>item.part===part && item.scope.kind==="text-span" && item.scope.index===texts.indexOf(node) && item.support==="native"))
       if(runs[0])elements.push({id:id(`s${index}t${shapeIndex}`),kind:"text",box:box(shape),source:{...source,objectId:`text:${spans.map(node=>texts.indexOf(node)).join(",")}`},support:capable ? {kind:"native"} : {kind:"kept",preview:null},theme:null,placeholder:null,overlap:null,runs:[runs[0],...runs.slice(1)]})
     }
-    for(const [objectIndex,node] of objects.entries())elements.push({id:id(`s${index}k${objectIndex}`),kind:"shape",geometry:"rectangle",fill:"#ffffff",box:box(node),source:{...source,objectId:`${node.local}:${objectIndex}`},support:{kind:"kept",preview:null},theme:null,placeholder:null,overlap:null})
+    for(const [objectIndex,node] of objects.entries()){
+      const objectType=node.local==="graphicFrame" ? parsed.nodes.some(child=>within(node,child)&&child.local==="chart"&&["http://schemas.openxmlformats.org/drawingml/2006/chart","http://purl.oclc.org/ooxml/drawingml/chart"].includes(child.uri)) ? "chart" : parsed.nodes.some(child=>within(node,child)&&child.local==="tbl"&&["http://schemas.openxmlformats.org/drawingml/2006/main","http://purl.oclc.org/ooxml/drawingml/main"].includes(child.uri)) ? "table" : undefined : undefined
+      elements.push({id:id(`s${index}k${objectIndex}`),kind:"shape",geometry:"rectangle",fill:"#ffffff",box:box(node),source:{...source,objectId:`${node.local}:${objectIndex}`,...objectType ? {objectType} : {}},support:{kind:"kept",preview:null},theme:null,placeholder:null,overlap:null})
+    }
+    for(const element of elements){
+      const index=Number(element.source.kind==="original" ? element.source.objectId.split(":").at(-1) : -1)
+      const object=element.kind==="text" ? undefined : objects[index]
+      const identity=object && parsed.nodes.find(child=>within(object,child)&&child.local==="cNvPr")
+      const removal=identity && presentation.report.removals.find(removal=>removal.affectedObjects?.some(affected=>affected.part===part&&affected.objectId===identity.attributes.id&&affected.content==="removed"))
+      if(removal)element.support={kind:"flagged",preservation:"removed",preview:null,reason:removal.reason}
+      else if(object){
+        const references=parsed.nodes.filter(child=>within(object,child)).flatMap(child=>Object.entries(child.attributes).filter(([key])=>["r:embed","r:link","r:id"].includes(key)).map(([,value])=>value))
+        const targets=presentation.report.relationships.filter(rel=>rel.part===part&&references.includes(rel.id)).map(rel=>rel.target)
+        const normalized=presentation.report.removals.find(removal=>removal.disposition==="normalized"&&targets.includes(removal.part))
+        if(normalized)element.support={kind:"flagged",preview:null,reason:normalized.detail}
+      }
+    }
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null
     const notes=notesBytes ? notesBody(notesBytes) : ""
     const slide={id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
