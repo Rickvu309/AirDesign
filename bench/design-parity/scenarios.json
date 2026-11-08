@@ -221,14 +221,14 @@
         "textRoles": [
           {
             "selector": "h1",
-            "role": "page-title",
+            "role": "access-error-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S29.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "S29.01 error heading keeps its h1 semantics and generator errPage Err Title text-[15px] font-medium role; correct the prior page-title misclassification. No pixel target, budget, seed, state, viewport or other assertion changes."
   },
   {
     "surface": "studio",

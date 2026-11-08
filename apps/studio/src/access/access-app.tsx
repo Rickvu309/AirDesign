@@ -380,7 +380,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     <header className="ad-access-header"><BrandMark/><h1 className="ad-title">{copy("access.entry_title")}</h1></header>
     <form className="ad-card" onSubmit={event => { event.preventDefault(); void onContinue() }}>
       <TextField label={copy("access.email_label")} placeholder={copy("access.email_placeholder")} type="email" inputMode="email" enterKeyHint="go" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={email} error={emailError} onChange={event => setEmail(event.target.value)}/>
-      <Button variant="primary" size="sign-in" type="submit" aria-label={copy("access.continue")}>{copy("access.continue_email")}</Button>
+      <Button variant="primary" size="sign-in" type="submit">{copy("access.continue_email")}</Button>
       <p className="ad-access-note">{copy("access.new_account")}</p>
     </form>
     <footer className="ad-access-legal"><a href="https://airdesign.app/terms/">{copy("access.terms")}</a> and <a href="https://airdesign.app/privacy/">{copy("access.privacy")}</a></footer>

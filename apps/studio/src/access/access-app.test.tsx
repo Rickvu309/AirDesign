@@ -2,6 +2,8 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
+import { renderToStaticMarkup } from "react-dom/server"
+import { chromium } from "playwright"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { AccessClient, IntentKind, VerifyResult } from "@airdesign/access/client"
 import { AccessApp } from "./access-app.tsx"
@@ -518,3 +520,14 @@ function fakeClient(options: { signedIn?: boolean; kind?: IntentKind; link?: Ver
     },
   }
 }
+
+it("exposes the painted email action by its exact accessible name", async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(renderToStaticMarkup(<AccessApp client={fakeClient({})} />))
+    expect(await page.getByRole("button", { name: "Continue with email", exact: true }).count()).toBe(1)
+  } finally {
+    await browser.close()
+  }
+})

@@ -50,3 +50,19 @@ it("restores the expired link after probing the designed sign-in heading",async(
   expect(await page.getByRole("heading").textContent()).toBe("This link has expired")
  }finally{await browser.close()}
 })
+
+it("enforces the generator error title without weakening ordinary page titles",async()=>{
+ const original=(await readRegistry()).find(entry=>entry.code==="S29.01")!
+ const entry={...original,assertions:{...original.assertions,copyKeys:[],controls:[],structure:{icons:[],textRoles:original.assertions.structure.textRoles}}}
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage({viewport:entry.viewport})
+  await page.setContent('<style>h1{font:500 15px Geist;color:#222}</style><h1>This link has expired</h1>')
+  const prior={...entry,assertions:{...entry.assertions,structure:{icons:[],textRoles:[{selector:"h1",role:"page-title" as const,color:"ink" as const,minimumContrast:4.5}]}}}
+  await expect(assertScenarioDOM(page,prior)).rejects.toThrow("text-token:page-title")
+  await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
+  await page.locator("h1").evaluate(element=>element.style.font="600 26px Geist")
+  await expect(assertScenarioDOM(page,entry)).rejects.toThrow("text-token:access-error-title")
+  await expect(assertScenarioDOM(page,prior)).resolves.toBeUndefined()
+ }finally{await browser.close()}
+})

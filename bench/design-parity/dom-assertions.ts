@@ -7,7 +7,7 @@ import {resolveCopy,type Scenario} from "./registry.ts"
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
 }
-export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
+export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"access-error-title":[15,15,500],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
 
 type IconInk={path:string,size:number,color:string}
 function inkPixels(pixels:Buffer){

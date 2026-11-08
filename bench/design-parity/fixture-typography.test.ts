@@ -15,7 +15,7 @@ it("keeps every committed scenario identity aligned with its registry",async()=>
 
 it("derives every traced role size and weight from its design generator classes",async()=>{
   const source=await readFile("docs/design/v0.1/source/gen-editor.mjs","utf8")
-  const citations={"landing-hero":["H Line"],"pricing-title":["Pricing Title"],"page-title":["Import Title"],"dialog-title":["Alert Title"],"module-title":["Brand Name"],body:["Toast Text","Nav Link"],helper:["Card State"]}
+  const citations={"landing-hero":["H Line"],"pricing-title":["Pricing Title"],"page-title":["Import Title"],"access-error-title":["Err Title"],"dialog-title":["Alert Title"],"module-title":["Brand Name"],body:["Toast Text","Nav Link"],helper:["Card State"]}
   for(const role of Object.keys(textRoleSizes))expect(citations).toHaveProperty(role)
   for(const [role,labels] of Object.entries(citations)){
     const tokens=labels.map(label=>{
@@ -29,4 +29,9 @@ it("derives every traced role size and weight from its design generator classes"
     expect(Reflect.get(textRoleSizes,role),role).toEqual([Math.min(...tokens.map(token=>token.size)),Math.max(...tokens.map(token=>token.size)),tokens[0]!.weight])
     expect(new Set(tokens.map(token=>token.weight)).size).toBe(1)
   }
+})
+
+it("assigns the expired-link heading its generator-specific error title role",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S29.01")!
+  expect(entry.assertions.structure.textRoles).toContainEqual({selector:"h1",role:"access-error-title",color:"ink",minimumContrast:4.5})
 })
