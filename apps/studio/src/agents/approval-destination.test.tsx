@@ -11,12 +11,13 @@ it.each([["Claude","claude.ai"],["Codex","Codex on this computer"],["Research ag
   try{
     await act(async()=>root.render(<AgentApproval intent="approval" client={createAccessClient("")}/>))
     expect(container.querySelector(".agent-footnote")?.textContent).toContain(`Returns you to ${destination}.`)
+    expect(container.querySelector("h1")?.textContent).toBe(`${name} wants to use AirDesign`)
     expect(requests).toEqual([])
     const action0=[...container.querySelectorAll("button")].find(button=>button.textContent==="Allow")
     if(!action0)throw new Error("missing-allow-action")
     await act(async()=>action0.click())
     expect(requests).toEqual(["/api/agents/approval"])
     expect(container.querySelector('a[target="_blank"]')?.textContent).toBe(`Return to ${name}`)
-    expect(container.textContent).toContain("Ready to return to your agent")
+    expect(container.textContent).toContain("Connected")
   }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
 })

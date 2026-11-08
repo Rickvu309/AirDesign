@@ -225,7 +225,7 @@ async function assertStructure(page:Page,entry:Scenario){
       })
       const sizes=textRoleSizes[text.role]
       if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
-      const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144]}[text.color]
+      const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144],white:[255,255,255]}[text.color]
       const channels=(color:string)=>color.match(/[\d.]+/g)?.map(Number)??[]
       const foreground=channels(result.color),background=channels(result.background)
       if(expected.some((channel,index)=>foreground[index]!==channel)||foreground.length===4&&foreground[3]!==1)throw failure(selector,`text-color:${text.role}`,expected,result.color)

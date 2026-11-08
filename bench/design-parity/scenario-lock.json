@@ -2355,7 +2355,7 @@
           {
             "selector": "[data-sonner-toast] [data-title]",
             "role": "body",
-            "color": "ink",
+            "color": "white",
             "minimumContrast": 4.5
           }
         ]
@@ -2449,7 +2449,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Ready to return to your agent"
+        "text": "Connected"
       }
     ],
     "viewport": {
@@ -2620,11 +2620,11 @@
         },
         {
           "role": "heading",
-          "nameKey": "settings.connected_agents"
+          "nameKey": "settings.agents_heading"
         },
         {
           "role": "button",
-          "nameKey": "settings.disconnect"
+          "nameKey": "settings.manage"
         }
       ],
       "probe": {

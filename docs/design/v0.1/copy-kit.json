@@ -143,5 +143,7 @@
   "settings.your_name": "Your name",
   "settings.save_name": "Save name",
   "settings.delete_account": "Delete account",
-  "credits.amount_label": "Amount in USD"
+  "credits.amount_label": "Amount in USD",
+  "settings.agents_heading": "Agents",
+  "settings.manage": "Manage"
 }

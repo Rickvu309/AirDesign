@@ -27,6 +27,7 @@ it("offers a retry for expiry and keeps embedded checkout mounted while waiting"
   try{
     await act(async()=>root.render(<AddCredits open balance={200} refresh={refresh} onClose={close}/>))
     expect(container.querySelector<HTMLDialogElement>("dialog")?.open).toBe(true)
+    expect(container.querySelector(".credits-footnote")?.textContent).toBe("Opens a secure page in a new tab.")
     expect(container.querySelector(".credits-preview")?.textContent).toContain("$12.00")
     await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Continue to payment")!.click())
     expect(container.querySelector<HTMLDialogElement>("dialog")?.open).toBe(false)

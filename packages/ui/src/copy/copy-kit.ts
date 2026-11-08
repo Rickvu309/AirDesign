@@ -118,6 +118,8 @@ export const copyKit = {
   "oauth.allow": "Allow",
   "oauth.return_claude": "Return to Claude",
   "oauth.return_help": "Having trouble returning?",
+  "settings.agents_heading": "Agents",
+  "settings.manage": "Manage",
   "settings.connected_agents": "Connected agents",
   "settings.disconnect": "Disconnect",
   "settings.your_name": "Your name",
