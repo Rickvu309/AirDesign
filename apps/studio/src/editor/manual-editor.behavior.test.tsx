@@ -223,3 +223,15 @@ it("exposes canonical New slide copy with real history controls",async()=>{
     await ui.click("Strategy⌄");await ui.click("Redo");expect(ui.sync.deck.slides).toHaveLength(3)
   }finally{await ui.close()}
 })
+
+it("keeps online connection status distinct from the real offline toast",async()=>{
+  const ui=await editor();try{
+    mock.value={sync:ui.sync,state:{kind:"connecting"},entry:{title:"Strategy"},setError:vi.fn()};await ui.render()
+    expect(ui.container.querySelector(".studio-editor")?.getAttribute("data-sync-state")).toBe("connecting")
+    expect(ui.container.querySelector(".editor-status:not([data-font-state])")?.textContent).toContain("Connecting")
+    expect(ui.container.textContent).not.toContain("You're offline")
+    mock.value={sync:ui.sync,state:{kind:"offline"},entry:{title:"Strategy"},setError:vi.fn()};await ui.render()
+    expect(ui.container.querySelector(".studio-editor")?.getAttribute("data-sync-state")).toBe("offline")
+    expect(ui.container.querySelector(".editor-status:not([data-font-state])")?.textContent).toContain("offline")
+  }finally{await ui.close()}
+})
