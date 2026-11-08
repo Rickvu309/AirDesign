@@ -859,7 +859,7 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
+            "componentSelector": "h2",
             "role": "dialog-title",
             "color": "ink",
             "minimumContrast": 4.5

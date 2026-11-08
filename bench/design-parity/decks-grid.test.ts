@@ -217,8 +217,8 @@ it("keeps real previews and visible 44px card actions on touch",async()=>{
 it.each(["S31.02","S31.04"])("classifies %s grid metadata as body text and rejects independent token mutations",async code=>{
   const entry=(await readRegistry()).find(entry=>entry.code===code)
   if(!entry)throw new Error("missing-grid-metadata-scenario")
-  const metadata=entry.assertions.structure.textRoles.find(role=>role.selector===".deck-card-details > p")
-  if(!metadata)throw new Error("missing-grid-metadata-role")
+  const metadata=entry.assertions.structure.textRoles.find(role=>"selector" in role&&role.selector===".deck-card-details > p")
+  if(!metadata||!("selector" in metadata))throw new Error("missing-grid-metadata-role")
   const focused={...entry,assertions:{...entry.assertions,structure:{...entry.assertions.structure,icons:[],textRoles:[metadata]}}}
   const old={...focused,assertions:{...focused.assertions,structure:{...focused.assertions.structure,textRoles:[{...metadata,role:"helper"}]}}} satisfies Scenario
   const browser=await chromium.launch({headless:true})

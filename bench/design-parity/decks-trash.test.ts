@@ -3,8 +3,8 @@ import {build} from "vite"
 import {chromium,type Page} from "playwright"
 import {beforeAll,expect,it} from "vitest"
 import {perform} from "./capture.mjs"
-import {readRegistry} from "./registry.ts"
-import {assertRendered,assertScenarioCopy,assertDialogActions} from "./dom-assertions.ts"
+import {readRegistry,type Scenario} from "./registry.ts"
+import {assertRendered,assertScenarioCopy,assertDialogActions,assertScenarioDOM,assertScenarioStructure} from "./dom-assertions.ts"
 import type {DeckEntry} from "../../packages/catalog/src/index.ts"
 
 let script="",styles=""
@@ -111,6 +111,7 @@ it("paints the real permanent-delete label and preserves Cancel and exact snapsh
     await expect(assertRendered(action,true)).resolves.toBeUndefined()
     await expect(assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)).resolves.toBeUndefined()
     await expect(assertDialogActions(page,entry)).resolves.toBeUndefined()
+    await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     expect(await action.evaluate(element=>{const style=getComputedStyle(element);return {background:style.backgroundColor,image:style.backgroundImage,color:style.color}})).toEqual({background:"rgb(217, 63, 63)",image:"none",color:"rgb(255, 255, 255)"})
     expect(proof.deletions).toEqual([])
     await dialog.getByRole("button",{name:"Cancel",exact:true}).click()
@@ -141,6 +142,81 @@ it.each(["missing","hidden"])("rejects a %s permanent-delete action from the rea
     expect(proof.deletions).toEqual([])
     await page.getByRole("dialog").getByRole("button",{name:"Cancel",exact:true}).click()
     for(const deck of proof.decks)expect(await page.getByRole("heading",{name:deck.title,exact:true}).count()).toBe(1)
+    expect(proof.errors).toEqual([])
+  }finally{await browser.close()}
+})
+
+it.each(["aria","native","alertdialog"])("validates the complete S33.03 contract inside its %s dialog",async semantics=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")
+  if(!entry||entry.component?.kind!=="dialog")throw new Error("missing-empty-trash-dialog-contract")
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:entry.viewport}),proof=await workspace(page,true)
+    await page.getByRole("button",{name:"Empty Trash",exact:true}).click()
+    if(semantics==="aria"){
+      const original:Scenario={...entry,assertions:{...entry.assertions,structure:{...entry.assertions.structure,textRoles:[{selector:"dialog[open] h2",role:"dialog-title",color:"ink",minimumContrast:4.5}]}}}
+      await expect(assertScenarioStructure(page,original)).rejects.toThrow(/selector=dialog\[open\] h2 check=required-text-role/)
+    }else await page.locator(".ad-dialog").evaluate((element,kind)=>{
+      if(kind==="alertdialog")element.setAttribute("role","alertdialog")
+      else{
+        const native=document.createElement("dialog")
+        for(const attribute of element.attributes)native.setAttribute(attribute.name,attribute.value)
+        native.removeAttribute("role")
+        native.setAttribute("open","")
+        native.append(...element.childNodes)
+        element.replaceWith(native)
+      }
+    },semantics)
+    await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
+    const title=page.locator(entry.component.selector).locator("h2")
+    expect(await title.count()).toBe(1)
+    expect(await title.evaluate(element=>{const style=getComputedStyle(element);return {size:style.fontSize,weight:style.fontWeight,color:style.color}})).toEqual({size:"17px",weight:"600",color:"rgb(34, 34, 34)"})
+    expect(proof.deletions).toEqual([])
+    expect(proof.errors).toEqual([])
+  }finally{await browser.close()}
+})
+
+it.each([
+  ["missing","required-text-role"],
+  ["hidden","required-rendered-element"],
+  ["outside","required-text-role"],
+  ["another-dialog","required-text-role"],
+  ["nested-dialog","dialog-title-ownership"],
+  ["size","text-token:dialog-title"],
+  ["weight","text-token:dialog-title"],
+  ["family","text-token:dialog-title"],
+  ["color","text-color:dialog-title"],
+  ["contrast","text-contrast:dialog-title"],
+  ["semantics","required-dialog-semantics"]
+])("rejects an independently %s dialog title from a passing real baseline",async(mutation,check)=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")
+  if(!entry||entry.component?.kind!=="dialog")throw new Error("missing-empty-trash-dialog-contract")
+  const registered={...entry,component:{...entry.component,selector:".workspace-home .ad-dialog"}}
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:entry.viewport}),proof=await workspace(page,true)
+    await page.getByRole("button",{name:"Empty Trash",exact:true}).click()
+    await expect(assertScenarioDOM(page,registered)).resolves.toBeUndefined()
+    await page.locator(".ad-dialog-title").evaluate((element,mutation)=>{
+      if(mutation==="missing")element.remove()
+      else if(mutation==="hidden")element.style.visibility="hidden"
+      else if(mutation==="outside")document.body.append(element)
+      else if(mutation==="another-dialog"||mutation==="nested-dialog"){
+        const other=document.createElement("div")
+        other.setAttribute("role","dialog")
+        const parent=mutation==="nested-dialog" ? element.closest(".ad-dialog") : document.body
+        if(!parent)throw new Error("missing-title-parent")
+        other.append(element)
+        parent.append(other)
+      }else if(mutation==="size")element.style.fontSize="18px"
+      else if(mutation==="weight")element.style.fontWeight="400"
+      else if(mutation==="family")element.style.fontFamily="Arial"
+      else if(mutation==="color")element.style.color="#666"
+      else if(mutation==="contrast")element.style.backgroundColor="#777"
+      else element.closest(".ad-dialog")?.setAttribute("role","group")
+    },mutation)
+    await expect(assertScenarioStructure(page,registered)).rejects.toThrow(check)
+    expect(proof.deletions).toEqual([])
     expect(proof.errors).toEqual([])
   }finally{await browser.close()}
 })

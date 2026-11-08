@@ -90,3 +90,15 @@ it("binds release thresholds to the committed faithful-reference calibration",as
   for(const row of record.results)expect(row.reference.score).toBeLessThan(row.surface=== "site" ? surfaceTargets.site : surfaceTargets.studio)
   for(const row of record.editor)expect(row.score).toBeLessThan(surfaceTargets.studio)
 })
+
+it("keeps component-owned dialog titles distinct from page text selectors",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")
+  if(!entry)throw new Error("missing-empty-trash-contract")
+  expect(()=>parseRegistry([entry])).not.toThrow()
+  const title=entry.assertions.structure.textRoles[0]
+  if(!title||!("componentSelector" in title))throw new Error("missing-component-title-contract")
+  for(const invalid of [{...title,selector:"h2"},{...title,role:"page-title"},{...title,componentSelector:"body h2"}]){
+    const wrong={...entry,assertions:{...entry.assertions,structure:{...entry.assertions.structure,textRoles:[invalid]}}}
+    expect(()=>parseRegistry([wrong])).toThrow()
+  }
+})

@@ -156,8 +156,17 @@ async function assertStructure(page:Page,entry:Scenario){
     await assertRendered(locator,false,{path,size:icon.size,color:expectedColor,strokeWidth:expectedStroke})
   }
   for(const text of entry.assertions.structure.textRoles){
-    const locators=page.locator(text.selector)
-    if(!await locators.count())throw failure(text.selector,"required-text-role",">=1",0)
+    const selector="componentSelector" in text ? `${entry.component?.selector} >> ${text.componentSelector}` : text.selector
+    let locators:Locator
+    if("componentSelector" in text){
+      if(entry.component?.kind!=="dialog")throw failure(selector,"required-dialog-component","registered dialog",entry.component)
+      const root=page.locator(entry.component.selector),count=await root.count()
+      if(count!==1)throw failure(entry.component.selector,"required-dialog-component",1,count)
+      if(!await root.evaluate(element=>element.matches('dialog[open], [role="dialog"], [role="alertdialog"]')))throw failure(entry.component.selector,"required-dialog-semantics","open native or ARIA dialog",await root.evaluate(element=>element.outerHTML))
+      if(!await root.evaluate((element,selector)=>[...element.querySelectorAll(selector)].every(title=>title.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===element),text.componentSelector))throw failure(selector,"dialog-title-ownership","title owned by registered dialog","title belongs to another dialog")
+      locators=root.locator(text.componentSelector)
+    }else locators=page.locator(text.selector)
+    if(!await locators.count())throw failure(selector,"required-text-role",">=1",0)
     for(const locator of await locators.all()){
       await assertRendered(locator)
       const result=await locator.evaluate(element=>{
@@ -170,14 +179,14 @@ async function assertStructure(page:Page,entry:Scenario){
         return {family:style.fontFamily,size:parseFloat(style.fontSize),weight:Number(style.fontWeight),color:style.color,background}
       })
       const sizes=textRoleSizes[text.role]
-      if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(text.selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
+      if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
       const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144]}[text.color]
       const channels=(color:string)=>color.match(/[\d.]+/g)?.map(Number)??[]
       const foreground=channels(result.color),background=channels(result.background)
-      if(expected.some((channel,index)=>foreground[index]!==channel)||foreground.length===4&&foreground[3]!==1)throw failure(text.selector,`text-color:${text.role}`,expected,result.color)
+      if(expected.some((channel,index)=>foreground[index]!==channel)||foreground.length===4&&foreground[3]!==1)throw failure(selector,`text-color:${text.role}`,expected,result.color)
       const luminance=(rgb:number[])=>rgb.slice(0,3).reduce((sum,value,index)=>{const channel=value/255;return sum+(channel<=0.04045 ? channel/12.92 : ((channel+0.055)/1.055)**2.4)*[0.2126,0.7152,0.0722][index]!},0)
       const light=luminance(foreground),dark=luminance(background),contrast=(Math.max(light,dark)+0.05)/(Math.min(light,dark)+0.05)
-      if(contrast<text.minimumContrast)throw failure(text.selector,`text-contrast:${text.role}`,text.minimumContrast,contrast)
+      if(contrast<text.minimumContrast)throw failure(selector,`text-contrast:${text.role}`,text.minimumContrast,contrast)
     }
   }
 }
