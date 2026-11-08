@@ -213,11 +213,18 @@ async function probeInteraction(page:Page,entry:Scenario){
       break
     }
     case "dialog":{
+      const accountMenu=page.getByLabel("Account menu",{exact:true})
+      const accountSignOut=probe.open===resolveCopy("access.sign_out")&&await accountMenu.count()>0
+      if(accountSignOut)await accountMenu.click()
       await page.getByRole("button",{name:probe.open,exact:true}).first().click()
       const dialog=page.getByRole("dialog",{name:resolveCopy(probe.titleKey,entry.assertions.copyValues),exact:true})
       await dialog.waitFor({state:"visible"})
       await dialog.getByRole("button",{name:probe.close,exact:true}).click()
       await dialog.waitFor({state:"hidden"})
+      if(accountSignOut){
+        await accountMenu.waitFor({state:"visible"})
+        if(await accountMenu.evaluate(element=>element.closest("details")?.open))throw new Error("account-menu-probe-restore-failed")
+      }
       break
     }
     case "view":{

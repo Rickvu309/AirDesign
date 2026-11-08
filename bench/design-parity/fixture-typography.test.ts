@@ -3,6 +3,13 @@ import {expect,it} from "vitest"
 import {fixtureContentHash,readRegistry,validateIdentity} from "./registry.ts"
 import {textRoleSizes} from "./dom-assertions.ts"
 
+it("enters the check-inbox state through the painted canonical email action",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S22.01")!
+  expect(entry.status).toBe("reachable")
+  if(entry.status!=="reachable")throw new Error("missing-check-inbox-journey")
+  expect(entry.steps).toContainEqual({kind:"click",name:"Continue with email"})
+})
+
 it("keeps every committed fixture receipt current",async()=>{
   const lock=JSON.parse(await readFile("bench/design-parity/scenario-lock.json","utf8"))
   expect(lock).toHaveLength(52)

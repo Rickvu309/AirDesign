@@ -153,7 +153,7 @@
       },
       {
         "kind": "click",
-        "name": "Continue"
+        "name": "Continue with email"
       }
     ],
     "metric": "local-oklab-v2",
@@ -185,7 +185,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S22.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Follow the painted canonical Continue with email accessible action to the same check-inbox state after removing the contradictory redundant aria-label; preserve seed, viewport, dimensions, targets and budgets."
   },
   {
     "surface": "studio",

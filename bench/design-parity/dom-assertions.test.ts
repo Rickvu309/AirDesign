@@ -5,6 +5,25 @@ import {assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
 import {readRegistry} from "./registry.ts"
 import {compareDesign} from "./metric.mjs"
 
+it("opens sign-out through the account menu and restores the closed sidebar state",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S31.02")!
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage()
+    page.setDefaultTimeout(500)
+    await page.setContent('<p role="status">Signed in</p><details><summary aria-label="Account menu">Ada Lovelace</summary><button id="sign-out">Sign out</button></details><dialog aria-label="Sign out?"><button id="confirm">Sign out</button><button id="cancel">Cancel</button></dialog><script>document.querySelector("#sign-out").onclick=()=>{document.querySelector("details").open=false;document.querySelector("dialog").showModal()};document.querySelector("#confirm").onclick=()=>document.querySelector("[role=status]").textContent="Signed out";document.querySelector("#cancel").onclick=()=>document.querySelector("dialog").close()</script>')
+    await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
+    expect(await page.locator("details").evaluate(element=>element instanceof HTMLDetailsElement&&element.open)).toBe(false)
+    expect(await page.getByRole("dialog").count()).toBe(0)
+    expect(await page.getByRole("status").textContent()).toBe("Signed in")
+    await page.locator("#cancel").evaluate(element=>element.addEventListener("click",()=>{document.querySelector("details")!.open=true}))
+    await expect(probeScenarioInteraction(page,entry)).rejects.toThrow("account-menu-probe-restore-failed")
+    await page.locator("details").evaluate(element=>{if(element instanceof HTMLDetailsElement)element.open=false})
+    await page.locator("#sign-out").evaluate(element=>element.remove())
+    await expect(probeScenarioInteraction(page,entry)).rejects.toThrow("check=interaction")
+  }finally{await browser.close()}
+})
+
 it("rejects the pixel-perfect design bitmap before capture and accepts working controls",async()=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
   const entry={...original,assertions:{...original.assertions,structure:{icons:[],textRoles:[{selector:"h1",role:"page-title",color:"ink",minimumContrast:4.5}]}}} satisfies typeof original

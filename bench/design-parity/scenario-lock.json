@@ -132,7 +132,7 @@
       },
       {
         "kind": "click",
-        "name": "Continue"
+        "name": "Continue with email"
       }
     ],
     "viewport": {
