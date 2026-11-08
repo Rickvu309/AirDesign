@@ -2,6 +2,8 @@ import path from "node:path"
 import {build} from "vite"
 import {chromium,type Page,type Locator} from "playwright"
 import {beforeAll,expect,it} from "vitest"
+import {assertScenarioControls} from "../design-parity/dom-assertions.ts"
+import {readRegistry} from "../design-parity/registry.ts"
 
 let script="",styles=""
 beforeAll(async()=>{
@@ -73,5 +75,35 @@ it("keeps tablet view and design controls independently owned",async()=>{
   await grid.focus();await grid.press("Enter");expect(await grid.getAttribute("aria-pressed")).toBe("true")
   for(const name of ["Select slides","Edit slide text","Images","Agent","Design"])expect(await ownsSquare(page.getByRole("button",{name,exact:true})),name+JSON.stringify(await page.getByRole("button",{name,exact:true}).boundingBox())).toBe(true)
   expect(proof.errors).toEqual([])
+ }finally{await browser.close()}
+})
+
+it("binds Export to the real visible manual toolbar and rejects wrong, hidden and duplicate owners",async()=>{
+ const browser=await chromium.launch()
+ try{
+  const page=await browser.newPage({viewport:{width:1470,height:923}});await mount(page,"/editor")
+  const entry=(await readRegistry()).find(entry=>entry.code==="S92.01");if(!entry)throw new Error("missing-editor-entry")
+  const proof={...entry,assertions:{...entry.assertions,controls:entry.assertions.controls.filter(control=>"nameKey" in control&&control.nameKey==="editor.export")}}
+  const button=page.locator(".studio-editor .editor-export button");await button.waitFor()
+  await page.evaluate(()=>{const background=document.createElement("button");background.textContent="Export";background.id="background-export";document.body.prepend(background)})
+  await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
+  const style=await button.getAttribute("style")
+  try{
+   await button.evaluate(element=>element.style.visibility="hidden")
+   await expect(assertScenarioControls(page,proof)).rejects.toThrow()
+  }finally{await button.evaluate((element,value)=>value===null?element.removeAttribute("style"):element.setAttribute("style",value),style)}
+  await button.evaluate(element=>element.setAttribute("disabled",""))
+  await expect(assertScenarioControls(page,proof)).rejects.toThrow()
+  await button.evaluate(element=>element.removeAttribute("disabled"))
+  await button.evaluate(element=>{const overlay=document.createElement("div"),box=element.getBoundingClientRect();overlay.id="export-occlusion";Object.assign(overlay.style,{position:"fixed",left:box.left+"px",top:box.top+"px",width:box.width+"px",height:box.height+"px",zIndex:"99999",background:"black"});document.body.append(overlay)})
+  try{await expect(assertScenarioControls(page,proof)).rejects.toThrow()}finally{await page.locator("#export-occlusion").evaluate(element=>element.remove())}
+  await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
+  await button.evaluate(element=>element.after(element.cloneNode(true)))
+  await expect(assertScenarioControls(page,proof)).rejects.toThrow("required-control")
+  await page.locator(".editor-export button").last().evaluate(element=>element.remove())
+  await button.press("Enter");const dialog=page.getByRole("dialog",{name:"Export",exact:true});await dialog.waitFor()
+  await dialog.getByRole("button",{name:"Close export",exact:true}).press("Enter");await dialog.waitFor({state:"hidden"})
+  await button.evaluate(element=>element.remove())
+  await expect(assertScenarioControls(page,proof)).rejects.toThrow("required-control")
  }finally{await browser.close()}
 })
