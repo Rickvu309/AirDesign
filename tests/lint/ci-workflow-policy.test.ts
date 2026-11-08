@@ -3,7 +3,7 @@ import { homedir } from "node:os"
 import { join } from "node:path"
 import { spawnSync } from "node:child_process"
 import { expect, it } from "vitest"
-import { deploymentWorkflowHits, ciCoverageHits, verifierBuildHits, workerLibraryHits, railwayKnownHostsHits } from "../../scripts/lint/ci-workflow-policy.ts"
+import { deploymentWorkflowHits, railwayControllerHits, ciCoverageHits, verifierBuildHits, workerLibraryHits, railwayKnownHostsHits } from "../../scripts/lint/ci-workflow-policy.ts"
 import { requiresFullGate } from "../../scripts/gate/plan.ts"
 
 const scripts: Record<string, string> = JSON.parse(readFileSync("package.json", "utf8")).scripts
@@ -192,4 +192,10 @@ it("pins Railway's SSH host key that a fresh runner refused to trust in the firs
   expect(railwayKnownHostsHits("")).not.toEqual([])
   expect(railwayKnownHostsHits(knownHosts.replace("ssh.railway.com", "*.railway.com"))).not.toEqual([])
   expect(railwayKnownHostsHits(knownHosts + "evil.example ssh-ed25519 AAAA\n")).not.toEqual([])
+})
+
+it("rejects local uploads in the Railway controller", () => {
+  const source = readFileSync("scripts/release/railway-production.ts", "utf8")
+  expect(railwayControllerHits(source)).toEqual([])
+  expect(railwayControllerHits(source.replace('["deployment", "redeploy", ...common', '["up", ...common'))).toEqual(["deploy-controller-must-build-from-github"])
 })

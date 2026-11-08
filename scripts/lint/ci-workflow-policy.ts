@@ -138,3 +138,7 @@ export function railwayKnownHostsHits(knownHosts: string): string[] {
   const lines = knownHosts.split("\n").filter(line => line.trim() !== "")
   return lines.length === 1 && /^ssh\.railway\.com ssh-ed25519 [A-Za-z0-9+/]{68}$/.test(lines[0] ?? "") ? [] : ["deploy-ssh-known-hosts-must-pin-one-railway-ed25519-key"]
 }
+
+export function railwayControllerHits(source: string): string[] {
+  return /command\("railway",\s*\["up"/.test(source) ? ["deploy-controller-must-build-from-github"] : []
+}

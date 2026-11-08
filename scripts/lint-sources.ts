@@ -1,5 +1,5 @@
 import {historyFixtureSafetyHits} from "./lint/history-fixture-safety.ts"
-import { deploymentWorkflowHits, ciCoverageHits, railwayKnownHostsHits, verifierBuildHits, workerLibraryHits } from "./lint/ci-workflow-policy.ts"
+import { deploymentWorkflowHits, railwayControllerHits, ciCoverageHits, railwayKnownHostsHits, verifierBuildHits, workerLibraryHits } from "./lint/ci-workflow-policy.ts"
 import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
 import {renderSiteTerms} from "./site-terms.ts"
@@ -34,6 +34,7 @@ const files = await collect(repoRoot)
 const failures: string[] = ciCoverageHits(JSON.parse(await readFile(path.join(repoRoot, "package.json"), "utf8")).scripts, await readFile(path.join(repoRoot, ".github/workflows/ci.yml"), "utf8"), await readFile(path.join(repoRoot, "vitest.config.ts"), "utf8"))
 failures.push(...deploymentWorkflowHits(await readFile(path.join(repoRoot, ".github/workflows/deploy.yml"), "utf8"), await readFile(path.join(repoRoot, ".railway/railway.ts"), "utf8")))
 failures.push(...railwayKnownHostsHits(await readFile(path.join(repoRoot, ".github/ssh/railway-known-hosts"), "utf8")))
+failures.push(...railwayControllerHits(await readFile(path.join(repoRoot, "scripts/release/railway-production.ts"), "utf8")))
 const capabilities=await readFile(path.join(repoRoot,"docs/release/capabilities.md"),"utf8")
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
