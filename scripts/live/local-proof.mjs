@@ -37,8 +37,21 @@ try{
     if(operation.kind==="ready")operation.report={...operation.report,workerSha:"f".repeat(40)}
     await route.fulfill({response,json:operation})
   })});assert.equal(mismatch.status,"fail");assert.equal(mismatch.failedStep,"import-powerpoint");assert.match(mismatch.error,/worker commit/)
+  const exportFailure=await verifyLive({...base,output:path.join(root,"deliberate-export-failure"),configureContext:async context=>context.route("**/api/catalog/**/exports",async route=>{
+    const response=await route.fetch(),jobs=await response.json()
+    const fail=job=>job.format==="pptx" && job.kind==="ready" ? {...job,kind:"failed",reason:"deliberate-export-failure",attempts:3} : job
+    await route.fulfill({response,json:Array.isArray(jobs) ? jobs.map(fail) : fail(jobs)})
+  })});assert.equal(exportFailure.status,"fail");assert.equal(exportFailure.failedStep,"export-pptx")
+  const failedExport=exportFailure.steps.find(step=>step.name==="export-pptx")
+  assert.ok(failedExport.operations?.some(operation=>operation.kind==="failed" && operation.reason==="deliberate-export-failure" && operation.attempts===3),"failed export operation reason missing")
+  assert.ok(failedExport.durationMs>=0)
+  assert.equal(new Set(failedExport.operations.map(operation=>operation.id)).size,failedExport.operations.length)
+  assert.ok(failedExport.operations.every(operation=>Object.keys(operation).every(key=>["id","kind","reason","attempts"].includes(key))))
+  assert.equal(typeof failedExport.screenshot,"string")
+  assert.deepEqual((await readFile(path.join(root,"deliberate-export-failure",failedExport.screenshot))).subarray(0,8),Buffer.from([137,80,78,71,13,10,26,10]))
+  assert.equal(wrong.steps.find(step=>step.name===wrong.failedStep).screenshot,null)
   const passed=await verifyLive({...base,output:path.join(root,"pass")});assert.equal(passed.status,"pass",passed.failedStep+": "+passed.error)
-  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,studioError:studioFailure.failedStep,staleWorker:mismatch.failedStep,pass:path.join(root,"pass/receipt.json")},null,2))
+  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,studioError:studioFailure.failedStep,staleWorker:mismatch.failedStep,exportFailure:path.join(root,"deliberate-export-failure/receipt.json"),pass:path.join(root,"pass/receipt.json")},null,2))
   process.stdout.write(`pass: ${root}/proof.json\n`)
 }finally{
   if(site){site.closeAllConnections();await new Promise(resolve=>site.close(resolve))}

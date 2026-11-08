@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, statSync, symlinkSync, writeFile
 import { tmpdir } from "node:os"
 import path from "node:path"
 import { describe, expect, it } from "vitest"
+import { recordPackedStartup } from "./packed-startup-evidence.mjs"
 import { performanceBudgets } from "../../contract-rules/src/budgets.ts"
 
 const packedUiBytes = performanceBudgets.packedUiBytes
@@ -87,22 +88,25 @@ describe("packed ui", () => {
     const readStarted = performance.now()
     readFileSync(path.join(directory, "node_modules/@airdesign/ui/dist/index.js"))
     const moduleReadMs = performance.now() - readStarted
-    const browserStartupMs = await measurePackedShell(directory)
-    expect(browserStartupMs).toBeLessThan(performanceBudgets.shellStartupMs)
-    const evidence = path.join(process.env.HOME ?? "", "tmp/airdesign-autopilot/P01/perf")
-    spawnSync("mkdir", ["-p", evidence])
-    writeFileSync(path.join(evidence, "w02-pack.json"), `${JSON.stringify({
+    const measurement = await measurePackedShell(directory)
+    const revision = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" })
+    expect(revision.status).toBe(0)
+    const worktree = spawnSync("git", ["status", "--porcelain"], { encoding: "utf8" })
+    expect(worktree.status).toBe(0)
+    const evidence = process.env.PACK_STARTUP_EVIDENCE_DIR ?? path.join(process.env.HOME ?? "", "tmp/airdesign-autopilot/P01/perf")
+    recordPackedStartup(path.join(evidence, "w02-pack.json"), measurement, {
+      revision: revision.stdout.trim(),
+      worktreeDirty: worktree.stdout.trim() !== "",
       packedJsBytes: bundle.size,
       packedUiBytes,
       moduleReadMs,
-      browserStartupMs,
       shellStartupBudgetMs: performanceBudgets.shellStartupMs,
       workload: "packed-consumer-navigation-to-shell",
       sampleCount: 1,
       state: "cold-navigation",
-      limiter: "browser-main-thread",
+      limiter: "unknown",
       trunk: "absent",
-    }, null, 2)}\n`)
+    }, performanceBudgets.shellStartupMs)
   }, 240_000)
 })
 
@@ -185,13 +189,14 @@ function serveAndReadStartup(rootDir) {
       const port = typeof address === "object" && address ? address.port : 0
       const session = `p01-w02-${process.pid}`
       const browser = (args) => new Promise((resolveBrowser, rejectBrowser) => {
-        const child = spawn("agent-browser", ["--session", session, ...args])
+        const child = spawn("agent-browser", ["--session", session, ...args], { timeout: 15_000, killSignal: "SIGKILL" })
         let stdout = ""
         let stderr = ""
         child.stdout.setEncoding("utf8")
         child.stderr.setEncoding("utf8")
         child.stdout.on("data", (chunk) => { stdout += chunk })
         child.stderr.on("data", (chunk) => { stderr += chunk })
+        child.on("error", rejectBrowser)
         child.on("close", (code) => {
           if (code !== 0) {
             rejectBrowser(new Error(`${args.join(" ")}\n${stdout}\n${stderr}`))
@@ -218,15 +223,21 @@ function serveAndReadStartup(rootDir) {
               await browser(["wait", "100"])
             }
           }
-          const browserStartupMs = Number(startup)
-          if (!Number.isFinite(browserStartupMs)) {
-            throw new Error(`startup-missing ${startup}`)
+          const diagnostics = JSON.parse(await browser(["eval", browserDiagnostics]))
+          let errors
+          try {
+            const result = JSON.parse(await browser(["errors", "--json"]))
+            if (!result.success || !Array.isArray(result.data?.errors)) throw new Error(JSON.stringify(result))
+            errors = { availability: "available", count: result.data.errors.length, entries: result.data.errors, scope: "uncaught page exceptions recorded by agent-browser" }
+          } catch (error) {
+            errors = { availability: "unavailable", limitation: String(error) }
           }
-          resolve(browserStartupMs)
+          resolve({ startup, ...diagnostics, errors, serverRequests: hits, serverErrorCount: hits.filter((hit) => !hit.startsWith("200 ")).length })
         } catch (error) {
           reject(error)
         } finally {
           await browser(["close"]).catch(() => undefined)
+          server.closeAllConnections()
           server.close()
         }
       })()
@@ -243,3 +254,35 @@ function contentType(file) {
   }
   return "text/html"
 }
+
+const browserDiagnostics = `(async () => {
+  const entries = (type) => {
+    try {
+      if (typeof performance.getEntriesByType !== "function") throw new Error("Performance Timeline unavailable")
+      return { availability: "available", entries: performance.getEntriesByType(type).map((entry) => entry.toJSON()) }
+    } catch (error) {
+      return { availability: "unavailable", limitation: String(error) }
+    }
+  }
+  let scheduling
+  try {
+    if (!globalThis.PerformanceObserver?.supportedEntryTypes?.includes("longtask")) throw new Error("buffered longtask observer unavailable")
+    const tasks = []
+    const observer = new PerformanceObserver((list) => tasks.push(...list.getEntries().map((entry) => entry.toJSON())))
+    observer.observe({ type: "longtask", buffered: true })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    tasks.push(...observer.takeRecords().map((entry) => entry.toJSON()))
+    observer.disconnect()
+    scheduling = { availability: "available", longTasks: tasks, limitation: "Buffered observations collected after shell effect; retention and delivery may be incomplete. Long tasks do not establish startup delay attribution." }
+  } catch (error) {
+    scheduling = { availability: "unavailable", limitation: String(error) }
+  }
+  return {
+    timeOrigin: performance.timeOrigin,
+    observedAtMs: performance.now(),
+    navigation: entries("navigation"),
+    resources: entries("resource"),
+    scheduling,
+    timingLimitation: "One navigation sample; diagnostics collected after the shell timestamp, not a partition of its interval. Resource entries may be buffer-limited.",
+  }
+})()`

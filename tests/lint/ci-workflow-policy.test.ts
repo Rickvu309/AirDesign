@@ -23,6 +23,12 @@ it("rejects the original absent CI and covers every PR verifier and workspace te
   expect(hits(scripts, workflow.replace("[setup, static, unit, verification, design]", "[setup, static, unit, design]"))).toContain("ci-final-gate-missing-dependency: verification")
 })
 
+it("rejects the shallow checkout that hid the design-parity merge base from unit and design jobs", () => {
+  expect(hits(scripts, workflow)).toEqual([])
+  const shallow = workflow.replaceAll("          fetch-depth: 0\n          persist-credentials: false", "          persist-credentials: false")
+  expect(hits(scripts, shallow)).toEqual(expect.arrayContaining(["ci-merge-base-history-missing: unit", "ci-merge-base-history-missing: design"]))
+})
+
 it("rejects verifiers that rebuild the shared artifact", () => {
   expect(hits({ ...scripts, "verify:mcp": "npm run build:mcp-renderer && vitest run" }, workflow)).toContain("ci-verifier-rebuilds: verify:mcp")
 })
