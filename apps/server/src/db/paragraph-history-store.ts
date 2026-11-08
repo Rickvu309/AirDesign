@@ -142,7 +142,7 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
     }),
     close: () => pool.end(),
     read: (principal: Principal, deck: string) => transaction(async tx => validateHistory(tx, deck, await owned(tx, principal, deck))),
-    commit: (principal: Principal, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity = {kind: "person"}) => transaction(async tx => {
+    commit: (principal: Principal, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity = {kind: "person"}, admission?: {kind: "hosted"}) => transaction(async tx => {
       const state = await owned(tx, principal, deck)
       const prior = await receipt(tx, deck, request, identity)
       if (prior) return prior
@@ -152,6 +152,7 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
       const command = parseNativeCommandV3(request)
       if (!executionMatches(command, identity)) throw new Error("execution-identity-mismatch")
       const history = await validateHistory(tx, deck, state)
+      if (admission?.kind === "hosted" && identity.kind === "run" && !history.runs.some(run => run.id === identity.run)) history.runs.push({id: identity.run, epoch: history.seq, kind: "open"})
       let result = executeNative(history, command, identity)
       await nativeParagraphCapability(tx)
       if (result.receipt.kind === "applied") {

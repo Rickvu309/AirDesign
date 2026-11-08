@@ -47,10 +47,18 @@ function validateImmutable(archive: ImmutableLegacyArchiveV2) {
   }
   if (events.size !== applied.size) throw new Error("missing-archived-event")
 }
-function decodeEvent(row: ArchivedEventV2, current: History) {
+function admittedArchivedRun<D>(history: History<D>, row: ArchivedEventV2, runs: History["runs"]): History<D> {
+  if (row.identity.kind !== "run") return history
+  const run = row.identity.run
+  if (history.runs.some(value => value.id === run)) return history
+  const saved = runs.find(value => value.id === run)
+  if (!saved || saved.epoch !== history.seq) throw new Error("invalid-archived-run-admission")
+  return {...history, runs: [...history.runs, {id: saved.id, epoch: saved.epoch, kind: "open"}]}
+}
+function decodeEvent(row: ArchivedEventV2, current: History, runs: History["runs"]) {
   if (row.seq !== current.seq + 1) throw new Error("legacy-event-sequence-gap")
   const command = decodeLegacyCommandV2({version: 2, command: JSON.parse(row.commandBytes)})
-  const result = execute(current, command, row.identity)
+  const result = execute(admittedArchivedRun(current, row, runs), command, row.identity)
   if (result.receipt.kind !== "applied") throw new Error("legacy-event-replay-refused")
   equal(result.receipt, JSON.parse(row.receiptBytes), "legacy-event-receipt-mismatch")
   return {command, history: result.history}
@@ -108,7 +116,7 @@ export function transduceLegacyHistory(archive: LegacyHistoryArchiveV2 | Paragra
   const reserved = new Set<Id>(archive.history.usedIds)
   for (const node of nodes(archive.history.initial)) reserved.add(node.id)
   for (const row of archive.immutable.events) {
-    legacy = decodeEvent(row, legacy).history
+    legacy = decodeEvent(row, legacy, archive.history.runs).history
     const event = legacy.events.find(event => event.seq === row.seq)
     for (const patch of event?.patches ?? []) {
       for (const node of [patch.before,patch.after]) if (node) reserved.add(node.id)
@@ -129,7 +137,7 @@ export function transduceLegacyHistory(archive: LegacyHistoryArchiveV2 | Paragra
   legacy = initialHistory(archive.history.initial)
   const prefixes = [proof(native)]
   for (const row of archive.immutable.events) {
-    const step = decodeEvent(row, legacy), source = step.history.events.find(event => event.seq === row.seq)
+    const step = decodeEvent(row, legacy, archive.history.runs), source = step.history.events.find(event => event.seq === row.seq)
     let command: Command<NativeChangeSet>
     if (step.command.kind === "edit" || step.command.kind === "patch") {
       const current = nativeNodes(native.deck)
@@ -141,6 +149,7 @@ export function transduceLegacyHistory(archive: LegacyHistoryArchiveV2 | Paragra
       command = {id: step.command.id, kind: "edit", base: step.command.base, run: step.command.run, changes: nativeHistoryModel.replace(desired)}
     } else command = step.command
     const model = source ? {...nativeHistoryModel, staleConflicts: "runs" as const, reconcileDelta: (delta: Patch[], before: NativeDeck, after: NativeDeck) => reconcileAdoption(delta,before,after,source)} : nativeHistoryModel
+    native = admittedArchivedRun(native, row, archive.history.runs)
     const result = executeWithModel(native, command, model, row.identity)
     if (result.receipt.kind !== "applied") throw new Error(`native-event-replay-refused:${row.seq}:${result.receipt.code}`)
     equal(result.receipt, JSON.parse(row.receiptBytes), "native-receipt-mismatch")

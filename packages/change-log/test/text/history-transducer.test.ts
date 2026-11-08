@@ -10,6 +10,21 @@ import {legacyTape} from "./history-fixture.ts"
 
 function firstText() { const text=fixtureElement(0);if(text.kind!=="text")throw new Error("fixture-text");return text }
 describe("complete versioned legacy history transduction",()=>{
+  it("reconstructs legacy hosted implicit run admission at its exact epoch before every native prefix",()=>{
+    const tape=legacyTape(fixtureDeck(1)),run={id:"hosted",epoch:0,kind:"open"} satisfies import("../../src/index.ts").History["runs"][number]
+    tape.archive.history.runs.push(run)
+    expect(tape.send({id:commandId("implicit-edit"),kind:"patch",base:0,run:run.id,target:id("s0e0"),fields:{runs:[{...firstText().runs[0],text:"Hosted input"}]}},{kind:"run",run:run.id,actor:"user-agent"}).kind).toBe("applied")
+    tape.patch("later-person",id("s0e0"),{box:{x:2,y:3,width:400,height:80}})
+    tape.send({id:commandId("implicit-undo"),kind:"undo-run",run:run.id})
+    const converted=transduceLegacyHistory(tape.archive)
+    expect(converted.history.runs).toEqual(tape.archive.history.runs)
+    expect(converted.immutable).toEqual(tape.archive.immutable)
+    expect(converted.prefixes.map(value=>value.seq)).toEqual([0,1,2,3])
+    expect(transduceLegacyHistory(converted)).toEqual(converted)
+    const invalid=structuredClone(tape.archive)
+    invalid.history.runs[0]!.epoch=1
+    expect(()=>transduceLegacyHistory(invalid)).toThrow("invalid-archived-run-admission")
+  })
   it("treats persisted property keys as a set after JSONB reorders object fields",()=>{
     const tape=legacyTape(fixtureDeck(2))
     tape.patch("properties",id("s0e0"),{box:{x:1,y:2,width:300,height:90},runs:[{...firstText().runs[0],text:"changed"}]})

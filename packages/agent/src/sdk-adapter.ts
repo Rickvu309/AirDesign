@@ -31,7 +31,7 @@ export function claudeAdapter(configuration:{key:string;model:string;query?:SdkQ
     })
     const env:NodeJS.ProcessEnv={...process.env,ANTHROPIC_API_KEY:configuration.key,CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:"1",DISABLE_NON_ESSENTIAL_MODEL_CALLS:"1"}
     delete env.CLAUDE_CODE_OAUTH_TOKEN
-    const initial=JSON.stringify({deckId:context.deckId,run:context.run,selection:context.selection,completed:context.completed??[],request:context.request})
+    const initial=JSON.stringify({textProtocol:context.textProtocol??"legacy-text-v2",deckId:context.deckId,run:context.run,selection:context.selection,completed:context.completed??[],request:context.request})
     const messages:import("@anthropic-ai/claude-agent-sdk").SDKUserMessage[]=[]
     let wakeInput=()=>{},inputClosed=false
     const enqueue=(text:string)=>{if(inputClosed)throw new Error("aira-run-finishing-retry");messages.push({type:"user",message:{role:"user",content:text},parent_tool_use_id:null,session_id:""});wakeInput()}
@@ -48,7 +48,7 @@ export function claudeAdapter(configuration:{key:string;model:string;query?:SdkQ
     }
     const task=agentBoundary.run({signal,fail},async()=>{
       try{
-        const run=(configuration.query??harness.query)({prompt:prompt(),options:{...harness.options,env,model:configuration.model,abortController:controller,settingSources:[],systemPrompt:"You are Aira. Build and refine executive decks using only AirDesign tools. Read the deck first. Use unique request ids including the run id. Preserve completed changes on resume; inspect current state before editing. Follow the user request and selected content.",includePartialMessages:true}})
+        const run=(configuration.query??harness.query)({prompt:prompt(),options:{...harness.options,env,model:configuration.model,abortController:controller,settingSources:[],systemPrompt:"You are Aira. Build and refine executive decks using only AirDesign tools. Read the deck first. On paragraph-body-v3 use body-only text with a frame and nonempty paragraphs, each with stable ids, inline text/break runs and endStyle. Set paragraph or frame ids to format independently; preserve untouched body ids. Never send legacy whole-element runs for native text. Use unique request ids including the run id. Preserve completed changes on resume; inspect current state before editing. Follow the user request and selected content.",includePartialMessages:true}})
         for await(const event of run){
           if(event.type==="assistant")for(const part of event.message.content)if(part.type==="text")queue.push({kind:"message",text:part.text})
           if(event.type==="result"){

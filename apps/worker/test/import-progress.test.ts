@@ -10,7 +10,7 @@ import {OperationStore,type OperationId} from "../../../packages/operations/src/
 import {importSlideProgressSchema,importProgressPrefix,type ImportSlideProgress} from "../../../packages/operations/src/import-progress.ts"
 import {ImportProgressDecoder,ImportProgressWriter,ImportProgressForwarder,acceptImportProgress} from "../src/import-progress.ts"
 import {importPptx,exportPptx} from "../../../packages/pptx/src/index.ts"
-import {importedDeck} from "../../../packages/pptx/src/import-deck.ts"
+import {importedDeck,importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
 import * as deck from "../../../packages/deck/src/index.ts"
 import {deliver} from "../src/isolation.ts"
 
@@ -44,6 +44,12 @@ it("preflights every reference and counts validated real slides while preserving
   const invalid:unknown[]=[]
   expect(()=>importedDeck({...source,parts},value=>invalid.push(value))).toThrow("invalid-import-slide")
   expect(invalid).toEqual([{completed:0,total:2},{completed:1,total:2}])
+  const nativeInvalid:unknown[]=[]
+  expect(()=>importedNativeDeck({...source,parts},value=>nativeInvalid.push(value))).toThrow("invalid-import-slide")
+  expect(nativeInvalid).toEqual([{completed:0,total:2},{completed:1,total:2}])
+  const nativeValid:unknown[]=[]
+  expect(importedNativeDeck(source,value=>nativeValid.push(value))).toEqual(importedNativeDeck(source))
+  expect(nativeValid).toEqual(events)
   vi.spyOn(deck,"parseDeck").mockImplementationOnce(()=>{throw new Error("injected-final-deck-validation")})
   const final:unknown[]=[]
   expect(()=>importedDeck(source,value=>final.push(value))).toThrow("injected-final-deck-validation")

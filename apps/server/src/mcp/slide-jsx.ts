@@ -1,5 +1,7 @@
+import type {Paragraph, TextFrame} from "../../../../packages/deck/src/text/body.ts"
+import type {NativeElement} from "../../../../packages/deck/src/text/native-v3.ts"
 import type {Element} from "../../../../packages/deck/src/index.ts"
-export function jsxNode(element:Element):string{
+export function jsxNode(element:Element|NativeElement|Paragraph|TextFrame):string{
   const {kind,id,...props}=element
   const tag=kind[0]!.toUpperCase()+kind.slice(1)
   const fields=kind==="group" ? Object.fromEntries(Object.entries(props).filter(([key])=>key!=="children")) : props

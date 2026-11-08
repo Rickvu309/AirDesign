@@ -1,3 +1,5 @@
+import {id} from "../../deck/src/index.ts"
+import type {NativeText} from "../../deck/src/text/native-v3.ts"
 import type {Paragraph} from "../../deck/src/text/body.ts"
 import {isNativeSlide, type NativeElement} from "../../deck/src/text/native-v3.ts"
 import {textElements} from "../../deck/src/text/content.ts"
@@ -77,7 +79,10 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
   if(!slideIds.length){
     const result=await call("get_deck",{deckId:context.deckId}),data=read(result)
     const suffix=createHash("sha256").update(context.run).digest("hex").slice(0,12)
-    const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`draft_${suffix}`,changes:[{kind:"insert",parent:context.deckId,index:0,value:{id:`slide_${suffix}`,version:0,size:{width:960,height:540},elements:[{id:`title_${suffix}`,kind:"text",box:{x:64,y:64,width:832,height:160},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,runs:[{text:"New presentation",bold:true,font:"Geist",size:40,color:"#111827"}]}],notes:"",theme:null,source:{kind:"created"}}}]})
+    const style={bold:true,font:brandFont??"Geist",size:40,color:"#111827"}
+    const base={id:id(`title_${suffix}`),kind:"text",box:{x:64,y:64,width:832,height:160},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null} satisfies Omit<NativeText,"body">
+    const element: NativeText | Element = context.textProtocol === "paragraph-body-v3" ? {...base,body:{frame:{id:id(`frame_${suffix}`),kind:"text-frame",anchor:"top",insets:{top:0,right:0,bottom:0,left:0},autofit:{kind:"none"}},paragraphs:[{id:id(`paragraph_${suffix}`),kind:"paragraph",runs:[{kind:"text",text:"New presentation",style}],endStyle:style,alignment:"left",level:0,indentation:{left:0,right:0,firstLine:0},marker:{kind:"none"},spacing:{before:0,after:0,line:{kind:"multiple",value:1.2}}}]}} : {...base,runs:[{text:"New presentation",...style}]}
+    const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`draft_${suffix}`,changes:[{kind:"insert",parent:context.deckId,index:0,value:{id:`slide_${suffix}`,version:0,size:{width:960,height:540},elements:[element],notes:"",theme:null,source:{kind:"created"}}}]})
     if(write.isError){
       for(const item of write.content)if(item.type==="text"){
         const refusal=z.object({error:z.object({details:usageLimitSchema})}).safeParse(JSON.parse(item.text))

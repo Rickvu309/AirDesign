@@ -1,5 +1,5 @@
 import {readTextBody} from "./text/body.ts"
-import {parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../deck/src/text/native-v3.ts"
+import {isNativeSlide, parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../deck/src/text/native-v3.ts"
 import { SaxesParser } from "saxes"
 import { id,isSlide,parseDeck,type Deck,type Element,type Source } from "../../deck/src/index.ts"
 import { hash,type Presentation } from "./index.ts"
@@ -37,7 +37,7 @@ function notesBody(bytes:Buffer):string {
 }
 type TextElement = Extract<Element, {kind: "text"}>
 type TextFactory<T extends TextElement | NativeText> = (base: Omit<TextElement, "runs">, parsed: ReturnType<typeof parseXml>, shape: XmlNode, spans: XmlNode[]) => T | undefined
-function importedSlides<T extends TextElement | NativeText>(presentation:Presentation, textElement: TextFactory<T>, progress?:(value:{completed:number;total:number})=>void) {
+function importedSlides<T extends TextElement | NativeText>(presentation:Presentation, textElement: TextFactory<T>, validSlide: (slide: unknown) => boolean, progress?:(value:{completed:number;total:number})=>void) {
   const main=presentation.parts.get("ppt/presentation.xml");if(!main)throw new Error("presentation-required")
   const document=parseXml(main),size=document.nodes.find(node=>node.local==="sldSz")
   const width=Number(size?.attributes.cx ?? 12192000)/9525,height=Number(size?.attributes.cy ?? 6858000)/9525
@@ -89,6 +89,7 @@ function importedSlides<T extends TextElement | NativeText>(presentation:Present
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null
     const notes=notesBytes ? notesBody(notesBytes) : ""
     const slide={id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
+    if (!validSlide(slide)) throw new Error("invalid-import-slide")
     progress?.({completed:index+1,total:ordered.length})
     return slide
   })
@@ -106,8 +107,7 @@ export function importedDeck(presentation: Presentation, progress?: (value: {com
       })
     if (!runs[0]) return undefined
     return {...base, runs: [runs[0], ...runs.slice(1)]}
-  }, progress)
-  if (!slides.every(isSlide)) throw new Error("invalid-import-slide")
+  }, isSlide, progress)
   return parseDeck({id: id("imported"), version: 0, slides, themes: []})
 }
 export function importedNativeDeck(presentation: Presentation, progress?: (value: {completed: number; total: number}) => void): NativeDeck {
@@ -116,6 +116,6 @@ export function importedNativeDeck(presentation: Presentation, progress?: (value
     if (!body) return undefined
     const bodyIndex = parsed.nodes.filter(node => node.local === "txBody").indexOf(body)
     return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: readTextBody(parsed, body, base.id)}
-  }, progress)
+  }, isNativeSlide, progress)
   return parseNativeArchiveV3({version: 3, deck: {id: id("imported"), version: 0, slides, themes: []}}).deck
 }

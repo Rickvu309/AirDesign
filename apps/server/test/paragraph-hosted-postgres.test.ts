@@ -1,0 +1,217 @@
+import {expect,it} from "vitest"
+import pg from "pg"
+import {Client} from "@modelcontextprotocol/sdk/client/index.js"
+import {InMemoryTransport} from "@modelcontextprotocol/sdk/inMemory.js"
+import {claudeAdapter,type SdkQuery} from "../../../packages/agent/src/sdk-adapter.ts"
+import {isNativeSlide} from "../../../packages/deck/src/text/native-v3.ts"
+import {mcpFixture,toolValue} from "./mcp/fixture.ts"
+import {deferred,eventStream} from "./agent/stream.ts"
+import {fontDeck} from "./agent/font-fixture.ts"
+import {localAdapter} from "../../../packages/agent/src/local-adapter.ts"
+import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
+import {id} from "../../../packages/deck/src/index.ts"
+import {nativeNodes} from "../../../packages/change-log/src/text/native-model.ts"
+import {createParagraphHistoryStore} from "../src/db/paragraph-history-store.ts"
+import {prepareParagraphCutover,pauseParagraphEditing} from "../src/db/paragraph-protocol.ts"
+import {cutoverParagraphHistory} from "../src/db/paragraph-cutover.ts"
+
+async function hostedFixture(adapter?:AgentAdapter){
+  const f=await mcpFixture({agentAdapter:adapter}),sql=new pg.Client({connectionString:f.url}),native=createParagraphHistoryStore(f.url,f.now)
+  try{
+  await sql.connect()
+  const owner=await f.signIn("paragraph-hosted@example.com"),auth=await f.authorize(owner.cookie)
+  const entry=await f.history.catalog.create(owner,"seed","Native hosted","",fontDeck())
+  const legacy=(await f.history.read(owner,entry.id)).deck,slide=legacy.slides[0]
+  if(!slide)throw new Error("legacy-slide-required")
+  const archivedRequest={deckId:entry.id,base:0,requestId:"archived-before-cutover",changes:[{kind:"set",target:slide.id,value:{...slide,notes:"Retained hosted input"}}]}
+  const archivedResult=toolValue(await auth.client.callTool({name:"apply_changes",arguments:archivedRequest}))
+  expect(archivedResult).toMatchObject({kind:"applied"})
+  const archivedEvents=(await sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 ORDER BY seq",[entry.id])).rows
+  const archivedReceipts=(await sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 ORDER BY id",[entry.id])).rows
+  expect((await f.json("/api/templates/from-deck",{deck:entry.id,id:"hosted-brand",name:"Hosted brand"},owner.cookie)).status).toBe(201)
+  await prepareParagraphCutover(sql)
+  await pauseParagraphEditing(sql,true)
+  await cutoverParagraphHistory(sql,{pause:{kind:"paused",drafts:"retained-or-visibly-refused",oldReaders:"retired"},lockBudgetMs:1000,conversionBudgetMs:30000})
+  await pauseParagraphEditing(sql,false)
+  async function http(route:string,body?:unknown,protocol="paragraph-body-v3",cookie=owner.cookie){return fetch(f.apiOrigin+route,{method:body===undefined ? "GET" : "POST",headers:{origin:f.origin,cookie,"content-type":"application/json","x-text-protocol":protocol},body:body===undefined ? undefined : JSON.stringify(body)})}
+  async function rawTool(name:string,args:Record<string,unknown>={}){
+    const response=await fetch(f.apiOrigin+"/mcp",{method:"POST",headers:{authorization:`Bearer ${auth.tokens.access_token}`,"content-type":"application/json",accept:"application/json, text/event-stream","mcp-protocol-version":"2025-11-25","x-text-protocol":"paragraph-body-v3"},body:JSON.stringify({jsonrpc:"2.0",id:name,method:"tools/call",params:{name,arguments:args}})})
+    const body=await response.json()
+    return {response,body}
+  }
+  async function tool(name:string,args:Record<string,unknown>={}){const result=await rawTool(name,args);return result.response.ok ? toolValue(result.body.result) : result.body}
+  return {...f,owner,entry,sql,native,http,tool,rawTool,archivedRequest,archivedResult,archivedEvents,archivedReceipts,async close(){await native.close();await sql.end();await f.close()}}
+  }catch(error){await native.close();await sql.end();await f.close();throw error}
+}
+
+it("executes hosted native reads, independent formatting and protected undo through durable PostgreSQL history",async()=>{
+  const f=await hostedFixture()
+  try{
+    const deckId=f.entry.id,initial=await f.native.read(f.owner,deckId),slide=initial.deck.slides[0],text=slide?.elements[0]
+    if(text?.kind!=="text"||!slide)throw new Error("native-text-required")
+    expect(await f.tool("apply_changes",f.archivedRequest)).toEqual(f.archivedResult)
+    expect(await f.tool("apply_changes",{...f.archivedRequest,changes:[{kind:"set",target:slide.id,value:{...slide,notes:"Changed retry"}}]})).toMatchObject({code:"request-id-payload-mismatch"})
+    expect(await f.tool("get_context")).toMatchObject({textProtocol:"paragraph-body-v3"})
+    const brand=await f.tool("get_brand",{brandId:"hosted-brand"})
+    const branded=await f.tool("update_brand",{brandId:"hosted-brand",base:brand.version,requestId:"native-brand",tokens:{accent:"#abcdef"}})
+    expect(branded).toMatchObject({version:brand.version+1,accent:"#abcdef"})
+    expect(await f.tool("update_brand",{brandId:"hosted-brand",base:brand.version,requestId:"native-brand",tokens:{accent:"#abcdef"}})).toEqual(branded)
+    const first=text.body.paragraphs[0],second={...first,id:id("hosted_second"),runs:[...first.runs]}
+    const insert=await f.tool("apply_changes",{deckId,base:initial.seq,requestId:"second",changes:[{kind:"insert",parent:text.id,index:2,value:second}]})
+    expect(insert,JSON.stringify(insert)).toMatchObject({kind:"applied"})
+    expect((await f.tool("get_slide",{deckId,slideId:slide.id})).items).toEqual((await f.native.read(f.owner,deckId)).deck.slides.filter(item=>item.id===slide.id))
+    expect((await f.tool("get_slide",{deckId,slideId:slide.id,rootId:first.id})).items).toEqual([first])
+    expect(await f.tool("get_slide",{deckId,slideId:slide.id,rootId:text.id,format:"jsx"})).toMatchObject({items:[{jsx:expect.stringContaining('"body"')}]})
+    expect((await f.tool("find_elements",{deckId,query:"clear direction",kind:"text"})).items).toContainEqual(expect.objectContaining({id:text.id,text:"A clear direction with evidence\nA clear direction with evidence"}))
+    expect(await f.tool("find_elements",{deckId,kind:"paragraph"})).toMatchObject({items:expect.arrayContaining([expect.objectContaining({id:first.id,parent:text.id,kind:"paragraph"})])})
+    const base=insert.savedVersion,change={deckId,base,requestId:"format-first",changes:[{kind:"set",target:first.id,value:{...first,alignment:"center",marker:{kind:"bullet",character:"•"},spacing:{...first.spacing,after:12},endStyle:{...first.endStyle,italic:true}}}]}
+    const edited=await f.tool("apply_changes",change)
+    expect(edited).toMatchObject({kind:"applied"})
+    expect(await f.tool("apply_changes",change)).toEqual(edited)
+    expect(await f.tool("apply_changes",{...change,changes:[]})).toMatchObject({code:expect.any(String)})
+    expect(await f.tool("apply_changes",{...change,changes:[{kind:"set",target:first.id,value:first}]})).toMatchObject({code:"request-id-payload-mismatch"})
+    expect(await f.tool("apply_changes",{deckId,base,requestId:"independent",changes:[{kind:"set",target:second.id,value:{...second,alignment:"right"}}]})).toMatchObject({kind:"applied"})
+    expect(await f.tool("apply_changes",{deckId,base,requestId:"stale-first",changes:[{kind:"set",target:first.id,value:first}]})).toMatchObject({kind:"refused",code:expect.stringContaining("stale")})
+    let current=await f.native.read(f.owner,deckId)
+    const person=await f.http(`/api/decks/${deckId}/commands`,{version:3,command:{id:"hosted_later_person",kind:"patch",target:first.id,fields:{alignment:"justify"},base:current.seq,run:null}})
+    expect(await person.json()).toMatchObject({kind:"applied"})
+    current=await f.native.read(f.owner,deckId)
+    expect(await f.tool("undo_change",{deckId,base:current.seq,requestId:"undo-first",changeId:edited.changeId})).toMatchObject({kind:"applied"})
+    current=await f.native.read(f.owner,deckId)
+    expect(nativeNodes(current.deck).find(node=>node.id===first.id)?.fields).toMatchObject({alignment:"justify",marker:first.marker,endStyle:first.endStyle})
+    expect(nativeNodes(current.deck).find(node=>node.id===second.id)?.fields.alignment).toBe("right")
+    const frame={...text.body.frame,anchor:"bottom",insets:{top:4,right:5,bottom:6,left:7},autofit:{kind:"shrink",fontScale:0.9,lineReduction:0.1}}
+    expect(await f.tool("apply_changes",{deckId,base:current.seq,requestId:"frame",changes:[{kind:"set",target:frame.id,value:frame}]})).toMatchObject({kind:"applied"})
+    current=await f.native.read(f.owner,deckId)
+    const protectedDeck=current.deck
+    expect(await f.tool("apply_changes",{deckId,base:current.seq,requestId:"legacy-body-erasure",changes:[{kind:"set",target:text.id,value:{id:text.id,kind:"text",box:text.box,runs:first.runs}}]})).toMatchObject({code:"invalid-native-change",retryable:false})
+    expect((await f.native.read(f.owner,deckId)).deck).toEqual(protectedDeck)
+    expect(await f.tool("check_deck",{deckId,savedVersion:current.seq})).toMatchObject({valid:true})
+    const capture=await f.rawTool("capture_slide",{deckId,slideId:slide.id,savedVersion:current.seq,width:320})
+    expect(capture.body.result.content[0]).toMatchObject({type:"image",mimeType:"image/png"})
+    expect(Buffer.from(capture.body.result.content[0].data,"base64").subarray(1,4).toString()).toBe("PNG")
+    expect(Buffer.byteLength(JSON.stringify(capture.body.result))).toBeLessThan(500000)
+    const job=await f.tool("export_deck",{deckId,savedVersion:current.seq,format:"pptx",requestId:"freeze"})
+    expect(job).toMatchObject({kind:"queued"})
+    const claim=await f.native.exports.claim()
+    expect(claim).toMatchObject({id:job.operationId,snapshotVersion:3,snapshot:{seq:current.seq,deck:current.deck}})
+    const stranger=await f.signIn("paragraph-hosted-stranger@example.com")
+    expect((await f.http(`/api/decks/${deckId}`,undefined,"paragraph-body-v3",stranger.cookie)).status).toBe(404)
+    const old=await f.http(`/api/decks/${deckId}`,undefined,"legacy-text-v2")
+    expect(await old.json()).toMatchObject({code:"editing-protocol-mismatch"})
+    const pending={deckId,base:current.seq,requestId:"retained-draft",changes:[{kind:"set",target:first.id,value:first}]}
+    await pauseParagraphEditing(f.sql,true)
+    expect(await f.tool("apply_changes",pending)).toEqual({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"})
+    const pausedRequest={action:"send",text:"Retain this agent request during the update"}
+    expect(await (await f.http(`/api/aira?deck=${deckId}`,pausedRequest)).json()).toEqual({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"})
+    expect(pausedRequest.text).toBe("Retain this agent request during the update")
+    expect(pending.requestId).toBe("retained-draft")
+    await pauseParagraphEditing(f.sql,false)
+    expect(await f.tool("apply_changes",pending)).toMatchObject({kind:"applied"})
+    const reopen=createParagraphHistoryStore(f.url,f.now)
+    try{expect(await reopen.read(f.owner,deckId)).toEqual(await f.native.read(f.owner,deckId))}finally{await reopen.close()}
+    expect((await f.sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 AND history_version=2 ORDER BY seq",[deckId])).rows).toEqual(f.archivedEvents)
+    expect((await f.sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 AND history_version=2 ORDER BY id",[deckId])).rows).toEqual(f.archivedReceipts)
+    expect((await f.sql.query("SELECT history_version FROM editing_event WHERE deck=$1 ORDER BY seq",[deckId])).rows.map(row=>row.history_version)).toEqual([2,...Array(current.seq).fill(3)])
+  }finally{await f.close()}
+})
+
+it("uses native hosted tools for deterministic agent generation, frozen resume and later-person protection",async()=>{
+  const accepted=deferred(),release=deferred();let attempts=0
+  const adapter:AgentAdapter=async function*(context,call,signal){
+    expect(context.textProtocol).toBe("paragraph-body-v3")
+    const attempt=++attempts
+    for await(const event of localAdapter(context,call,signal)){
+      yield event
+      if(attempt===1&&event.kind==="tool"&&event.name==="apply_changes"){
+        signal.addEventListener("abort",()=>release.resolve(),{once:true});accepted.resolve();await release.promise
+      }
+    }
+  }
+  const f=await hostedFixture(adapter)
+  try{
+    const deckId=f.entry.id,stream=await eventStream(f.apiOrigin+`/api/aira/events?deck=${deckId}`,f.owner.cookie,{"x-text-protocol":"paragraph-body-v3"})
+    try{
+      const start=await (await f.http(`/api/aira?deck=${deckId}`,{action:"send",text:"Apply the saved brand to all slides"})).json()
+      await accepted.promise
+      expect((await f.http(`/api/aira?deck=${deckId}`,{action:"stop"})).status).toBe(200)
+      const frozen=await f.native.agents.latest(f.owner.personId,deckId)
+      expect(frozen).toMatchObject({id:start.id,kind:"stopped",request:"Apply the saved brand to all slides",completed:[expect.any(String)]})
+      const before=await f.native.read(f.owner,deckId),first=before.deck.slides[0]?.elements[0]
+      if(first?.kind!=="text")throw new Error("native-text-required")
+      expect(first.body.paragraphs[0].runs.every(run=>run.style.font==="Geist")).toBe(true)
+      const paragraph=first.body.paragraphs[0]
+      expect(await (await f.http(`/api/decks/${deckId}/commands`,{version:3,command:{id:"agent_person",kind:"patch",target:paragraph.id,fields:{alignment:"right"},base:before.seq,run:null}})).json()).toMatchObject({kind:"applied"})
+      expect((await f.http(`/api/aira?deck=${deckId}`,{action:"resume"})).status).toBe(202)
+      let final
+      do{final=await stream.next()}while(final.run?.id!==start.id||!["complete","failed"].includes(final.run.kind))
+      expect(final.run).toMatchObject({id:start.id,kind:"complete",completed:before.deck.slides.map(slide=>slide.id),request:frozen?.request})
+      expect((await f.http(`/api/aira?deck=${deckId}`,{action:"undo"})).status).toBe(200)
+      const undone=await f.native.read(f.owner,deckId)
+      expect(nativeNodes(undone.deck).find(node=>node.id===paragraph.id)?.fields).toMatchObject({alignment:"right"})
+      const restored=undone.deck.slides[0]?.elements[0]
+      if(restored?.kind!=="text")throw new Error("native-text-required")
+      expect(restored.body.paragraphs[0].runs.map(run=>run.style.font)).toEqual(["Arial","Georgia"])
+      const empty=await f.tool("create_deck",{title:"Agent native generation",requestId:"empty-agent"})
+      const generatedStream=await eventStream(f.apiOrigin+`/api/aira/events?deck=${empty.id}`,f.owner.cookie,{"x-text-protocol":"paragraph-body-v3"})
+      try{
+        const generation=await (await f.http(`/api/aira?deck=${empty.id}`,{action:"send",text:"Create a title slide"})).json()
+        let result
+        do{result=await generatedStream.next()}while(result.run?.id!==generation.id||!["complete","failed"].includes(result.run.kind))
+        expect(result.run).toMatchObject({kind:"complete"})
+        const generated=await f.native.read(f.owner,empty.id),title=generated.deck.slides[0]?.elements[0]
+        expect(title).toMatchObject({kind:"text",body:{paragraphs:[{runs:[{kind:"text",text:"New presentation"}]}]}})
+        expect(title).not.toHaveProperty("runs")
+        const reopened=createParagraphHistoryStore(f.url,f.now)
+        try{expect(await reopened.read(f.owner,empty.id)).toEqual(generated);expect(await reopened.agents.latest(f.owner.personId,deckId)).toMatchObject({id:start.id,kind:"undone",completed:frozen?.completed?.length ? expect.any(Array) : []})}finally{await reopened.close()}
+      }finally{await generatedStream.close()}
+    }finally{await stream.close()}
+  }finally{await f.close()}
+})
+
+
+it("dispatches a deterministic fake SDK model through the real native hosted tools without translating its body",async()=>{
+  let formatted:string|undefined
+  const query:SdkQuery=async function*({prompt,options}){
+    yield* []
+    if(typeof prompt==="string")throw new Error("streaming-context-required")
+    const inputs=prompt[Symbol.asyncIterator](),initial=(await inputs.next()).value
+    if(typeof initial?.message.content!=="string")throw new Error("context-required")
+    const context=JSON.parse(initial.message.content)
+    expect(context).toMatchObject({textProtocol:"paragraph-body-v3",request:"Center the first paragraph",completed:[]})
+    expect(options?.systemPrompt).toContain("body-only text")
+    expect(options?.tools).toEqual([])
+    expect(options?.maxTurns).toBe(20)
+    const server=options?.mcpServers?.airdesign
+    if(!server||server.type!=="sdk")throw new Error("sdk-tool-server-required")
+    const [clientTransport,serverTransport]=InMemoryTransport.createLinkedPair(),client=new Client({name:"deterministic-native-model",version:"1"})
+    await server.instance.connect(serverTransport);await client.connect(clientTransport)
+    try{
+      const catalog=await client.listTools()
+      expect(catalog.tools).toHaveLength(18)
+      expect(Math.ceil(Buffer.byteLength(JSON.stringify(catalog))/4)).toBeLessThanOrEqual(8000)
+      const call=async(name:string,input:Record<string,unknown>)=>toolValue(await client.callTool({name,arguments:{input}}))
+      const deck=await call("get_deck",{deckId:context.deckId}),data=await call("get_slide",{deckId:context.deckId,slideId:deck.items[0].id}),slide=data.items[0]
+      if(!isNativeSlide(slide)||slide.elements[0]?.kind!=="text")throw new Error("native-slide-required")
+      const text=slide.elements[0],paragraph=text.body.paragraphs[0]
+      formatted=paragraph.id
+      const input={deckId:context.deckId,base:data.savedVersion,requestId:`model_${context.run}`,changes:[{kind:"set",target:paragraph.id,value:{...paragraph,alignment:"center"}}]}
+      expect(await call("apply_changes",input)).toMatchObject({kind:"applied"})
+      const result=await call("get_slide",{deckId:context.deckId,slideId:slide.id,rootId:text.id})
+      expect(result.items[0]).toEqual({...text,body:{...text.body,paragraphs:[{...paragraph,alignment:"center"}]}})
+    }finally{await client.close();await server.instance.close();await inputs.return?.()}
+  }
+  const f=await hostedFixture(claudeAdapter({key:"fake-no-network",model:"deterministic-test",query}))
+  try{
+    const stream=await eventStream(f.apiOrigin+`/api/aira/events?deck=${f.entry.id}`,f.owner.cookie,{"x-text-protocol":"paragraph-body-v3"})
+    try{
+      const start=await (await f.http(`/api/aira?deck=${f.entry.id}`,{action:"send",text:"Center the first paragraph"})).json()
+      let result
+      do{result=await stream.next()}while(result.run?.id!==start.id||!["complete","failed"].includes(result.run.kind))
+      expect(result.run).toMatchObject({kind:"complete"})
+      expect(formatted).toBeDefined()
+      const reopened=createParagraphHistoryStore(f.url,f.now)
+      try{expect(nativeNodes((await reopened.read(f.owner,f.entry.id)).deck).find(node=>node.id===formatted)?.fields.alignment).toBe("center")}finally{await reopened.close()}
+    }finally{await stream.close()}
+  }finally{await f.close()}
+})

@@ -86,7 +86,7 @@ it("shares catalog lifecycle over real native PostgreSQL, HTTP and hosted tools 
     expect(await native.catalog.list(owner,false,"Geist")).toEqual([])
     expect(await tool("create_deck",{requestId:"tool-create",title:"Hosted native"})).toMatchObject({title:"Hosted native"})
     expect((await tool("list_decks")).items.some((item:{id:string})=>item.id===entry.id)).toBe(true)
-    expect(await tool("apply_changes",{deckId:entry.id,base:2,requestId:"old-write",changes:[{kind:"set",target:text.id,value:{...nested,runs:[{text:"Must retain this draft",size:24,font:"Geist",color:"#000000",bold:false}]}}]})).toMatchObject({kind:"refused",code:"editing-feature-pending",next:"retain-and-reconcile"})
+    expect(await tool("apply_changes",{deckId:entry.id,base:2,requestId:"old-write",changes:[{kind:"set",target:text.id,value:{...nested,runs:[{text:"Must retain this draft",size:24,font:"Geist",color:"#000000",bold:false}]}}]})).toMatchObject({code:"invalid-native-change",retryable:false})
 
     expect((await native.read(owner,entry.id)).seq).toBe(2)
     const imported=importedNativeDeck(await importPptx(await readFile("fixtures/pptx/native.pptx")))

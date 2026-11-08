@@ -83,7 +83,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
   const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin,paragraphs)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
-  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck),paragraphs),publicOrigin,extras.agentAdapter ?? configuredAgent(),deck=>sync.refresh(deck))
+  const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck),paragraphs),publicOrigin,extras.agentAdapter ?? configuredAgent(),deck=>sync.refresh(deck),paragraphs)
   await access.resumeDeletions()
   const handleBilling=billingHandler(access,history,extras.paymentProvider,publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
@@ -104,7 +104,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
       void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
       return
     }
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, boundary(aira.handle), handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, boundary(aira.handle,()=>true), handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
