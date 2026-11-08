@@ -3194,6 +3194,11 @@
         "agent.resume_line",
         "agent.resume"
       ],
+      "copyOwners": {
+        "usage.reset_done": "toast",
+        "agent.resume_line": "aira-panel",
+        "agent.resume": "aira-panel"
+      },
       "copyValues": {
         "slide": "3"
       },

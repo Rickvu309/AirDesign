@@ -105,10 +105,23 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
 }
 async function visible(page:Page|Locator,text:string){
   const candidates=[page.getByText(text,{exact:true}),page.getByRole("link",{name:text,exact:true}),page.getByRole("button",{name:text,exact:true})]
+  const rejected:{check:string;ink?:number;minimumInk?:number;maximumInk?:number}[]=[]
   for(const locator of candidates)for(const element of await locator.all()){
-    try{await assertRendered(element);return}catch{}
+    try{await assertRendered(element);return}catch(error){
+      if(rejected.length<3){
+        const message=String(error),check=message.match(/check=([a-zA-Z0-9:_-]+)/)?.[1]
+        const rejection:{check:string;ink?:number;minimumInk?:number;maximumInk?:number}={check:check??"candidate-measurement-error"}
+        if(check==="required-rendered-element:text-ink-ownership"){
+          for(const field of ["ink","minimumInk","maximumInk"]){
+            const value=message.match(new RegExp('"'+field+'":([0-9]+(?:\\.[0-9]+)?)'))?.[1]
+            if(value!==undefined)Object.assign(rejection,{[field]:Number(value)})
+          }
+        }
+        rejected.push(rejection)
+      }
+    }
   }
-  throw failure(`text=${text}`,"required-visible-copy","painted exact copy","no painted candidate")
+  throw failure(`text=${text}`,"required-visible-copy","painted exact copy",{candidates:rejected.length,checks:rejected})
 }
 export async function assertDialogActions(page:Page,entry:Scenario){
   const actions=entry.assertions.structure.dialogActions
@@ -290,14 +303,22 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
     await assertControlPaint(locator)
   }
 }
-async function assertDOM(page:Page,entry:Scenario){
+export async function assertScenarioOwnedCopy(page:Page,entry:Scenario){
   let copyOwner:Page|Locator=page
   if(entry.component?.kind==="toast"){
     const toast=page.locator(entry.component.selector)
     if(await toast.count()!==1||!await toast.isVisible())throw failure(entry.component.selector,"required-toast-owner","one visible toast",await toast.count())
     copyOwner=toast
   }
-  await assertScenarioCopy(copyOwner,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
+  for(const key of entry.assertions.copyKeys){
+    const owner=entry.assertions.copyOwners?.[key]
+    const ownedRoot=owner==="aira-panel" ? page.getByRole("complementary",{name:"Aira",exact:true}) : owner==="toast" ? page.locator(entry.component?.selector??"[data-sonner-toast]") : undefined
+    if(ownedRoot&&(await ownedRoot.count()!==1||!await ownedRoot.isVisible()))throw failure(owner??"copy","required-copy-owner","one visible owner",await ownedRoot.count())
+    await assertScenarioCopy(ownedRoot??copyOwner,[key],entry.code,entry.assertions.copyValues)
+  }
+}
+async function assertDOM(page:Page,entry:Scenario){
+  await assertScenarioOwnedCopy(page,entry)
   await assertScenarioControls(page,entry)
   await assertStructure(page,entry)
 }

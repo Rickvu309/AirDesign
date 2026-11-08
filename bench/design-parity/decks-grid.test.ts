@@ -205,9 +205,20 @@ it("keeps real previews and visible 44px card actions on touch",async()=>{
   try{
     const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),errors=await workspace(page)
     expect(await page.locator(".deck-card-actions").first().evaluate(element=>getComputedStyle(element).opacity)).toBe("1")
-    const target=await page.locator(".deck-star").first().boundingBox()
-    expect(target?.width).toBeGreaterThanOrEqual(44)
-    expect(target?.height).toBeGreaterThanOrEqual(44)
+    const action=page.locator(".deck-star").first()
+    const geometry=()=>action.evaluate(element=>{
+      const rect=element.getBoundingClientRect()
+      return {width:rect.width,height:rect.height,owned:[[rect.left+.5,rect.top+rect.height/2],[rect.right-.5,rect.top+rect.height/2]].every(([x,y])=>x!==undefined&&y!==undefined&&element.contains(document.elementFromPoint(x,y)))}
+    })
+    const assertTarget=async()=>{const target=await geometry();expect(target.width).toBeGreaterThanOrEqual(44);expect(target.height).toBeGreaterThanOrEqual(44);expect(target.owned).toBe(true)}
+    await assertTarget()
+    const original=await action.getAttribute("style")
+    try{
+      await action.evaluate(element=>{element.style.setProperty("min-inline-size","43px","important");element.style.setProperty("inline-size","43px","important")})
+      expect((await geometry()).width).toBe(43)
+      await expect(assertTarget()).rejects.toThrow()
+    }finally{await action.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},original)}
+    await assertTarget()
     expect(await page.locator(".deck-preview-canvas").first().textContent()).toContain("A clear direction")
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
     expect(errors).toEqual([])
