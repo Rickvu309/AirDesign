@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION editing_protocol_marker_fence() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF current_setting('airdesign.history_protocol',true) IS DISTINCT FROM 'paragraph-body-v3' THEN RAISE EXCEPTION 'editing-protocol-mismatch' USING ERRCODE='55000'; END IF; RETURN NULL; END $$

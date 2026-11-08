@@ -16,6 +16,12 @@ export type ImmutableLegacyArchiveV2 = {version: 2; events: ArchivedEventV2[]; r
 export type LegacyHistoryArchiveV2 = {version: 2; history: History; immutable: ImmutableLegacyArchiveV2}
 export type ParagraphHistoryArchiveV3 = {version: 3; history: History<NativeDeck>; immutable: ImmutableLegacyArchiveV2; lifetimes: TextLifetimeAllocation[]; heads: HistoryHeads; prefixes: {seq: number; digest: string}[]}
 function equal(actual: unknown, expected: unknown, code: string) { if (!isDeepStrictEqual(actual, expected)) throw new Error(code) }
+function comparableLegacyHistory(history: History) {
+  return {...history, runs: [...history.runs].sort((a,b) => a.id.localeCompare(b.id)), usedIds: undefined, events: history.events.map(event => ({...event, patches: event.patches.map(patch => {
+    if (new Set(patch.keys).size !== patch.keys.length) throw new Error("duplicate-history-property")
+    return {...patch, keys: [...patch.keys].sort()}
+  })}))}
+}
 function originKey(value: TextLifetimeInput): string { return JSON.stringify([value.deck,value.element,value.lifetime]) }
 function textElements(deck: Deck): Extract<Element, {kind: "text"}>[] {
   function visit(elements: Element[]): Extract<Element, {kind: "text"}>[] { return elements.flatMap(element => element.kind === "text" ? [element] : element.kind === "group" ? visit(element.children) : []) }
@@ -109,7 +115,7 @@ export function transduceLegacyHistory(archive: LegacyHistoryArchiveV2 | Paragra
       if (patch.after?.fields.kind === "text" && patch.before?.fields.kind !== "text") inputs.push({deck: legacy.deck.id, element: patch.id, lifetime: {kind: "contribution", command: event?.id ?? ""}})
     }
   }
-  equal({...legacy, runs: [...legacy.runs].sort((a,b)=>a.id.localeCompare(b.id)), usedIds: undefined}, {...archive.history, runs: [...archive.history.runs].sort((a,b)=>a.id.localeCompare(b.id)), usedIds: undefined}, "legacy-persisted-history-mismatch")
+  equal(comparableLegacyHistory(legacy), comparableLegacyHistory(archive.history), "legacy-persisted-history-mismatch")
   if (new Set(archive.history.usedIds).size !== archive.history.usedIds.length || legacy.usedIds.some(id => !archive.history.usedIds.includes(id))) throw new Error("invalid-legacy-used-ids")
   const lifetimes = allocateTextLifetimeIds(inputs, [...reserved]), byOrigin = new Map(lifetimes.map(value => [originKey(value),value])), byFrame = new Map(lifetimes.map(value => [value.frame,value]))
   function allocation(element: Id, command?: CommandId): TextLifetimeAllocation {

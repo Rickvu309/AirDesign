@@ -37,8 +37,16 @@ export function isTextFrame(value: unknown): value is TextFrame {
     default: return false
   }
 }
+function textBodyShape(value: unknown): value is TextBody {
+  return record(value) && exact(value, ["frame", "paragraphs"]) && isTextFrame(value.frame) && Array.isArray(value.paragraphs) && value.paragraphs.length > 0 && value.paragraphs.every(isParagraph)
+}
+export function isTextBody(value: unknown): value is TextBody {
+  if (!textBodyShape(value)) return false
+  const ids = [value.frame.id, ...value.paragraphs.map(paragraph => paragraph.id)]
+  return new Set(ids).size === ids.length
+}
 export function parseTextBody(value: unknown): TextBody {
-  if (!record(value) || !exact(value, ["frame", "paragraphs"]) || !isTextFrame(value.frame) || !Array.isArray(value.paragraphs) || value.paragraphs.length === 0 || !value.paragraphs.every(isParagraph)) throw new Error("invalid-text-body")
+  if (!textBodyShape(value)) throw new Error("invalid-text-body")
   const ids = [value.frame.id, ...value.paragraphs.map(paragraph => paragraph.id)]
   if (new Set(ids).size !== ids.length) throw new Error("duplicate-text-node-id")
   const [first, ...rest] = value.paragraphs

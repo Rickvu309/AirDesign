@@ -4,7 +4,7 @@ import {id} from "../../../deck/src/model.ts"
 import type {NativeChangeSet} from "../../../deck/src/text/operations.ts"
 import type {NativeDeck, NativeText} from "../../../deck/src/text/native-v3.ts"
 import {parseDeck} from "../../../deck/src/parse.ts"
-import {commandId, initialHistory, projectHistory, type Command, type History} from "../../src/index.ts"
+import {commandId, diffNodes, initialHistory, projectHistory, type Command, type History} from "../../src/index.ts"
 import {executeNative, nativeHistoryModel} from "../../src/text/native-model.ts"
 import {transduceLegacyHistory} from "../../src/text/history-transducer.ts"
 
@@ -104,4 +104,12 @@ describe("native topology through the ordered history executor", () => {
     expect(text(history).body.paragraphs[0]).toMatchObject({alignment:"left",runs:[{text:"person"}]})
     expect(projectHistory(history,nativeHistoryModel)).toEqual(history.deck)
   })
+})
+
+it("ignores JSONB object ordering while preserving array and property changes", () => {
+  const before = {id: id("node"), parent: null, order: 0, fields: {style: {font: "Arial", color: "black"}, runs: [{text: "one"}, {text: "two"}]}}
+  const reordered = {...before, fields: {runs: [{text: "one"}, {text: "two"}], style: {color: "black", font: "Arial"}}}
+  expect(diffNodes([before], [reordered])).toEqual([])
+  expect(diffNodes([before], [{...reordered, fields: {...reordered.fields, runs: [{text: "two"}, {text: "one"}]}}])[0]?.keys).toEqual(["runs"])
+  expect(diffNodes([before], [{...reordered, fields: {runs: reordered.fields.runs}}])[0]?.keys).toEqual(["style"])
 })

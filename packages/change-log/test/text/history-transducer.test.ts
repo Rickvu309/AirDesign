@@ -10,6 +10,19 @@ import {legacyTape} from "./history-fixture.ts"
 
 function firstText() { const text=fixtureElement(0);if(text.kind!=="text")throw new Error("fixture-text");return text }
 describe("complete versioned legacy history transduction",()=>{
+  it("treats persisted property keys as a set after JSONB reorders object fields",()=>{
+    const tape=legacyTape(fixtureDeck(2))
+    tape.patch("properties",id("s0e0"),{box:{x:1,y:2,width:300,height:90},runs:[{...firstText().runs[0],text:"changed"}]})
+    const expected=transduceLegacyHistory(tape.archive)
+    for(const event of tape.archive.history.events) for(const patch of event.patches) patch.keys.reverse()
+    expect(transduceLegacyHistory(tape.archive)).toEqual(expected)
+    const patch=tape.archive.history.events[0]?.patches[0]
+    if(!patch)throw new Error("fixture-patch")
+    patch.keys.push("fabricated")
+    expect(()=>transduceLegacyHistory(tape.archive)).toThrow("legacy-persisted-history-mismatch")
+    patch.keys=["box","box"]
+    expect(()=>transduceLegacyHistory(tape.archive)).toThrow("duplicate-history-property")
+  })
   it("preserves immutable bytes, inactive contributions, adoption, runs and later person edits",()=>{
     const tape=legacyTape(fixtureDeck(2,2)), target=id("s0e0"), original=firstText().runs[0]
     expect(tape.send({id:commandId("start"),kind:"start-run",run:"agent"}).kind).toBe("applied")

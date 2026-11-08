@@ -1,10 +1,11 @@
 import type {Id} from "../../../deck/src/model.ts"
-import {parseTextBody} from "../../../deck/src/text/body-codec.ts"
+import {isTextBody, parseTextBody} from "../../../deck/src/text/body-codec.ts"
 import type {TextBody} from "../../../deck/src/text/body.ts"
 import type {Node} from "../index.ts"
 
 export function textBodyNodes(element: Id, input: TextBody): Node[] {
-  const body = parseTextBody(input)
+  if (!isTextBody(input)) throw new Error("invalid-text-body")
+  const body = input
   const {id: frameId, ...frameFields} = body.frame
   return [{id: frameId, parent: element, order: 0, fields: frameFields}, ...body.paragraphs.map((paragraph, index) => {
     const {id, ...fields} = paragraph

@@ -1,7 +1,7 @@
 import type {Deck, Element, Slide} from "../model.ts"
 import {isId} from "../model.ts"
 import {deckShape, elementShape, slideShape} from "../parse.ts"
-import {parseTextBody} from "./body-codec.ts"
+import {isTextBody} from "./body-codec.ts"
 import type {TextBody} from "./body.ts"
 
 export type NativeText = Omit<Extract<Element, {kind: "text"}>, "runs"> & {body: TextBody}
@@ -14,7 +14,7 @@ function record(value: unknown): value is Record<string, unknown> { return value
 export function isNativeElement(value: unknown): value is NativeElement {
   return elementShape(value, text => {
     if ("runs" in text) return false
-    try { parseTextBody(text.body); return true } catch { return false }
+    return isTextBody(text.body)
   }, isNativeElement) && record(value) && (value.kind === "text" || !("runs" in value || "body" in value))
 }
 export function isNativeSlide(value: unknown): value is NativeSlide { return slideShape(value, isNativeElement) }

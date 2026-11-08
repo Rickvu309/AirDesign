@@ -1,0 +1,16 @@
+{
+  "apps/server/src/db/history-store.ts": {
+    "base": "74984dc7b6ea8a547a1978a061db8a599268e4c7",
+    "sourceSha256": "7a32fdbf8c3094055c8b6e241dfba87f2c041c6c9f8f3a122d95877007fe4f88",
+    "fixture": "apps/server/test/fixtures/paragraph-v2/history-store.ts",
+    "fixtureSha256": "ccbcb99bc2e470507637ce88c41a3aff8c7511e4d60e644a9c12d060ace7ba22",
+    "adaptation": "relative imports only; legacy store resolves frozen executor"
+  },
+  "packages/change-log/src/index.ts": {
+    "base": "74984dc7b6ea8a547a1978a061db8a599268e4c7",
+    "sourceSha256": "933f3327598249db220a0279ca6e06793c991cea87efec5c4e76be16c33d67b7",
+    "fixture": "apps/server/test/fixtures/paragraph-v2/change-log.ts",
+    "fixtureSha256": "f1ad4ae580b16a9a874fd213d91a77c6dfc2899380cbc0d4669b37d265f0df2e",
+    "adaptation": "relative imports only; legacy store resolves frozen executor"
+  }
+}

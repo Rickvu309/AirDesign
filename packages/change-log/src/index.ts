@@ -46,7 +46,14 @@ export function nodes(deck: Deck): Node[] {
   visit(deck, null, 0)
   return result
 }
-function same(a: unknown, b: unknown): boolean { return JSON.stringify(a) === JSON.stringify(b) }
+function objectFields(value: unknown): value is {[key: string]: unknown} { return typeof value === "object" && value !== null }
+function same(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (Array.isArray(a) || Array.isArray(b)) return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((value, index) => same(value, b[index]))
+  if (!objectFields(a) || !objectFields(b)) return false
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && same(a[key], b[key]))
+}
 export function diffNodes(before: Node[], after: Node[]): Patch[] {
   const previous = new Map(before.map(node=>[node.id,node])), next = new Map(after.map(node=>[node.id,node]))
   return [...new Set([...previous.keys(), ...next.keys()])].flatMap(id => {

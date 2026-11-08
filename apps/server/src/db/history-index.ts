@@ -1,10 +1,10 @@
-import type { PGlite } from "@electric-sql/pglite"
+import type {CatalogSql} from "../../../../packages/catalog/src/index.ts"
 import type { ChangeBatch, Command, Contribution, History } from "../../../../packages/change-log/src/index.ts"
 
 import {rebuildHistoryHeads} from "../../../../packages/change-log/src/text/history-heads.ts"
 import {contributionProperties} from "../../../../packages/change-log/src/history-properties.ts"
 
-type Transaction = Pick<PGlite, "query">
+type Transaction = CatalogSql
 
 export async function initializeHistoryIndex(tx: Transaction) {
   await tx.query("CREATE TABLE IF NOT EXISTS editing_contribution (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, run text, payload jsonb NOT NULL, PRIMARY KEY(deck,id))")
