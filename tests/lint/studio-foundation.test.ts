@@ -131,7 +131,7 @@ describe("Studio design foundation", () => {
     const css = readFileSync(styles, "utf8")
     expect(studioFoundationHits(styles, css)).toEqual([])
     expect(studioFoundationHits(styles, css.replace("font-size:var(--text-body-small);font-weight:500", "font-size:var(--text-body-small);font-weight:600"))).toEqual([{ line: 1, reason: "studio-new-deck-uses-medium-signature-button-weight" }])
-    expect(studioFoundationHits(styles, css.replace("padding:8px 16px;background:var(--signature-gradient);", "padding:8px 16px;background:linear-gradient(var(--primary-top),var(--primary));"))).toEqual([{ line: 1, reason: "studio-new-deck-paints-the-shared-signature-gradient" }])
+    expect(studioFoundationHits(styles, css.replace("padding:8px 16px;background:linear-gradient(var(--primary-top),var(--primary));", "padding:8px 16px;background:var(--signature-gradient);"))).toEqual([{ line: 1, reason: "studio-new-deck-paints-the-design-primary-gradient" }])
   })
   it("preserves the access header when focusing the code on a phone", () => {
     const code = "packages/ui/src/code-entry/code-entry.tsx"
