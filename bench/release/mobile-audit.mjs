@@ -1,6 +1,7 @@
+import {writeSavedPptx} from "../../packages/pptx/src/export-deck.ts"
 import {mobileAuditFailures} from "./mobile-audit-checks.ts"
 import assert from "node:assert/strict"
-import {mkdir,writeFile} from "node:fs/promises"
+import {mkdir,writeFile,readFile} from "node:fs/promises"
 import path from "node:path"
 import {preview} from "vite"
 import {chromium} from "playwright"
@@ -40,12 +41,31 @@ try{
    await page.goto(stack.origin+"/deck/mobile-audit-deck");await page.locator('[data-sync-state="saved"]').waitFor();await audit("studio-editor")
    const viewport=page.viewportSize()
    assert.ok(viewport)
+   const positions=await page.evaluateHandle(()=>({x:scrollX,y:scrollY,items:[...document.querySelectorAll("*")].map(element=>({element,top:element.scrollTop,left:element.scrollLeft}))}))
    try{
-    if(!desktop)await page.setViewportSize({width:1440,height:844})
     await page.getByRole("button",{name:"Export",exact:true}).click();await page.locator("dialog[open]").waitFor()
-    if(!desktop)await page.setViewportSize(viewport)
-    await audit("studio-export-resized")
-   }finally{await page.setViewportSize(viewport)}
+    assert.deepEqual(page.viewportSize(),viewport)
+    await audit("studio-export")
+    const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
+    await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
+    const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
+    assert.ok(lease&&lease.id===job.id)
+    const saved=lease.snapshot,expected=await writeSavedPptx(saved.deck,saved.seq,saved.source,saved.assets??{})
+    assert.equal(await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{}),true)
+    const link=page.getByRole("link",{name:"Download PPTX",exact:true});await link.waitFor()
+    const href=await link.getAttribute("href");assert.ok(href)
+    const artifact=await page.request.get(href);assert.equal(artifact.status(),200)
+    const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
+    assert.ok(filename);assert.equal(Buffer.from(expected).equals(bytes),true)
+    const pending=page.waitForEvent("download");await link.click();const download=await pending,file=await download.path()
+    assert.equal(await download.failure(),null);assert.ok(file);assert.equal(download.suggestedFilename(),filename);assert.equal(bytes.equals(await readFile(file)),true)
+    await page.getByText(filename+" downloaded",{exact:true}).waitFor()
+    results.push({name:"studio-export-download",failures:[],filename,bytes:bytes.length,boundary:"controlled local completion of actual saved snapshot; real authenticated artifact and browser download"})
+   }finally{
+    await page.setViewportSize(viewport)
+    await page.evaluate(saved=>{for(const {element,top,left} of saved.items)element.scrollTo({top,left,behavior:"instant"});window.scrollTo({left:saved.x,top:saved.y,behavior:"instant"})},positions)
+    await positions.dispose()
+   }
   }finally{await page.close();await stack.close()}
  }
 }finally{await context.close();await browser.close();if(evidence){await mkdir(evidence,{recursive:true});await writeFile(path.join(evidence,"audit.json"),JSON.stringify({target,desktop,tablet,width,results},null,2)+"\n")}}

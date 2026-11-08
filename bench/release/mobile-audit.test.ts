@@ -72,3 +72,11 @@ it("restores every scroll position when target measurement throws",async()=>{
   expect(await page.evaluate(()=>({x:scrollX,y:scrollY,containers:[...document.querySelectorAll("*")].map(element=>({top:element.scrollTop,left:element.scrollLeft}))}))).toEqual(before)
  }finally{await page.evaluate(original=>{Element.prototype.scrollIntoView=original},original);await original.dispose()}
 })
+
+it("uses browser disclosure visibility while retaining visible overflow and target failures",async()=>{
+ expect(await audit("summary{height:44px;touch-action:manipulation}.small{width:20px;height:20px}",'<details><summary>Account</summary><button class="small">Hidden action</button></details>')).toEqual([])
+ const open=await audit("summary{height:44px;touch-action:manipulation}.small{width:20px;height:20px}",'<details open><summary>Account</summary><button class="small">Visible action</button></details>')
+ expect(open.some(hit=>hit.startsWith("small target: Visible action"))).toBe(true)
+ const overflow=await audit(".wide{width:500px}",'<div class="wide">Visible overflow</div>')
+ expect(overflow.some(hit=>hit.startsWith("horizontal overflow:"))).toBe(true)
+})
