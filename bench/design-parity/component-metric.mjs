@@ -13,5 +13,12 @@ export async function faithfulReference(image){
 }
 export async function compareComponent(design,capture,designBox,captureBox){
   const left=await cropComponent(design,designBox),right=await cropComponent(capture,captureBox)
-  return {design:left,capture:right,metric:await compareDesign(left,right)}
+  const dimensions=await Promise.all([left,right].map(image=>sharp(image).metadata()))
+  const [a,b]=dimensions,width=Math.min(a.width,b.width),height=Math.min(a.height,b.height)
+  const commonArea=Math.abs(a.width-b.width)<=3&&Math.abs(a.height-b.height)<=3
+  const appearance=commonArea ? await Promise.all([left,right].map(image=>sharp(image).extract({left:0,top:0,width,height}).png().toBuffer())) : [left,right]
+  const metric=await compareDesign(...appearance)
+  const sizeLoss=1-width/Math.max(width,Math.max(a.width,b.width)-3)*height/Math.max(height,Math.max(a.height,b.height)-3)
+  const globalScore=Math.max(metric.foregroundLoss,metric.edgeLoss,sizeLoss,metric.backgroundLoss,metric.colorLoss)
+  return {design:left,capture:right,metric:{...metric,sizeLoss,globalScore,score:Math.max(globalScore,metric.localLoss),comparison:{design:{width:a.width,height:a.height},capture:{width:b.width,height:b.height},commonArea,width:commonArea ? width : Math.max(a.width,b.width),height:commonArea ? height : Math.max(a.height,b.height)}}}
 }

@@ -1,3 +1,14 @@
+import {readFileSync} from "node:fs"
+import {z} from "zod"
+import {validateSourceFloor} from "./source-floor.mjs"
+export const floorSchema=z.discriminatedUnion("status",[z.object({code:z.string(),status:z.literal("uncalibrated"),floor:z.null(),target:z.null(),reason:z.string()}),z.object({code:z.string(),status:z.literal("calibrated"),floor:z.number(),target:z.number(),repeatIdentical:z.boolean(),captureSha256:z.string(),repeatSha256:z.string()})])
+export const sourceFloors=z.object({metric:z.literal("local-oklab-v2"),fixedMargin:z.literal(0.01),results:z.array(floorSchema)}).parse(JSON.parse(readFileSync(new URL("./calibration.json",import.meta.url),"utf8"))).results
+for(const row of sourceFloors)validateSourceFloor(row)
+export function calibrationFor(code:string){
+  const row=sourceFloors.find(row=>row.code===code)
+  if(!row)throw new Error(`missing-source-floor:${code}`)
+  return row
+}
 export const surfaceTargets=Object.freeze({"site":0.02,"studio":0.53})
 
 export const scenarioTargets:Readonly<Record<string,number>>=Object.freeze({"S11.01":0.02,"S12.01":0.01,"S21.01":0.02,"S22.01":0.02,"S29.01":0.02,"S31.01":0.02,"S31.02":0.02,"S31.03":0.02,"S31.04":0.02,"S31.05":0.02,"S32.01":0.02,"S32.02":0.02,"S32.03":0.02,"S33.01":0.02,"S33.02":0.02,"S33.03":0.3,"S41.01":0.5,"S41.02":0.02,"S41.03":0.03,"S41.04":0.02,"S42.01":0.53,"S42.02":0.02,"S42.03":0.02,"S42.04":0.02,"S43.01":0.03,"S43.02":0.02,"S43.03":0.02,"S43.04":0.02,"S43.05":0.02,"S43.06":0.02,"S43.07":0.02,"S49.01":0.02,"S49.02":0.02,"S61.01":0.3,"S61.02":0.3,"S61.03":0.02,"S69.01":0.02,"S71.01":0.01,"S71.02":0.01,"S71.03":0.02,"S81.01":0.02,"S81.02":0.02,"S81.03":0.02,"S91.01":0.3,"S91.02":0.02,"S91.03":0.3,"S92.01":0.02,"S92.02":0.3,"S92.03":0.3,"S92.04":0.02,"S99.01":0.3,"S99.02":0.3})
