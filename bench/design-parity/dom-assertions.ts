@@ -1,15 +1,15 @@
 import type {Page,Locator} from "playwright"
 import sharp from "sharp"
 import {createHash} from "node:crypto"
-import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
+import {iconPaths,iconStrokeWidth,isIconName} from "../../packages/ui/src/icon/icon-paths.ts"
 import {resolveCopy,type Scenario} from "./registry.ts"
 
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
 }
-export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
+export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"consent-title":[20,20,600],"access-error-title":[15,15,500],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
 
-type IconInk={path:string,size:number,color:string}
+type IconInk={path:string,size:number,color:string,strokeWidth:ReturnType<typeof iconStrokeWidth>}
 function inkPixels(pixels:Buffer){
   const colors=new Map<number,number>()
   for(let index=0;index<pixels.length;index+=4){
@@ -21,6 +21,56 @@ function inkPixels(pixels:Buffer){
   let ink=0
   for(let index=0;index<pixels.length;index+=4)if(background.some((channel,offset)=>Math.abs(pixels[index+offset]!-channel)>=32))ink++
   return ink
+}
+async function assertPaintedText(locator:Locator,clip:{x:number,y:number,width:number,height:number},before:Buffer){
+  const snapshot=await locator.evaluateHandle(element=>{
+    const parents=new Set<HTMLElement|SVGElement>()
+    const texts:{estimate:number,rects:{left:number,top:number,right:number,bottom:number}[]}[]=[]
+    if(element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement||element instanceof HTMLSelectElement){
+      const text=element instanceof HTMLSelectElement ? element.selectedOptions[0]?.textContent??"" : element.value||element.placeholder,box=element.getBoundingClientRect()
+      if(text.trim())texts.push({estimate:[...text.replace(/\s/g,"")].length*parseFloat(getComputedStyle(element).fontSize)**2*0.18,rects:[{left:box.left,top:box.top,right:box.right,bottom:box.bottom}]})
+      parents.add(element)
+    }else{
+      const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT)
+      while(walker.nextNode()){
+        const node=walker.currentNode,parent=node.parentElement,text=node.textContent??""
+        if(!text.trim()||!parent||["SCRIPT","STYLE"].includes(parent.tagName))continue
+        const range=document.createRange()
+        range.selectNodeContents(node)
+        texts.push({estimate:[...text.replace(/\s/g,"")].length*parseFloat(getComputedStyle(parent).fontSize)**2*0.18,rects:[...range.getClientRects()].map(rect=>({left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}))})
+        parents.add(parent)
+      }
+    }
+    return {texts,styles:[...parents].map(element=>{
+      const clone=element.cloneNode(false)
+      if(!(clone instanceof HTMLElement||clone instanceof SVGElement))throw new Error("invalid-label-style-snapshot")
+      return {element,style:element.getAttribute("style"),roundTrips:clone.style.cssText===element.style.cssText,properties:["-webkit-text-fill-color","-webkit-text-stroke-color","text-shadow"].map(name=>({name,value:element.style.getPropertyValue(name),priority:element.style.getPropertyPriority(name)}))}
+    })}
+  })
+  try{
+    const texts=await snapshot.evaluate(saved=>saved.texts)
+    if(!texts.length)throw failure(locator.toString(),"required-rendered-element:text-ink-ownership","nonempty DOM label",texts)
+    await snapshot.evaluate(saved=>{
+      for(const {element} of saved.styles){
+        element.style.setProperty("-webkit-text-fill-color","transparent","important")
+        element.style.setProperty("-webkit-text-stroke-color","transparent","important")
+        element.style.setProperty("text-shadow","none","important")
+      }
+    })
+    const after=await locator.page().screenshot({clip,animations:"disabled",caret:"initial",style:"*{caret-color:transparent!important}"})
+    const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
+    for(const text of texts){
+      let ink=0
+      for(let index=0;index<left.length;index+=4){
+        const pixel=index/4,x=clip.x+pixel%clip.width+0.5,y=clip.y+Math.floor(pixel/clip.width)+0.5
+        if(!text.rects.some(rect=>x>=rect.left&&x<rect.right&&y>=rect.top&&y<rect.bottom))continue
+        if([0,1,2].some(channel=>Math.abs((left[index+channel]??0)-(right[index+channel]??0))>=32))ink++
+      }
+      if(!Number.isFinite(text.estimate)||text.estimate<=0||ink<text.estimate/4||ink>text.estimate*4)throw failure(locator.toString(),"required-rendered-element:text-ink-ownership",{minimumInk:text.estimate/4,maximumInk:text.estimate*4},{ink,rects:text.rects})
+    }
+  }finally{
+    try{await snapshot.evaluate(saved=>{for(const {element,style,roundTrips,properties} of saved.styles){for(const {name,value,priority} of properties){if(value)element.style.setProperty(name,value,priority);else element.style.removeProperty(name)}if(roundTrips){element.setAttribute("style",style??"");if(style===null)element.removeAttribute("style")}}})}finally{await snapshot.dispose()}
+  }
 }
 export async function assertRendered(locator:Locator,control=false,icon?:IconInk){
   const selector=locator.toString(),page=locator.page()
@@ -34,7 +84,8 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
     if(!hit)throw failure(selector,"hit-test",true,hit)
   }
   const clip={x:Math.floor(box.x),y:Math.floor(box.y),width:Math.ceil(box.x+box.width)-Math.floor(box.x),height:Math.ceil(box.y+box.height)-Math.floor(box.y)}
-  const before=await page.screenshot({clip,animations:"disabled",caret:"hide"})
+  const before=await page.screenshot({clip,animations:"disabled",caret:icon?"hide":"initial",style:icon?undefined:"*{caret-color:transparent!important}"})
+  if(!icon)return assertPaintedText(locator,clip,before)
   const element=await locator.elementHandle()
   if(!element)throw failure(selector,"required-rendered-element","attached element",null)
   const original=await element.getAttribute("style")
@@ -48,22 +99,29 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
   }
   const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
   const beforeInk=inkPixels(left),afterInk=inkPixels(right)
-  const estimate=icon ? inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer()) : await locator.evaluate(element=>{
-    const style=getComputedStyle(element),size=parseFloat(style.fontSize)
-    const text=element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement ? element.value||element.placeholder : element.textContent??""
-    const textArea=[...text.replace(/\s/g,"")].length*size*size*0.18
-    const iconArea=[...element.querySelectorAll("svg[data-icon]")].reduce((area,svg)=>{const box=svg.getBoundingClientRect();return area+box.width*box.height*0.2},0)
-    return textArea+iconArea
-  })
+  const estimate=inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="${icon.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer())
   const ownership=beforeInk>0 ? (beforeInk-afterInk)/beforeInk : 0
   if(ownership<0.8||estimate<=0||beforeInk<estimate/4||beforeInk>estimate*4)throw failure(selector,"required-rendered-element:ink-ownership",{minimumOwnership:0.8,minimumInk:estimate/4,maximumInk:estimate*4},{beforeInk,afterInk,ownership,box})
 }
-async function visible(page:Page,text:string){
+async function visible(page:Page|Locator,text:string){
   const candidates=[page.getByText(text,{exact:true}),page.getByRole("link",{name:text,exact:true}),page.getByRole("button",{name:text,exact:true})]
+  const rejected:{check:string;ink?:number;minimumInk?:number;maximumInk?:number}[]=[]
   for(const locator of candidates)for(const element of await locator.all()){
-    try{await assertRendered(element);return}catch{}
+    try{await assertRendered(element);return}catch(error){
+      if(rejected.length<3){
+        const message=String(error),check=message.match(/check=([a-zA-Z0-9:_-]+)/)?.[1]
+        const rejection:{check:string;ink?:number;minimumInk?:number;maximumInk?:number}={check:check??"candidate-measurement-error"}
+        if(check==="required-rendered-element:text-ink-ownership"){
+          for(const field of ["ink","minimumInk","maximumInk"]){
+            const value=message.match(new RegExp('"'+field+'":([0-9]+(?:\\.[0-9]+)?)'))?.[1]
+            if(value!==undefined)Object.assign(rejection,{[field]:Number(value)})
+          }
+        }
+        rejected.push(rejection)
+      }
+    }
   }
-  throw failure(`text=${text}`,"required-visible-copy","painted exact copy","no painted candidate")
+  throw failure(`text=${text}`,"required-visible-copy","painted exact copy",{candidates:rejected.length,checks:rejected})
 }
 export async function assertDialogActions(page:Page,entry:Scenario){
   const actions=entry.assertions.structure.dialogActions
@@ -126,15 +184,18 @@ async function assertStructure(page:Page,entry:Scenario){
   for(const icon of entry.assertions.structure.icons){
     const locator=page.locator(icon.region).locator(`svg[data-icon="${icon.name}"]`).first()
     if(!await locator.count())throw failure(locator.toString(),"required-icon",1,0)
-    const path=Reflect.get(iconPaths,icon.name)
-    if(typeof path!=="string")throw failure(locator.toString(),"icon-geometry","registered icon name",icon.name)
+    if(!isIconName(icon.name))throw failure(locator.toString(),"icon-geometry","registered icon name",icon.name)
+    const path=iconPaths[icon.name]
     const expectedColor={ink:"rgb(34, 34, 34)","gray.600":"rgb(102, 102, 102)","gray.500":"rgb(144, 144, 144)"}[icon.color]
     const appearance=await locator.evaluate(element=>{
       const box=element.getBoundingClientRect()
       return {width:box.width,height:box.height,parts:[...element.querySelectorAll("path")].map(part=>{const style=getComputedStyle(part);return {stroke:style.stroke,fill:style.fill,width:style.strokeWidth,opacity:style.opacity,strokeOpacity:style.strokeOpacity}})}
     })
     if(appearance.width!==icon.size||appearance.height!==icon.size)throw failure(locator.toString(),"icon-size",icon.size,appearance)
-    if(appearance.parts.some(part=>part.stroke!==expectedColor||part.fill!=="none"||part.width!=="1.5px"||part.opacity!=="1"||part.strokeOpacity!=="1"))throw failure(locator.toString(),"icon-color",expectedColor,appearance)
+    const expectedStroke=iconStrokeWidth(icon.name)
+    if(appearance.parts.some(part=>part.stroke!==expectedColor||part.fill!=="none"))throw failure(locator.toString(),"icon-color",expectedColor,appearance)
+    if(appearance.parts.some(part=>part.width!==expectedStroke+"px"))throw failure(locator.toString(),"icon-stroke",expectedStroke,appearance)
+    if(appearance.parts.some(part=>part.opacity!=="1"||part.strokeOpacity!=="1"))throw failure(locator.toString(),"icon-opacity",1,appearance)
     const geometry=await locator.evaluate((element,expectedPath)=>{
       const reference=document.createElementNS("http://www.w3.org/2000/svg","svg"),referencePath=document.createElementNS("http://www.w3.org/2000/svg","path")
       reference.setAttribute("style","position:fixed;inset:0;width:0;height:0;visibility:hidden!important")
@@ -150,11 +211,20 @@ async function assertStructure(page:Page,entry:Scenario){
     const expected=hash({viewBox:"0 0 24 24",transform:"none",parts:[{tag:"path",paintedPath:geometry.canonicalPath,transform:"none",attributes:[]}]})
     const actual=hash(geometry.actual)
     if(actual!==expected)throw failure(locator.toString(),"icon-geometry",expected,actual)
-    await assertRendered(locator,false,{path,size:icon.size,color:expectedColor})
+    await assertRendered(locator,false,{path,size:icon.size,color:expectedColor,strokeWidth:expectedStroke})
   }
   for(const text of entry.assertions.structure.textRoles){
-    const locators=page.locator(text.selector)
-    if(!await locators.count())throw failure(text.selector,"required-text-role",">=1",0)
+    const selector="componentSelector" in text ? `${entry.component?.selector} >> ${text.componentSelector}` : text.selector
+    let locators:Locator
+    if("componentSelector" in text){
+      if(entry.component?.kind!=="dialog")throw failure(selector,"required-dialog-component","registered dialog",entry.component)
+      const root=page.locator(entry.component.selector),count=await root.count()
+      if(count!==1)throw failure(entry.component.selector,"required-dialog-component",1,count)
+      if(!await root.evaluate(element=>element.matches('dialog[open], [role="dialog"], [role="alertdialog"]')))throw failure(entry.component.selector,"required-dialog-semantics","open native or ARIA dialog",await root.evaluate(element=>element.outerHTML))
+      if(!await root.evaluate((element,selector)=>[...element.querySelectorAll(selector)].every(title=>title.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===element),text.componentSelector))throw failure(selector,"dialog-title-ownership","title owned by registered dialog","title belongs to another dialog")
+      locators=root.locator(text.componentSelector)
+    }else locators=page.locator(text.selector)
+    if(!await locators.count())throw failure(selector,"required-text-role",">=1",0)
     for(const locator of await locators.all()){
       await assertRendered(locator)
       const result=await locator.evaluate(element=>{
@@ -167,33 +237,108 @@ async function assertStructure(page:Page,entry:Scenario){
         return {family:style.fontFamily,size:parseFloat(style.fontSize),weight:Number(style.fontWeight),color:style.color,background}
       })
       const sizes=textRoleSizes[text.role]
-      if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(text.selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
-      const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144]}[text.color]
+      if(result.family.split(",")[0]?.replaceAll(/["']/g,"").trim()!==(text.role==="landing-hero" ? "Newsreader" : "Geist")||result.size<sizes[0]!||result.size>sizes[1]!||result.weight!==sizes[2])throw failure(selector,`text-token:${text.role}`,{family:text.role==="landing-hero" ? "Newsreader" : "Geist",sizes},result)
+      const expected={ink:[34,34,34],"gray.600":[102,102,102],"gray.500":[144,144,144],white:[255,255,255]}[text.color]
       const channels=(color:string)=>color.match(/[\d.]+/g)?.map(Number)??[]
       const foreground=channels(result.color),background=channels(result.background)
-      if(expected.some((channel,index)=>foreground[index]!==channel)||foreground.length===4&&foreground[3]!==1)throw failure(text.selector,`text-color:${text.role}`,expected,result.color)
+      if(expected.some((channel,index)=>foreground[index]!==channel)||foreground.length===4&&foreground[3]!==1)throw failure(selector,`text-color:${text.role}`,expected,result.color)
       const luminance=(rgb:number[])=>rgb.slice(0,3).reduce((sum,value,index)=>{const channel=value/255;return sum+(channel<=0.04045 ? channel/12.92 : ((channel+0.055)/1.055)**2.4)*[0.2126,0.7152,0.0722][index]!},0)
       const light=luminance(foreground),dark=luminance(background),contrast=(Math.max(light,dark)+0.05)/(Math.min(light,dark)+0.05)
-      if(contrast<text.minimumContrast)throw failure(text.selector,`text-contrast:${text.role}`,text.minimumContrast,contrast)
+      if(contrast<text.minimumContrast)throw failure(selector,`text-contrast:${text.role}`,text.minimumContrast,contrast)
     }
   }
 }
 export async function assertScenarioStructure(page:Page,entry:Scenario){
   try{await assertStructure(page,entry)}catch(error){throw new Error(`scenario=${entry.code} ${String(error)}`)}
 }
-export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-entry",values:Record<string,string>={}){
+export async function assertScenarioCopy(page:Page|Locator,keys:string[],scenario="copy-entry",values:Record<string,string>={}){
   for(const key of keys){
     const text=resolveCopy(key,values)
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
   }
 }
-async function assertDOM(page:Page,entry:Scenario){
-  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
-  for(const control of entry.assertions.controls){
-    const locator=page.getByRole(control.role,{name:resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true}).first()
-    if(!await locator.count())throw failure(locator.toString(),"required-control",1,0)
-    await assertRendered(locator,true)
+export async function assertControlPaint(locator:Locator,paint?:"icon"){
+  const text=await locator.evaluate(element=>element instanceof HTMLInputElement||element instanceof HTMLSelectElement||element instanceof HTMLTextAreaElement||Boolean(element.textContent?.trim()))
+  if(text&&paint!=="icon")return assertRendered(locator,true)
+  const box=await locator.boundingBox(),viewport=locator.page().viewportSize()
+  if(!box||box.width<=0||box.height<=0||box.x<0||box.y<0||viewport&&(box.x+box.width>viewport.width||box.y+box.height>viewport.height))throw failure(locator.toString(),"required-control-paint","visible control",box)
+  if(!await locator.evaluate(element=>{const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"hit-test",true,false)
+  const svg=locator.locator("svg")
+  if(await svg.count()!==1||!await svg.isVisible()||!await svg.evaluate(element=>element.querySelectorAll("path").length>0&&!element.querySelector("image,use,foreignObject,text")))throw failure(locator.toString(),"required-control-vector","one painted inline vector",await svg.count())
+  const rect=await svg.boundingBox()
+  if(!rect)throw failure(locator.toString(),"required-control-vector","attached vector",null)
+  const clip={x:Math.floor(rect.x),y:Math.floor(rect.y),width:Math.ceil(rect.x+rect.width)-Math.floor(rect.x),height:Math.ceil(rect.y+rect.height)-Math.floor(rect.y)}
+  const saved=await svg.getAttribute("style"),before=await locator.page().screenshot({clip,animations:"disabled"})
+  let after:Buffer
+  try{
+    await svg.evaluate(element=>element.style.setProperty("opacity","0","important"))
+    after=await locator.page().screenshot({clip,animations:"disabled"})
+  }finally{await svg.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},saved)}
+  const left=await sharp(before).removeAlpha().raw().toBuffer(),right=await sharp(after).removeAlpha().raw().toBuffer()
+  if(left.length!==right.length||!left.some((value,index)=>Math.abs(value-(right[index]??value))>16))throw failure(locator.toString(),"required-control-vector","owned visible vector ink","no differential vector ink")
+}
+export async function assertScenarioControls(page:Page,entry:Scenario){
+  let owner:Page|Locator=page
+  if(entry.component?.kind==="dialog"){
+    const root=page.locator(entry.component.selector)
+    if(await root.count()!==1||!await root.evaluate(element=>element.matches('dialog[open], [role="dialog"], [role="alertdialog"]')))throw failure(entry.component.selector,"required-dialog-owner","one open dialog",await root.count())
+    if(!await root.isVisible())throw failure(entry.component.selector,"required-dialog-owner","visible open dialog","hidden")
+    owner=root
   }
+  for(const control of entry.assertions.controls){
+    let controlOwner=owner
+    if("owner" in control&&control.owner==="manual-editor"){
+      const root=page.locator(".studio-editor .editor-export")
+      if(await root.count()!==1||!await root.isVisible())throw failure(root.toString(),"required-editor-owner","one visible manual editor export owner",await root.count())
+      controlOwner=root
+    }
+    if("owner" in control&&control.owner!=="manual-editor"&&control.owner){
+      const selectors={"editor-shell":".studio-editor .editor-bar","aira-panel":".aira-panel","images-panel":".image-panel","slide-navigation":".editor-filmstrip"}
+      controlOwner=page.locator(selectors[control.owner])
+      if(await controlOwner.count()!==1||!await controlOwner.isVisible())throw failure(controlOwner.toString(),"required-control-owner",control.owner,"missing or hidden")
+    }
+    const copyName=control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues)
+    const name="owner" in control&&control.owner==="slide-navigation" ? `Go to ${copyName.toLowerCase()}` : copyName
+    const locator=controlOwner.getByRole(control.role,{name,exact:true})
+    if(await locator.count()!==1)throw failure(locator.toString(),"required-control",1,await locator.count())
+    if(entry.component?.kind==="dialog"&&!await locator.evaluate((element,selector)=>element.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===document.querySelector(selector),entry.component.selector))throw failure(locator.toString(),"required-control-owner",entry.component.selector,"different dialog")
+    if(control.role==="combobox"){
+      const state=await locator.evaluate(element=>element instanceof HTMLSelectElement ? {value:element.value,selected:element.selectedOptions.length,text:element.selectedOptions[0]?.textContent?.trim(),disabled:element.disabled} : null)
+      if(!state||state.value!==control.value||state.selected!==1||!state.text||state.disabled)throw failure(locator.toString(),"required-native-selection",control.value,state)
+    }
+    if("owner" in control&&control.owner==="manual-editor"&&!await locator.isEnabled())throw failure(locator.toString(),"required-enabled-control",true,false)
+    if("paint" in control&&control.paint==="keyboard-focus"){
+      const previous=await page.evaluateHandle(()=>document.activeElement)
+      try{await locator.focus();await page.keyboard.press("Tab");await page.keyboard.press("Shift+Tab");if(!await locator.evaluate(element=>element===document.activeElement))throw failure(locator.toString(),"required-keyboard-focus",true,false);await assertControlPaint(locator)}finally{await previous.evaluate(element=>{if(element instanceof HTMLElement)element.focus()});await previous.dispose()}
+    }else if("owner" in control&&control.owner==="slide-navigation"){
+      const number=locator.locator(":scope > span").first()
+      if(!await locator.isEnabled()||!await locator.evaluate(element=>{const box=element.getBoundingClientRect(),hit=document.elementFromPoint(box.x+box.width/2,box.y+box.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"required-navigation-hit-test",true,false)
+      if(await number.textContent()!==entry.assertions.copyValues?.slide)throw failure(number.toString(),"required-slide-number",entry.assertions.copyValues?.slide,await number.textContent())
+      await assertControlPaint(number)
+    }else await assertControlPaint(locator,"paint" in control&&control.paint==="icon" ? "icon" : undefined)
+  }
+}
+export async function assertScenarioOwnedCopy(page:Page,entry:Scenario){
+  let copyOwner:Page|Locator=page
+  if(entry.component?.kind==="toast"){
+    const toast=page.locator(entry.component.selector)
+    if(await toast.count()!==1||!await toast.isVisible())throw failure(entry.component.selector,"required-toast-owner","one visible toast",await toast.count())
+    copyOwner=toast
+  }
+  for(const key of entry.assertions.copyKeys){
+    const owner=entry.assertions.copyOwners?.[key]
+    const ownedRoot=owner==="editor-shell" ? page.locator(".editor-bar") : owner==="aira-panel" ? page.getByRole("complementary",{name:"Aira",exact:true}) : owner==="toast" ? page.locator(entry.component?.selector??"[data-sonner-toast]") : undefined
+    if(ownedRoot&&(await ownedRoot.count()!==1||!await ownedRoot.isVisible()))throw failure(owner??"copy","required-copy-owner","one visible owner",await ownedRoot.count())
+    if(owner==="actions-search"){
+      const text=resolveCopy(key,entry.assertions.copyValues),input=page.getByRole("complementary",{name:"Actions picker",exact:true}).getByRole("textbox",{name:text,exact:true})
+      if(await input.count()!==1||await input.getAttribute("placeholder")!==text||await input.inputValue()!=="")throw failure(input.toString(),"required-search-placeholder",text,"missing or replaced")
+      await assertControlPaint(input)
+    }else await assertScenarioCopy(ownedRoot??copyOwner,[key],entry.code,entry.assertions.copyValues)
+  }
+}
+async function assertDOM(page:Page,entry:Scenario){
+  await assertScenarioOwnedCopy(page,entry)
+  await assertScenarioControls(page,entry)
   await assertStructure(page,entry)
 }
 export async function assertScenarioDOM(page:Page,entry:Scenario){
@@ -213,11 +358,22 @@ async function probeInteraction(page:Page,entry:Scenario){
       break
     }
     case "dialog":{
+      const accountMenu=page.getByLabel("Account menu",{exact:true})
+      const accountSignOut=probe.open===resolveCopy("access.sign_out")
+      if(accountSignOut){
+        await accountMenu.waitFor({state:"visible"})
+        if(await accountMenu.evaluate(element=>element.closest("details")?.open!==false))throw new Error("account-menu-probe-restore-failed")
+        await accountMenu.click()
+      }
       await page.getByRole("button",{name:probe.open,exact:true}).first().click()
       const dialog=page.getByRole("dialog",{name:resolveCopy(probe.titleKey,entry.assertions.copyValues),exact:true})
       await dialog.waitFor({state:"visible"})
       await dialog.getByRole("button",{name:probe.close,exact:true}).click()
       await dialog.waitFor({state:"hidden"})
+      if(accountSignOut){
+        await accountMenu.waitFor({state:"visible"})
+        if(await accountMenu.evaluate(element=>element.closest("details")?.open!==false))throw new Error("account-menu-probe-restore-failed")
+      }
       break
     }
     case "view":{
@@ -242,7 +398,7 @@ async function probeInteraction(page:Page,entry:Scenario){
       break
     case "expired":
       await page.getByRole("button",{name:"Send a new link",exact:true}).click()
-      await page.getByRole("heading",{name:"Sign in",exact:true}).waitFor()
+      await page.getByRole("heading",{name:resolveCopy("access.entry_title"),exact:true}).waitFor()
       await page.reload()
       await page.getByRole("heading",{name:"This link has expired",exact:true}).waitFor()
       break
@@ -251,4 +407,11 @@ async function probeInteraction(page:Page,entry:Scenario){
 }
 export async function probeScenarioInteraction(page:Page,entry:Scenario){
   try{await probeInteraction(page,entry)}catch(error){throw new Error(`scenario=${entry.code} selector=probe:${entry.assertions.probe.kind} check=interaction expected=${JSON.stringify(entry.assertions.probe)} actual=${JSON.stringify(String(error))}`)}
+}
+
+export async function waitForScenarioDialog(page:Page,entry:Scenario){
+  if(entry.component?.kind!=="dialog")return
+  const dialog=page.locator(entry.component.selector)
+  await dialog.waitFor({state:"visible"})
+  for(const key of entry.assertions.copyKeys)await dialog.getByText(resolveCopy(key,entry.assertions.copyValues),{exact:true}).waitFor({state:"visible"})
 }

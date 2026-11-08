@@ -1,0 +1,213 @@
+import {readFile} from "node:fs/promises"
+import {importPptx} from "../../packages/pptx/src/index.ts"
+import {importedDeck} from "../../packages/pptx/src/import-deck.ts"
+import {seedStockImages} from "../editor/stock-fixture.mjs"
+import {clipboardSource} from "../../apps/studio/src/editor/editor-model.ts"
+import {createHash} from "node:crypto"
+import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
+import {scenario} from "../agent-account/editor-fixture.mjs"
+import {OperationStore,operationId} from "../../packages/operations/src/index.ts"
+import {writeSavedPptx} from "../../packages/pptx/src/export-deck.ts"
+import {investorDeck} from "./editor-investor-deck.ts"
+import {localFixture} from "./fixture-environment.ts"
+import {approvalRoute} from "./approval-fixture.ts"
+export async function stack(){return localFixture(()=>scenario({browserEnabled:true}))}
+export async function seed(stack,entry){
+  stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
+  if(entry.seed==="signed-out")return {route:entry.route}
+  const owner=await stack.fixture.signIn("ada@halden.com")
+  await stack.request(owner,`/api/people/${owner.personId}/profile`,{displayName:"Ada Lovelace"})
+  if(["recents","trash-with-items","deck-open","deck-limited","deck-limited-with-credits"].includes(entry.seed)){
+    await stack.request(owner,"/api/templates",{id:"halden",version:1,name:"Halden",font:"Geist",background:"#ffffff",foreground:"#102633",accent:"#1e6f8c",fontRight:"installed",families:[{id:"basic",name:"Basic",master:null,layouts:["Blank"]}]},201)
+    const recentTitles=["Project Atlas","Q3 Investor Update","FY26 Operating Plan","Pricing Strategy Review","Board Pack, October","Germany Market Sizing"]
+    const titles=entry.seed==="trash-with-items" ? [...recentTitles.slice(0,3),"Old pitch draft","Brightwater kickoff","Scratchpad copy"] : entry.seed==="recents" ? recentTitles.filter(title=>!["S32.02","S32.03"].includes(entry.code)||title!=="Project Atlas") : ["Q3 Investor Update"]
+    const created=["2026-10-30","2026-10-21","2026-09-12","2026-09-03","2026-08-28","2026-08-04"]
+    for(const [index,title] of titles.entries()){
+      const id=index===0&&entry.seed.startsWith("deck-") ? "designparity"+entry.code.replaceAll(".","") : "parity"+entry.code.replaceAll(".","")+index
+      const deck=investorDeck(id),position=recentTitles.indexOf(title),trashed=entry.seed==="trash-with-items"&&position<0,catalogFixture=!entry.seed.startsWith("deck-")
+      if(catalogFixture){
+        const cover=deck.slides[0]
+        for(const element of cover.elements){
+          if(element.kind==="text")element.runs[0].text=title
+        }
+        cover.notes=title+" overview"
+      }
+      if(catalogFixture)stack.fixture.advance(Date.parse(created[position<0 ? index : position]+"T03:00:00Z")-stack.fixture.now())
+      await stack.request(owner,"/api/decks",deck,201)
+      const age=!catalogFixture ? 0 : trashed ? [2,7,21][index-3] : [0,1/12,1,7,21,30][position]
+      stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
+      await stack.request(owner,`/api/catalog/${id}/rename`,{title})
+      if(catalogFixture&&position>=0&&position<3)await stack.request(owner,`/api/catalog/${id}/star`,{starred:true})
+      if(trashed)await stack.request(owner,`/api/catalog/${id}/trash`,{})
+      if(entry.seed.startsWith("deck-")){
+        const name="Q3 board notes.txt",uploadResponse=await fetch(stack.origin+"/api/mcp/uploads",{method:"POST",headers:{cookie:owner.cookie,origin:stack.origin,"content-type":"application/json"},body:JSON.stringify({requestId:`notes_${id}`,name,text:"Q3 investor update. Revenue: Q3 24 $4.1M, Q4 24 $4.6M, Q1 25 $5M, Q2 25 $5.4M, Q3 25 $5.7M. Revenue grew 39% year over year. Gross margin 71%. Two enterprise deals. Customers, Product, Hiring plan, Next quarter."})})
+        if(uploadResponse.status!==201)throw new Error("notes-upload-failed")
+        const uploaded=await uploadResponse.json()
+        const {client}=await stack.fixture.authorize(owner.cookie,"Codex"),file=await client.callTool({name:"add_file",arguments:{sourceUrl:uploaded.sourceUrl,name,requestId:`ingest_${id}`}})
+        stack.runSources.set(id,{fileId:JSON.parse(file.content.find(item=>item.type==="text").text).data.fileId,name})
+      }
+    }
+    stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
+  }
+  if(entry.code==="S43.03")await seedStockImages(stack,owner)
+  if(entry.seed.startsWith("deck-limited")){
+    const usage=stack.fixture.history.usage
+    await usage.reserve(owner.personId,{id:"fill"+entry.code,actor:"user-agent",request:"Prepare the next deck",units:10000})
+    await usage.reserve(owner.personId,{id:"limit"+entry.code,actor:"user-agent",request:"Prepare the next deck",units:1})
+    if(entry.seed.endsWith("with-credits"))await usage.grantFixture(owner.personId,"design-parity-credit",1000,"bonus")
+  }
+  if(entry.seed.startsWith("usage-active")){
+    const usage=stack.fixture.history.usage
+    stack.fixture.advance(Date.parse("2026-10-28T03:00:00Z")-stack.fixture.now())
+    const payment=await usage.checkout(owner.personId,2000)
+    await stack.webhook({id:"design-parity-original-credit",payment:payment.id,cents:2000,kind:"paid"})
+    stack.fixture.advance(Date.parse("2026-11-03T03:00:00Z")-stack.fixture.now())
+    await usage.reserve(owner.personId,{id:"previous-weekly-work",actor:"user-agent",request:"Prepare the board update",units:10000})
+    const filled=await usage.status(owner.personId)
+    if(!filled.hit)throw new Error("fixture-usage-limit-missing")
+    await usage.reset(owner.personId,filled.hit)
+    stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
+    await usage.reserve(owner.personId,{id:"weekly-work",actor:"user-agent",request:"Prepare the investor update",units:6200})
+    await usage.configure(owner.personId,{autoReset:true})
+    if(entry.seed==="usage-active-connected"){const {client}=await stack.fixture.authorize(owner.cookie,"Claude");await client.close()}
+  }
+  if(entry.seed.startsWith("oauth-")){
+    return {owner,route:await approvalRoute(stack.origin,stack.fixture.apiOrigin,entry.seed.slice(6))}
+  }
+  return {owner,route:entry.seed.startsWith("deck-") ? entry.route.replace("designparity","designparity"+entry.code.replaceAll(".","")) : entry.route}
+}
+export async function perform(page,step,stack,owner){
+  switch(step.kind){
+    case "assert":await page.locator(step.selector).waitFor({state:"visible"});break
+    case "hold":{
+      const button=page.locator(".studio-editor .editor-bar").getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.locator(".contextual-insertion-slot").waitFor();await page.mouse.up();break
+    }
+    case "paste-slides":{
+      const deck=fixtureDeck(1,step.count)
+      for(const [index,slide] of deck.slides.entries()){
+        const title=slide.elements.find(element=>element.kind==="text");title.runs=[{text:index===0 ? "Market share by region" : "Churn is down to 4%",font:"Geist",size:48,bold:true,color:"#1f1f1f"}];title.box={x:70.4,y:70.4,width:819.2,height:60}
+        slide.elements=[title]
+      }
+      const imported=importedDeck(await importPptx(await writeSavedPptx(deck,0,null,{})))
+      if(imported.slides.some(slide=>slide.source.kind!=="original" || slide.elements.some(element=>element.support.kind!=="native")))throw new Error("PowerPoint fixture must contain qualified native imported content")
+      const source=clipboardSource(imported,imported.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted from PowerPoint`,{exact:true}).waitFor();break
+    }
+    case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
+    case "click":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().click();break
+    case "keyboard-activate":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().press("Enter");break
+    case "dialog-click":await page.getByRole("dialog").getByRole("button",{name:step.name,exact:true}).click();break
+    case "selector-click":await page.locator(step.selector).click();break
+    case "hover":await page.getByRole("button",{name:step.name,exact:true}).hover();break
+    case "fill":await page.getByLabel(step.label,{exact:true}).fill(step.value);break
+    case "select":await page.getByLabel(step.label,{exact:true}).selectOption(step.value);break
+    case "import":{
+      await page.getByRole("button",{name:"New deck",exact:true}).click()
+      await page.getByRole("button",{name:"Import PowerPoint",exact:true}).click()
+      const response=page.waitForResponse(response=>response.url().endsWith("/api/operations")&&response.request().method()==="POST")
+      await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles({name:"Brightwater board review.pptx",mimeType:"application/vnd.openxmlformats-officedocument.presentationml.presentation",buffer:await writeSavedPptx(fixtureDeck(1,6),0,null,{})})
+      const operation=await (await response).json()
+      if(step.outcome==="failed"){
+        const store=new OperationStore(stack.fixture.operationsPath,stack.fixture.now)
+        try{const id=operationId(operation.id),lease=store.claim(id);if(!lease)throw new Error("import-not-queued");store.fail(id,lease.lease,"Unable to read this PowerPoint file");store.acknowledgeCleanup(id,lease.lease)}finally{store.close()}
+        await page.getByRole("heading",{name:"Unable to import this file",exact:true}).waitFor()
+      }else await page.getByRole("heading",{name:"Importing PowerPoint",exact:true}).waitFor()
+      break
+    }
+    case "agent":{
+      const deck=page.url().split("/deck/")[1]
+      if(!await page.getByLabel("Message Aira",{exact:true}).isVisible())await page.getByRole("button",{name:"Agent",exact:true}).click()
+      await page.getByLabel("Attach",{exact:true}).selectOption("whole")
+      if(step.outcome==="remote"){
+        await stack.run(owner,deck,"Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
+        const {client}=await stack.fixture.authorize(owner.cookie,"Claude"),current=await stack.request(owner,`/api/decks/${deck}`),title=current.deck.slides[0].elements.find(element=>element.id==="s0e0")
+        const response=await client.callTool({name:"apply_changes",arguments:{deckId:deck,base:current.seq,requestId:"design-parity-remote",changes:[{kind:"set",target:"s0e0",value:{...title,runs:[{text:"Q3 Investor Update",font:"Geist",size:40,bold:true,color:"#111827"}]}}]}})
+        if(response.isError)throw new Error("remote-fixture-write-failed")
+        await page.getByText("Your agent updated",{exact:false}).waitFor()
+      }else{
+        if(step.outcome==="long-message"){
+          await page.locator('.editor-slide:not([hidden]) [data-kind="group"]').click({position:{x:4,y:4}})
+          await page.getByLabel("Message Aira",{exact:true}).fill("Make this chart tell the story faster. Lead with the Q3 number, then show the trend across all five quarters. Keep our Halden colors and label each bar with its value. Add one takeaway line under the title, revenue grew 39% year over year, and cut the source note down to a single line so the slide breathes.")
+          break
+        }
+        if(step.outcome==="limited"){
+          await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
+          await page.getByRole("button",{name:"Send",exact:true}).click()
+          await page.locator('.aira-run-status[data-kind="limited"]').waitFor({state:"attached"})
+          await page.getByRole("heading",{name:"You've hit this week's limit",exact:true}).waitFor()
+          break
+        }
+        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after",step.outcome==="working"||step.outcome==="failed" ? 2 : 0)
+        stack.parityFinish=async()=>{hold.release.resolve()}
+        await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
+        await page.getByRole("button",{name:"Send",exact:true}).click()
+        await page.locator('.aira-run-status[data-kind="working"]').waitFor()
+        if(step.outcome!=="working"){
+          await Promise.race([hold.entered.promise,page.locator('.aira-run-status:not([data-kind="working"])').waitFor().then(()=>{throw new Error("agent-ended-before-change")})])
+          hold.release.resolve()
+          await stack.until(source,value=>value.run?.kind===step.outcome)
+          await page.locator(`.aira-run-status[data-kind="${step.outcome}"]`).waitFor()
+        }else await Promise.race([hold.entered.promise,page.locator('.aira-run-status:not([data-kind="working"])').waitFor().then(()=>{throw new Error("agent-ended-before-change")})])
+      }
+      break
+    }
+    case "export-failed":{
+      const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
+      const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
+      if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
+      await stack.fixture.history.exports.fail(lease.id,lease.lease,"Unable to create this export")
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText("Unable to export. Your deck is unchanged.",{exact:true}).waitFor()
+      break
+    }
+    case "export-download":{
+      const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
+      const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
+      if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
+      const saved=lease.snapshot,expected=await writeSavedPptx(saved.deck,saved.seq,saved.source,saved.assets??{})
+      if(!await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{}))throw new Error("export-completion-rejected")
+      const proof=await assertArtifactDownload(page,expected)
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText(proof.requestedFilename+" downloaded",{exact:true}).waitFor()
+      console.log(JSON.stringify({proof:"real-browser-artifact-download",...proof}))
+      break
+    }
+    case "checkout-failed":{
+      await page.route("**/api/billing/checkout",route=>route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({code:"payment-unavailable"})}))
+      await page.getByRole("button",{name:"Continue to payment",exact:true}).click()
+      await page.getByRole("heading",{name:"Unable to complete payment",exact:true}).waitFor()
+      break
+    }
+    case "offline":await page.context().setOffline(true);await page.locator('.studio-editor[data-sync-state="offline"]').waitFor();break
+    case "pay":{
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
+      const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
+      await stack.webhook({id:"design-parity-paid",payment,cents:2500,kind:"paid"})
+      await page.getByRole("heading",{name:"$25.00 added",exact:true}).waitFor();break
+    }
+    case "expire-payment":{
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
+      stack.fixture.advance(86400000)
+      const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
+      await stack.request(owner,`/api/billing/payments/${payment}`)
+      await page.getByText("This payment expired. Your balance is unchanged. Add credits to start again.",{exact:true}).waitFor();break
+    }
+    default:throw new Error("unknown-interaction")
+  }
+}
+
+export async function assertArtifactDownload(page,expected){
+  const link=page.getByRole("link",{name:"Download PPTX",exact:true})
+  await link.waitFor()
+  const href=await link.getAttribute("href")
+  if(!href)throw new Error("missing-artifact-url")
+  const url=new URL(href,page.url()).href
+  const artifact=await page.request.get(url)
+  if(!artifact.ok())throw new Error("artifact-http-failed")
+  const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
+  if(!filename||!Buffer.from(expected).equals(bytes))throw new Error("artifact-content-mismatch")
+  const pending=page.waitForEvent("download")
+  await link.click()
+  const download=await pending,path=await download.path()
+  if(await download.failure()||!path||download.suggestedFilename()!==filename||!bytes.equals(await readFile(path)))throw new Error("browser-download-mismatch")
+  return {href,url,requestedFilename:filename,contentDisposition:artifact.headers()["content-disposition"],suggestedFilename:download.suggestedFilename(),bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex"),expectedBytes:expected.length,expectedSha256:createHash("sha256").update(expected).digest("hex")}
+}

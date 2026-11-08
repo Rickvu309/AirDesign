@@ -21,8 +21,11 @@ export function claudeAdapter(configuration:{key:string;model:string;query?:SdkQ
           if(limit.success){const error=new UsageLimitError(limit.data.error.details);fail(error);throw error}
         }
       }else {
-        const write=z.object({changes:z.array(z.object({target:z.string()}))}).safeParse(input)
-        queue.push({kind:"tool",name,result,...name==="apply_changes"&&write.success?{scope:write.data.changes[0]?.target}:{}})
+        const read=z.object({slideId:z.string()}).safeParse(input)
+        const write=z.object({changes:z.array(z.object({target:z.string().optional(),value:z.object({template:z.unknown().optional()}).passthrough().optional()}))}).safeParse(input)
+        const file=result.content.flatMap(part=>{if(part.type!=="text")return [];try{const parsed=z.object({ok:z.literal(true),data:z.object({name:z.string()})}).safeParse(JSON.parse(part.text));return parsed.success ? [parsed.data.data.name] : []}catch{return []}})[0]
+        const scopes=write.success ? write.data.changes.flatMap(change=>change.target ? [change.target] : []) : []
+        queue.push({kind:"tool",name,result,...(name==="get_slide"&&read.success ? {scope:read.data.slideId} : name==="apply_changes"&&write.success ? {scope:scopes[0],scopes,...(write.data.changes.some(change=>change.value?.template!==undefined) ? {brandApplied:true} : {})} : {}),...(name==="read_file"&&file ? {fileName:file} : {})})
       }
       notify();return result
     })

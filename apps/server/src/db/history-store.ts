@@ -19,7 +19,7 @@ import { currentProjection, initializeHistoryIndex, loadHistoryIndex, saveHistor
 import { waitForHistorySchema, workerHistorySchemaWait, type HistorySchemaWaitPolicy } from "./history-schema-wait.ts"
 
 const historySchemaLock=639074220
-export const historySchemaVersion=1
+export const historySchemaVersion=2
 type Transaction = Pick<PGlite, "query">
 export type HistoryStore = Awaited<ReturnType<typeof createHistoryStore>>
 export async function createHistoryStore(driver: { kind: "pglite"; path?: string; client?: PGlite } | { kind: "postgres"; url: string; schema?: "migrate"; wait?: never } | { kind: "postgres"; url: string; schema: "connect"; wait?: HistorySchemaWaitPolicy; signal?: AbortSignal }, clock=Date.now) {
@@ -159,7 +159,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
       return transaction(async tx => {
         await lockRetainedAccount(tx,principal.personId)
         await ownedDeckAssets(tx,principal,deck);await captureTemplateSources(tx,principal,deck)
-        await tx.query("INSERT INTO editing_deck(id,owner,state) VALUES ($1,$2,$3)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck))])
+        await tx.query("INSERT INTO editing_deck(id,owner,state,updated_at,created_at) VALUES ($1,$2,$3,$4,$4)", [deck.id, principal.personId, JSON.stringify(initialHistory(deck)),clock()])
         return { deck, seq: 0 }
       })
     },

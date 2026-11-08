@@ -48,7 +48,7 @@
     "verify:pr-08": "npm run verify:agent && npm run verify:billing",
     "usage:reconcile": "node apps/server/src/billing/reconcile.ts",
     "verify:release": "vitest run bench/release tests/lint/release-claims.test.ts && node bench/release/replay.mjs && node bench/release/tool-replay.mjs && node bench/release/recovery.mjs",
-    "verify:site": "vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs && node bench/release/site-widths.mjs",
+    "verify:site": "vitest run apps/site/test/discovery.test.ts && node bench/release/site-audit.mjs && node bench/release/site-widths.mjs && node bench/release/mobile-audit.mjs site",
     "verify:pr-09": "npm run verify:release && npm run verify:site",
     "build": "node scripts/live/write-build-identity.mjs && npm run build --workspaces --if-present && npm run build:export-renderer && npm run build:mcp-renderer && npm run build:deck && npm run build:ui",
     "verify:live": "node scripts/live/verify-live.mjs",
@@ -62,7 +62,8 @@
     "gate:typecheck": "node scripts/gate/run.ts typecheck",
     "gate:unit": "node scripts/gate/run.ts unit",
     "gate:verify": "node scripts/gate/run.ts verify",
-    "gate": "node scripts/gate/run.ts all"
+    "gate": "node scripts/gate/run.ts all",
+    "verify:studio-foundation": "node bench/studio-foundation/verify.mjs"
   },
   "devDependencies": {
     "@types/node": "24.10.1",

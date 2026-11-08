@@ -7,7 +7,7 @@ import { commandsHandler } from "../src/commands/handle.ts"
 import { randomBytes } from "node:crypto"
 import pg from "pg"
 import { expect,it,vi } from "vitest"
-import { createHistoryStore,type HistoryStore } from "../src/db/history-store.ts"
+import { createHistoryStore,historySchemaVersion,type HistoryStore } from "../src/db/history-store.ts"
 import { fixtureDeck } from "../../../packages/deck/src/fixture.ts"
 import { id } from "../../../packages/deck/src/index.ts"
 import { commandId,type Command } from "../../../packages/change-log/src/index.ts"
@@ -118,7 +118,7 @@ it("runs a schema version once when two web services start together",async()=>{
     const opened=await Promise.all([createHistoryStore({...driver,schema:"migrate"}),createHistoryStore({...driver,schema:"migrate"})])
     stores.push(...opened)
     expect(migrations).toBe(1)
-    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:1}])
+    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:historySchemaVersion}])
     observed.mockRestore()
   })
 },30_000)
@@ -132,16 +132,16 @@ it("rejects missing or outdated schemas in worker mode without issuing DDL",asyn
       if(typeof args[0]==="string")statements.push(args[0])
       return Reflect.apply(original,this,args)
     })
-    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow("history-schema-outdated: expected version 1, found 0")
+    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow(`history-schema-outdated: expected version ${historySchemaVersion}, found 0`)
     expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
     const store=await createHistoryStore(driver);stores.push(store)
     await sql.query("UPDATE schema_version SET version=0 WHERE name='history'")
     statements.length=0
-    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow("history-schema-outdated: expected version 1, found 0")
+    await expect(createHistoryStore({...driver,schema:"connect",wait:noWait})).rejects.toThrow(`history-schema-outdated: expected version ${historySchemaVersion}, found 0`)
     expect(statements.filter(sql=>/^\s*(CREATE|ALTER|DROP|LOCK|TRUNCATE|REINDEX)\b/i.test(sql))).toEqual([])
     observed.mockRestore()
     const migrated=await createHistoryStore(driver);stores.push(migrated)
-    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:1}])
+    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{version:historySchemaVersion}])
   })
 },30_000)
 

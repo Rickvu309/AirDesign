@@ -11,7 +11,7 @@ import { thumbnailCache } from "../src/server.ts"
 it("uses one geometry tree for client and snapshot with accessible SVG hit areas", () => {
   const slide = fixtureDeck(3).slides[0]!
   const markup = renderToStaticMarkup(createElement(Slide, { slide }))
-  expect(markup).toContain('viewBox="0 0 38 18"')
+  expect(markup).toContain('viewBox="0 0 100 100"')
   expect(markup).toContain('data-element="s0e1"')
   expect(markup).toContain('inline-size:960px')
 })

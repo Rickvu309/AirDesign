@@ -2,6 +2,8 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { act, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
+import { renderToStaticMarkup } from "react-dom/server"
+import { chromium } from "playwright"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import type { AccessClient, IntentKind, VerifyResult } from "@airdesign/access/client"
 import { AccessApp } from "./access-app.tsx"
@@ -21,6 +23,20 @@ afterEach(() => {
 })
 
 describe("studio access", () => {
+  it("preserves the search query when a returning session is still signed in", async () => {
+    await render(<AccessApp client={fakeClient({signedIn:true})} initialScreen="checking" />)
+    await act(flush)
+    await act(async () => { setValue(document.querySelector<HTMLInputElement>('input[type="search"]'), "Strategy"); await flush() })
+    await act(async () => { window.dispatchEvent(new Event("pagehide")) })
+    expect(document.querySelector(".ad-shell")).toBeNull()
+    await act(async () => {
+      window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
+      await flush()
+    })
+    expect(document.querySelector<HTMLInputElement>('input[type="search"]')?.value).toBe("Strategy")
+  })
+
+
   it("preserves the email sign-in flow when switching tabs", async () => {
     await render(<AccessApp client={fakeClient()} />)
     const field = document.querySelector<HTMLInputElement>('input[type="email"]')
@@ -90,7 +106,7 @@ describe("studio access", () => {
       window.dispatchEvent(Object.assign(new Event("pageshow"), {persisted:true}))
       await flush()
     })
-    expect(document.body.textContent).toContain("Connected agents")
+    expect(document.querySelector(".settings-module-heading h2")?.textContent).toBe("Agents")
     expect(location.pathname).toBe("/settings/agents")
     expect(document.querySelector(".ad-shell")).not.toBeNull()
   })
@@ -106,6 +122,61 @@ describe("studio access", () => {
     })
     expect(document.querySelector('[data-screen="signin"]')).not.toBeNull()
     expect(document.querySelector(".ad-shell")).toBeNull()
+  })
+
+  it("explains account creation and links to the legal policies before asking for email", async () => {
+    await render(<AccessApp client={fakeClient()} />)
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
+    expect(document.body.textContent).toContain("New email? The same link creates your account.")
+    expect(document.querySelector('a[href="https://airdesign.app/terms/"]')?.textContent).toBe("Terms of Service")
+    expect(document.querySelector('a[href="https://airdesign.app/privacy/"]')?.textContent).toBe("Privacy Policy")
+    expect(document.querySelector('input[type="email"]')?.getAttribute("autocomplete")).toBe("email")
+  })
+
+  it("switches browse routes without losing loaded decks or list mode", async () => {
+    const requests: string[] = []
+    vi.stubGlobal("fetch", async (input: string) => {
+      requests.push(input)
+      return Response.json(input.startsWith("/api/catalog") ? [{ id: "example", title: "Strategy", slides: 1, updated: Date.now(), deletedAt: null, generation: 1 }] : { name: "Ada" })
+    })
+    await render(<AccessApp client={fakeClient({ signedIn: true })} initialScreen="checking" />)
+    await act(flush)
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="List view"]')?.click())
+    const deck = document.querySelector(".deck-card")
+    expect(deck?.textContent).toContain("Strategy")
+    const catalogRequests = requests.filter(request => request.startsWith("/api/catalog")).length
+    await act(async () => [...document.querySelectorAll<HTMLButtonElement>(".ad-nav-item")].find(button => button.textContent === "All decks")?.click())
+    expect(location.search).toBe("?browse=all")
+    expect(document.querySelector("h1")?.textContent).toBe("All decks")
+    expect(document.querySelector(".deck-card")).toBe(deck)
+    expect(document.querySelector('[aria-label="List view"]')?.getAttribute("aria-pressed")).toBe("true")
+    expect(requests.filter(request => request.startsWith("/api/catalog"))).toHaveLength(catalogRequests)
+    await act(async () => { history.replaceState(history.state, "", "/"); window.dispatchEvent(new PopStateEvent("popstate")) })
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
+    expect(document.querySelector(".deck-card")).toBe(deck)
+  })
+
+  it.each(["/settings/usage", "/settings/agents", "/settings/account", "/trash"])("searches decks from %s while preserving focus and the query", async (destination) => {
+    history.replaceState(null, "", destination)
+    const requests: string[] = []
+    vi.stubGlobal("fetch", async (input: string) => {
+      requests.push(input)
+      if (input === "/api/usage") return Response.json({ payments: { kind: "unavailable" }, used: 0, remaining: 10000, paid: 0, bonus: 0, autoReset: false, week: { zone: "UTC", resetsAt: 1804483200000 } })
+      if (input === "/api/usage/history") return Response.json({ items: [], nextCursor: null })
+      if (input === "/api/agents") return Response.json([])
+      if (input === "/api/aira/configure") return Response.json({ enabled: false })
+      return Response.json(input.startsWith("/api/catalog") ? [{ id: "strategy", title: "Strategy", slides: 1, updated: Date.now(), deletedAt: null, generation: 1 }] : {})
+    })
+    await render(<AccessApp client={fakeClient()} initialScreen="home" />)
+    const search = document.querySelector<HTMLInputElement>('input[type="search"]')
+    search?.focus()
+    await act(async () => { setValue(search, "Strategy"); await flush() })
+    expect(location.pathname).toBe("/")
+    expect(document.querySelector("h1")?.textContent).toBe("All decks")
+    expect(document.querySelector(".deck-card")?.textContent).toContain("Strategy")
+    expect(requests.some(request => request.includes("search=Strategy") && !request.includes("trash=true"))).toBe(true)
+    expect(document.activeElement).toBe(search)
+    expect(search?.value).toBe("Strategy")
   })
 
   it("keeps the discovery import action over a saved home session", async () => {
@@ -136,18 +207,19 @@ describe("studio access", () => {
     history.replaceState(null, "", "/settings/agents")
     await render(<AccessApp client={fakeClient({ signedIn: true, kind: "connect-agent" })} initialScreen="checking" />)
     await act(flush)
-    expect(document.body.textContent).toContain("Connected agents")
+    expect(document.querySelector("h1")?.textContent).toBe("Settings")
+    expect(document.body.textContent).toContain("MCP server")
     expect(document.querySelector(".agent-approval")).toBeNull()
   })
 
-  it("keeps a wrong code on the check screen and returns focus to the code", async () => {
-    const client = fakeClient()
+  it("offers recovery for a wrong code and keeps the same destination", async () => {
+    const client = fakeClient(),submitted=vi.spyOn(client,"submitCode")
     await render(<AccessApp client={client} />)
     await act(async () => {
       await flush()
     })
     const email = document.querySelector<HTMLInputElement>("input")
-    const button = [...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")
+    const button = document.querySelector<HTMLButtonElement>("button.ad-button-primary")
     await act(async () => {
       setValue(email, "ada@example.com")
       button?.click()
@@ -156,15 +228,22 @@ describe("studio access", () => {
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
     const boxes = [...document.querySelectorAll<HTMLInputElement>(".ad-code-box")]
     expect(boxes[0]?.autocomplete).toBe("one-time-code")
+    expect(document.activeElement).toBe(boxes[0])
     await act(async () => {
       const paste = new Event("paste", { bubbles: true, cancelable: true })
       Object.defineProperty(paste, "clipboardData", { value: { getData: () => "000000" } })
       boxes[0]?.dispatchEvent(paste)
       await flush()
     })
-    expect(document.querySelector("[role=alert]")?.textContent).toBe("That code is not valid. Try again.")
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
-    expect(document.activeElement).toBe(document.querySelector(".ad-code-box"))
+    expect(document.querySelector("[role=alert]")?.textContent).toBe("That code is not valid. Try again.")
+    expect([...document.querySelectorAll<HTMLInputElement>(".ad-code-box")].map(input=>input.value)).toEqual(["","","","","",""])
+    await act(async()=>{const paste=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(paste,"clipboardData",{value:{getData:()=>"111111"}});document.querySelector(".ad-code-box")?.dispatchEvent(paste);await flush()})
+    expect(submitted).toHaveBeenNthCalledWith(1,"ada@example.com","000000",expect.any(String))
+    expect(submitted).toHaveBeenNthCalledWith(2,"ada@example.com","111111",submitted.mock.calls[0]?.[2])
+    expect(document.querySelector(".ad-email-target strong")?.textContent).toBe("ada@example.com")
+    await act(async () => { [...document.querySelectorAll("button")].find(button=>button.textContent?.includes("Use a different email"))?.click(); await flush() })
+    expect(document.querySelector<HTMLInputElement>("input[type=email]")?.value).toBe("")
   })
 
   it("clears the email when the person switches address", async () => {
@@ -176,13 +255,13 @@ describe("studio access", () => {
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     await act(async () => {
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Use a different email")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent?.includes("Use a different email"))?.click()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
     expect(document.querySelector("input")?.value).toBe("")
     expect(document.body.textContent).not.toContain("ada@example.com")
   })
@@ -193,10 +272,10 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    const trigger = [...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")
-    trigger?.focus()
+    const trigger = document.querySelector<HTMLElement>('[aria-label="Account menu"]')!
+    await act(async () => trigger.click())
     await act(async () => {
-      trigger?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")?.click()
     })
     expect(document.querySelector("[role=dialog]")).not.toBeNull()
     await act(async () => {
@@ -218,9 +297,9 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector('[aria-label="Workspace sidebar"]')).not.toBeNull()
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
-    expect(document.body.textContent).toContain("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
   })
 
   it("opens an email link into the saved intent", async () => {
@@ -231,7 +310,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
   })
 
@@ -248,14 +327,13 @@ describe("studio access", () => {
       await flush()
     })
     expect(document.querySelector("[data-link-status]")?.getAttribute("data-link-status")).toBe("link-used")
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
     await act(async () => {
       ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Send a new link")?.click()
     })
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
@@ -272,7 +350,7 @@ describe("studio access", () => {
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
-    expect(document.querySelector("[role=status]")?.textContent).toContain("Your place is saved.")
+    expect(document.querySelector(".ad-helper")?.textContent).toContain("Sign-in links work once")
     expect(document.querySelector(".ad-sign-in")).not.toBeNull()
   })
 
@@ -335,7 +413,7 @@ describe("studio access", () => {
       ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Sign out")?.click()
     })
     await act(async () => {
-      document.querySelector<HTMLButtonElement>("button.ad-button-danger")?.click()
+      document.querySelector<HTMLButtonElement>('[role="dialog"] button.ad-button-primary')?.click()
       await flush()
     })
     expect(document.querySelector("[data-screen=signin]")).not.toBeNull()
@@ -343,7 +421,7 @@ describe("studio access", () => {
     const email = document.querySelector<HTMLInputElement>("input")
     await act(async () => {
       setValue(email, "ada@example.com")
-      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue")?.click()
+      ;[...document.querySelectorAll("button")].find((item) => item.textContent === "Continue with email")?.click()
       await flush()
     })
     expect(document.querySelector("h1")?.textContent).toBe("Check your email")
@@ -370,7 +448,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("No decks yet")
+    expect(document.querySelector("h1")?.textContent).toBe("Recents")
     expect(document.querySelector("[role=status]")?.textContent).toContain("Import a PowerPoint")
     root?.unmount()
     document.body.innerHTML = ""
@@ -379,7 +457,7 @@ describe("studio access", () => {
     await act(async () => {
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("Sign in")
+    expect(document.querySelector("h1")?.textContent).toBe("Sign in or create an account")
   })
 })
 
@@ -423,7 +501,7 @@ function fakeClient(options: { signedIn?: boolean; kind?: IntentKind; link?: Ver
       return { status: "check-email", resendAvailableAt: Date.now() + 30_000 }
     },
     async submitCode() {
-      return { status: "invalid-code", screen: "S22.01" }
+      return { status: "invalid-code", screen: "S29.01" }
     },
     async consumeLink() {
       return options.link ?? { status: "link-expired", screen: "S29.01", intentToken: "signed-intent", kind }
@@ -451,3 +529,14 @@ function fakeClient(options: { signedIn?: boolean; kind?: IntentKind; link?: Ver
     },
   }
 }
+
+it("exposes the painted email action by its exact accessible name", async () => {
+  const browser = await chromium.launch({ headless: true })
+  try {
+    const page = await browser.newPage()
+    await page.setContent(renderToStaticMarkup(<AccessApp client={fakeClient({})} />))
+    expect(await page.getByRole("button", { name: "Continue with email", exact: true }).count()).toBe(1)
+  } finally {
+    await browser.close()
+  }
+})

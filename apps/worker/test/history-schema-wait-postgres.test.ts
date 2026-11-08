@@ -6,7 +6,7 @@ import os from "node:os"
 import path from "node:path"
 import pg from "pg"
 import { expect, it } from "vitest"
-import { createHistoryStore } from "../../server/src/db/history-store.ts"
+import { createHistoryStore,historySchemaVersion } from "../../server/src/db/history-store.ts"
 
 it("waits for web to migrate an unversioned production schema, then finishes its cycle without crashing", async () => {
   const database = `airdesign_schema_wait_${randomBytes(6).toString("hex")}`
@@ -30,10 +30,10 @@ it("waits for web to migrate an unversioned production schema, then finishes its
     const [code] = await exited
     const waits = stderr.split("\n").filter(line => line.includes("history-schema-waiting")).map(line => JSON.parse(line))
     expect(code, stderr).toBe(0)
-    expect(waits[0]).toMatchObject({ event: "history-schema-waiting", expected: 1, found: 0, attempt: 1 })
+    expect(waits[0]).toMatchObject({ event: "history-schema-waiting", expected: historySchemaVersion, found: 0, attempt: 1 })
     expect(waits.every(wait => wait.retryInMs >= 125 && wait.retryInMs <= 15_000)).toBe(true)
     expect(stderr).not.toContain("history-schema-outdated")
-    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{ version: 1 }])
+    expect((await sql.query("SELECT version FROM schema_version WHERE name='history'")).rows).toEqual([{ version: historySchemaVersion }])
   } finally {
     await sql.end()
     await admin.query(`DROP DATABASE ${database} WITH (FORCE)`)

@@ -130,7 +130,7 @@ try {
         assert.equal(actual.frameVerdict, "pass")
       }
       if (n === 3 || n === 7) {
-        const textbox = page.getByRole("textbox", { name: "Text s0e0", exact: true })
+        const textbox = page.locator('[data-text="s0e0"]')
         const zoomChecks = []
         for (const zoom of [0.5, 1, 1.5]) {
           await textbox.focus()
@@ -165,7 +165,7 @@ try {
         const start = performance.now()
         await page.goto(`${origin}/render-fixture?hundred=1`)
         await page.locator("[data-ready=true]").waitFor()
-        await page.getByRole("textbox", { name: "Text s0e0", exact: true }).fill("Editable first slide")
+        await page.locator('[data-text="s0e0"]').fill("Editable first slide")
         const elapsed = performance.now() - start
         const hundred = await saved()
         assert.equal(hundred.slides.length, 100)
@@ -173,7 +173,7 @@ try {
         actual = { firstEditableMs: elapsed, slides: hundred.slides.length, totalElements: hundred.slides.reduce((n, s) => n + s.elements.length, 0), budgetMs: 2000 }
       }
       if (n === 5) {
-        const field = page.getByRole("textbox", { name: "Text s0e0", exact: true })
+        const field = page.locator('[data-text="s0e0"]')
         await field.focus()
         await field.dispatchEvent("compositionstart", { data: "" })
         await field.evaluate(node => { node.textContent = "日本語"; node.dispatchEvent(new InputEvent("input", { bubbles: true, isComposing: true, data: "日本語" })) })

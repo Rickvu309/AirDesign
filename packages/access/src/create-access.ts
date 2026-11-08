@@ -325,7 +325,7 @@ async function submitCode(
     return json(400, { status: "guard-rejected" })
   }
   if (typeof body.email !== "string" || !isEmail(body.email) || typeof body.code !== "string" || typeof body.intent !== "string") {
-    return json(400, { status: "invalid-code", screen: "S22.01" })
+    return json(400, { status: "invalid-code", screen: "S29.01" })
   }
   const email = normalizeEmail(body.email)
   const intent = usableIntent(options.secret, body.intent, options.clock())
@@ -333,8 +333,11 @@ async function submitCode(
     return json(400, { status: "intent-rejected" })
   }
   const current = await currentChallenge(db, tables, email)
-  if (!current || current.intentToken !== intent.token || current.expiresAt.getTime() <= options.clock() || current.locked) {
-    return json(400, { status: "invalid-code", screen: "S22.01" })
+  if (!current || current.intentToken !== intent.token || current.locked) {
+    return json(400, { status: "invalid-code", screen: "S29.01" })
+  }
+  if (current.expiresAt.getTime() <= options.clock()) {
+    return recoveryResponse(options, "link-expired", current.intentToken)
   }
   if (body.code.length !== accessPolicy.codeLength || sha256(body.code) !== current.codeHash) {
     await db.update(tables.challenge).set({
@@ -345,11 +348,11 @@ async function submitCode(
       eq(tables.challenge.consumed, false),
       eq(tables.challenge.locked, false),
     ))
-    return json(400, { status: "invalid-code", screen: "S22.01" })
+    return json(400, { status: "invalid-code", screen: "S29.01" })
   }
   const claimed = await claimChallenge(db, tables, current.id, options.clock())
   if (!claimed) {
-    return json(400, { status: "invalid-code", screen: "S22.01" })
+    return json(400, { status: "invalid-code", screen: "S29.01" })
   }
   return signInResponse(options, auth, db, tables, secure, email, intent)
 }

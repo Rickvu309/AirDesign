@@ -1,9 +1,12 @@
-import { copyKit, type CopyKey } from "./copy-kit.ts"
+import { copyKit } from "./copy-kit.ts"
+import { studioFoundationCopy } from "./studio-foundation-copy.ts"
 
-export type { CopyKey }
+const messages = { ...studioFoundationCopy, ...copyKit }
+
+export type CopyKey = keyof typeof messages
 
 export function copy(key: CopyKey): string {
-  return copyKit[key]
+  return messages[key]
 }
 
 export function fillCopy(key: CopyKey, slots: Readonly<Record<string, string>>): string {

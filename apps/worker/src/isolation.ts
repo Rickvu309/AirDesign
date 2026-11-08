@@ -1,3 +1,5 @@
+import {ImportProgressDecoder,acceptImportProgress} from "./import-progress.ts"
+import type {ImportSlideProgress} from "../../../packages/operations/src/import-progress.ts"
 import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {isolationMode, spawnContainerJob, killContainerJob} from "./container-process.ts"
 import { spawn } from "node:child_process"
@@ -5,7 +7,7 @@ import { mkdir, writeFile, readFile, rm, rmdir } from "node:fs/promises"
 import path from "node:path"
 import { OperationStore, type OperationId } from "../../../packages/operations/src/index.ts"
 
-export async function deliver(store: OperationStore, id: OperationId, root: string, program: string, started?:(job:{directory:string;unit:string;pid:number})=>void, signal?:AbortSignal): Promise<boolean> {
+export async function deliver(store: OperationStore, id: OperationId, root: string, program: string, started?:(job:{directory:string;unit:string;pid:number})=>void, signal?:AbortSignal, progress?:(value:ImportSlideProgress)=>void): Promise<boolean> {
   signal?.throwIfAborted()
   const claimed = store.claim(id)
   if (!claimed) return false
@@ -23,8 +25,8 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     signal?.throwIfAborted()
     const child = isolationMode() === "container" ? spawnContainerJob(directory,program,pid=>started?.({directory,unit,pid})) : spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })
     if(isolationMode()==="systemd"&&child.pid)started?.({directory,unit,pid:child.pid})
-    let diagnostic = ""
-    child.stderr?.on("data", (value: Buffer) => { diagnostic = (diagnostic + value.toString()).slice(-2000) })
+    const decoder=new ImportProgressDecoder(value=>{acceptImportProgress(store,id,claimed.lease,value,progress)})
+    child.stderr?.on("data",(value:Buffer)=>decoder.push(value))
     const kill = () => {
       if (isolationMode() === "container") { killContainerJob(child); return }
       killed ??= new Promise<void>(resolve => {
@@ -35,12 +37,15 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     }
     stop = kill
     signal?.addEventListener("abort",kill,{once:true})
-    timer = setTimeout(kill, 30_000)
     cancellation = setInterval(() => { if (!store.active(id, claimed.lease)) kill() }, 25)
-    const code = await new Promise<number | null>((resolve, reject) => { child.once("error", reject); child.once("exit", resolve) })
+    const code = await new Promise<number | null>((resolve, reject) => {
+      timer=setTimeout(()=>{kill();child.stderr?.destroy();reject(new Error("isolated-worker-timeout"))},30_000)
+      child.once("error",reject);child.once("close",resolve)
+    })
+    decoder.finish()
     if (code !== 0) {
       const failure = await readFile(path.join(directory,"failure.json")).catch(() => undefined)
-      let reason = `isolated-worker-failed:${code}:${diagnostic.slice(-150)}`
+      let reason = `isolated-worker-failed:${code}:${decoder.diagnostics().slice(-150)}`
       if (failure && failure.length <= 1024) {
         const value: unknown = JSON.parse(failure.toString())
         if (value && typeof value === "object" && "code" in value && typeof value.code === "string") reason = value.code.slice(0,200)

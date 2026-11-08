@@ -7,7 +7,7 @@ try{
   await review.browser("set","viewport","1440","1000");await review.browser("open",review.consent);await review.browser("wait","--text","wants to use AirDesign")
   await review.browser("record","start",file)
   await review.click("Allow");await review.browser("wait","--text","Ready to return to your agent");await review.click("Having trouble returning?");await review.browser("wait","--text","Unable to return to your agent")
-  await review.browser("open",review.origin+"/settings/agents");await review.browser("wait","--text","Connected agents");await review.click("Disconnect");await review.browser("wait","--text","Your decks and saved work stay here.")
+  await review.browser("open",review.origin+"/settings/agents");await review.browser("wait","--text","MCP server");await review.click("Manage");await review.browser("wait","--text","Your decks and saved work stay here.")
   const snapshot=await review.browser("snapshot","-i"),buttons=snapshot.split("\n").filter(line=>line.includes('button "Disconnect"'));await review.browser("click","@"+buttons.at(-1).match(/ref=(e\d+)/)[1]);await review.browser("wait","--text","Disconnected")
   await review.browser("open",review.expired);await review.browser("wait","--text","Approval has expired")
   await review.browser("open",review.origin+"/settings/usage");await review.browser("wait","--text","Weekly usage")

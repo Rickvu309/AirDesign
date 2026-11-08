@@ -1,0 +1,23 @@
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+body { overscroll-behavior: none; }
+.aira-conversation, .image-panel, .template-panel, .workspace-dialog, .ad-dialog, .ad-command [cmdk-list] {
+  overscroll-behavior: contain;
+}
+.editor-dock { margin-block-end: env(safe-area-inset-bottom, 0px); }
+.aira-panel {
+  padding-block-start: calc(16px + env(safe-area-inset-top, 0px));
+  padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-inline-end: calc(16px + env(safe-area-inset-right, 0px));
+}
+.ad-scrim { padding-block-end: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.workspace-dialog { padding-block-end: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.ad-topbar { padding-block-start: calc(12px + env(safe-area-inset-top, 0px)); }
+[data-sonner-toaster] { margin-block-end: env(safe-area-inset-bottom, 0px); }
+@media (pointer: coarse) {
+  .ad-sign-in, .ad-sign-in .ad-card { box-sizing: border-box; }
+  :root body input, :root body textarea, :root body select { font-size: 16px; }
+}

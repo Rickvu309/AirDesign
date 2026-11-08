@@ -1,3 +1,6 @@
+import {perform as performEditor} from "./editor-capture.mjs"
+import {readFile} from "node:fs/promises"
+import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
 import {scenario} from "../agent-account/fixture.mjs"
 import {OperationStore,operationId} from "../../packages/operations/src/index.ts"
@@ -13,15 +16,26 @@ export async function seed(stack,entry){
   await stack.request(owner,`/api/people/${owner.personId}/profile`,{displayName:"Ada Lovelace"})
   if(["recents","trash-with-items","deck-open","deck-limited","deck-limited-with-credits"].includes(entry.seed)){
     await stack.request(owner,"/api/templates",{id:"halden",version:1,name:"Halden",font:"Geist",background:"#ffffff",foreground:"#102633",accent:"#1e6f8c",fontRight:"installed",families:[{id:"basic",name:"Basic",master:null,layouts:["Blank"]}]},201)
-    const titles=entry.seed==="recents" ? ["Project Atlas","Q3 Investor Update","FY26 Operating Plan","Pricing Strategy Review","Board Pack, October","Germany Market Sizing"] : entry.seed==="trash-with-items" ? ["Old pitch draft","Brightwater kickoff","Scratchpad copy"] : ["Q3 Investor Update"]
+    const recentTitles=["Project Atlas","Q3 Investor Update","FY26 Operating Plan","Pricing Strategy Review","Board Pack, October","Germany Market Sizing"]
+    const titles=entry.seed==="trash-with-items" ? [...recentTitles.slice(0,3),"Old pitch draft","Brightwater kickoff","Scratchpad copy"] : entry.seed==="recents" ? recentTitles.filter(title=>!["S32.02","S32.03"].includes(entry.code)||title!=="Project Atlas") : ["Q3 Investor Update"]
+    const created=["2026-10-30","2026-10-21","2026-09-12","2026-09-03","2026-08-28","2026-08-04"]
     for(const [index,title] of titles.entries()){
       const id=index===0&&entry.seed.startsWith("deck-") ? "designparity"+entry.code.replaceAll(".","") : "parity"+entry.code.replaceAll(".","")+index
-      const deck=investorDeck(id)
-      const age=entry.seed==="trash-with-items" ? [2,7,21][index] : [0,1/12,1,7,21,30][index]
-      stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
+      const deck=investorDeck(id),position=recentTitles.indexOf(title),trashed=entry.seed==="trash-with-items"&&position<0,catalogFixture=!entry.seed.startsWith("deck-")
+      if(catalogFixture){
+        const cover=deck.slides[0]
+        for(const element of cover.elements){
+          if(element.kind==="text")element.runs[0].text=title
+        }
+        cover.notes=title+" overview"
+      }
+      if(catalogFixture)stack.fixture.advance(Date.parse(created[position<0 ? index : position]+"T03:00:00Z")-stack.fixture.now())
       await stack.request(owner,"/api/decks",deck,201)
+      const age=!catalogFixture ? 0 : trashed ? [2,7,21][index-3] : [0,1/12,1,7,21,30][position]
+      stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
       await stack.request(owner,`/api/catalog/${id}/rename`,{title})
-      if(entry.seed==="trash-with-items")await stack.request(owner,`/api/catalog/${id}/trash`,{})
+      if(catalogFixture&&position>=0&&position<3)await stack.request(owner,`/api/catalog/${id}/star`,{starred:true})
+      if(trashed)await stack.request(owner,`/api/catalog/${id}/trash`,{})
     }
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
   }
@@ -53,16 +67,17 @@ export async function seed(stack,entry){
 }
 export async function perform(page,step,stack,owner){
   switch(step.kind){
+    case "hold":case "paste-slides":await performEditor(page,step,stack,owner);break
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
-    case "click":await page.getByRole("button",{name:step.name,exact:true}).first().click();break
-    case "keyboard-activate":await page.getByRole("button",{name:step.name,exact:true}).first().press("Enter");break
+    case "click":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().click();break
+    case "keyboard-activate":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().press("Enter");break
     case "dialog-click":await page.getByRole("dialog").getByRole("button",{name:step.name,exact:true}).click();break
     case "selector-click":await page.locator(step.selector).click();break
     case "hover":await page.getByRole("button",{name:step.name,exact:true}).hover();break
     case "fill":await page.getByLabel(step.label,{exact:true}).fill(step.value);break
     case "select":await page.getByLabel(step.label,{exact:true}).selectOption(step.value);break
     case "import":{
-      await page.getByRole("button",{name:"+ New deck",exact:true}).click()
+      await page.getByRole("button",{name:"New deck",exact:true}).click()
       await page.getByRole("button",{name:"Import PowerPoint",exact:true}).click()
       const response=page.waitForResponse(response=>response.url().endsWith("/api/operations")&&response.request().method()==="POST")
       await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles({name:"Brightwater board review.pptx",mimeType:"application/vnd.openxmlformats-officedocument.presentationml.presentation",buffer:await writeSavedPptx(fixtureDeck(1,6),0,null,{})})
@@ -90,8 +105,8 @@ export async function perform(page,step,stack,owner){
         if(step.outcome==="limited"){
           await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
           await page.getByRole("button",{name:"Send",exact:true}).click()
-          await page.locator('.aira-run-status[data-kind="limited"]').waitFor()
-          await page.getByText("Your weekly usage is used up. Changes so far stay. You can keep editing manually.",{exact:true}).waitFor()
+          await page.locator('.aira-run-status[data-kind="limited"]').waitFor({state:"attached"})
+          await page.getByRole("heading",{name:"You've hit this week's limit",exact:true}).waitFor()
           break
         }
         const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed")
@@ -110,22 +125,40 @@ export async function perform(page,step,stack,owner){
     }
     case "export-failed":{
       const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
-      await page.getByRole("button",{name:"Create export",exact:true}).click()
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
       const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
       if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
       await stack.fixture.history.exports.fail(lease.id,lease.lease,"Unable to create this export")
-      await page.getByText("Export failed:",{exact:false}).waitFor()
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText("Unable to export. Your deck is unchanged.",{exact:true}).waitFor()
+      break
+    }
+    case "export-download":{
+      const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
+      const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
+      if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
+      const saved=lease.snapshot,expected=await writeSavedPptx(saved.deck,saved.seq,saved.source,saved.assets??{})
+      if(!await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{}))throw new Error("export-completion-rejected")
+      const proof=await assertArtifactDownload(page,expected)
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText(proof.requestedFilename+" downloaded",{exact:true}).waitFor()
+      console.log(JSON.stringify({proof:"real-browser-artifact-download",...proof}))
+      break
+    }
+    case "checkout-failed":{
+      await page.route("**/api/billing/checkout",route=>route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({code:"payment-unavailable"})}))
+      await page.getByRole("button",{name:"Continue to payment",exact:true}).click()
+      await page.getByRole("heading",{name:"Unable to complete payment",exact:true}).waitFor()
       break
     }
     case "offline":await page.context().setOffline(true);await page.locator('.studio-editor[data-sync-state="offline"]').waitFor();break
     case "pay":{
-      await page.getByText("Waiting for your $25.00 payment…",{exact:true}).waitFor()
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
       const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
       await stack.webhook({id:"design-parity-paid",payment,cents:2500,kind:"paid"})
-      await page.getByText("Payment received. Credits added.",{exact:true}).waitFor();break
+      await page.getByRole("heading",{name:"$25.00 added",exact:true}).waitFor();break
     }
     case "expire-payment":{
-      await page.getByText("Waiting for your $25.00 payment…",{exact:true}).waitFor()
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
       stack.fixture.advance(86400000)
       const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
       await stack.request(owner,`/api/billing/payments/${payment}`)
@@ -133,4 +166,21 @@ export async function perform(page,step,stack,owner){
     }
     default:throw new Error("unknown-interaction")
   }
+}
+
+export async function assertArtifactDownload(page,expected){
+  const link=page.getByRole("link",{name:"Download PPTX",exact:true})
+  await link.waitFor()
+  const href=await link.getAttribute("href")
+  if(!href)throw new Error("missing-artifact-url")
+  const url=new URL(href,page.url()).href
+  const artifact=await page.request.get(url)
+  if(!artifact.ok())throw new Error("artifact-http-failed")
+  const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
+  if(!filename||!Buffer.from(expected).equals(bytes))throw new Error("artifact-content-mismatch")
+  const pending=page.waitForEvent("download")
+  await link.click()
+  const download=await pending,path=await download.path()
+  if(await download.failure()||!path||download.suggestedFilename()!==filename||!bytes.equals(await readFile(path)))throw new Error("browser-download-mismatch")
+  return {href,url,requestedFilename:filename,contentDisposition:artifact.headers()["content-disposition"],suggestedFilename:download.suggestedFilename(),bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex"),expectedBytes:expected.length,expectedSha256:createHash("sha256").update(expected).digest("hex")}
 }

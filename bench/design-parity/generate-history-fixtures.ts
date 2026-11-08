@@ -8,7 +8,7 @@ const output=path.resolve("bench/design-parity/fixtures/history")
 await mkdir(output,{recursive:true})
 const registry=await readRegistry()
 for(const scenario of ["budget","identity","base","landed-lock"]){
-  const entries=scenario==="identity" ? registry.map(entry=>({...entry,scenarioChangedBecause:undefined})) : registry
+  const entries=scenario==="identity" ? parseRegistry(registry.map((entry,index)=>index===registry.length-1 ? {...entry,status:"unreachable",reason:"History coverage baseline",scenarioChangedBecause:undefined} : {...entry,scenarioChangedBecause:undefined})) : registry
   const cwd=await mkdtemp(path.join(os.homedir(),"tmp/parity-history-generation-"))
   const git=(...args:string[])=>execFileSync("git",args,{cwd,encoding:"utf8",stdio:"pipe"}).trim()
   const save=async(file:string,value:unknown)=>writeFile(path.join(cwd,"bench/design-parity",file),JSON.stringify(value))

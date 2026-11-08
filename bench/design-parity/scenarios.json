@@ -41,7 +41,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "site",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -131,7 +131,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -153,7 +153,7 @@
       },
       {
         "kind": "click",
-        "name": "Continue"
+        "name": "Continue with email"
       }
     ],
     "metric": "local-oklab-v2",
@@ -185,7 +185,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -221,14 +221,14 @@
         "textRoles": [
           {
             "selector": "h1",
-            "role": "page-title",
+            "role": "access-error-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -251,8 +251,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -264,10 +264,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -303,8 +303,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -320,10 +320,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -335,14 +335,14 @@
           },
           {
             "selector": ".deck-card-details > p",
-            "role": "helper",
+            "role": "body",
             "color": "gray.600",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -370,8 +370,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -387,10 +387,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -437,8 +437,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -454,10 +454,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -469,14 +469,14 @@
           },
           {
             "selector": ".deck-card-details > p",
-            "role": "helper",
+            "role": "body",
             "color": "gray.600",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -508,8 +508,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -525,10 +525,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -563,8 +563,8 @@
     "status": "reachable",
     "steps": [
       {
-        "kind": "click",
-        "name": "+ New deck"
+        "kind": "selector-click",
+        "selector": "summary[aria-label=\"New deck\"]"
       }
     ],
     "metric": "local-oklab-v2",
@@ -575,8 +575,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",
@@ -592,10 +592,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -637,8 +637,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -650,10 +650,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -699,8 +699,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -712,10 +712,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -745,7 +745,11 @@
     "steps": [
       {
         "kind": "selector-click",
-        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) summary[aria-label=\"Actions for Pricing Strategy Review\"]"
+      },
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .ad-menu button:text-is(\"Move to Trash\")"
       },
       {
         "kind": "dialog-click",
@@ -765,8 +769,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -778,10 +782,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -797,7 +801,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -848,10 +852,10 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -870,7 +874,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -919,7 +923,7 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
+            "componentSelector": "h2",
             "role": "dialog-title",
             "color": "ink",
             "minimumContrast": 4.5
@@ -934,7 +938,7 @@
         "n": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -1013,7 +1017,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -1034,7 +1038,7 @@
       },
       {
         "kind": "hover",
-        "name": "+ New slide"
+        "name": "New slide"
       }
     ],
     "metric": "local-oklab-v2",
@@ -1085,7 +1089,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Use painted New slide, matching gen-editor New Slide Label; retain actual hover and selection marker."
   },
   {
     "surface": "studio",
@@ -1098,8 +1102,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "New slide has only onClick; no pointer-hold template chooser exists in ManualEditor.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.03,
     "assertions": {
@@ -1148,7 +1151,17 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success.",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 5"
+      },
+      {
+        "kind": "hold",
+        "name": "New slide"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -1161,8 +1174,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Paste is a JSON review flow; the designed clipboard pasted-slides toast does not exist.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -1211,9 +1223,14 @@
       "copyValues": {
         "n": "2",
         "slide": "3"
+      },
+      "copyOwners": {
+        "editor.new_slide": "editor-shell",
+        "import.pasted": "toast",
+        "common.undo": "toast"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1224,7 +1241,17 @@
         "height": 42
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 2"
+      },
+      {
+        "kind": "paste-slides",
+        "count": 2
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -1270,7 +1297,9 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.stop"
+          "nameKey": "agent.stop",
+          "owner": "aira-panel",
+          "paint": "icon"
         }
       ],
       "probe": {
@@ -1304,7 +1333,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Check named Stop square SVG ink and hit ownership, as gen-editor StopSquare specifies."
   },
   {
     "surface": "studio",
@@ -1350,7 +1379,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1384,7 +1414,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Check painted Undo inside Aira, matching gen-editor Undo Label and preserving selective run ownership."
   },
   {
     "surface": "studio",
@@ -1434,7 +1464,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1468,7 +1499,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Check painted Undo inside Aira, matching gen-editor Undo Label and preserving selective run ownership."
   },
   {
     "surface": "studio",
@@ -1518,7 +1549,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1552,7 +1584,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Check painted Undo inside Aira, matching gen-editor Undo Label and preserving selective run ownership."
   },
   {
     "surface": "studio",
@@ -1597,11 +1629,13 @@
         },
         {
           "role": "button",
-          "nameKey": "editor.slide_label"
+          "nameKey": "editor.slide_label",
+          "owner": "slide-navigation"
         },
         {
           "role": "button",
-          "nameKey": "editor.close_picker"
+          "nameKey": "editor.close_picker",
+          "paint": "keyboard-focus"
         }
       ],
       "probe": {
@@ -1635,7 +1669,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v9: source-owned filmstrip number and genuine focus-visible keyboard Close picker preserve reference layout and actual dismissal; fixed fixtures and budgets."
   },
   {
     "surface": "studio",
@@ -1715,7 +1749,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -1794,7 +1828,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -1807,8 +1841,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "No Shapes tool or shapes browser exists in ManualEditor.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -1857,7 +1890,21 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success.",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Shapes"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -1870,8 +1917,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "No expanded shapes browser exists in ManualEditor.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -1919,7 +1965,25 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success.",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Shapes"
+      },
+      {
+        "kind": "click",
+        "name": "More shapes"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -1932,8 +1996,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "No Text toolbar panel exists in ManualEditor.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -1981,7 +2044,21 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success.",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Edit slide text"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -1994,8 +2071,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "The Components dock button is disabled; the floating action picker with Chart, Table, Icon, Remove background and Boost resolution is not implemented.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -2041,9 +2117,26 @@
       },
       "copyValues": {
         "slide": "3"
+      },
+      "copyOwners": {
+        "editor.actions": "actions-search"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Enter the implemented Editor state through real owner controls; clipboard uses the preserved Editor native-PPTX import/parser adapter. Image transforms remain an explicit capability gap, not a simulated success. Actions search is the actual named textbox placeholder owned by Actions picker; require exact placeholder and painted input ink, rejecting filled, wrong, hidden or outside-owner substitutes.",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Actions"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -2120,7 +2213,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2198,10 +2291,10 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Offline feedback is the visible source-owned compact status toast, not a Sonner node; preserve copy, reference box, pixel predicate and target.",
     "component": {
       "kind": "toast",
-      "selector": "[data-sonner-toast]",
+      "selector": ".studio-editor[data-sync-state=\"offline\"]>.editor-status:not([data-font-state])",
       "designBox": {
         "left": 534,
         "top": 11,
@@ -2250,7 +2343,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pptx"
         },
         {
           "role": "button",
@@ -2260,22 +2354,27 @@
       "probe": {
         "kind": "view"
       },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
             "role": "dialog-title",
             "color": "ink",
-            "minimumContrast": 4.5
+            "minimumContrast": 4.5,
+            "componentSelector": "h2"
           }
         ]
-      }
+      },
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
+      ]
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Home is a named brand icon in the canonical Editor header; verify real painted vector and hit target before the export journey.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2332,7 +2431,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pdf"
         },
         {
           "role": "button",
@@ -2342,22 +2442,27 @@
       "probe": {
         "kind": "view"
       },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
             "role": "dialog-title",
             "color": "ink",
-            "minimumContrast": 4.5
+            "minimumContrast": 4.5,
+            "componentSelector": "h2"
           }
         ]
-      }
+      },
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
+      ]
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Home is a named brand icon in the canonical Editor header; verify real painted vector and hit target before the export journey.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2381,46 +2486,41 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
       "copyKeys": [
         "export.downloaded"
       ],
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
+      "controls": [],
       "probe": {
         "kind": "view"
       },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
+            "color": "white",
             "minimumContrast": 4.5
           }
         ]
       },
       "copyValues": {
-        "file": "Q3 Investor Update.pptx"
-      }
+        "file": "Q3 Investor Update-v3.pptx"
+      },
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
+      ]
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Home is a named brand icon in the canonical Editor header; verify real painted vector and hit target before the export journey.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2431,7 +2531,28 @@
         "height": 42
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-download"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -2475,37 +2596,34 @@
       ],
       "controls": [
         {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
           "role": "button",
-          "nameKey": "export.close"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.retry"
+          "nameKey": "pay.try_again"
         }
       ],
       "probe": {
         "kind": "view"
       },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
+            "color": "white",
             "minimumContrast": 4.5
           }
         ]
-      }
+      },
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
+      ]
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Home is a named brand icon in the canonical Editor header; verify real painted vector and hit target before the export journey.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2558,8 +2676,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2569,7 +2687,7 @@
         "agent": "Claude"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2590,7 +2708,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Ready to return to your agent"
+        "text": "Connected"
       }
     ],
     "metric": "local-oklab-v2",
@@ -2619,15 +2737,15 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2669,8 +2787,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2680,7 +2798,7 @@
         "agent": "Codex"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2706,8 +2824,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -2728,7 +2846,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2752,16 +2870,16 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
-          "nameKey": "settings.connected_agents"
+          "nameKey": "settings.agents_heading"
         },
         {
           "role": "button",
-          "nameKey": "settings.disconnect"
+          "nameKey": "settings.manage"
         }
       ],
       "probe": {
@@ -2782,7 +2900,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2796,7 +2914,12 @@
     "seed": "usage-active",
     "budget": 0.982311,
     "status": "reachable",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Edit"
+      }
+    ],
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -2806,8 +2929,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -2844,7 +2967,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -2862,6 +2985,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       }
     ],
     "metric": "local-oklab-v2",
@@ -2903,7 +3030,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2935,15 +3062,15 @@
       },
       {
         "kind": "click",
+        "name": "$25"
+      },
+      {
+        "kind": "click",
         "name": "Continue to payment"
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
-      },
-      {
-        "kind": "selector-click",
-        "selector": "button[aria-label=\"Close add credits\"]"
+        "text": "Waiting for your $25.00 payment. Finish in the new tab."
       }
     ],
     "metric": "local-oklab-v2",
@@ -2956,8 +3083,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",
@@ -2985,7 +3112,7 @@
         "amount": "$25.00"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -3003,6 +3130,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
@@ -3048,7 +3179,7 @@
         "balance": "$40.00"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3098,7 +3229,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3136,7 +3268,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated."
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
   },
   {
     "surface": "studio",
@@ -3165,7 +3297,7 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       }
     ],
     "metric": "local-oklab-v2",
@@ -3194,15 +3326,15 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
             "role": "dialog-title",
             "color": "ink",
-            "minimumContrast": 4.5
+            "minimumContrast": 4.5,
+            "componentSelector": "h2"
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3226,8 +3358,7 @@
     },
     "seed": "deck-limited",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
@@ -3241,11 +3372,11 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "pay.continue"
         },
         {
           "role": "button",
-          "nameKey": "editor.slide_label"
+          "nameKey": "common.cancel"
         }
       ],
       "probe": {
@@ -3255,10 +3386,10 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
             "role": "dialog-title",
             "color": "ink",
-            "minimumContrast": 4.5
+            "minimumContrast": 4.5,
+            "componentSelector": "h2"
           }
         ]
       },
@@ -3266,7 +3397,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3277,7 +3408,29 @@
         "height": 444
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Minimum $10."
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3306,15 +3459,15 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       },
       {
         "kind": "dialog-click",
-        "name": "Reset for $5"
+        "name": "Reset"
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Pick up where you left off."
       }
     ],
     "metric": "local-oklab-v2",
@@ -3328,7 +3481,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3368,9 +3522,14 @@
       },
       "copyValues": {
         "slide": "3"
+      },
+      "copyOwners": {
+        "usage.reset_done": "toast",
+        "agent.resume_line": "aira-panel",
+        "agent.resume": "aira-panel"
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3385,23 +3544,22 @@
   },
   {
     "surface": "studio",
-    "route": "/",
+    "route": "/settings/usage",
     "code": "S99.01",
     "design": "docs/design/v0.1/screens/S99.01-credits-errors-payment-failed.png",
     "viewport": {
       "width": 1470,
       "height": 923
     },
-    "seed": "signed-out",
+    "seed": "usage-active",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
       "copyKeys": [
         "pay.failed_title",
-        "pay.not_charged",
+        "pay.checkout_failed_body",
         "common.close",
         "pay.try_again"
       ],
@@ -3416,23 +3574,27 @@
         }
       ],
       "probe": {
-        "kind": "fill",
-        "label": "Email",
-        "value": "probe@halden.com"
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
       },
       "structure": {
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".credits-dialog[open] h2",
+            "role": "dialog-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
-      }
+      },
+      "entryCopyKeys": [
+        "settings.title"
+      ]
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3443,7 +3605,16 @@
         "height": 208
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "checkout-failed"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3464,6 +3635,10 @@
       },
       {
         "kind": "click",
+        "name": "$25"
+      },
+      {
+        "kind": "click",
         "name": "Continue to payment"
       },
       {
@@ -3475,7 +3650,7 @@
     "assertions": {
       "copyKeys": [
         "pay.expired_title",
-        "pay.not_charged",
+        "pay.expired_body",
         "common.close",
         "pay.try_again"
       ],
@@ -3507,7 +3682,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Round 7 audits required copy against the authoritative PNG and resolves only copy-kit keys; component regions are independently gated.",
+    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",

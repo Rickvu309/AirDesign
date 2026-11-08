@@ -60,7 +60,7 @@ describe("design parity contract",()=>{
   })
 })
 it("enforces release targets separately from regression ceilings and refuses missing coverage",async()=>{
-  const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing=entries.find(entry=>entry.status==="unreachable")!
+  const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing={...entry,status:"unreachable" as const,reason:"Deliberately missing behavior"}
   const scenario={...entry,budget:0.9,target:targetFor(entry.code,entry.surface)}
   expect(passesParity(scenario,0.8,false)).toBe(true)
   expect(passesParity(scenario,0.8,true)).toBe(false)
@@ -89,4 +89,27 @@ it("binds release thresholds to the committed faithful-reference calibration",as
   }
   for(const row of record.results)expect(row.reference.score).toBeLessThan(row.surface=== "site" ? surfaceTargets.site : surfaceTargets.studio)
   for(const row of record.editor)expect(row.score).toBeLessThan(surfaceTargets.studio)
+})
+
+it("keeps component-owned dialog titles distinct from page text selectors",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")
+  if(!entry)throw new Error("missing-empty-trash-contract")
+  expect(()=>parseRegistry([entry])).not.toThrow()
+  const title=entry.assertions.structure.textRoles[0]
+  if(!title||!("componentSelector" in title))throw new Error("missing-component-title-contract")
+  for(const invalid of [{...title,selector:"h2"},{...title,role:"page-title"},{...title,componentSelector:"body h2"}]){
+    const wrong={...entry,assertions:{...entry.assertions,structure:{...entry.assertions.structure,textRoles:[invalid]}}}
+    expect(()=>parseRegistry([wrong])).toThrow()
+  }
+})
+
+
+it("permits actionless completion only inside a registered toast component",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S61.03")
+  if(!entry)throw new Error("missing-completed-export-contract")
+  expect(()=>parseRegistry([entry])).not.toThrow()
+  const {component,...withoutOwner}=entry
+  expect(component?.kind).toBe("toast")
+  expect(()=>parseRegistry([withoutOwner])).toThrow("missing-required-control")
+  expect(()=>parseRegistry([{...entry,component:{...component,kind:"dialog"}}])).toThrow("missing-required-control")
 })

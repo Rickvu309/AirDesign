@@ -1,3 +1,4 @@
+import {ImportProgressForwarder} from "./import-progress.ts"
 import {RemoteJournal} from "./remote-journal.ts"
 import {isolationMode} from "./container-process.ts"
 import {z} from "zod"
@@ -8,6 +9,14 @@ import {deliver} from "./isolation.ts"
 const cleanup=z.object({cleanup:z.array(z.object({id:z.string().uuid(),lease:z.string().uuid()}))})
 const claim = z.object({id:z.string().uuid(),lease:z.string().uuid(),input:z.string()}).nullable()
 const active = z.object({active:z.boolean()})
+
+export function forwardImportProgress({origin,secret,id,lease,signal}:{origin:string;secret:string;id:string;lease:string;signal?:AbortSignal}):ImportProgressForwarder {
+  return new ImportProgressForwarder(async(value,progressSignal)=>{
+      const response=await fetch(new URL("/internal/worker",origin),{method:"POST",headers:{authorization:`Bearer ${secret}`,"content-type":"application/json"},body:JSON.stringify({kind:"progress",queue:"import",id:id,lease:lease,progress:value}),signal:AbortSignal.any([progressSignal,...(signal ? [signal] : [])]),redirect:"error"})
+      if(!response.ok)throw new Error("progress-unavailable")
+      await response.body?.cancel()
+    })
+}
 
 export async function drainRemoteQueue(origin:string,secret:string,root:string,signal?:AbortSignal):Promise<void> {
   async function request(body:unknown) {
@@ -42,8 +51,9 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string,s
       checking = true
       pending = request({kind:"active",queue,id:job.id,lease:job.lease}).then(value => { if (!active.parse(value).active) store.cancel(principal,local.id) }).catch(() => { store.cancel(principal,local.id) }).finally(() => { checking = false })
     },100)
+    const progress=forwardImportProgress({origin,secret,id:job.id,lease:job.lease,signal})
     try {
-      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process),signal)
+      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process),signal,queue==="import" ? value=>progress.publish(value) : undefined)
       clearInterval(cancellation)
       const status = store.status(principal,local.id)
       if (status.kind === "ready") {
@@ -58,7 +68,8 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string,s
         await request({kind:"complete",queue,id:job.id,lease:job.lease,report:status.report})
       }
       else await request({kind:"fail",queue,id:job.id,lease:job.lease,reason:status.kind === "failed" ? status.reason : "worker-cancelled"})
-    } finally { clearInterval(cancellation); await pending; store.close() }
+    } finally {
+      await progress.close(); clearInterval(cancellation); await pending; store.close() }
     const entry=journal.entries().find(entry=>entry.lease===job.lease)
     if(!entry)throw new Error("missing-remote-journal")
     await journal.clean(entry)

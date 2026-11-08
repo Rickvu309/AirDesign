@@ -1,7 +1,9 @@
+import {ImportProgressWriter} from "./import-progress.ts"
 import {jobPath} from "./job-path.ts"
 import { importedDeck } from "../../../packages/pptx/src/import-deck.ts"
 import { readFile, writeFile } from "node:fs/promises"
 import { importPptx, exportPptx } from "../../../packages/pptx/src/index.ts"
+const progress=new ImportProgressWriter(process.stderr)
 try {
   const started = performance.now()
   const input = await readFile(jobPath("input.pptx"))
@@ -9,8 +11,10 @@ try {
   const output = await exportPptx(presentation)
   await importPptx(output)
   await writeFile(jobPath("result.pptx"), output)
-  await writeFile(jobPath("report.json"), JSON.stringify({ ...presentation.report, deck:importedDeck(presentation), workerMetrics: { wallMs: performance.now()-started, peakRssBytes: process.resourceUsage().maxRSS*1024, inputBytes: input.length, expandedBytes: [...presentation.parts.values()].reduce((total,bytes) => total+bytes.length,0), parts: presentation.parts.size } }))
+  await writeFile(jobPath("report.json"), JSON.stringify({ ...presentation.report, deck:importedDeck(presentation,value=>progress.publish({kind:"import-slides",...value})), workerMetrics: { wallMs: performance.now()-started, peakRssBytes: process.resourceUsage().maxRSS*1024, inputBytes: input.length, expandedBytes: [...presentation.parts.values()].reduce((total,bytes) => total+bytes.length,0), parts: presentation.parts.size } }))
 } catch (error) {
   await writeFile(jobPath("failure.json"),JSON.stringify({ code: error instanceof Error ? error.message.slice(0,200) : "import-failed" }))
   process.exitCode = 1
 }
+
+await progress.flush()
