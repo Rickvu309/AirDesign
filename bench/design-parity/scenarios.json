@@ -264,7 +264,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -320,7 +320,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -387,7 +387,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -454,7 +454,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -525,7 +525,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -592,7 +592,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Open the intended visible New deck summary and require the actual sidebar Search searchbox after Decks reconciliation; preserve state, viewport and parity limits."
+    "scenarioChangedBecause": "Open the intended visible New deck summary and require the actual sidebar Search searchbox after Decks reconciliation; preserve state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -650,7 +650,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -712,7 +712,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",
@@ -782,7 +782,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -801,7 +801,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Open the visible Pricing Strategy Review card Actions menu before its Move to Trash action, retain real confirmation and completion wait, and require sidebar Search; design, state, viewport and parity limits remain unchanged.",
+    "scenarioChangedBecause": "Open the visible Pricing Strategy Review card Actions menu before its Move to Trash action, retain real confirmation and completion wait, and require sidebar Search; design, state, viewport and parity limits remain unchanged. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -852,7 +852,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -874,7 +874,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
   },
   {
     "surface": "studio",

@@ -240,7 +240,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -292,7 +292,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -355,7 +355,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -418,7 +418,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -485,7 +485,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -548,7 +548,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -602,7 +602,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -660,7 +660,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -726,7 +726,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
@@ -792,7 +792,7 @@
       "structure": {
         "icons": [
           {
-            "region": ".workspace-home",
+            "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
             "color": "ink"
