@@ -9,7 +9,7 @@ const relationshipsUri = "http://schemas.openxmlformats.org/package/2006/relatio
 const drawingUri = "http://schemas.openxmlformats.org/drawingml/2006/main"
 export const hash = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex")
 export type Relationship = { part: string; id: string; type: string; target: string }
-export type SafetyRemoval = { part: string; detail: string; affectedObjects?: { part: string; objectId: string; content: "removed" | "preserved" }[] } & ({ disposition: "removed"; reason: "remote-external-relationships" | "macros" | "active-embedded-objects" } | { disposition: "normalized"; reason: "inert-office-processing-instruction" | "inert-svg-attributes" })
+export type SafetyRemoval = { provenance?: "source-reported"; part: string; detail: string; affectedObjects?: { part: string; objectId: string; content: "removed" | "preserved" | "partial" }[] } & ({ disposition: "removed"; reason: "remote-external-relationships" | "macros" | "active-embedded-objects" } | { disposition: "normalized"; reason: "inert-office-processing-instruction" | "inert-svg-attributes" })
 export type Capability = { scope: { kind: "part" } | { kind: "text-span"; index: number }; part: string; support: "native" | "kept" | "flagged"; local: "proven"; powerpoint: "unproven"; preview: null; sourceSha256: string; editor: "text-span" | "qualified-generated" | null }
 export type Report = { sourceSha256: string; hashes: Record<string,string>; relationships: Relationship[]; removals: SafetyRemoval[]; capabilities: Capability[]; fonts: { family: string; status: "unresolved"; fileHash: null; license: null }[]; referenceGate: "P09-X01-unproven" }
 export type Presentation = { parts: ReadonlyMap<string, Buffer>; report: Report }
@@ -112,9 +112,12 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
           const references = parsedSource.nodes.filter(item => Object.entries(item.attributes).some(([key,value]) => key.includes(":") && ["id","embed","link"].includes(key.split(":")[1] ?? "") && value === id))
           const removal = removals.at(-1)
           if (removal) removal.affectedObjects = references.flatMap(reference => {
-            const object = parsedSource.nodes.filter(item => ["sp", "pic", "graphicFrame", "cxnSp", "grpSp"].includes(item.local) && item.start < reference.start && item.end > reference.end).sort((a,b) => (a.end-a.start)-(b.end-b.start))[0]
-            const identity = object && parsedSource.nodes.find(item => item.local === "cNvPr" && item.start > object.start && item.end < object.end)
-            return identity?.attributes.id ? [{ part: source, objectId: identity.attributes.id, content: reference.local === "hlinkClick" || reference.local === "hlinkMouseOver" ? "preserved" : "removed" }] : []
+            const ancestors = parsedSource.nodes.filter(item => ["sp", "pic", "graphicFrame", "cxnSp", "grpSp"].includes(item.local) && item.start < reference.start && item.end > reference.end).sort((a,b) => (a.end-a.start)-(b.end-b.start))
+            return ancestors.flatMap((object, index) => {
+              const identity = parsedSource.nodes.find(item => item.local === "cNvPr" && item.start > object.start && item.end < object.end)
+              const content: "preserved" | "removed" | "partial" = reference.local === "hlinkClick" || reference.local === "hlinkMouseOver" ? "preserved" : index === 0 ? "removed" : "partial"
+              return identity?.attributes.id ? [{ part: source, objectId: identity.attributes.id, content }] : []
+            })
           })
           parts.set(source, Buffer.from(removeSpans(parsedSource.xml, references)))
         }

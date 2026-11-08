@@ -76,13 +76,16 @@ export function importedDeck(presentation:Presentation,progress?:(value:{complet
       const index=Number(element.source.kind==="original" ? element.source.objectId.split(":").at(-1) : -1)
       const object=element.kind==="text" ? undefined : objects[index]
       const identity=object && parsed.nodes.find(child=>within(object,child)&&child.local==="cNvPr")
-      const removal=identity && presentation.report.removals.find(removal=>removal.affectedObjects?.some(affected=>affected.part===part&&affected.objectId===identity.attributes.id&&affected.content==="removed"))
-      if(removal)element.support={kind:"flagged",preservation:"removed",preview:null,reason:removal.reason}
+      const removal=identity && presentation.report.removals.findLast(removal=>removal.affectedObjects?.some(affected=>affected.part===part&&affected.objectId===identity.attributes.id&&affected.content!=="preserved"))
+      if(removal){
+        const affected=removal.affectedObjects?.find(affected=>affected.part===part&&affected.objectId===identity?.attributes.id)
+        element.support={kind:"flagged",preservation:removal.provenance === "source-reported" ? "reported" : affected?.content === "partial" ? "partial" : "removed",preview:null,reason:removal.reason}
+      }
       else if(object){
         const references=parsed.nodes.filter(child=>within(object,child)).flatMap(child=>Object.entries(child.attributes).filter(([key])=>["r:embed","r:link","r:id"].includes(key)).map(([,value])=>value))
         const targets=presentation.report.relationships.filter(rel=>rel.part===part&&references.includes(rel.id)).map(rel=>rel.target)
         const normalized=presentation.report.removals.find(removal=>removal.disposition==="normalized"&&targets.includes(removal.part))
-        if(normalized)element.support={kind:"flagged",preview:null,reason:normalized.detail}
+        if(normalized)element.support={kind:"flagged",preview:null,reason:normalized.provenance === "source-reported" ? `Source reports prior normalization (unverified): ${normalized.detail}` : normalized.detail}
       }
     }
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null

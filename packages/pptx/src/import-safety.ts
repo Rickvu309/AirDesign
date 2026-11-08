@@ -9,8 +9,8 @@ export function readSafetyHistory(parts: ReadonlyMap<string, Buffer>): SafetyRem
   if (!bytes) return []
   if (bytes.length > 8 * 1024 * 1024) throw new Error("safety-history-limit")
   const value: unknown = JSON.parse(bytes.toString("utf8"))
-  if (!Array.isArray(value) || value.length > 10000 || !value.every(item => typeof item === "object" && item !== null && typeof item.part === "string" && safePartName(item.part) && reasons.has(item.reason) && item.disposition === (item.reason === "inert-office-processing-instruction" || item.reason === "inert-svg-attributes" ? "normalized" : "removed") && (item.affectedObjects === undefined || Array.isArray(item.affectedObjects) && item.affectedObjects.length <= 10000 && item.affectedObjects.every((object: unknown) => typeof object === "object" && object !== null && "part" in object && typeof object.part === "string" && safePartName(object.part) && "objectId" in object && typeof object.objectId === "string" && object.objectId.length <= 128 && "content" in object && (object.content === "removed" || object.content === "preserved"))) && typeof item.detail === "string" && item.detail.length <= 4096)) throw new Error("invalid-safety-history")
-  return value
+  if (!Array.isArray(value) || value.length > 10000 || !value.every(item => typeof item === "object" && item !== null && typeof item.part === "string" && safePartName(item.part) && reasons.has(item.reason) && item.disposition === (item.reason === "inert-office-processing-instruction" || item.reason === "inert-svg-attributes" ? "normalized" : "removed") && (item.affectedObjects === undefined || Array.isArray(item.affectedObjects) && item.affectedObjects.length <= 10000 && item.affectedObjects.every((object: unknown) => typeof object === "object" && object !== null && "part" in object && typeof object.part === "string" && safePartName(object.part) && "objectId" in object && typeof object.objectId === "string" && object.objectId.length <= 128 && "content" in object && (object.content === "removed" || object.content === "preserved" || object.content === "partial"))) && typeof item.detail === "string" && item.detail.length <= 4096)) throw new Error("invalid-safety-history")
+  return value.map(item => ({ ...item, provenance: "source-reported" }))
 }
 export function storeSafetyHistory(parts: Map<string, Buffer>, removals: SafetyRemoval[]): void {
   if (!removals.length) return
@@ -30,7 +30,7 @@ export function normalizeImportPart(part: string, bytes: Buffer): { bytes: Buffe
     if (xml.startsWith("<?mso-contentType?>")) {
       const normalized = xml.slice("<?mso-contentType?>".length)
       const parsed = parseXml(Buffer.from(normalized))
-      if (parsed.nodes[0]?.local !== "FormTemplates" || parsed.nodes[0]?.uri !== "http://schemas.microsoft.com/sharepoint/v3/contenttype/forms") throw new Error("unqualified-office-processing-instruction")
+      if (!/^<FormTemplates xmlns="http:\/\/schemas\.microsoft\.com\/sharepoint\/v3\/contenttype\/forms">(?:<Display>DocumentLibraryForm<\/Display>)?(?:<Edit>DocumentLibraryForm<\/Edit>)?(?:<New>DocumentLibraryForm<\/New>)?<\/FormTemplates>$/.test(parsed.xml)) throw new Error("unqualified-office-processing-instruction")
       bytes = Buffer.from(normalized)
       removals.push({ disposition: "normalized", part, reason: "inert-office-processing-instruction", detail: "Removed empty mso-contentType instruction; retained SharePoint form metadata" })
     }

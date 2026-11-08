@@ -19,14 +19,14 @@ it("normalizes only the qualified Office PI and records persistent removals", as
   expect(safe.parts.get("customXml/item3.xml")?.toString()).not.toContain("<?mso")
   expect(safe.report.removals).toContainEqual(expect.objectContaining({ part: "customXml/item3.xml", reason: "inert-office-processing-instruction" }))
   const again = await importPptx(await exportPptx(safe))
-  expect(again.report.removals).toEqual(safe.report.removals)
+  expect(again.report.removals).toEqual(safe.report.removals.map(item=>({...item,provenance:"source-reported"})))
 })
 it("keeps sanitized icon geometry and records exact root attribute removals", async () => {
   expect(() => rejectActiveSvg(icon)).toThrow("unsafe-svg")
   const safe = await withPart("ppt/media/camera.svg", icon)
   expect(safe.parts.get("ppt/media/camera.svg")?.toString()).toContain('<path d="M0 0L96 96"')
   expect(safe.report.removals).toContainEqual(expect.objectContaining({ reason: "inert-svg-attributes" }))
-  expect((await importPptx(await exportPptx(safe))).report.removals).toEqual(safe.report.removals)
+  expect((await importPptx(await exportPptx(safe))).report.removals).toEqual(safe.report.removals.map(item=>({...item,provenance:"source-reported"})))
 })
 it.each([
   '<script>alert(1)</script>', '<g onclick="alert(1)"/>', '<foreignObject/>', '<image href="https://evil.test/a"/>', '<use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="file:///etc/passwd"/>', '<path fill="url(https://evil.test)"/>', '<?evil command?>', '<g id="nested-id"/>', '<g style="background:url(https://evil.test)"/>'
