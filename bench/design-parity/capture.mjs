@@ -101,8 +101,8 @@ export async function perform(page,step,stack,owner){
         if(step.outcome==="limited"){
           await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
           await page.getByRole("button",{name:"Send",exact:true}).click()
-          await page.locator('.aira-run-status[data-kind="limited"]').waitFor()
-          await page.getByText("Your weekly usage is used up. Changes so far stay. You can keep editing manually.",{exact:true}).waitFor()
+          await page.locator('.aira-run-status[data-kind="limited"]').waitFor({state:"attached"})
+          await page.getByRole("heading",{name:"You've hit this week's limit",exact:true}).waitFor()
           break
         }
         const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed")
@@ -121,22 +121,38 @@ export async function perform(page,step,stack,owner){
     }
     case "export-failed":{
       const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
-      await page.getByRole("button",{name:"Create export",exact:true}).click()
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
       const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
       if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
       await stack.fixture.history.exports.fail(lease.id,lease.lease,"Unable to create this export")
-      await page.getByText("Export failed:",{exact:false}).waitFor()
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText("Unable to export. Your deck is unchanged.",{exact:true}).waitFor()
+      break
+    }
+    case "export-download":{
+      const response=page.waitForResponse(response=>response.url().includes("/exports")&&response.request().method()==="POST")
+      await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
+      const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
+      if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
+      await stack.fixture.history.exports.complete(lease.id,lease.lease,await writeSavedPptx(fixtureDeck(1,6),0,null,{}),{})
+      await page.getByRole("link",{name:"Download PPTX",exact:true}).click()
+      await page.getByText("PowerPoint downloaded",{exact:true}).waitFor()
+      break
+    }
+    case "checkout-failed":{
+      await page.route("**/api/billing/checkout",route=>route.fulfill({status:503,contentType:"application/json",body:JSON.stringify({code:"payment-unavailable"})}))
+      await page.getByRole("button",{name:"Continue to payment",exact:true}).click()
+      await page.getByRole("heading",{name:"Unable to complete payment",exact:true}).waitFor()
       break
     }
     case "offline":await page.context().setOffline(true);await page.locator('.studio-editor[data-sync-state="offline"]').waitFor();break
     case "pay":{
-      await page.getByText("Waiting for your $25.00 payment…",{exact:true}).waitFor()
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
       const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
       await stack.webhook({id:"design-parity-paid",payment,cents:2500,kind:"paid"})
-      await page.getByText("Payment received. Credits added.",{exact:true}).waitFor();break
+      await page.getByRole("heading",{name:"$25.00 added",exact:true}).waitFor();break
     }
     case "expire-payment":{
-      await page.getByText("Waiting for your $25.00 payment…",{exact:true}).waitFor()
+      await page.getByText("Waiting for your $25.00 payment. Finish in the new tab.",{exact:true}).waitFor()
       stack.fixture.advance(86400000)
       const payment=await page.evaluate(()=>sessionStorage.getItem("airdesign-payment"))
       await stack.request(owner,`/api/billing/payments/${payment}`)

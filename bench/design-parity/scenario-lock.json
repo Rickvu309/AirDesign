@@ -1,6 +1,6 @@
 [
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S11.01",
     "seed": "signed-out",
     "steps": [],
@@ -40,7 +40,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S12.01",
     "seed": "signed-out",
     "steps": [],
@@ -80,7 +80,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S21.01",
     "seed": "signed-out",
     "steps": [],
@@ -122,7 +122,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S22.01",
     "seed": "signed-out",
     "steps": [
@@ -172,7 +172,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S29.01",
     "seed": "signed-out",
     "steps": [],
@@ -211,7 +211,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S31.01",
     "seed": "empty-account",
     "steps": [],
@@ -259,7 +259,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S31.02",
     "seed": "recents",
     "steps": [],
@@ -317,7 +317,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S31.03",
     "seed": "recents",
     "steps": [
@@ -380,7 +380,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S31.04",
     "seed": "recents",
     "steps": [
@@ -443,7 +443,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S31.05",
     "seed": "recents",
     "steps": [
@@ -510,7 +510,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S32.01",
     "seed": "recents",
     "steps": [
@@ -567,7 +567,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S32.02",
     "seed": "recents",
     "steps": [
@@ -625,7 +625,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S32.03",
     "seed": "recents",
     "steps": [
@@ -679,7 +679,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S33.01",
     "seed": "recents",
     "steps": [
@@ -759,7 +759,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S33.02",
     "seed": "trash-with-items",
     "steps": [],
@@ -817,7 +817,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S33.03",
     "seed": "trash-with-items",
     "steps": [
@@ -888,7 +888,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S41.01",
     "seed": "deck-open",
     "steps": [
@@ -952,7 +952,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S41.02",
     "seed": "deck-open",
     "steps": [
@@ -1020,7 +1020,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S41.03",
     "seed": "deck-open",
     "steps": [],
@@ -1079,7 +1079,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S41.04",
     "seed": "deck-open",
     "steps": [],
@@ -1151,7 +1151,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S42.01",
     "seed": "deck-open",
     "steps": [
@@ -1227,7 +1227,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S42.02",
     "seed": "deck-open",
     "steps": [
@@ -1303,7 +1303,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S42.03",
     "seed": "deck-open",
     "steps": [
@@ -1383,7 +1383,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S42.04",
     "seed": "deck-open",
     "steps": [
@@ -1463,7 +1463,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.01",
     "seed": "deck-open",
     "steps": [
@@ -1542,7 +1542,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.02",
     "seed": "deck-open",
     "steps": [
@@ -1618,7 +1618,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.03",
     "seed": "deck-open",
     "steps": [
@@ -1693,7 +1693,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.04",
     "seed": "deck-open",
     "steps": [],
@@ -1752,7 +1752,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.05",
     "seed": "deck-open",
     "steps": [],
@@ -1810,7 +1810,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.06",
     "seed": "deck-open",
     "steps": [],
@@ -1868,7 +1868,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S43.07",
     "seed": "deck-open",
     "steps": [],
@@ -1926,7 +1926,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S49.01",
     "seed": "deck-open",
     "steps": [
@@ -1999,7 +1999,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S49.02",
     "seed": "deck-open",
     "steps": [
@@ -2084,7 +2084,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S61.01",
     "seed": "deck-open",
     "steps": [
@@ -2158,7 +2158,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S61.02",
     "seed": "deck-open",
     "steps": [
@@ -2237,17 +2237,37 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S61.03",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-download"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [],
@@ -2297,7 +2317,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S69.01",
     "seed": "deck-open",
     "steps": [
@@ -2333,8 +2353,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2349,17 +2369,8 @@
       ],
       "controls": [
         {
-          "role": "combobox",
-          "nameKey": "export.file_format",
-          "value": "pptx"
-        },
-        {
           "role": "button",
-          "nameKey": "export.close"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.retry"
+          "nameKey": "pay.try_again"
         }
       ],
       "probe": {
@@ -2379,7 +2390,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S71.01",
     "seed": "oauth-Claude",
     "steps": [],
@@ -2428,7 +2439,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S71.02",
     "seed": "oauth-Claude",
     "steps": [
@@ -2482,7 +2493,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S71.03",
     "seed": "oauth-Codex",
     "steps": [],
@@ -2531,7 +2542,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S81.01",
     "seed": "usage-active",
     "steps": [],
@@ -2575,7 +2586,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S81.02",
     "seed": "usage-active-connected",
     "steps": [],
@@ -2625,7 +2636,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S81.03",
     "seed": "usage-active",
     "steps": [],
@@ -2683,13 +2694,17 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S91.01",
     "seed": "usage-active",
     "steps": [
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       }
     ],
     "viewport": {
@@ -2749,7 +2764,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S91.02",
     "seed": "usage-active",
     "steps": [
@@ -2759,15 +2774,15 @@
       },
       {
         "kind": "click",
+        "name": "$25"
+      },
+      {
+        "kind": "click",
         "name": "Continue to payment"
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
-      },
-      {
-        "kind": "selector-click",
-        "selector": "button[aria-label=\"Close add credits\"]"
+        "text": "Waiting for your $25.00 payment. Finish in the new tab."
       }
     ],
     "viewport": {
@@ -2816,13 +2831,17 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S91.03",
     "seed": "usage-active",
     "steps": [
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
@@ -2886,7 +2905,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S92.01",
     "seed": "deck-limited",
     "steps": [
@@ -2959,7 +2978,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S92.02",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -2977,7 +2996,7 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       }
     ],
     "viewport": {
@@ -3032,17 +3051,38 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S92.03",
     "seed": "deck-limited",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Minimum $10."
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [],
@@ -3092,7 +3132,7 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S92.04",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -3110,15 +3150,15 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       },
       {
         "kind": "dialog-click",
-        "name": "Reset for $5"
+        "name": "Reset"
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Pick up where you left off."
       }
     ],
     "viewport": {
@@ -3192,17 +3232,25 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S99.01",
-    "seed": "signed-out",
-    "steps": [],
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "checkout-failed"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
-    "route": "/",
-    "status": "unreachable",
+    "route": "/settings/usage",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [],
@@ -3250,13 +3298,17 @@
     }
   },
   {
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "fixtureContentHash": "2a5cf03fc5d147f2612949ab920c0b76160c96ed617e9e18c65d23a7a4874fe1",
     "code": "S99.02",
     "seed": "usage-active",
     "steps": [
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
