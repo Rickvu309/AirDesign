@@ -5,6 +5,7 @@ import {beforeAll,expect,it} from "vitest"
 import {perform} from "./capture.mjs"
 import {readRegistry,type Scenario} from "./registry.ts"
 import {assertRendered,assertScenarioCopy,assertDialogActions,assertScenarioDOM,assertScenarioStructure} from "./dom-assertions.ts"
+import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
 import type {DeckEntry} from "../../packages/catalog/src/index.ts"
 
 let script="",styles=""
@@ -12,16 +13,16 @@ const title="Pricing Strategy Review"
 const card='.deck-card:has(h2:has-text("Pricing Strategy Review"))'
 beforeAll(async()=>{
   const entry=path.resolve("virtual:decks-trash-proof")
-  const built=await build({configFile:false,logLevel:"silent",oxc:{jsx:{runtime:"automatic",development:false}},define:{"process.env.NODE_ENV":JSON.stringify("production")},resolve:{alias:{"@airdesign/ui":path.resolve("packages/ui/src/index.ts")}},plugins:[{name:"decks-trash-proof",resolveId:source=>source===entry ? entry : undefined,load:source=>source===entry ? `import {createElement} from "react";import {createRoot} from "react-dom/client";import {Toaster} from "@airdesign/ui";import {Workspace} from "${path.resolve("apps/studio/src/decks/workspace.tsx")}";import {StudioShell} from "${path.resolve("apps/studio/src/shell/studio-shell.tsx")}";import "${path.resolve("apps/studio/src/editor/workspace.css")}";import "${path.resolve("apps/studio/src/decks/decks.css")}";import "${path.resolve("packages/ui/src/tokens/tokens.css")}";createRoot(document.getElementById("root")).render(createElement(StudioShell,{intentLabel:"",showIntent:false,onSignOut:()=>{},search:"",onSearch:()=>{},starredDecks:[]},createElement(Workspace),createElement(Toaster)));` : undefined}],build:{write:false,minify:false,lib:{entry,formats:["iife"],name:"DecksTrashProof"}}})
+  const built=await build({configFile:false,logLevel:"silent",oxc:{jsx:{runtime:"automatic",development:false}},define:{"process.env.NODE_ENV":JSON.stringify("production")},resolve:{alias:{"@airdesign/ui":path.resolve("packages/ui/src/index.ts")}},plugins:[{name:"decks-trash-proof",resolveId:source=>source===entry ? entry : undefined,load:source=>source===entry ? `import {createElement} from "react";import {createRoot} from "react-dom/client";import {Workspace} from "${path.resolve("apps/studio/src/decks/workspace.tsx")}";import {StudioShell} from "${path.resolve("apps/studio/src/shell/studio-shell.tsx")}";import "${path.resolve("apps/studio/src/editor/workspace.css")}";import "${path.resolve("apps/studio/src/decks/decks.css")}";import "${path.resolve("packages/ui/src/tokens/tokens.css")}";createRoot(document.getElementById("root")).render(createElement(StudioShell,{intentLabel:"",showIntent:false,onSignOut:()=>{},search:"",onSearch:()=>{},starredDecks:[]},createElement(Workspace)));` : undefined}],build:{write:false,minify:false,lib:{entry,formats:["iife"],name:"DecksTrashProof"}}})
   const outputs=(Array.isArray(built) ? built : [built]).flatMap(output=>"output" in output ? output.output : [])
   script=outputs.filter(output=>output.type==="chunk").map(output=>output.code).join("\n")
   styles=outputs.flatMap(output=>output.type==="asset"&&output.fileName.endsWith(".css") ? [typeof output.source==="string" ? output.source : new TextDecoder().decode(output.source)] : []).join("\n")
 })
 
-async function workspace(page:Page,trash=false){
+async function workspace(page:Page,trash=false,restore?:"restored"|"rejected"){
   const posts:string[]=[],errors:string[]=[]
   let removed=false,emptied=false
-  const deletions:{path:string;body:unknown}[]=[]
+  const deletions:{path:string;body:unknown}[]=[],restores:{path:string;body:unknown}[]=[]
   const decks:DeckEntry[]=[{id:"pricing",title,updated:1762484400000,created:1762484400000,deletedAt:null,generation:0,pendingRequest:"",slides:8,starred:false,preview:null},{id:"atlas",title:"Project Atlas",updated:1762484400000,created:1762484400000,deletedAt:null,generation:0,pendingRequest:"",slides:8,starred:false,preview:null}]
   if(trash){
     decks.push({id:"draft",title:"Old pitch draft",updated:1762484400000,created:1762484400000,deletedAt:null,generation:0,pendingRequest:"",slides:4,starred:false,preview:null})
@@ -29,6 +30,11 @@ async function workspace(page:Page,trash=false){
   }
   const target=decks[0]
   if(!target)throw new Error("missing-trash-fixture-deck")
+  if(restore){
+    const deck=fixtureDeck(1),slide=deck.slides[0]
+    if(!slide)throw new Error("missing-undo-fixture-slide")
+    target.preview={slide,themes:deck.themes}
+  }
   page.setDefaultTimeout(700)
   page.on("pageerror",error=>errors.push(error.message))
   await page.route("http://deck-proof.test/**",async route=>{
@@ -37,6 +43,12 @@ async function workspace(page:Page,trash=false){
     if(url.pathname==="/api/account")return route.fulfill({json:{status:"signed-in",personId:"ada"}})
     if(url.pathname==="/api/catalog"&&request.method()==="GET")return route.fulfill({json:emptied ? [] : removed ? decks.slice(1) : decks})
     if(url.pathname==="/api/catalog/pricing/trash"&&request.method()==="POST"){posts.push(url.pathname);removed=true;return route.fulfill({json:{...target,deletedAt:1762484400000}})}
+    if(url.pathname==="/api/catalog/pricing/restore"&&request.method()==="POST"){
+      restores.push({path:url.pathname,body:request.postDataJSON()})
+      if(restore==="rejected")return route.fulfill({status:409,json:{code:"restore-rejected"}})
+      removed=false
+      return route.fulfill({json:target})
+    }
     if(url.pathname==="/api/catalog/trash"&&request.method()==="DELETE"){deletions.push({path:url.pathname,body:request.postDataJSON()});emptied=true;return route.fulfill({json:{deleted:decks.length}})}
     errors.push(request.method()+" "+url.pathname)
     return route.fulfill({status:500,json:{code:"unexpected-proof-request"}})
@@ -45,7 +57,7 @@ async function workspace(page:Page,trash=false){
   await page.addStyleTag({content:styles})
   await page.addScriptTag({content:script})
   await page.getByRole("heading",{name:title,exact:true}).waitFor()
-  return {posts,errors,deletions,decks}
+  return {posts,errors,deletions,decks,restores}
 }
 
 it("reaches Trash through the visible card menu and real confirmation",async()=>{
@@ -74,6 +86,62 @@ it("reaches Trash through the visible card menu and real confirmation",async()=>
     expect(await page.getByRole("dialog").count()).toBe(0)
     expect(await page.getByRole("heading",{name:title,exact:true}).count()).toBe(0)
     expect(await page.getByRole("heading",{name:"Project Atlas",exact:true}).count()).toBe(1)
+    expect(proof.errors).toEqual([])
+  }finally{await browser.close()}
+})
+
+it.each<{outcome:"restored"|"rejected"}>([{outcome:"restored"},{outcome:"rejected"}])("activates the real toast Undo by keyboard with a $outcome controlled HTTP restore",async({outcome})=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:1440,height:900}}),proof=await workspace(page,false,outcome)
+    const target=page.locator(card),sibling=page.locator('.deck-card:has(h2:has-text("Project Atlas"))')
+    const original=await target.innerHTML(),originalSibling=await sibling.innerHTML(),entries=structuredClone(proof.decks)
+    expect(await target.locator(".deck-preview [data-slide]").count()).toBe(1)
+    expect(await target.locator(".deck-preview").textContent()).not.toBe("")
+    expect(await target.getByRole("link",{name:title,exact:true}).getAttribute("href")).toBe("/deck/pricing")
+    await target.getByLabel("Actions for Pricing Strategy Review",{exact:true}).click()
+    await target.getByRole("button",{name:"Move to Trash",exact:true}).click()
+    expect(proof.posts).toEqual([])
+    expect(proof.restores).toEqual([])
+    await page.getByRole("dialog").getByRole("button",{name:"Cancel",exact:true}).click()
+    expect(proof.posts).toEqual([])
+    expect(proof.restores).toEqual([])
+    expect(await sibling.innerHTML()).toBe(originalSibling)
+    await target.getByLabel("Actions for Pricing Strategy Review",{exact:true}).click()
+    await target.getByRole("button",{name:"Move to Trash",exact:true}).click()
+    expect(proof.posts).toEqual([])
+    await page.getByRole("dialog").getByRole("button",{name:"Move to Trash",exact:true}).click()
+    const toast=page.locator("[data-sonner-toast]").filter({hasText:`${title} moved to Trash`}),undo=toast.getByRole("button",{name:"Undo",exact:true})
+    await undo.waitFor({state:"visible"})
+    expect(await page.locator("[data-sonner-toaster]").count()).toBe(1)
+    expect(await toast.count()).toBe(1)
+    await undo.click({trial:true,timeout:2000})
+    await expect(assertRendered(undo,true)).resolves.toBeUndefined()
+    expect(proof.posts).toEqual(["/api/catalog/pricing/trash"])
+    expect(await target.count()).toBe(0)
+    expect(await sibling.innerHTML()).toBe(originalSibling)
+    expect(proof.restores).toEqual([])
+    await page.keyboard.press("Alt+t")
+    expect(await page.locator("[data-sonner-toaster]").evaluate(element=>element===document.activeElement)).toBe(true)
+    await page.keyboard.press("Tab")
+    expect(await toast.evaluate(element=>element===document.activeElement)).toBe(true)
+    await page.keyboard.press("Tab")
+    expect(await undo.evaluate(element=>element===document.activeElement)).toBe(true)
+    await page.keyboard.press("Enter")
+    if(outcome==="restored"){
+      await page.getByRole("heading",{name:title,exact:true}).waitFor()
+      expect(await target.innerHTML()).toBe(original)
+      expect(await page.locator(".workspace-status").innerText()).toBe("Deck restored")
+      expect(await page.getByRole("alert").count()).toBe(0)
+    }else{
+      await page.getByRole("alert").filter({hasText:"restore-rejected"}).waitFor()
+      expect(await target.count()).toBe(0)
+      expect(await page.locator(".workspace-status").innerText()).toBe("Deck moved to Trash")
+    }
+    expect(proof.restores).toEqual([{path:"/api/catalog/pricing/restore",body:{}}])
+    expect(proof.posts).toEqual(["/api/catalog/pricing/trash"])
+    expect(await sibling.innerHTML()).toBe(originalSibling)
+    expect(proof.decks).toEqual(entries)
     expect(proof.errors).toEqual([])
   }finally{await browser.close()}
 })
