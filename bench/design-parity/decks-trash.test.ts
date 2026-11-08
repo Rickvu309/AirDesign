@@ -37,6 +37,11 @@ async function workspace(page:Page,trash=false,restore?:"restored"|"rejected"){
   }
   page.setDefaultTimeout(700)
   page.on("pageerror",error=>errors.push(error.message))
+  await page.addInitScript(()=>{
+    new PerformanceObserver(list=>{
+      for(const entry of list.getEntries())performance.measure("trash-ready-long-task",{start:entry.startTime,duration:entry.duration})
+    }).observe({type:"longtask",buffered:true})
+  })
   await page.route("http://deck-proof.test/**",async route=>{
     const request=route.request(),url=new URL(request.url())
     if(url.pathname==="/"||url.pathname==="/trash")return route.fulfill({contentType:"text/html",body:'<div id="root"></div>'})
@@ -55,8 +60,21 @@ async function workspace(page:Page,trash=false,restore?:"restored"|"rejected"){
   })
   await page.goto(`http://deck-proof.test/${trash ? "trash" : ""}`)
   await page.addStyleTag({content:styles})
-  await page.addScriptTag({content:script})
-  await page.getByRole("heading",{name:title,exact:true}).waitFor()
+  const started=performance.now()
+  let scriptMs:number|null=null,ready=false
+  try{
+    await page.addScriptTag({content:script})
+    scriptMs=performance.now()-started
+    await page.getByRole("heading",{name:title,exact:true}).waitFor()
+    ready=true
+  }finally{
+    const elapsedMs=performance.now()-started
+    const surface=await page.evaluate(()=>{
+      const tasks=performance.getEntriesByName("trash-ready-long-task")
+      return {headings:[...document.querySelectorAll("h1,h2")].slice(0,10).map(node=>node.textContent),rootChildren:document.getElementById("root")?.childElementCount ?? 0,longTaskCount:tasks.length,longTaskMs:tasks.reduce((total,entry)=>total+entry.duration,0),maxLongTaskMs:tasks.reduce((max,entry)=>Math.max(max,entry.duration),0)}
+    }).catch(error=>({diagnosticError:error instanceof Error ? error.message : String(error)}))
+    console.info(JSON.stringify({probe:"trash-ready",test:expect.getState().currentTestName,trash,restore:restore ?? null,ready,scriptMs,elapsedMs,pageErrors:errors.slice(0,10),surface}))
+  }
   return {posts,errors,deletions,decks,restores}
 }
 

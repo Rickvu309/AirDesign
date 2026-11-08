@@ -3,6 +3,7 @@ import { readFile,writeFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { chromium } from "playwright"
 import { parseDeck,flatten } from "../../../../packages/deck/src/index.ts"
+import { importPptx } from "../../../../packages/pptx/src/index.ts"
 import { writeSavedPptx } from "../../../../packages/pptx/src/export-deck.ts"
 import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
 import { fontReport } from "../../../../packages/render/src/fonts.ts"
@@ -16,9 +17,10 @@ try {
   const fonts=await Promise.all(fontManifest.faces.map(async face=>{const bytes=await readFile(new URL(`../../../../packages/ui/fonts/${face.file}`,import.meta.url));if(createHash("sha256").update(bytes).digest("hex")!==face.sha256)throw new Error("font-hash-mismatch");return `@font-face{font-family:Geist;font-weight:${face.weight};src:url(data:font/woff2;base64,${bytes.toString("base64")}) format('woff2')}`}))
   const flags=slides.flatMap(slide=>flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=>({slide:slide.id,element:element.id,kind:element.support.kind})))
   const missingFonts=[...new Set(slides.flatMap(slide=>fontReport(slide,deck.themes).missing))]
-  if((flags.length||missingFonts.length)&&!input.options.allowIssues)throw new Error("export-needs-review")
+  const removals=input.snapshot.source ? (await importPptx(Buffer.from(input.snapshot.source,"base64"))).report.removals : []
+  if((flags.length||missingFonts.length||removals.length)&&!input.options.allowIssues)throw new Error("export-needs-review")
   const digest=createHash("sha256").update(JSON.stringify({deck:saved,seq})).digest("hex")
-  const report={provenance:input.snapshot.provenance ?? {},deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
+  const report={removals,provenance:input.snapshot.provenance ?? {},deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
   let output:Buffer
   if(input.options.format==="pptx")output=await writeSavedPptx(saved,seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report,input.snapshot.assets ?? {},input.snapshot.templates ?? {})
   else {

@@ -17,7 +17,7 @@ it("explains a killed export and keeps its typed diagnostic behind Details",asyn
   expect(container.querySelector("details")?.open).toBe(false)
   expect(container.querySelector("details")?.textContent).toContain("SIGKILL")
   expect([...container.querySelectorAll("button")].some(button=>button.textContent==="Retry export")).toBe(true)
- }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
+ }finally{toast.dismiss();await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
 })
 
 it("offers the designed export options and a safe retry after a worker failure",async()=>{
@@ -45,7 +45,9 @@ it("offers the designed export options and a safe retry after a worker failure",
     expect(close).toHaveBeenCalled()
     const retry=[...document.querySelectorAll("button")].find(button=>button.textContent==="Try again")
     if(!retry)throw new Error("missing-retry-control")
-    await act(async()=>retry.click())
-    expect(document.body.textContent).toContain("Unable to retry this export. Open Export to try again.")
+    await act(async()=>{
+      retry.click()
+      await vi.waitFor(()=>expect([...document.querySelectorAll("[data-sonner-toast] [data-title]")].map(element=>element.textContent)).toContain("Unable to retry this export. Open Export to try again."))
+    })
   }finally{toast.dismiss();await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals()}
 })
