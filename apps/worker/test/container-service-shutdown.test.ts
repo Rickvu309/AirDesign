@@ -1,7 +1,6 @@
 import { spawn, type ChildProcess } from "node:child_process"
 import { once } from "node:events"
 import { createServer } from "node:http"
-import { watch } from "node:fs"
 import { cp, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises"
 import { randomBytes, randomUUID } from "node:crypto"
 import os from "node:os"
@@ -11,6 +10,7 @@ import { expect, it } from "vitest"
 import { createHistoryStore } from "../../server/src/db/history-store.ts"
 import { fixtureDeck } from "../../../packages/deck/src/fixture.ts"
 import { processIdentity } from "../src/container-job-processes.ts"
+import { waitForStartedPids } from "./fixtures/started-pids.ts"
 
 it.each([["schema", "container", "SIGTERM"], ["schema", "systemd", "SIGINT"], ["exports", "container", "SIGTERM"]] as const)("stops during %s in %s on %s without new work or surviving processes", async (scenario, isolation, signal) => {
   const database = `airdesign_shutdown_${randomBytes(6).toString("hex")}`
@@ -51,21 +51,19 @@ it.each([["schema", "container", "SIGTERM"], ["schema", "systemd", "SIGINT"], ["
       } finally { await history.close() }
       await writeFile(path.join(shadow, "apps/worker/src/export/entry.ts"), `import {spawn} from "node:child_process";import {appendFileSync} from "node:fs";const child=spawn(process.execPath,["-e","setInterval(()=>{},1000)"],{detached:true,stdio:"ignore"});child.unref();appendFileSync(${JSON.stringify(marker)},JSON.stringify([process.pid,child.pid])+"\\n");setInterval(()=>{},1000)`)
     }
-    const watcher = watch(folder)
     let diagnostic = ""
     let ready: () => void = () => undefined
     const started = new Promise<void>(resolve => { ready = resolve })
-    watcher.on("change", (_event, name) => { if (name === "started") ready() })
     worker = spawn(process.execPath, ["apps/worker/src/service.ts"], { cwd: shadow, stdio: ["ignore", "pipe", "pipe"], env: { ...process.env, DATABASE_URL: url, AIRDESIGN_DATABASE_URL: url, AIRDESIGN_ISOLATION: isolation, AIRDESIGN_SECRET: "shutdown-secret-at-least-32-characters", AIRDESIGN_WORKER_API_ORIGIN: `http://127.0.0.1:${address.port}`, AIRDESIGN_OPERATIONS_PATH: path.join(folder, "operations.sqlite"), AIRDESIGN_WORKER_TEMP: path.join(folder, "jobs") } })
     const exited = once(worker, "exit")
     let output = ""
     worker.stdout?.on("data", chunk => { output += String(chunk) })
     worker.stderr?.on("data", chunk => { diagnostic += String(chunk); if (scenario === "schema" && diagnostic.includes("history-schema-waiting")) ready() })
     const timeout = AbortSignal.timeout(12_000)
+    const reading = new AbortController()
     try {
-      await Promise.race([started, exited.then(() => { throw new Error(`worker-exited-before-ready:${diagnostic}`) }), once(timeout, "abort").then(() => { throw new Error(`worker-ready-timeout:${diagnostic}`) })])
-    } finally { watcher.close() }
-    if (scenario === "exports") pids = (await readFile(marker, "utf8")).trim().split("\n").flatMap(line => JSON.parse(line))
+      pids = await Promise.race([scenario === "exports" ? waitForStartedPids(marker, AbortSignal.any([timeout, reading.signal])) : started.then(() => []), exited.then(() => { throw new Error(`worker-exited-before-ready:${diagnostic}`) }), once(timeout, "abort").then(() => { throw new Error(`worker-ready-timeout:${diagnostic}`) })])
+    } finally { reading.abort() }
     const stopped = performance.now()
     worker.kill(signal)
     const result = await Promise.race([exited, once(AbortSignal.timeout(2500), "abort").then(() => null)])
