@@ -408,3 +408,10 @@ async function probeInteraction(page:Page,entry:Scenario){
 export async function probeScenarioInteraction(page:Page,entry:Scenario){
   try{await probeInteraction(page,entry)}catch(error){throw new Error(`scenario=${entry.code} selector=probe:${entry.assertions.probe.kind} check=interaction expected=${JSON.stringify(entry.assertions.probe)} actual=${JSON.stringify(String(error))}`)}
 }
+
+export async function waitForScenarioDialog(page:Page,entry:Scenario){
+  if(entry.component?.kind!=="dialog")return
+  const dialog=page.locator(entry.component.selector)
+  await dialog.waitFor({state:"visible"})
+  for(const key of entry.assertions.copyKeys)await dialog.getByText(resolveCopy(key,entry.assertions.copyValues),{exact:true}).waitFor({state:"visible"})
+}

@@ -192,3 +192,10 @@ it("rejects co-edited seed, unreachable status and budget ceilings after the fir
     expect(()=>validateRegistry([{...entry,budget:1}],[path.basename(entry.design)],capped)).toThrow("budget-raised-without-reason")
   }finally{await rm(cwd,{recursive:true,force:true})}
 })
+
+it("rejects a truly invalid current combobox contract",async()=>{
+  const entries=await readRegistry(),entry=entries.find(entry=>entry.assertions.controls.some(control=>control.role==="combobox"))
+  if(!entry)throw new Error("missing-combobox-contract")
+  const bad=entries.map(value=>value===entry ? {...value,assertions:{...value.assertions,controls:value.assertions.controls.map(control=>control.role==="combobox" ? {...control,value:undefined} : control)}} : value)
+  expect(()=>parseRegistry(bad)).toThrow()
+})

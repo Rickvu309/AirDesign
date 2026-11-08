@@ -15,8 +15,9 @@
 .editor-logo .ad-brand-mark { inline-size:16px;block-size:22px;display:block;margin-inline:auto; }
 .editor-logo { inline-size:24px;flex:none;font-size:22px;text-decoration:none;text-align:center;font-weight:300;color:var(--foreground); }
 .deck-menu { position:relative;min-inline-size:0; }
-.deck-name { display:block;max-inline-size:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600; }
+.deck-name { display:block;max-inline-size:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .editor-bar button,.editor-export select,.editor-dock button { font:inherit;font-size:13px;border:0;background:transparent;color:var(--foreground);padding:8px;border-radius:7px;cursor:pointer;white-space:nowrap; }
+.editor-bar .deck-name { font-family:var(--font-sans);font-size:15px;font-weight:600; }
 .editor-bar>.ad-button { border:1px solid var(--border);padding:6px 8px; }
 .editor-bar button:disabled,.editor-dock button:disabled { opacity:.45;cursor:default; }
 .editor-export { inset-block-start:12px;inset-inline-end:12px; }
@@ -24,13 +25,13 @@
 .editor-view [aria-pressed=true],.editor-dock [aria-pressed=true] { background:var(--accent); }
 .studio-editor[data-view=single] .editor-bar { inset:0 auto auto 0;inline-size:248px;block-size:56px;max-inline-size:none;box-sizing:border-box;border:0;border-inline-end:1px solid var(--border);border-radius:0;box-shadow:none;padding:12px;gap:6px; }
 .studio-editor[data-view=single] .deck-menu { flex:1; }
-.studio-editor[data-view=single] .deck-name { max-inline-size:162px;font-size:12px;padding:4px 0; }
+.studio-editor[data-view=single] .deck-name { max-inline-size:162px;padding:4px 0; }
 .studio-editor[data-view=single] .editor-view { border:0;padding:0; }
 .studio-editor[data-view=single] .editor-bar>.ad-button { position:absolute;inset-block-start:56px;inset-inline:12px;block-size:34px; }
 .studio-editor[data-view=single] .editor-export { inset-block-start:0;inset-inline-end:0;inline-size:360px;block-size:56px;box-sizing:border-box;justify-content:space-between;border-radius:0;border-block:0;border-inline-end:0;box-shadow:none;padding:10px 12px; }
 .editor-status { margin:0; }
 .editor-status:not([role=alert]):not([data-font-state=loading]) { position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%); }
-.studio-editor[data-sync-state=offline]>.editor-status:not([data-font-state]),.studio-editor[data-sync-state=retrying]>.editor-status:not([data-font-state]) { position:fixed;inset-block-start:calc(12px + env(safe-area-inset-top,0px));inset-inline-start:calc((100% + var(--editor-left) - var(--editor-right))/2);transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:0;box-sizing:border-box;inline-size:max-content;max-inline-size:calc(100% - var(--editor-left) - var(--editor-right) - 32px);block-size:40px;clip-path:none;padding:0 16px 0 14px;font-size:13px;border:0;border-radius:10px;background:var(--foreground);color:var(--primary-foreground);box-shadow:var(--shadow-toast); }
+.studio-editor[data-sync-state=offline]>.editor-status:not([data-font-state]),.studio-editor[data-sync-state=retrying]>.editor-status:not([data-font-state]) { position:fixed;inset-block-start:calc(68px + env(safe-area-inset-top,0px));inset-inline-start:calc((100% + var(--editor-left) - var(--editor-right))/2);transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:0;box-sizing:border-box;inline-size:max-content;max-inline-size:calc(100% - var(--editor-left) - var(--editor-right) - 32px);block-size:40px;clip-path:none;padding:0 16px 0 14px;font-size:13px;border:0;border-radius:10px;background:var(--foreground);color:var(--primary-foreground);box-shadow:var(--shadow-toast); }
 .editor-section h2 { display:flex;align-items:center;gap:14px;font-size:13px;font-weight:600;margin:0 0 20px; }
 .editor-section h2::after { content:"";block-size:1px;flex:1;background:var(--border); }
 .studio-editor[data-view=single] .editor-section h2 { display:none; }
@@ -274,3 +275,5 @@
 .editor-history { display:flex;gap:4px; }
 .editor-history button { display:grid;place-items:center;inline-size:28px;block-size:28px;padding:6px;border:0;border-radius:6px;background:transparent;color:var(--foreground); }
 .editor-history button:disabled { opacity:.45; }
+
+@media (width >= 768px) { .ad-editor-shell [data-sonner-toaster][data-y-position=top] { inset-block-start:calc(68px + env(safe-area-inset-top,0px)); } }

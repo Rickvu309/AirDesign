@@ -11,7 +11,7 @@ import {PNG} from "pngjs"
 import {compareComponent} from "./component-metric.mjs"
 import {compareDesign,metricVersion} from "./metric.mjs"
 import {readRegistry,readBudgetBaseline,validateIdentity,validateRegistry,selectScenarios,ratchet,passesParity} from "./registry.ts"
-import {assertScenarioControls,assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
+import {assertScenarioControls,assertScenarioCopy,assertScenarioDOM,waitForScenarioDialog,probeScenarioInteraction} from "./dom-assertions.ts"
 import {stack,seed,perform} from "./capture.mjs"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
 import {approvalRoute} from "./approval-fixture.ts"
@@ -58,6 +58,7 @@ try{
       for(const step of entry.steps)await perform(page,step,local,setup.owner)
       await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(image=>image.decode().catch(()=>undefined)))})
       if(!entry.steps.some(step=>step.kind==="hover"))await page.mouse.move(0,0)
+      await waitForScenarioDialog(page,entry)
       let structureError
       try{await assertScenarioDOM(page,entry)}catch(error){structureError=String(error)}
       let componentBox,componentError
