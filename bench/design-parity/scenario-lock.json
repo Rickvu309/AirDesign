@@ -1,0 +1,3315 @@
+[
+  {
+    "code": "S11.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1440,
+      "height": 923
+    },
+    "surface": "site",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "landing.hero"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "site.pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Pricing",
+        "path": "/pricing/"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "landing-hero",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S12.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "site",
+    "route": "/pricing/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "pricing.heading"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "site.pricing"
+        }
+      ],
+      "probe": {
+        "kind": "navigate",
+        "name": "Product",
+        "path": "/#product"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "pricing-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S21.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.entry_title",
+        "access.email_label",
+        "access.continue_email"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.continue_email"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S22.01",
+    "seed": "signed-out",
+    "steps": [
+      {
+        "kind": "fill",
+        "label": "Email",
+        "value": "ada@halden.com"
+      },
+      {
+        "kind": "click",
+        "name": "Continue"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.check_title"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.different_email"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S29.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/access/link?token=expired-design-parity-token",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "access.expired_title",
+        "access.send_new"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "access.send_new"
+        }
+      ],
+      "probe": {
+        "kind": "expired"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S31.01",
+    "seed": "empty-account",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S31.02",
+    "seed": "recents",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S31.03",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S31.04",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S31.05",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "All decks"
+      },
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S32.01",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "+ New deck"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "button",
+          "nameKey": "decks.blank"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S32.02",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "queued"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents",
+        "decks.importing"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "current": "14",
+        "total": "24"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S32.03",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "import",
+        "outcome": "failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.recents",
+        "decks.import_failed"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S33.01",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "selector-click",
+        "selector": ".deck-card:has(h2:has-text(\"Pricing Strategy Review\")) .deck-card-actions button:last-child"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Move to Trash"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Deck moved to Trash"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.trashed",
+        "common.undo"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "deck": "Pricing Strategy Review"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 697,
+        "top": 11,
+        "width": 324,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S33.02",
+    "seed": "trash-with-items",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/trash",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "decks.trash"
+      ],
+      "controls": [
+        {
+          "role": "heading",
+          "nameKey": "decks.trash"
+        },
+        {
+          "role": "button",
+          "nameKey": "trash.empty_open"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".workspace-home",
+            "name": "search",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          },
+          {
+            "selector": ".deck-card-details > p",
+            "role": "helper",
+            "color": "gray.600",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S33.03",
+    "seed": "trash-with-items",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Empty Trash"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/trash",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "trash.empty_title",
+        "trash.empty_body",
+        "trash.empty_action",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "trash.empty_action"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ],
+        "dialogActions": {
+          "primaryKey": "trash.empty_action",
+          "cancelKey": "common.cancel"
+        }
+      },
+      "copyValues": {
+        "n": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S41.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S41.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "hover",
+        "name": "+ New slide"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S41.03",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S41.04",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.new_slide",
+        "import.pasted",
+        "common.undo"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "n": "2",
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 584,
+        "top": 11,
+        "width": 302,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S42.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "working"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.stop"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S42.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S42.03",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "remote"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S42.04",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "agent",
+        "outcome": "long-message"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      },
+      {
+        "kind": "click",
+        "name": "Choose template"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.templates"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.close_picker"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Design"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.choose_template"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.03",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Images"
+      },
+      {
+        "kind": "wait-text",
+        "text": "0.0 MB of 512 MB used"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.images"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.04",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.05",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.shapes"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.06",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.text"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S43.07",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.actions"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S49.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "agent.failed_title",
+        "agent.failed_body",
+        "agent.resume"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S49.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "offline"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.offline"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S61.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 495,
+        "top": 341,
+        "width": 480,
+        "height": 241
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S61.02",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "select",
+        "label": "File format",
+        "value": "pdf"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "editor.export"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 495,
+        "top": 317,
+        "width": 480,
+        "height": 289
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S61.03",
+    "seed": "deck-open",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "export.downloaded"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "file": "Q3 Investor Update.pptx"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 540,
+        "top": 11,
+        "width": 278,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S69.01",
+    "seed": "deck-open",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-failed"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "export.failed",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.retry"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 487,
+        "top": 11,
+        "width": 384,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S71.01",
+    "seed": "oauth-Claude",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "oauth.approve_title",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "oauth.allow"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "agent": "Claude"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S71.02",
+    "seed": "oauth-Claude",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Allow"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Ready to return to your agent"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "oauth.connected"
+      ],
+      "controls": [
+        {
+          "role": "link",
+          "nameKey": "oauth.return_claude"
+        },
+        {
+          "role": "button",
+          "nameKey": "oauth.return_help"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S71.03",
+    "seed": "oauth-Codex",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/agents/approve",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "oauth.approve_title",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "oauth.allow"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "approval"
+      },
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "agent": "Codex"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S81.01",
+    "seed": "usage-active",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "usage.title",
+        "credits.title",
+        "auto.title"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S81.02",
+    "seed": "usage-active-connected",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/agents",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "agent.name"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "settings.connected_agents"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.disconnect"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S81.03",
+    "seed": "usage-active",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/account",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "settings.title",
+        "settings.profile"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "heading",
+          "nameKey": "settings.profile"
+        },
+        {
+          "role": "textbox",
+          "nameKey": "settings.your_name"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.save_name"
+        },
+        {
+          "role": "button",
+          "nameKey": "settings.delete_account"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S91.01",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel",
+        "pay.new_tab"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "pay.continue"
+        },
+        {
+          "role": "spinbutton",
+          "nameKey": "credits.amount_label"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S91.02",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Waiting for your $25.00 payment…"
+      },
+      {
+        "kind": "selector-click",
+        "selector": "button[aria-label=\"Close add credits\"]"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "pay.waiting",
+        "pay.open",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "shell.command"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "amount": "$25.00"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S91.03",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "pay"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "pay.added_title",
+        "pay.added_body",
+        "common.done"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.done"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "amount": "$25.00",
+        "balance": "$40.00"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S92.01",
+    "seed": "deck-limited",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.limit_title",
+        "usage.limit_body",
+        "usage.reset_action"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839"
+  },
+  {
+    "code": "S92.02",
+    "seed": "deck-limited-with-credits",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.reset_confirm_title",
+        "usage.reset_confirm_body",
+        "usage.reset_action",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "usage.reset_action"
+        },
+        {
+          "role": "button",
+          "nameKey": "common.cancel"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S92.03",
+    "seed": "deck-limited",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "credits.add",
+        "credits.facts",
+        "credits.minimum",
+        "pay.continue",
+        "common.cancel"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 515,
+        "top": 240,
+        "width": 440,
+        "height": 444
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S92.04",
+    "seed": "deck-limited-with-credits",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset usage"
+      },
+      {
+        "kind": "dialog-click",
+        "name": "Reset for $5"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Usage reset. Resume when you’re ready."
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/deck/designparity",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "usage.reset_done",
+        "agent.resume_line",
+        "agent.resume"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.resume"
+        }
+      ],
+      "probe": {
+        "kind": "view"
+      },
+      "structure": {
+        "icons": [
+          {
+            "region": ".studio-editor",
+            "name": "undo",
+            "size": 16,
+            "color": "ink"
+          },
+          {
+            "region": ".studio-editor",
+            "name": "redo",
+            "size": 16,
+            "color": "ink"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".deck-name",
+            "role": "module-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
+      "copyValues": {
+        "slide": "3"
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "toast",
+      "selector": "[data-sonner-toast]",
+      "designBox": {
+        "left": 534,
+        "top": 11,
+        "width": 290,
+        "height": 42
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S99.01",
+    "seed": "signed-out",
+    "steps": [],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "unreachable",
+    "assertions": {
+      "copyKeys": [
+        "pay.failed_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
+        }
+      ],
+      "probe": {
+        "kind": "fill",
+        "label": "Email",
+        "value": "probe@halden.com"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  },
+  {
+    "code": "S99.02",
+    "seed": "usage-active",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "Continue to payment"
+      },
+      {
+        "kind": "expire-payment"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/settings/usage",
+    "status": "reachable",
+    "assertions": {
+      "copyKeys": [
+        "pay.expired_title",
+        "pay.not_charged",
+        "common.close",
+        "pay.try_again"
+      ],
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.close"
+        },
+        {
+          "role": "button",
+          "nameKey": "pay.try_again"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "close": "Cancel",
+        "titleKey": "access.sign_out_title"
+      },
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      }
+    },
+    "fixtureContentHash": "d2fe50f4bed7d1c7e603468910ce45b48880c8bb56a318bd0682c6967c70b839",
+    "component": {
+      "kind": "dialog",
+      "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
+      "designBox": {
+        "left": 535,
+        "top": 358,
+        "width": 400,
+        "height": 208
+      },
+      "target": 0.01
+    }
+  }
+]

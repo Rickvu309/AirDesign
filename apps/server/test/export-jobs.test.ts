@@ -68,7 +68,7 @@ it("reclaims expired leases without accepting a stale result and bounds crash re
     now=third.deadline
     expect(await store.exports.claim()).toBeNull()
     const failed=await store.exports.status(person,job.id)
-    expect(failed.kind).toBe("failed");expect(failed.attempts).toBe(3);expect(failed.diagnostics).toHaveLength(3)
+    expect(failed).toMatchObject({kind:"failed",failure:{kind:"limit",limit:"wall-clock",signal:null}});expect(failed.attempts).toBe(3);expect(failed.diagnostics).toHaveLength(3)
     await expect(store.exports.retry(person,job.id)).rejects.toThrow("export-retry-unavailable")
   }finally{await store.close()}
 })

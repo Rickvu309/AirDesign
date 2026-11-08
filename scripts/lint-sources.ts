@@ -1,3 +1,4 @@
+import {historyFixtureSafetyHits} from "./lint/history-fixture-safety.ts"
 import { deploymentWorkflowHits, railwayControllerHits, ciCoverageHits, railwayKnownHostsHits, verifierBuildHits, workerLibraryHits } from "./lint/ci-workflow-policy.ts"
 import {deploymentRuntimeHits} from "./lint/deployment-runtime.ts"
 import {releaseRuntimeHits} from "./lint/release-runtime.ts"
@@ -23,6 +24,8 @@ import { accessSafetyHits } from "./lint/access-safety.ts"
 import { gateRecordingHits } from "./lint/gate-recording.ts"
 import { responseHeaderHits } from "./lint/response-headers.ts"
 
+import {parseRegistry} from "../bench/design-parity/registry.ts"
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const sourceExtensions = new Set([".ts", ".tsx", ".js", ".mjs", ".css", ".html", ".txt", ".json"])
 const skipped = new Set(["node_modules", "dist", "coverage", "docs", "fixtures"])
@@ -36,6 +39,10 @@ const capabilities=await readFile(path.join(repoRoot,"docs/release/capabilities.
 const claims:PublicClaim[]=JSON.parse(renderSiteTerms(await readFile(path.join(repoRoot,"apps/site/content/claims.json"),"utf8"))).claims
 for (const file of files) {
   const source = await readFile(file, "utf8")
+  for(const hit of historyFixtureSafetyHits(file,source))failures.push(`${file}:${hit.line} ${hit.reason}`)
+  if(file.endsWith("/bench/design-parity/scenarios.json")){
+    try{parseRegistry(JSON.parse(source))}catch(error){failures.push(`${file}: required-copy-must-use-copy-kit-keys ${String(error)}`)}
+  }
   for (const hit of workerLibraryHits(file, source)) failures.push(`${file}: ${hit}`)
   for (const hit of verifierBuildHits(file, source)) failures.push(`${file}: ${hit}`)
   for (const hit of deploymentRuntimeHits(file,source)) failures.push(`${file}: ${hit}`)

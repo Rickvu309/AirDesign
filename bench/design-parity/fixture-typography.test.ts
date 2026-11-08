@@ -1,0 +1,28 @@
+import {readFile} from "node:fs/promises"
+import {expect,it} from "vitest"
+import {fixtureContentHash} from "./registry.ts"
+import {textRoleSizes} from "./dom-assertions.ts"
+
+it("keeps every committed fixture receipt current",async()=>{
+  const lock=JSON.parse(await readFile("bench/design-parity/scenario-lock.json","utf8"))
+  expect(lock).toHaveLength(52)
+  for(const entry of lock)expect(entry.fixtureContentHash,entry.code).toBe(fixtureContentHash())
+})
+
+it("derives every traced role size and weight from its design generator classes",async()=>{
+  const source=await readFile("docs/design/v0.1/source/gen-editor.mjs","utf8")
+  const citations={"landing-hero":["H Line"],"pricing-title":["Pricing Title"],"page-title":["Import Title"],"dialog-title":["Alert Title"],"module-title":["Brand Name"],body:["Toast Text","Nav Link"],helper:["Card State"]}
+  for(const role of Object.keys(textRoleSizes))expect(citations).toHaveProperty(role)
+  for(const [role,labels] of Object.entries(citations)){
+    const tokens=labels.map(label=>{
+      const call=source.slice(label==="H Line" ? source.indexOf("('H Line', 'Clarity is the edge.'") : source.indexOf(`('${label}',`))
+      const classes=call.match(/^\('[^']+',\s*(?:'[^']*'|"[^"]*"|[^,]+),\s*([`'"])(.*?)\1/)?.[2]
+      expect(classes,label).toBeDefined()
+      const size=Number(classes!.match(/text-\[(\d+)px\]/)![1])
+      const weight=classes!.includes("font-semibold") ? 600 : classes!.includes("font-medium") ? 500 : 400
+      return {size,weight}
+    })
+    expect(Reflect.get(textRoleSizes,role),role).toEqual([Math.min(...tokens.map(token=>token.size)),Math.max(...tokens.map(token=>token.size)),tokens[0]!.weight])
+    expect(new Set(tokens.map(token=>token.weight)).size).toBe(1)
+  }
+})

@@ -52,7 +52,8 @@ it("rejects the original export, JSON transfer and npm signal boundaries",()=>{
  expect(deploymentRuntimeHits("Dockerfile",'CMD ["npm run start:web"]')).not.toEqual([])
  expect(deploymentRuntimeHits("Dockerfile",'ENTRYPOINT ["/app/scripts/docker/entrypoint.sh"]')).toEqual([])
  expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec "$@"')).not.toEqual([])
- expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec node "$entry"; --no-new-privs --bounding-set=-all --inh-caps=-all')).toEqual([])
+ expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'exec node "$entry"; --no-new-privs --bounding-set=-all --inh-caps=-all')).not.toEqual([])
+ expect(deploymentRuntimeHits("scripts/docker/entrypoint.sh",'set -- node "$entry"; set -- tini -s -- node apps/worker/src/container-worker-entry.ts "$entry"; exec "$@"; --no-new-privs --bounding-set=-all --inh-caps=-all')).toEqual([])
 })
 
 it("rejects the original mutable asset caching and accepts immutable content hashes",()=>{
@@ -79,3 +80,23 @@ it("rejects the original Trash confirmation role",()=>{
  expect(deploymentRuntimeHits(file,'page.getByRole("alertdialog")')).not.toEqual([])
  expect(deploymentRuntimeHits(file,'page.getByRole("dialog",{name:"Move deck to Trash?",exact:true})')).toEqual([])
 })
+
+it("rejects dropping an export signal and the two-second Chromium lease",()=>{
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'journal.save(job);journal.started(lease,process);child.once("exit",resolve)')).toContain("export-exit-signal: preserve the child's signal and the enforced limit")
+ expect(deploymentRuntimeHits("apps/worker/src/export/deliver.ts",'journal.save(job);journal.started(lease,process);child.once("exit",(code,signal)=>resolve({code,signal}))')).toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/decks/export-store.ts",'row.options.format==="pdf" ? 2000 : 30000')).not.toEqual([])
+ expect(deploymentRuntimeHits("apps/server/src/decks/export-store.ts",'row.options.format==="pdf" ? exportLimits.wallMs : 30000')).toEqual([])
+})
+
+it("rejects a zero PID fallback in export descendant cleanup",()=>{
+ const file="apps/worker/src/export/deliver.ts",journal="journal.save(job);journal.started(lease,process);"
+ expect(deploymentRuntimeHits(file,journal+"killExportDescendants(child.pid ?? 0)")).toContain("export-process-root: require a spawned child PID before scanning descendants")
+ expect(deploymentRuntimeHits(file,journal+"const pid=child.pid;if(pid)killExportDescendants(pid)")).toEqual([])
+})
+
+ it("rejects a container worker entry without its outer subreaper boundary", () => {
+  for (const file of ["apps/worker/src/main.ts", "apps/worker/src/service.ts"]) {
+   expect(deploymentRuntimeHits(file, "await runWorkerCycle()")).not.toEqual([])
+   expect(deploymentRuntimeHits(file, "ensureContainerWorker();await runWorkerCycle()")).toEqual([])
+  }
+ })

@@ -1,4 +1,3 @@
-import {createServer} from "node:net"
 import {execFile} from "node:child_process"
 import {promisify} from "node:util"
 import {mkdir,writeFile} from "node:fs/promises"
@@ -11,6 +10,7 @@ import {eventStream,deferred} from "../../apps/server/test/agent/stream.ts"
 import {localAdapter} from "../../packages/agent/src/local-adapter.ts"
 import {localPaymentProvider} from "../../packages/usage/src/payments/provider.ts"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
+import {createWithBrowserOrigin} from "./browser-origin.ts"
 export {toolValue,deferred}
 export const execute=promisify(execFile)
 export const evidence=process.env.P08_EVIDENCE ?? path.join(os.homedir(),"tmp/airdesign-autopilot/P08")
@@ -26,10 +26,10 @@ export async function scenario({browserEnabled=false,exposeInbox=true,realtime=f
       if(activity.kind==="tool"&&activity.name==="apply_changes"&&gate){const current=gate;gate=null;current.entered.resolve();await Promise.race([current.release.promise,new Promise(resolve=>{if(signal.aborted)resolve();else signal.addEventListener("abort",resolve,{once:true})})]);if(current.fail&&!signal.aborted)throw new Error("Local adapter interrupted after an accepted change")}
     }
   }
-  const portProbe=createServer();await new Promise(resolve=>portProbe.listen(0,"127.0.0.1",resolve));const port=portProbe.address().port;await new Promise(resolve=>portProbe.close(resolve))
-  const browserOrigin=`http://127.0.0.1:${port}`,fixture=await mcpFixture({exposeInbox,realtime,...browserEnabled ? {publicOrigin:browserOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")}),origin=fixture.origin,trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
+  const create=publicOrigin=>mcpFixture({exposeInbox,realtime,...publicOrigin ? {publicOrigin} : {},agentAdapter:adapter,paymentProvider:localPaymentProvider("dev-only-local-payment-fixture")})
+  const fixture=await (browserEnabled ? createWithBrowserOrigin(create) : create()),origin=fixture.origin,port=Number(new URL(origin).port),trace=[],streams=[],sessions=new Set(),previous=process.env.AIRDESIGN_API_ORIGIN
   let vite
-  if(browserEnabled){process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin;vite=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port,strictPort:true,headers:{"x-content-type-options":"nosniff","referrer-policy":"no-referrer","cache-control":"public, max-age=31536000, immutable"},proxy:{"/version":fixture.apiOrigin,"/healthz":fixture.apiOrigin,"/.well-known":fixture.apiOrigin,"/api":fixture.apiOrigin,"/ws":{target:fixture.apiOrigin,ws:true},"/mcp":{target:fixture.apiOrigin,changeOrigin:false},"/oauth":fixture.apiOrigin}}})}
+  try{if(browserEnabled){process.env.AIRDESIGN_API_ORIGIN=fixture.apiOrigin;vite=await preview({root:path.resolve("apps/studio"),configFile:path.resolve("apps/studio/vite.config.ts"),preview:{host:"127.0.0.1",port,strictPort:true,headers:{"x-content-type-options":"nosniff","referrer-policy":"no-referrer","cache-control":"public, max-age=31536000, immutable"},proxy:{"/version":fixture.apiOrigin,"/healthz":fixture.apiOrigin,"/.well-known":fixture.apiOrigin,"/api":fixture.apiOrigin,"/ws":{target:fixture.apiOrigin,ws:true},"/mcp":{target:fixture.apiOrigin,changeOrigin:false},"/oauth":fixture.apiOrigin}}})}}catch(error){await fixture.close();if(previous===undefined)delete process.env.AIRDESIGN_API_ORIGIN;else process.env.AIRDESIGN_API_ORIGIN=previous;throw error}
   const provider=localPaymentProvider("dev-only-local-payment-fixture")
   async function request(owner,url,body,expected=200){const response=await fixture.json(url,body,owner?.cookie ?? ""),value=await response.json();trace.push({url,method:body===undefined ? "GET" : "POST",body,status:response.status,value});assert.equal(response.status,expected,JSON.stringify(value));return value}
   async function webhook(event,forged=false){const signed=provider.sign(event),response=await fetch(fixture.apiOrigin+"/api/billing/webhook",{method:"POST",headers:{"x-payment-signature":forged ? "0".repeat(64) : signed.signature},body:signed.body}),value=await response.json();trace.push({url:"/api/billing/webhook",body:event,status:response.status,value});assert.equal(response.status,forged ? 400 : 200);return value}

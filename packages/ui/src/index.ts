@@ -6,3 +6,5 @@ export { AlertDialog } from "./dialog/alert-dialog.tsx"
 export { TextField } from "./text-field/text-field.tsx"
 export { Toaster, toast } from "./toast/toaster.tsx"
 export { Toolbar, type ToolbarItem } from "./toolbar/toolbar.tsx"
+
+export { Icon } from "./icon/icon.tsx"
