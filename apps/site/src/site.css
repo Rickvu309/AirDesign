@@ -230,3 +230,8 @@ footer a { text-decoration: none; }
 
 .demo-workspace:focus-visible { outline: 3px solid var(--primary); outline-offset: 5px; }
 @media (prefers-reduced-motion: reduce) { .button { transition: none; } .button:active { transform: none; } }
+
+html { -webkit-text-size-adjust: 100%; }
+@media (pointer: coarse) {
+  :root body input, :root body textarea, :root body select { font-size: 16px; }
+}

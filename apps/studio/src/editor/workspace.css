@@ -103,3 +103,6 @@
 .ad-shell .home-actions { margin-right:74px; }
 .ad-shell .deck-grid { gap:20px;grid-template-columns:repeat(auto-fill,minmax(min(100%,354px),1fr)); }
 @media (width < 700px) { .ad-shell .home-heading { gap:12px; }.ad-shell .home-actions { width:auto;margin-right:0; }.ad-shell .home-view { position:static;justify-self:end;margin-bottom:16px; } }
+@media (pointer: coarse) {
+ input, textarea, select { font-size:16px; }
+}
