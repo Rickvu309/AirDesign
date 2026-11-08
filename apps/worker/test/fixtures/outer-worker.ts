@@ -6,6 +6,7 @@ import { setTimeout } from "node:timers/promises"
 import { spawn } from "node:child_process"
 import { ensureContainerWorker, sweepContainerOrphans } from "../../src/container-worker-ownership.ts"
 import { spawnContainerJob, killContainerJob, containerJobFailure } from "../../src/container-process.ts"
+import { waitForDescendantExit } from "./wait-for-descendant-exit.ts"
 import { processIdentity } from "../../src/container-job-processes.ts"
 
 ensureContainerWorker()
@@ -25,6 +26,7 @@ async function ready(file: string): Promise<number> {
 }
 if (process.argv[3] === "recovered") {
   const pids: number[] = JSON.parse(readFileSync(path.join(directory, "pids"), "utf8"))
+  await waitForDescendantExit(pids)
   assert(pids.every(pid => processIdentity(pid) === null))
   process.stdout.write("recovered\n")
 } else {
