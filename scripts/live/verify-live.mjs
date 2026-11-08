@@ -111,7 +111,7 @@ export async function verifyLive(options){
     await step("studio-sign-in",async()=>{await page.goto(studio);await expect(page.getByRole("textbox",{name:/email/i})).toBeVisible();return {assets:await auditAssets(page),screenshot:await shot("studio-sign-in")}})
     await step("smoke-sign-in",async()=>{
       const link=new URL(await signInLink());assert.equal(link.origin,studio);assert.equal(link.pathname,"/access/link");assert.ok(link.searchParams.get("token"))
-      await page.goto(link.href);await page.getByRole("button",{name:"+ New deck",exact:true}).waitFor()
+      await page.goto(link.href);await page.getByRole("button",{name:"New deck",exact:true}).waitFor()
       const response=await context.request.get(studio+"/api/account"),account=await response.json()
       assert.equal(account.email?.toLowerCase(),email.toLowerCase(),"authenticated account must be the smoke account")
       for(const trash of [false,true]){const response=await context.request.get(studio+"/api/catalog?trash="+trash);assert.ok(response.ok());assert.equal((await response.json()).length,0,"dedicated smoke account must start empty")}
@@ -119,34 +119,35 @@ export async function verifyLive(options){
       return {screenshot:await shot("smoke-home")}
     })
     await step("create-deck-and-aira-entry",async()=>{
-      await page.getByRole("button",{name:"+ New deck",exact:true}).click();await page.getByRole("button",{name:"Blank deck",exact:true}).click()
+      await page.getByRole("button",{name:"New deck",exact:true}).click();await page.getByRole("button",{name:"Blank deck",exact:true}).click()
       await page.waitForURL(/\/deck\//);created.push(new URL(page.url()).pathname.split("/").at(-1))
       await expect(page.getByRole("button",{name:"Build with Aira",exact:true})).toBeVisible()
       return {screenshot:await shot("blank-deck")}
     })
     await step("import-powerpoint",async()=>{
-      await page.goto(studio);await page.getByRole("button",{name:"+ New deck",exact:true}).click()
-      await page.getByLabel("New deck",{exact:true}).getByRole("button",{name:"Import PowerPoint",exact:true}).click()
+      await page.goto(studio);await page.getByRole("button",{name:"New deck",exact:true}).click()
+      await page.locator("details").filter({has:page.getByRole("button",{name:"New deck",exact:true})}).getByRole("button",{name:"Import PowerPoint",exact:true}).click()
       await page.getByLabel("Import PowerPoint",{exact:true}).setInputFiles(path.resolve("fixtures/pptx/preservation.pptx"))
-      if(options.runWorker){await expect(page.getByRole("status").filter({hasText:"Import queued"})).toBeVisible();await options.runWorker()}
+      if(options.runWorker){await expect(page.getByRole("status").filter({hasText:"Importing PowerPoint…"})).toBeVisible();await options.runWorker()}
       await expect(page.locator(".import-report")).toBeVisible({timeout:120000})
       const workerIdentity=checkWorkerIdentity(JSON.parse(await page.locator(".import-report pre").textContent()),sha)
       await page.getByRole("button",{name:"Keep and open deck",exact:true}).click()
-      const link=page.getByRole("link",{name:"Open imported deck",exact:true});await link.waitFor();created.push((await link.getAttribute("href")).split("/").at(-1))
-      await link.click();await page.locator('[data-sync-state="saved"]').waitFor()
+      await page.waitForURL(/\/deck\//);created.push(new URL(page.url()).pathname.split("/").at(-1));await page.locator('[data-sync-state="saved"]').waitFor()
       return {...workerIdentity,screenshot:await shot("imported-deck")}
     })
     const title="Live verification "+sha.slice(0,12)
     await step("edit-title-and-reload",async()=>{
-      await page.getByRole("textbox",{name:"Text s0t0",exact:true}).fill(title)
+      await page.getByRole("button",{name:"Edit slide text",exact:true}).click()
+      await page.locator('[role="textbox"][data-text="s0t0"]').fill(title)
       await page.locator('[data-sync-state="saved"]').waitFor();await page.reload()
-      await expect(page.getByRole("textbox",{name:"Text s0t0",exact:true})).toHaveText(title)
+      await page.getByRole("button",{name:"Edit slide text",exact:true}).click()
+      await expect(page.locator('[role="textbox"][data-text="s0t0"]')).toHaveText(title)
       return {screenshot:await shot("persisted-title")}
     })
     for(const format of ["pptx","pdf"])await step("export-"+format,async()=>{
       await page.getByRole("button",{name:"Export",exact:true}).click();await page.getByLabel("File format",{exact:true}).selectOption(format)
-      if(format==="pdf")await page.getByLabel("Export slides",{exact:true}).fill("1")
-      const submit=page.getByRole("button",{name:"Export anyway",exact:true});if(await submit.count())await submit.click();else await page.getByRole("button",{name:"Create export",exact:true}).click()
+      if(format==="pdf"){await page.getByLabel("Export slides",{exact:true}).selectOption("custom");await page.getByRole("textbox",{name:"Slide numbers",exact:true}).fill("1")}
+      const submit=page.getByRole("button",{name:"Export anyway",exact:true});if(await submit.count())await submit.click();else await page.getByRole("dialog",{name:"Export",exact:true}).getByRole("button",{name:"Export",exact:true}).click()
       if(options.runWorker){await expect(page.getByRole("status").filter({hasText:"Export queued"})).toBeVisible();await options.runWorker()}
       const link=page.getByRole("link",{name:"Download "+format.toUpperCase(),exact:true});await link.waitFor({timeout:120000})
       const pending=page.waitForEvent("download");await link.click();const download=await pending
@@ -162,14 +163,14 @@ export async function verifyLive(options){
         const documentTask=getDocument({data:new Uint8Array(bytes),useSystemFonts:false})
         try{const doc=await documentTask.promise;assert.equal(doc.numPages,1);const text=(await (await doc.getPage(1)).getTextContent()).items.map(item=>"str" in item ? item.str : "").join(" ");assert.ok(text.includes(title),"PDF missing persisted title")}finally{await documentTask.destroy()}
       }
-      const screenshot=await shot("export-"+format);await page.getByRole("button",{name:"Close export",exact:true}).click()
+      const screenshot=await shot("export-"+format);await expect(page.getByRole("dialog",{name:"Export",exact:true})).not.toBeVisible()
       return {file:"export."+format,bytes:bytes.length,screenshot}
     })
     await step("trash-and-empty",async()=>{
       await page.goto(studio)
-      for(const id of created){const card=page.locator("article").filter({has:page.locator(`a[href="/deck/${id}"]`)});await card.getByRole("button",{name:"Move to Trash",exact:true}).click();await page.getByRole("dialog",{name:"Move deck to Trash?",exact:true}).getByRole("button",{name:"Move to Trash",exact:true}).click();await expect(card).toHaveCount(0)}
-      await page.getByRole("button",{name:"Trash",exact:true}).click();await expect(page.locator(".deck-card")).toHaveCount(2);await shot("trash")
-      await page.getByRole("button",{name:"Empty Trash",exact:true}).click();await page.getByRole("button",{name:"Delete permanently",exact:true}).click();await expect(page.getByRole("heading",{name:"Trash is empty",exact:true})).toBeVisible()
+      for(const id of created){const card=page.locator("article").filter({has:page.locator(`a[href="/deck/${id}"]`)});await card.locator("summary").click();await card.getByRole("button",{name:"Move to Trash",exact:true}).click();await page.getByRole("dialog",{name:"Move deck to Trash?",exact:true}).getByRole("button",{name:"Move to Trash",exact:true}).click();await expect(card).toHaveCount(0)}
+      await page.getByRole("link",{name:"Trash",exact:true}).click();await expect(page.locator(".deck-card")).toHaveCount(2);await shot("trash")
+      await page.getByRole("button",{name:"Empty Trash",exact:true}).click();await page.getByRole("button",{name:"Delete for good",exact:true}).click();await expect(page.getByRole("heading",{name:"Trash is empty",exact:true})).toBeVisible()
       return {screenshot:await shot("empty-trash")}
     })
     await step("no-paid-agent-calls",async()=>{assert.deepEqual(paidCalls,[],"unexpected Aira mutation was blocked")})
