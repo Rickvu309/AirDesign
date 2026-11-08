@@ -14,8 +14,8 @@ vi.mock("../../../../packages/render/src/fonts.ts",async original=>({...await or
 vi.mock("../export/export-dialog.tsx",()=>({ExportDialog:()=>null}))
 vi.mock("@airdesign/ui",async original=>({...await original<typeof import("@airdesign/ui")>(),toast:{success:mock.toast}}))
 afterEach(()=>{vi.unstubAllGlobals();vi.useRealTimers();mock.toast.mockReset()})
-async function editor(deck=fixtureDeck(1,2)) {
-  vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
+async function editor(deck=fixtureDeck(1,2),phone=false) {
+  vi.stubGlobal("matchMedia",()=>({matches:phone,addEventListener:()=>{},removeEventListener:()=>{}}))
   vi.stubGlobal("fetch",()=>Promise.resolve(Response.json({templates:basics,default:basics[0]})))
   const streams:{onmessage:((event:MessageEvent)=>void)|null}[]=[]
   vi.stubGlobal("EventSource",class {onmessage:((event:MessageEvent)=>void)|null=null;constructor(){streams.push(this)}close(){}})
@@ -221,5 +221,24 @@ it("exposes canonical New slide copy with real history controls",async()=>{
     await ui.click("New slide");expect(ui.sync.deck.slides).toHaveLength(3)
     await ui.click("Strategy⌄");await ui.click("Undo");expect(ui.sync.deck.slides).toHaveLength(2)
     await ui.click("Strategy⌄");await ui.click("Redo");expect(ui.sync.deck.slides).toHaveLength(3)
+  }finally{await ui.close()}
+})
+
+it("keeps online connection status distinct from the real offline toast",async()=>{
+  const ui=await editor();try{
+    mock.value={sync:ui.sync,state:{kind:"connecting"},entry:{title:"Strategy"},setError:vi.fn()};await ui.render()
+    expect(ui.container.querySelector(".studio-editor")?.getAttribute("data-sync-state")).toBe("connecting")
+    expect(ui.container.querySelector(".editor-status:not([data-font-state])")?.textContent).toContain("Connecting")
+    expect(ui.container.textContent).not.toContain("You're offline")
+    mock.value={sync:ui.sync,state:{kind:"offline"},entry:{title:"Strategy"},setError:vi.fn()};await ui.render()
+    expect(ui.container.querySelector(".studio-editor")?.getAttribute("data-sync-state")).toBe("offline")
+    expect(ui.container.querySelector(".editor-status:not([data-font-state])")?.textContent).toContain("offline")
+  }finally{await ui.close()}
+})
+
+it("preserves the unavailable explanation on a phone without a selection suffix",async()=>{
+  const ui=await editor(fixtureDeck(1,2),true);try{
+    mock.value={sync:ui.sync,state:{kind:"unavailable"},entry:{title:"Strategy"},setError:vi.fn()};await ui.render()
+    expect(ui.container.querySelector(".editor-status:not([data-font-state])")?.textContent).toBe("Cannot connect · your changes are saved on this device")
   }finally{await ui.close()}
 })

@@ -11,7 +11,8 @@ export function cachedSnapshot(person: string, deck: string): Snapshot | null {
   if (!value) return null
   try { return parseSnapshot(JSON.parse(value)) } catch { return null }
 }
-export function transport(client: SyncClient, person: string, deck: string, error: (value:string)=>void) {
+export type ConnectionState = "connecting" | "connected" | "offline" | "unavailable"
+export function transport(client: SyncClient, person: string, deck: string, error: (value:string)=>void, connectionChanged:(state:ConnectionState)=>void=()=>{}) {
   let socket: WebSocket | null = null
   let timer: ReturnType<typeof setTimeout> | undefined
   let slow: ReturnType<typeof setTimeout> | undefined
@@ -57,6 +58,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     requestAnimationFrame(()=>setTimeout(resolve,0))
   })
   async function connect() {
+    if(attempts===0 || !navigator.onLine)connectionChanged(navigator.onLine ? "connecting" : "offline")
     const own=++generation
     recovering=client.queue.length>1
     clearTimeout(timer)
@@ -64,6 +66,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     client.disconnected(Date.now()-offlineAt>=3000)
     if (!slow) slow=setTimeout(()=>{if (!stopped && !resumed) client.disconnected(true)},Math.max(0,3000-(Date.now()-offlineAt)))
     resumed=false
+    if(!navigator.onLine)return
     try {
       const authenticated=await currentPerson()
       if (own!==generation || stopped) return
@@ -108,7 +111,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
               if(receipts.length && !latest)latest=previous
               if(latest){
                 client.receive(latest)
-                if(!resumed){resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=>{if(active.readyState===WebSocket.OPEN)active.send(JSON.stringify(command))})}
+                if(!resumed){resumed=true;connectionChanged("connected");attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=>{if(active.readyState===WebSocket.OPEN)active.send(JSON.stringify(command))})}
                 const checkpoint=cache(latest,recovering)
                 if(receipts.length)void client.acknowledgeBatch(receipts,checkpoint).then(()=>{if(client.queue.length===0){recovering=false;if(saveFailed){saveFailed=false;error("")}}}).catch(failure=>error(String(failure)))
               }
@@ -124,13 +127,14 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     } catch { if (own===generation && !stopped) retry() }
   }
   function retry() {
+    connectionChanged(navigator.onLine ? "unavailable" : "offline")
     client.disconnected(Date.now()-offlineAt>=3000)
     if (!slow) slow=setTimeout(()=>{if (!stopped && !resumed) client.disconnected(true)},Math.max(0,3000-(Date.now()-offlineAt)))
-    if (attempts>=3) return
+    if (!navigator.onLine || attempts>=3) return
     timer=setTimeout(()=>void connect(),[500,1000,2000][attempts++] ?? 2000)
   }
   const online=()=>{if(!saveFailed && resumed && socket?.readyState===WebSocket.OPEN)return;attempts=0;void connect()}
-  const offline=()=>socket?.close()
+  const offline=()=>{generation++;clearTimeout(timer);clearTimeout(slow);slow=undefined;resumed=false;offlineAt=Date.now();retry();socket?.close()}
   window.addEventListener("online",online)
   window.addEventListener("offline",offline)
   void connect()

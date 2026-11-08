@@ -2,13 +2,14 @@ import { syncErrorCode,type SyncErrorCode } from "../../../../packages/rpc/src/s
 import { useEffect,useRef,useState } from "react"
 import { SyncClient,parseSnapshot } from "../../../../packages/rpc/src/client.ts"
 import { indexedOutbox } from "../../../../packages/rpc/src/outbox.ts"
-import { cachedSnapshot,currentPerson,transport } from "../sync/transport.ts"
+import { cachedSnapshot,currentPerson,transport,type ConnectionState } from "../sync/transport.ts"
 import { api } from "../decks/catalog-client.ts"
 import type { DeckEntry } from "../../../../packages/catalog/src/index.ts"
 
 export function useDeck(deckId:string) {
   const client=useRef<SyncClient|null>(null),connection=useRef<ReturnType<typeof transport>|null>(null)
   const [,render]=useState(0),[entry,setEntry]=useState<DeckEntry|null>(null),[error,setFailure]=useState<SyncErrorCode|null>(null),[opening,setOpening]=useState(0)
+  const [connectionState,setConnectionState]=useState<ConnectionState>("connecting")
   const setError=(failure:unknown)=>setFailure(failure==="" ? null : syncErrorCode(failure))
   useEffect(()=>{
     let stopped=false,frame:number|undefined,task:ReturnType<typeof setTimeout>|undefined
@@ -34,7 +35,7 @@ export function useDeck(deckId:string) {
         if(stopped)return
         client.current=sync
         if(deleted)sync.stop("deleted")
-        else connection.current=transport(sync,person,deckId,setError)
+        else connection.current=transport(sync,person,deckId,setError,setConnectionState)
         render(value=>value+1)
         setEntry(await api<DeckEntry>(`/api/catalog/${deckId}`))
       }catch(failure){if(!stopped)setError(failure instanceof Error ? failure.message : "Could not open this deck.")}
@@ -42,5 +43,7 @@ export function useDeck(deckId:string) {
     void open()
     return ()=>{stopped=true;if(frame!==undefined)cancelAnimationFrame(frame);if(task!==undefined)clearTimeout(task);connection.current?.close()}
   },[deckId,opening])
-  return {sync:client.current,entry,setEntry,error,setError,reconnect:()=>{if(connection.current)connection.current.reconnect();else {setError("");setOpening(value=>value+1)}}}
+  const syncState=client.current?.state
+  const state=syncState && (syncState.kind==="offline" || syncState.kind==="retrying") && (connectionState==="connecting" || connectionState==="unavailable") ? {kind:connectionState} : syncState
+  return {state,sync:client.current,entry,setEntry,error,setError,reconnect:()=>{if(connection.current)connection.current.reconnect();else {setError("");setOpening(value=>value+1)}}}
 }
