@@ -132,7 +132,7 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
       for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
         const previous=old.elements[index]
         if(!previous)throw new Error("source-slide-structure-change-requires-fix")
-        const withoutText=(value:Element)=>({...value,...value.kind==="text" ? {runs:[]} : {},source:value.source.kind==="original" ? {...value.source,objectType:undefined} : value.source})
+        const withoutText=(value:Element)=>({...value,support:undefined,...value.kind==="text" ? {runs:[]} : {},source:value.source.kind==="original" ? {...value.source,objectType:undefined} : value.source})
         if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
         if(element.kind==="text" && previous.kind==="text" && element.source.kind==="original"){
           const indices=element.source.objectId.slice(5).split(",").map(Number)

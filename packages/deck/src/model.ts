@@ -20,7 +20,7 @@ export function isThemeId(value: unknown): value is ThemeId { return isId(value)
 export function isPlaceholderId(value: unknown): value is PlaceholderId { return isId(value) }
 export function isOverlapId(value: unknown): value is OverlapId { return isId(value) }
 export type Source = { kind: "created" } | { kind: "original"; part: string; sha256: string; objectId: string; objectType?: "chart" | "table"; dependencies: string[] }
-export type Support = { kind: "native" } | { kind: "kept"; preview: string | null } | { kind: "flagged"; reason: string; preview: string | null; preservation?: "removed" }
+export type Support = { kind: "native" } | { kind: "kept"; preview: string | null } | { kind: "flagged"; reason: string; preview: string | null; preservation?: "removed" | "partial" | "reported" }
 export type Box = { x: number; y: number; width: number; height: number }
 export type Run = { text: string; bold: boolean; italic?: boolean; underline?: boolean; font: string; size: number; color: string }
 type ElementBase = { styleLinks?: ("font" | "color" | "fill")[]; id: Id; box: Box; source: Source; support: Support; theme: ThemeId | null; placeholder: PlaceholderId | null; overlap: OverlapId | null }

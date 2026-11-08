@@ -9,7 +9,7 @@ function source(v: unknown): v is Source {
   return record(v) && (v.kind === "created" || (v.kind === "original" && typeof v.part === "string" && typeof v.sha256 === "string" && /^[a-f0-9]{64}$/.test(v.sha256) && typeof v.objectId === "string" && (v.objectType === undefined || v.objectType === "chart" || v.objectType === "table") && Array.isArray(v.dependencies) && v.dependencies.every(p => typeof p === "string")))
 }
 function support(v: unknown): v is Support {
-  return record(v) && (v.kind === "native" || (v.kind === "kept" && nullable(v.preview)) || (v.kind === "flagged" && (v.preservation === undefined || v.preservation === "removed") && typeof v.reason === "string" && nullable(v.preview)))
+  return record(v) && (v.kind === "native" || (v.kind === "kept" && nullable(v.preview)) || (v.kind === "flagged" && (v.preservation === undefined || v.preservation === "removed" || v.preservation === "partial" || v.preservation === "reported") && typeof v.reason === "string" && nullable(v.preview)))
 }
 function box(v: unknown): v is Box { return record(v) && finite(v.x) && finite(v.y) && finite(v.width) && finite(v.height) && v.width >= 0 && v.height >= 0 }
 function run(v: unknown): v is Run { return record(v) && typeof v.text === "string" && typeof v.bold === "boolean" && (v.italic === undefined || typeof v.italic === "boolean") && (v.underline === undefined || typeof v.underline === "boolean") && typeof v.font === "string" && finite(v.size) && v.size > 0 && typeof v.color === "string" }

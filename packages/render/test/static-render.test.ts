@@ -18,7 +18,7 @@ it("labels preserved original object types even with missing or failed previews 
     const html=renderToStaticMarkup(createElement(Slide,{slide:{...slide,elements:[kept]}}))
     expect(html).toContain("Table · Preserved on export")
     expect(html).toContain('data-preservation=')
-    expect(html).toContain("Original placement is small or outside the slide")
+    expect(html).not.toContain("data-import-content-report")
   }
 })
 it("never labels removed content preserved",()=>{
