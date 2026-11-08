@@ -1,7 +1,9 @@
+import {assertArtifactDownload} from "../design-parity/capture.mjs"
+import {readArchive} from "../../packages/pptx/src/archive.ts"
 import {writeSavedPptx} from "../../packages/pptx/src/export-deck.ts"
 import {mobileAuditFailures} from "./mobile-audit-checks.ts"
 import assert from "node:assert/strict"
-import {mkdir,writeFile,readFile} from "node:fs/promises"
+import {mkdir,writeFile} from "node:fs/promises"
 import path from "node:path"
 import {preview} from "vite"
 import {chromium} from "playwright"
@@ -32,6 +34,10 @@ try{
   process.env.NODE_ENV="test"
   const stack=await scenario({browserEnabled:true})
   try{
+   const identity=await (await page.request.get(stack.origin+"/version")).json()
+   assert.equal(identity.sha,process.env.AIRDESIGN_BUILD_SHA??identity.sha)
+   assert.equal(identity.builtAt,process.env.AIRDESIGN_BUILD_TIME??identity.builtAt)
+   results.push({name:"studio-build-identity",failures:[],identity})
    await page.goto(stack.origin);await page.locator(".ad-sign-in").waitFor();await audit("studio-sign-in")
    const owner=await stack.fixture.signIn("mobile-audit@example.com")
    await context.addCookies(owner.cookie.split("; ").map(pair=>{const i=pair.indexOf("=");return {name:pair.slice(0,i),value:pair.slice(i+1),url:stack.origin}}))
@@ -52,19 +58,20 @@ try{
     assert.ok(lease&&lease.id===job.id)
     const saved=lease.snapshot,expected=await writeSavedPptx(saved.deck,saved.seq,saved.source,saved.assets??{})
     assert.equal(await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{}),true)
-    const link=page.getByRole("link",{name:"Download PPTX",exact:true});await link.waitFor()
-    const href=await link.getAttribute("href");assert.ok(href)
-    const artifact=await page.request.get(href);assert.equal(artifact.status(),200)
-    const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
-    assert.ok(filename);assert.equal(Buffer.from(expected).equals(bytes),true)
-    const pending=page.waitForEvent("download");await link.click();const download=await pending,file=await download.path()
-    assert.equal(await download.failure(),null);assert.ok(file);assert.equal(download.suggestedFilename(),filename);assert.equal(bytes.equals(await readFile(file)),true)
-    await page.getByText(filename+" downloaded",{exact:true}).waitFor()
-    results.push({name:"studio-export-download",failures:[],filename,bytes:bytes.length,boundary:"controlled local completion of actual saved snapshot; real authenticated artifact and browser download"})
+    const proof=await assertArtifactDownload(page,expected)
+    const parts=await readArchive(Buffer.from(expected))
+    assert.ok(parts.has("[Content_Types].xml")&&parts.has("ppt/presentation.xml")&&parts.has("ppt/slides/slide1.xml"))
+    await page.getByText(proof.requestedFilename+" downloaded",{exact:true}).waitFor()
+    results.push({name:"studio-export-download",failures:[],...proof,pptxParts:parts.size,boundary:"controlled local completion of actual saved snapshot; real authenticated artifact and browser download"})
    }finally{
     await page.setViewportSize(viewport)
     await page.evaluate(saved=>{for(const {element,top,left} of saved.items)element.scrollTo({top,left,behavior:"instant"});window.scrollTo({left:saved.x,top:saved.y,behavior:"instant"})},positions)
-    await positions.dispose()
+    try{
+     assert.deepEqual(page.viewportSize(),viewport)
+     const restored=await page.evaluate(saved=>scrollX===saved.x&&scrollY===saved.y&&saved.items.every(({element,top,left})=>!element.isConnected||(element.scrollTop===top&&element.scrollLeft===left)),positions)
+     assert.equal(restored,true)
+     results.push({name:"studio-export-restoration",failures:[],viewport,scrollRestored:restored})
+    }finally{await positions.dispose()}
    }
   }finally{await page.close();await stack.close()}
  }
