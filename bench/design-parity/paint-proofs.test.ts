@@ -257,7 +257,7 @@ it("requires actions in their registered open dialog rather than a blocked backg
   const browser=await chromium.launch()
   try{
     const page=await browser.newPage()
-    const mount=()=>page.setContent('<button>Cancel</button><div role="dialog" aria-modal="true" id="owner"><p>Confirmation</p><button>Cancel</button></div><style>#owner{position:fixed;inset:0;background:white}button{width:100px;height:44px}</style>')
+    const mount=()=>page.setContent('<button>Cancel</button><div role="dialog" aria-modal="true" id="owner"><p>Confirmation</p><p hidden>Unavailable state</p><button>Cancel</button></div><style>#owner{position:fixed;inset:0;background:white}button{width:100px;height:44px}</style>')
     await mount()
     await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
     for(const mutation of ["missing","hidden","wrong-owner","nested-owner"]){

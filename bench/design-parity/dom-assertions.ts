@@ -249,7 +249,7 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
   if(entry.component?.kind==="dialog"){
     const root=page.locator(entry.component.selector)
     if(await root.count()!==1||!await root.evaluate(element=>element.matches('dialog[open], [role="dialog"], [role="alertdialog"]')))throw failure(entry.component.selector,"required-dialog-owner","one open dialog",await root.count())
-    await assertRendered(root)
+    if(!await root.isVisible())throw failure(entry.component.selector,"required-dialog-owner","visible open dialog","hidden")
     owner=root
   }
   for(const control of entry.assertions.controls){
