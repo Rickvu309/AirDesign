@@ -563,8 +563,8 @@
     "status": "reachable",
     "steps": [
       {
-        "kind": "click",
-        "name": "+ New deck"
+        "kind": "selector-click",
+        "selector": "summary[aria-label=\"New deck\"]"
       }
     ],
     "metric": "local-oklab-v2",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Open the intended visible New deck summary and require the actual sidebar Search searchbox after Decks reconciliation; preserve state, viewport and parity limits."
   },
   {
     "surface": "studio",
