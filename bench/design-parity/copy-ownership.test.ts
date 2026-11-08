@@ -57,3 +57,18 @@ it("retains bounded candidate reasons without swallowing the painted-copy failur
   await expect(assertScenarioCopy(page,["agent.resume"])).rejects.toThrow('text-ink-ownership')
  }finally{await browser.close()}
 })
+
+it("requires the Actions picker to paint its real empty search placeholder",async()=>{
+ const entry=(await readRegistry()).find(entry=>entry.code==="S43.07")!
+ const browser=await chromium.launch()
+ try{
+  const page=await browser.newPage()
+  const baseline='<aside aria-label="Actions picker"><input aria-label="Search actions" placeholder="Search actions" style="font:14px Arial;color:#222"></aside>'
+  await page.setContent(baseline)
+  await expect(assertScenarioOwnedCopy(page,entry)).resolves.toBeUndefined()
+  for(const changed of [baseline.replace('Actions picker','Other'),baseline.replace('placeholder="Search actions"','placeholder="Wrong"'),baseline.replace('<input','<input hidden'),baseline.replace('<input','<input value="Search actions"')]){
+   await page.setContent(changed)
+   await expect(assertScenarioOwnedCopy(page,entry)).rejects.toThrow()
+  }
+ }finally{await browser.close()}
+})

@@ -257,9 +257,9 @@ export async function assertScenarioCopy(page:Page|Locator,keys:string[],scenari
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
   }
 }
-async function assertControlPaint(locator:Locator){
+export async function assertControlPaint(locator:Locator,paint?:"icon"){
   const text=await locator.evaluate(element=>element instanceof HTMLInputElement||element instanceof HTMLSelectElement||element instanceof HTMLTextAreaElement||Boolean(element.textContent?.trim()))
-  if(text)return assertRendered(locator,true)
+  if(text&&paint!=="icon")return assertRendered(locator,true)
   const box=await locator.boundingBox(),viewport=locator.page().viewportSize()
   if(!box||box.width<=0||box.height<=0||box.x<0||box.y<0||viewport&&(box.x+box.width>viewport.width||box.y+box.height>viewport.height))throw failure(locator.toString(),"required-control-paint","visible control",box)
   if(!await locator.evaluate(element=>{const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"hit-test",true,false)
@@ -292,7 +292,14 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
       if(await root.count()!==1||!await root.isVisible())throw failure(root.toString(),"required-editor-owner","one visible manual editor export owner",await root.count())
       controlOwner=root
     }
-    const locator=controlOwner.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true})
+    if("owner" in control&&control.owner!=="manual-editor"&&control.owner){
+      const selectors={"editor-shell":".studio-editor .editor-bar","aira-panel":".aira-panel","images-panel":".image-panel","slide-navigation":".editor-filmstrip"}
+      controlOwner=page.locator(selectors[control.owner])
+      if(await controlOwner.count()!==1||!await controlOwner.isVisible())throw failure(controlOwner.toString(),"required-control-owner",control.owner,"missing or hidden")
+    }
+    const copyName=control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues)
+    const name="owner" in control&&control.owner==="slide-navigation" ? `Go to ${copyName.toLowerCase()}` : copyName
+    const locator=controlOwner.getByRole(control.role,{name,exact:true})
     if(await locator.count()!==1)throw failure(locator.toString(),"required-control",1,await locator.count())
     if(entry.component?.kind==="dialog"&&!await locator.evaluate((element,selector)=>element.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===document.querySelector(selector),entry.component.selector))throw failure(locator.toString(),"required-control-owner",entry.component.selector,"different dialog")
     if(control.role==="combobox"){
@@ -300,7 +307,15 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
       if(!state||state.value!==control.value||state.selected!==1||!state.text||state.disabled)throw failure(locator.toString(),"required-native-selection",control.value,state)
     }
     if("owner" in control&&control.owner==="manual-editor"&&!await locator.isEnabled())throw failure(locator.toString(),"required-enabled-control",true,false)
-    await assertControlPaint(locator)
+    if("paint" in control&&control.paint==="keyboard-focus"){
+      const previous=await page.evaluateHandle(()=>document.activeElement)
+      try{await locator.focus();await page.keyboard.press("Tab");await page.keyboard.press("Shift+Tab");if(!await locator.evaluate(element=>element===document.activeElement))throw failure(locator.toString(),"required-keyboard-focus",true,false);await assertControlPaint(locator)}finally{await previous.evaluate(element=>{if(element instanceof HTMLElement)element.focus()});await previous.dispose()}
+    }else if("owner" in control&&control.owner==="slide-navigation"){
+      const number=locator.locator(":scope > span").first()
+      if(!await locator.isEnabled()||!await locator.evaluate(element=>{const box=element.getBoundingClientRect(),hit=document.elementFromPoint(box.x+box.width/2,box.y+box.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"required-navigation-hit-test",true,false)
+      if(await number.textContent()!==entry.assertions.copyValues?.slide)throw failure(number.toString(),"required-slide-number",entry.assertions.copyValues?.slide,await number.textContent())
+      await assertControlPaint(number)
+    }else await assertControlPaint(locator,"paint" in control&&control.paint==="icon" ? "icon" : undefined)
   }
 }
 export async function assertScenarioOwnedCopy(page:Page,entry:Scenario){
@@ -312,9 +327,13 @@ export async function assertScenarioOwnedCopy(page:Page,entry:Scenario){
   }
   for(const key of entry.assertions.copyKeys){
     const owner=entry.assertions.copyOwners?.[key]
-    const ownedRoot=owner==="aira-panel" ? page.getByRole("complementary",{name:"Aira",exact:true}) : owner==="toast" ? page.locator(entry.component?.selector??"[data-sonner-toast]") : undefined
+    const ownedRoot=owner==="editor-shell" ? page.locator(".editor-bar") : owner==="aira-panel" ? page.getByRole("complementary",{name:"Aira",exact:true}) : owner==="toast" ? page.locator(entry.component?.selector??"[data-sonner-toast]") : undefined
     if(ownedRoot&&(await ownedRoot.count()!==1||!await ownedRoot.isVisible()))throw failure(owner??"copy","required-copy-owner","one visible owner",await ownedRoot.count())
-    await assertScenarioCopy(ownedRoot??copyOwner,[key],entry.code,entry.assertions.copyValues)
+    if(owner==="actions-search"){
+      const text=resolveCopy(key,entry.assertions.copyValues),input=page.getByRole("complementary",{name:"Actions picker",exact:true}).getByRole("textbox",{name:text,exact:true})
+      if(await input.count()!==1||await input.getAttribute("placeholder")!==text||await input.inputValue()!=="")throw failure(input.toString(),"required-search-placeholder",text,"missing or replaced")
+      await assertControlPaint(input)
+    }else await assertScenarioCopy(ownedRoot??copyOwner,[key],entry.code,entry.assertions.copyValues)
   }
 }
 async function assertDOM(page:Page,entry:Scenario){

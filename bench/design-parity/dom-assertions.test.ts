@@ -1,7 +1,7 @@
 import {chromium} from "playwright"
 import {readFile} from "node:fs/promises"
 import {expect,it} from "vitest"
-import {assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
+import {assertScenarioControls,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
 import {readRegistry} from "./registry.ts"
 import {compareDesign} from "./metric.mjs"
 
@@ -97,5 +97,54 @@ it("enforces the generator error title without weakening ordinary page titles",a
   await page.locator("h1").evaluate(element=>element.style.font="600 26px Geist")
   await expect(assertScenarioDOM(page,entry)).rejects.toThrow("text-token:access-error-title")
   await expect(assertScenarioDOM(page,prior)).resolves.toBeUndefined()
+ }finally{await browser.close()}
+})
+
+it("requires owned painted Stop vectors and rejects hidden, absent and wrong-owner controls",async()=>{
+ const original=(await readRegistry()).find(entry=>entry.status==="reachable")!
+ const entry={...original,component:undefined,assertions:{...original.assertions,controls:[{role:"button" as const,nameKey:"agent.stop",owner:"aira-panel" as const,paint:"icon" as const}]}}
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage();page.setDefaultTimeout(300)
+  const baseline='<aside class="aira-panel"><button aria-label="Stop"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg></button></aside>'
+  await page.setContent(baseline)
+  await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+  for(const changed of [baseline.replace('aria-label="Stop"','aria-label="Resume"'),baseline.replace('class="aira-panel"','class="wrong-owner"'),baseline.replace('<button','<button style="visibility:hidden"'),baseline.replace('<svg','<svg style="opacity:0"'),baseline.replace(/<svg.*?<\/svg>/,'')]){
+   await page.setContent(changed)
+   await expect(assertScenarioControls(page,entry)).rejects.toThrow()
+  }
+ }finally{await browser.close()}
+})
+
+it("requires the real filmstrip navigation control behind an open template picker",async()=>{
+ const original=(await readRegistry()).find(entry=>entry.code==="S43.01")!
+ const entry={...original,component:undefined,assertions:{...original.assertions,controls:[{role:"button" as const,nameKey:"editor.slide_label",owner:"slide-navigation" as const}]}}
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage();page.setDefaultTimeout(300)
+  const baseline='<nav class="editor-filmstrip"><button aria-label="Go to slide 3"><span>3</span><div style="transform:scale(.1);transform-origin:0 0;font-size:30px">Slide content</div></button></nav>'
+  await page.setContent(baseline)
+  await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+  for(const changed of [baseline.replace('Go to slide 3','Slide 3'),baseline.replace('editor-filmstrip','other'),baseline.replace('<span>3','<span>4'),baseline.replace('<span>','<span style="opacity:0">'),baseline.replace('<button','<button hidden')]){
+   await page.setContent(changed)
+   await expect(assertScenarioControls(page,entry)).rejects.toThrow()
+  }
+ }finally{await browser.close()}
+})
+
+it("requires actual focus-visible keyboard close ink and rejects permanently concealed controls",async()=>{
+ const original=(await readRegistry()).find(entry=>entry.code==="S43.01")!
+ const control=original.assertions.controls.find(control=>"nameKey" in control&&control.nameKey==="editor.close_picker")!
+ const entry={...original,component:undefined,assertions:{...original.assertions,controls:[control]}}
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage();page.setDefaultTimeout(300)
+  const styles=await readFile("apps/studio/src/templates/templates.css","utf8")
+  const baseline=`<style>.sr-only{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}${styles}</style><section class="template-picker"><button class="sr-only">Close picker</button><input aria-label="Search templates"></section>`
+  await page.setContent(baseline);await page.getByRole('textbox').focus()
+  await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+  expect(await page.getByRole('textbox').evaluate(element=>element===document.activeElement)).toBe(true)
+  await page.setContent(baseline.replace('.template-picker>.sr-only:focus-visible','.template-picker>.never'))
+  await expect(assertScenarioControls(page,entry)).rejects.toThrow()
  }finally{await browser.close()}
 })

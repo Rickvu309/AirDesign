@@ -22,14 +22,14 @@ it("keeps every committed scenario identity aligned with its registry",async()=>
 
 it("derives every traced role size and weight from its design generator classes",async()=>{
   const source=await readFile("docs/design/v0.1/source/gen-editor.mjs","utf8")
-  const citations={"landing-hero":["H Line"],"pricing-title":["Pricing Title"],"page-title":["Import Title"],"access-error-title":["Err Title"],"dialog-title":["Alert Title"],"module-title":["Brand Name"],body:["Toast Text","Nav Link"],helper:["Card State"]}
+  const citations={"landing-hero":["H Line"],"pricing-title":["Pricing Title"],"page-title":["Import Title"],"consent-title":["Connect Title"],"access-error-title":["Err Title"],"dialog-title":["Alert Title"],"module-title":["Brand Name"],body:["Toast Text","Nav Link"],helper:["Card State"]}
   for(const role of Object.keys(textRoleSizes))expect(citations).toHaveProperty(role)
   for(const [role,labels] of Object.entries(citations)){
     const tokens=labels.map(label=>{
       const call=source.slice(label==="H Line" ? source.indexOf("('H Line', 'Clarity is the edge.'") : source.indexOf(`('${label}',`))
       const classes=call.match(/^\('[^']+',\s*(?:'[^']*'|"[^"]*"|[^,]+),\s*([`'"])(.*?)\1/)?.[2]
       expect(classes,label).toBeDefined()
-      const size=Number(classes!.match(/text-\[(\d+)px\]/)![1])
+      const size=classes!.split(/\s/).includes("text-xl") ? 20 : Number(classes!.match(/text-\[(\d+)px\]/)![1])
       const weight=classes!.includes("font-semibold") ? 600 : classes!.includes("font-medium") ? 500 : 400
       return {size,weight}
     })
@@ -48,4 +48,14 @@ it("opens the intended New deck menu through its accessible summary",async()=>{
   expect(entry.status).toBe("reachable")
   if(entry.status!=="reachable")throw new Error("missing-new-deck-journey")
   expect(entry.steps).toEqual([{kind:"selector-click",selector:'summary[aria-label="New deck"]'}])
+})
+
+it("rejects citing the import page title for the consent heading",async()=>{
+ const source=await readFile("docs/design/v0.1/source/gen-editor.mjs","utf8")
+ const call=source.slice(source.indexOf("('Import Title',"))
+ const classes=call.match(/^\('[^']+',\s*(?:'[^']*'|"[^"]*"|[^,]+),\s*([`'"])(.*?)\1/)?.[2]
+ expect(classes).toBeDefined()
+ const size=Number(classes!.match(/text-\[(\d+)px\]/)![1])
+ const weight=classes!.includes("font-semibold") ? 600 : classes!.includes("font-medium") ? 500 : 400
+ expect(()=>expect([size,size,weight]).toEqual(textRoleSizes["consent-title"])).toThrow()
 })

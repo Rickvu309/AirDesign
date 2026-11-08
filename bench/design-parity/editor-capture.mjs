@@ -80,7 +80,7 @@ export async function perform(page,step,stack,owner){
   switch(step.kind){
     case "assert":await page.locator(step.selector).waitFor({state:"visible"});break
     case "hold":{
-      const button=page.getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.locator(".contextual-insertion-slot").waitFor();await page.mouse.up();break
+      const button=page.locator(".studio-editor .editor-bar").getByRole("button",{name:step.name,exact:true});await button.hover();await page.mouse.down();await page.locator(".contextual-insertion-slot").waitFor();await page.mouse.up();break
     }
     case "paste-slides":{
       const deck=fixtureDeck(1,step.count)

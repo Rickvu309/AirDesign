@@ -11,7 +11,7 @@ import {PNG} from "pngjs"
 import {compareComponent} from "./component-metric.mjs"
 import {compareDesign,metricVersion} from "./metric.mjs"
 import {readRegistry,readBudgetBaseline,validateIdentity,validateRegistry,selectScenarios,ratchet,passesParity} from "./registry.ts"
-import {assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
+import {assertScenarioControls,assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
 import {stack,seed,perform} from "./capture.mjs"
 import {fixtureIdentifier} from "./fixture-identifiers.ts"
 import {approvalRoute} from "./approval-fixture.ts"
@@ -52,6 +52,7 @@ try{
       if(entry.seed.startsWith("deck-"))await page.locator('.studio-editor[data-sync-state="saved"]').waitFor()
       else await page.waitForLoadState("networkidle")
       await assertScenarioCopy(page,entry.assertions.entryCopyKeys??[],entry.code,entry.assertions.copyValues)
+      if(entry.assertions.entryControls?.length)await assertScenarioControls(page,{...entry,component:undefined,assertions:{...entry.assertions,controls:entry.assertions.entryControls}})
       await probeScenarioInteraction(page,entry)
       if(entry.assertions.probe.kind==="approval")await page.goto(local.origin+await approvalRoute(local.origin,local.fixture.apiOrigin,entry.seed.slice(6)),{waitUntil:"networkidle"})
       for(const step of entry.steps)await perform(page,step,local,setup.owner)

@@ -41,7 +41,7 @@
 .template-card[data-tone=light] .template-sample { box-shadow:inset 0 0 0 1px var(--border); }
 .template-card[data-tone=dark] .template-sample { background:var(--template-dark)!important; }
 .template-card[aria-pressed=true] .template-sample { outline:0; }
-@media (pointer:coarse) { .template-panel .template-search input { font-size:16px; }.template-picker .template-search { min-block-size:44px; }.template-picker>.sr-only:focus-visible { position:static;inline-size:auto;block-size:44px;clip-path:none;margin:8px; } }
+@media (pointer:coarse) { .template-panel .template-search input { font-size:16px; }.template-picker .template-search { min-block-size:44px; } }
 
 .template-panel { padding:0; }
 .template-panel>header { margin:0; }
@@ -63,3 +63,5 @@
 .template-management>header button { background:transparent;border:0;padding:8px;cursor:pointer;color:var(--muted-foreground); }
 .template-panel>.template-offer,.template-panel>p { margin-inline:16px; }
 @media (pointer:coarse) { .design-section-heading { min-block-size:44px; }.design-section-heading>button,.template-management>header button { min-inline-size:44px;min-block-size:44px; }.background-tabs { min-block-size:48px; }.background-tabs>button,.template-palette>label,.template-panel .background-color { min-block-size:44px; }.template-management input,.template-management select { font-size:16px; } }
+
+.template-picker>.sr-only:focus-visible { position:static;inline-size:auto;block-size:44px;clip-path:none;margin:8px; }

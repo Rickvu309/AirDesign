@@ -52,7 +52,7 @@
 .aira-composer:not(:has(textarea:not(:placeholder-shown))) textarea { flex:1;min-inline-size:0; }
 .aira-composer:not(:has(textarea:not(:placeholder-shown))) button[type=submit] { display:none; }
 .aira-composer button[aria-label=Stop] { background:var(--foreground);color:var(--card);font-size:0; }
-.aira-composer button[aria-label=Stop]::after { content:"";display:block;inline-size:10px;block-size:10px;margin:auto;border-radius:2px;background:currentColor; }
+.aira-composer button[aria-label=Stop] svg { display:block;margin:auto; }
 .aira-composer:has(button[aria-label=Stop]) .aira-mic { display:none; }
 .aira-attachments button:nth-child(n+2) { background:var(--accent);color:var(--primary); }
 @media (pointer:coarse) { .aira-composer:not(:has(textarea:not(:placeholder-shown))) { flex-wrap:wrap; }.aira-composer:not(:has(textarea:not(:placeholder-shown))) .aira-attachments { inline-size:100%; }.aira-panel>header button,.aira-history summary { min-inline-size:44px;min-block-size:44px; }.aira-header-actions { gap:0; } }

@@ -1,6 +1,6 @@
 [
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S11.01",
     "seed": "signed-out",
     "steps": [],
@@ -40,7 +40,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S12.01",
     "seed": "signed-out",
     "steps": [],
@@ -80,7 +80,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S21.01",
     "seed": "signed-out",
     "steps": [],
@@ -122,7 +122,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S22.01",
     "seed": "signed-out",
     "steps": [
@@ -172,7 +172,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S29.01",
     "seed": "signed-out",
     "steps": [],
@@ -211,7 +211,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S31.01",
     "seed": "empty-account",
     "steps": [],
@@ -259,7 +259,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S31.02",
     "seed": "recents",
     "steps": [],
@@ -317,7 +317,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S31.03",
     "seed": "recents",
     "steps": [
@@ -380,7 +380,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S31.04",
     "seed": "recents",
     "steps": [
@@ -443,7 +443,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S31.05",
     "seed": "recents",
     "steps": [
@@ -510,7 +510,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S32.01",
     "seed": "recents",
     "steps": [
@@ -567,7 +567,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S32.02",
     "seed": "recents",
     "steps": [
@@ -625,7 +625,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S32.03",
     "seed": "recents",
     "steps": [
@@ -679,7 +679,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S33.01",
     "seed": "recents",
     "steps": [
@@ -759,7 +759,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S33.02",
     "seed": "trash-with-items",
     "steps": [],
@@ -817,7 +817,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S33.03",
     "seed": "trash-with-items",
     "steps": [
@@ -888,7 +888,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S41.01",
     "seed": "deck-open",
     "steps": [
@@ -952,7 +952,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S41.02",
     "seed": "deck-open",
     "steps": [
@@ -962,7 +962,7 @@
       },
       {
         "kind": "hover",
-        "name": "+ New slide"
+        "name": "New slide"
       }
     ],
     "viewport": {
@@ -1020,17 +1020,26 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S41.03",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 5"
+      },
+      {
+        "kind": "hold",
+        "name": "New slide"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1079,17 +1088,26 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S41.04",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 2"
+      },
+      {
+        "kind": "paste-slides",
+        "count": 2
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1120,6 +1138,11 @@
         "import.pasted",
         "common.undo"
       ],
+      "copyOwners": {
+        "editor.new_slide": "editor-shell",
+        "import.pasted": "toast",
+        "common.undo": "toast"
+      },
       "copyValues": {
         "n": "2",
         "slide": "3"
@@ -1151,7 +1174,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S42.01",
     "seed": "deck-open",
     "steps": [
@@ -1218,7 +1241,9 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.stop"
+          "nameKey": "agent.stop",
+          "owner": "aira-panel",
+          "paint": "icon"
         }
       ],
       "probe": {
@@ -1227,7 +1252,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S42.02",
     "seed": "deck-open",
     "steps": [
@@ -1294,7 +1319,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1303,7 +1329,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S42.03",
     "seed": "deck-open",
     "steps": [
@@ -1374,7 +1400,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1383,7 +1410,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S42.04",
     "seed": "deck-open",
     "steps": [
@@ -1454,7 +1481,8 @@
         },
         {
           "role": "button",
-          "nameKey": "agent.undo_run"
+          "nameKey": "common.undo",
+          "owner": "aira-panel"
         }
       ],
       "probe": {
@@ -1463,7 +1491,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.01",
     "seed": "deck-open",
     "steps": [
@@ -1529,11 +1557,13 @@
         },
         {
           "role": "button",
-          "nameKey": "editor.slide_label"
+          "nameKey": "editor.slide_label",
+          "owner": "slide-navigation"
         },
         {
           "role": "button",
-          "nameKey": "editor.close_picker"
+          "nameKey": "editor.close_picker",
+          "paint": "keyboard-focus"
         }
       ],
       "probe": {
@@ -1542,7 +1572,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.02",
     "seed": "deck-open",
     "steps": [
@@ -1618,7 +1648,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.03",
     "seed": "deck-open",
     "steps": [
@@ -1693,17 +1723,30 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.04",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Shapes"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1752,17 +1795,34 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.05",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Shapes"
+      },
+      {
+        "kind": "click",
+        "name": "More shapes"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1810,17 +1870,30 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.06",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Edit slide text"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1868,17 +1941,30 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S43.07",
     "seed": "deck-open",
-    "steps": [],
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "click",
+        "name": "Actions"
+      }
+    ],
     "viewport": {
       "width": 1470,
       "height": 923
     },
     "surface": "studio",
     "route": "/deck/designparity",
-    "status": "unreachable",
+    "status": "reachable",
     "assertions": {
       "structure": {
         "icons": [
@@ -1907,6 +1993,9 @@
       "copyKeys": [
         "editor.actions"
       ],
+      "copyOwners": {
+        "editor.actions": "actions-search"
+      },
       "copyValues": {
         "slide": "3"
       },
@@ -1926,7 +2015,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S49.01",
     "seed": "deck-open",
     "steps": [
@@ -1999,7 +2088,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S49.02",
     "seed": "deck-open",
     "steps": [
@@ -2073,7 +2162,7 @@
     },
     "component": {
       "kind": "toast",
-      "selector": "[data-sonner-toast]",
+      "selector": ".studio-editor[data-sync-state=\"offline\"]>.editor-status:not([data-font-state])",
       "designBox": {
         "left": 534,
         "top": 11,
@@ -2084,7 +2173,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S61.01",
     "seed": "deck-open",
     "steps": [
@@ -2127,8 +2216,13 @@
       "copyKeys": [
         "editor.export"
       ],
-      "entryCopyKeys": [
-        "shell.home"
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
       ],
       "controls": [
         {
@@ -2158,7 +2252,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S61.02",
     "seed": "deck-open",
     "steps": [
@@ -2206,8 +2300,13 @@
       "copyKeys": [
         "editor.export"
       ],
-      "entryCopyKeys": [
-        "shell.home"
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
       ],
       "controls": [
         {
@@ -2237,7 +2336,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S61.03",
     "seed": "deck-open",
     "steps": [
@@ -2283,8 +2382,13 @@
       "copyKeys": [
         "export.downloaded"
       ],
-      "entryCopyKeys": [
-        "shell.home"
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
       ],
       "copyValues": {
         "file": "Q3 Investor Update-v3.pptx"
@@ -2307,7 +2411,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S69.01",
     "seed": "deck-open",
     "steps": [
@@ -2354,8 +2458,13 @@
         "export.failed",
         "pay.try_again"
       ],
-      "entryCopyKeys": [
-        "shell.home"
+      "entryControls": [
+        {
+          "role": "link",
+          "nameKey": "shell.home",
+          "owner": "editor-shell",
+          "paint": "icon"
+        }
       ],
       "controls": [
         {
@@ -2380,7 +2489,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S71.01",
     "seed": "oauth-Claude",
     "steps": [],
@@ -2429,7 +2538,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S71.02",
     "seed": "oauth-Claude",
     "steps": [
@@ -2483,7 +2592,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S71.03",
     "seed": "oauth-Codex",
     "steps": [],
@@ -2532,7 +2641,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S81.01",
     "seed": "usage-active",
     "steps": [],
@@ -2576,7 +2685,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S81.02",
     "seed": "usage-active-connected",
     "steps": [],
@@ -2626,7 +2735,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S81.03",
     "seed": "usage-active",
     "steps": [
@@ -2689,7 +2798,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S91.01",
     "seed": "usage-active",
     "steps": [
@@ -2759,7 +2868,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S91.02",
     "seed": "usage-active",
     "steps": [
@@ -2826,7 +2935,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S91.03",
     "seed": "usage-active",
     "steps": [
@@ -2900,7 +3009,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S92.01",
     "seed": "deck-limited",
     "steps": [
@@ -2974,7 +3083,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S92.02",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -3047,7 +3156,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S92.03",
     "seed": "deck-limited",
     "steps": [
@@ -3128,7 +3237,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S92.04",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -3234,7 +3343,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S99.01",
     "seed": "usage-active",
     "steps": [
@@ -3304,7 +3413,7 @@
     }
   },
   {
-    "fixtureContentHash": "ddd470c6011972f363680b338c174ef8e502efe33b2215c063409bde50ceea86",
+    "fixtureContentHash": "94e4e7f8670bf3095ee21591e094d11cf408cfc69f6d7a16305e6b7ae0a91c48",
     "code": "S99.02",
     "seed": "usage-active",
     "steps": [

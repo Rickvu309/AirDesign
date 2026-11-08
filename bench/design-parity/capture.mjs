@@ -1,3 +1,4 @@
+import {perform as performEditor} from "./editor-capture.mjs"
 import {readFile} from "node:fs/promises"
 import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
@@ -66,6 +67,7 @@ export async function seed(stack,entry){
 }
 export async function perform(page,step,stack,owner){
   switch(step.kind){
+    case "hold":case "paste-slides":await performEditor(page,step,stack,owner);break
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
     case "click":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().click();break
     case "keyboard-activate":await page.getByRole(["Recents","All decks","Trash","Settings"].includes(step.name) ? "link" : "button",{name:step.name,exact:true}).first().press("Enter");break

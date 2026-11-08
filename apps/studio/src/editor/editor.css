@@ -1,4 +1,4 @@
-.studio-editor { margin-inline:auto;inline-size:100%;color:var(--foreground); }
+.studio-editor { --insertion-border:#a8a8a8;margin-inline:auto;inline-size:100%;color:var(--foreground); }
 .editor-first-request h2 { font-size:28px;letter-spacing:-.04em; }.editor-first-request p { font-size:14px;line-height:1.6;color:var(--muted-foreground); }
 .studio-editor>.paste-review textarea { display:block;inline-size:100%;box-sizing:border-box;min-block-size:96px;resize:vertical;border:1px solid var(--border);border-radius:8px;background:var(--background);color:var(--foreground);padding:12px;font:inherit;font-size:16px;margin-block:8px 16px; }
 .editor-slides { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-inline:auto; }.editor-slide { min-inline-size:0; }.slide-select { background:transparent;border:0;padding:10px 0;font:inherit;cursor:pointer; }
@@ -270,3 +270,7 @@
 .editor-notes-grip { inset-block-start:-12px;inset-inline-start:calc(50% - 24px);inline-size:48px;block-size:4px;background:var(--input);opacity:1; }
 .studio-editor .editor-notes-panel .editor-notes { display:block;block-size:48px;padding:14px 16px; }
 @media (width < 768px) { .studio-editor { padding-inline:16px; } }
+
+.editor-history { display:flex;gap:4px; }
+.editor-history button { display:grid;place-items:center;inline-size:28px;block-size:28px;padding:6px;border:0;border-radius:6px;background:transparent;color:var(--foreground); }
+.editor-history button:disabled { opacity:.45; }

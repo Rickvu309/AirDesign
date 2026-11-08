@@ -60,7 +60,7 @@ describe("design parity contract",()=>{
   })
 })
 it("enforces release targets separately from regression ceilings and refuses missing coverage",async()=>{
-  const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing=entries.find(entry=>entry.status==="unreachable")!
+  const entries=await readRegistry(),entry=entries.find(entry=>entry.status==="reachable")!,missing={...entry,status:"unreachable" as const,reason:"Deliberately missing behavior"}
   const scenario={...entry,budget:0.9,target:targetFor(entry.code,entry.surface)}
   expect(passesParity(scenario,0.8,false)).toBe(true)
   expect(passesParity(scenario,0.8,true)).toBe(false)
