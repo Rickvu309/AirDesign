@@ -31,13 +31,13 @@ for(const reportPath of reports){
     const directory=path.join(out,"comparisons",`${report.head.slice(0,8)}-${old.code}`)
     await fs.mkdir(directory,{recursive:true})
     let sideBySide=null
-    if(floor.status==="calibrated"){
+    if(floor.file){
       const source=await fs.readFile(path.join(out,`${old.code}-source.png`)),images=[design,source,capture]
       const sizes=await Promise.all(images.map(image=>sharp(image).metadata())),width=Math.max(...sizes.map(size=>size.width)),height=Math.max(...sizes.map(size=>size.height))
       sideBySide=path.join(directory,"design-source-product.png")
       await sharp({create:{width:width*3,height,channels:4,background:"white"}}).composite(images.map((input,index)=>({input,left:index*width,top:0}))).png().toFile(sideBySide)
     }
-    results.push({head:report.head,code:old.code,reportPath,capturePath,captureSha256:digest(capture),sourceStatus:floor.status,sourceFloor:floor.floor,target:floor.target,oldTarget:old.target,oldScore:old.score,score:metric.score,oldScreenPassed:Number.isFinite(old.score) ? old.score<=old.target : null,newScreenPassed:sourcePassed,oldPassed:old.passed??null,newPassed,independentPassed,component,sourceProductGap:floor.status==="calibrated" ? metric.score-floor.floor : null,marginCrossesProduct:floor.status==="calibrated"&&metric.score>floor.floor&&metric.score<=floor.target,weakSeparation:floor.status==="calibrated"&&metric.score-floor.floor<=0.02,sideBySide})
+    results.push({head:report.head,code:old.code,reportPath,capturePath,captureSha256:digest(capture),sourceStatus:floor.status,sourceReason:floor.reason??null,measuredSourceScore:floor.measuredFloor??floor.floor,sourceFloor:floor.floor,target:floor.target,oldTarget:old.target,oldScore:old.score,score:metric.score,oldScreenPassed:Number.isFinite(old.score) ? old.score<=old.target : null,newScreenPassed:sourcePassed,oldPassed:old.passed??null,newPassed,independentPassed,component,sourceProductGap:floor.status==="calibrated" ? metric.score-floor.floor : null,marginCrossesProduct:floor.status==="calibrated"&&metric.score>floor.floor&&metric.score<=floor.target,weakSeparation:floor.status==="calibrated"&&metric.score-floor.floor<=0.02,sideBySide})
   }
 }
 const heads=[...new Set(results.map(row=>row.head))]

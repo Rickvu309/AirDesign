@@ -6,7 +6,7 @@ import {createHash} from "node:crypto"
 import {compile} from "@tailwindcss/node"
 import {chromium} from "playwright"
 import {compareDesign,metricVersion} from "./metric.mjs"
-import {fixedMargin,sourceTarget,validateSourceFloor} from "./source-floor.mjs"
+import {fixedMargin,maximumSourceFloor,sourceTarget,validateSourceFloor} from "./source-floor.mjs"
 const args=process.argv.slice(2),out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration")
 if(!args[0])throw new Error("usage: node bench/design-parity/calibrate.mjs UNUSED OUT --references-only")
 await fs.mkdir(out,{recursive:true})
@@ -49,7 +49,7 @@ try{
       if(errors.length||!captures[0].equals(captures[1]))throw new Error(`non-reproducible-source:${entry.code}:${errors}`)
       const design=await fs.readFile(entry.design),metric=await compareDesign(design,captures[0])
       const {score,globalScore,localLoss,worstRegion,colorLoss,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss}=metric
-      const row={code:entry.code,surface:entry.surface,status:"calibrated",file,label,mapping:entry.code==="S12.01" ? "legacy S01.02 Pricing, free usage → S12.01 Discover / Pricing / Default" : "exact-root-scenario-label",viewport:entry.viewport,sourceSha256:digest(jsx),htmlSha256:digest(content),designSha256:digest(design),captureSha256:digest(captures[0]),repeatSha256:digest(captures[1]),repeatIdentical:true,floor:score,target:sourceTarget(score),globalScore,localLoss,worstRegion,colorLoss,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss}
+      const row={code:entry.code,surface:entry.surface,file,label,mapping:entry.code==="S12.01" ? "legacy S01.02 Pricing, free usage → S12.01 Discover / Pricing / Default" : "exact-root-scenario-label",viewport:entry.viewport,sourceSha256:digest(jsx),htmlSha256:digest(content),designSha256:digest(design),captureSha256:digest(captures[0]),repeatSha256:digest(captures[1]),repeatIdentical:true,...(score>=maximumSourceFloor ? {status:"uncalibrated",floor:null,target:null,measuredFloor:score,reason:`source-render-mismatch: measured floor ${score} >= ${maximumSourceFloor}; source does not faithfully reproduce design PNG`} : {status:"calibrated",floor:score,target:sourceTarget(score)}),globalScore,localLoss,worstRegion,colorLoss,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss}
       validateSourceFloor(row)
       results.push(row)
       await fs.writeFile(path.join(out,`${entry.code}-source.png`),captures[0])
