@@ -1,3 +1,4 @@
+import { normalizeImportPart, readSafetyHistory, storeSafetyHistory } from "./import-safety.ts"
 import path from "node:path"
 import { createHash } from "node:crypto"
 import { readArchive, writeArchive } from "./archive.ts"
@@ -8,7 +9,7 @@ const relationshipsUri = "http://schemas.openxmlformats.org/package/2006/relatio
 const drawingUri = "http://schemas.openxmlformats.org/drawingml/2006/main"
 export const hash = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex")
 export type Relationship = { part: string; id: string; type: string; target: string }
-export type SafetyRemoval = { part: string; reason: "remote-external-relationships" | "macros" | "active-embedded-objects"; detail: string }
+export type SafetyRemoval = { part: string; detail: string; affectedObjects?: { part: string; objectId: string; content: "removed" | "preserved" }[] } & ({ disposition: "removed"; reason: "remote-external-relationships" | "macros" | "active-embedded-objects" } | { disposition: "normalized"; reason: "inert-office-processing-instruction" | "inert-svg-attributes" })
 export type Capability = { scope: { kind: "part" } | { kind: "text-span"; index: number }; part: string; support: "native" | "kept" | "flagged"; local: "proven"; powerpoint: "unproven"; preview: null; sourceSha256: string; editor: "text-span" | "qualified-generated" | null }
 export type Report = { sourceSha256: string; hashes: Record<string,string>; relationships: Relationship[]; removals: SafetyRemoval[]; capabilities: Capability[]; fonts: { family: string; status: "unresolved"; fileHash: null; license: null }[]; referenceGate: "P09-X01-unproven" }
 export type Presentation = { parts: ReadonlyMap<string, Buffer>; report: Report }
@@ -64,7 +65,12 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
     if (node.local === "Override" && node.attributes.PartName) overrides.set(node.attributes.PartName.replace(/^\//, ""), type)
   }
   const original = new Map(parts)
-  const removals: SafetyRemoval[] = []
+  const removals: SafetyRemoval[] = readSafetyHistory(parts)
+  for (const [name, bytes] of parts) {
+    const normalized = normalizeImportPart(name, bytes)
+    parts.set(name, normalized.bytes)
+    removals.push(...normalized.removals)
+  }
   const relationships: Relationship[] = []
   const removed = new Set<string>()
   const workbooks = new Set<string>()
@@ -76,7 +82,7 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
     if (/\.svg$/i.test(name) || (overrides.get(name) ?? defaults.get(path.posix.extname(name).slice(1).toLowerCase())) === "image/svg+xml") rejectActiveSvg(new TextDecoder("utf-8", { fatal: true }).decode(bytes))
     if (/vbaProject|activeX|\/embeddings\//i.test(name) && !workbooks.has(name)) {
       removed.add(name)
-      removals.push({ part: name, reason: /vbaProject/i.test(name) ? "macros" : "active-embedded-objects", detail: "payload removed" })
+      removals.push({ disposition: "removed", part: name, reason: /vbaProject/i.test(name) ? "macros" : "active-embedded-objects", detail: "payload removed" })
     }
   }
   for (const [name, bytes] of parts) {
@@ -98,12 +104,18 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
       const active = /\/(?:oleObject|vbaProject|control|activeXControlBinary)$/.test(type) || (type.endsWith("/package") && !(source.startsWith("ppt/charts/") && workbooks.has(resolved)))
       if (external || active || removed.has(resolved)) {
         drops.push(node)
-        removals.push({ part: name, reason: external ? "remote-external-relationships" : /vbaProject/.test(type) ? "macros" : "active-embedded-objects", detail: id })
+        removals.push({ disposition: "removed", part: name, reason: external ? "remote-external-relationships" : /vbaProject/.test(type) ? "macros" : "active-embedded-objects", detail: id })
         if (active && !external) removed.add(resolved)
         const sourceBytes = parts.get(source)
         if (sourceBytes) {
           const parsedSource = parseXml(sourceBytes)
           const references = parsedSource.nodes.filter(item => Object.entries(item.attributes).some(([key,value]) => key.includes(":") && ["id","embed","link"].includes(key.split(":")[1] ?? "") && value === id))
+          const removal = removals.at(-1)
+          if (removal) removal.affectedObjects = references.flatMap(reference => {
+            const object = parsedSource.nodes.filter(item => ["sp", "pic", "graphicFrame", "cxnSp", "grpSp"].includes(item.local) && item.start < reference.start && item.end > reference.end).sort((a,b) => (a.end-a.start)-(b.end-b.start))[0]
+            const identity = object && parsedSource.nodes.find(item => item.local === "cNvPr" && item.start > object.start && item.end < object.end)
+            return identity?.attributes.id ? [{ part: source, objectId: identity.attributes.id, content: reference.local === "hlinkClick" || reference.local === "hlinkMouseOver" ? "preserved" : "removed" }] : []
+          })
           parts.set(source, Buffer.from(removeSpans(parsedSource.xml, references)))
         }
       } else {
@@ -134,6 +146,7 @@ export async function importPptx(input: Buffer): Promise<Presentation> {
     for (const index of spans) capabilities.push({ scope: { kind: "text-span", index }, part: name, support: "native", local: "proven", powerpoint: "unproven", preview: null, sourceSha256: hash(source ?? bytes), editor: "text-span" })
   }
   for (const removal of removals) if (!capabilities.some(item => item.part === removal.part && item.support === "flagged")) capabilities.push({ scope: { kind: "part" }, part: removal.part, support: "flagged", local: "proven", powerpoint: "unproven", preview: null, sourceSha256: hash(original.get(removal.part) ?? Buffer.alloc(0)), editor: null })
+  storeSafetyHistory(parts, removals)
   return { parts, report: { sourceSha256: hash(input), hashes: Object.fromEntries([...original].map(([name,bytes]) => [name,hash(bytes)])), relationships: relationships.filter(rel => !removed.has(rel.part)), removals, capabilities, fonts: [...fonts].map(family => ({ family, status: "unresolved", fileHash: null, license: null })), referenceGate: "P09-X01-unproven" } }
 }
 
