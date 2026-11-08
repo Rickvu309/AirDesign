@@ -135,22 +135,11 @@ export async function perform(page,step,stack,owner){
       await page.locator(".export-dialog").getByRole("button",{name:"Export",exact:true}).click()
       const job=await (await response).json(),lease=await stack.fixture.history.exports.claim()
       if(!lease||lease.id!==job.id)throw new Error("export-not-queued")
-      const expected=await writeSavedPptx(fixtureDeck(1,6),0,null,{})
-      await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{})
-      const link=page.getByRole("link",{name:"Download PPTX",exact:true})
-      await link.waitFor()
-      const href=await link.getAttribute("href")
-      if(!href)throw new Error("missing-artifact-url")
-      const artifact=await page.request.get(href)
-      if(!artifact.ok())throw new Error("artifact-http-failed")
-      const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
-      if(!filename||!Buffer.from(expected).equals(bytes))throw new Error("artifact-content-mismatch")
-      const pending=page.waitForEvent("download")
-      await link.click()
-      const download=await pending,path=await download.path()
-      if(await download.failure()||!path||download.suggestedFilename()!==filename||!bytes.equals(await readFile(path)))throw new Error("browser-download-mismatch")
-      await page.getByRole("region",{name:"Notifications alt+T"}).getByText(filename+" downloaded",{exact:true}).waitFor()
-      console.log(JSON.stringify({proof:"real-browser-artifact-download",filename,bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex")}))
+      const saved=lease.snapshot,expected=await writeSavedPptx(saved.deck,saved.seq,saved.source,saved.assets??{})
+      if(!await stack.fixture.history.exports.complete(lease.id,lease.lease,expected,{}))throw new Error("export-completion-rejected")
+      const proof=await assertArtifactDownload(page,expected)
+      await page.getByRole("region",{name:"Notifications alt+T"}).getByText(proof.requestedFilename+" downloaded",{exact:true}).waitFor()
+      console.log(JSON.stringify({proof:"real-browser-artifact-download",...proof}))
       break
     }
     case "checkout-failed":{
@@ -175,4 +164,21 @@ export async function perform(page,step,stack,owner){
     }
     default:throw new Error("unknown-interaction")
   }
+}
+
+export async function assertArtifactDownload(page,expected){
+  const link=page.getByRole("link",{name:"Download PPTX",exact:true})
+  await link.waitFor()
+  const href=await link.getAttribute("href")
+  if(!href)throw new Error("missing-artifact-url")
+  const url=new URL(href,page.url()).href
+  const artifact=await page.request.get(url)
+  if(!artifact.ok())throw new Error("artifact-http-failed")
+  const bytes=await artifact.body(),filename=/filename="([^"]+)"/.exec(artifact.headers()["content-disposition"]??"")?.[1]
+  if(!filename||!Buffer.from(expected).equals(bytes))throw new Error("artifact-content-mismatch")
+  const pending=page.waitForEvent("download")
+  await link.click()
+  const download=await pending,path=await download.path()
+  if(await download.failure()||!path||download.suggestedFilename()!==filename||!bytes.equals(await readFile(path)))throw new Error("browser-download-mismatch")
+  return {href,url,requestedFilename:filename,contentDisposition:artifact.headers()["content-disposition"],suggestedFilename:download.suggestedFilename(),bytes:bytes.length,sha256:createHash("sha256").update(bytes).digest("hex"),expectedBytes:expected.length,expectedSha256:createHash("sha256").update(expected).digest("hex")}
 }
