@@ -1,4 +1,5 @@
-import {randomBytes,createHash} from "node:crypto"
+import {randomBytes} from "node:crypto"
+import {historySchemaConstraintsSql,historySchemaFingerprint} from "./history-schema-snapshot.ts"
 import pg from "pg"
 import {expect,it} from "vitest"
 import {createHistoryStore,historySchemaVersion,type HistoryStore} from "../src/db/history-store.ts"
@@ -8,8 +9,8 @@ import {commandId} from "../../../packages/change-log/src/index.ts"
 async function schemaFingerprint(sql:pg.Client){
   const columns=await sql.query("SELECT table_name, column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_schema='public' ORDER BY table_name, column_name")
   const indexes=await sql.query("SELECT indexname, indexdef FROM pg_indexes WHERE schemaname='public' ORDER BY indexname")
-  const constraints=await sql.query("SELECT conname, pg_get_constraintdef(oid) AS definition FROM pg_constraint WHERE connamespace='public'::regnamespace ORDER BY conname")
-  return createHash("sha256").update(JSON.stringify([columns.rows,indexes.rows,constraints.rows])).digest("hex")
+  const constraints=await sql.query(historySchemaConstraintsSql)
+  return historySchemaFingerprint([columns.rows,indexes.rows,constraints.rows])
 }
 
 it("migrates the fingerprinted production v1 catalog without losing decks, history or stars and reopens idempotently",async()=>{
