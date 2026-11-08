@@ -242,7 +242,7 @@ async function probeInteraction(page:Page,entry:Scenario){
       break
     case "expired":
       await page.getByRole("button",{name:"Send a new link",exact:true}).click()
-      await page.getByRole("heading",{name:"Sign in",exact:true}).waitFor()
+      await page.getByRole("heading",{name:resolveCopy("access.entry_title"),exact:true}).waitFor()
       await page.reload()
       await page.getByRole("heading",{name:"This link has expired",exact:true}).waitFor()
       break

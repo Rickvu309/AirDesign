@@ -38,3 +38,15 @@ it("rejects the pixel-perfect design bitmap before capture and accepts working c
     await expect(probeScenarioInteraction(page,entry)).rejects.toThrow()
   }finally{await browser.close()}
 })
+
+it("restores the expired link after probing the designed sign-in heading",async()=>{
+ const entry=(await readRegistry()).find(entry=>entry.code==="S29.01")!
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage();page.setDefaultTimeout(500)
+  await page.route("http://expired.test/",route=>route.fulfill({contentType:"text/html",body:`<h1>This link has expired</h1><button onclick="document.querySelector('h1').textContent='Sign in or create an account'">Send a new link</button>`}))
+  await page.goto("http://expired.test/")
+  await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
+  expect(await page.getByRole("heading").textContent()).toBe("This link has expired")
+ }finally{await browser.close()}
+})
