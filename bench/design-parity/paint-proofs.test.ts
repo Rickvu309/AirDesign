@@ -2,8 +2,8 @@ import {chromium} from "playwright"
 import {readFile,mkdtemp,mkdir,copyFile,writeFile,rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
-import {expect,it} from "vitest"
-import {assertRendered,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
+import {expect,it,vi} from "vitest"
+import {assertRendered,assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
 import {readRegistry,validateIdentity,seedFiles,passesParity} from "./registry.ts"
 import {iconPaths,iconStrokeWidth} from "../../packages/ui/src/icon/icon-paths.ts"
 import {compareDesign} from "./metric.mjs"
@@ -126,5 +126,99 @@ it("uses declared icon size and color tokens for its raster estimate",async()=>{
     const page=await browser.newPage({viewport:entry.viewport})
     await page.setContent(`<main><svg data-icon="search" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="${iconStrokeWidth("search")}"><path d="${iconPaths.search}"/></svg></main>`)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
+  }finally{await browser.close()}
+})
+
+
+it.each(["ordinary","nested","input","placeholder","textarea"])("measures actual %s label glyph paint and restores exact DOM",async kind=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:600,height:200}})
+    const content=kind==="ordinary" ? '<p class="label">Required text</p>' : kind==="nested" ? '<button class="label"><span style="letter-spacing:0.1px"><strong>Required text</strong></span></button>' : kind==="textarea" ? '<textarea class="label">Required text</textarea>' : kind==="placeholder" ? '<input class="label" placeholder="Required text">' : '<input class="label" value="Required text">'
+    await page.setContent(`<style>body{background:white}.label{font:20px Arial;color:#222;background:#fff;border:1px solid #222;padding:8px}</style>${content}`)
+    const baseline=await page.locator("body").innerHTML()
+    await expect(assertRendered(page.locator(".label"),kind!=="ordinary")).resolves.toBeUndefined()
+    expect(await page.locator("body").innerHTML()).toBe(baseline)
+  }finally{await browser.close()}
+})
+
+it.each(["transparent","text-fill","missing","border-only","icon-only","raster","hidden","occluded"])("rejects independent %s copy from a passing glyph baseline",async mutation=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:600,height:200}})
+    await page.setContent('<style>body{background:white}button{font:20px Arial;color:#222;background:white;border:2px solid #222;padding:8px;position:relative}</style><button aria-label="Delete for good"><span>Delete for good</span></button>')
+    const button=page.locator("button")
+    await expect(assertRendered(button,true)).resolves.toBeUndefined()
+    await expect(assertScenarioCopy(page,["trash.empty_action"])).resolves.toBeUndefined()
+    const image=await button.screenshot()
+    await button.evaluate((element,{mutation,src})=>{
+      const label=element.querySelector("span")
+      if(!label)throw new Error("missing-paint-baseline-label")
+      if(mutation==="transparent")label.style.color="transparent"
+      else if(mutation==="text-fill")label.style.webkitTextFillColor="transparent"
+      else if(mutation==="missing"||mutation==="border-only"||mutation==="icon-only"){
+        label.remove()
+        if(mutation!=="missing"){element.style.width="180px";element.style.height="45px"}
+        if(mutation==="icon-only"){
+          const icon=document.createElementNS("http://www.w3.org/2000/svg","svg")
+          icon.setAttribute("width","20");icon.setAttribute("height","20")
+          const path=document.createElementNS("http://www.w3.org/2000/svg","path")
+          path.setAttribute("d","M2 2L18 18M18 2L2 18");path.setAttribute("stroke","#222")
+          icon.append(path);element.append(icon)
+        }
+      }else if(mutation==="raster"){
+        label.style.webkitTextFillColor="transparent"
+        element.style.backgroundImage=`url("${src}")`
+        element.style.backgroundSize="100% 100%"
+      }else if(mutation==="hidden")label.style.visibility="hidden"
+      else{
+        const cover=document.createElement("div")
+        cover.style.cssText="position:absolute;inset:0;background:white;pointer-events:none"
+        element.append(cover)
+      }
+    },{mutation,src:`data:image/png;base64,${image.toString("base64")}`})
+    const mutated=await page.locator("body").innerHTML()
+    await expect(assertRendered(button,true)).rejects.toThrow(/text-ink-ownership/)
+    await expect(assertScenarioCopy(page,["trash.empty_action"])).rejects.toThrow(/required-visible-copy/)
+    expect(await page.locator("body").innerHTML()).toBe(mutated)
+  }finally{await browser.close()}
+})
+
+it.each(["capture","mutation"])("restores every label inline value after a forced %s measurement error",async fault=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:600,height:200}})
+    await page.setContent('<button style="font:20px Arial;color:#222"><span style="text-shadow:none!important"><strong style="letter-spacing:0.2px">Required text</strong></span></button>')
+    const button=page.locator("button"),baseline=await page.locator("body").innerHTML()
+    await expect(assertRendered(button,true)).resolves.toBeUndefined()
+    if(fault==="capture"){
+      const screenshot=page.screenshot.bind(page)
+      let calls=0
+      const spy=vi.spyOn(page,"screenshot").mockImplementation(async options=>{
+        calls++
+        if(calls===2){
+          expect(await page.locator("strong").getAttribute("style")).toContain("-webkit-text-fill-color")
+          throw new Error("forced-label-capture-error")
+        }
+        return screenshot(options)
+      })
+      try{await expect(assertRendered(button,true)).rejects.toThrow("forced-label-capture-error")}finally{spy.mockRestore()}
+      expect(calls).toBe(2)
+    }else{
+      const native=await page.evaluateHandle(()=>CSSStyleDeclaration.prototype.setProperty)
+      try{
+        await page.evaluate(()=>{
+          const native=CSSStyleDeclaration.prototype.setProperty
+          CSSStyleDeclaration.prototype.setProperty=function(property,value,priority){
+            if(property==="-webkit-text-stroke-color")throw new Error("forced-label-mutation-error")
+            native.call(this,property,value,priority)
+          }
+        })
+        await expect(assertRendered(button,true)).rejects.toThrow("forced-label-mutation-error")
+      }finally{try{await native.evaluate(original=>{CSSStyleDeclaration.prototype.setProperty=original})}finally{await native.dispose()}}
+    }
+    expect(await page.locator("body").innerHTML()).toBe(baseline)
+    await expect(assertRendered(button,true)).resolves.toBeUndefined()
+    expect(await page.locator("body").innerHTML()).toBe(baseline)
   }finally{await browser.close()}
 })

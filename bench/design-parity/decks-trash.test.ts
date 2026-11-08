@@ -220,3 +220,48 @@ it.each([
     expect(proof.errors).toEqual([])
   }finally{await browser.close()}
 })
+
+
+it.each(["gradient","invisible-border"])("requires real destructive %s label paint independently of its background",async variant=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:1470,height:923}}),proof=await workspace(page,true)
+    await page.getByRole("button",{name:"Empty Trash",exact:true}).click()
+    const action=page.getByRole("dialog").getByRole("button",{name:"Delete for good",exact:true})
+    await expect(assertRendered(action,true)).resolves.toBeUndefined()
+    const original=await action.getAttribute("style")
+    try{
+      await action.evaluate((element,variant)=>{
+        element.style.setProperty("background","linear-gradient(var(--destructive-top), var(--destructive))","important")
+        if(variant==="invisible-border")element.style.setProperty("background-image","none","important")
+      },variant)
+      const state=await action.evaluate(element=>({style:element.getAttribute("style"),background:getComputedStyle(element).backgroundColor,fill:getComputedStyle(element).webkitTextFillColor,image:getComputedStyle(element).backgroundImage}))
+      if(variant==="gradient")await expect(assertRendered(action,true)).resolves.toBeUndefined()
+      else await expect(assertRendered(action,true)).rejects.toThrow()
+      expect(await action.evaluate(element=>({style:element.getAttribute("style"),background:getComputedStyle(element).backgroundColor,fill:getComputedStyle(element).webkitTextFillColor,image:getComputedStyle(element).backgroundImage}))).toEqual(state)
+    }finally{await action.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},original)}
+    expect(proof.deletions).toEqual([])
+    expect(proof.errors).toEqual([])
+  }finally{await browser.close()}
+})
+
+
+it("measures a nested label in the real destructive control without changing paint or confirmation state",async()=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:1470,height:923}}),proof=await workspace(page,true)
+    await page.getByRole("button",{name:"Empty Trash",exact:true}).click()
+    const action=page.getByRole("dialog").getByRole("button",{name:"Delete for good",exact:true})
+    await expect(assertRendered(action,true)).resolves.toBeUndefined()
+    const children=await action.evaluateHandle(element=>[...element.childNodes])
+    try{
+      await action.evaluate(element=>{const span=document.createElement("span");span.append(...element.childNodes);element.append(span)})
+      const baseline=await action.evaluate(element=>element.outerHTML)
+      await expect(assertRendered(action,true)).resolves.toBeUndefined()
+      await expect(assertScenarioCopy(page,["trash.empty_action"])).resolves.toBeUndefined()
+      expect(await action.evaluate(element=>element.outerHTML)).toBe(baseline)
+    }finally{try{await children.evaluate(nodes=>{const parent=nodes[0]?.parentElement?.closest("button");if(!parent)throw new Error("missing-nested-label-parent");parent.replaceChildren(...nodes)})}finally{await children.dispose()}}
+    expect(proof.deletions).toEqual([])
+    expect(proof.errors).toEqual([])
+  }finally{await browser.close()}
+})

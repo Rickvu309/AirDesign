@@ -22,6 +22,56 @@ function inkPixels(pixels:Buffer){
   for(let index=0;index<pixels.length;index+=4)if(background.some((channel,offset)=>Math.abs(pixels[index+offset]!-channel)>=32))ink++
   return ink
 }
+async function assertPaintedText(locator:Locator,clip:{x:number,y:number,width:number,height:number},before:Buffer){
+  const snapshot=await locator.evaluateHandle(element=>{
+    const parents=new Set<HTMLElement|SVGElement>()
+    const texts:{estimate:number,rects:{left:number,top:number,right:number,bottom:number}[]}[]=[]
+    if(element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement){
+      const text=element.value||element.placeholder,box=element.getBoundingClientRect()
+      if(text.trim())texts.push({estimate:[...text.replace(/\s/g,"")].length*parseFloat(getComputedStyle(element).fontSize)**2*0.18,rects:[{left:box.left,top:box.top,right:box.right,bottom:box.bottom}]})
+      parents.add(element)
+    }else{
+      const walker=document.createTreeWalker(element,NodeFilter.SHOW_TEXT)
+      while(walker.nextNode()){
+        const node=walker.currentNode,parent=node.parentElement,text=node.textContent??""
+        if(!text.trim()||!parent||["SCRIPT","STYLE"].includes(parent.tagName))continue
+        const range=document.createRange()
+        range.selectNodeContents(node)
+        texts.push({estimate:[...text.replace(/\s/g,"")].length*parseFloat(getComputedStyle(parent).fontSize)**2*0.18,rects:[...range.getClientRects()].map(rect=>({left:rect.left,top:rect.top,right:rect.right,bottom:rect.bottom}))})
+        parents.add(parent)
+      }
+    }
+    return {texts,styles:[...parents].map(element=>{
+      const clone=element.cloneNode(false)
+      if(!(clone instanceof HTMLElement||clone instanceof SVGElement))throw new Error("invalid-label-style-snapshot")
+      return {element,style:element.getAttribute("style"),roundTrips:clone.style.cssText===element.style.cssText,properties:["-webkit-text-fill-color","-webkit-text-stroke-color","text-shadow"].map(name=>({name,value:element.style.getPropertyValue(name),priority:element.style.getPropertyPriority(name)}))}
+    })}
+  })
+  try{
+    const texts=await snapshot.evaluate(saved=>saved.texts)
+    if(!texts.length)throw failure(locator.toString(),"required-rendered-element:text-ink-ownership","nonempty DOM label",texts)
+    await snapshot.evaluate(saved=>{
+      for(const {element} of saved.styles){
+        element.style.setProperty("-webkit-text-fill-color","transparent","important")
+        element.style.setProperty("-webkit-text-stroke-color","transparent","important")
+        element.style.setProperty("text-shadow","none","important")
+      }
+    })
+    const after=await locator.page().screenshot({clip,animations:"disabled",caret:"initial",style:"*{caret-color:transparent!important}"})
+    const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
+    for(const text of texts){
+      let ink=0
+      for(let index=0;index<left.length;index+=4){
+        const pixel=index/4,x=clip.x+pixel%clip.width+0.5,y=clip.y+Math.floor(pixel/clip.width)+0.5
+        if(!text.rects.some(rect=>x>=rect.left&&x<rect.right&&y>=rect.top&&y<rect.bottom))continue
+        if([0,1,2].some(channel=>Math.abs((left[index+channel]??0)-(right[index+channel]??0))>=32))ink++
+      }
+      if(!Number.isFinite(text.estimate)||text.estimate<=0||ink<text.estimate/4||ink>text.estimate*4)throw failure(locator.toString(),"required-rendered-element:text-ink-ownership",{minimumInk:text.estimate/4,maximumInk:text.estimate*4},{ink,rects:text.rects})
+    }
+  }finally{
+    try{await snapshot.evaluate(saved=>{for(const {element,style,roundTrips,properties} of saved.styles){for(const {name,value,priority} of properties){if(value)element.style.setProperty(name,value,priority);else element.style.removeProperty(name)}if(roundTrips){element.setAttribute("style",style??"");if(style===null)element.removeAttribute("style")}}})}finally{await snapshot.dispose()}
+  }
+}
 export async function assertRendered(locator:Locator,control=false,icon?:IconInk){
   const selector=locator.toString(),page=locator.page()
   const box=await locator.boundingBox(),viewport=page.viewportSize()
@@ -34,7 +84,8 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
     if(!hit)throw failure(selector,"hit-test",true,hit)
   }
   const clip={x:Math.floor(box.x),y:Math.floor(box.y),width:Math.ceil(box.x+box.width)-Math.floor(box.x),height:Math.ceil(box.y+box.height)-Math.floor(box.y)}
-  const before=await page.screenshot({clip,animations:"disabled",caret:"hide"})
+  const before=await page.screenshot({clip,animations:"disabled",caret:icon?"hide":"initial",style:icon?undefined:"*{caret-color:transparent!important}"})
+  if(!icon)return assertPaintedText(locator,clip,before)
   const element=await locator.elementHandle()
   if(!element)throw failure(selector,"required-rendered-element","attached element",null)
   const original=await element.getAttribute("style")
@@ -48,13 +99,7 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
   }
   const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
   const beforeInk=inkPixels(left),afterInk=inkPixels(right)
-  const estimate=icon ? inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="${icon.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer()) : await locator.evaluate(element=>{
-    const style=getComputedStyle(element),size=parseFloat(style.fontSize)
-    const text=element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement ? element.value||element.placeholder : element.textContent??""
-    const textArea=[...text.replace(/\s/g,"")].length*size*size*0.18
-    const iconArea=[...element.querySelectorAll("svg[data-icon]")].reduce((area,svg)=>{const box=svg.getBoundingClientRect();return area+box.width*box.height*0.2},0)
-    return textArea+iconArea
-  })
+  const estimate=inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="${icon.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer())
   const ownership=beforeInk>0 ? (beforeInk-afterInk)/beforeInk : 0
   if(ownership<0.8||estimate<=0||beforeInk<estimate/4||beforeInk>estimate*4)throw failure(selector,"required-rendered-element:ink-ownership",{minimumOwnership:0.8,minimumInk:estimate/4,maximumInk:estimate*4},{beforeInk,afterInk,ownership,box})
 }
