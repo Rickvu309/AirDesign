@@ -109,7 +109,7 @@
   .import-diagnostics>summary { min-inline-size:44px;min-block-size:44px;display:flex;align-items:center; }
   .deck-card-actions .ad-dropdown>summary,.deck-star,.home-new-deck .ad-dropdown>summary,.import-cover .ad-button,[data-browse="trash"] .deck-card-actions .ad-button { min-inline-size:44px;min-block-size:44px; }
   .workspace-home .deck-card-details h2 { padding-inline-end:92px; }
-  .workspace-home .deck-list .deck-card { grid-template-columns:minmax(0,1fr) 88px; }
+  .workspace-home .deck-list .deck-card { grid-template-columns:minmax(0,1fr) 92px; }
   .workspace-home .deck-list .deck-cover { min-block-size:44px;display:flex;align-items:center;overflow:visible;background:transparent; }
   .deck-list .deck-cover .deck-preview { block-size:36px; }
   .workspace-home .deck-list .deck-card-details h2 { padding-inline-end:8px; }
@@ -117,3 +117,8 @@
 }
 
 .workspace-home .ad-dialog-actions .ad-button-danger { background:var(--destructive); }
+
+@media (pointer: coarse) {
+ .workspace-home .deck-card-actions { gap:4px; }
+ .workspace-home .deck-card-actions>.ad-dropdown,.workspace-home .deck-star { flex-shrink:0; }
+}
