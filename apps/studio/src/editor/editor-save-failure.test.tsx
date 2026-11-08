@@ -7,11 +7,12 @@ import { ManualEditor } from "./manual-editor.tsx"
 
 const failure=vi.hoisted(()=>({message:"deadlock detected: private database detail",retry:vi.fn()}))
 vi.mock("./use-deck.ts",()=>({useDeck:()=>({sync:{deck:fixtureDeck(1,2),seq:0,state:{kind:"pending"},history:initialHistory(fixtureDeck(1,2)),queue:[],historyTarget:()=>null},entry:{title:"Strategy"},setError:()=>{},error:failure.message,reconnect:failure.retry})}))
-vi.mock("../../../../packages/render/src/fonts.ts",()=>({waitForFonts:()=>Promise.resolve(),fontReport:()=>({missing:[]})}))
+vi.mock("../../../../packages/render/src/fonts.ts",async original=>({...await original<typeof import("../../../../packages/render/src/fonts.ts")>(),waitForFonts:()=>Promise.resolve(),fontReport:()=>({missing:[]})}))
 vi.mock("../export/export-dialog.tsx",()=>({ExportDialog:()=>null}))
 
 it("shows reviewed copy and a retry action for a persistent database failure",async()=>{
   vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
+  vi.stubGlobal("EventSource",class {onmessage=null;onerror=null;close(){}})
   const container=document.createElement("div");document.body.append(container)
   const root=createRoot(container)
   try{

@@ -1,8 +1,39 @@
-import { id,parseDeck,flatten,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
+import { id,parseDeck,flatten,type Box,type Deck,type Id,type Slide,type Element } from "../../../../packages/deck/src/index.ts"
 export function nodeId() {return id(`n${crypto.randomUUID().replaceAll("-","").slice(0,30)}`)}
-export function newSlide(deck?:Deck):Slide {
+export type SlideLayout="title"|"summary"|"chart"|"columns"|"table"|"next"
+export function fitToolElement(element:Element,size:Slide["size"]):Element {
+  return scaleElement(element,size.width/960,size.height/540)
+}
+function scaleElement(element:Element,horizontal:number,vertical:number):Element {
+  const fitted={...element,box:{x:element.box.x*horizontal,y:element.box.y*vertical,width:element.box.width*horizontal,height:element.box.height*vertical}}
+  if(fitted.kind==="group")return {...fitted,children:fitted.children.map(child=>scaleElement(child,horizontal,vertical))}
+  if(fitted.kind==="text") {
+    const scale=(run:typeof fitted.runs[number])=>({...run,size:run.size*Math.min(horizontal,vertical)})
+    const [first,...rest]=fitted.runs
+    return {...fitted,runs:[scale(first),...rest.map(scale)]}
+  }
+  return fitted
+}
+export function elementWithBox(element:Element,box:Box):Element {
+  if(element.kind!=="group")return {...element,box}
+  const scaled=scaleElement(element,element.box.width===0 ? 1 : box.width/element.box.width,element.box.height===0 ? 1 : box.height/element.box.height)
+  return {...scaled,box}
+}
+export function newSlide(deck?:Deck,layout:SlideLayout="title"):Slide {
   const theme=deck?.themes.find(theme=>theme.id===deck.template?.id),link=theme?.id ?? null
-  return {...(deck?.template?.layout ? {layout:{template:deck.template.id,version:deck.template.version,family:deck.template.family,...deck.template.layout}} : {}),id:nodeId(),version:0,size:deck?.slides[0]?.size ?? {width:960,height:540},elements:[{id:nodeId(),kind:"text",box:{x:64,y:64,width:832,height:100},source:{kind:"created"},support:{kind:"native"},theme:link,placeholder:null,overlap:null,runs:[{text:"Add your title",bold:true,font:theme?.font ?? "Geist",size:40,color:theme?.foreground ?? "#172333"}]}],notes:"",theme:link,source:{kind:"created"}}
+  const ink=theme?.foreground ?? "#172333",font=theme?.font ?? "Geist"
+  const base=()=>({id:nodeId(),source:{kind:"created"},support:{kind:"native"},theme:link,placeholder:null,overlap:null} as const)
+  const text=(value:string,x:number,y:number,width:number,size=22,bold=false):Element=>({...base(),kind:"text",box:{x,y,width,height:size*3},runs:[{text:value,bold,font,size,color:ink}]})
+  const elements:Element[]=[text(layout==="next" ? "Next steps" : layout==="summary" ? "Executive summary" : "Add your title",64,64,832,40,true)]
+  if(layout==="summary" || layout==="next")elements.push(text("1. Add your first point\n2. Add your next point\n3. Add your final point",64,180,832))
+  if(layout==="columns")elements.push(text("First idea\nAdd supporting detail",64,180,384),text("Second idea\nAdd supporting detail",512,180,384))
+  if(layout==="chart") {
+    for(const [index,height] of [100,160,210,260].entries())elements.push({...base(),kind:"shape",geometry:"rectangle",fill:ink,box:{x:96+index*130,y:440-height,width:90,height}})
+    elements.push(text("Add your takeaway",670,180,226))
+  }
+  if(layout==="table")for(let row=0;row<4;row++)for(let column=0;column<3;column++)elements.push(text(row===0 ? "Header" : "Value",64+column*280,180+row*64,260,20,row===0))
+  const size=deck?.slides[0]?.size ?? {width:960,height:540}
+  return {...(deck?.template?.layout ? {layout:{template:deck.template.id,version:deck.template.version,family:deck.template.family,...deck.template.layout}} : {}),id:nodeId(),version:0,size,elements:elements.map(element=>fitToolElement(element,size)),notes:"",theme:link,source:{kind:"created"}}
 }
 export function selectSlides(deck:Deck,selection:Id[],target:Id,anchor:Id|null,shift:boolean,toggle:boolean):Id[] {
   const ids=deck.slides.map(slide=>slide.id),start=ids.indexOf(anchor ?? target),end=ids.indexOf(target)
@@ -16,17 +47,37 @@ export function orderedSlides(deck:Deck,selection:Id[],direction:-1|1):Id[] {
   else for(let i=order.length-2;i>=0;i--) {const current=order[i],next=order[i+1];if(current && next && selected.has(current) && !selected.has(next))[order[i],order[i+1]]=[next,current]}
   return order
 }
-function copiedElement(element:Element):Element {const base={...element,id:nodeId()};return base.kind==="group" ? {...base,children:base.children.map(copiedElement)} : base}
-export type PasteReview={source:string;accepted:Slide[];refused:string[]}
+function copiedElement(element:Element):Element {const base={...element,id:nodeId(),source:{kind:"created"} as const};return base.kind==="group" ? {...base,children:base.children.map(copiedElement)} : base}
+export type PasteReview={source:string;accepted:Slide[];refused:string[];origin:"internal"|"powerpoint"}
 export function reviewPaste(source:string):PasteReview {
-  const accepted:Slide[]=[],refused:string[]=[]
+  const accepted:Slide[]=[],refused:string[]=[],origins:("internal"|"powerpoint")[]=[]
   try {
     const raw:unknown=JSON.parse(source)
     if(!raw || typeof raw!=="object" || !("slides" in raw) || !Array.isArray(raw.slides))throw new Error("Paste slide JSON with a slides array.")
     raw.slides.forEach((candidate:unknown,index:number)=>{
-      try {const deck=parseDeck({id:"paste",version:0,slides:[candidate],themes:"themes" in raw ? raw.themes : []}),slide=deck.slides[0];if(!slide)throw new Error("Missing slide");if(slide.source.kind!=="created" || slide.theme || flatten(slide.elements).some(element=>element.theme || element.placeholder || element.overlap || element.source.kind!=="created" || element.support.kind!=="native"))throw new Error("Paste requires native slides without external theme or source references.");accepted.push({...slide,id:nodeId(),elements:slide.elements.map(copiedElement)})}
+      try {
+        const deck=parseDeck({id:"paste",version:0,slides:[candidate],themes:"themes" in raw ? raw.themes : []}),slide=deck.slides[0]
+        if(!slide)throw new Error("Missing slide")
+        const original=slide.source.kind==="original" && /^ppt\/slides\/slide\d+\.xml$/.test(slide.source.part),part=slide.source.kind==="original" ? slide.source.part : null
+        if((slide.source.kind!=="created" && !original) || slide.theme || flatten(slide.elements).some(element=>element.theme || element.placeholder || element.overlap || element.support.kind!=="native" || (original ? element.source.kind!=="original" || element.source.part!==part : element.source.kind!=="created")))throw new Error("Paste requires native slides without external theme or unsupported source references.")
+        origins.push(original ? "powerpoint" : "internal")
+        accepted.push({...slide,id:nodeId(),source:{kind:"created"},elements:slide.elements.map(copiedElement)})
+      }
       catch(error){refused.push(`Slide ${index+1}: ${error instanceof Error ? error.message : "Unsupported slide"}`)}
     })
   }catch(error){refused.push(error instanceof Error ? error.message : "Invalid slide data")}
-  return {source,accepted,refused}
+  return {source,accepted,refused,origin:origins.length>0 && origins.every(origin=>origin==="powerpoint") ? "powerpoint" : "internal"}
+}
+
+export function clipboardSource(deck:Deck,selection:Id[]) {
+  const detached=(element:Element):Element=>{
+    const base={...element,theme:null}
+    return base.kind==="group" ? {...base,children:base.children.map(detached)} : base
+  }
+  return JSON.stringify({slides:deck.slides.filter(slide=>selection.includes(slide.id)).map(slide=>({...slide,theme:null,elements:slide.elements.map(detached)}))})
+}
+
+export function insertionAnchor(deck:Deck,selection:Id[]) {
+  const selected=deck.slides.findLast(slide=>selection.includes(slide.id)) ?? deck.slides.at(-1)
+  return {index:selected ? deck.slides.indexOf(selected)+1 : 0,section:selected?.section}
 }

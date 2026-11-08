@@ -13,3 +13,5 @@ export async function waitForFonts(document: Document): Promise<void> {
   await document.fonts.ready
   if (!document.fonts.check('400 16px Geist') || !document.fonts.check('600 16px Geist')) throw new Error("Pinned Geist fonts failed to load")
 }
+
+export function fontFamily(font: string): string { return font === "Geist" ? "Geist" : `${JSON.stringify(font)}, Geist` }

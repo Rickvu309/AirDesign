@@ -4,8 +4,8 @@ import { writeSavedPptx } from "../../../../packages/pptx/src/export-deck.ts"
 import { exportPptx,importPptx } from "../../../../packages/pptx/src/index.ts"
 import { describe,it,expect } from "vitest"
 import { id } from "../../../../packages/deck/src/index.ts"
-import { fixtureDeck } from "../../../../packages/deck/src/fixture.ts"
-import { newSlide,orderedSlides,reviewPaste,selectSlides } from "./editor-model.ts"
+import { fixtureDeck,fixtureElement } from "../../../../packages/deck/src/fixture.ts"
+import { clipboardSource,elementWithBox,newSlide,orderedSlides,reviewPaste,selectSlides } from "./editor-model.ts"
 
 describe("manual slide operations",()=>{
   it("adds slides in the imported presentation size",()=>{
@@ -26,6 +26,20 @@ describe("manual slide operations",()=>{
     expect(orderedSlides(deck,[id("s1"),id("s2")],-1)).toEqual([s[1],s[2],s[0],s[3],s[4]])
     expect(orderedSlides(deck,[id("s1"),id("s2")],1)).toEqual([s[0],s[3],s[1],s[2],s[4]])
   })
+  it("identifies actual PowerPoint imports and detaches their archive references",async()=>{
+    const original=newSlide(),deck={...fixtureDeck(1),slides:[original]}
+    const imported=importedDeck(await importPptx(await writeSavedPptx(deck,0,null,{})))
+    const review=reviewPaste(clipboardSource(imported,imported.slides.map(slide=>slide.id)))
+    expect(review.origin).toBe("powerpoint")
+    expect(review.refused).toEqual([])
+    expect(review.accepted).toHaveLength(1)
+    expect(review.accepted[0]?.source).toEqual({kind:"created"})
+    expect(review.accepted[0]?.elements.every(element=>element.source.kind==="created")).toBe(true)
+    expect(reviewPaste(clipboardSource(deck,[original.id])).origin).toBe("internal")
+    const unsupported=imported.slides[0]!.elements[0]!
+    unsupported.support={kind:"kept",preview:null}
+    expect(reviewPaste(clipboardSource(imported,imported.slides.map(slide=>slide.id))).accepted).toEqual([])
+  })
   it("retains refused paste input and copies only the explicitly accepted subset",()=>{
     const slide=newSlide(),source=JSON.stringify({slides:[slide,{id:"broken"},slide]})
     const review=reviewPaste(source)
@@ -37,4 +51,11 @@ describe("manual slide operations",()=>{
     expect(reviewPaste(JSON.stringify({slides:[{...slide,source:{kind:"original",part:"ppt/slides/slide1.xml",sha256:"a".repeat(64),objectId:"slide",dependencies:[]}}]})).accepted).toHaveLength(0)
     expect(reviewPaste("not json").accepted).toHaveLength(0)
   })
+})
+
+it("expands a zero-sized native group without non-finite child geometry",()=>{
+  const child=fixtureElement(1),group={...child,kind:"group" as const,box:{x:0,y:0,width:0,height:0},children:[child]}
+  const resized=elementWithBox(group,{x:0,y:0,width:80,height:60})
+  expect(resized.kind==="group"&&resized.children[0]?.box).toEqual(child.box)
+  expect(resized.box).toEqual({x:0,y:0,width:80,height:60})
 })

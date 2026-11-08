@@ -5,6 +5,6 @@ export class UsageLimitError extends Error {
   readonly limit:UsageLimit
   constructor(limit:UsageLimit){super("out-of-usage");this.limit=limit}
 }
-export type ActivityContent={kind:"tool";name:string;scope?:string}|{kind:"message";text:string}|{kind:"limit";limit:UsageLimit}
+export type ActivityContent={kind:"tool";name:string;scope?:string;scopes?:string[];fileName?:string;brandApplied?:boolean}|{kind:"message";text:string}|{kind:"limit";limit:UsageLimit}
 export type RunActivity=ActivityContent & {id:number}
 export type AgentRun={id:string;owner:string;deck:string;request:string;selection:string[];kind:"working"|"complete"|"failed"|"stopped"|"undone"|"limited";events:RunActivity[];completed:string[]}

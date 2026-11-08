@@ -1,10 +1,11 @@
 import type { Run } from "../../deck/src/model.ts"
+import { fontFamily } from "./fonts.ts"
 import { editableRuns } from "./editable-runs.ts"
 function runSpan(node: HTMLElement, run: Run) {
   const span = node.ownerDocument.createElement("span")
   span.textContent = run.text
   span.dataset.runStyle = JSON.stringify({ ...run, text: "" })
-  Object.assign(span.style, { fontFamily: "Geist", fontSize: `${run.size}px`, fontWeight: run.bold ? "600" : "400", color: run.color })
+  Object.assign(span.style, { fontFamily: fontFamily(run.font), fontSize: `${run.size}px`, fontWeight: run.bold ? "600" : "400", fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none", color: run.color })
   return span
 }
 export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
@@ -21,13 +22,13 @@ export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
   const anchor = offset(selection?.anchorNode ?? null, selection?.anchorOffset ?? 0)
   const focus = offset(selection?.focusNode ?? null, selection?.focusOffset ?? 0)
   const spans=[...node.childNodes]
-  if(!selection && spans.length===runs.length && spans.every(span=>span instanceof node.ownerDocument.defaultView!.HTMLSpanElement && span.childNodes.length===1 && span.firstChild?.nodeType===3 && span.getAttributeNames().every(name=>name==="style" || name==="data-run-style") && Array.from({length:span.style.length},(_,index)=>span.style.item(index)).every(name=>["font-family","font-size","font-weight","color"].includes(name)))){
+  if(!selection && spans.length===runs.length && spans.every(span=>span instanceof node.ownerDocument.defaultView!.HTMLSpanElement && span.childNodes.length===1 && span.firstChild?.nodeType===3 && span.getAttributeNames().every(name=>name==="style" || name==="data-run-style") && Array.from({length:span.style.length},(_,index)=>span.style.item(index)).every(name=>["font-family","font-size","font-weight","font-style","text-decoration","color"].includes(name)))){
     runs.forEach((run,index)=>{
       const span=spans[index]
       if(!(span instanceof node.ownerDocument.defaultView!.HTMLSpanElement))throw new Error("text-span-required")
       if(span.firstChild && span.firstChild.textContent!==run.text)span.firstChild.textContent=run.text
       span.dataset.runStyle=JSON.stringify({...run,text:""})
-      Object.assign(span.style,{fontFamily:"Geist",fontSize:`${run.size}px`,fontWeight:run.bold ? "600" : "400",color:run.color})
+      Object.assign(span.style,{fontFamily:fontFamily(run.font),fontSize:`${run.size}px`,fontWeight:run.bold ? "600" : "400",fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color})
     })
   }else node.replaceChildren(...runs.map(run => runSpan(node, run)))
   function point(position: number): [Node, number] {

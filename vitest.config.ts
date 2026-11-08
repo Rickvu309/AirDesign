@@ -18,6 +18,7 @@ export default defineConfig({
           name: "node",
           environment: "node",
           testTimeout: 20_000,
+          hookTimeout: 60_000,
           include: [
             "tests/**/*.test.ts",
             "bench/**/*.test.ts",

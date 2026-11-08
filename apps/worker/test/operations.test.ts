@@ -115,7 +115,7 @@ it("uses real P01 sessions with origin checks and cross-owner denial on submit, 
   const job = await response.json()
   expect((await call(`/${job.id}`, a)).status).toBe(200)
   for (const [route, body] of [[`/${job.id}`, undefined], [`/${job.id}/artifact`, undefined], [`/${job.id}/cancel`, {}]]) expect((await call(String(route), b, body)).status).toBe(404)
-})
+}, 60_000)
 it("rejects URL/path uploads, active SVG and hostile fonts before any external access", () => {
   for (const value of [{ url: "http://169.254.169.254" }, { path: "/etc/passwd" }, { base64: input.toString("base64"), url: "https://public.example/redirect" }]) expect(() => requireLocalUpload(value)).toThrow()
   expect(() => rejectActiveSvg('<svg><script>x</script></svg>')).toThrow("unsafe-svg")

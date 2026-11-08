@@ -6,28 +6,38 @@ import type {AgentAdapter} from "../../../../packages/agent/src/harness.ts"
 import {localPaymentProvider} from "../../../../packages/usage/src/payments/provider.ts"
 import {mcpFixture} from "../mcp/fixture.ts"
 import {deferred,eventStream} from "./stream.ts"
+import {brandedRuns,fontDeck} from "./font-fixture.ts"
 it("resumes stopped work with one identity, skips accepted scopes and keeps later person edits on undo",async()=>{
   const entered=deferred(),release=deferred();let attempt=0
-  const adapter:AgentAdapter=async function*(context,call,signal){attempt++;for await(const event of localAdapter(context,call,signal)){yield event;if(attempt===1&&event.kind==="tool"&&event.name==="apply_changes"){entered.resolve();await release.promise}}}
+  const adapter:AgentAdapter=async function*(context,call,signal){attempt++;for await(const event of localAdapter(context,call,signal)){yield event;if(attempt===1&&event.kind==="tool"&&event.name==="apply_changes"){signal.addEventListener("abort",()=>release.resolve(),{once:true});entered.resolve();await release.promise}}}
   const f=await mcpFixture({agentAdapter:adapter})
   try{
-    const owner=await f.signIn("stopped@example.com");await f.json("/api/decks",fixtureDeck(2,2),owner.cookie)
+    const owner=await f.signIn("stopped@example.com"),deck=fontDeck();await f.json("/api/decks",deck,owner.cookie)
     const stream=await eventStream(f.origin+"/api/aira/events?deck=deck",owner.cookie)
     try{
       const start=await (await f.json("/api/aira?deck=deck",{action:"send",text:"Saved request"},owner.cookie)).json()
       await entered.promise
-      const stop=f.json("/api/aira?deck=deck",{action:"stop"},owner.cookie);release.resolve();expect((await stop).status).toBe(200)
+      expect((await f.json("/api/aira?deck=deck",{action:"stop"},owner.cookie)).status).toBe(200)
       const saved=await f.history.read({personId:owner.personId},"deck")
+      expect(saved.deck.slides[0]).toMatchObject({notes:deck.slides[0]!.notes,elements:[{runs:brandedRuns},deck.slides[0]!.elements[1],{runs:[{text:"Keep supporting detail",font:"Geist"}]}]})
+      expect(saved.deck.slides[1]).toEqual(deck.slides[1])
+      expect(await f.history.agents.latest(owner.personId,"deck")).toMatchObject({id:start.id,kind:"stopped",request:"Saved request",completed:["s0"]})
       await f.history.commit({personId:owner.personId},"deck",{id:commandId("later_person"),kind:"patch",target:saved.deck.slides[0]!.id,fields:{notes:"Keep later edit"},base:saved.seq,run:null})
+      const personEdited=await f.history.read({personId:owner.personId},"deck")
       const resumed=await f.json("/api/aira?deck=deck",{action:"resume"},owner.cookie)
       expect(resumed.status).toBe(202);expect(await resumed.json()).toMatchObject({id:start.id})
       let final=await stream.next();while(final.run?.id!==start.id||final.run.kind!=="complete")final=await stream.next()
       expect(final.run.completed).toEqual(["s0","s1"])
       expect(final.run.events.filter((event:{name?:string})=>event.name==="apply_changes")).toHaveLength(2)
-      expect((await f.history.read({personId:owner.personId},"deck")).deck.slides[1]?.notes).toBe("Saved request")
+      expect(final.run.request).toBe("Saved request")
+      const completed=await f.history.read({personId:owner.personId},"deck")
+      expect(completed.deck.slides[0]).toEqual(personEdited.deck.slides[0])
+      expect(completed.deck.slides[1]).toMatchObject({notes:deck.slides[1]!.notes,elements:[{runs:brandedRuns},deck.slides[1]!.elements[1],{runs:[{text:"Keep supporting detail",font:"Geist"}]}]})
+      expect(await f.history.agents.latest(owner.personId,"deck")).toMatchObject({id:start.id,kind:"complete",request:"Saved request",completed:["s0","s1"]})
       await f.json("/api/aira?deck=deck",{action:"undo"},owner.cookie)
       const undone=await f.history.read({personId:owner.personId},"deck")
-      expect(undone.deck.slides[0]?.notes).toBe("Keep later edit");expect(undone.deck.slides[1]?.notes).not.toBe("Saved request")
+      expect(undone.deck.slides[0]).toEqual({...deck.slides[0],version:expect.any(Number),notes:"Keep later edit"})
+      expect(undone.deck.slides[1]).toEqual({...deck.slides[1],version:expect.any(Number)})
     }finally{await stream.close()}
   }finally{release.resolve();await f.close()}
 })

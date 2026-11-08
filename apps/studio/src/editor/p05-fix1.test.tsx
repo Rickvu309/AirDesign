@@ -7,10 +7,11 @@ import { ManualEditor } from "./manual-editor.tsx"
 import { StudioShell } from "../shell/studio-shell.tsx"
 
 vi.mock("./use-deck.ts",()=>({useDeck:()=>({sync:{deck:fixtureDeck(1,2),seq:0,state:{kind:"saved"},history:initialHistory(fixtureDeck(1,2)),queue:[],historyTarget:()=>null},entry:{title:"Strategy"},setError:()=>{}})}))
-vi.mock("../../../../packages/render/src/fonts.ts",()=>({waitForFonts:()=>Promise.resolve(),fontReport:()=>({missing:[]})}))
+vi.mock("../../../../packages/render/src/fonts.ts",async original=>({...await original<typeof import("../../../../packages/render/src/fonts.ts")>(),waitForFonts:()=>Promise.resolve(),fontReport:()=>({missing:[]})}))
 vi.mock("../export/export-dialog.tsx",()=>({ExportDialog:()=>null}))
 
 it("uses the floating editor shell, switches views and exposes contextual actions",async()=>{
+  vi.stubGlobal("EventSource",class{close(){}})
   vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
   history.replaceState(null,"","/deck/example")
   const container=document.createElement("div");document.body.append(container)
@@ -23,6 +24,7 @@ it("uses the floating editor shell, switches views and exposes contextual action
     expect(container.querySelector(".editor-menu")).toBeNull()
     const button=(name:string)=>[...container.querySelectorAll("button")].find(value=>value.getAttribute("aria-label")===name || value.textContent===name)!
     expect(button("Agent").disabled).toBe(false)
+    expect(container.querySelectorAll(".editor-panel-switch button>svg")).toHaveLength(2)
     await act(async()=>button("Single slide view").click())
     expect(container.querySelectorAll(".editor-slide:not([hidden])")).toHaveLength(1)
     await act(async()=>button("Grid view").click())
