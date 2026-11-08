@@ -7,7 +7,7 @@ import {resolveCopy,type Scenario} from "./registry.ts"
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
   return new Error(`selector=${selector} check=${check} expected=${JSON.stringify(expected)} actual=${JSON.stringify(actual)}`)
 }
-export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"access-error-title":[15,15,500],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
+export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"consent-title":[20,20,600],"access-error-title":[15,15,500],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
 
 type IconInk={path:string,size:number,color:string,strokeWidth:ReturnType<typeof iconStrokeWidth>}
 function inkPixels(pixels:Buffer){
@@ -103,7 +103,7 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
   const ownership=beforeInk>0 ? (beforeInk-afterInk)/beforeInk : 0
   if(ownership<0.8||estimate<=0||beforeInk<estimate/4||beforeInk>estimate*4)throw failure(selector,"required-rendered-element:ink-ownership",{minimumOwnership:0.8,minimumInk:estimate/4,maximumInk:estimate*4},{beforeInk,afterInk,ownership,box})
 }
-async function visible(page:Page,text:string){
+async function visible(page:Page|Locator,text:string){
   const candidates=[page.getByText(text,{exact:true}),page.getByRole("link",{name:text,exact:true}),page.getByRole("button",{name:text,exact:true})]
   for(const locator of candidates)for(const element of await locator.all()){
     try{await assertRendered(element);return}catch{}
@@ -238,7 +238,7 @@ async function assertStructure(page:Page,entry:Scenario){
 export async function assertScenarioStructure(page:Page,entry:Scenario){
   try{await assertStructure(page,entry)}catch(error){throw new Error(`scenario=${entry.code} ${String(error)}`)}
 }
-export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-entry",values:Record<string,string>={}){
+export async function assertScenarioCopy(page:Page|Locator,keys:string[],scenario="copy-entry",values:Record<string,string>={}){
   for(const key of keys){
     const text=resolveCopy(key,values)
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
@@ -273,18 +273,31 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
     owner=root
   }
   for(const control of entry.assertions.controls){
-    const locator=owner.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true})
+    let controlOwner=owner
+    if("owner" in control&&control.owner==="manual-editor"){
+      const root=page.locator(".studio-editor .editor-export")
+      if(await root.count()!==1||!await root.isVisible())throw failure(root.toString(),"required-editor-owner","one visible manual editor export owner",await root.count())
+      controlOwner=root
+    }
+    const locator=controlOwner.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true})
     if(await locator.count()!==1)throw failure(locator.toString(),"required-control",1,await locator.count())
     if(entry.component?.kind==="dialog"&&!await locator.evaluate((element,selector)=>element.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===document.querySelector(selector),entry.component.selector))throw failure(locator.toString(),"required-control-owner",entry.component.selector,"different dialog")
     if(control.role==="combobox"){
       const state=await locator.evaluate(element=>element instanceof HTMLSelectElement ? {value:element.value,selected:element.selectedOptions.length,text:element.selectedOptions[0]?.textContent?.trim(),disabled:element.disabled} : null)
       if(!state||state.value!==control.value||state.selected!==1||!state.text||state.disabled)throw failure(locator.toString(),"required-native-selection",control.value,state)
     }
+    if("owner" in control&&control.owner==="manual-editor"&&!await locator.isEnabled())throw failure(locator.toString(),"required-enabled-control",true,false)
     await assertControlPaint(locator)
   }
 }
 async function assertDOM(page:Page,entry:Scenario){
-  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
+  let copyOwner:Page|Locator=page
+  if(entry.component?.kind==="toast"){
+    const toast=page.locator(entry.component.selector)
+    if(await toast.count()!==1||!await toast.isVisible())throw failure(entry.component.selector,"required-toast-owner","one visible toast",await toast.count())
+    copyOwner=toast
+  }
+  await assertScenarioCopy(copyOwner,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
   await assertScenarioControls(page,entry)
   await assertStructure(page,entry)
 }

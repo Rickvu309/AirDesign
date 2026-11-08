@@ -39,7 +39,7 @@
   "pay.waiting": "Waiting for your {amount} payment. Finish in the new tab.",
   "pay.open": "Open payment page",
   "pay.added_title": "{amount} added",
-  "pay.added_body": "Your balance is now {balance}. Receipt sent to your email.",
+  "pay.added_body": "Your balance is now {balance}. Credits added.",
   "pay.failed_title": "Unable to complete payment",
   "pay.expired_title": "Payment expired",
   "pay.not_charged": "Nothing was charged. Try again.",
@@ -145,5 +145,7 @@
   "settings.delete_account": "Delete account",
   "credits.amount_label": "Amount in USD",
   "settings.agents_heading": "Agents",
-  "settings.manage": "Manage"
+  "settings.manage": "Manage",
+  "pay.checkout_failed_body": "Couldn't update this payment. Your credits are safe. Try again.",
+  "pay.expired_body": "This payment expired. Your balance is unchanged. Add credits to start again."
 }

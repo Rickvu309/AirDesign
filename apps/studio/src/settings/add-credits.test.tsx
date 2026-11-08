@@ -1,6 +1,7 @@
 import {expect,it,vi} from "vitest"
 import {act} from "react"
 import {createRoot} from "react-dom/client"
+import {copy,fillCopy} from "@airdesign/ui"
 import {AddCredits} from "./add-credits.tsx"
 it("opens a recoverable payment failure dialog when the network fails",async()=>{
   vi.stubGlobal("fetch",async()=>{throw new TypeError("Failed to fetch")})
@@ -12,6 +13,9 @@ it("opens a recoverable payment failure dialog when the network fails",async()=>
     await act(async()=>submit.click())
     expect(container.querySelector("dialog")?.textContent).toContain("Your credits are safe. Try again.")
     expect(container.querySelector("dialog")?.textContent).not.toContain("TypeError")
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(copy("pay.checkout_failed_body"))
+    expect(container.textContent).not.toContain("Nothing was charged")
+    expect(container.textContent).not.toContain("Credits added")
     expect(container.querySelector("h2")?.textContent).toBe("Unable to complete payment");expect(document.activeElement).toBe(container.querySelector("[data-credits-close]"));expect([...container.querySelectorAll("button")].find(button=>button.textContent==="Try again")?.disabled).toBe(false)
   }finally{await act(async()=>root.unmount());container.remove();sessionStorage.clear();vi.unstubAllGlobals()}
 })
@@ -36,6 +40,9 @@ it("offers a retry for expiry and keeps embedded checkout mounted while waiting"
     expect(container.querySelector(".payment-status a")?.getAttribute("href")).toBe("/settings/usage?payment=fixture")
     await act(async()=>receive?.(new MessageEvent("message",{data:JSON.stringify({...payment,kind:"expired"})})))
     expect(container.querySelector("h2")?.textContent).toBe("Payment expired")
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(copy("pay.expired_body"))
+    expect(container.textContent).not.toContain("Nothing was charged")
+    expect(container.textContent).not.toContain("Credits added")
     await act(async()=>[...container.querySelectorAll("button")].find(button=>button.textContent==="Try again")!.click())
     expect(container.querySelector("h2")?.textContent).toBe("Add credits")
     expect(container.querySelector<HTMLInputElement>("input")?.value).toBe("10")
@@ -59,7 +66,8 @@ it("announces pending, paid, refund and error states without granting from a bro
     const focused=container.querySelector<HTMLButtonElement>("[data-credits-close]")!;expect(container.querySelector("dialog")?.open).toBe(false)
     expect(refresh).not.toHaveBeenCalled()
     await act(async()=>streams[0]?.onmessage?.(new MessageEvent("message",{data:JSON.stringify({...payment,kind:"paid"})})))
-    expect(container.querySelector('[role="status"]')?.textContent).toContain("Credits added")
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(fillCopy("pay.added_body",{balance:"$0.00"}))
+    expect(container.textContent).not.toContain("Receipt sent")
     expect(streams[0]?.closed).toBe(false)
     expect(refresh).toHaveBeenCalledTimes(1);expect(container.querySelector("dialog")?.open).toBe(true);expect(document.activeElement).toBe(focused)
     await act(async()=>streams[0]?.onmessage?.(new MessageEvent("message",{data:JSON.stringify({...payment,kind:"reversed"})})))

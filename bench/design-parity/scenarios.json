@@ -2394,17 +2394,7 @@
       "copyKeys": [
         "export.downloaded"
       ],
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format",
-          "value": "pptx"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
+      "controls": [],
       "probe": {
         "kind": "view"
       },
@@ -2415,9 +2405,9 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": ".export-dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
+            "color": "white",
             "minimumContrast": 4.5
           }
         ]
@@ -2426,7 +2416,7 @@
         "file": "Q3 Investor Update-v3.pptx"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged.",
+    "scenarioChangedBecause": "Completed browser download is proved against saved filename, bytes and hash before the owned downloaded toast; the closed export dialog has no active modal controls.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2577,8 +2567,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2588,7 +2578,7 @@
         "agent": "Claude"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged."
+    "scenarioChangedBecause": "Root-approved compact consent title is scoped to AgentApproval h1 at 20px/600; generic page-title remains 26px/600."
   },
   {
     "surface": "studio",
@@ -2638,15 +2628,15 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged. Remaining structure: the S71.02 reference and canonical oauth.connected require Connected only after successful approval; preserve explicit safe return link, denial, expired and return-error recovery. No automatic redirect is claimed."
+    "scenarioChangedBecause": "Root-approved compact consent title is scoped to AgentApproval h1 at 20px/600; generic page-title remains 26px/600."
   },
   {
     "surface": "studio",
@@ -2688,8 +2678,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2699,7 +2689,7 @@
         "agent": "Codex"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged."
+    "scenarioChangedBecause": "Root-approved compact consent title is scoped to AgentApproval h1 at 20px/600; generic page-title remains 26px/600."
   },
   {
     "surface": "studio",
@@ -3080,7 +3070,7 @@
         "balance": "$40.00"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged.",
+    "scenarioChangedBecause": "Payment copy is bound to existing paid/refreshed balance, checkout error or expired operation facts; receipt delivery and processor-wide no-charge claims are unsupported. Original reference pixels remain binding.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3130,7 +3120,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3168,7 +3159,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged."
+    "scenarioChangedBecause": "Export belongs to the real manual editor export toolbar, rather than the background Workspace action. Unique visibility, enabled state and hit-testing remain required."
   },
   {
     "surface": "studio",
@@ -3381,7 +3372,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3423,7 +3415,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged.",
+    "scenarioChangedBecause": "Export belongs to the real manual editor export toolbar, rather than the background Workspace action. Unique visibility, enabled state and hit-testing remain required.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3453,7 +3445,7 @@
     "assertions": {
       "copyKeys": [
         "pay.failed_title",
-        "pay.not_charged",
+        "pay.checkout_failed_body",
         "common.close",
         "pay.try_again"
       ],
@@ -3477,8 +3469,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".credits-dialog[open] h2",
+            "role": "dialog-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -3488,7 +3480,7 @@
         "settings.title"
       ]
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged.",
+    "scenarioChangedBecause": "Payment copy is bound to existing paid/refreshed balance, checkout error or expired operation facts; receipt delivery and processor-wide no-charge claims are unsupported. Original reference pixels remain binding.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3544,7 +3536,7 @@
     "assertions": {
       "copyKeys": [
         "pay.expired_title",
-        "pay.not_charged",
+        "pay.expired_body",
         "common.close",
         "pay.try_again"
       ],
@@ -3576,7 +3568,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets. Artifact boundary v7: resolve real relative download URLs at the browser URL and verify actual saved artifact bytes; S99.01 retains authenticated Settings after real Sign out Cancel, replacing only stale entry Home copy. Reference, viewport, state, steps, targets and budgets remain unchanged.",
+    "scenarioChangedBecause": "Payment copy is bound to existing paid/refreshed balance, checkout error or expired operation facts; receipt delivery and processor-wide no-charge claims are unsupported. Original reference pixels remain binding.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",

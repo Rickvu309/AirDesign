@@ -2273,9 +2273,9 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": ".export-dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
+            "color": "white",
             "minimumContrast": 4.5
           }
         ]
@@ -2289,17 +2289,7 @@
       "copyValues": {
         "file": "Q3 Investor Update-v3.pptx"
       },
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format",
-          "value": "pptx"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
+      "controls": [],
       "probe": {
         "kind": "view"
       }
@@ -2406,8 +2396,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2464,8 +2454,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2509,8 +2499,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".agent-approval h1",
+            "role": "consent-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -2970,7 +2960,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3209,7 +3200,8 @@
       "controls": [
         {
           "role": "button",
-          "nameKey": "editor.export"
+          "nameKey": "editor.export",
+          "owner": "manual-editor"
         },
         {
           "role": "button",
@@ -3261,8 +3253,8 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "h1",
-            "role": "page-title",
+            "selector": ".credits-dialog[open] h2",
+            "role": "dialog-title",
             "color": "ink",
             "minimumContrast": 4.5
           }
@@ -3270,7 +3262,7 @@
       },
       "copyKeys": [
         "pay.failed_title",
-        "pay.not_charged",
+        "pay.checkout_failed_body",
         "common.close",
         "pay.try_again"
       ],
@@ -3348,7 +3340,7 @@
       },
       "copyKeys": [
         "pay.expired_title",
-        "pay.not_charged",
+        "pay.expired_body",
         "common.close",
         "pay.try_again"
       ],

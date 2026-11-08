@@ -102,3 +102,14 @@ it("keeps component-owned dialog titles distinct from page text selectors",async
     expect(()=>parseRegistry([wrong])).toThrow()
   }
 })
+
+
+it("permits actionless completion only inside a registered toast component",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S61.03")
+  if(!entry)throw new Error("missing-completed-export-contract")
+  expect(()=>parseRegistry([entry])).not.toThrow()
+  const {component,...withoutOwner}=entry
+  expect(component?.kind).toBe("toast")
+  expect(()=>parseRegistry([withoutOwner])).toThrow("missing-required-control")
+  expect(()=>parseRegistry([{...entry,component:{...component,kind:"dialog"}}])).toThrow("missing-required-control")
+})

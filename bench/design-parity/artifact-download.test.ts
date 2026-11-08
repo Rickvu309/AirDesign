@@ -32,7 +32,10 @@ it("downloads relative and absolute artifacts at the actual browser port and rej
    await page.locator("a").evaluate((element,href)=>element.setAttribute("href",href),href)
    await expect(assertArtifactDownload(page,expected)).rejects.toThrow(error)
   }
+  await page.evaluate(()=>{const toast=document.createElement("div");toast.setAttribute("data-sonner-toast","");toast.textContent="Actual saved deck.pptx downloaded";document.body.append(toast)})
   await page.locator("a").evaluate(element=>{element.setAttribute("role","link");element.removeAttribute("href")})
   await expect(assertArtifactDownload(page,expected)).rejects.toThrow("missing-artifact-url")
+  await page.locator("a").evaluate(element=>element.remove())
+  await expect(assertArtifactDownload(page,expected)).rejects.toThrow()
  }finally{await browser.close();await new Promise<void>((resolve,reject)=>server.close(error=>error?reject(error):resolve()))}
 })
