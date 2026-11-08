@@ -58,7 +58,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     requestAnimationFrame(()=>setTimeout(resolve,0))
   })
   async function connect() {
-    connectionChanged(navigator.onLine ? "connecting" : "offline")
+    if(attempts===0 || !navigator.onLine)connectionChanged(navigator.onLine ? "connecting" : "offline")
     const own=++generation
     recovering=client.queue.length>1
     clearTimeout(timer)
@@ -130,11 +130,11 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     connectionChanged(navigator.onLine ? "unavailable" : "offline")
     client.disconnected(Date.now()-offlineAt>=3000)
     if (!slow) slow=setTimeout(()=>{if (!stopped && !resumed) client.disconnected(true)},Math.max(0,3000-(Date.now()-offlineAt)))
-    if (attempts>=3) return
+    if (!navigator.onLine || attempts>=3) return
     timer=setTimeout(()=>void connect(),[500,1000,2000][attempts++] ?? 2000)
   }
   const online=()=>{if(!saveFailed && resumed && socket?.readyState===WebSocket.OPEN)return;attempts=0;void connect()}
-  const offline=()=>{generation++;clearTimeout(timer);clearTimeout(slow);slow=undefined;resumed=false;offlineAt=Date.now();connectionChanged("offline");client.disconnected();socket?.close()}
+  const offline=()=>{generation++;clearTimeout(timer);clearTimeout(slow);slow=undefined;resumed=false;offlineAt=Date.now();retry();socket?.close()}
   window.addEventListener("online",online)
   window.addEventListener("offline",offline)
   void connect()

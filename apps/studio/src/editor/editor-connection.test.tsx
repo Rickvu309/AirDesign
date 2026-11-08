@@ -38,11 +38,44 @@ it("distinguishes delayed online startup, connected, real offline and reconnecti
     expect(container.textContent).toBe("saved")
     online=false
     await act(async()=>{window.dispatchEvent(new Event("offline"));await vi.advanceTimersByTimeAsync(10)})
-    expect(["offline","retrying"]).toContain(container.textContent)
+    expect(container.textContent).toBe("offline")
+    await act(async()=>vi.advanceTimersByTimeAsync(3000))
+    expect(container.textContent).toBe("retrying")
     online=true
     await act(async()=>{window.dispatchEvent(new Event("online"));await vi.advanceTimersByTimeAsync(10)})
     expect(container.textContent).toBe("connecting")
     await act(async()=>{deliver!({data:JSON.stringify({kind:"snapshot",...snapshot})});await vi.advanceTimersByTimeAsync(10)})
     expect(container.textContent).toBe("saved")
+  }finally{await act(async()=>root.unmount());vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers();localStorage.clear();sessionStorage.clear()}
+})
+
+it("keeps an online service failure unavailable across automatic retries",async()=>{
+  vi.useFakeTimers()
+  let deckRequests=0
+  const snapshot={deck:fixtureDeck(1),seq:0},phases:string[]=[]
+  vi.spyOn(navigator,"onLine","get").mockReturnValue(true)
+  vi.stubGlobal("requestAnimationFrame",(callback:FrameRequestCallback)=>setTimeout(()=>callback(0),0))
+  vi.stubGlobal("cancelAnimationFrame",clearTimeout)
+  vi.stubGlobal("fetch",async(url:string)=>{
+    if(url==="/api/account")return Response.json({status:"signed-in",personId:"owner"})
+    if(url.startsWith("/api/catalog/"))return Response.json({title:"Strategy"})
+    if(++deckRequests===1)return Response.json(snapshot)
+    await new Promise(resolve=>setTimeout(resolve,10))
+    return new Response(null,{status:503})
+  })
+  function Probe(){const {state}=useDeck(snapshot.deck.id);const kind=state?.kind ?? "loading";phases.push(kind);return <p>{kind}</p>}
+  const container=document.createElement("div"),root=createRoot(container)
+  try{
+    await act(async()=>root.render(<Probe/>))
+    await act(async()=>vi.advanceTimersByTimeAsync(20))
+    expect(container.textContent).toBe("unavailable")
+    const firstFailure=phases.indexOf("unavailable")
+    await act(async()=>vi.advanceTimersByTimeAsync(495))
+    expect(container.textContent).toBe("unavailable")
+    await act(async()=>vi.advanceTimersByTimeAsync(4000))
+    expect(deckRequests).toBe(5)
+    expect(phases.slice(firstFailure)).not.toContain("connecting")
+    expect(phases).not.toContain("offline")
+    expect(container.textContent).toBe("unavailable")
   }finally{await act(async()=>root.unmount());vi.restoreAllMocks();vi.unstubAllGlobals();vi.useRealTimers();localStorage.clear();sessionStorage.clear()}
 })
