@@ -26,8 +26,8 @@ async function assertPaintedText(locator:Locator,clip:{x:number,y:number,width:n
   const snapshot=await locator.evaluateHandle(element=>{
     const parents=new Set<HTMLElement|SVGElement>()
     const texts:{estimate:number,rects:{left:number,top:number,right:number,bottom:number}[]}[]=[]
-    if(element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement){
-      const text=element.value||element.placeholder,box=element.getBoundingClientRect()
+    if(element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement||element instanceof HTMLSelectElement){
+      const text=element instanceof HTMLSelectElement ? element.selectedOptions[0]?.textContent??"" : element.value||element.placeholder,box=element.getBoundingClientRect()
       if(text.trim())texts.push({estimate:[...text.replace(/\s/g,"")].length*parseFloat(getComputedStyle(element).fontSize)**2*0.18,rects:[{left:box.left,top:box.top,right:box.right,bottom:box.bottom}]})
       parents.add(element)
     }else{
@@ -244,13 +244,28 @@ export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
   }
 }
-async function assertDOM(page:Page,entry:Scenario){
-  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
+export async function assertScenarioControls(page:Page,entry:Scenario){
+  let owner:Page|Locator=page
+  if(entry.component?.kind==="dialog"){
+    const root=page.locator(entry.component.selector)
+    if(await root.count()!==1||!await root.evaluate(element=>element.matches('dialog[open], [role="dialog"], [role="alertdialog"]')))throw failure(entry.component.selector,"required-dialog-owner","one open dialog",await root.count())
+    await assertRendered(root)
+    owner=root
+  }
   for(const control of entry.assertions.controls){
-    const locator=page.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true}).first()
-    if(!await locator.count())throw failure(locator.toString(),"required-control",1,0)
+    const locator=owner.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true})
+    if(await locator.count()!==1)throw failure(locator.toString(),"required-control",1,await locator.count())
+    if(entry.component?.kind==="dialog"&&!await locator.evaluate((element,selector)=>element.closest('dialog[open], [role="dialog"], [role="alertdialog"]')===document.querySelector(selector),entry.component.selector))throw failure(locator.toString(),"required-control-owner",entry.component.selector,"different dialog")
+    if(control.role==="combobox"){
+      const state=await locator.evaluate(element=>element instanceof HTMLSelectElement ? {value:element.value,selected:element.selectedOptions.length,text:element.selectedOptions[0]?.textContent?.trim(),disabled:element.disabled} : null)
+      if(!state||state.value!==control.value||state.selected!==1||!state.text||state.disabled)throw failure(locator.toString(),"required-native-selection",control.value,state)
+    }
     await assertRendered(locator,true)
   }
+}
+async function assertDOM(page:Page,entry:Scenario){
+  await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
+  await assertScenarioControls(page,entry)
   await assertStructure(page,entry)
 }
 export async function assertScenarioDOM(page:Page,entry:Scenario){

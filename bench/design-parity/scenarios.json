@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13\u201314), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13–14), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
   },
   {
     "surface": "studio",
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13\u201314), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13–14), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
   },
   {
     "surface": "studio",
@@ -2254,7 +2254,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pptx"
         },
         {
           "role": "button",
@@ -2279,7 +2280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2336,7 +2337,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pdf"
         },
         {
           "role": "button",
@@ -2361,7 +2363,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2396,7 +2398,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pptx"
         },
         {
           "role": "button",
@@ -2424,7 +2427,7 @@
         "file": "Q3 Investor Update.pptx"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2480,7 +2483,8 @@
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pptx"
         },
         {
           "role": "button",
@@ -2509,7 +2513,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S69.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S69.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Control ownership v6: require the selected native value and actual open action owner; exercise real profile editing, authenticated entry and verified artifact download without changing reference, state, viewport, pixel targets or budgets.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2943,7 +2947,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment\u2026"
+        "text": "Waiting for your $25.00 payment…"
       },
       {
         "kind": "selector-click",
@@ -3318,7 +3322,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you\u2019re ready."
+        "text": "Usage reset. Resume when you’re ready."
       }
     ],
     "metric": "local-oklab-v2",

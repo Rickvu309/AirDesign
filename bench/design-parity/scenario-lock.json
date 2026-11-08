@@ -1,5 +1,6 @@
 [
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S11.01",
     "seed": "signed-out",
     "steps": [],
@@ -11,6 +12,17 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "landing-hero",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "landing.hero"
       ],
@@ -24,22 +36,11 @@
         "kind": "navigate",
         "name": "Pricing",
         "path": "/pricing/"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "landing-hero",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S12.01",
     "seed": "signed-out",
     "steps": [],
@@ -51,6 +52,17 @@
     "route": "/pricing/",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "pricing-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "pricing.heading"
       ],
@@ -64,22 +76,11 @@
         "kind": "navigate",
         "name": "Product",
         "path": "/#product"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "pricing-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S21.01",
     "seed": "signed-out",
     "steps": [],
@@ -91,6 +92,17 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "access.entry_title",
         "access.email_label",
@@ -106,22 +118,11 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S22.01",
     "seed": "signed-out",
     "steps": [
@@ -143,6 +144,17 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "access.check_title"
       ],
@@ -156,22 +168,11 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S29.01",
     "seed": "signed-out",
     "steps": [],
@@ -183,6 +184,17 @@
     "route": "/access/link?token=expired-design-parity-token",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "access-error-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "access.expired_title",
         "access.send_new"
@@ -195,22 +207,11 @@
       ],
       "probe": {
         "kind": "expired"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "access-error-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S31.01",
     "seed": "empty-account",
     "steps": [],
@@ -222,21 +223,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.recents"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -254,11 +240,26 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S31.02",
     "seed": "recents",
     "steps": [],
@@ -270,25 +271,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.recents"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        },
-        {
-          "role": "heading",
-          "nameKey": "decks.recents"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -312,27 +294,7 @@
             "minimumContrast": 4.5
           }
         ]
-      }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
-  },
-  {
-    "code": "S31.03",
-    "seed": "recents",
-    "steps": [
-      {
-        "kind": "click",
-        "name": "List view"
-      }
-    ],
-    "viewport": {
-      "width": 1470,
-      "height": 923
-    },
-    "surface": "studio",
-    "route": "/",
-    "status": "reachable",
-    "assertions": {
+      },
       "copyKeys": [
         "decks.recents"
       ],
@@ -349,9 +311,29 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
+      }
+    }
+  },
+  {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
+    "code": "S31.03",
+    "seed": "recents",
+    "steps": [
+      {
+        "kind": "click",
+        "name": "List view"
+      }
+    ],
+    "viewport": {
+      "width": 1470,
+      "height": 923
+    },
+    "surface": "studio",
+    "route": "/",
+    "status": "reachable",
+    "assertions": {
       "structure": {
         "icons": [
           {
@@ -375,11 +357,30 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.recents"
+      ],
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.recents"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S31.04",
     "seed": "recents",
     "steps": [
@@ -396,25 +397,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.all"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        },
-        {
-          "role": "heading",
-          "nameKey": "decks.all"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -438,11 +420,30 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S31.05",
     "seed": "recents",
     "steps": [
@@ -463,25 +464,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.all"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        },
-        {
-          "role": "heading",
-          "nameKey": "decks.all"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -505,11 +487,30 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.all"
+      ],
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        },
+        {
+          "role": "heading",
+          "nameKey": "decks.all"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S32.01",
     "seed": "recents",
     "steps": [
@@ -526,6 +527,24 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [
+          {
+            "region": ".ad-sidebar .ad-search",
+            "name": "search",
+            "size": 16,
+            "color": "gray.500"
+          }
+        ],
+        "textRoles": [
+          {
+            "selector": ".home-heading h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "decks.recents"
       ],
@@ -542,31 +561,13 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [
-          {
-            "region": ".ad-sidebar .ad-search",
-            "name": "search",
-            "size": 16,
-            "color": "gray.500"
-          }
-        ],
-        "textRoles": [
-          {
-            "selector": ".home-heading h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S32.02",
     "seed": "recents",
     "steps": [
@@ -583,22 +584,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.recents",
-        "decks.importing"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -617,14 +602,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "decks.recents",
+        "decks.importing"
+      ],
       "copyValues": {
         "current": "14",
         "total": "24"
+      },
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S32.03",
     "seed": "recents",
     "steps": [
@@ -641,22 +642,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.recents",
-        "decks.import_failed"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -674,11 +659,27 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.recents",
+        "decks.import_failed"
+      ],
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S33.01",
     "seed": "recents",
     "steps": [
@@ -707,22 +708,6 @@
     "route": "/",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.trashed",
-        "common.undo"
-      ],
-      "controls": [
-        {
-          "role": "searchbox",
-          "name": "Search"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -741,11 +726,26 @@
           }
         ]
       },
+      "copyKeys": [
+        "decks.trashed",
+        "common.undo"
+      ],
       "copyValues": {
         "deck": "Pricing Strategy Review"
+      },
+      "controls": [
+        {
+          "role": "searchbox",
+          "name": "Search"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -759,6 +759,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S33.02",
     "seed": "trash-with-items",
     "steps": [],
@@ -770,25 +771,6 @@
     "route": "/trash",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "decks.trash"
-      ],
-      "controls": [
-        {
-          "role": "heading",
-          "nameKey": "decks.trash"
-        },
-        {
-          "role": "button",
-          "nameKey": "trash.empty_open"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [
           {
@@ -812,11 +794,30 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "decks.trash"
+      ],
+      "controls": [
+        {
+          "role": "heading",
+          "nameKey": "decks.trash"
+        },
+        {
+          "role": "button",
+          "nameKey": "trash.empty_open"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S33.03",
     "seed": "trash-with-items",
     "steps": [
@@ -833,12 +834,30 @@
     "route": "/trash",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "dialogActions": {
+          "primaryKey": "trash.empty_action",
+          "cancelKey": "common.cancel"
+        },
+        "icons": [],
+        "textRoles": [
+          {
+            "componentSelector": "h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "trash.empty_title",
         "trash.empty_body",
         "trash.empty_action",
         "common.cancel"
       ],
+      "copyValues": {
+        "n": "3"
+      },
       "controls": [
         {
           "role": "button",
@@ -852,29 +871,10 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "componentSelector": "h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ],
-        "dialogActions": {
-          "primaryKey": "trash.empty_action",
-          "cancelKey": "common.cancel"
-        }
-      },
-      "copyValues": {
-        "n": "3"
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -888,6 +888,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S41.01",
     "seed": "deck-open",
     "steps": [
@@ -904,23 +905,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -945,13 +929,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S41.02",
     "seed": "deck-open",
     "steps": [
@@ -972,23 +973,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1013,13 +997,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S41.03",
     "seed": "deck-open",
     "steps": [],
@@ -1031,23 +1032,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1072,13 +1056,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S41.04",
     "seed": "deck-open",
     "steps": [],
@@ -1090,24 +1091,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.new_slide",
-        "import.pasted",
-        "common.undo"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1132,12 +1115,29 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.new_slide",
+        "import.pasted",
+        "common.undo"
+      ],
       "copyValues": {
         "n": "2",
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1151,6 +1151,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S42.01",
     "seed": "deck-open",
     "steps": [
@@ -1175,27 +1176,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "agent.stop"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1220,13 +1200,34 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.stop"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S42.02",
     "seed": "deck-open",
     "steps": [
@@ -1251,27 +1252,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "agent.undo_run"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1296,13 +1276,34 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S42.03",
     "seed": "deck-open",
     "steps": [
@@ -1331,27 +1332,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "agent.undo_run"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1376,13 +1356,34 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S42.04",
     "seed": "deck-open",
     "steps": [
@@ -1411,27 +1412,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "agent.undo_run"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1456,13 +1436,34 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.undo_run"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.01",
     "seed": "deck-open",
     "steps": [
@@ -1491,26 +1492,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.templates"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.close_picker"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1535,13 +1516,33 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.templates"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.close_picker"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.02",
     "seed": "deck-open",
     "steps": [
@@ -1566,27 +1567,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.choose_template"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1611,13 +1591,34 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.choose_template"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.03",
     "seed": "deck-open",
     "steps": [
@@ -1646,22 +1647,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.images"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1686,13 +1671,29 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.images"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.04",
     "seed": "deck-open",
     "steps": [],
@@ -1704,23 +1705,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export",
-        "editor.new_slide"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1745,13 +1729,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.export",
+        "editor.new_slide"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.05",
     "seed": "deck-open",
     "steps": [],
@@ -1763,22 +1764,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.shapes"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1803,13 +1788,29 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.shapes"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.06",
     "seed": "deck-open",
     "steps": [],
@@ -1821,22 +1822,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.text"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1861,13 +1846,29 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.text"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S43.07",
     "seed": "deck-open",
     "steps": [],
@@ -1879,22 +1880,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "editor.actions"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1919,13 +1904,29 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.actions"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S49.01",
     "seed": "deck-open",
     "steps": [
@@ -1950,24 +1951,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "agent.failed_title",
-        "agent.failed_body",
-        "agent.resume"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -1992,13 +1975,31 @@
           }
         ]
       },
+      "copyKeys": [
+        "agent.failed_title",
+        "agent.failed_body",
+        "agent.resume"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S49.02",
     "seed": "deck-open",
     "steps": [
@@ -2026,22 +2027,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.offline"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -2066,11 +2051,26 @@
           }
         ]
       },
+      "copyKeys": [
+        "editor.offline"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2084,6 +2084,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S61.01",
     "seed": "deck-open",
     "steps": [
@@ -2112,25 +2113,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export"
-      ],
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
@@ -2141,9 +2123,28 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "editor.export"
+      ],
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format",
+          "value": "pptx"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2157,6 +2158,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S61.02",
     "seed": "deck-open",
     "steps": [
@@ -2190,25 +2192,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "editor.export"
-      ],
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
@@ -2219,9 +2202,28 @@
             "minimumContrast": 4.5
           }
         ]
+      },
+      "copyKeys": [
+        "editor.export"
+      ],
+      "entryCopyKeys": [
+        "shell.home"
+      ],
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format",
+          "value": "pdf"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2235,6 +2237,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S61.03",
     "seed": "deck-open",
     "steps": [],
@@ -2246,25 +2249,6 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
-      "copyKeys": [
-        "export.downloaded"
-      ],
-      "controls": [
-        {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.close"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
       "structure": {
         "icons": [],
         "textRoles": [
@@ -2276,11 +2260,30 @@
           }
         ]
       },
+      "copyKeys": [
+        "export.downloaded"
+      ],
+      "entryCopyKeys": [
+        "shell.home"
+      ],
       "copyValues": {
         "file": "Q3 Investor Update.pptx"
+      },
+      "controls": [
+        {
+          "role": "combobox",
+          "nameKey": "export.file_format",
+          "value": "pptx"
+        },
+        {
+          "role": "button",
+          "nameKey": "export.close"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2294,6 +2297,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S69.01",
     "seed": "deck-open",
     "steps": [
@@ -2325,14 +2329,29 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "export.failed",
         "pay.try_again"
       ],
+      "entryCopyKeys": [
+        "shell.home"
+      ],
       "controls": [
         {
           "role": "combobox",
-          "nameKey": "export.file_format"
+          "nameKey": "export.file_format",
+          "value": "pptx"
         },
         {
           "role": "button",
@@ -2345,23 +2364,8 @@
       ],
       "probe": {
         "kind": "view"
-      },
-      "entryCopyKeys": [
-        "shell.home"
-      ],
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2375,6 +2379,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S71.01",
     "seed": "oauth-Claude",
     "steps": [],
@@ -2386,10 +2391,27 @@
     "route": "/agents/approve",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "oauth.approve_title",
         "common.cancel"
       ],
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "copyValues": {
+        "agent": "Claude"
+      },
       "controls": [
         {
           "role": "button",
@@ -2402,28 +2424,11 @@
       ],
       "probe": {
         "kind": "approval"
-      },
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
-      },
-      "copyValues": {
-        "agent": "Claude"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S71.02",
     "seed": "oauth-Claude",
     "steps": [
@@ -2444,8 +2449,22 @@
     "route": "/agents/approve",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "oauth.connected"
+      ],
+      "entryCopyKeys": [
+        "common.cancel"
       ],
       "controls": [
         {
@@ -2459,25 +2478,11 @@
       ],
       "probe": {
         "kind": "approval"
-      },
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S71.03",
     "seed": "oauth-Codex",
     "steps": [],
@@ -2489,10 +2494,27 @@
     "route": "/agents/approve",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "oauth.approve_title",
         "common.cancel"
       ],
+      "entryCopyKeys": [
+        "common.cancel"
+      ],
+      "copyValues": {
+        "agent": "Codex"
+      },
       "controls": [
         {
           "role": "button",
@@ -2505,28 +2527,11 @@
       ],
       "probe": {
         "kind": "approval"
-      },
-      "entryCopyKeys": [
-        "common.cancel"
-      ],
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
-      },
-      "copyValues": {
-        "agent": "Codex"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S81.01",
     "seed": "usage-active",
     "steps": [],
@@ -2538,6 +2543,17 @@
     "route": "/settings/usage",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "settings.title",
         "usage.title",
@@ -2553,24 +2569,13 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S81.02",
     "seed": "usage-active-connected",
     "steps": [],
@@ -2582,6 +2587,17 @@
     "route": "/settings/agents",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "settings.title",
         "agent.name"
@@ -2603,24 +2619,13 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S81.03",
     "seed": "usage-active",
     "steps": [],
@@ -2632,6 +2637,17 @@
     "route": "/settings/account",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "settings.title",
         "settings.profile"
@@ -2661,24 +2677,13 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S91.01",
     "seed": "usage-active",
     "steps": [
@@ -2695,6 +2700,17 @@
     "route": "/settings/usage",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "credits.add",
         "credits.facts",
@@ -2716,22 +2732,10 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2745,6 +2749,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S91.02",
     "seed": "usage-active",
     "steps": [
@@ -2773,11 +2778,25 @@
     "route": "/settings/usage",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "pay.waiting",
         "pay.open",
         "common.cancel"
       ],
+      "copyValues": {
+        "amount": "$25.00"
+      },
       "controls": [
         {
           "role": "searchbox",
@@ -2791,27 +2810,13 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
-      },
-      "copyValues": {
-        "amount": "$25.00"
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S91.03",
     "seed": "usage-active",
     "steps": [
@@ -2835,23 +2840,6 @@
     "route": "/settings/usage",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "pay.added_title",
-        "pay.added_body",
-        "common.done"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "common.done"
-        }
-      ],
-      "probe": {
-        "kind": "dialog",
-        "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
       "structure": {
         "icons": [],
         "textRoles": [
@@ -2863,12 +2851,28 @@
           }
         ]
       },
+      "copyKeys": [
+        "pay.added_title",
+        "pay.added_body",
+        "common.done"
+      ],
       "copyValues": {
         "amount": "$25.00",
         "balance": "$40.00"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "common.done"
+        }
+      ],
+      "probe": {
+        "kind": "dialog",
+        "open": "Sign out",
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2882,6 +2886,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S92.01",
     "seed": "deck-limited",
     "steps": [
@@ -2906,24 +2911,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "usage.limit_title",
-        "usage.limit_body",
-        "usage.reset_action"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -2948,13 +2935,31 @@
           }
         ]
       },
+      "copyKeys": [
+        "usage.limit_title",
+        "usage.limit_body",
+        "usage.reset_action"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
-    },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e"
+    }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S92.02",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -2983,6 +2988,17 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "usage.reset_confirm_title",
         "usage.reset_confirm_body",
@@ -3001,20 +3017,8 @@
       ],
       "probe": {
         "kind": "view"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3028,6 +3032,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S92.03",
     "seed": "deck-limited",
     "steps": [],
@@ -3039,6 +3044,17 @@
     "route": "/deck/designparity",
     "status": "unreachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "credits.add",
         "credits.facts",
@@ -3046,6 +3062,9 @@
         "pay.continue",
         "common.cancel"
       ],
+      "copyValues": {
+        "slide": "3"
+      },
       "controls": [
         {
           "role": "button",
@@ -3058,23 +3077,8 @@
       ],
       "probe": {
         "kind": "view"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
-      },
-      "copyValues": {
-        "slide": "3"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3088,6 +3092,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S92.04",
     "seed": "deck-limited-with-credits",
     "steps": [
@@ -3124,28 +3129,6 @@
     "route": "/deck/designparity",
     "status": "reachable",
     "assertions": {
-      "copyKeys": [
-        "usage.reset_done",
-        "agent.resume_line",
-        "agent.resume"
-      ],
-      "controls": [
-        {
-          "role": "button",
-          "nameKey": "editor.export"
-        },
-        {
-          "role": "button",
-          "nameKey": "editor.slide_label"
-        },
-        {
-          "role": "button",
-          "nameKey": "agent.resume"
-        }
-      ],
-      "probe": {
-        "kind": "view"
-      },
       "structure": {
         "icons": [
           {
@@ -3170,11 +3153,32 @@
           }
         ]
       },
+      "copyKeys": [
+        "usage.reset_done",
+        "agent.resume_line",
+        "agent.resume"
+      ],
       "copyValues": {
         "slide": "3"
+      },
+      "controls": [
+        {
+          "role": "button",
+          "nameKey": "editor.export"
+        },
+        {
+          "role": "button",
+          "nameKey": "editor.slide_label"
+        },
+        {
+          "role": "button",
+          "nameKey": "agent.resume"
+        }
+      ],
+      "probe": {
+        "kind": "view"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3188,6 +3192,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S99.01",
     "seed": "signed-out",
     "steps": [],
@@ -3199,6 +3204,17 @@
     "route": "/",
     "status": "unreachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "h1",
+            "role": "page-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "pay.failed_title",
         "pay.not_charged",
@@ -3219,20 +3235,8 @@
         "kind": "fill",
         "label": "Email",
         "value": "probe@halden.com"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "h1",
-            "role": "page-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3246,6 +3250,7 @@
     }
   },
   {
+    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "code": "S99.02",
     "seed": "usage-active",
     "steps": [
@@ -3269,6 +3274,17 @@
     "route": "/settings/usage",
     "status": "reachable",
     "assertions": {
+      "structure": {
+        "icons": [],
+        "textRoles": [
+          {
+            "selector": "dialog[open] h2",
+            "role": "dialog-title",
+            "color": "ink",
+            "minimumContrast": 4.5
+          }
+        ]
+      },
       "copyKeys": [
         "pay.expired_title",
         "pay.not_charged",
@@ -3288,22 +3304,10 @@
       "probe": {
         "kind": "dialog",
         "open": "Sign out",
-        "close": "Cancel",
-        "titleKey": "access.sign_out_title"
-      },
-      "structure": {
-        "icons": [],
-        "textRoles": [
-          {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
-            "color": "ink",
-            "minimumContrast": 4.5
-          }
-        ]
+        "titleKey": "access.sign_out_title",
+        "close": "Cancel"
       }
     },
-    "fixtureContentHash": "89f71fd4c1d9eac4e23b82555d01cd2ccc37da2d3e176e149acab8c8385df92e",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",

@@ -3,8 +3,8 @@ import {readFile,mkdtemp,mkdir,copyFile,writeFile,rm} from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
 import {expect,it,vi} from "vitest"
-import {assertRendered,assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
-import {readRegistry,validateIdentity,seedFiles,passesParity} from "./registry.ts"
+import {assertRendered,assertScenarioControls,assertScenarioCopy,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
+import {type Scenario,readRegistry,validateIdentity,seedFiles,passesParity} from "./registry.ts"
 import {iconPaths,iconStrokeWidth} from "../../packages/ui/src/icon/icon-paths.ts"
 import {compareDesign} from "./metric.mjs"
 
@@ -220,5 +220,55 @@ it.each(["capture","mutation"])("restores every label inline value after a force
     expect(await page.locator("body").innerHTML()).toBe(baseline)
     await expect(assertRendered(button,true)).resolves.toBeUndefined()
     expect(await page.locator("body").innerHTML()).toBe(baseline)
+  }finally{await browser.close()}
+})
+
+
+it("measures selected native option paint and rejects independent control substitutions",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S61.01")
+  if(!entry)throw new Error("missing-native-select-contract")
+  const browser=await chromium.launch()
+  try{
+    const page=await browser.newPage()
+    const mount=()=>page.setContent('<label>File format<select><option value="pptx">PowerPoint</option><option value="pdf">PDF</option></select></label><style>select{font:16px Arial;color:#222;background:white;width:180px;height:44px}</style>')
+    const controls:Scenario={...entry,component:undefined,assertions:{...entry.assertions,controls:[{role:"combobox",nameKey:"export.file_format",value:"pptx"}]}}
+    await mount()
+    await expect(assertScenarioControls(page,controls)).resolves.toBeUndefined()
+    for(const mutation of ["missing","hidden","value","wrong-control","transparent","image"]){
+      await mount()
+      await page.locator("select").evaluate((element,mutation)=>{
+        if(mutation==="missing")element.remove()
+        if(mutation==="hidden")element.style.display="none"
+        if(mutation==="value"){if(!(element instanceof HTMLSelectElement))throw new Error("native-select-required");element.value="pdf"}
+        if(mutation==="wrong-control")element.outerHTML='<div role="combobox" aria-label="File format">PowerPoint</div>'
+        if(mutation==="transparent")element.style.webkitTextFillColor="transparent"
+        if(mutation==="image")element.outerHTML='<img role="combobox" aria-label="File format" alt="PowerPoint" width="180" height="44">'
+      },mutation)
+      await expect(assertScenarioControls(page,controls),mutation).rejects.toThrow()
+    }
+  }finally{await browser.close()}
+})
+
+
+it("requires actions in their registered open dialog rather than a blocked background or nested owner",async()=>{
+  const original=(await readRegistry()).find(entry=>entry.code==="S33.03")
+  if(!original)throw new Error("missing-dialog-contract")
+  const entry:Scenario={...original,component:{kind:"dialog",selector:"#owner",designBox:{left:0,top:0,width:400,height:200},target:0.01},assertions:{...original.assertions,controls:[{role:"button",nameKey:"common.cancel"}]}}
+  const browser=await chromium.launch()
+  try{
+    const page=await browser.newPage()
+    const mount=()=>page.setContent('<button>Cancel</button><div role="dialog" aria-modal="true" id="owner"><p>Confirmation</p><button>Cancel</button></div><style>#owner{position:fixed;inset:0;background:white}button{width:100px;height:44px}</style>')
+    await mount()
+    await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+    for(const mutation of ["missing","hidden","wrong-owner","nested-owner"]){
+      await mount()
+      await page.locator("#owner button").evaluate((element,mutation)=>{
+        if(mutation==="missing")element.remove()
+        if(mutation==="hidden")element.style.visibility="hidden"
+        if(mutation==="wrong-owner")document.body.append(element)
+        if(mutation==="nested-owner"){const dialog=document.createElement("div");dialog.setAttribute("role","dialog");element.replaceWith(dialog);dialog.append(element)}
+      },mutation)
+      await expect(assertScenarioControls(page,entry),mutation).rejects.toThrow()
+    }
   }finally{await browser.close()}
 })
