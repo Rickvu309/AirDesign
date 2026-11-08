@@ -1,17 +1,15 @@
 import {DatabaseSync} from "node:sqlite"
-import {mkdirSync,readFileSync} from "node:fs"
+import {mkdirSync} from "node:fs"
 import {rm,rmdir} from "node:fs/promises"
 import {spawn} from "node:child_process"
 import path from "node:path"
 import {z} from "zod"
+import {cleanContainerJob,processIdentity} from "./container-job-processes.ts"
 const ownership=z.object({id:z.string().uuid(),lease:z.string().uuid(),directory:z.string().nullable(),unit:z.string().nullable(),pid:z.number().nullable(),identity:z.string().nullable(),mode:z.enum(["container","systemd"])})
 const entry=z.discriminatedUnion("queue",[
  ownership.extend({queue:z.enum(["import","image"]),database:z.string()}),
  ownership.extend({queue:z.literal("export"),database:z.null()}),
 ])
-function identity(pid:number):string|null{
- try{return readFileSync(`/proc/${pid}/stat`,"utf8").split(") ")[1]?.split(" ")[19] ?? null}catch{return null}
-}
 export class RemoteJournal{
  private db:DatabaseSync
  constructor(root:string){
@@ -24,11 +22,11 @@ export class RemoteJournal{
  started(lease:string,process:{directory:string;unit:string;pid:number}){
   const job=this.entries().find(job=>job.lease===lease)
   if(!job)throw new Error("missing-remote-journal")
-  this.save({...job,...process,identity:identity(process.pid)})
+  this.save({...job,...process,identity:processIdentity(process.pid)?.identity ?? null})
  }
  async clean(job:z.infer<typeof entry>){
-  if(job.mode==="container"&&job.pid&&(identity(job.pid)===null||job.identity===identity(job.pid))){
-   try{process.kill(-job.pid,"SIGKILL")}catch(error){if(!(error instanceof Error&&"code" in error&&error.code==="ESRCH"))throw error}
+  if(job.mode==="container"&&job.pid&&job.identity){
+   cleanContainerJob({pid:job.pid,identity:job.identity})
   }
   if(job.mode==="systemd"&&job.unit)await new Promise<void>((resolve,reject)=>{
    const child=spawn("systemctl",["--user","kill","--signal=SIGKILL",job.unit ?? ""],{stdio:"ignore"})

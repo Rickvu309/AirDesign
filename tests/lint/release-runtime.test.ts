@@ -9,3 +9,9 @@ it.each(originals)("rejects original $revision release mistake and accepts the f
  expect(releaseRuntimeHits(file,source)).not.toEqual([])
  expect(releaseRuntimeHits(file,readFileSync(file,"utf8"))).toEqual([])
 })
+
+it("validates the renderer before queues in the shared worker cycle", () => {
+ const file = "apps/worker/src/worker-cycle.ts"
+ expect(releaseRuntimeHits(file, "new OperationStore(database)")).not.toEqual([])
+ expect(releaseRuntimeHits(file, readFileSync(file, "utf8"))).toEqual([])
+})

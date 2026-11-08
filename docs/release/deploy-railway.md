@@ -2,7 +2,7 @@
 
 ## Configure the services
 
-Build the root Dockerfile with Node 24. The image builds Studio, the public site, the PDF renderer, and the MCP capture renderer. Its runtime installs production npm dependencies, Playwright Chromium, browser system libraries, and util-linux. Run as the image's unprivileged node user.
+Build the root Dockerfile with Node 24. The image builds Studio, the public site, the PDF renderer, and the MCP capture renderer. Its runtime installs production npm dependencies, Playwright Chromium, browser system libraries, util-linux, and Debian tini. Run as the image's unprivileged node user.
 
 `.railway/railway.ts` is the source of truth for both services: GitHub source, build, start command, health check, domains, volumes and non-secret variables. Secrets (`DATABASE_URL`, `AIRDESIGN_SECRET`, `AIRDESIGN_CLAUDE_KEY`, `RESEND_API_KEY`) are marked `preserve()` and live only in Railway. Change service configuration in that file and run `railway config plan`, then `railway config apply`, from a checkout linked to the project. Both services use the same image. Do not scale either service beyond one replica in this release.
 
@@ -39,17 +39,25 @@ Set the worker operation path to `/data/operations.sqlite` on its own volume. Re
 
 `AIRDESIGN_EXPOSE_INBOX=1` is refused in production. Resend is selected when its key is present; the in-memory inbox remains the development default. `AIRDESIGN_RESEND_ENDPOINT` is an optional HTTP adapter override for a local mail mock during rehearsal. Omit it in Railway. Payments remain unavailable because no payment provider is injected.
 
-Startup applies existing idempotent account and deck schema initialization. Deploy web first, then worker, to avoid concurrent first-time schema creation. Back up the database before upgrades; there is no automatic down migration.
+Web startup runs the history schema migrations once per `historySchemaVersion`, under an advisory lock. The worker never migrates. It connects only and waits up to 180 seconds for web to reach the expected version, so both services can deploy together. Back up the database before upgrades; there is no automatic down migration.
 
 ## Understand container isolation
 
 `AIRDESIGN_ISOLATION=systemd` preserves systemd user scopes and bubblewrap network and filesystem namespaces. Use it on hosts that provide those facilities.
+
+In container mode the worker starts beneath a dedicated outer `tini -s -- node apps/worker/src/container-worker-entry.ts` subreaper. The Docker worker entrypoint launches that wrapper directly. A standalone worker entry re-execs into it before accepting work. Initialization checks the parent executable, wrapper arguments and PID start time. The wrapper keeps a guardian process as tini’s direct child and starts the worker below it. The handshake also checks the guardian executable, arguments and PID start time. Service cycles share one worker process and one live-job registry. On SIGTERM the worker stops claiming work, stops any running job through its ownership cleanup, and exits within 2 seconds. `RAILWAY_DEPLOYMENT_DRAINING_SECONDS` is 5 on the worker so Railway waits for that stop; Railway defaults it to 0 and would SIGKILL at once.
+
+An orphan sweep runs at startup, every 100 ms, on every job exit and on orderly worker exit. It preserves the guardian, the worker and registered live job roots with their descendants. It freezes and kills all other descendants of the outer subreaper deepest first, checking each PID start time before signaling. If a payload kills its own tini, its detached children reparent to the outer subreaper and the sweep removes them. An unexpectedly SIGKILLed job tini produces the typed export failure `{kind:"isolation",reason:"subreaper-lost"}`. Re-exec discards old registrations and sweeps abandoned descendants before new work starts. If the worker is SIGKILLed, the guardian sweeps all remaining descendants before exiting, so cleanup does not depend on a worker exit handler.
+
+Container mode runs each job beneath its own `tini -s -g --` child subreaper, installed by the runtime Docker stage. Detached and double-forked descendants reparent to that subreaper even if they clear or forge environment variables. Ownership follows kernel ancestry and the subreaper PID start time. Cleanup freezes descendants, kills them deepest first, rescans until empty, and then kills the subreaper. Every signal rechecks the target start time. RSS monitoring and restart recovery use the same ancestry. The supervisor cleans up after payload exit or worker death. `AIRDESIGN_JOB_DIRECTORY` routes job files only; it grants no process ownership. The entrypoint still drops privileges before starting the worker.
 
 Container mode uses a separate process group for each job, private job and temporary directories, prlimit CPU, address-space, data-segment, file-size and descriptor limits, V8 heap limits, a wall-clock kill, cancellation checks, and recursive cleanup. Imports and images have an 8 GiB virtual-address ceiling. Chromium export requires a larger virtual-address ceiling of 4 TiB because Chromium reserves large virtual ranges. Both have a 768 MiB data-segment limit; virtual limits do not equal resident-memory guarantees. Job environments exclude service credentials. Existing archive, SVG, font, size, and image validation remains in place.
 
 A preload rejects fetch, WebSocket construction, socket connections, HTTP and HTTPS requests, TLS, UDP, and DNS calls in job code. PDF Chromium additionally runs offline and aborts routed requests. This is application-level network denial, not a kernel network namespace. Code execution through a compromised native parser or a newly spawned executable can bypass JavaScript guards. Container mode also lacks per-job filesystem namespaces, cgroup RSS enforcement, and systemd accounting. It is weaker than systemd plus bubblewrap. The Railway service container is the remaining OS boundary; use separate worker credentials and no public worker port.
 
 The worker only needs database access and the authenticated web job endpoint. Import, image, and export children receive neither credential. Never describe this mode as equivalent to hostile-code sandboxing.
+
+Process ownership in container mode has a defined boundary. It guarantees that no export or Chromium process outlives its job after normal exit, crash, CPU, memory or wall-clock limits, cancellation, or worker restart, and that cleaning one job never signals another job's processes. Job code runs as the same Unix user as the worker, its guardian and the subreapers, so a payload that gains arbitrary code execution can signal those supervisors: it can stop the worker, fail concurrent jobs, or leave a detached process behind. Containing that case needs a separate job user started by a privileged launcher, or the systemd and bubblewrap mode, which Railway does not provide. Treat any such event as a security incident, not an export failure.
 
 ## Verify and roll back
 
@@ -61,15 +69,15 @@ Aira selects the Claude Agent SDK when the AirDesign Claude key is set, with the
 
 ## Volume ownership
 
-Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv`, disables privilege escalation and clears capabilities before execing Node. The app itself never runs as root.
+Railway mounts volumes as root. Both services start through `scripts/docker/entrypoint.sh`, which runs as root only long enough to give the `node` user `/data` and `/home/node/tmp`, then drops to `node` with `setpriv`, disables privilege escalation and clears capabilities before execing the worker subreaper or web Node process. The app itself never runs as root.
 
 ## Service role
 
-One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: unset or `web` runs `node apps/server/src/main.ts`, `worker` runs `node apps/worker/src/service.ts`. The entrypoint execs Node directly so SIGTERM reaches the app. Set `AIRDESIGN_ROLE=worker` on the worker service. The role is declared in `.railway/railway.ts`.
+One image serves both services. `AIRDESIGN_ROLE` selects the Node entry file: unset or `web` runs `node apps/server/src/main.ts`, `worker` runs `node apps/worker/src/service.ts`. The entrypoint execs the selected role so SIGTERM reaches the app or worker subreaper. Set `AIRDESIGN_ROLE=worker` on the worker service. Railway may ignore an uploaded `railway.json` start command, so the role variable is the source of truth. The role is declared in `.railway/railway.ts`.
 
 Worker artifact completion uses an authenticated binary PUT to `/internal/worker` with queue, operation ID and lease query parameters, followed by a separate JSON completion report. Uploads spool to private disk in bounded chunks and reject more than 500 MiB as they arrive; reports are limited to 8 MiB. The existing SQLite artifact commit still reads the accepted artifact once into a Buffer. Public upload limits are unchanged. Abandoned upload files are removed when the web process starts.
 
-The worker journals export scratch and process-group ownership on its persistent jobs volume before rendering. On restart it kills abandoned groups, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.
+The worker journals export scratch and the job subreaper PID with its start-time identity on its persistent jobs volume before rendering. On restart it kills abandoned descendants, removes their private snapshots and then records failure. Journal ownership remains until scratch removal succeeds.
 
 ## Verify the deployed commit and journey
 

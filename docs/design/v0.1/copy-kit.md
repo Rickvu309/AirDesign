@@ -64,6 +64,13 @@ Every screen, component and agent message uses these strings by key. Write a new
 | `agent.failed_body` | Your work so far is saved. |
 | `export.downloaded` | {file} downloaded |
 | `export.failed` | Unable to export. Your deck is unchanged. |
+| `export.failed_time` | The export reached its time limit. Try again. |
+| `export.failed_memory` | The export reached its memory limit. Try fewer slides. |
+| `export.failed_cpu` | The export reached its processing limit. Try fewer slides. |
+| `export.failed_size` | The export reached its file size limit. Try fewer slides. |
+| `export.failed_signal` | The export process stopped ({signal}). Try again. |
+| `export.failed_exit` | The export process exited with code {code}. Try again. |
+| `export.failed_application` | Try again. If the problem continues, export fewer slides. |
 | `editor.offline` | You're offline. Edits are saved on this device. |
 | `import.pasted` | {n} slides pasted from PowerPoint |
 | `decks.trashed` | {deck} moved to Trash |

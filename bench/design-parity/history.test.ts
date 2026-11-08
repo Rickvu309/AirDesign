@@ -3,10 +3,17 @@ import {realpathSync} from "node:fs"
 import {mkdtemp,rm,writeFile,readFile} from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
-import {expect,it} from "vitest"
+import {afterEach,beforeEach,expect,it,vi} from "vitest"
 import {readRegistry,readBudgetBaseline,validateRegistry,validateIdentity,parseRegistry,scenarioIdentity,mergeBase,fixtureContentHash} from "./registry.ts"
 
 const fixtureRoot=path.join(os.homedir(),"tmp")
+beforeEach(()=>{
+  vi.stubEnv("CI","false")
+  vi.stubEnv("DESIGN_PARITY_BASE",undefined)
+  vi.stubEnv("GITHUB_BASE_REF",undefined)
+})
+afterEach(()=>vi.unstubAllEnvs())
+
 function initFixtureRepo(cwd:string,git:(...args:string[])=>string,scenario:"budget"|"identity"|"base"|"landed-lock"){
   const relative=path.relative(realpathSync(fixtureRoot),realpathSync(cwd))
   expect(relative!==""&&!relative.startsWith("..")&&!path.isAbsolute(relative),"fixture repo must live under the test temp dir").toBe(true)
@@ -19,7 +26,7 @@ function initFixtureRepo(cwd:string,git:(...args:string[])=>string,scenario:"bud
 }
 
 it("refuses to initialize a repository outside the test temp dir",()=>{
-  expect(()=>initFixtureRepo(process.cwd(),()=>{throw new Error("git must not run outside the temp dir")},"base")).toThrow("fixture repo must live under the test temp dir")
+  expect(()=>initFixtureRepo(os.homedir(),()=>{throw new Error("git must not run outside the temp dir")},"base")).toThrow("fixture repo must live under the test temp dir")
 })
 
 it("keeps the merge-base ceiling after an unauthorized increase is committed",async()=>{

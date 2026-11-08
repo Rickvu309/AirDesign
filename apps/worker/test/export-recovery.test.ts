@@ -8,7 +8,7 @@ import os from "node:os"
 import {fixtureDeck} from "../../../packages/deck/src/fixture.ts"
 import {RemoteJournal} from "../src/remote-journal.ts"
 
-it("erases a PDF lease and its process group after SIGKILL during page.pdf and restart",async()=>{
+it("erases a PDF lease and its descendants after SIGKILL during page.pdf and restart",async()=>{
  const root=await mkdtemp(path.join(os.homedir(),"tmp/export-crash-")),shadow=path.join(root,"shadow"),scratch=path.join(root,"jobs")
  await mkdir(path.join(shadow,"apps/worker"),{recursive:true});await mkdir(scratch)
  await cp("apps/worker/src",path.join(shadow,"apps/worker/src"),{recursive:true})
@@ -23,15 +23,15 @@ it("erases a PDF lease and its process group after SIGKILL during page.pdf and r
  const program=`import {deliverExport} from ${JSON.stringify(path.join(shadow,"apps/worker/src/export/deliver.ts"))};import {watch,readFileSync,existsSync} from 'node:fs';
  const root=${JSON.stringify(scratch)},job=JSON.parse(readFileSync(${JSON.stringify(path.join(root,"job.json"))},'utf8'));
  const recovery=process.argv[1]==='recover';
- const watcher=watch(root,{recursive:true},(_,file)=>{if(!recovery&&file?.endsWith('pdf-active'))process.stdout.write('pdf-active\\n')});
- await deliverExport({claim:async()=>recovery?null:job,active:async()=>true,complete:async()=>true,fail:async()=>{if(recovery&&existsSync(root+'/'+job.id+'/'+job.lease))throw new Error('ack-before-cleanup')}},root);watcher.close();if(recovery)process.stdout.write('recovered\\n');`
+ let announced=false;const watcher=watch(root,{recursive:true},(_,file)=>{if(!announced&&!recovery&&file?.endsWith('pdf-active')&&existsSync(root+'/'+job.id+'/'+job.lease+'/pdf-active')){announced=true;watcher.close();process.stdout.write('pdf-active\\n')}});
+ await deliverExport({claim:async()=>recovery?null:job,active:async()=>true,complete:async()=>true,fail:async(_id,_lease,failure)=>{if(!recovery)process.stderr.write(JSON.stringify(failure));if(recovery&&existsSync(root+'/'+job.id+'/'+job.lease))throw new Error('ack-before-cleanup')}},root);watcher.close();if(recovery)process.stdout.write('recovered\\n');`
  const env={...process.env,AIRDESIGN_ISOLATION:"container",PLAYWRIGHT_BROWSERS_PATH:process.env.PLAYWRIGHT_BROWSERS_PATH ?? path.join(os.homedir(),".cache/ms-playwright")}
  const supervisor=spawn(process.execPath,["--input-type=module","-e",program],{env,stdio:["ignore","pipe","pipe"]})
  const supervisorLines=createInterface({input:supervisor.stdout})
  let stderr="";supervisor.stderr.on("data",chunk=>{stderr=(stderr+chunk).slice(-3000)})
  let pid:number|null=null
  try{
-  const [marker]=await once(supervisorLines,"line",{signal:AbortSignal.timeout(25000)}).catch(error=>{throw new Error(String(error)+stderr)})
+  const [marker]=await Promise.race([once(supervisorLines,"line",{signal:AbortSignal.timeout(25000)}),once(supervisor,"exit").then(()=>{throw new Error("export-exited-before-pdf"+stderr)})]).catch(error=>{throw new Error(String(error)+stderr)})
   expect(marker.toString().trim()).toBe("pdf-active")
   const exit=once(supervisor,"exit");supervisor.kill("SIGKILL");await exit
   const journal=new RemoteJournal(scratch)

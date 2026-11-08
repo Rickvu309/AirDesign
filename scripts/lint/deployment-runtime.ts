@@ -1,5 +1,8 @@
 export function deploymentRuntimeHits(file:string,source:string): string[] {
   const normalized=file.replaceAll("\\","/")
+  if(normalized.endsWith("apps/worker/src/export/deliver.ts") && /killExportDescendants\([^)]*\?\?\s*0\)/.test(source))return ["export-process-root: require a spawned child PID before scanning descendants"]
+  if(normalized.endsWith("apps/worker/src/export/deliver.ts") && /child\.once\(["']exit["'],\s*resolve\)/.test(source))return ["export-exit-signal: preserve the child's signal and the enforced limit"]
+  if(normalized.endsWith("apps/server/src/decks/export-store.ts") && /format===?["']pdf["']\s*\?\s*2000/.test(source))return ["export-lease: use the shared PDF wall-clock budget including Chromium startup"]
   if (/apps\/worker\/src\/(isolation|export\/deliver)\.ts$/.test(normalized) && source.includes('spawn("systemd-run"') && !source.includes('isolationMode() === "container"')) return ["worker-isolation-mode: select the configured container or systemd driver"]
   if (normalized.endsWith("apps/server/src/main.ts") && /mail:\s*inbox[,\n]/.test(source)) return ["production-mail: select the configured mail adapter at startup"]
   if (normalized.endsWith("bench/sync/local-stack.mjs") && source.includes('AIRDESIGN_EXPOSE_INBOX:"1"') && !source.includes('NODE_ENV:"test"')) return ["fixture-environment: set NODE_ENV to test before exposing the fixture inbox"]
@@ -16,7 +19,8 @@ export function deploymentRuntimeHits(file:string,source:string): string[] {
   if(normalized.endsWith("apps/server/src/worker/handle.ts")&&source.includes('result:z.string()'))return ["worker-binary-transfer: artifacts must not be JSON strings"]
   if(normalized.endsWith("Dockerfile")&&source.includes("npm run start:"))return ["container-direct-node: entrypoint must exec node directly"]
   if(/railway(?:\.worker)?\.json$/.test(normalized)&&source.includes("npm run start:"))return ["container-direct-node: start the role-selecting entrypoint"]
-  if(normalized.endsWith("scripts/docker/entrypoint.sh")&&(!source.includes('exec node "$entry"')||!source.includes("--no-new-privs --bounding-set=-all --inh-caps=-all")))return ["container-direct-node: exec node with privilege restrictions"]
+  if((normalized.endsWith("apps/worker/src/main.ts")||normalized.endsWith("apps/worker/src/service.ts"))&&!source.includes("ensureContainerWorker()"))return ["container-outer-subreaper: establish worker ownership before accepting jobs"]
+  if(normalized.endsWith("scripts/docker/entrypoint.sh")&&(!source.includes('set -- node "$entry"')||!source.includes('set -- tini -s -- node apps/worker/src/container-worker-entry.ts "$entry"')||!source.includes('exec "$@"')||!source.includes("--no-new-privs --bounding-set=-all --inh-caps=-all")))return ["container-outer-subreaper: exec the selected role with privilege restrictions"]
   if(normalized.endsWith("apps/server/src/runtime/studio.ts") && source.includes("max-age=3600"))return ["immutable-studio-assets: cache content-hashed assets for one year with immutable"]
   if(normalized.endsWith("scripts/live/local-proof.mjs") && !source.includes('AIRDESIGN_WORKER_API_ORIGIN:""'))return ["local-smoke-worker: clear the remote worker origin before launching the local worker"]
   if(normalized.endsWith("scripts/live/verify-live.mjs") && source.includes('promisify(execFile)(process.env.AIRDESIGN_LIBREOFFICE'))return ["live-libreoffice-check: reuse libreOfficeFastCheck for fresh-profile initialization and PDF validation"]
