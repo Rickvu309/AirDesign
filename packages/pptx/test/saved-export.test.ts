@@ -2,7 +2,7 @@ import { it,expect } from "vitest"
 import { createNativePresentation } from "../src/native.ts"
 import { importedDeck } from "../src/import-deck.ts"
 import { writeSavedPptx } from "../src/export-deck.ts"
-import { importPptx,exportPptx } from "../src/index.ts"
+import { importPptx,exportPptx,patchText } from "../src/index.ts"
 import {shapeGeometry,type ShapeGeometry} from "../../deck/src/shape-geometry.ts"
 import { fixtureDeck } from "../../deck/src/fixture.ts"
 
@@ -23,11 +23,11 @@ it("keeps original OPC payload bytes and unsupported objects while patching only
   expect(slide.elements.some(element=>element.support.kind==="kept")).toBe(true)
   const source=await exportPptx(original)
   const unchanged=await importPptx(await writeSavedPptx(deck,0,source,{}))
-  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml","ppt/presentation.xml","ppt/_rels/presentation.xml.rels"].includes(name))expect(unchanged.parts.get(name),name).toEqual(bytes)
+  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml"].includes(name))expect(unchanged.parts.get(name),name).toEqual(bytes)
   title.runs[0]!.text="Changed saved title"
   const changed=await importPptx(await writeSavedPptx(deck,1,source,{}))
   expect(changed.parts.get("ppt/slides/slide1.xml")?.toString()).toContain("Changed saved title")
-  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml","ppt/presentation.xml","ppt/_rels/presentation.xml.rels","ppt/slides/slide1.xml"].includes(name))expect(changed.parts.get(name),name).toEqual(bytes)
+  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml","ppt/slides/slide1.xml"].includes(name))expect(changed.parts.get(name),name).toEqual(bytes)
 })
 
 it("adds notes to an original slide with a reciprocal relationship to that slide",async()=>{
@@ -72,4 +72,49 @@ it("retains native bold, italic and underline through PowerPoint export and impo
  title.runs=[{...title.runs[0],text:"Bold",bold:true},{...title.runs[0],text:"Italic",bold:false,italic:true},{...title.runs[0],text:"Underline",bold:false,underline:true}]
  const reopened=importedDeck(await importPptx(await writeSavedPptx(deck,1,null,{}))),text=reopened.slides[0]!.elements.find(element=>element.kind==="text")
  expect(text?.kind==="text"&&text.runs).toMatchObject([{text:"Bold",bold:true},{text:"Italic",italic:true},{text:"Underline",underline:true}])
+})
+
+const nativeContent={table:{headers:["Year"],rows:[["2026"]]},chart:{name:"Value",labels:["A"],values:[3]}}
+
+it("registers only saved metadata and keeps registrations stable across saved exports",async()=>{
+  const original=await createNativePresentation([{...nativeContent,title:"Preserved",notes:"Existing note"}])
+  const source=await exportPptx(original),deck=importedDeck(original)
+  const first=await importPptx(await writeSavedPptx(deck,1,source,{}))
+  expect([...first.parts.keys()].filter(name=>!original.parts.has(name))).toEqual(["airdesign/saved-version.json"])
+  expect(first.parts.get("[Content_Types].xml")?.toString()).toBe(original.parts.get("[Content_Types].xml")!.toString().replace("</Types>",'<Override PartName="/airdesign/saved-version.json" ContentType="application/json"/></Types>'))
+  const second=await importPptx(await writeSavedPptx(importedDeck(first),2,await exportPptx(first),{}))
+  expect([...second.parts.keys()].sort()).toEqual([...first.parts.keys()].sort())
+  for(const [name,bytes] of first.parts)if(name!=="airdesign/saved-version.json")expect(second.parts.get(name),name).toEqual(bytes)
+})
+
+it("isolates individual text, color, background and existing notes edits",async()=>{
+  const original=await createNativePresentation([{...nativeContent,title:"Original title",notes:"Existing note"}]),source=await exportPptx(original)
+  for(const edit of ["text","color","background","notes"]){
+    const deck=importedDeck(original),slide=deck.slides[0]!,title=slide.elements.find(element=>element.kind==="text")!
+    if(title.kind!=="text" || title.source.kind!=="original")throw new Error("title-required")
+    if(edit==="text")title.runs[0].text="One replacement & value"
+    if(edit==="color")title.runs[0].color="#123456"
+    if(edit==="background")slide.background="#654321"
+    if(edit==="notes")slide.notes="Changed note"
+    const result=await importPptx(await writeSavedPptx(deck,1,source,{}))
+    const target=edit==="notes" ? original.report.relationships.find(rel=>rel.part==="ppt/slides/slide1.xml" && rel.type.endsWith("/notesSlide"))!.target : "ppt/slides/slide1.xml"
+    expect([...original.parts].filter(([name,bytes])=>!bytes.equals(result.parts.get(name)!)).map(([name])=>name).sort()).toEqual(["[Content_Types].xml",target].sort())
+    expect([...result.parts.keys()].filter(name=>!original.parts.has(name))).toEqual(["airdesign/saved-version.json"])
+    if(edit==="text")expect(result.parts.get(target)).toEqual(patchText(original,target,Number(title.source.objectId.slice(5).split(",")[0]),title.runs[0].text).parts.get(target))
+  }
+})
+it("preserves slide parts and relationships through reorder and generated slide insertion",async()=>{
+  const original=await createNativePresentation([{...nativeContent,title:"First",notes:"One"},{...nativeContent,title:"Second",notes:"Two"}]),deck=importedDeck(original),source=await exportPptx(original)
+  deck.slides.reverse()
+  const reordered=await importPptx(await writeSavedPptx(deck,1,source,{}))
+  expect(importedDeck(reordered).slides.map(slide=>slide.notes.trim())).toEqual(["Two","One"])
+  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml","ppt/presentation.xml"].includes(name))expect(reordered.parts.get(name),name).toEqual(bytes)
+  const created={...fixtureDeck(2).slides[0]!,size:deck.slides[0]!.size}
+  deck.slides.splice(1,0,created)
+  const result=await importPptx(await writeSavedPptx(deck,2,source,{}))
+  expect(importedDeck(result).slides).toHaveLength(3)
+  expect(importedDeck(result).slides[1]!.notes).toContain(created.notes)
+  for(const [name,bytes] of original.parts)if(!["[Content_Types].xml","ppt/presentation.xml","ppt/_rels/presentation.xml.rels"].includes(name))expect(result.parts.get(name),name).toEqual(bytes)
+  const repeat=await importPptx(await writeSavedPptx(importedDeck(result),3,await exportPptx(result),{}))
+  for(const [name,bytes] of result.parts)if(name!=="airdesign/saved-version.json")expect(repeat.parts.get(name),name).toEqual(bytes)
 })
