@@ -32,7 +32,7 @@
 .aira-panel>p { margin:0;line-height:1.5; }.aira-panel [role=alert] { color:var(--destructive); }
 @media (width < 768px) { .aira-panel { inset-block-start:118px;inline-size:100%;padding-block-end:calc(12px + env(safe-area-inset-bottom,0px)); }.aira-panel input,.aira-panel select,.aira-panel textarea { font-size:16px; }.aira-panel button,.aira-panel select { min-block-size:44px; } }
 
-.aira-run-status[data-kind=failed]{border:1px solid var(--border);border-radius:12px;padding:14px;color:var(--foreground);background:var(--muted)}
+
 @media(min-width:768px){.studio-editor[data-chat=true] .editor-export{inset-inline-end:372px}}
 .aira-activity-log { color:var(--muted-foreground);font-size:13px;line-height:1.6; }
 .aira-header-actions { display:flex;align-items:center;gap:2px; }
@@ -57,7 +57,7 @@
 .aira-attachments button:nth-child(n+2) { background:var(--accent);color:var(--primary); }
 @media (pointer:coarse) { .aira-composer:not(:has(textarea:not(:placeholder-shown))) { flex-wrap:wrap; }.aira-composer:not(:has(textarea:not(:placeholder-shown))) .aira-attachments { inline-size:100%; }.aira-panel>header button,.aira-history summary { min-inline-size:44px;min-block-size:44px; }.aira-header-actions { gap:0; } }
 
-.aira-source-files { display:flex;flex-direction:column;align-items:end;gap:4px;margin-block-start:-14px;margin-block-end:16px;color:var(--muted-foreground);font-size:11px; }
+.aira-source-files { display:flex;flex-direction:column;align-items:end;gap:4px;margin-block-start:-14px;margin-block-end:0;color:var(--muted-foreground);font-size:11px; }
 .aira-source-files>span { display:flex;align-items:center;gap:6px;max-inline-size:100%;overflow-wrap:anywhere; }
 .aira-source-files svg { inline-size:12px;block-size:12px;flex:none; }
 .aira-usage-head,.aira-usage-foot { display:flex;align-items:center;justify-content:space-between;gap:8px; }
