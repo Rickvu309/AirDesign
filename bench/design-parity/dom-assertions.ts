@@ -244,6 +244,25 @@ export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-
     try{await visible(page,text)}catch(error){throw new Error(`scenario=${scenario} ${String(error)}`)}
   }
 }
+async function assertControlPaint(locator:Locator){
+  const text=await locator.evaluate(element=>element instanceof HTMLInputElement||element instanceof HTMLSelectElement||element instanceof HTMLTextAreaElement||Boolean(element.textContent?.trim()))
+  if(text)return assertRendered(locator,true)
+  const box=await locator.boundingBox(),viewport=locator.page().viewportSize()
+  if(!box||box.width<=0||box.height<=0||box.x<0||box.y<0||viewport&&(box.x+box.width>viewport.width||box.y+box.height>viewport.height))throw failure(locator.toString(),"required-control-paint","visible control",box)
+  if(!await locator.evaluate(element=>{const r=element.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"hit-test",true,false)
+  const svg=locator.locator("svg")
+  if(await svg.count()!==1||!await svg.isVisible()||!await svg.evaluate(element=>element.querySelectorAll("path").length>0&&!element.querySelector("image,use,foreignObject,text")))throw failure(locator.toString(),"required-control-vector","one painted inline vector",await svg.count())
+  const saved=await svg.getAttribute("style"),before=await svg.screenshot({animations:"disabled"})
+  let after:Buffer
+  try{
+    await svg.evaluate(element=>element.style.setProperty("opacity","0","important"))
+    const rect=await svg.boundingBox()
+    if(!rect)throw failure(locator.toString(),"required-control-vector","attached vector",null)
+    after=await locator.page().screenshot({clip:rect,animations:"disabled"})
+  }finally{await svg.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},saved)}
+  const left=await sharp(before).removeAlpha().raw().toBuffer(),right=await sharp(after).removeAlpha().raw().toBuffer()
+  if(left.length!==right.length||!left.some((value,index)=>Math.abs(value-(right[index]??value))>16))throw failure(locator.toString(),"required-control-vector","owned visible vector ink","no differential vector ink")
+}
 export async function assertScenarioControls(page:Page,entry:Scenario){
   let owner:Page|Locator=page
   if(entry.component?.kind==="dialog"){
@@ -260,7 +279,7 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
       const state=await locator.evaluate(element=>element instanceof HTMLSelectElement ? {value:element.value,selected:element.selectedOptions.length,text:element.selectedOptions[0]?.textContent?.trim(),disabled:element.disabled} : null)
       if(!state||state.value!==control.value||state.selected!==1||!state.text||state.disabled)throw failure(locator.toString(),"required-native-selection",control.value,state)
     }
-    await assertRendered(locator,true)
+    await assertControlPaint(locator)
   }
 }
 async function assertDOM(page:Page,entry:Scenario){

@@ -272,3 +272,24 @@ it("requires actions in their registered open dialog rather than a blocked backg
     }
   }finally{await browser.close()}
 })
+
+it("requires actual vector paint for accessible icon-only controls",async()=>{
+ const browser=await chromium.launch()
+ try{
+  const page=await browser.newPage(),original=(await readRegistry()).find(entry=>entry.code==="S61.01")
+  if(!original)throw new Error("missing-export-contract")
+  const entry:Scenario={...original,component:undefined,assertions:{...original.assertions,controls:[]}}
+  const control=original.assertions.controls.find(control=>control.role==="button")
+  if(!control||control.role!=="button")throw new Error("missing-close-control")
+  entry.assertions.controls=[control]
+  const {resolveCopy}=await import("./registry.ts")
+  const name=resolveCopy(control.nameKey)
+  for(const mutation of ["none","missing","hidden","transparent","raster"]){
+   await page.setContent(`<button aria-label="${name}" style="width:44px;height:44px;background:white"><svg width="16" height="16" viewBox="0 0 24 24" stroke="black" fill="none"><path d="M4 4l16 16M20 4L4 20"/></svg></button>`)
+   await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+   if(mutation==="none")continue
+   await page.locator("svg").evaluate((element,mutation)=>{if(mutation==="missing")element.remove();else if(mutation==="hidden")element.style.visibility="hidden";else if(mutation==="transparent")element.style.opacity="0";else element.innerHTML='<image href="data:image/svg+xml,%3Csvg/%3E" width="16" height="16"/>'},mutation)
+   await expect(assertScenarioControls(page,entry)).rejects.toThrow()
+  }
+ }finally{await browser.close()}
+})
