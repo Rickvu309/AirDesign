@@ -11,8 +11,9 @@ it("recomputes every available source floor independently of committed targets a
   try{
     execFileSync(process.execPath,["bench/design-parity/calibrate.mjs","unused",directory,"--references-only"],{stdio:"pipe",timeout:600000})
     const fresh=z.object({fixedMargin:z.literal(0.01),results:z.array(floorSchema)}).parse(JSON.parse(await readFile(path.join(directory,"calibration.json"),"utf8")))
-    expect(fresh.results).toEqual(sourceFloors)
     for(const row of fresh.results)validateSourceFloor(row)
+    const measurementSchema=z.discriminatedUnion("status",[floorSchema.options[0],floorSchema.options[1].omit({captureSha256:true,repeatSha256:true})])
+    expect(fresh.results.map(row=>measurementSchema.parse(row))).toEqual(sourceFloors.map(row=>measurementSchema.parse(row)))
     const mappings=z.object({results:z.array(z.object({code:z.string(),file:z.string().optional(),label:z.string().optional(),status:z.string()}))}).parse(JSON.parse(await readFile(path.join(directory,"calibration.json"),"utf8")))
     const exactFiles={"S11.01":"ed39.jsx","S12.01":"ed21.jsx","S29.01":"ed28.jsx","S41.01":"ed3.jsx","S41.02":"ed5.jsx","S41.03":"ed6.jsx","S41.04":"ed13.jsx","S42.01":"ed1.jsx","S42.02":"ed2.jsx","S42.03":"ed35.jsx","S42.04":"ed38.jsx","S43.01":"ed4.jsx","S43.02":"ed9.jsx","S43.03":"ed30.jsx","S43.04":"ed31.jsx","S43.05":"ed32.jsx","S43.06":"ed33.jsx","S43.07":"ed34.jsx","S49.01":"ed24.jsx","S49.02":"ed27.jsx","S61.01":"ed14.jsx","S61.02":"ed16.jsx","S61.03":"ed15.jsx","S69.01":"ed26.jsx","S71.01":"ed17.jsx","S71.02":"ed18.jsx","S71.03":"ed20.jsx","S92.01":"ed22.jsx","S92.03":"ed23.jsx","S92.04":"ed36.jsx"}
     expect(Object.fromEntries(mappings.results.filter(row=>row.file!==undefined).map(row=>[row.code,row.file]))).toEqual(exactFiles)
@@ -32,6 +33,7 @@ it("rejects manual loosening even infinitesimally above the exact source floor p
   expect(()=>validateSourceFloor({...row,target:row.target+Number.EPSILON})).toThrow("invalid-source-floor")
   expect(()=>validateSourceFloor({...row,target:Math.ceil(row.target*100)/100+0.01})).toThrow("invalid-source-floor")
   expect(()=>validateSourceFloor({...row,repeatIdentical:false})).toThrow("invalid-source-floor")
+  expect(()=>validateSourceFloor({...row,repeatSha256:"different-render"})).toThrow("invalid-source-floor")
 })
 it("reports missing sources as uncalibrated regardless of product score",()=>{
   const row={code:"S00.00",status:"uncalibrated",floor:null,target:null,reason:"no complete generator"} satisfies z.infer<typeof floorSchema>
