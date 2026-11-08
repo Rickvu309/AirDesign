@@ -3,6 +3,7 @@ import {chromium} from "playwright"
 import {expect,it} from "vitest"
 import {assertScenarioDOM,assertScenarioCopy,assertDialogActions,probeScenarioInteraction} from "./dom-assertions.ts"
 import {readRegistry,parseRegistry,resolveCopy,passesParity,validateRegistry} from "./registry.ts"
+import {calibrationFor} from "./targets.ts"
 import {compareDesign} from "./metric.mjs"
 import {compareComponent,cropComponent,faithfulReference} from "./component-metric.mjs"
 
@@ -27,7 +28,7 @@ it("requires independently calibrated components in both normal and strict gates
     const component=entry.component!
     const reachable={...entry,status:"reachable",steps:[]} satisfies typeof entry
     expect(passesParity(reachable,0,false)).toBe(false)
-    expect(passesParity(reachable,0,true,component.target)).toBe(true)
+    expect(passesParity(reachable,0,true,component.target)).toBe(calibrationFor(entry.code).status==="uncalibrated" ? null : true)
     expect(passesParity(reachable,0,false,component.target+0.00001)).toBe(false)
     expect(passesParity(reachable,0,true,NaN)).toBe(false)
     expect(passesParity({...reachable,component:{...component,target:1}},0,false,0)).toBe(false)
@@ -109,7 +110,8 @@ it("rejects incorrect component crops while retaining faithful references",async
   const entry=(await readRegistry()).find(entry=>entry.code==="S33.03")!,component=entry.component!,design=await readFile(entry.design)
   const box=component.designBox
   const reference=(await compareComponent(design,await faithfulReference(design),box,{...box,left:box.left+1,top:box.top+1})).metric
-  expect(passesParity(entry,0,true,reference.score)).toBe(true)
+  expect(passesParity(entry,0,false,reference.score)).toBe(true)
+  expect(passesParity(entry,0,true,reference.score)).toBe(null)
   const displaced=await compareComponent(design,design,component.designBox,{...component.designBox,left:0,top:0})
   expect(passesParity(entry,0,true,displaced.metric.score)).toBe(false)
   await expect(cropComponent(design,{left:-1,top:0,width:100,height:100})).rejects.toThrow("invalid-component-box")

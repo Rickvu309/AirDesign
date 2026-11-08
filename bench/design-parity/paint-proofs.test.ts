@@ -67,7 +67,7 @@ it("locks fixture title bytes as scenario identity",async()=>{
   }finally{await rm(cwd,{recursive:true,force:true})}
 })
 
-it("rejects four-pixel substitute ink over a strict-passing bitmap",async()=>{
+it("rejects four-pixel substitute ink over a matching bitmap with an uncalibrated source",async()=>{
   const entry=(await readRegistry()).find(entry=>entry.code==="S31.02")!
   const design=await readFile(entry.design),browser=await chromium.launch({headless:true})
   try{
@@ -75,7 +75,8 @@ it("rejects four-pixel substitute ink over a strict-passing bitmap",async()=>{
     await page.setContent(`<style>body{margin:0}canvas{position:fixed;inset:0;z-index:-1}main>*{position:absolute;left:1200px;width:4px;height:1px;margin:0;padding:0;border:0;border-top:1px solid #222;overflow:hidden;-webkit-text-fill-color:transparent}span{top:120px}#commands{top:240px}.home-heading{top:360px;height:2px;border:0}.home-heading h1{font:600 26px Geist;color:#222;margin:0;width:4px;height:1px;border-top:1px solid #222;-webkit-text-fill-color:transparent}svg{top:480px;stroke:none}.deck-card-details{top:600px;height:2px;border:0}.deck-card-details p{font:400 12px Geist;color:#666;margin:0;width:4px;height:1px;border-top:1px solid #666;-webkit-text-fill-color:transparent}#open{top:720px}dialog:not([open]){display:none}dialog[open]{position:fixed;width:200px;height:100px;overflow:visible}dialog button{-webkit-text-fill-color:black}</style><canvas width="1470" height="923"></canvas><main class="workspace-home"><span>AirDesign</span><button id="commands">Commands</button><div class="home-heading"><h1>Recents</h1></div><svg data-icon="search" viewBox="0 0 24 24"><path d="${iconPaths.search}"/></svg><div class="deck-card-details"><p>Edited today</p></div><details style="top:720px;overflow:visible"><summary aria-label="Account menu" style="width:4px;height:1px;overflow:hidden;list-style:none">Account</summary><button id="open">Sign out</button></details><dialog aria-label="Sign out?"><button id="close">Cancel</button></dialog></main><script>document.querySelector('#open').onclick=()=>{document.querySelector('details').open=false;document.querySelector('dialog').showModal()};document.querySelector('#close').onclick=()=>document.querySelector('dialog').close()</script>`)
     await page.evaluate(async src=>{const image=new Image();image.src=src;await image.decode();document.querySelector("canvas")!.getContext("2d")!.drawImage(image,0,0)},`data:image/png;base64,${design.toString("base64")}`)
     const score=(await compareDesign(design,await page.screenshot())).score
-    expect(passesParity(entry,score,true)).toBe(true)
+    expect(passesParity(entry,score,false)).toBe(true)
+    expect(passesParity(entry,score,true)).toBeNull()
     await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
     await expect(assertScenarioDOM(page,entry)).rejects.toThrow()
   }finally{await browser.close()}

@@ -4,7 +4,8 @@ import {readFile} from "node:fs/promises"
 import {execFileSync,spawnSync} from "node:child_process"
 import {isDeepStrictEqual} from "node:util"
 import {z} from "zod"
-import {surfaceTargets,targetFor,componentTargets} from "./targets.ts"
+import {targetFor,componentTargets,calibrationFor,sourceFloors} from "./targets.ts"
+import {sourceVerdict} from "./source-floor.mjs"
 const copyKit=z.record(z.string(),z.unknown()).parse(JSON.parse(readFileSync(new URL("../../docs/design/v0.1/copy-kit.json",import.meta.url),"utf8")))
 const copyKey=z.string().refine(key=>typeof copyKit[key]==="string","required-copy-must-use-copy-kit-key")
 export function resolveCopy(key:string,values:Record<string,string>={}):string{
@@ -32,9 +33,10 @@ export type Step=z.infer<typeof stepSchema>
 export type Scenario=z.infer<typeof scenarioSchema>
 export function parseRegistry(value:unknown):Scenario[]{return z.array(scenarioSchema).parse(value)}
 export async function readRegistry():Promise<Scenario[]> {
-  const calibration=z.object({metric:z.literal("local-oklab-v2"),targets:z.object({site:z.number(),studio:z.number()})}).parse(JSON.parse(await readFile(new URL("./calibration.json",import.meta.url),"utf8")))
-  if(calibration.targets.site!==surfaceTargets.site||calibration.targets.studio!==surfaceTargets.studio)throw new Error("target-calibration-mismatch")
-  return parseRegistry(JSON.parse(await readFile(new URL("./scenarios.json",import.meta.url),"utf8")))
+  const entries=parseRegistry(JSON.parse(await readFile(new URL("./scenarios.json",import.meta.url),"utf8")))
+  if(entries.length!==sourceFloors.length||new Set(sourceFloors.map(row=>row.code)).size!==entries.length)throw new Error("source-floor-coverage")
+  for(const entry of entries)calibrationFor(entry.code)
+  return entries
 }
 export function mergeBase(cwd=process.cwd(),target?:string):string {
   const ci=process.env.CI==="true"
@@ -108,8 +110,9 @@ export function selectScenarios(entries:Scenario[],only:string|undefined):Scenar
   if(codes.some(code=>!entries.some(entry=>entry.code===code)))throw new Error("unknown-screen")
   return entries.filter(entry=>codes.includes(entry.code))
 }
-export function passesParity(entry:Scenario,score:number|undefined,strict:boolean,componentScore?:number):boolean {
+export function passesParity(entry:Scenario,score:number|undefined,strict:boolean,componentScore?:number):boolean|null {
   const target=componentTargets[entry.code]?.target
   const componentPassed=target===undefined ? entry.component===undefined : entry.component?.target===target&&componentScore!==undefined&&Number.isFinite(componentScore)&&componentScore<=target
-  return componentPassed&&entry.status==="reachable"&&score!==undefined&&Number.isFinite(score)&&score<=entry.budget&&(!strict||score<=targetFor(entry.code,entry.surface)&&entry.target===targetFor(entry.code,entry.surface))
+  if(strict&&componentPassed&&score!==undefined&&Number.isFinite(score)&&entry.status==="reachable"&&score<=entry.budget&&sourceVerdict(calibrationFor(entry.code),score)==="uncalibrated")return null
+  return componentPassed&&entry.status==="reachable"&&score!==undefined&&Number.isFinite(score)&&score<=entry.budget&&(!strict||sourceVerdict(calibrationFor(entry.code),score)==="pass"&&entry.target===targetFor(entry.code,entry.surface))
 }
