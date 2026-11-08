@@ -14,7 +14,7 @@ it("rejects literal required copy and unknown keys at the registry boundary",asy
     expect(()=>parseRegistry([{...entry,assertions:{...entry.assertions,controls:[{role:"button",name:"Delete permanently"}]}}])).toThrow()
     expect(()=>parseRegistry([{...entry,assertions:{...entry.assertions,controls:[{role:"button",nameKey:"Delete permanently"}]}}])).toThrow(/required-copy-must-use-copy-kit-key/)
     if(entry.assertions.probe.kind==="dialog")expect(()=>parseRegistry([{...entry,assertions:{...entry.assertions,probe:{...entry.assertions.probe,title:"Sign out?"}}}])).toThrow()
-    for(const key of [...entry.assertions.copyKeys,...entry.assertions.entryCopyKeys??[],...entry.assertions.controls.map(control=>control.nameKey)])expect(resolveCopy(key,entry.assertions.copyValues)).not.toMatch(/\{[^}]+\}/)
+    for(const key of [...entry.assertions.copyKeys,...entry.assertions.entryCopyKeys??[],...entry.assertions.controls.flatMap(control=>"nameKey" in control ? [control.nameKey] : [])])expect(resolveCopy(key,entry.assertions.copyValues)).not.toMatch(/\{[^}]+\}/)
   }
   expect(resolveCopy("trash.empty_title",{n:"3"})).toBe("Delete 3 decks for good?")
   expect(()=>resolveCopy("trash.empty_title")).toThrow("missing-copy-value")

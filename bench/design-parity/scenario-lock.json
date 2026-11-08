@@ -227,8 +227,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -275,8 +275,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -338,8 +338,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -401,8 +401,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -468,8 +468,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -531,8 +531,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",
@@ -589,8 +589,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -647,8 +647,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -709,8 +709,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -2542,8 +2542,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -2584,8 +2584,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -2634,8 +2634,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -2776,8 +2776,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",

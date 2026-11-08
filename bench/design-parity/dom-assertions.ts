@@ -190,7 +190,7 @@ export async function assertScenarioCopy(page:Page,keys:string[],scenario="copy-
 async function assertDOM(page:Page,entry:Scenario){
   await assertScenarioCopy(page,entry.assertions.copyKeys,entry.code,entry.assertions.copyValues)
   for(const control of entry.assertions.controls){
-    const locator=page.getByRole(control.role,{name:resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true}).first()
+    const locator=page.getByRole(control.role,{name:control.role==="searchbox" ? control.name : resolveCopy(control.nameKey,entry.assertions.copyValues),exact:true}).first()
     if(!await locator.count())throw failure(locator.toString(),"required-control",1,0)
     await assertRendered(locator,true)
   }

@@ -251,8 +251,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -303,8 +303,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -370,8 +370,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -437,8 +437,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.04: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -508,8 +508,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S31.05: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -575,8 +575,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -637,8 +637,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -699,8 +699,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S32.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -765,8 +765,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -797,7 +797,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2706,8 +2706,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         }
       ],
       "probe": {
@@ -2728,7 +2728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.01: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -2752,8 +2752,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -2782,7 +2782,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -2806,8 +2806,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "heading",
@@ -2844,7 +2844,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S81.03: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -2939,7 +2939,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
+        "text": "Waiting for your $25.00 payment\u2026"
       },
       {
         "kind": "selector-click",
@@ -2956,8 +2956,8 @@
       ],
       "controls": [
         {
-          "role": "button",
-          "nameKey": "shell.command"
+          "role": "searchbox",
+          "name": "Search"
         },
         {
           "role": "button",
@@ -2985,7 +2985,7 @@
         "amount": "$25.00"
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S91.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits."
   },
   {
     "surface": "studio",
@@ -3314,7 +3314,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Usage reset. Resume when you\u2019re ready."
       }
     ],
     "metric": "local-oklab-v2",
