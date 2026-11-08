@@ -563,8 +563,8 @@
     "status": "reachable",
     "steps": [
       {
-        "kind": "click",
-        "name": "+ New deck"
+        "kind": "selector-click",
+        "selector": "summary[aria-label=\"New deck\"]"
       }
     ],
     "metric": "local-oklab-v2",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v5 receipt refresh on accepted e694150 for S32.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Open the actual accessible New deck summary to capture the same intended S32.01 menu, replacing the stale + New deck button lookup. Preserve menu state, seed, viewport, dimensions, targets, budgets and assertions."
   },
   {
     "surface": "studio",
@@ -2939,7 +2939,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment…"
+        "text": "Waiting for your $25.00 payment\u2026"
       },
       {
         "kind": "selector-click",
@@ -3314,7 +3314,7 @@
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you’re ready."
+        "text": "Usage reset. Resume when you\u2019re ready."
       }
     ],
     "metric": "local-oklab-v2",

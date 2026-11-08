@@ -514,8 +514,8 @@
     "seed": "recents",
     "steps": [
       {
-        "kind": "click",
-        "name": "+ New deck"
+        "kind": "selector-click",
+        "selector": "summary[aria-label=\"New deck\"]"
       }
     ],
     "viewport": {

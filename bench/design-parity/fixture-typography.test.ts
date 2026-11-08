@@ -42,3 +42,10 @@ it("assigns the expired-link heading its generator-specific error title role",as
   const entry=(await readRegistry()).find(entry=>entry.code==="S29.01")!
   expect(entry.assertions.structure.textRoles).toContainEqual({selector:"h1",role:"access-error-title",color:"ink",minimumContrast:4.5})
 })
+
+it("opens the intended New deck menu through its accessible summary",async()=>{
+  const entry=(await readRegistry()).find(entry=>entry.code==="S32.01")!
+  expect(entry.status).toBe("reachable")
+  if(entry.status!=="reachable")throw new Error("missing-new-deck-journey")
+  expect(entry.steps).toEqual([{kind:"selector-click",selector:'summary[aria-label="New deck"]'}])
+})
