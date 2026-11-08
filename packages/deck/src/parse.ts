@@ -18,22 +18,27 @@ export function isImagePlacement(v: unknown): v is ImagePlacement {
   const c=v.crop,f=v.focal
   return finite(c.x) && finite(c.y) && finite(c.width) && finite(c.height) && c.x >= 0 && c.y >= 0 && c.width > 0 && c.height > 0 && c.x+c.width <= 1.0000001 && c.y+c.height <= 1.0000001 && finite(f.x) && finite(f.y) && f.x >= 0 && f.x <= 1 && f.y >= 0 && f.y <= 1
 }
-export function isElement(v: unknown): v is Element {
+export function elementShape(v: unknown, text: (v: Record<string, unknown>) => boolean, child: (v: unknown) => boolean): boolean {
   if (!record(v) || !(v.styleLinks === undefined || (Array.isArray(v.styleLinks) && v.styleLinks.every(key => ["font", "color", "fill"].includes(String(key))))) || !isId(v.id) || !box(v.box) || !source(v.source) || !support(v.support) || !(v.theme === null || isThemeId(v.theme)) || !(v.placeholder === null || isPlaceholderId(v.placeholder)) || !(v.overlap === null || isOverlapId(v.overlap))) return false
   switch (v.kind) {
-    case "text": return Array.isArray(v.runs) && v.runs.length > 0 && v.runs.every(run)
+    case "text": return text(v)
     case "image": return isImagePlacement(v.image)
     case "shape": return isShapeGeometry(v.geometry) && typeof v.fill === "string"
-    case "group": return Array.isArray(v.children) && v.children.every(isElement)
+    case "group": return Array.isArray(v.children) && v.children.every(child)
     default: return false
   }
 }
-export function isSlide(v: unknown): v is Slide {
-  return record(v) && (v.background===undefined || typeof v.background==="string" && /^#[\da-f]{6}$/i.test(v.background)) && (v.section===undefined || typeof v.section==="string" && v.section.trim().length>0 && v.section.length<=100) && (v.layout === undefined || (record(v.layout) && isId(v.layout.template) && Number.isSafeInteger(v.layout.version) && Number(v.layout.version)>0 && isId(v.layout.family) && typeof v.layout.master==="string" && /^ppt\/slideMasters\/[a-zA-Z0-9_-]+\.xml$/.test(v.layout.master) && typeof v.layout.part==="string" && /^ppt\/slideLayouts\/[a-zA-Z0-9_-]+\.xml$/.test(v.layout.part))) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && record(v.size) && finite(v.size.width) && v.size.width > 0 && finite(v.size.height) && v.size.height > 0 && Array.isArray(v.elements) && v.elements.every(isElement) && typeof v.notes === "string" && (v.theme === null || isThemeId(v.theme)) && source(v.source)
+export function isElement(v: unknown): v is Element {
+  return elementShape(v, text => !("body" in text) && Array.isArray(text.runs) && text.runs.length > 0 && text.runs.every(run), isElement)
 }
-export function isDeck(v: unknown): v is Deck {
-  return record(v) && (v.template === undefined || (record(v.template) && isId(v.template.id) && Number.isSafeInteger(v.template.version) && Number(v.template.version) > 0 && isId(v.template.family) && (v.template.layout===undefined || (record(v.template.layout) && typeof v.template.layout.master==="string" && /^ppt\/slideMasters\/[a-zA-Z0-9_-]+\.xml$/.test(v.template.layout.master) && typeof v.template.layout.part==="string" && /^ppt\/slideLayouts\/[a-zA-Z0-9_-]+\.xml$/.test(v.template.layout.part))))) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && Array.isArray(v.slides) && v.slides.every(isSlide) && (v.placeholders === undefined || (Array.isArray(v.placeholders) && v.placeholders.every(isPlaceholderId))) && (v.overlaps === undefined || (Array.isArray(v.overlaps) && v.overlaps.every(isOverlapId))) && Array.isArray(v.themes) && v.themes.every(t => record(t) && isThemeId(t.id) && typeof t.font === "string" && typeof t.background === "string" && (t.foreground===undefined || typeof t.foreground==="string"))
+export function slideShape(v: unknown, child: (v: unknown) => boolean): boolean {
+  return record(v) && (v.background===undefined || typeof v.background==="string" && /^#[\da-f]{6}$/i.test(v.background)) && (v.section===undefined || typeof v.section==="string" && v.section.trim().length>0 && v.section.length<=100) && (v.layout === undefined || (record(v.layout) && isId(v.layout.template) && Number.isSafeInteger(v.layout.version) && Number(v.layout.version)>0 && isId(v.layout.family) && typeof v.layout.master==="string" && /^ppt\/slideMasters\/[a-zA-Z0-9_-]+\.xml$/.test(v.layout.master) && typeof v.layout.part==="string" && /^ppt\/slideLayouts\/[a-zA-Z0-9_-]+\.xml$/.test(v.layout.part))) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && record(v.size) && finite(v.size.width) && v.size.width > 0 && finite(v.size.height) && v.size.height > 0 && Array.isArray(v.elements) && v.elements.every(child) && typeof v.notes === "string" && (v.theme === null || isThemeId(v.theme)) && source(v.source)
 }
+export function isSlide(v: unknown): v is Slide { return slideShape(v, isElement) }
+export function deckShape(v: unknown, child: (v: unknown) => boolean): boolean {
+  return record(v) && (v.template === undefined || (record(v.template) && isId(v.template.id) && Number.isSafeInteger(v.template.version) && Number(v.template.version) > 0 && isId(v.template.family) && (v.template.layout===undefined || (record(v.template.layout) && typeof v.template.layout.master==="string" && /^ppt\/slideMasters\/[a-zA-Z0-9_-]+\.xml$/.test(v.template.layout.master) && typeof v.template.layout.part==="string" && /^ppt\/slideLayouts\/[a-zA-Z0-9_-]+\.xml$/.test(v.template.layout.part))))) && isId(v.id) && Number.isSafeInteger(v.version) && Number(v.version) >= 0 && Array.isArray(v.slides) && v.slides.every(child) && (v.placeholders === undefined || (Array.isArray(v.placeholders) && v.placeholders.every(isPlaceholderId))) && (v.overlaps === undefined || (Array.isArray(v.overlaps) && v.overlaps.every(isOverlapId))) && Array.isArray(v.themes) && v.themes.every(t => record(t) && isThemeId(t.id) && typeof t.font === "string" && typeof t.background === "string" && (t.foreground===undefined || typeof t.foreground==="string"))
+}
+export function isDeck(v: unknown): v is Deck { return deckShape(v, isSlide) }
 export function parseDeck(v: unknown): Deck {
   if (!isDeck(v)) throw new Error("Invalid canonical deck")
   return v

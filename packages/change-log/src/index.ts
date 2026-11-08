@@ -10,15 +10,16 @@ export function commandId(value: string): CommandId {
 function isCommandId(value: unknown): value is CommandId { return typeof value === "string" && /^[a-zA-Z0-9_-]{1,100}$/.test(value) }
 export type ExecutionIdentity = {kind:"person"} | {kind:"run";run:string;undoOf?:string;actor?:"aira" | "user-agent"}
 export type AuthorityError = {code:"execution-identity-mismatch";expected:ExecutionIdentity}
-export type Command = { id: CommandId } & (
-  { kind: "edit"; base: number; changes: ChangeSet; run: string | null } |
+export type ChangeBatch = {changes: ({kind: "insert"; parent: Id; index: number} | {kind: "set" | "remove"; target: Id} | {kind: "move"; target: Id; parent: Id; index: number})[]}
+export type Command<C extends ChangeBatch = ChangeSet> = { id: CommandId } & (
+  { kind: "edit"; base: number; changes: C; run: string | null } |
   { kind: "patch"; base: number; target: Id; fields: Node["fields"]; run: string | null } |
   { kind: "start-run"; run: string } |
   { kind: "close-run" | "undo-run"; run: string } |
   { kind: "undo" | "redo"; target: CommandId } |
   { kind: "undo-change"; target: CommandId; base: number; run: string }
 )
-export function executionMatches(command: Command, identity: ExecutionIdentity): boolean {
+export function executionMatches<C extends ChangeBatch>(command: Command<C>, identity: ExecutionIdentity): boolean {
   if(command.kind==="edit" || command.kind==="patch")return command.run===(identity.kind==="person" ? null : identity.run)
   if(command.kind==="undo-change")return identity.kind==="run" && command.run===identity.run
   return identity.kind==="person" || (command.kind==="close-run" && command.run===identity.run)
@@ -28,8 +29,8 @@ export type Node = { id: Id; parent: Id | null; order: number; fields: { [key: s
 export type Patch = { id: Id; before: Node | null; after: Node | null; keys: string[]; adopts: boolean; places: boolean }
 export type Contribution = { id: CommandId; seq: number; actor: "person" | "agent"; run: string | null; patches: Patch[]; active: boolean; toggledAt: number }
 export type RunState = { id: string; epoch: number; kind: "open" | "closed" | "undone" }
-export type History = { initial: Deck; deck: Deck; seq: number; events: Contribution[]; runs: RunState[]; usedIds: Id[] }
-export type Receipt = { id: CommandId; seq: number; kind: "applied" } | { id: CommandId; seq: number; kind: "refused"; code: string; command: Command; restore?: CommandId }
+export type History<D = Deck> = { initial: D; deck: D; seq: number; events: Contribution[]; runs: RunState[]; usedIds: Id[] }
+export type Receipt<C extends ChangeBatch = ChangeSet> = { id: CommandId; seq: number; kind: "applied" } | { id: CommandId; seq: number; kind: "refused"; code: string; command: Command<C>; restore?: CommandId }
 export function initialHistory(deck: Deck): History { return { initial: deck, deck, seq: 0, events: [], runs: [], usedIds: nodes(deck).map(n => n.id) } }
 
 export function nodes(deck: Deck): Node[] {
@@ -46,8 +47,8 @@ export function nodes(deck: Deck): Node[] {
   return result
 }
 function same(a: unknown, b: unknown): boolean { return JSON.stringify(a) === JSON.stringify(b) }
-function patches(before: Deck, after: Deck): Patch[] {
-  const previous = new Map(nodes(before).map(node=>[node.id,node])), next = new Map(nodes(after).map(node=>[node.id,node]))
+export function diffNodes(before: Node[], after: Node[]): Patch[] {
+  const previous = new Map(before.map(node=>[node.id,node])), next = new Map(after.map(node=>[node.id,node]))
   return [...new Set([...previous.keys(), ...next.keys()])].flatMap(id => {
     const a = previous.get(id) ?? null, b = next.get(id) ?? null
     const keys = !a || !b ? ["existence"] : [...new Set([...Object.keys(a.fields), ...Object.keys(b.fields)])].filter(k => !same(a.fields[k], b.fields[k]))
@@ -56,8 +57,18 @@ function patches(before: Deck, after: Deck): Patch[] {
     return keys.length ? [{ id, before: a, after: b, keys, adopts: false, places: false }] : []
   })
 }
-function projection(history: History): Deck {
-  const tree = new Map(nodes(history.initial).map(n => [n.id,n]))
+export type HistoryModel<D extends {id: Id; version: number}, C extends ChangeBatch> = {
+  staleConflicts: "all" | "runs"
+  nodes: (deck: D) => Node[]
+  materialize: (nodes: Node[], id: Id, seq: number) => D
+  replace: (deck: D) => C
+  apply: (deck: D, changes: C) => {ok: true; deck: D} | {ok: false; error: {code: string}}
+  projectionMetadata?: (deck: D, history: History<D>) => D
+  reconcileDelta?: (delta: Patch[], before: D, after: D) => Patch[]
+  complete?: (tree: Map<Id, Node>, history: History<D>) => void
+}
+export function projectHistory<D extends {id: Id; version: number}, C extends ChangeBatch>(history: History<D>, model: HistoryModel<D, C>): D {
+  const tree = new Map(model.nodes(history.initial).map(n => [n.id,n]))
   for (const event of history.events) {
     if (!event.active) continue
     for (const patch of event.patches) {
@@ -90,9 +101,11 @@ function projection(history: History): Deck {
     retainParent(parent)
   }
   for(const node of tree.values())retainParent(node)
-  return materialize([...tree.values()], history.initial.id, history.seq)
+  model.complete?.(tree, history)
+  const deck = model.materialize([...tree.values()], history.initial.id, history.seq)
+  return model.projectionMetadata?.(deck, history) ?? deck
 }
-function materialize(list: Node[], deckId: Id, seq: number): Deck {
+export function materializeNodes<D>(list: Node[], deckId: Id, seq: number, decode: (value: unknown) => D, textBody?: (element: Id, children: Node[]) => Json): D {
   const tree = new Map(list.map(n => [n.id,n]))
   const childrenByParent = new Map<Id | null, Node[]>()
   for(const node of list) {
@@ -111,20 +124,21 @@ function materialize(list: Node[], deckId: Id, seq: number): Deck {
     if (node.parent === null) { value.version = seq; value.slides = children.map(n => build(n, next)) }
     else if ("size" in node.fields) { value.version = seq; value.elements = children.map(n => build(n, next)) }
     else if (node.fields.kind === "group") value.children = children.map(n => build(n, next))
+    else if (node.fields.kind === "text" && textBody) { children.forEach(child => reached.add(child.id)); value.body = textBody(node.id, children) }
     return value
   }
   const root = tree.get(deckId)
   if (!root) throw new Error("missing-deck")
-  const deck = parseDeck(build(root, new Set()))
+  const deck = decode(build(root, new Set()))
   if (reached.size !== tree.size) throw new Error("unreachable-history-node")
   return deck
 }
-export function execute(current: History, command: Command, identity: ExecutionIdentity = {kind:"person"}): { history: History; receipt: Receipt } {
-  const history:History={...current,deck:{...current.deck},events:current.events.map(event=>({...event})),runs:current.runs.map(run=>({...run})),usedIds:[...current.usedIds]}
+export function executeWithModel<D extends {id: Id; version: number}, C extends ChangeBatch>(current: History<D>, command: Command<C>, model: HistoryModel<D, C>, identity: ExecutionIdentity = {kind:"person"}): { history: History<D>; receipt: Receipt<C> } {
+  const history:History<D>={...current,deck:{...current.deck},events:current.events.map(event=>({...event})),runs:current.runs.map(run=>({...run})),usedIds:[...current.usedIds]}
   const refuse = (code: string) => {
     const targets=command.kind==="patch" ? [command.target] : command.kind==="edit" ? command.changes.changes.flatMap(change=>"target" in change ? [change.target] : []) : []
     const deletion=current.events.findLast(event=>event.active && event.patches.some(patch=>patch.after===null && targets.includes(patch.id)))
-    return { history: current, receipt: { id: command.id, seq: current.seq, kind: "refused", code, command, ...(code==="invalid-reference" && deletion ? {restore:deletion.id} : {}) } satisfies Receipt }
+    return { history: current, receipt: { id: command.id, seq: current.seq, kind: "refused", code, command, ...(code==="invalid-reference" && deletion ? {restore:deletion.id} : {}) } satisfies Receipt<C> }
   }
   if(!executionMatches(command,identity)) {
     const error:AuthorityError={code:"execution-identity-mismatch",expected:identity}
@@ -143,28 +157,29 @@ export function execute(current: History, command: Command, identity: ExecutionI
     case "edit":
     case "patch": {
       if (command.run !== null && (!run || run.kind !== "open")) return refuse("run-closed")
-      let changes: ChangeSet
+      let changes: C
       if (command.kind === "patch") {
-        const node = nodes(history.deck).find(n => n.id === command.target)
+        const node = model.nodes(history.deck).find(n => n.id === command.target)
         if (!node) return refuse("invalid-reference")
-        if (Object.keys(command.fields).some(key => ["id", "version", "slides", "elements", "children", "parent", "order", "kind"].includes(key))) return refuse("invalid-patch-field")
-        const tree = nodes(history.deck)
+        if (Object.keys(command.fields).some(key => ["id", "version", "slides", "elements", "children", "parent", "order", "kind", "body"].includes(key))) return refuse("invalid-patch-field")
+        const tree = model.nodes(history.deck)
         const target = tree.find(n => n.id === command.target)
         if (!target) return refuse("invalid-reference")
         Object.assign(target.fields, command.fields)
-        let desired: Deck
-        try { desired = materialize(tree, history.initial.id, history.seq) } catch { return refuse("invalid-data") }
-        changes = { changes: [{ kind: "set", target: history.deck.id, value: desired }] }
+        let desired: D
+        try { desired = model.materialize(tree, history.initial.id, history.seq) } catch { return refuse("invalid-data") }
+        changes = model.replace(desired)
       } else changes = command.changes
-      const applied = apply(history.deck, changes)
+      const applied = model.apply(history.deck, changes)
       if (!applied.ok) return refuse(applied.error.code)
-      const delta = patches(history.deck, applied.deck).map(patch => ({...patch,places:changes.changes.some(change => change.kind === "move" && change.target === patch.id),adopts:command.run === null && (patch.keys.some(key => key !== "order") || changes.changes.some(change => change.kind === "move" && change.target === patch.id))}))
+      let delta = diffNodes(model.nodes(history.deck), model.nodes(applied.deck)).map(patch => ({...patch,places:changes.changes.some(change => change.kind === "move" && change.target === patch.id),adopts:command.run === null && (patch.keys.some(key => key !== "order") || changes.changes.some(change => change.kind === "move" && change.target === patch.id))}))
+      delta = model.reconcileDelta?.(delta, history.deck, applied.deck) ?? delta
       if (delta.some(p => !p.before && history.usedIds.includes(p.id))) return refuse("node-id-reused")
-      if (command.run !== null) {
+      if (command.run !== null || model.staleConflicts === "all") {
         for (const event of history.events) for (const old of event.patches) for (const patch of delta) {
           const conflict = old.id === patch.id && old.keys.some(k => patch.keys.includes(k) || k === "existence" || patch.keys.includes("existence"))
           if (conflict && Math.max(event.seq,event.toggledAt) > command.base) return refuse("stale-base")
-          if (event.actor === "person" && old.adopts && old.id === patch.id && Math.max(event.seq,event.toggledAt) > (run?.epoch ?? -1)) return refuse("person-protected")
+          if (command.run !== null && event.actor === "person" && old.adopts && old.id === patch.id && Math.max(event.seq,event.toggledAt) > (run?.epoch ?? -1)) return refuse("person-protected")
         }
       }
       history.deck = applied.deck
@@ -192,7 +207,18 @@ export function execute(current: History, command: Command, identity: ExecutionI
     default: { const exhaustive: never = command; return exhaustive }
   }
   history.seq++
-  try { if (command.kind === "undo" || command.kind === "undo-change" || command.kind === "redo" || command.kind === "undo-run") history.deck = projection(history) } catch { return refuse("undo-structure-conflict") }
+  try { if (command.kind === "undo" || command.kind === "undo-change" || command.kind === "redo" || command.kind === "undo-run") history.deck = projectHistory(history, model) } catch { return refuse("undo-structure-conflict") }
   history.deck.version=history.seq
   return { history, receipt: { id: command.id, kind: "applied", seq: history.seq } }
+}
+
+export const legacyHistoryModel: HistoryModel<Deck, ChangeSet> = {
+  staleConflicts: "runs",
+  nodes,
+  materialize: (list, deckId, seq) => materializeNodes(list, deckId, seq, parseDeck),
+  replace: deck => ({changes: [{kind: "set", target: deck.id, value: deck}]}),
+  apply
+}
+export function execute(current: History, command: Command, identity: ExecutionIdentity = {kind: "person"}): {history: History; receipt: Receipt} {
+  return executeWithModel(current, command, legacyHistoryModel, identity)
 }

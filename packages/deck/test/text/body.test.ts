@@ -66,7 +66,7 @@ describe("native text body boundary", () => {
     expect(parseNativeArchiveV3({version: 3, deck: native}).deck).toEqual(native)
     expect(() => parseDeck(native)).toThrow()
     Object.assign(native.slides[0]!.elements[0]!, {runs: element.runs})
-    expect(() => parseNativeArchiveV3({version: 3, deck: native})).toThrow("legacy-text")
+    expect(() => parseNativeArchiveV3({version: 3, deck: native})).toThrow("invalid-native-archive-v3")
   })
   it("rejects cross-tree internal identity collisions", () => {
     const legacy = fixtureDeck(1), element = legacy.slides[0]!.elements[0]!

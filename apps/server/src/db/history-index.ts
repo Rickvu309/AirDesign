@@ -1,8 +1,10 @@
 import type { PGlite } from "@electric-sql/pglite"
-import type { Command, Contribution, History } from "../../../../packages/change-log/src/index.ts"
+import type { ChangeBatch, Command, Contribution, History } from "../../../../packages/change-log/src/index.ts"
+
+import {rebuildHistoryHeads} from "../../../../packages/change-log/src/text/history-heads.ts"
+import {contributionProperties} from "../../../../packages/change-log/src/history-properties.ts"
 
 type Transaction = Pick<PGlite, "query">
-type Property = { node: string; key: string }
 
 export async function initializeHistoryIndex(tx: Transaction) {
   await tx.query("CREATE TABLE IF NOT EXISTS editing_contribution (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, run text, payload jsonb NOT NULL, PRIMARY KEY(deck,id))")
@@ -15,7 +17,7 @@ export async function initializeHistoryIndex(tx: Transaction) {
   await tx.query("CREATE TABLE IF NOT EXISTS editing_run (deck text NOT NULL REFERENCES editing_deck(id), id text NOT NULL, payload jsonb NOT NULL, PRIMARY KEY(deck,id))")
 }
 
-export async function loadHistoryIndex(tx: Transaction, deck: string, history: History, command: Command) {
+export async function loadHistoryIndex<D, C extends ChangeBatch>(tx: Transaction, deck: string, history: History<D>, command: Command<C>) {
   const heads = await tx.query<{node:string;key:string;latest:Pick<Contribution,"id">;person:Pick<Contribution,"id">|null}>("SELECT node,key,latest,person FROM editing_key WHERE deck=$1", [deck])
   const targets = command.kind === "undo-run"
     ? await tx.query<{ payload: Contribution }>("SELECT payload FROM editing_contribution WHERE deck=$1 AND run=$2", [deck,command.run])
@@ -47,20 +49,32 @@ export async function loadHistoryIndex(tx: Transaction, deck: string, history: H
   }
 }
 
-function properties(event: Contribution): Property[] {
-  return event.patches.flatMap(patch => patch.keys.map(key => ({node:patch.id,key})))
-}
-
-export async function saveHistoryIndex(tx: Transaction, deck: string, previous: History, next: History) {
+export async function saveHistoryIndex<D>(tx: Transaction, deck: string, previous: History<D>, next: History<D>) {
   const changed = next.events.filter(event => {
     const old = previous.events.find(item => item.id === event.id)
     return !old || event.active !== old.active || event.toggledAt !== old.toggledAt
   })
   for (const event of changed) {
-    const rows = JSON.stringify(properties(event))
+    const rows = JSON.stringify(contributionProperties(event))
     await tx.query("WITH contribution AS (INSERT INTO editing_contribution(deck,id,run,payload) VALUES ($1,$2,$5,$6) ON CONFLICT(deck,id) DO UPDATE SET payload=excluded.payload), properties AS (INSERT INTO editing_property(deck,event,node,key,seq,active,payload) SELECT $1,$2,p.node,p.key,$7,$3,$8::jsonb FROM jsonb_to_recordset($4::jsonb) AS p(node text,key text) ON CONFLICT(deck,event,node,key) DO UPDATE SET active=excluded.active,payload=excluded.payload RETURNING node,key,payload) INSERT INTO editing_key(deck,node,key,latest,person) SELECT $1,node,key,payload,CASE WHEN payload->>'actor'='person' THEN payload ELSE NULL END FROM properties ON CONFLICT(deck,node,key) DO UPDATE SET latest=excluded.latest,person=COALESCE(excluded.person,editing_key.person)", [deck,event.id,event.active,rows,event.run,JSON.stringify(event),event.seq,JSON.stringify({id:event.id,actor:event.actor})])
   }
   for (const run of next.runs) await tx.query("INSERT INTO editing_run(deck,id,payload) VALUES ($1,$2,$3) ON CONFLICT(deck,id) DO UPDATE SET payload=excluded.payload", [deck,run.id,JSON.stringify(run)])
 }
 
-export function currentProjection(history: History): History { return {...history,events:[],runs:[]} }
+export function currentProjection<D>(history: History<D>): History<D> { return {...history,events:[],runs:[]} }
+
+export async function rebuildHistoryIndex<D>(tx: Transaction, deck: string, history: History<D>) {
+  const heads = rebuildHistoryHeads(history)
+  for (const table of ["editing_key","editing_property","editing_contribution","editing_run"]) await tx.query(`DELETE FROM ${table} WHERE deck=$1`,[deck])
+  await tx.query("INSERT INTO editing_contribution(deck,id,run,payload) SELECT $1,p.id,p.run,p.payload FROM jsonb_to_recordset($2::jsonb) AS p(id text,run text,payload jsonb)",[deck,JSON.stringify(history.events.map(event=>({id:event.id,run:event.run,payload:event})))])
+  await tx.query("INSERT INTO editing_property(deck,event,node,key,seq,active,payload) SELECT $1,p.event,p.node,p.key,(c.payload->>'seq')::integer,(c.payload->>'active')::boolean,jsonb_build_object('id',c.id,'actor',c.payload->>'actor') FROM jsonb_to_recordset($2::jsonb) AS p(event text,node text,key text) JOIN editing_contribution c ON c.deck=$1 AND c.id=p.event",[deck,JSON.stringify(heads.properties.map(({event,node,key})=>({event,node,key})))])
+  const events=new Map(history.events.map(event=>[event.id,event]))
+  function reference(id: Contribution["id"] | null) {
+    if(id===null)return null
+    const event=events.get(id)
+    if(!event)throw new Error("missing-history-head-event")
+    return {id:event.id,actor:event.actor}
+  }
+  await tx.query("INSERT INTO editing_key(deck,node,key,latest,person) SELECT $1,p.node,p.key,p.latest,p.person FROM jsonb_to_recordset($2::jsonb) AS p(node text,key text,latest jsonb,person jsonb)",[deck,JSON.stringify(heads.keys.map(row=>({...row,latest:reference(row.latest),person:reference(row.person)})))])
+  await tx.query("INSERT INTO editing_run(deck,id,payload) SELECT $1,p.id,p.payload FROM jsonb_to_recordset($2::jsonb) AS p(id text,payload jsonb)",[deck,JSON.stringify(history.runs.map(run=>({id:run.id,payload:run})))])
+}
