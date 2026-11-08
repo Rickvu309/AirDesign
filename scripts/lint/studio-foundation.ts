@@ -4,6 +4,12 @@ const designCopyValues = new Set(Object.values(JSON.parse(readFileSync("docs/des
 const designCopyKeys = new Set(Object.entries(JSON.parse(readFileSync("docs/design/v0.1/copy-kit.json", "utf8"))).filter(([, value]) => typeof value === "string").map(([key]) => key))
 
 export function studioFoundationHits(file: string, source: string): { line: number; reason: string }[] {
+  if (file.endsWith("bench/design-parity/dom-assertions.ts")) {
+    return /stroke-width=["']\d|part\.width\s*!==\s*["']\d/.test(source) ? [{ line: 1, reason: "canonical-icon-stroke-must-use-source-owned-width" }] : []
+  }
+  if (file.endsWith("packages/ui/src/icon/icon.tsx")) {
+    return /strokeWidth=\{[^}]*["']?\d/.test(source) ? [{ line: 1, reason: "canonical-icon-stroke-must-use-source-owned-width" }] : []
+  }
   if (file.endsWith("packages/ui/src/copy/studio-foundation-copy.ts")) {
     return [...source.matchAll(/^\s*"([^"]+)":\s*"([^"]+)"/gm)].filter(match => designCopyKeys.has(match[1] ?? "") || designCopyValues.has(match[2] ?? "")).map(match => ({ line: source.slice(0, match.index).split("\n").length, reason: "studio-supplemental-copy-must-not-duplicate-canonical-copy" }))
   }

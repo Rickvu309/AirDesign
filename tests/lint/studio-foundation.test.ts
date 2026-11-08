@@ -103,3 +103,15 @@ describe("shell semantics", () => {
     expect(studioFoundationHits(file, original).map(hit => hit.reason)).toEqual(["studio-navigation-requires-native-links", "studio-tooltip-must-not-add-tab-stop"])
   })
 })
+
+it("rejects duplicated canonical stroke literals in renderer and both verifier consumers",()=>{
+  const renderer="packages/ui/src/icon/icon.tsx",verifier="bench/design-parity/dom-assertions.ts"
+  const currentRenderer=readFileSync(renderer,"utf8"),currentVerifier=readFileSync(verifier,"utf8")
+  expect(studioFoundationHits(renderer,currentRenderer)).toEqual([])
+  expect(studioFoundationHits(verifier,currentVerifier)).toEqual([])
+  const reason=[{line:1,reason:"canonical-icon-stroke-must-use-source-owned-width"}]
+  expect(studioFoundationHits(renderer,currentRenderer.replace("iconStrokeWidth(name)",'name === "undo" || name === "redo" ? "1.5" : "1.6"'))).toEqual(reason)
+  expect(studioFoundationHits(verifier,currentVerifier.replace('stroke-width="${icon.strokeWidth}"','stroke-width="1.5"'))).toEqual(reason)
+  expect(studioFoundationHits(verifier,currentVerifier.replace('part.width!==expectedStroke+"px"','part.width!=="1.5px"'))).toEqual(reason)
+  expect(studioFoundationHits("negative-fixture.test.ts",'stroke-width="1.5"')).toEqual([])
+})

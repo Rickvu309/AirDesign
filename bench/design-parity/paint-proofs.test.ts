@@ -5,7 +5,7 @@ import os from "node:os"
 import {expect,it} from "vitest"
 import {assertRendered,assertScenarioDOM,probeScenarioInteraction} from "./dom-assertions.ts"
 import {readRegistry,validateIdentity,seedFiles,passesParity} from "./registry.ts"
-import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
+import {iconPaths,iconStrokeWidth} from "../../packages/ui/src/icon/icon-paths.ts"
 import {compareDesign} from "./metric.mjs"
 
 it("proves real paint despite perfect canvas pixels and working invisible controls",async()=>{
@@ -14,7 +14,7 @@ it("proves real paint despite perfect canvas pixels and working invisible contro
   const design=await readFile(entry.design),browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    await page.setContent(`<style>body{margin:0}main{filter:opacity(0)}h1{font:600 26px Geist;color:#222}.deck-card-details>p{font:400 12px Geist;color:#666}canvas{position:fixed;inset:0;pointer-events:none;z-index:-1}</style><canvas width="1470" height="923"></canvas><main class="workspace-home"><span>AirDesign</span><div class="home-heading"><h1>Recents</h1></div><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="1.5"><path d="${iconPaths.search}"/></svg><div class="deck-card-details"><p>Edited today</p></div><button>Commands</button><details style="top:720px;overflow:visible"><summary aria-label="Account menu" style="width:4px;height:1px;overflow:hidden;list-style:none">Account</summary><button id="open">Sign out</button></details><dialog aria-label="Sign out?"><button id="close">Cancel</button></dialog></main><script>document.querySelector('#open').onclick=()=>{document.querySelector('details').open=false;document.querySelector('dialog').showModal()};document.querySelector('#close').onclick=()=>document.querySelector('dialog').close()</script>`)
+    await page.setContent(`<style>body{margin:0}main{filter:opacity(0)}h1{font:600 26px Geist;color:#222}.deck-card-details>p{font:400 12px Geist;color:#666}canvas{position:fixed;inset:0;pointer-events:none;z-index:-1}</style><canvas width="1470" height="923"></canvas><main class="workspace-home"><span>AirDesign</span><div class="home-heading"><h1>Recents</h1></div><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="${iconStrokeWidth("search")}"><path d="${iconPaths.search}"/></svg><div class="deck-card-details"><p>Edited today</p></div><button>Commands</button><details style="top:720px;overflow:visible"><summary aria-label="Account menu" style="width:4px;height:1px;overflow:hidden;list-style:none">Account</summary><button id="open">Sign out</button></details><dialog aria-label="Sign out?"><button id="close">Cancel</button></dialog></main><script>document.querySelector('#open').onclick=()=>{document.querySelector('details').open=false;document.querySelector('dialog').showModal()};document.querySelector('#close').onclick=()=>document.querySelector('dialog').close()</script>`)
     await page.evaluate(async src=>{const image=new Image();image.src=src;await image.decode();document.querySelector("canvas")!.getContext("2d")!.drawImage(image,0,0)},`data:image/png;base64,${design.toString("base64")}`)
     expect((await compareDesign(design,await page.screenshot())).score).toBe(0)
     await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
@@ -39,7 +39,7 @@ it("hashes actual geometry and viewBox instead of trusting a search label",async
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    const content=`<main><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="1.5"><path d="${iconPaths.search}"/></svg></main>`
+    const content=`<main><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="${iconStrokeWidth("search")}"><path d="${iconPaths.search}"/></svg></main>`
     await page.setContent(content)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     await page.locator("path").evaluate(element=>element.setAttribute("d",element.getAttribute("d")!.replaceAll("21","21.0")))
@@ -88,7 +88,7 @@ it("rejects canonical icons at the wrong rendered size or color",async()=>{
   try{
     const page=await browser.newPage({viewport:entry.viewport})
     for(const [size,color] of [[10,"red"],[8,"black"],[16,"red"]]){
-      await page.setContent(`<main><svg data-icon="search" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5"><path d="${iconPaths.search}"/></svg></main>`)
+      await page.setContent(`<main><svg data-icon="search" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="${iconStrokeWidth("search")}"><path d="${iconPaths.search}"/></svg></main>`)
       await expect(assertScenarioDOM(page,entry)).rejects.toThrow()
     }
   }finally{await browser.close()}
@@ -124,7 +124,7 @@ it("uses declared icon size and color tokens for its raster estimate",async()=>{
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    await page.setContent(`<main><svg data-icon="search" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5"><path d="${iconPaths.search}"/></svg></main>`)
+    await page.setContent(`<main><svg data-icon="search" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="${iconStrokeWidth("search")}"><path d="${iconPaths.search}"/></svg></main>`)
     await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
   }finally{await browser.close()}
 })

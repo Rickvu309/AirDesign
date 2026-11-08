@@ -13,3 +13,11 @@ export const iconPaths = {
   mail: "M3 5h18v14H3zM3 6l9 7 9-7",
   plus: "M12 4v16M4 12h16",
 }
+
+export type IconName = keyof typeof iconPaths
+export function isIconName(name:string):name is IconName{
+  return Object.hasOwn(iconPaths,name)
+}
+export function iconStrokeWidth(name:IconName):1.5|1.6{
+  return name==="undo"||name==="redo" ? 1.5 : 1.6
+}
