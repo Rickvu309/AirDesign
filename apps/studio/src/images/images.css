@@ -7,3 +7,7 @@
 .image-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.image-grid article{min-inline-size:0}.image-grid button{inline-size:100%;border:1px solid var(--border);background:var(--background);border-radius:7px;cursor:pointer;padding:4px;font-size:11px;color:var(--muted-foreground)}
 .image-grid img{inline-size:100%;block-size:94px;object-fit:cover;border-radius:4px}.image-panel details,.image-panel p{font-size:12px;line-height:1.5;overflow-wrap:anywhere}.image-panel details p{padding-block:4px}.image-panel footer{margin-block-start:auto;display:grid;gap:8px;border-block-start:1px solid var(--border);padding-block-start:16px;color:var(--muted-foreground)}
 .image-upload{border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;color:var(--foreground);background:var(--background)}.image-upload input{font-size:11px}.image-adjust{display:grid;gap:12px;min-inline-size:0;border:1px solid var(--border);border-radius:8px;padding:12px}.image-adjust legend{font-size:12px;font-weight:600}.image-crop-preview{position:relative;overflow:hidden;inline-size:100%;background:var(--muted)}.image-crop-preview img{position:absolute;max-inline-size:none}.image-adjust input[type=range]{inline-size:100%;accent-color:var(--primary)}.provider-results{display:grid;gap:12px}.provider-results article{display:grid;gap:6px}.image-panel [role=alert]{padding:12px;border:1px solid var(--destructive);border-radius:8px}
+
+@media (pointer: coarse) {
+ input, textarea, select { font-size:16px; }
+}

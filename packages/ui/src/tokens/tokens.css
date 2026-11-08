@@ -124,7 +124,7 @@ body {
   font-weight: 500;
   line-height: 1;
   cursor: pointer;
-  transition: transform var(--motion-micro), box-shadow var(--motion-micro);
+  transition: transform var(--motion-micro), box-shadow var(--motion-micro), opacity var(--motion-micro);
 }
 
 .ad-button:disabled {
@@ -326,7 +326,7 @@ body {
 
 .ad-sign-in,
 .ad-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   background: var(--background);
   color: var(--foreground);
 }
@@ -517,3 +517,36 @@ body {
 @media(pointer:coarse){.ad-toaster [data-sonner-toast][data-styled=true] [data-button]{min-inline-size:44px;min-block-size:44px}}
 
 .ad-external-link-icon{margin-inline-start:6px}
+
+button, a, [role="button"], summary {
+  touch-action: manipulation;
+}
+button, [role="button"], summary {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+@media (pointer: coarse) {
+  :root body input, :root body textarea, :root body select { font-size: 16px; }
+  button, a, [role="button"], summary {
+    position: relative;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    box-sizing: border-box;
+  }
+  button::after, a::after, [role="button"]::after, summary::after {
+    content: "";
+    position: absolute;
+    inline-size: 44px;
+    block-size: 44px;
+    inset-inline-start: calc(50% - 22px);
+    inset-block-start: calc(50% - 22px);
+    pointer-events: auto;
+  }
+  a { display: inline-block; align-content: center; }
+  p > a { margin-block: 1px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  button, a, [role="button"], summary { transition: opacity var(--motion-micro); }
+}
+button:active, a:active, [role="button"]:active, summary:active { opacity: .75; }
