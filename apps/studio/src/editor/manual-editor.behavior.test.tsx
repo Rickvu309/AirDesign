@@ -182,11 +182,15 @@ it("keeps run progress on its actual target when the selected slide changes",asy
     await ui.snapshot({enabled:true,remote:[],run:{id:"run",owner:"owner",deck:"deck",request:"Build",selection:["s1"],kind:"working",events:[{id:1,kind:"tool",name:"get_slide",scope:"s1"}],completed:[]}})
     expect(ui.container.querySelector('.editor-slide[data-selected="true"]')?.getAttribute("data-run-state")).toBeNull()
     expect(ui.container.querySelector('.editor-slide[data-run-state="working"] [data-slide]')?.getAttribute("data-slide")).toBe("s1")
+    expect(ui.button("Go to slide 2").getAttribute("data-run-state")).toBe("working")
+    expect(ui.button("Go to slide 1").getAttribute("data-run-state")).toBeNull()
     expect(ui.container.textContent).toContain("Building slide 1 of 1")
     await ui.click("Go to slide 2")
     expect(ui.container.querySelector('.editor-slide:not([hidden])')?.getAttribute("data-run-state")).toBe("working")
     await ui.click("Go to slide 1")
     expect(ui.container.querySelector('.editor-slide:not([hidden])')?.getAttribute("data-run-state")).toBeNull()
+    await ui.snapshot({enabled:true,remote:[],run:{id:"run",owner:"owner",deck:"deck",request:"Build",selection:["s1"],kind:"complete",events:[],completed:["s1"]}})
+    expect(ui.container.querySelector('.editor-filmstrip [data-run-state="working"]')).toBeNull()
   }finally{await ui.close()}
 })
 

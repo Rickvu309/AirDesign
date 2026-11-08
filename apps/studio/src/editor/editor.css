@@ -1,4 +1,4 @@
-.studio-editor { --insertion-border:#a8a8a8;margin-inline:auto;inline-size:100%;color:var(--foreground); }
+.studio-editor { --insertion-border:#a8a8a8;--working-blue:var(--primary);--working-blue-glow:#4d94fb59;--working-light-glow:#93b8ef47;--working-purple-glow:#b39dff47;--working-edge-light:#a9c8ff;--working-edge-purple:#b9a8ff;--working-sweep-blue:#4d94fb26;--working-sweep-purple:#8b7bff1a;margin-inline:auto;inline-size:100%;color:var(--foreground); }
 .editor-first-request h2 { font-size:28px;letter-spacing:-.04em; }.editor-first-request p { font-size:14px;line-height:1.6;color:var(--muted-foreground); }
 .studio-editor>.paste-review textarea { display:block;inline-size:100%;box-sizing:border-box;min-block-size:96px;resize:vertical;border:1px solid var(--border);border-radius:8px;background:var(--background);color:var(--foreground);padding:12px;font:inherit;font-size:16px;margin-block:8px 16px; }
 .editor-slides { display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));margin-inline:auto; }.editor-slide { min-inline-size:0; }.slide-select { background:transparent;border:0;padding:10px 0;font:inherit;cursor:pointer; }
@@ -48,6 +48,7 @@
 .editor-filmstrip { position:fixed;inset-block:96px 0;inset-inline-start:0;inline-size:248px;box-sizing:border-box;padding:16px 28px 32px 12px;background:var(--card);border-inline-end:1px solid var(--border);overflow:auto;overscroll-behavior:contain; }
 .editor-filmstrip details>button { display:grid;grid-template-columns:20px minmax(0,1fr);align-items:start;gap:8px;inline-size:100%;border:0;background:transparent;padding:8px 0;color:var(--muted-foreground);text-align:start;font:inherit;font-size:12px;cursor:pointer;border-radius:10px; }
 .editor-filmstrip details>button>span { padding-block-start:6px;text-align:center; }
+.editor-filmstrip details>button[data-run-state=working]>span:first-child::after { content:"";display:block;inline-size:6px;block-size:6px;margin-inline:auto;margin-block-start:6px;border-radius:50%;background:var(--primary); }
 .editor-filmstrip [aria-current=page] { background:var(--accent);color:var(--primary); }
 .editor-filmstrip [aria-current=page] .slide-preview { outline:2px solid var(--primary);outline-offset:2px; }
 .studio-editor[data-tool=text] .editor-filmstrip,.studio-editor:has(.editor-tool-shapes[data-expanded=true]) .editor-filmstrip,.studio-editor[data-images=true] .editor-filmstrip { inset-inline-start:248px;inset-block-start:56px;inline-size:96px;padding:22px 16px; }
@@ -56,7 +57,7 @@
 .studio-editor:is([data-tool=text],[data-images=true],:has(.editor-tool-shapes[data-expanded=true])) .editor-filmstrip summary { display:none; }
 .studio-editor:is([data-tool=text],[data-images=true],:has(.editor-tool-shapes[data-expanded=true])) .editor-bar>.ad-button { inset-block-start:0;inset-inline:248px auto;inline-size:96px;block-size:56px;border-radius:0;border-block:0;font-size:0; }
 .studio-editor:is([data-tool=text],[data-images=true],:has(.editor-tool-shapes[data-expanded=true])) .editor-bar>.ad-button::after { content:"+";font-size:20px; }
-.editor-slide[data-run-state=working]>.slide-preview { box-shadow:var(--editor-working-shadow);overflow:visible;border-radius:4px; }
+.studio-editor .editor-slide[data-run-state=working]>.slide-preview { box-shadow:var(--editor-working-shadow);overflow:visible;border-radius:4px; }
 .editor-slide[data-run-state=working]>.slide-preview::before { content:"";position:absolute;inset:-2px;z-index:2;pointer-events:none;border-radius:6px;padding:2px;background:linear-gradient(135deg,var(--working-blue) 0%,var(--working-edge-light) 35%,var(--working-edge-purple) 65%,var(--working-blue) 100%);mask:linear-gradient(var(--card) 0 0) content-box,linear-gradient(var(--card) 0 0);mask-composite:exclude; }
 .working-chart { position:absolute;pointer-events:none;border-radius:6px;box-shadow:0 0 0 1px var(--working-blue-glow);overflow:clip; }
 .working-chart-sweep { position:absolute;inset:0;background:linear-gradient(100deg,transparent 25%,var(--working-sweep-blue) 50%,var(--working-sweep-purple) 62%,transparent 80%);animation:working-chart-pulse var(--motion-panel) infinite alternate; }
