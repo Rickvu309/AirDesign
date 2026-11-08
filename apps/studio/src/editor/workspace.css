@@ -106,3 +106,9 @@
 @media (pointer: coarse) {
  input, textarea, select { font-size:16px; }
 }
+
+@media (pointer: coarse) {
+ .editor-bar { flex-wrap:wrap; }
+ .editor-view { gap:4px;flex-shrink:0; }
+ .editor-view>button,.editor-dock>button { flex-shrink:0;min-inline-size:44px; }
+}
