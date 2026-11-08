@@ -1,5 +1,5 @@
 import { SaxesParser } from "saxes"
-import { id,parseDeck,type Deck,type Element,type Source } from "../../deck/src/index.ts"
+import { id,isSlide,parseDeck,type Deck,type Element,type Source } from "../../deck/src/index.ts"
 import { hash,type Presentation } from "./index.ts"
 import { parseXml,type XmlNode } from "./xml.ts"
 
@@ -10,14 +10,18 @@ function content(xml:string) {
   return value
 }
 function within(parent:XmlNode,child:XmlNode) {return child.start>parent.start && child.end<parent.end}
-export function importedDeck(presentation:Presentation):Deck {
+export function importedDeck(presentation:Presentation,progress?:(value:{completed:number;total:number})=>void):Deck {
   const main=presentation.parts.get("ppt/presentation.xml");if(!main)throw new Error("presentation-required")
   const document=parseXml(main),size=document.nodes.find(node=>node.local==="sldSz")
   const width=Number(size?.attributes.cx ?? 12192000)/9525,height=Number(size?.attributes.cy ?? 6858000)/9525
-  const slides=document.nodes.filter(node=>node.local==="sldId").map((node,index)=>{
+  const ordered=document.nodes.filter(node=>node.local==="sldId").map(node=>{
     const rel=presentation.report.relationships.find(rel=>rel.part==="ppt/presentation.xml" && rel.id===node.attributes["r:id"])
     const part=rel?.target,bytes=part ? presentation.parts.get(part) : null
     if(!part || !bytes)throw new Error("slide-relationship-required")
+    return {part,bytes}
+  })
+  progress?.({completed:0,total:ordered.length})
+  const slides=ordered.map(({part,bytes},index)=>{
     const source:Source={kind:"original",part,sha256:hash(bytes),objectId:"slide",dependencies:presentation.report.relationships.filter(rel=>rel.part===part).map(rel=>rel.target)}
     const parsed=parseXml(bytes),texts=parsed.nodes.filter(node=>node.local==="t" && node.uri.endsWith("/drawingml/2006/main"))
     const containers=["graphicFrame","pic","cxnSp","grpSp"]
@@ -44,7 +48,10 @@ export function importedDeck(presentation:Presentation):Deck {
     for(const [objectIndex,node] of objects.entries())elements.push({id:id(`s${index}k${objectIndex}`),kind:"shape",geometry:"rectangle",fill:"#ffffff",box:box(node),source:{...source,objectId:`${node.local}:${objectIndex}`},support:{kind:"kept",preview:null},theme:null,placeholder:null,overlap:null})
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null
     const notes=notesBytes ? (()=>{const parsed=parseXml(notesBytes);return parsed.nodes.filter(node=>node.local==="t" && node.uri.endsWith("/drawingml/2006/main")).map(node=>content(parsed.xml.slice(node.openEnd,node.closeStart))).join("\n")})() : ""
-    return {id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
+    const slide={id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
+    if(!isSlide(slide))throw new Error("invalid-import-slide")
+    progress?.({completed:index+1,total:ordered.length})
+    return slide
   })
   return parseDeck({id:id("imported"),version:0,slides,themes:[]})
 }

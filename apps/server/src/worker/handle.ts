@@ -1,3 +1,4 @@
+import {importSlideProgressSchema} from "../../../../packages/operations/src/import-progress.ts"
 import {WorkerArtifacts} from "./artifacts.ts"
 import path from "node:path"
 import os from "node:os"
@@ -7,6 +8,7 @@ import {workerAuthorized} from "./transport.ts"
 import {operationId, type OperationStore} from "../../../../packages/operations/src/index.ts"
 
 const command = z.discriminatedUnion("kind",[
+  z.object({kind:z.literal("progress"),queue:z.literal("import"),id:z.string().uuid(),lease:z.string().uuid(),progress:importSlideProgressSchema}).strict(),
   z.object({kind:z.literal("claim"),queue:z.enum(["import","image"])}),
   z.object({kind:z.literal("cleaned"),queue:z.enum(["import","image"]),id:z.string().uuid(),lease:z.string().uuid()}),
   z.object({kind:z.literal("active"),queue:z.enum(["import","image"]),id:z.string().uuid(),lease:z.string().uuid()}),
@@ -40,6 +42,7 @@ export function workerHandler(imports:OperationStore,images:OperationStore,secre
       return Response.json(null)
     }
     const id = operationId(input.id)
+    if(input.kind === "progress")return store.recordProgress(id,input.lease,input.progress) ? Response.json({ok:true}) : Response.json({code:"stale-or-invalid-progress"},{status:409})
     if(input.kind === "cleaned"){store.recover();store.acknowledgeCleanup(id,input.lease);await reconcile();return Response.json({ok:true})}
     if (input.kind === "active") return Response.json({active:store.active(id,input.lease)})
     if (input.kind === "fail") {store.fail(id,input.lease,input.reason);await artifacts.erase(input.lease)}

@@ -25,7 +25,7 @@ async function workspace(page:Page){
   const retained:DeckEntry={...sibling,id:"retained-import",title:"native"}
   const failed:Operation={id:oldId,attempts:1,kind:"failed",reason}
   const queued:Operation={id:freshId,attempts:0,kind:"queued"}
-  const running:Operation={id:freshId,attempts:1,kind:"running",lease:"controlled-browser-lease"}
+  const running:Operation={id:freshId,attempts:1,kind:"running",progress:{kind:"unavailable"},lease:"controlled-browser-lease"}
   const ready:Operation={id:freshId,attempts:1,kind:"ready",sha256:"a".repeat(64),expires:4102444800000,report:{capabilities:[]}}
   let complete=false
   page.setDefaultTimeout(2000)
