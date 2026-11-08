@@ -29,7 +29,7 @@ it("accepts every actual canonical renderer output with exact default and undo/r
   }finally{await browser.close()}
 })
 
-it.each(["search","grid","undo","redo"] as const)("rejects independent icon mutations from passing actual %s baselines",async name=>{
+it.each(["search","grid","undo","redo","presentation"] as const)("rejects independent icon mutations from passing actual %s baselines",async name=>{
   const original=(await readRegistry()).find(value=>value.code==="S31.02")!
   const scenario=entry(original,name),svg=markup(name)
   const raster=await sharp(Buffer.from(svg.replace("<svg ",'<svg xmlns="http://www.w3.org/2000/svg" color="#222" '))).png().toBuffer()
