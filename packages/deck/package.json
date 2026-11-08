@@ -13,6 +13,10 @@
     "./jsx": {
       "types": "./dist/jsx.d.ts",
       "import": "./dist/jsx.js"
+    },
+    "./text": {
+      "types": "./dist/text/index.d.ts",
+      "import": "./dist/text/index.js"
     }
   }
 }

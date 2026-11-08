@@ -27,7 +27,8 @@ export function importBoundaryHits(filePath: string, source: string, repoRoot: s
 }
 
 function boundaryReason(relativeFile: string, filePath: string, specifier: string, repoRoot: string): string | null {
-  if (relativeFile.startsWith("packages/deck/src/") && (!specifier.startsWith("./") || /react|jsx-runtime|node:/.test(specifier))) {
+  const deckLocal = (specifier.startsWith("./") || specifier.startsWith("../")) && path.relative(path.join(repoRoot, "packages/deck/src"), path.resolve(path.dirname(filePath), specifier)).split(path.sep).every(part => part !== "..")
+  if (relativeFile.startsWith("packages/deck/src/") && (!deckLocal || /react|jsx-runtime|node:/.test(specifier))) {
     return "deck-must-be-dependency-free"
   }
   const inPackage = relativeFile.startsWith("packages/")
