@@ -115,14 +115,14 @@ it.each(["recent","all"].flatMap(browse=>[
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:{width:1470,height:923},deviceScaleFactor:1,reducedMotion:"reduce"}),errors=await workspace(page,browse)
-    const baselineStyle=await page.addStyleTag({content:".home-new-deck .ad-dropdown>summary{background:var(--signature-gradient)}"})
+    const baselineStyle=await page.addStyleTag({content:".home-new-deck .ad-dropdown>summary{background:var(--signature-gradient);color:var(--primary-foreground)}"})
     await newDeckMenuRoundTrip(page)
     const baseline=await newDeckLabelContrast(page)
     expect(baseline.minimum,JSON.stringify(baseline)).toBeGreaterThanOrEqual(4.5)
     const control=await page.getByRole("button",{name:"New deck",exact:true}).elementHandle()
     if(!control)throw new Error("new-deck-contrast-baseline-control-missing")
     await baselineStyle.evaluate(element=>{if(!(element instanceof HTMLStyleElement))throw new Error("new-deck-contrast-baseline-style-boundary");element.remove()})
-    const mutation=".never-mounted-primary{background:var(--signature-gradient)}"+override
+    const mutation=".never-mounted-primary{background:var(--signature-gradient)}.home-new-deck .ad-dropdown>summary{color:var(--primary-foreground)}"+override
     await page.addStyleTag({content:mutation})
     expect(await readFile("apps/studio/src/decks/decks.css","utf8")+mutation).toMatch(/background:\s*var\(--signature-gradient\)/)
     expect(await page.locator(".never-mounted-primary").count()).toBe(0)
