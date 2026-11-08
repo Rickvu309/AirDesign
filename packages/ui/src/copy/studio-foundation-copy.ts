@@ -1,4 +1,7 @@
 export const studioFoundationCopy = {
+  "export.retry_failure": "Unable to retry this export. Open Export to try again.",
+  "export.limit_failure": "The export reached a resource limit. Try exporting fewer slides.",
+  "export.interrupted_failure": "The export was interrupted. Try again.",
   "access.new_account": "New email? The same link creates your account.",
   "access.email_placeholder": "Your email address",
   "access.email_sent": "Sign-in link sent to",

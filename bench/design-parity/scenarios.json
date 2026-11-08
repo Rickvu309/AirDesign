@@ -41,7 +41,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S11.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S11.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "site",
@@ -85,7 +85,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S12.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S12.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -131,7 +131,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S21.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S21.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -185,7 +185,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Follow the painted canonical Continue with email accessible action to the same check-inbox state after removing the contradictory redundant aria-label; preserve seed, viewport, dimensions, targets and budgets."
+    "scenarioChangedBecause": "Follow the painted canonical Continue with email accessible action to the same check-inbox state after removing the contradictory redundant aria-label; preserve seed, viewport, dimensions, targets and budgets. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -228,7 +228,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "S29.01 error heading keeps its h1 semantics and generator errPage Err Title text-[15px] font-medium role; correct the prior page-title misclassification. No pixel target, budget, seed, state, viewport or other assertion changes."
+    "scenarioChangedBecause": "S29.01 error heading keeps its h1 semantics and generator errPage Err Title text-[15px] font-medium role; correct the prior page-title misclassification. No pixel target, budget, seed, state, viewport or other assertion changes. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13\u201314), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13–14), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13\u201314), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Classify only the S31.02/S31.04 card status line as body (design tokens 13–14), rather than helper12: same-string Geist real-CSS crop comparison favors13px across twelve reference crops. Raster evidence does not recover exact fractional size or font version; current13px product CSS, color/contrast, state and parity limits are retained. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Open the intended visible New deck summary and require the actual sidebar Search searchbox after Decks reconciliation; preserve state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Open the intended visible New deck summary and require the actual sidebar Search searchbox after Decks reconciliation; preserve state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -801,7 +801,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Open the visible Pricing Strategy Review card Actions menu before its Move to Trash action, retain real confirmation and completion wait, and require sidebar Search; design, state, viewport and parity limits remain unchanged. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values.",
+    "scenarioChangedBecause": "Open the visible Pricing Strategy Review card Actions menu before its Move to Trash action, retain real confirmation and completion wait, and require sidebar Search; design, state, viewport and parity limits remain unchanged. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -874,7 +874,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S33.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -938,7 +938,7 @@
         "n": "3"
       }
     },
-    "scenarioChangedBecause": "The real Empty Trash AlertDialog uses an ARIA dialog with h2.ad-dialog-title. Resolve the unchanged 17px/600/ink title within the single registered dialog component, preserving native-dialog support and all copy, action, paint and contrast requirements.",
+    "scenarioChangedBecause": "The real Empty Trash AlertDialog uses an ARIA dialog with h2.ad-dialog-title. Resolve the unchanged 17px/600/ink title within the single registered dialog component, preserving native-dialog support and all copy, action, paint and contrast requirements. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -1017,7 +1017,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1089,7 +1089,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1152,7 +1152,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1217,7 +1217,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S41.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -1308,7 +1308,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1388,7 +1388,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1472,7 +1472,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1556,7 +1556,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S42.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1639,7 +1639,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1719,7 +1719,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1798,7 +1798,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1861,7 +1861,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1923,7 +1923,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.05: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.05: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -1985,7 +1985,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.06: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.06: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2047,7 +2047,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.07: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S43.07: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2124,7 +2124,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2202,7 +2202,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S49.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2279,7 +2279,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2361,7 +2361,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2385,8 +2385,7 @@
     },
     "seed": "deck-open",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Download uses an anchor; there is no export-downloaded toast in ExportDialog.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.02,
     "assertions": {
@@ -2424,7 +2423,7 @@
         "file": "Q3 Investor Update.pptx"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S61.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2435,7 +2434,28 @@
         "height": 42
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "complete"
+      },
+      {
+        "kind": "keyboard-activate",
+        "name": "Export"
+      },
+      {
+        "kind": "export-download"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -2479,16 +2499,8 @@
       ],
       "controls": [
         {
-          "role": "combobox",
-          "nameKey": "export.file_format"
-        },
-        {
           "role": "button",
-          "nameKey": "export.close"
-        },
-        {
-          "role": "button",
-          "nameKey": "export.retry"
+          "nameKey": "pay.try_again"
         }
       ],
       "probe": {
@@ -2501,15 +2513,15 @@
         "icons": [],
         "textRoles": [
           {
-            "selector": "dialog[open] h2",
-            "role": "dialog-title",
+            "selector": "[data-sonner-toast] [data-title]",
+            "role": "body",
             "color": "ink",
             "minimumContrast": 4.5
           }
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S69.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S69.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -2573,7 +2585,7 @@
         "agent": "Claude"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2631,7 +2643,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2684,7 +2696,7 @@
         "agent": "Codex"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S71.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2732,7 +2744,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2786,7 +2798,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2848,7 +2860,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -2866,6 +2878,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       }
     ],
     "metric": "local-oklab-v2",
@@ -2907,7 +2923,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -2939,15 +2955,15 @@
       },
       {
         "kind": "click",
+        "name": "$25"
+      },
+      {
+        "kind": "click",
         "name": "Continue to payment"
       },
       {
         "kind": "wait-text",
-        "text": "Waiting for your $25.00 payment\u2026"
-      },
-      {
-        "kind": "selector-click",
-        "selector": "button[aria-label=\"Close add credits\"]"
+        "text": "Waiting for your $25.00 payment. Finish in the new tab."
       }
     ],
     "metric": "local-oklab-v2",
@@ -2989,7 +3005,7 @@
         "amount": "$25.00"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its real role and name while reconciling Decks fixture receipts; preserve Commands keyboard behavior, state, viewport and parity limits. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -3007,6 +3023,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
@@ -3052,7 +3072,7 @@
         "balance": "$40.00"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S91.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3140,7 +3160,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps."
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content."
   },
   {
     "surface": "studio",
@@ -3169,7 +3189,7 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       }
     ],
     "metric": "local-oklab-v2",
@@ -3206,7 +3226,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3230,8 +3250,7 @@
     },
     "seed": "deck-limited",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "The editor has a reset confirmation and a link to Settings, but no insufficient-credit Add credits dialog inside the editor as designed.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
@@ -3270,7 +3289,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.03: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3281,7 +3300,29 @@
         "height": 444
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Slide 3"
+      },
+      {
+        "kind": "click",
+        "name": "Single slide view"
+      },
+      {
+        "kind": "agent",
+        "outcome": "limited"
+      },
+      {
+        "kind": "click",
+        "name": "Reset"
+      },
+      {
+        "kind": "wait-text",
+        "text": "Minimum $10."
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3310,15 +3351,15 @@
       },
       {
         "kind": "click",
-        "name": "Reset usage"
+        "name": "Reset"
       },
       {
         "kind": "dialog-click",
-        "name": "Reset for $5"
+        "name": "Reset"
       },
       {
         "kind": "wait-text",
-        "text": "Usage reset. Resume when you\u2019re ready."
+        "text": "Pick up where you left off."
       }
     ],
     "metric": "local-oklab-v2",
@@ -3374,7 +3415,7 @@
         "slide": "3"
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S92.04: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -3389,17 +3430,16 @@
   },
   {
     "surface": "studio",
-    "route": "/",
+    "route": "/settings/usage",
     "code": "S99.01",
     "design": "docs/design/v0.1/screens/S99.01-credits-errors-payment-failed.png",
     "viewport": {
       "width": 1470,
       "height": 923
     },
-    "seed": "signed-out",
+    "seed": "usage-active",
     "budget": 1,
-    "status": "unreachable",
-    "reason": "Payment supports pending/paid/expired/cancelled/reversed; no payment-failed state exists in AddCredits.",
+    "status": "reachable",
     "metric": "local-oklab-v2",
     "target": 0.3,
     "assertions": {
@@ -3436,7 +3476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.01: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
@@ -3447,7 +3487,16 @@
         "height": 208
       },
       "target": 0.01
-    }
+    },
+    "steps": [
+      {
+        "kind": "click",
+        "name": "Add credits"
+      },
+      {
+        "kind": "checkout-failed"
+      }
+    ]
   },
   {
     "surface": "studio",
@@ -3465,6 +3514,10 @@
       {
         "kind": "click",
         "name": "Add credits"
+      },
+      {
+        "kind": "click",
+        "name": "$25"
       },
       {
         "kind": "click",
@@ -3511,7 +3564,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps.",
+    "scenarioChangedBecause": "Studio decks v4 receipt refresh for S99.02: record Decks starter and import capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Settings v5: integrate export download/payment-failure adapters on accepted typed export behavior; S69.01 observes the canonical failure toast and real Try again action after modal close; preserve targets, budgets, reference, viewport and genuine content.",
     "component": {
       "kind": "dialog",
       "selector": "dialog[open], [role=\"dialog\"], [role=\"alertdialog\"]",
