@@ -4,6 +4,8 @@ import {chromium,type Page} from "playwright"
 import {beforeAll,expect,it} from "vitest"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
 import type {DeckEntry} from "../../packages/catalog/src/index.ts"
+import {assertScenarioDOM} from "./dom-assertions.ts"
+import {readRegistry,type Scenario} from "./registry.ts"
 
 let script="",styles=""
 const deck=fixtureDeck(1),title="Independent customer research"
@@ -110,6 +112,40 @@ it("keeps real previews and visible 44px card actions on touch",async()=>{
     expect(target?.height).toBeGreaterThanOrEqual(44)
     expect(await page.locator(".deck-preview-canvas").first().textContent()).toContain("A clear direction")
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true)
+    expect(errors).toEqual([])
+  }finally{await browser.close()}
+})
+
+it.each(["S31.02","S31.04"])("classifies %s grid metadata as body text and rejects independent token mutations",async code=>{
+  const entry=(await readRegistry()).find(entry=>entry.code===code)
+  if(!entry)throw new Error("missing-grid-metadata-scenario")
+  const metadata=entry.assertions.structure.textRoles.find(role=>role.selector===".deck-card-details > p")
+  if(!metadata)throw new Error("missing-grid-metadata-role")
+  const focused={...entry,assertions:{...entry.assertions,structure:{...entry.assertions.structure,icons:[],textRoles:[metadata]}}}
+  const old={...focused,assertions:{...focused.assertions,structure:{...focused.assertions.structure,textRoles:[{...metadata,role:"helper"}]}}} satisfies Scenario
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:entry.viewport}),errors=await workspace(page,code==="S31.04" ? "all" : "recent")
+    await expect(assertScenarioDOM(page,old)).rejects.toThrow("text-token:helper")
+    await expect(assertScenarioDOM(page,focused)).resolves.toBeUndefined()
+    expect(metadata.role).toBe("body")
+    const paragraph=page.locator(metadata.selector).first()
+    expect(await paragraph.evaluate(element=>({size:getComputedStyle(element).fontSize,weight:getComputedStyle(element).fontWeight,color:getComputedStyle(element).color}))).toEqual({size:"13px",weight:"400",color:"rgb(102, 102, 102)"})
+    const originalStyle=await paragraph.getAttribute("style")
+    for(const mutation of [
+      {style:"font-size:12px",check:"text-token:body"},
+      {style:"font-size:15px",check:"text-token:body"},
+      {style:"font-family:Arial",check:"text-token:body"},
+      {style:"font-weight:500",check:"text-token:body"},
+      {style:"color:#909090",check:"text-color:body"},
+      {style:"background-color:#d0d0d0",check:"text-contrast:body"}
+    ]){
+      await expect(assertScenarioDOM(page,focused)).resolves.toBeUndefined()
+      await paragraph.evaluate((element,style)=>element.setAttribute("style",style),mutation.style)
+      await expect(assertScenarioDOM(page,focused),mutation.style).rejects.toThrow(mutation.check)
+      await paragraph.evaluate((element,style)=>{if(style===null)element.removeAttribute("style");else element.setAttribute("style",style)},originalStyle)
+    }
+    await expect(assertScenarioDOM(page,focused)).resolves.toBeUndefined()
     expect(errors).toEqual([])
   }finally{await browser.close()}
 })

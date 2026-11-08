@@ -307,7 +307,7 @@
           },
           {
             "selector": ".deck-card-details > p",
-            "role": "helper",
+            "role": "body",
             "color": "gray.600",
             "minimumContrast": 4.5
           }
@@ -433,7 +433,7 @@
           },
           {
             "selector": ".deck-card-details > p",
-            "role": "helper",
+            "role": "body",
             "color": "gray.600",
             "minimumContrast": 4.5
           }
