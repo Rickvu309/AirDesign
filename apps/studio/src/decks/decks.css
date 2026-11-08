@@ -115,3 +115,5 @@
   .workspace-home .deck-list .deck-card-details h2 { padding-inline-end:8px; }
   .workspace-home .deck-card-details { min-block-size:62px; }
 }
+
+.workspace-home .ad-dialog-actions .ad-button-danger { background:var(--destructive); }
