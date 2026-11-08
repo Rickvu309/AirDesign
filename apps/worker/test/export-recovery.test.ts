@@ -18,7 +18,7 @@ it("erases a PDF lease and its descendants after SIGKILL during page.pdf and res
  await writeFile(path.join(shadow,"package.json"),JSON.stringify({type:"module"}))
  const entry=path.join(shadow,"apps/worker/src/export/entry.ts"),source=await readFile(entry,"utf8")
  await writeFile(entry,source.replace('output=await page.pdf(', 'const rendering=page.pdf(').replace('margin:{top:0,right:0,bottom:0,left:0}})','margin:{top:0,right:0,bottom:0,left:0}});await writeFile(jobPath("pdf-active"),"rendering");output=await rendering'))
- const job={id:"00000000-0000-4000-8000-000000000002",lease:"00000000-0000-4000-8000-000000000001",deadline:Date.now()+60000,options:{format:"pdf",slides:[],allowIssues:true},snapshot:{deck:fixtureDeck(20,50),seq:0}}
+ const job={snapshotVersion:2,id:"00000000-0000-4000-8000-000000000002",lease:"00000000-0000-4000-8000-000000000001",deadline:Date.now()+60000,options:{format:"pdf",slides:[],allowIssues:true},snapshot:{deck:fixtureDeck(20,50),seq:0}}
  await writeFile(path.join(root,"job.json"),JSON.stringify(job))
  const program=`import {deliverExport} from ${JSON.stringify(path.join(shadow,"apps/worker/src/export/deliver.ts"))};import {watch,readFileSync,existsSync} from 'node:fs';
  const root=${JSON.stringify(scratch)},job=JSON.parse(readFileSync(${JSON.stringify(path.join(root,"job.json"))},'utf8'));

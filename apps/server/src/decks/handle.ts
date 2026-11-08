@@ -1,3 +1,4 @@
+import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import {welcomeDeck} from "../../../../packages/catalog/src/welcome-deck.ts"
 import { applyTemplate } from "../../../../packages/brand/src/index.ts"
 import type { TemplateStore } from "../../../../packages/brand/src/template-store.ts"
@@ -10,25 +11,26 @@ import { mutationRejection, type Access } from "@airdesign/access"
 import type { HistoryStore } from "../db/history-store.ts"
 
 function text(body:unknown,key:string):string {if(!body || typeof body!=="object" || !(key in body))throw new Error(`missing-${key}`);const value=Reflect.get(body,key);if(typeof value!=="string")throw new Error(`invalid-${key}`);return value}
-export function decksHandler(access:Access,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,operations:OperationStore,templates?:TemplateStore) {
+export function decksHandler(access:Access,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,operations:OperationStore,templates?:TemplateStore,paragraphs?:ParagraphHistoryStore) {
   const catalog=history.catalog
   return async(request:Request):Promise<Response>=>{
     const rejection=mutationRejection(request,origin);if(rejection)return Response.json(rejection,{status:rejection.status})
     const principal=await access.principal(request);if(!principal)return Response.json({code:"signed-out"},{status:401})
     const url=new URL(request.url)
     try {
+      const exports=paragraphs && (await paragraphs.protocol()).protocol==="paragraph-body-v3" ? paragraphs.exports : history.exports
       const exportMatch=/^\/api\/catalog\/export-jobs\/([a-f0-9-]{36})(?:\/(artifact|cancel|retry))?$/.exec(url.pathname)
       if(exportMatch?.[1]) {
         const id=exportMatch[1]
-        if(exportMatch[2]==="artifact" && request.method==="GET"){const result=await history.exports.artifact(principal,id);return new Response(new Uint8Array(result.bytes),{headers:{"content-type":result.format==="pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation","content-disposition":`attachment; filename="${exportFilename(result.title,result.seq,result.format)}"`}})}
-        if(exportMatch[2]==="cancel" && request.method==="POST")return Response.json(await history.exports.cancel(principal,id))
-        if(exportMatch[2]==="retry" && request.method==="POST")return Response.json(await history.exports.retry(principal,id))
-        if(!exportMatch[2] && request.method==="GET")return Response.json(await history.exports.status(principal,id))
+        if(exportMatch[2]==="artifact" && request.method==="GET"){const result=await exports.artifact(principal,id);return new Response(new Uint8Array(result.bytes),{headers:{"content-type":result.format==="pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.presentationml.presentation","content-disposition":`attachment; filename="${exportFilename(result.title,result.seq,result.format)}"`}})}
+        if(exportMatch[2]==="cancel" && request.method==="POST")return Response.json(await exports.cancel(principal,id))
+        if(exportMatch[2]==="retry" && request.method==="POST")return Response.json(await exports.retry(principal,id))
+        if(!exportMatch[2] && request.method==="GET")return Response.json(await exports.status(principal,id))
         return Response.json({code:"method-not-allowed"},{status:405})
       }
       const submit=/^\/api\/catalog\/([a-zA-Z][a-zA-Z0-9_-]{0,31})\/exports$/.exec(url.pathname)
-      if(submit?.[1] && request.method==="GET")return Response.json(await history.exports.list(principal,submit[1]))
-      if(submit?.[1] && request.method==="POST"){const body:unknown=await request.json();return Response.json(await history.exports.submit(principal,text(body,"requestId"),submit[1],parseExportOptions(body)),{status:202})}
+      if(submit?.[1] && request.method==="GET")return Response.json(await exports.list(principal,submit[1]))
+      if(submit?.[1] && request.method==="POST"){const body:unknown=await request.json();return Response.json(await exports.submit(principal,text(body,"requestId"),submit[1],parseExportOptions(body)),{status:202})}
       if(url.pathname==="/api/catalog/import" && request.method==="POST") {
         const body:unknown=await request.json(),op=operationId(text(body,"operation")),status=operations.status(principal,op)
         if(status.kind!=="ready")throw new Error("import-not-ready")

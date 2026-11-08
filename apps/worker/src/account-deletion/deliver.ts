@@ -4,7 +4,7 @@ import path from "node:path"
 import type {HistoryStore} from "../../../server/src/db/history-store.ts"
 import type {OperationStore} from "../../../../packages/operations/src/index.ts"
 import type {TemplateStore} from "../../../../packages/brand/src/template-store.ts"
-export async function deliverAccountDeletion(history:HistoryStore,operations:OperationStore,images:OperationStore,templates:TemplateStore,root:string,signal?:AbortSignal){
+export async function deliverAccountDeletion(history:Pick<HistoryStore,"deletions">,operations:OperationStore,images:OperationStore,templates:TemplateStore,root:string,signal?:AbortSignal){
   const completed:string[]=[]
   for(const job of await history.deletions.pending()){
     signal?.throwIfAborted()

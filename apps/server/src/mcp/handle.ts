@@ -1,3 +1,5 @@
+import {paragraphFeatureAdmission} from "../rpc/paragraph-boundary.ts"
+import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import {createHash} from "node:crypto"
 import {Server} from "@modelcontextprotocol/sdk/server/index.js"
 import {WebStandardStreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
@@ -9,7 +11,7 @@ import {mutationRejection,type Access} from "@airdesign/access"
 import type {HistoryStore} from "../db/history-store.ts"
 import type {TemplateStore} from "../../../../packages/brand/src/template-store.ts"
 import type {OperationStore} from "../../../../packages/operations/src/index.ts"
-export function mcpHandler(access:Access,history:HistoryStore,templates:TemplateStore,operations:OperationStore,imageQueue:OperationStore,origin:string,secret:string,changed:(deck:string)=>Promise<void>,resourceOrigin=origin){
+export function mcpHandler(access:Access,history:HistoryStore,templates:TemplateStore,operations:OperationStore,imageQueue:OperationStore,origin:string,secret:string,changed:(deck:string)=>Promise<void>,resourceOrigin=origin,paragraphs?:ParagraphHistoryStore){
   const oauth=history.oauth(secret,resourceOrigin+"/mcp"),tools=domainTools(history,templates,operations,imageQueue,origin,changed)
   return {
     close:()=>tools.close(),
@@ -19,6 +21,7 @@ export function mcpHandler(access:Access,history:HistoryStore,templates:Template
       if(url.pathname==="/api/mcp/uploads"&&request.method==="POST"){
         const rejected=mutationRejection(request,origin,["application/json","application/octet-stream"]);if(rejected)return Response.json(rejected,{status:rejected.status})
         const principal=await access.principal(request);if(!principal)return Response.json({code:"signed-out"},{status:401})
+        const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission
         try{
           const mime=request.headers.get("content-type")?.split(";")[0] ?? ""
           let name:string,requestId:string,bytes:Buffer
@@ -37,6 +40,7 @@ export function mcpHandler(access:Access,history:HistoryStore,templates:Template
       if(url.pathname!=="/mcp")return Response.json({code:"not-found"},{status:404})
       const authorization=request.headers.get("authorization"),principal=authorization?.startsWith("Bearer ") ? await oauth.authenticate(authorization.slice(7),resourceOrigin+"/mcp") : null
       if(!principal)return Response.json({code:"invalid-token"},{status:401,headers:{"www-authenticate":`Bearer resource_metadata="${resourceOrigin}/.well-known/oauth-protected-resource/mcp"`}})
+      const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission
       const protocol=request.headers.get("mcp-protocol-version")
       if(protocol&&protocol!==mcpPin.protocol)return Response.json({code:"unsupported-protocol-version",supported:[mcpPin.protocol]},{status:400})
       if(request.method==="POST"){

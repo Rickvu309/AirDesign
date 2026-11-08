@@ -1,3 +1,4 @@
+import {validateSavedVersionV2} from "../db/paragraph-frozen-state.ts"
 import { decodeExportFailure, type ExportFailure } from "../../../../packages/operations/src/export-failure.ts"
 import { captureTemplateSources } from "../templates/source-store.ts"
 import { ownedDeckAssets } from "../images/store.ts"
@@ -29,7 +30,7 @@ function exposed(row:Row):ExportJob {
 function valid(options:ExportOptions) {
   if(!["pptx","pdf"].includes(options.format)||!["now","after-run"].includes(options.timing)||!Array.isArray(options.slides)||options.slides.some(value=>typeof value!=="string")||new Set(options.slides).size!==options.slides.length||!Number.isSafeInteger(options.expectedSeq)||options.expectedSeq<0||typeof options.allowIssues!=="boolean")throw new Error("invalid-export-options")
 }
-export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
+export function exportStore(transaction:CatalogTransaction,clock=Date.now,protocol:"legacy-text-v2"|"paragraph-body-v3"="legacy-text-v2") {
   async function owned(tx:CatalogSql,principal:Principal,id:string) {const row=(await tx.query<Row>("SELECT * FROM deck_export WHERE id=$1 AND owner=$2 FOR UPDATE",[id,principal.personId])).rows[0];if(!row)throw new Error("export-not-found");if(row.state==="ready" && Number(row.expires)<=clock()){await tx.query("UPDATE deck_export SET state='expired',result=NULL WHERE id=$1",[id]);return {...row,state:"expired" as const,result:null}}return row}
   async function capture(tx:CatalogSql,deck:string,owner:string) {
     const row=(await tx.query<{state:History;deleted:boolean;title:string}>("SELECT state,deleted,title FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,owner])).rows[0]
@@ -41,7 +42,7 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
     return {snapshot:{templates,assets,provenance,title:row.title,deck:row.state.deck,seq:row.state.seq,source:source ? Buffer.from(source.bytes).toString("base64") : null},running:(await tx.query<{payload:History["runs"][number]}>("SELECT payload FROM editing_run WHERE deck=$1",[deck])).rows.some(run=>run.payload.kind==="open")}
   }
   return {
-    async submit(principal:Principal,request:string,deck:string,options:ExportOptions) {valid(options);if(!/^[A-Za-z0-9_-]{1,100}$/.test(request))throw new Error("invalid-request-id");return transaction(async tx=>{
+    async submit(principal:Principal,request:string,deck:string,options:ExportOptions) {if(protocol==="paragraph-body-v3")throw new Error("editing-protocol-requires-native-export");valid(options);if(!/^[A-Za-z0-9_-]{1,100}$/.test(request))throw new Error("invalid-request-id");return transaction(async tx=>{
       const current=await capture(tx,deck,principal.personId)
       const previous=(await tx.query<Row>("SELECT * FROM deck_export WHERE owner=$1 AND request=$2",[principal.personId,request])).rows[0]
       if(previous){if(previous.deck!==deck||JSON.stringify(Object.entries(previous.options).sort())!==JSON.stringify(Object.entries(options).sort()))throw new Error("request-id-payload-conflict");return exposed(previous)}
@@ -57,7 +58,7 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
     async status(principal:Principal,id:string){return transaction(async tx=>exposed(await owned(tx,principal,id)))},
     async artifact(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="ready"||!row.result)throw new Error("export-artifact-unavailable");return {bytes:Buffer.from(row.result),format:row.options.format,seq:row.snapshot?.seq,title:row.snapshot?.title ?? "AirDesign"}})},
     async cancel(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(["waiting","queued","running"].includes(row.state))await tx.query("UPDATE deck_export SET state='cancelled',result=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
-    async retry(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="failed"||row.attempts>=3)throw new Error("export-retry-unavailable");await tx.query("UPDATE deck_export SET state='queued',reason=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
+    async retry(principal:Principal,id:string){return transaction(async tx=>{const row=await owned(tx,principal,id);if(row.state!=="failed"||row.attempts>=3)throw new Error("export-retry-unavailable");if(!row.snapshot)throw new Error("editing-protocol-requires-new-snapshot");await tx.query("UPDATE deck_export SET state='queued',reason=NULL,lease=NULL WHERE id=$1",[id]);return exposed(await owned(tx,principal,id))})},
     async claim(){await transaction(async tx=>{
       const failure=JSON.stringify({kind:"limit",limit:"wall-clock",signal:null} satisfies ExportFailure)
       await tx.query("UPDATE deck_export SET state=CASE WHEN attempts<3 THEN 'queued' ELSE 'failed' END,reason=$2,diagnostics=diagnostics || $3::jsonb,lease=NULL WHERE state='running' AND deadline<=$1",[clock(),failure,JSON.stringify([failure])])
@@ -68,9 +69,11 @@ export function exportStore(transaction:CatalogTransaction,clock=Date.now) {
       const row=(await tx.query<Row>("SELECT * FROM deck_export WHERE state='queued' ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1")).rows[0]
       if(!row)return null
       if(!row.snapshot)throw new Error("saved-version-required")
+      if(protocol === "paragraph-body-v3" && (await tx.query<{snapshot_version:number}>("SELECT snapshot_version FROM deck_export WHERE id=$1",[row.id])).rows[0]?.snapshot_version !== 2)throw new Error("unsupported-export-snapshot-version")
+      validateSavedVersionV2(row.snapshot)
       const lease=randomUUID(),deadline=clock()+(row.options.format==="pdf" ? pdfExportDeadlineMs : 30000)
       await tx.query("UPDATE deck_export SET state='running',lease=$2,deadline=$3,attempts=attempts+1 WHERE id=$1",[row.id,lease,deadline])
-      return {id:row.id,lease,deadline,options:row.options,snapshot:row.snapshot}
+      return {id:row.id,lease,deadline,options:row.options,snapshot:row.snapshot,snapshotVersion:2}
     })},
     async complete(id:string,lease:string,result:Buffer,report:Record<string,unknown>){return transaction(async tx=>{const changed=await tx.query<{id:string}>("UPDATE deck_export SET state='ready',result=$3,report=$4,sha=$5,expires=$6,lease=NULL WHERE id=$1 AND lease=$2 AND state='running' AND deadline>$7 RETURNING id",[id,lease,result,JSON.stringify(report),createHash("sha256").update(result).digest("hex"),clock()+resultLife,clock()]);return changed.rows.length===1})},
     async fail(id:string,lease:string,failure:string|ExportFailure){const reason=typeof failure === "string" ? failure : JSON.stringify(failure);return transaction(async tx=>{await tx.query("UPDATE deck_export SET state='failed',reason=$3,diagnostics=diagnostics || $4::jsonb,lease=NULL WHERE id=$1 AND lease=$2 AND state='running'",[id,lease,reason,JSON.stringify([reason])])})},

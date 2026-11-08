@@ -1,6 +1,7 @@
 export type TextProtocol = "legacy-text-v2" | "paragraph-body-v3"
 export type TextAdmission = {kind: "ready"; protocol: TextProtocol} | {kind: "paused"; protocol: TextProtocol}
 export type TextAdmissionRefusal =
+  {kind: "refused"; code: "editing-feature-pending"; retryable: false; next: "retain-and-reconcile"} |
   {kind: "refused"; code: "editing-paused"; retryable: true; next: "retain-and-retry"} |
   {kind: "refused"; code: "editing-protocol-mismatch"; retryable: false; next: "retain-and-reconcile"}
 export type TextAdmissionResult = {kind: "admitted"; protocol: TextProtocol} | TextAdmissionRefusal

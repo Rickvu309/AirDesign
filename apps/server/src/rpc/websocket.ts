@@ -1,3 +1,6 @@
+import {admitTextProtocol} from "../../../../packages/rpc/src/text/protocol.ts"
+import {parseParagraphCommandRequest} from "../../../../packages/rpc/src/text/command-request.ts"
+import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import { syncErrorCode } from "../../../../packages/rpc/src/sync-error.ts"
 import { WebSocketServer, WebSocket } from "ws"
 import type { Server } from "node:http"
@@ -6,14 +9,19 @@ import type { HistoryStore } from "../db/history-store.ts"
 import { parseCommand } from "../../../../packages/rpc/src/parse-command.ts"
 import type { Snapshot } from "../../../../packages/rpc/src/client.ts"
 import { snapshotDelta } from "../../../../packages/rpc/src/snapshot-delta.ts"
-export function attachSync(server: Server, access: Access, store: HistoryStore, origin: string) {
+export function attachSync(server: Server, access: Access, store: HistoryStore, origin: string, paragraphs?: ParagraphHistoryStore) {
   const sockets = new WebSocketServer({noServer:true,maxPayload:1_048_576})
-  const peers = new Map<WebSocket,{deck:string;request:Request;personId:string;seq:number|null}>()
+  const peers = new Map<WebSocket,{deck:string;request:Request;personId:string;seq:number|null;native:boolean}>()
   async function refresh(deck: string, snapshot?: Snapshot & {committedAt?:number}, except?: WebSocket) {
     await Promise.all([...peers].filter(([socket,peer])=>peer.deck===deck && socket!==except).map(async ([socket,peer])=> {
       try {
         const principal = await access.principal(peer.request)
         if (!principal || principal.personId !== peer.personId) { socket.send(JSON.stringify({kind:"signed-out"})); socket.close(); return }
+        if (paragraphs) {
+          const admission = admitTextProtocol(await paragraphs.protocol(), peer.native ? "paragraph-body-v3" : "legacy-text-v2")
+          if (admission.kind === "refused") {socket.send(JSON.stringify(admission)); socket.close(4009); return}
+          if (peer.native) {const current = await paragraphs.snapshot(principal, deck); socket.send(JSON.stringify({kind: "snapshot", ...current})); peer.seq = current.seq; return}
+        }
         const current = snapshot ? snapshotDelta(snapshot,peer.seq) : peer.seq===null ? await store.read(principal,deck) : await store.delta(principal,deck,peer.seq)
         if (socket !== except && socket.readyState === WebSocket.OPEN && (peer.seq===null || current.seq>=peer.seq)) {socket.send(JSON.stringify({kind:"snapshot",...current}));peer.seq=current.seq}
       } catch (error) {
@@ -67,11 +75,19 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
       const request = new Request(new URL("/api/account",origin),{headers:{cookie:incoming.headers.cookie ?? ""}})
       const principal = await access.principal(request)
       if (!principal) { socket.destroy(); return }
+      const requested = url.searchParams.get("textProtocol") ?? "legacy-text-v2"
+      const admission = paragraphs ? admitTextProtocol(await paragraphs.protocol(), requested) : admitTextProtocol({kind: "ready", protocol: "legacy-text-v2"}, requested)
+      if (admission.kind === "refused") {
+        sockets.handleUpgrade(incoming,socket,head,websocket => {websocket.on("error",()=>websocket.close()); websocket.send(JSON.stringify(admission)); websocket.close(4009)})
+        return
+      }
+      const native = admission.protocol === "paragraph-body-v3"
+      const active = native && paragraphs ? paragraphs : store
       const token=url.searchParams.get("runCredential")
-      const identity=token ? await store.runIdentity(principal,deck,token) : {kind:"person" as const}
-      await store.read(principal,deck)
+      const identity=token ? await active.runIdentity(principal,deck,token) : {kind:"person" as const}
+      await active.read(principal,deck)
       sockets.handleUpgrade(incoming,socket,head,websocket=> {
-        peers.set(websocket,{deck,request,personId:principal.personId,seq:null})
+        peers.set(websocket,{deck,request,personId:principal.personId,seq:null,native})
         websocket.on("error",()=>websocket.close())
         websocket.on("close",()=>peers.delete(websocket))
         const deliver=async(batch:string[])=>{
@@ -79,6 +95,20 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
           const current=await access.principal(request)
           const authorized=performance.now()
           if(!current || current.personId!==principal?.personId){websocket.send(JSON.stringify({kind:"signed-out"}));websocket.close();return}
+          if (paragraphs) {
+            const admitted = admitTextProtocol(await paragraphs.protocol(), requested)
+            if (admitted.kind === "refused") {websocket.send(JSON.stringify(admitted)); return}
+            if (native) {
+              for (const raw of batch) {
+                try {
+                  const result = await paragraphs.commit(current, deck, parseParagraphCommandRequest(JSON.parse(raw)), identity)
+                  websocket.send(JSON.stringify({kind: "receipt", version: result.version, receiptBytes: result.receiptBytes}))
+                } catch (error) {websocket.send(JSON.stringify({kind: "error", code: syncErrorCode(error)}))}
+              }
+              await refresh(deck)
+              return
+            }
+          }
           const bases=[...peers.values()].filter(peer=>peer.deck===deck).map(peer=>peer.seq)
           const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
           const parsed=batch.map(raw=>{
@@ -103,6 +133,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         }
         websocket.on("message",data=>enqueue(deck,{websocket,raw:data.toString(),deliver}))
         void (async ()=> {
+          if (native) {await refresh(deck); return}
           let cursor=after
           while (websocket.readyState===WebSocket.OPEN) {
             const page=await store.replay(principal,deck,cursor)

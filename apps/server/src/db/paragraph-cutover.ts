@@ -4,6 +4,7 @@ import type {History} from "../../../../packages/change-log/src/index.ts"
 import {currentProjection, rebuildHistoryIndex} from "./history-index.ts"
 import {legacyHistoryArchive} from "./paragraph-history-rows.ts"
 import {convertParagraphArchives} from "./paragraph-conversion.ts"
+import {reconcileParagraphFrozenState} from "./paragraph-frozen-state.ts"
 import {lockParagraphRelations, nativeParagraphCapability} from "./paragraph-protocol.ts"
 
 export type ParagraphCutoverPause = {kind: "paused"; drafts: "retained-or-visibly-refused"; oldReaders: "retired"}
@@ -25,14 +26,13 @@ export async function cutoverParagraphHistory(client: pg.Client, options: Paragr
       return {kind: "already-native", decks: 0, conversionMs: 0, lockMs: performance.now() - locked, wholeMs: performance.now() - started}
     }
     if (marker.protocol !== "legacy-text-v2") throw new Error("editing-protocol-mismatch")
-    const frozen = await client.query("SELECT 1 FROM deck_export WHERE snapshot IS NOT NULL UNION ALL SELECT 1 FROM tool_snapshot UNION ALL SELECT 1 FROM aira_run LIMIT 1")
-    if (frozen.rows.length) throw new Error("paragraph-frozen-state-reconciliation-required")
     const rows = await client.query<{id: string; state: History}>("SELECT id,state FROM editing_deck ORDER BY id")
     const archives = []
     for (const row of rows.rows) archives.push(await legacyHistoryArchive(client, row.id, row.state))
     const converted = await convertParagraphArchives(archives, options.conversionBudgetMs, options.signal)
     options.signal?.throwIfAborted()
     await nativeParagraphCapability(client)
+    await reconcileParagraphFrozenState(client)
     for (const archive of converted.archives) {
       options.signal?.throwIfAborted()
       const deck = archive.history.deck.id

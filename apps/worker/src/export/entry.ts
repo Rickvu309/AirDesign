@@ -9,7 +9,9 @@ import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
 import { fontReport } from "../../../../packages/render/src/fonts.ts"
 
 try {
-  const input=JSON.parse(await readFile(jobPath("input.json"),"utf8")),deck=parseDeck(input.snapshot.deck),seq=input.snapshot.seq
+  const input=JSON.parse(await readFile(jobPath("input.json"),"utf8"))
+  if(input.snapshotVersion!==2)throw new Error("unsupported-export-snapshot-version")
+  const deck=parseDeck(input.snapshot.deck),seq=input.snapshot.seq
   if(!Number.isSafeInteger(seq)||seq<0)throw new Error("invalid-saved-version")
   const selected:string[]=input.options.slides
   const slides=selected.length ? selected.map(id=>{const slide=deck.slides.find(slide=>slide.id===id);if(!slide)throw new Error("invalid-slide-range");return slide}) : deck.slides

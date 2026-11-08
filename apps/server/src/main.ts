@@ -1,3 +1,5 @@
+import {createParagraphHistoryStore} from "./db/paragraph-history-store.ts"
+import {paragraphLegacyBoundary} from "./rpc/paragraph-boundary.ts"
 import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {access as accessFile} from "node:fs/promises"
 import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
@@ -65,27 +67,29 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
     guard: { allow: () => true },
     exposeInbox: process.env.AIRDESIGN_EXPOSE_INBOX === "1",
     publicOrigin,
-    deleteOwnedData:async owner=>{await aira.stopOwner(owner);await history.deletions.enqueue(owner);await deliverAccountDeletion(history,operations,imageQueue,templates,path.join(os.homedir(),"tmp/airdesign-jobs"))},
+    deleteOwnedData:async owner=>{await aira.stopOwner(owner);const active=paragraphs && (await paragraphs.protocol()).protocol==="paragraph-body-v3" ? paragraphs : history;await active.deletions.enqueue(owner);await deliverAccountDeletion(active,operations,imageQueue,templates,path.join(os.homedir(),"tmp/airdesign-jobs"))},
   })
   const operationsPath=extras.operationsPath ?? process.env.AIRDESIGN_OPERATIONS_PATH ?? path.join(os.homedir(), ".local/share/airdesign/operations.sqlite")
   const operations = new OperationStore(operationsPath, extras.clock)
   const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
   const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", client:memory, path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl, schema:"migrate" }, extras.clock)
+  const paragraphs = databaseUrl === undefined ? undefined : createParagraphHistoryStore(databaseUrl, extras.clock)
+  const boundary=(handler:(request:Request)=>Promise<Response>,nativeAvailable?:(request:Request)=>boolean)=>paragraphLegacyBoundary(access,paragraphs,publicOrigin,handler,nativeAvailable)
   const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
-  const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
-  const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
+  const handleImages=boundary(imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)}),request=>request.method==="GET")
+  const handleTemplates = boundary(templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck)))
   const changed=async(deck:string)=>{await sync.refresh(deck);await aira.publish(deck)}
-  const handleDecks = decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates)
+  const handleDecks = boundary(decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates,paragraphs),request=>new URL(request.url).pathname.startsWith("/api/catalog/export-jobs/") || (request.method==="GET" && new URL(request.url).pathname.endsWith("/exports")))
   const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
-  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin)
+  const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin,paragraphs)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
   const aira=agentHandler(access,history,domainTools(history,templates,operations,imageQueue,publicOrigin,deck=>sync.refresh(deck)),publicOrigin,extras.agentAdapter ?? configuredAgent(),deck=>sync.refresh(deck))
   await access.resumeDeletions()
   const handleBilling=billingHandler(access,history,extras.paymentProvider,publicOrigin)
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
-  const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
+  const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck), paragraphs)
   const handleOperation = operationsHandler(access, operations, publicOrigin)
-  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
+  const handleWorker = workerHandler(operations,imageQueue,secret,async()=>{const active=paragraphs && (await paragraphs.protocol()).protocol==="paragraph-body-v3" ? paragraphs : history;return deliverAccountDeletion(active,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs"))},operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
   const version = await readBuildIdentity()
   const server = createServer((request, response) => {
     response.setHeader("x-content-type-options", "nosniff")
@@ -100,11 +104,11 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
       void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
       return
     }
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, aira.handle, handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, boundary(aira.handle), handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })
-  const sync = attachSync(server, access, history, publicOrigin)
+  const sync = attachSync(server, access, history, publicOrigin, paragraphs)
   await new Promise<void>((resolve,reject) => {
     server.once("error",reject)
     server.listen(port, process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1", () => resolve())
@@ -121,6 +125,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
         server.close((error) => error ? reject(error) : resolve())
       })
       await mcp.close()
+      await paragraphs?.close()
       await history.close()
       imageQueue.close()
       templates.close()

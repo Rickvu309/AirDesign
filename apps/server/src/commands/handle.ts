@@ -1,15 +1,18 @@
+import {paragraphCommands} from "./paragraph-handle.ts"
+import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import { syncErrorCode } from "../../../../packages/rpc/src/sync-error.ts"
 import { mutationRejection, type Access } from "@airdesign/access"
 import { parseDeck } from "../../../../packages/deck/src/index.ts"
 import type { HistoryStore } from "../db/history-store.ts"
 import { parseCommand } from "../../../../packages/rpc/src/parse-command.ts"
-export function commandsHandler(access: Access, store: HistoryStore, origin: string, changed: (deck: string) => Promise<void> = async () => {}) {
+export function commandsHandler(access: Access, store: HistoryStore, origin: string, changed: (deck: string) => Promise<void> = async () => {}, paragraphs?: ParagraphHistoryStore) {
   return async (request: Request): Promise<Response> => {
     const rejection = mutationRejection(request, origin)
     if (rejection) return Response.json(rejection, { status: rejection.status })
     const principal = await access.principal(request)
     if (!principal) return Response.json({ code: "signed-out" }, { status: 401 })
     try {
+      if (paragraphs) {const response = await paragraphCommands(request, principal, paragraphs, changed); if (response) return response}
       const url = new URL(request.url)
       if (url.pathname === "/api/decks" && request.method === "POST") return Response.json(await store.create(principal, parseDeck(await request.json())), { status: 201 })
       const match = /^\/api\/decks\/([a-zA-Z][a-zA-Z0-9_-]{0,31})(?:\/(commands|events))?$/.exec(url.pathname)
@@ -34,6 +37,8 @@ export function commandsHandler(access: Access, store: HistoryStore, origin: str
       return Response.json({ code: "method-not-allowed" }, { status: 405 })
     } catch (error) {
       const code = syncErrorCode(error)
+      if (code === "editing-paused") return Response.json({kind: "refused", code, retryable: true, next: "retain-and-retry"}, {status: 409})
+      if (code === "editing-protocol-mismatch") return Response.json({kind: "refused", code, retryable: false, next: "retain-and-reconcile"}, {status: 409})
       return Response.json({ code }, { status: code === "deck-not-found" ? 404 : code === "deck-deleted" ? 410 : code === "sync-unavailable" ? 503 : 400 })
     }
   }

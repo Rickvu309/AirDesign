@@ -25,7 +25,7 @@ function run(value:unknown):RunState {
   if(!record(value) || typeof value.id!=="string" || !integer(value.epoch) || !(value.kind==="open" || value.kind==="closed" || value.kind==="undone"))throw new Error("invalid-history-run")
   return {id:value.id,epoch:value.epoch,kind:value.kind}
 }
-export function parseContributions(value:unknown,deck:Deck,seq:number,previous?:History) {
+export function parseHistoryContributions<D extends {id: Deck["id"]}>(value:unknown,deck:D,seq:number,decode:(value:unknown)=>D,previous?:History<D>) {
   if(!record(value) || !record(value.history) || !Array.isArray(value.applied))throw new Error("invalid-snapshot-history")
   const raw=value.history
   if(!integer(raw.seq) || raw.seq!==seq || !Array.isArray(raw.events) || !Array.isArray(raw.runs) || !Array.isArray(raw.usedIds) || !raw.usedIds.every(isId))throw new Error("invalid-snapshot-history")
@@ -33,8 +33,12 @@ export function parseContributions(value:unknown,deck:Deck,seq:number,previous?:
   if(delta && (!previous || raw.base!==previous.seq))throw new Error("history-base-mismatch")
   const updates=raw.events.map(contribution),byId=new Map(updates.map(event=>[event.id,event]))
   const events=delta && previous ? [...previous.events.map(event=>byId.get(event.id) ?? event),...updates.filter(event=>!previous.events.some(old=>old.id===event.id))] : updates
-  const history:History={initial:delta && previous ? previous.initial : parseDeck(raw.initial),deck,seq:raw.seq,events,runs:raw.runs.map(run),usedIds:raw.usedIds}
+  const history:History<D>={initial:delta && previous ? previous.initial : decode(raw.initial),deck,seq:raw.seq,events,runs:raw.runs.map(run),usedIds:raw.usedIds}
   const applied=value.applied.map((id:unknown)=> {if(typeof id!=="string")throw new Error("invalid-snapshot-receipt");return commandId(id)})
-  if(history.initial.id!==deck.id || (!delta && JSON.stringify(parseDeck(raw.deck))!==JSON.stringify(deck)) || history.events.some(event=>event.seq>seq || event.toggledAt>seq) || new Set(history.events.map(event=>event.id)).size!==history.events.length)throw new Error("inconsistent-snapshot-history")
+  if(history.initial.id!==deck.id || (!delta && JSON.stringify(decode(raw.deck))!==JSON.stringify(deck)) || history.events.some(event=>event.seq>seq || event.toggledAt>seq) || new Set(history.events.map(event=>event.id)).size!==history.events.length)throw new Error("inconsistent-snapshot-history")
   return {history,applied}
+}
+
+export function parseContributions(value:unknown,deck:Deck,seq:number,previous?:History) {
+  return parseHistoryContributions(value,deck,seq,parseDeck,previous)
 }

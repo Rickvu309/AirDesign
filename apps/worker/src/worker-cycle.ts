@@ -22,26 +22,31 @@ export async function runWorkerCycle(signal: AbortSignal) {
   try {
     if (mode === "all" && process.env.AIRDESIGN_DATABASE_URL) {
       const {createHistoryStore} = await import("../../server/src/db/history-store.ts")
+      const {createParagraphHistoryStore} = await import("../../server/src/db/paragraph-history-store.ts")
       const {purgeExpiredDecks} = await import("./purge/expired-decks.ts")
       const {deliverExport,recoverExports} = await import("./export/deliver.ts")
       const history = await createHistoryStore({kind:"postgres",url:process.env.AIRDESIGN_DATABASE_URL,schema:"connect",signal})
+      const paragraphs = createParagraphHistoryStore(process.env.AIRDESIGN_DATABASE_URL)
       try {
         signal.throwIfAborted()
-        await recoverExports(history.exports,root)
+        const admission = await paragraphs.protocol()
+        if (admission.kind === "paused") throw new Error("editing-paused")
+        const active = admission.protocol === "paragraph-body-v3" ? paragraphs : history
+        await recoverExports(active.exports,root)
         if (process.env.AIRDESIGN_WORKER_API_ORIGIN) await drainRemoteQueue(process.env.AIRDESIGN_WORKER_API_ORIGIN,process.env.AIRDESIGN_SECRET ?? "",root,signal)
         signal.throwIfAborted()
         if (!process.env.AIRDESIGN_WORKER_API_ORIGIN) {
           const templates = new TemplateStore(database+".templates")
-          try { await deliverAccountDeletion(history,store,images,templates,root,signal) } finally { templates.close() }
+          try { await deliverAccountDeletion(active,store,images,templates,root,signal) } finally { templates.close() }
         }
         signal.throwIfAborted()
-        await purgeExpiredDecks(history.catalog)
+        if (admission.protocol === "legacy-text-v2") await purgeExpiredDecks(history.catalog)
         while (!signal.aborted) {
-          const result = await deliverExport(history.exports,root,signal)
+          const result = await deliverExport(active.exports,root,signal)
           if (!result) break
           process.stdout.write(JSON.stringify(result)+"\n")
         }
-      } finally { await history.close() }
+      } finally { await paragraphs.close(); await history.close() }
     } else if (process.env.AIRDESIGN_WORKER_API_ORIGIN) await drainRemoteQueue(process.env.AIRDESIGN_WORKER_API_ORIGIN,process.env.AIRDESIGN_SECRET ?? "",root,signal)
     signal.throwIfAborted()
     for (const queue of [store,images]) for (const recovered of queue.recover()) {
