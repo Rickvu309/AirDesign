@@ -5,6 +5,16 @@ import { studioFoundationHits } from "../../scripts/lint/studio-foundation.ts"
 const file = "packages/ui/src/tokens/tokens.css"
 const fixed = readFileSync(file, "utf8")
 describe("Studio design foundation", () => {
+  it("rejects retired Editor journey controls",()=>{
+    const file="bench/studio/browser-check.mjs",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    for(const stale of [source.replace('name:"New slide"','name:"+ New slide"'),source.replace('name:"Edit history"','name:"Deck menu"')])expect(studioFoundationHits(file,stale)).toContainEqual({line:1,reason:"studio-browser-uses-current-slide-and-history-controls"})
+  })
+  it("rejects a release replay without observable font and preservation proof",()=>{
+    const file="bench/release/replay.mjs",source=readFileSync(file,"utf8")
+    expect(studioFoundationHits(file,source)).toEqual([])
+    for(const stale of [source.replace('assertFontChange(before,saved.deck,["s0e0"])','assert.equal(saved.deck.slides[0].elements[0].runs[0].text,request)'),source.replace("fontDeck(id,1)","fixtureDeck(2,1)")])expect(studioFoundationHits(file,stale)).toContainEqual({line:1,reason:"release-replay-proves-font-mutation-and-content-preservation"})
+  })
   it("rejects canonical keys and values in supplemental copy", () => {
     const supplemental = "packages/ui/src/copy/studio-foundation-copy.ts"
     expect(studioFoundationHits(supplemental, readFileSync(supplemental, "utf8"))).toEqual([])

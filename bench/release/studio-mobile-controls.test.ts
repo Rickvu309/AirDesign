@@ -2,6 +2,7 @@ import path from "node:path"
 import {build} from "vite"
 import {chromium,type Page,type Locator} from "playwright"
 import {beforeAll,expect,it} from "vitest"
+import type {AiraSnapshot} from "../../apps/studio/src/chat/aira-client.ts"
 import {assertScenarioControls} from "../design-parity/dom-assertions.ts"
 import {readRegistry,resolveCopy} from "../design-parity/registry.ts"
 
@@ -53,12 +54,12 @@ it("opens Export on the unchanged phone viewport while keeping unsafe snapshots 
  const browser=await chromium.launch()
  try{for(const state of ["saved","offline","deleted","signed-out"]){
   const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,isMobile:true}),proof=await mount(page,"/editor?state="+state)
-  const button=page.getByRole("button",{name:"Export",exact:true});await button.waitFor()
+  const button=page.locator(".studio-editor .editor-export").getByRole("button",{name:"Export",exact:true,includeHidden:true});await button.waitFor()
   expect(await button.isEnabled(),JSON.stringify({state,dom:await page.locator(".studio-editor").getAttribute("data-sync-state"),errors:proof.errors})).toBe(state==="saved")
   if(state==="saved"){
    expect(await ownsSquare(button)).toBe(true);await button.tap()
    const dialog=page.getByRole("dialog",{name:"Export",exact:true});await dialog.waitFor()
-   expect(await dialog.getByRole("button",{name:"Export",exact:true}).isEnabled()).toBe(true)
+   expect(await dialog.getByRole("button",{name:"Export",exact:true,includeHidden:true}).isEnabled()).toBe(true)
    expect(page.viewportSize()).toEqual({width:390,height:844});expect(proof.requests).toEqual([])
    await dialog.getByRole("button",{name:"Close export",exact:true}).press("Enter");await dialog.waitFor({state:"hidden"})
   }
@@ -84,7 +85,7 @@ it("binds Export to the real visible manual toolbar and rejects wrong, hidden an
   const page=await browser.newPage({viewport:{width:1470,height:923}});await mount(page,"/editor")
   const entry=(await readRegistry()).find(entry=>entry.code==="S92.01");if(!entry)throw new Error("missing-editor-entry")
   const proof={...entry,assertions:{...entry.assertions,controls:entry.assertions.controls.filter(control=>"nameKey" in control&&control.nameKey==="editor.export")}}
-  const button=page.locator(".studio-editor .editor-export button");await button.waitFor()
+  const button=page.locator(".studio-editor .editor-export").getByRole("button",{name:"Export",exact:true,includeHidden:true});await button.waitFor()
   await page.evaluate(()=>{const background=document.createElement("button");background.textContent="Export";background.id="background-export";document.body.prepend(background)})
   await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
   const style=await button.getAttribute("style")
@@ -100,7 +101,7 @@ it("binds Export to the real visible manual toolbar and rejects wrong, hidden an
   await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
   await button.evaluate(element=>element.after(element.cloneNode(true)))
   await expect(assertScenarioControls(page,proof)).rejects.toThrow("required-control")
-  await page.locator(".editor-export button").last().evaluate(element=>element.remove())
+  await page.locator(".editor-export").getByRole("button",{name:"Export",exact:true,includeHidden:true}).last().evaluate(element=>element.remove())
   await button.press("Enter");const dialog=page.getByRole("dialog",{name:"Export",exact:true});await dialog.waitFor()
   await dialog.getByRole("button",{name:"Close export",exact:true}).press("Enter");await dialog.waitFor({state:"hidden"})
   await button.evaluate(element=>element.remove())
@@ -116,12 +117,14 @@ it("keeps the integrated Aira weekly-limit Export hit target outside the panel a
  try{
   const page=await browser.newPage({viewport:entry.viewport})
   const mounted=await mount(page,"/editor?state=saved")
-  await page.route("**/api/aira/events?**",route=>route.fulfill({contentType:"text/event-stream",body:'data: '+JSON.stringify({enabled:true,remote:[],run:{id:"limited-proof",kind:"limited",request:"Build a deck",events:[{id:1,kind:"limit",limit:{kind:"out-of-usage",usage:{hit:"week-hit",paid:0,week:{resetsAt:1804483200000}}}}]}})+'\n\n'}))
+  await page.route("**/api/aira/events?**",route=>route.fulfill({contentType:"text/event-stream",body:'data: '+JSON.stringify({enabled:true,remote:[],run:{id:"limited-proof",owner:"mobile-owner",deck:"mobile-proof",selection:[],completed:[],kind:"limited",request:"Build a deck",events:[{id:1,kind:"limit",limit:{kind:"out-of-usage",usage:{hit:"week-hit",paid:0,week:{resetsAt:1804483200000}}}}]}} satisfies AiraSnapshot)+'\n\n'}))
+  await page.locator('.editor-slide[data-run-state="queued"]').first().waitFor()
+  expect(mounted.errors).toEqual([])
   await page.getByRole("button",{name:"Agent",exact:true}).click()
   const panel=page.getByRole("complementary",{name:"Aira",exact:true})
   await panel.getByText(resolveCopy("usage.limit_title"),{exact:true}).waitFor()
   await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
-  const button=page.locator(".editor-export").getByRole("button",{name:"Export",exact:true})
+  const button=page.locator(".editor-export").getByRole("button",{name:"Export",exact:true,includeHidden:true})
   await button.press("Enter")
   const dialog=page.getByRole("dialog",{name:"Export",exact:true});await dialog.waitFor()
   await expect(assertScenarioControls(page,proof)).rejects.toThrow("hit-test")

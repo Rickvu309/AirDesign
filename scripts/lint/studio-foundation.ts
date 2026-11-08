@@ -42,6 +42,8 @@ export function studioFoundationHits(file: string, source: string): { line: numb
   }
   if (/bench\/.*\.mjs$/.test(file)) {
     const hits = []
+    if(file.endsWith("bench/studio/browser-check.mjs") && /\+ New slide|name:"Deck menu",exact:true\}\)\.getByRole\("button",\{name:"(?:Undo|Redo)"/.test(source))hits.push({line:1,reason:"studio-browser-uses-current-slide-and-history-controls"})
+    if(file.endsWith("bench/release/replay.mjs") && (!source.includes('assertFontChange(before,saved.deck,["s0e0"])') || !source.includes("fontDeck(id,1)")))hits.push({line:1,reason:"release-replay-proves-font-mutation-and-content-preservation"})
     if (source.includes('locator(".deck-card").waitFor()')) hits.push({line:1,reason:"studio-browser-waits-for-persisted-deck-rows"})
     if (source.includes('getByLabel("New deck"')) hits.push({line:1,reason:"studio-browser-opens-deck-menu-by-button-role"})
     for (const match of source.matchAll(/name\s*:\s*["'](?:\+ New deck|No decks yet)["']|getByLabel\(["']Search decks["']\)/g)) hits.push({ line: source.slice(0, match.index).split("\n").length, reason: "studio-browser-check-uses-designed-shell-accessible-names" })

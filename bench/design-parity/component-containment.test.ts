@@ -27,7 +27,7 @@ it("contains visible text and controls and limits raster coverage for all compon
       const tag=entry.component!.kind==="dialog" ? "dialog" : "div"
       const html=`<style>.toast,dialog{position:fixed;left:200px;top:200px;margin:0;padding:20px;width:400px;height:200px;box-sizing:border-box}p{margin:0}</style><${tag} class="toast" data-sonner-toast role="${tag==="dialog" ? "dialog" : "status"}" open><p>Contained text</p><button>Done</button><span hidden>Hidden text</span><button hidden style="position:absolute;top:500px">Hidden control</button><img alt="" style="width:16px;height:16px"></${tag}>`
       for(const mutation of ["text","control","image","canvas","background"]){
-        await page.setContent(html)
+        await page.setContent(entry.code==="S49.02" ? html.replace(`<${tag} class="toast"`, `<div class="studio-editor" data-sync-state="offline"><${tag} class="toast editor-status"`)+"</div>" : html)
         await expect(assertScenarioStructure(page,entry)).resolves.toBeUndefined()
         await page.locator(entry.component!.selector).evaluate((element,mutation)=>{
           if(mutation==="text"||mutation==="control"){

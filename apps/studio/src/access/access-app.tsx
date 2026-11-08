@@ -60,6 +60,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
   const [accountName, setAccountName] = useState("My account")
   const [email, setEmail] = useState("")
   const [code, setCode] = useState("")
+  const [codeError,setCodeError]=useState<string | undefined>()
   const [emailError, setEmailError] = useState<string | undefined>()
   const [intentToken, setIntentToken] = useState<string | null>(initialIntent)
   const [kind, setKind] = useState<IntentKind>(initialKind)
@@ -274,6 +275,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     }
     setEmailError(undefined)
     setResendAvailableAt(result.resendAvailableAt)
+    setCodeError(undefined)
     setScreen("check")
   }
 
@@ -284,7 +286,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     const result = await client.submitCode(email, next, intentToken)
     if (result.status === "invalid-code") {
       setCode("")
-      setScreen("expired")
+      setCodeError(copy("access.wrong_code"))
       return
     }
     if (result.status !== "signed-in") {
@@ -306,6 +308,8 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     }
     const result = await client.sendEmail(email, intentToken)
     if (result.status === "check-email") {
+      setCode("")
+      setCodeError(undefined)
       setResendAvailableAt(result.resendAvailableAt)
     }
   }
@@ -315,6 +319,7 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
     setConfirmSignOut(false)
     setEmail("")
     setCode("")
+    setCodeError(undefined)
     setIntentToken(null)
     setKind("home")
     if (route.kind === "link") {
@@ -368,11 +373,11 @@ export function AccessApp({ client, initialScreen = "signin", initialKind = "hom
       <section className="ad-card ad-check-card">
         <span className="ad-mail-tile"><Icon name="mail"/></span>
         <p className="ad-email-target">{copy("access.email_sent")}<strong>{email}</strong></p>
-        <CodeEntry label={copy("access.code_prompt")} value={code} onValueChange={next => { setCode(next); if (next.length === 6) void onCode(next) }}/>
+        <CodeEntry label={copy("access.code_prompt")} value={code} error={codeError} onValueChange={next => { setCodeError(undefined); setCode(next); if (next.length === 6) void onCode(next) }}/>
         <div className="ad-email-apps"><a className="ad-button ad-button-secondary ad-button-dialog" href="https://outlook.live.com/mail/" target="_blank" rel="noreferrer"><MailProviderMark provider="outlook"/>{copy("access.open_outlook")}</a><a className="ad-button ad-button-secondary ad-button-dialog" href="https://mail.google.com/" target="_blank" rel="noreferrer"><MailProviderMark provider="gmail"/>{copy("access.open_gmail")}</a></div>
         <p className="ad-access-note">{copy("access.resend_prompt")} <Button variant="link" size="compact" disabled={secondsLeft > 0} onClick={() => void onResend()}>{secondsLeft > 0 ? fillCopy("access.resend_wait", { n: String(secondsLeft) }) : copy("access.resend")}</Button></p>
       </section>
-      <Button variant="link" size="compact" onClick={() => { setEmail(""); setCode(""); setScreen("signin") }}><span aria-hidden="true">←</span>{copy("access.different_email")}</Button>
+      <Button variant="link" size="compact" onClick={() => { setEmail(""); setCode(""); setCodeError(undefined); setScreen("signin") }}><span aria-hidden="true">←</span>{copy("access.different_email")}</Button>
     </main>
   }
 

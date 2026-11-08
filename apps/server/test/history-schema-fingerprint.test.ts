@@ -3,7 +3,7 @@ import { createHash } from "node:crypto"
 import { expect, it } from "vitest"
 import { createHistoryStore, historySchemaVersion } from "../src/db/history-store.ts"
 
-const fingerprints: Record<number, string> = { 1: "c8d3c452904da12534bc2107eaf825a5df994e32757b9b046968ad349c283dbd" }
+const fingerprints: Record<number, string> = { 1: "c8d3c452904da12534bc2107eaf825a5df994e32757b9b046968ad349c283dbd", 2: "a00cc4bd0c336cfa47c4e33d8cd11ef7b27c6877bced2e1cfbc1a70ae60f9aa1" }
 
 it("records a new history schema version whenever the migrated schema changes", async () => {
   const client = new PGlite()

@@ -34,6 +34,8 @@ it("offers the designed export options and a safe retry after a worker failure",
     if(!format)throw new Error("missing-format-control")
     await act(async()=>{format.value="pdf";format.dispatchEvent(new Event("change",{bubbles:true}))})
     expect(container.querySelector<HTMLSelectElement>('[aria-label="PDF quality"]')?.selectedOptions[0]?.text).toBe("Standard")
+    expect(container.querySelector<HTMLSelectElement>('[aria-label="PDF quality"]')?.disabled).toBe(true)
+    expect(container.querySelector('[aria-label="PDF quality"]')?.getAttribute("title")).toBe("PDF quality selection is not available yet")
     failed=true
     await act(async()=>root.render(<><Toaster/><ExportDialog deck={{...deck,id:id("second")}} seq={0} open close={close} fix={()=>{}} disabled={false}/></>))
     await act(async()=>new Promise(resolve=>setTimeout(resolve,50)))

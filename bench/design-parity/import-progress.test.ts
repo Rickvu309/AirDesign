@@ -51,6 +51,8 @@ it("carries actual child slide work across two leases, authenticated handlers an
     const worker=workerHandler(remote,images,secret,async()=>{},path.join(root,"artifacts")),status=operationsHandler(access,remote,origin)
     const command=(body:unknown,token=secret)=>worker(new Request(origin+"/internal/worker",{method:"POST",headers:{authorization:`Bearer ${token}`,"content-type":"application/json"},body:JSON.stringify(body)}))
     const update=(value:unknown,lease=remoteClaim.lease)=>({kind:"progress",queue:"import",id:job.id,lease,progress:value})
+    const pending=await status(new Request(origin+`/api/operations/${job.id}`,{headers:{cookie:owner.cookie}}))
+    expect(await pending.json()).toMatchObject({id:job.id,kind:"running",progress:{kind:"unavailable"}})
     const one={kind:"import-slides",completed:1,total:2}
     expect((await command(update(one),"wrong")).status).toBe(401)
     expect((await command({...update(one),queue:"image"})).status).toBe(400)

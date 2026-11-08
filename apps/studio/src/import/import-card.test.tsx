@@ -6,7 +6,7 @@ import {ImportCard} from "./import-card.tsx"
 it("restores an importing card and offers plain failure recovery with diagnostics behind Details",async()=>{
   localStorage.clear();localStorage.setItem(JSON.stringify(["import","owner"]),"import_example")
   let failed=false
-  vi.stubGlobal("fetch",vi.fn(async(url:string)=>({ok:true,json:async()=>url==="/api/account" ? {status:"signed-in",personId:"owner"} : {id:"import_example",kind:failed ? "failed" : "running",reason:"zip-central-directory-missing"}})))
+  vi.stubGlobal("fetch",vi.fn(async(url:string)=>({ok:true,json:async()=>url==="/api/account" ? {status:"signed-in",personId:"owner"} : failed ? {id:"import_example",attempts:1,kind:"failed",reason:"zip-central-directory-missing"} : {id:"import_example",attempts:1,kind:"running",lease:"worker-lease",progress:{kind:"unavailable"}}})))
   const container=document.createElement("div");document.body.append(container);let root=createRoot(container)
   try{
     await act(async()=>root.render(<ImportCard finished={async()=>{}}/>))
@@ -31,4 +31,16 @@ it("AD-10 opens the retained imported deck after keeping it",async()=>{
   vi.stubGlobal("fetch",vi.fn(async(url:string)=>({ok:true,json:async()=>url==="/api/account" ? {status:"signed-in",personId:"owner"} : url==="/api/catalog/import" ? {entry:{id:"retained"}} : {id:"import_ready",kind:"ready",report:{capabilities:[]}}})))
   const container=document.createElement("div"),root=createRoot(container);document.body.append(container)
   try{await act(async()=>root.render(<ImportCard finished={finished} openDeck={openDeck}/>));await act(async()=>[...container.querySelectorAll("button")].find(node=>node.textContent==="Keep and open deck")!.click());expect(openDeck).toHaveBeenCalledWith("retained");expect(finished).toHaveBeenCalledOnce()}finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();localStorage.clear()}
+})
+
+
+it.each([undefined,{kind:"import-slides",completed:3,total:2},{kind:"invented"}])("rejects malformed running progress %j instead of displaying healthy import",async progress=>{
+  localStorage.clear();localStorage.setItem(JSON.stringify(["import","owner"]),"import_malformed")
+  vi.stubGlobal("fetch",vi.fn(async(url:string)=>({ok:true,json:async()=>url==="/api/account" ? {status:"signed-in",personId:"owner"} : {id:"import_malformed",attempts:1,kind:"running",lease:"worker-lease",progress}})))
+  const container=document.createElement("div"),root=createRoot(container);document.body.append(container)
+  try{
+    await act(async()=>root.render(<ImportCard finished={async()=>{}}/>))
+    expect(container.querySelector("h2")?.textContent).toBe("Unable to import this file")
+    expect(container.querySelector("details")?.textContent).toContain("Invalid input")
+  }finally{await act(async()=>root.unmount());container.remove();vi.unstubAllGlobals();localStorage.clear()}
 })

@@ -13,11 +13,12 @@ vi.mock("../export/export-dialog.tsx",()=>({ExportDialog:()=>null}))
 it("uses the floating editor shell, switches views and exposes contextual actions",async()=>{
   vi.stubGlobal("EventSource",class{close(){}})
   vi.stubGlobal("matchMedia",()=>({matches:false,addEventListener:()=>{},removeEventListener:()=>{}}))
+  const unexpectedFetch=vi.fn(()=>Promise.reject(new Error("unexpected-network-request")));vi.stubGlobal("fetch",unexpectedFetch)
   history.replaceState(null,"","/deck/example")
   const container=document.createElement("div");document.body.append(container)
   const root=createRoot(container)
   try{
-    await act(async()=>root.render(<StudioShell search="" onSearch={() => undefined} intentLabel="" showIntent={false} onSignOut={()=>{}}><ManualEditor deckId="example"/></StudioShell>))
+    await act(async()=>root.render(<StudioShell starredDecks={[]} search="" onSearch={() => undefined} intentLabel="" showIntent={false} onSignOut={()=>{}}><ManualEditor deckId="example"/></StudioShell>))
     expect(container.querySelector(".ad-topbar")).toBeNull()
     expect(container.querySelector('.editor-dock[aria-label="Design tools"]')).not.toBeNull()
     expect(container.querySelector(".editor-section h2")?.textContent).toBe("Slides")
@@ -35,5 +36,6 @@ it("uses the floating editor shell, switches views and exposes contextual action
     expect(container.querySelector(".editor-menu")).toBeNull()
     await act(async()=>container.querySelector(".editor-slide")!.dispatchEvent(new MouseEvent("contextmenu",{bubbles:true})))
     expect(container.querySelector('[aria-label="Slide actions"]')).not.toBeNull()
+    expect(unexpectedFetch).not.toHaveBeenCalled()
   }finally{await act(async()=>root.unmount());container.remove();history.replaceState(null,"","/");vi.unstubAllGlobals()}
 })

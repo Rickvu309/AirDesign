@@ -213,7 +213,7 @@ describe("studio access", () => {
   })
 
   it("offers recovery for a wrong code and keeps the same destination", async () => {
-    const client = fakeClient()
+    const client = fakeClient(),submitted=vi.spyOn(client,"submitCode")
     await render(<AccessApp client={client} />)
     await act(async () => {
       await flush()
@@ -235,9 +235,15 @@ describe("studio access", () => {
       boxes[0]?.dispatchEvent(paste)
       await flush()
     })
-    expect(document.querySelector("h1")?.textContent).toBe("This link has expired")
-    await act(async () => { document.querySelector<HTMLButtonElement>(".ad-button-primary")?.click(); await flush() })
-    expect(document.querySelector<HTMLInputElement>("input[type=email]")?.value).toBe("ada@example.com")
+    expect(document.querySelector("h1")?.textContent).toBe("Check your email")
+    expect(document.querySelector("[role=alert]")?.textContent).toBe("That code is not valid. Try again.")
+    expect([...document.querySelectorAll<HTMLInputElement>(".ad-code-box")].map(input=>input.value)).toEqual(["","","","","",""])
+    await act(async()=>{const paste=new Event("paste",{bubbles:true,cancelable:true});Object.defineProperty(paste,"clipboardData",{value:{getData:()=>"111111"}});document.querySelector(".ad-code-box")?.dispatchEvent(paste);await flush()})
+    expect(submitted).toHaveBeenNthCalledWith(1,"ada@example.com","000000",expect.any(String))
+    expect(submitted).toHaveBeenNthCalledWith(2,"ada@example.com","111111",submitted.mock.calls[0]?.[2])
+    expect(document.querySelector(".ad-email-target strong")?.textContent).toBe("ada@example.com")
+    await act(async () => { [...document.querySelectorAll("button")].find(button=>button.textContent?.includes("Use a different email"))?.click(); await flush() })
+    expect(document.querySelector<HTMLInputElement>("input[type=email]")?.value).toBe("")
   })
 
   it("clears the email when the person switches address", async () => {
