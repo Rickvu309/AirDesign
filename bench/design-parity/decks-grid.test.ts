@@ -1,4 +1,6 @@
 import path from "node:path"
+import {readFile} from "node:fs/promises"
+import sharp from "sharp"
 import {build} from "vite"
 import {chromium,type Page} from "playwright"
 import {beforeAll,expect,it} from "vitest"
@@ -41,6 +43,102 @@ async function workspace(page:Page,browse="recent"){
   await page.getByRole("heading",{name:firstDeckTitle,exact:true}).waitFor()
   return errors
 }
+
+async function newDeckLabelContrast(page:Page){
+  const button=page.getByRole("button",{name:"New deck",exact:true})
+  if(await button.count()!==1||!await button.isVisible())throw new Error("new-deck-contrast-control-not-visible")
+  await page.evaluate(()=>document.fonts.ready)
+  const label=await button.evaluate(element=>{
+    const style=getComputedStyle(element),box=element.getBoundingClientRect()
+    const node=[...element.childNodes].find(node=>node.nodeType===Node.TEXT_NODE&&node.textContent?.trim()==="New deck")
+    if(!node)throw new Error("new-deck-contrast-label-missing")
+    const range=document.createRange();range.selectNodeContents(node)
+    const text=range.getBoundingClientRect()
+    for(let ancestor:Element|null=element;ancestor;ancestor=ancestor.parentElement){
+      const paint=getComputedStyle(ancestor)
+      if(paint.opacity!=="1"||paint.filter!=="none"||paint.mixBlendMode!=="normal"||paint.visibility!=="visible")throw new Error("new-deck-contrast-unsupported-compositing")
+    }
+    if(style.textShadow!=="none"||!document.fonts.check(style.font)||box.width<=0||box.height<=0||text.width<=0||text.height<=0)throw new Error("new-deck-contrast-unmeasurable-label")
+    return {text:node.textContent,color:style.color,font:style.font,background:style.backgroundImage,box:{x:box.x,y:box.y,width:box.width,height:box.height},range:{x:text.x,y:text.y,width:text.width,height:text.height}}
+  })
+  const color=label.color.match(/^rgb\((\d+), (\d+), (\d+)\)$/)
+  if(!color||color[1]===undefined||color[2]===undefined||color[3]===undefined)throw new Error("new-deck-contrast-requires-opaque-rgb")
+  const luminance=(red:number,green:number,blue:number)=>{
+    const linear=(value:number)=>value/255<=0.04045 ? value/255/12.92 : ((value/255+0.055)/1.055)**2.4
+    return linear(red)*0.2126+linear(green)*0.7152+linear(blue)*0.0722
+  }
+  const foreground=luminance(Number(color[1]),Number(color[2]),Number(color[3]))
+  const clip={x:Math.floor(label.box.x),y:Math.floor(label.box.y),width:Math.ceil(label.box.x+label.box.width)-Math.floor(label.box.x),height:Math.ceil(label.box.y+label.box.height)-Math.floor(label.box.y)}
+  const painted=await page.screenshot({clip}),hidden=await page.addStyleTag({content:".home-new-deck .ad-dropdown>summary{color:transparent!important}"})
+  let background:Buffer
+  try{background=await page.screenshot({clip})}finally{await hidden.evaluate(element=>{if(!(element instanceof HTMLStyleElement))throw new Error("new-deck-contrast-style-boundary");element.remove()})}
+  const visible=await sharp(painted).removeAlpha().raw().toBuffer({resolveWithObject:true}),underlying=await sharp(background).removeAlpha().raw().toBuffer({resolveWithObject:true})
+  if(visible.info.width!==underlying.info.width||visible.info.height!==underlying.info.height||visible.info.channels!==3||underlying.info.channels!==3)throw new Error("new-deck-contrast-raster-mismatch")
+  let minimum=Infinity,samples=0
+  for(let y=0;y<underlying.info.height;y++)for(let x=0;x<underlying.info.width;x++){
+    const px=x+clip.x+0.5,py=y+clip.y+0.5
+    if(px<label.range.x||px>label.range.x+label.range.width||py<label.range.y||py>label.range.y+label.range.height)continue
+    const offset=(y*underlying.info.width+x)*3
+    const red=underlying.data[offset],green=underlying.data[offset+1],blue=underlying.data[offset+2],inkRed=visible.data[offset],inkGreen=visible.data[offset+1],inkBlue=visible.data[offset+2]
+    if(red===undefined||green===undefined||blue===undefined||inkRed===undefined||inkGreen===undefined||inkBlue===undefined)throw new Error("new-deck-contrast-raster-pixel-missing")
+    if(Math.max(Math.abs(inkRed-red),Math.abs(inkGreen-green),Math.abs(inkBlue-blue))<=8)continue
+    const paint=luminance(red,green,blue)
+    minimum=Math.min(minimum,(Math.max(foreground,paint)+0.05)/(Math.min(foreground,paint)+0.05));samples++
+  }
+  if(!samples||!Number.isFinite(minimum))throw new Error("new-deck-contrast-visible-label-ink-missing")
+  return {minimum,samples,label}
+}
+
+async function newDeckMenuRoundTrip(page:Page){
+  const button=page.getByRole("button",{name:"New deck",exact:true})
+  await button.click()
+  expect(await page.getByRole("button",{name:"Blank deck",exact:true}).isVisible()).toBe(true)
+  await button.click()
+  expect(await button.evaluate(element=>element.parentElement instanceof HTMLDetailsElement&&!element.parentElement.open)).toBe(true)
+}
+
+it.each(["recent","all"])("requires %s New deck nominal opaque-label footprint contrast >=4.5, independently of gradient averages",async browse=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:1470,height:923},deviceScaleFactor:1,reducedMotion:"reduce"}),errors=await workspace(page,browse)
+    await newDeckMenuRoundTrip(page)
+    const measured=await newDeckLabelContrast(page)
+    expect(errors).toEqual([])
+    expect(measured.minimum,JSON.stringify(measured)).toBeGreaterThanOrEqual(4.5)
+  }finally{await browser.close()}
+})
+
+it.each(["recent","all"].flatMap(browse=>[
+  {browse,paint:"current",override:""},
+  {browse,paint:"arbitrary",override:".home-new-deck .ad-dropdown>summary{background:#ffee00}"}
+]))("rejects $browse $paint paint despite dead signature membership after a passing connected-control baseline",async({browse,override})=>{
+  const browser=await chromium.launch({headless:true})
+  try{
+    const page=await browser.newPage({viewport:{width:1470,height:923},deviceScaleFactor:1,reducedMotion:"reduce"}),errors=await workspace(page,browse)
+    const baselineStyle=await page.addStyleTag({content:".home-new-deck .ad-dropdown>summary{background:var(--signature-gradient)}"})
+    await newDeckMenuRoundTrip(page)
+    const baseline=await newDeckLabelContrast(page)
+    expect(baseline.minimum,JSON.stringify(baseline)).toBeGreaterThanOrEqual(4.5)
+    const control=await page.getByRole("button",{name:"New deck",exact:true}).elementHandle()
+    if(!control)throw new Error("new-deck-contrast-baseline-control-missing")
+    await baselineStyle.evaluate(element=>{if(!(element instanceof HTMLStyleElement))throw new Error("new-deck-contrast-baseline-style-boundary");element.remove()})
+    const mutation=".never-mounted-primary{background:var(--signature-gradient)}"+override
+    await page.addStyleTag({content:mutation})
+    expect(await readFile("apps/studio/src/decks/decks.css","utf8")+mutation).toMatch(/background:\s*var\(--signature-gradient\)/)
+    expect(await page.locator(".never-mounted-primary").count()).toBe(0)
+    expect(await control.evaluate(element=>element.isConnected&&element===document.querySelector(".home-new-deck .ad-dropdown>summary"))).toBe(true)
+    await newDeckMenuRoundTrip(page)
+    const mutated=await newDeckLabelContrast(page)
+    expect(mutated.label.box).toEqual(baseline.label.box)
+    expect(mutated.label.range).toEqual(baseline.label.range)
+    expect(mutated.label.font).toBe(baseline.label.font)
+    expect(mutated.label.color).toBe(baseline.label.color)
+    expect(mutated.label.text).toBe(baseline.label.text)
+    expect(()=>expect(mutated.minimum,JSON.stringify(mutated)).toBeGreaterThanOrEqual(4.5)).toThrow(/to be greater than or equal to 4\.5/)
+    console.info("NEW_DECK_CONTRAST_MUTATION",JSON.stringify({browse,paint:override ? "arbitrary" : "current",baseline,mutated}))
+    expect(errors).toEqual([])
+  }finally{await browser.close()}
+})
 
 it.each(["recent","all"])("frames %s cards with the designed spacing and real landscape/portrait previews",async browse=>{
   const browser=await chromium.launch({headless:true})
