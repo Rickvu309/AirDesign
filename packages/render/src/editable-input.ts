@@ -1,10 +1,11 @@
 import type { Run } from "../../deck/src/model.ts"
+import { fontFamily } from "./fonts.ts"
 import { editableRuns } from "./editable-runs.ts"
 function runSpan(node: HTMLElement, run: Run) {
   const span = node.ownerDocument.createElement("span")
   span.textContent = run.text
   span.dataset.runStyle = JSON.stringify({ ...run, text: "" })
-  Object.assign(span.style, { fontFamily: "Geist", fontSize: `${run.size}px`, fontWeight: run.bold ? "600" : "400", fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none", color: run.color })
+  Object.assign(span.style, { fontFamily: fontFamily(run.font), fontSize: `${run.size}px`, fontWeight: run.bold ? "600" : "400", fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none", color: run.color })
   return span
 }
 export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
@@ -27,7 +28,7 @@ export function canonicalChildren(node: HTMLElement, runs: [Run, ...Run[]]) {
       if(!(span instanceof node.ownerDocument.defaultView!.HTMLSpanElement))throw new Error("text-span-required")
       if(span.firstChild && span.firstChild.textContent!==run.text)span.firstChild.textContent=run.text
       span.dataset.runStyle=JSON.stringify({...run,text:""})
-      Object.assign(span.style,{fontFamily:"Geist",fontSize:`${run.size}px`,fontWeight:run.bold ? "600" : "400",fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color})
+      Object.assign(span.style,{fontFamily:fontFamily(run.font),fontSize:`${run.size}px`,fontWeight:run.bold ? "600" : "400",fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color})
     })
   }else node.replaceChildren(...runs.map(run => runSpan(node, run)))
   function point(position: number): [Node, number] {

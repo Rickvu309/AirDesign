@@ -6,7 +6,7 @@ import type { CSSProperties, PointerEventHandler } from "react"
 import type { Element, Id, Run, Deck, Slide as DeckSlide } from "../../deck/src/model.ts"
 import { canonicalChildren, normalizeEditable } from "./editable-input.ts"
 import { editableRuns } from "./editable-runs.ts"
-import { fontReport } from "./fonts.ts"
+import { fontReport, fontFamily } from "./fonts.ts"
 export type TextHistory = (direction: "undo" | "redo") => void
 export type CommitText = (id: Id, runs: [Run, ...Run[]]) => void
 function position(element: Element): CSSProperties {
@@ -95,8 +95,8 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     localRuns.current = JSON.stringify(runs)
     commit?.(element.id, runs)
   }
-  if(!commit)return <div key="readonly" data-text={element.id} data-theme-font={themeFont} style={{inlineSize:"100%",blockSize:"100%",whiteSpace:"pre-wrap",overflowWrap:"break-word",lineHeight:1.2,fontFamily:"Geist"}}>{element.runs.map((run,index)=><span key={index} style={{fontFamily:"Geist",fontSize:run.size,fontWeight:run.bold ? 600 : 400,fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color}}>{run.text}</span>)}</div>
-  return <div key="editable" ref={ref} data-text={element.id} data-theme-font={themeFont} role="textbox" aria-label={`Text · ${contentLabel(element)}`} aria-multiline contentEditable={element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: "Geist", fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
+  if(!commit)return <div key="readonly" data-text={element.id} data-theme-font={themeFont} style={{inlineSize:"100%",blockSize:"100%",whiteSpace:"pre-wrap",overflowWrap:"break-word",lineHeight:1.2,fontFamily:fontFamily(element.runs[0].font)}}>{element.runs.map((run,index)=><span key={index} style={{fontFamily:fontFamily(run.font),fontSize:run.size,fontWeight:run.bold ? 600 : 400,fontStyle:run.italic ? "italic" : "normal",textDecoration:run.underline ? "underline" : "none",color:run.color}}>{run.text}</span>)}</div>
+  return <div key="editable" ref={ref} data-text={element.id} data-theme-font={themeFont} role="textbox" aria-label={`Text · ${contentLabel(element)}`} aria-multiline contentEditable={element.support.kind === "native"} suppressContentEditableWarning spellCheck style={{ inlineSize: "100%", blockSize: "100%", whiteSpace: "pre-wrap", overflowWrap: "break-word", lineHeight: 1.2, fontFamily: fontFamily(element.runs[0].font), fontSize: element.runs[0]?.size, fontWeight: element.runs[0]?.bold ? 600 : 400, color: element.runs[0]?.color }} onDragOver={event => event.preventDefault()} onDrop={event => {
     event.preventDefault()
     if (composing.current) return
     const node = event.currentTarget
@@ -137,7 +137,7 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
 export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources,label="Slide" }: {label?:string;imageSources?: Record<string,string>; historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
   const fonts = fontReport(slide, themes)
   return <section aria-label={label}>
-    {fonts.missing.length > 0 && <p role="status" data-font-warning="">Missing fonts: {fonts.missing.join(", ")}. Using pinned Geist.</p>}
+    {fonts.missing.length > 0 && <p role="status" data-font-warning="">Missing fonts: {fonts.missing.join(", ")} (not bundled). Using system fonts when available, with pinned Geist as fallback.</p>}
     <div data-slide={slide.id} data-version={slide.version} style={{ position: "relative", inlineSize: slide.size.width, blockSize: slide.size.height, background: slide.background ?? themes.find(t => t.id === slide.theme)?.background ?? "white", overflow: "clip" }}>
       {slide.elements.map(element => <Item key={element.id} element={element} commit={commitText} history={historyText} pointerDown={onPointerDown} themes={themes} inheritedTheme={slide.theme} imageSources={imageSources} />)}
     </div>
