@@ -16,12 +16,9 @@ export function nativeNodes(value: NativeValue, parent: Id | null = null, order 
 function decode(value: unknown): NativeDeck { return parseNativeArchiveV3({version: 3, deck: value}).deck }
 function materialize(list: Node[], id: Id, seq: number): NativeDeck {
   const deck = materializeNodes(list, id, seq, decode, materializeTextBody)
-  const ids = new Set(list.map(node => node.id)), themes = new Set<string>(deck.themes.map(theme => theme.id))
+  const ids = new Set(list.map(node => node.id))
   for (const node of list) {
     if (node.parent !== null && !ids.has(node.parent)) throw new Error("invalid-native-parent")
-    if (typeof node.fields.theme === "string" && !themes.has(node.fields.theme)) throw new Error("invalid-theme-reference")
-    if (typeof node.fields.placeholder === "string" && !deck.placeholders?.some(id => id === node.fields.placeholder)) throw new Error("invalid-placeholder-reference")
-    if (typeof node.fields.overlap === "string" && !deck.overlaps?.some(id => id === node.fields.overlap)) throw new Error("invalid-overlap-reference")
   }
   return deck
 }

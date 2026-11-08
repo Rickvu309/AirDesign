@@ -1,6 +1,8 @@
+import {textElements} from "../../../../packages/deck/src/text/content.ts"
+import type {NativeDeck} from "../../../../packages/deck/src/text/native-v3.ts"
 import type { CatalogSql,CatalogTransaction } from "../../../../packages/catalog/src/index.ts"
 import type { Principal } from "../../../../packages/change-log/src/index.ts"
-import { flatten,type Deck } from "../../../../packages/deck/src/index.ts"
+import { type Deck } from "../../../../packages/deck/src/index.ts"
 import { assetLimits,type ValidatedImage } from "../../../../packages/files/src/assets/validate.ts"
 import type { AssetProvenance,AssetSummary } from "../../../../packages/files/src/assets/provenance.ts"
 
@@ -11,8 +13,8 @@ export async function initializeAssets(tx:CatalogSql) {
   await tx.query("ALTER TABLE image_asset ADD COLUMN IF NOT EXISTS full_resolution bytea,ADD COLUMN IF NOT EXISTS export_mime text")
 }
 function summary(row:AssetRow):AssetSummary{return {id:row.hash,mime:row.mime,width:row.width,height:row.height,bytes:row.bytes,provenance:row.provenance,listed:row.listed}}
-export async function ownedDeckAssets(tx:CatalogSql,principal:Principal,deck:Deck,withBytes=false,provenance:Record<string,AssetProvenance>={}):Promise<Record<string,string>> {
-  const hashes=[...new Set(deck.slides.flatMap(slide=>flatten(slide.elements).flatMap(element=>element.kind==="image" ? [element.image.asset] : [])))]
+export async function ownedDeckAssets(tx:CatalogSql,principal:Principal,deck:Deck | NativeDeck,withBytes=false,provenance:Record<string,AssetProvenance>={}):Promise<Record<string,string>> {
+  const hashes=[...new Set(deck.slides.flatMap(slide=>textElements(slide.elements).flatMap(element=>element.kind==="image" ? [element.image.asset] : [])))]
   const sources:Record<string,string>={}
   for(const hash of hashes){
     const row=(await tx.query<{full_resolution:Uint8Array|null;export_mime:string;provenance:AssetProvenance}>(withBytes ? "SELECT hash,full_resolution,export_mime,provenance FROM image_asset WHERE owner=$1 AND hash=$2" : "SELECT hash FROM image_asset WHERE owner=$1 AND hash=$2",[principal.personId,hash])).rows[0]

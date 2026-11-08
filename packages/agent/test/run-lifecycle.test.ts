@@ -1,3 +1,7 @@
+import {initialHistory, commandId} from "../../change-log/src/index.ts"
+import {transduceLegacyHistory} from "../../change-log/src/text/history-transducer.ts"
+import {executeNative} from "../../change-log/src/text/native-model.ts"
+import {parseNativeChangeSet} from "../../deck/src/text/operations.ts"
 import {expect,it} from "vitest"
 import {z} from "zod"
 import {fixtureDeck} from "../../deck/src/fixture.ts"
@@ -56,4 +60,37 @@ it("never copies a run request into existing slide content or notes",async()=>{
     expect(JSON.stringify(tools.writes)).not.toContain(request)
     expect(JSON.stringify(tools.writes)).toContain("REVENUE")
   }
+})
+
+it("applies brand fonts to native paragraphs and insertion styles without rewriting person content", async () => {
+  const legacy = fixtureDeck(1), original = legacy.slides[0]!.elements[0]!
+  if (original.kind !== "text") throw new Error("text-required")
+  original.runs[0].text += "\n"
+  let history = transduceLegacyHistory({version: 2, history: initialHistory(legacy), immutable: {version: 2, events: [], receipts: []}}).history
+  const initial = history.deck.slides[0]!.elements[0]!
+  if (initial.kind !== "text") throw new Error("text-required")
+  const writes: unknown[] = []
+  const call: AgentTools = async (name, input) => {
+    let data: unknown
+    if (name === "get_brand") data = {font: "Liberation Serif"}
+    else if (name === "apply_changes") {
+      const args = z.object({changes: z.unknown()}).parse(input)
+      const changes = parseNativeChangeSet({changes: args.changes})
+      const result = executeNative(history, {id: commandId("brand-native"), kind: "edit", base: history.seq, run: null, changes})
+      expect(result.receipt.kind).toBe("applied")
+      history = result.history
+      writes.push(input)
+      data = result.receipt
+    } else data = {savedVersion: history.seq, items: name === "get_deck" ? history.deck.slides.map(slide => ({id: slide.id})) : history.deck.slides, template: {id: "brand", version: 1}}
+    return {content: [{type: "text", text: JSON.stringify({ok: true, data})}]}
+  }
+  const context = {run: "native-agent", deckId: "deck", request: "Preserve this person input", selection: [initial.id]}
+  for await (const event of localAdapter(context, call, new AbortController().signal)) expect(event).toBeDefined()
+  expect(writes).toHaveLength(1)
+  const text = history.deck.slides[0]!.elements[0]!
+  if (text.kind !== "text") throw new Error("text-required")
+  expect(text.body.paragraphs[0].endStyle.font).toBe("Liberation Serif")
+  expect(text.body.paragraphs[0].runs.map(run => run.style.font)).toEqual(["Liberation Serif", "Liberation Serif"])
+  expect(text.body.frame).toEqual(initial.body.frame)
+  expect(JSON.stringify(writes)).not.toContain(context.request)
 })

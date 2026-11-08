@@ -1,30 +1,33 @@
+import type {Slide} from "../../../../packages/deck/src/model.ts"
+import type {NativeSlide} from "../../../../packages/deck/src/text/native-v3.ts"
+import {decodeExportSnapshot, selectExportSlides} from "../../../../packages/rpc/src/text/export-snapshot.ts"
+import {textElements} from "../../../../packages/deck/src/text/content.ts"
 import {jobPath} from "../job-path.ts"
 import { readFile,writeFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
 import { chromium } from "playwright"
-import { parseDeck,flatten } from "../../../../packages/deck/src/index.ts"
 import { importPptx } from "../../../../packages/pptx/src/index.ts"
-import { writeSavedPptx } from "../../../../packages/pptx/src/export-deck.ts"
+import { writeSavedPptx, writeNativeSavedPptx } from "../../../../packages/pptx/src/export-deck.ts"
 import { fontManifest } from "../../../../packages/render/src/font-manifest.ts"
 import { fontReport } from "../../../../packages/render/src/fonts.ts"
 
 try {
   const input=JSON.parse(await readFile(jobPath("input.json"),"utf8"))
-  if(input.snapshotVersion!==2)throw new Error("unsupported-export-snapshot-version")
-  const deck=parseDeck(input.snapshot.deck),seq=input.snapshot.seq
+  const frozen = decodeExportSnapshot(input.snapshotVersion, input.snapshot)
+  const deck=frozen.snapshot.deck,seq=frozen.snapshot.seq
   if(!Number.isSafeInteger(seq)||seq<0)throw new Error("invalid-saved-version")
   const selected:string[]=input.options.slides
-  const slides=selected.length ? selected.map(id=>{const slide=deck.slides.find(slide=>slide.id===id);if(!slide)throw new Error("invalid-slide-range");return slide}) : deck.slides
+  const slides=selectExportSlides<Slide | NativeSlide>(deck.slides, selected)
   const saved={...deck,slides}
   const fonts=await Promise.all(fontManifest.faces.map(async face=>{const bytes=await readFile(new URL(`../../../../packages/ui/fonts/${face.file}`,import.meta.url));if(createHash("sha256").update(bytes).digest("hex")!==face.sha256)throw new Error("font-hash-mismatch");return `@font-face{font-family:Geist;font-weight:${face.weight};src:url(data:font/woff2;base64,${bytes.toString("base64")}) format('woff2')}`}))
-  const flags=slides.flatMap(slide=>flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=>({slide:slide.id,element:element.id,kind:element.support.kind})))
+  const flags=slides.flatMap(slide=>textElements(slide.elements).filter(element=>element.support.kind!=="native").map(element=>({slide:slide.id,element:element.id,kind:element.support.kind})))
   const missingFonts=[...new Set(slides.flatMap(slide=>fontReport(slide,deck.themes).missing))]
   const removals=input.snapshot.source ? (await importPptx(Buffer.from(input.snapshot.source,"base64"))).report.removals : []
   if((flags.length||missingFonts.length||removals.length)&&!input.options.allowIssues)throw new Error("export-needs-review")
   const digest=createHash("sha256").update(JSON.stringify({deck:saved,seq})).digest("hex")
   const report={removals,provenance:input.snapshot.provenance ?? {},deck:deck.id,seq,slideIds:slides.map(slide=>slide.id),savedVersionSha256:digest,fontManifest,flags,acknowledged:input.options.allowIssues,missingFonts,referenceGate:"P09-X01-unproven"}
   let output:Buffer
-  if(input.options.format==="pptx")output=await writeSavedPptx(saved,seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report,input.snapshot.assets ?? {},input.snapshot.templates ?? {})
+  if(input.options.format==="pptx")output=frozen.snapshotVersion === 3 ? await writeNativeSavedPptx({...frozen.snapshot.deck, slides: selectExportSlides(frozen.snapshot.deck.slides, selected)}, seq, input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null, report, input.snapshot.assets ?? {}, input.snapshot.templates ?? {}) : await writeSavedPptx({...frozen.snapshot.deck, slides: selectExportSlides(frozen.snapshot.deck.slides, selected)},seq,input.snapshot.source ? Buffer.from(input.snapshot.source,"base64") : null,report,input.snapshot.assets ?? {},input.snapshot.templates ?? {})
   else {
     const first=slides[0];if(!first)throw new Error("empty-export")
     if(slides.some(slide=>slide.size.width!==first.size.width||slide.size.height!==first.size.height))throw new Error("mixed-slide-sizes-require-fix")

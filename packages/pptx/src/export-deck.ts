@@ -1,27 +1,35 @@
+import type {NativeDeck, NativeElement} from "../../deck/src/text/native-v3.ts"
+import {textElements} from "../../deck/src/text/content.ts"
+import {writeTextBody, replaceTextBody} from "./text/body.ts"
+import type {TextBody} from "../../deck/src/text/body.ts"
 import { attachTemplateLayouts } from "./template-layouts.ts"
 import {patchTextColor} from "./edit/text-color.ts"
 import {patchSlideBackground} from "./edit/slide-background.ts"
 import PptxGenJS from "pptxgenjs"
 import path from "node:path"
 import { isDeepStrictEqual } from "node:util"
-import { shapeGeometry,flatten,type Deck,type Element } from "../../deck/src/index.ts"
+import { shapeGeometry,type Deck,type Element } from "../../deck/src/index.ts"
 import { importPptx,patchText } from "./index.ts"
 import { readArchive,writeArchive } from "./archive.ts"
-import { importedDeck } from "./import-deck.ts"
+import { importedDeck, importedNativeDeck } from "./import-deck.ts"
 import { appendCreatedPictures } from "./append-pictures.ts"
 import { parseXml,escapeXml } from "./xml.ts"
 
 const presentationType="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
-function addElement(slide:PptxGenJS.Slide,element:Element,assets:Record<string,string>,offset={x:0,y:0}) {
+function bodyFormatting(body: TextBody) {
+  return {frame: {...body.frame, id: undefined}, paragraphs: body.paragraphs.map(paragraph => ({...paragraph, id: undefined}))}
+}
+function addElement(slide:PptxGenJS.Slide,element:Element | NativeElement,assets:Record<string,string>,offset={x:0,y:0}) {
   if(element.support.kind!=="native")return
   const box={x:(element.box.x+offset.x)/96,y:(element.box.y+offset.y)/96,w:element.box.width/96,h:element.box.height/96}
   if(element.kind==="group"){for(const child of element.children)addElement(slide,child,assets,{x:element.box.x+offset.x,y:element.box.y+offset.y});return}
+  if(element.kind==="text" && "body" in element){slide.addText(" ",{...box,objectName:element.id});return}
   if(element.kind==="text"){slide.addText(element.runs.map(run=>({text:run.text,options:{bold:run.bold,italic:run.italic ?? false,underline:{style:run.underline ? "sng" : "none"},fontFace:run.font,fontSize:run.size*.75,color:run.color.slice(1)}})),{...box,margin:0,valign:"top"});return}
   if(element.kind==="image"){const data=assets[element.image.asset];if(!data)throw new Error("asset-not-found");slide.addImage({...box,data,objectName:element.id,altText:element.image.alt,rounding:element.image.mask==="ellipse"});return}
   const shape=shapeGeometry[element.geometry].preset
   slide.addShape(shape,{...box,...(element.geometry==="downTriangle" ? {rotate:180} : {}),fill:{color:element.fill.slice(1)},line:{color:element.fill.slice(1),transparency:100}})
 }
-async function generated(deck:Deck,assets:Record<string,string>) {
+async function generated(deck:Deck | NativeDeck,assets:Record<string,string>) {
   const first=deck.slides[0];if(!first)throw new Error("empty-export")
   if(deck.slides.some(slide=>slide.size.width!==first.size.width||slide.size.height!==first.size.height))throw new Error("mixed-slide-sizes-require-fix")
   const pptx=new PptxGenJS()
@@ -35,11 +43,20 @@ async function generated(deck:Deck,assets:Record<string,string>) {
   for(const [index,source] of deck.slides.entries()){
     const part=`ppt/slides/slide${index+1}.xml`,bytes=parts.get(part)
     if(!bytes)throw new Error("slide-part-required")
-    const parsed=parseXml(bytes),pictures=parsed.nodes.filter(node=>node.local==="pic")
+    let bodyDocument = parseXml(bytes)
+    for (const element of textElements(source.elements)) if (element.kind === "text" && "body" in element) {
+      const properties = bodyDocument.nodes.find(node => node.local === "cNvPr" && node.attributes.name === element.id)
+      const shape = properties && bodyDocument.nodes.find(node => node.local === "sp" && node.start < properties.start && node.end > properties.end)
+      const body = shape && bodyDocument.nodes.find(node => node.local === "txBody" && node.start > shape.start && node.end < shape.end)
+      if (!body) throw new Error("generated-text-body-required")
+      parts.set(part, Buffer.from(bodyDocument.xml.slice(0, body.start) + writeTextBody(element.body) + bodyDocument.xml.slice(body.end)))
+      bodyDocument = parseXml(parts.get(part)!)
+    }
+    const parsed=bodyDocument,pictures=parsed.nodes.filter(node=>node.local==="pic")
     let xml=parsed.xml
     for(const picture of [...pictures].reverse()){
       const properties=parsed.nodes.find(node=>node.local==="cNvPr" && node.start>picture.start && node.end<picture.end)
-      const element=flatten(source.elements).find(element=>element.kind==="image" && element.id===properties?.attributes.name)
+      const element=textElements(source.elements).find(element=>element.kind==="image" && element.id===properties?.attributes.name)
       if(element?.kind!=="image")continue
       const crop=element.image.crop,rect=`<a:srcRect l="${Math.round(crop.x*100000)}" t="${Math.round(crop.y*100000)}" r="${Math.round((1-crop.x-crop.width)*100000)}" b="${Math.round((1-crop.y-crop.height)*100000)}"/>`
       let fragment=parsed.xml.slice(picture.start,picture.end)
@@ -118,23 +135,35 @@ function copyGeneratedDependencies(parts:Map<string,Buffer>,native:Map<string,Bu
     parts.set("ppt/presentation.xml",Buffer.from(main.xml.slice(0,start)+replacement+main.xml.slice(end)))
   }
 }
-export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,manifest:Record<string,unknown>,assets:Record<string,string>={},templates:Record<string,string>={}):Promise<Buffer> {
+async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,manifest:Record<string,unknown>,assets:Record<string,string>={},templates:Record<string,string>={},version:2|3=2):Promise<Buffer> {
   const native=await generated(deck,assets)
   await attachTemplateLayouts(native,deck,templates)
   let parts=native
   if(source){
     let original=await importPptx(source)
-    const baseline=importedDeck(original)
+    const baseline=version === 3 ? importedNativeDeck(original) : importedDeck(original)
     for(const slide of deck.slides)if(slide.source.kind==="original"){
       if(slide.background)original=patchSlideBackground(original,slide.source.part,slide.background)
       const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
       if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
+      const retained = parseXml(original.parts.get(source.part)!), bodies = retained.nodes.filter(node => node.local === "txBody")
       for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
         const previous=old.elements[index]
         if(!previous)throw new Error("source-slide-structure-change-requires-fix")
-        const withoutText=(value:Element)=>({...value,support:undefined,...value.kind==="text" ? {runs:[]} : {},source:value.source.kind==="original" ? {...value.source,objectType:undefined} : value.source})
+        const withoutText=(value:Element | NativeElement)=>({...value,support:undefined,...(value.kind==="text" ? "body" in value ? {body:undefined} : {runs:undefined} : {}),source:value.source.kind==="original" ? {...value.source,objectType:undefined} : value.source})
         if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
-        if(element.kind==="text" && previous.kind==="text" && element.source.kind==="original"){
+        if (element.kind === "text" && "body" in element && previous.kind === "text" && "body" in previous) {
+          if (!isDeepStrictEqual(bodyFormatting(element.body), bodyFormatting(previous.body))) {
+            if (element.support.kind !== "native") throw new Error("kept-object-change-requires-fix")
+            const identity = element.source
+            if (identity.kind !== "original") throw new Error("source-text-body-required")
+            const ordinal = identity.objectId.startsWith("body:") ? Number(identity.objectId.split(":")[1]) : bodies.findIndex(node => retained.nodes.filter(node => node.local === "t" && node.uri.endsWith("/drawingml/2006/main")).some((span, index) => index === Number(identity.objectId.split(":")[1]?.split(",")[0]) && span.start > node.start && span.end < node.end))
+            const parsed = parseXml(original.parts.get(source.part)!), body = parsed.nodes.filter(node => node.local === "txBody")[ordinal]
+            if (!body) throw new Error("source-text-body-required")
+            original = {...original, parts: new Map(original.parts).set(source.part, Buffer.from(replaceTextBody(parsed, body, element.body)))}
+          }
+        }
+        if(element.kind==="text" && !("body" in element) && previous.kind==="text" && !("body" in previous) && element.source.kind==="original"){
           const indices=element.source.objectId.slice(5).split(",").map(Number)
           const style=(run:typeof element.runs[number])=>({...run,text:"",color:""})
           const collapsed=element.runs.length===1 && isDeepStrictEqual(style(element.runs[0]),style(previous.runs[0]))
@@ -155,7 +184,7 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
     parts=new Map(original.parts)
     let generation=0,prefix="airdesign-generated/"
     while([...parts.keys()].some(name=>name.startsWith(prefix)))prefix=`airdesign-generated-${++generation}/`
-    for(const [index,slide] of deck.slides.entries())if(slide.source.kind==="original" && (slide.layout || flatten(slide.elements).some(element=>element.source.kind==="created"))){
+    for(const [index,slide] of deck.slides.entries())if(slide.source.kind==="original" && (slide.layout || textElements(slide.elements).some(element=>element.source.kind==="created"))){
       appendCreatedPictures(parts,native,slide,index,prefix)
     }
     const main=parseXml(parts.get("ppt/presentation.xml")!),list=main.nodes.find(node=>node.local==="sldIdLst")
@@ -197,9 +226,16 @@ export async function writeSavedPptx(deck:Deck,seq:number,source:Buffer|null,man
     }
     copyGeneratedDependencies(parts,native,prefix)
   }
-  parts.set("airdesign/saved-version.json",Buffer.from(JSON.stringify({...manifest,deck,seq})))
+  parts.set("airdesign/saved-version.json",Buffer.from(JSON.stringify({...manifest,version,deck,seq})))
   registerContentTypes(parts,[{part:"airdesign/saved-version.json",type:"application/json"}])
   const output=await writeArchive(parts)
   await importPptx(output)
   return output
+}
+
+export function writeSavedPptx(deck: Deck, seq: number, source: Buffer | null, manifest: Record<string, unknown>, assets: Record<string, string> = {}, templates: Record<string, string> = {}): Promise<Buffer> {
+  return writeSaved(deck, seq, source, manifest, assets, templates, 2)
+}
+export function writeNativeSavedPptx(deck: NativeDeck, seq: number, source: Buffer | null, manifest: Record<string, unknown>, assets: Record<string, string> = {}, templates: Record<string, string> = {}): Promise<Buffer> {
+  return writeSaved(deck, seq, source, manifest, assets, templates, 3)
 }

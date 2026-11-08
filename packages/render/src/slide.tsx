@@ -1,3 +1,5 @@
+import {Body} from "./text/body.tsx"
+import type {NativeElement, NativeSlide} from "../../deck/src/text/native-v3.ts"
 import { KeptContent, keptBounds } from "./kept-content.tsx"
 import {contentLabel} from "../../deck/src/content-labels.ts"
 import {formatRuns,textSelection,type TextFormat} from "./text-format.ts"
@@ -10,7 +12,7 @@ import { editableRuns } from "./editable-runs.ts"
 import { fontReport, fontFamily } from "./fonts.ts"
 export type TextHistory = (direction: "undo" | "redo") => void
 export type CommitText = (id: Id, runs: [Run, ...Run[]]) => void
-function position(element: Element): CSSProperties {
+function position(element: Element | NativeElement): CSSProperties {
   return { position: "absolute", insetInlineStart: element.box.x, insetBlockStart: element.box.y, inlineSize: element.box.width, blockSize: element.box.height }
 }
 function Text({ element, commit, themeFont, history }: { history: TextHistory | undefined; themeFont: string | undefined; element: Extract<Element, { kind: "text" }>; commit: CommitText | undefined }) {
@@ -119,7 +121,7 @@ function Text({ element, commit, themeFont, history }: { history: TextHistory | 
     node.dispatchEvent(new InputEvent("beforeinput", { inputType: "insertFromDrop", dataTransfer: event.dataTransfer, bubbles: true, cancelable: true }))
   }} onCompositionStart={() => { composing.current = true }} onCompositionEnd={event => { composing.current = false; save(event.currentTarget) }} onInput={event => { if (!composing.current) { save(event.currentTarget) } }} />
 }
-const Item = memo(function Item({ element, commit, pointerDown, themes, inheritedTheme, history, imageSources, canvas, placements }: { placements: Record<string, Element["box"]>; canvas: DeckSlide["size"]; imageSources: Record<string,string> | undefined; history: TextHistory | undefined; themes: Deck["themes"]; inheritedTheme: DeckSlide["theme"]; element: Element; commit: CommitText | undefined; pointerDown: PointerEventHandler<HTMLDivElement> | undefined }) {
+const Item = memo(function Item({ element, commit, pointerDown, themes, inheritedTheme, history, imageSources, canvas, placements }: { placements: Record<string, Element["box"]>; canvas: DeckSlide["size"]; imageSources: Record<string,string> | undefined; history: TextHistory | undefined; themes: Deck["themes"]; inheritedTheme: DeckSlide["theme"]; element: Element | NativeElement; commit: CommitText | undefined; pointerDown: PointerEventHandler<HTMLDivElement> | undefined }) {
   const theme = themes.find(t => t.id === (element.theme ?? inheritedTheme))
   let content
   if (element.support.kind !== "native") {
@@ -127,7 +129,7 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
   } else {
     switch (element.kind) {
       case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} canvas={canvas} placements={placements} />); break
-      case "text": content = <Text element={element} commit={commit} history={history} themeFont={theme?.font} />; break
+      case "text": content = "body" in element ? <Body body={element.body}/> : <Text element={element} commit={commit} history={history} themeFont={theme?.font} />; break
       case "image": {const crop=element.image.crop;content=<div style={{position:"relative",inlineSize:"100%",blockSize:"100%",overflow:"hidden",borderRadius:element.image.mask==="ellipse" ? "50%" : 0}}><img draggable={false} src={imageSources?.[element.image.asset] ?? `/api/assets/${element.image.asset}/media`} alt={element.image.alt} style={{position:"absolute",maxInlineSize:"none",inlineSize:`${100/crop.width}%`,blockSize:`${100/crop.height}%`,insetInlineStart:`${-crop.x/crop.width*100}%`,insetBlockStart:`${-crop.y/crop.height*100}%`}}/></div>;break}
       case "shape": content = <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={contentLabel(element)} style={{pointerEvents:"none"}}><path d={shapeGeometry[element.geometry].path} fill={element.fill} style={{pointerEvents:"visiblePainted"}}/></svg>;break
       default: { const exhaustive: never = element; return exhaustive }
@@ -135,7 +137,10 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
   }
   return <div data-element={element.id} data-kind={element.kind} style={{ ...position(element.support.kind === "native" ? element : {...element,box:placements[element.id] ?? keptBounds(element,canvas)}), zIndex: element.support.kind === "native" ? undefined : 1, pointerEvents: element.kind === "shape" && element.support.kind === "native" ? "none" : undefined }} onPointerDown={pointerDown}>{content}</div>
 })
-export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources,label="Slide" }: {label?:string;imageSources?: Record<string,string>; historyText?: TextHistory; slide: DeckSlide; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement> }) {
+type SlideProps<S> = {label?:string;imageSources?: Record<string,string>; historyText?: TextHistory; slide: S; themes?: Deck["themes"]; commitText?: CommitText; onPointerDown?: PointerEventHandler<HTMLDivElement>}
+export function Slide(props: SlideProps<DeckSlide | NativeSlide>): React.JSX.Element
+export function Slide(props: SlideProps<DeckSlide>): React.JSX.Element
+export function Slide({ slide, themes = [], commitText, onPointerDown, historyText, imageSources,label="Slide" }: SlideProps<DeckSlide | NativeSlide>) {
   const fonts = fontReport(slide, themes)
   const obstacles=slide.elements.filter(element=>element.support.kind==="native").map(element=>element.box)
   const placements:Record<string,Element["box"]>={}

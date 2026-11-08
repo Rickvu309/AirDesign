@@ -1,9 +1,10 @@
+import type {NativeDeck} from "../../deck/src/text/native-v3.ts"
 import path from "node:path"
 import type { Deck } from "../../deck/src/index.ts"
 import { importPptx } from "./index.ts"
 import { parseXml,escapeXml } from "./xml.ts"
 
-export async function attachTemplateLayouts(parts:Map<string,Buffer>,deck:Deck,sources:Record<string,string>) {
+export async function attachTemplateLayouts(parts:Map<string,Buffer>,deck:Deck | NativeDeck,sources:Record<string,string>) {
   const used=new Map<string,{prefix:string;masters:Set<string>;layoutMasters:Map<string,string>}>()
   for(const [index,slide] of deck.slides.entries()){
     const layout=slide.layout;if(!layout)continue

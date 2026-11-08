@@ -1,3 +1,5 @@
+import {readTextBody} from "./text/body.ts"
+import {parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../deck/src/text/native-v3.ts"
 import { SaxesParser } from "saxes"
 import { id,isSlide,parseDeck,type Deck,type Element,type Source } from "../../deck/src/index.ts"
 import { hash,type Presentation } from "./index.ts"
@@ -33,7 +35,9 @@ function notesBody(bytes:Buffer):string {
     return elements(run,drawing,"t").map(text=>content(xml.slice(text.openEnd,text.closeStart))).join("")
   }).join("")).join("\n")
 }
-export function importedDeck(presentation:Presentation,progress?:(value:{completed:number;total:number})=>void):Deck {
+type TextElement = Extract<Element, {kind: "text"}>
+type TextFactory<T extends TextElement | NativeText> = (base: Omit<TextElement, "runs">, parsed: ReturnType<typeof parseXml>, shape: XmlNode, spans: XmlNode[]) => T | undefined
+function importedSlides<T extends TextElement | NativeText>(presentation:Presentation, textElement: TextFactory<T>, progress?:(value:{completed:number;total:number})=>void) {
   const main=presentation.parts.get("ppt/presentation.xml");if(!main)throw new Error("presentation-required")
   const document=parseXml(main),size=document.nodes.find(node=>node.local==="sldSz")
   const width=Number(size?.attributes.cx ?? 12192000)/9525,height=Number(size?.attributes.cy ?? 6858000)/9525
@@ -50,23 +54,17 @@ export function importedDeck(presentation:Presentation,progress?:(value:{complet
     const containers=["graphicFrame","pic","cxnSp","grpSp"]
     const objects=parsed.nodes.filter(node=>containers.includes(node.local) && !parsed.nodes.some(parent=>containers.includes(parent.local)&&within(parent,node)))
     const shapes=parsed.nodes.filter(node=>node.local==="sp"&&!objects.some(parent=>within(parent,node)))
-    const elements:Element[]=[]
+    const elements:(Exclude<Element, {kind: "text"} | {kind: "group"}> | T)[]=[]
     function box(node:XmlNode) {
       const children=parsed.nodes.filter(child=>within(node,child)),offset=children.find(child=>child.local==="off"),extent=children.find(child=>child.local==="ext")
       return {x:Number(offset?.attributes.x ?? 0)/9525,y:Number(offset?.attributes.y ?? 0)/9525,width:Number(extent?.attributes.cx ?? width*9525)/9525,height:Number(extent?.attributes.cy ?? height*9525)/9525}
     }
     for(const [shapeIndex,shape] of shapes.entries()){
       const spans=texts.filter(node=>within(shape,node))
-      if(!spans.length){objects.push(shape);continue}
-      const runs=spans.map((node,spanIndex)=>{
-        const run=parsed.nodes.filter(parent=>parent.local==="r" && within(parent,node)).at(-1)
-        const properties=run ? parsed.nodes.filter(child=>within(run,child)) : []
-        const style=properties.find(child=>child.local==="rPr"),font=properties.find(child=>child.local==="latin"),color=properties.find(child=>child.local==="srgbClr")
-        const paragraph=parsed.nodes.find(parent=>parent.local==="p" && within(parent,node)),previous=spans[spanIndex-1]
-        return {text:(previous && paragraph && !within(paragraph,previous) ? "\n" : "")+content(parsed.xml.slice(node.openEnd,node.closeStart)),bold:style?.attributes.b==="1",...(style?.attributes.i==="1" ? {italic:true} : {}),...(style?.attributes.u&&style.attributes.u!=="none" ? {underline:true} : {}),font:font?.attributes.typeface || "Aptos",size:Math.max(1,Number(style?.attributes.sz ?? 2400)/100*4/3),color:color?.attributes.val ? `#${color.attributes.val}` : "#171717"}
-      })
       const capable=spans.every(node=>presentation.report.capabilities.some(item=>item.part===part && item.scope.kind==="text-span" && item.scope.index===texts.indexOf(node) && item.support==="native"))
-      if(runs[0])elements.push({id:id(`s${index}t${shapeIndex}`),kind:"text",box:box(shape),source:{...source,objectId:`text:${spans.map(node=>texts.indexOf(node)).join(",")}`},support:capable ? {kind:"native"} : {kind:"kept",preview:null},theme:null,placeholder:null,overlap:null,runs:[runs[0],...runs.slice(1)]})
+      const element = textElement({id:id(`s${index}t${shapeIndex}`),kind:"text",box:box(shape),source:{...source,objectId:`text:${spans.map(node=>texts.indexOf(node)).join(",")}`},support:capable ? {kind:"native"} : {kind:"kept",preview:null},theme:null,placeholder:null,overlap:null}, parsed, shape, spans)
+      if(element) elements.push(element)
+      else objects.push(shape)
     }
     for(const [objectIndex,node] of objects.entries()){
       const objectType=node.local==="graphicFrame" ? parsed.nodes.some(child=>within(node,child)&&child.local==="chart"&&["http://schemas.openxmlformats.org/drawingml/2006/chart","http://purl.oclc.org/ooxml/drawingml/chart"].includes(child.uri)) ? "chart" : parsed.nodes.some(child=>within(node,child)&&child.local==="tbl"&&["http://schemas.openxmlformats.org/drawingml/2006/main","http://purl.oclc.org/ooxml/drawingml/main"].includes(child.uri)) ? "table" : undefined : undefined
@@ -91,9 +89,33 @@ export function importedDeck(presentation:Presentation,progress?:(value:{complet
     const notesRel=presentation.report.relationships.find(rel=>rel.part===part && rel.type.endsWith("/notesSlide")),notesBytes=notesRel ? presentation.parts.get(notesRel.target) : null
     const notes=notesBytes ? notesBody(notesBytes) : ""
     const slide={id:id(`s${index}`),version:0,size:{width,height},elements,notes,theme:null,source}
-    if(!isSlide(slide))throw new Error("invalid-import-slide")
     progress?.({completed:index+1,total:ordered.length})
     return slide
   })
-  return parseDeck({id:id("imported"),version:0,slides,themes:[]})
+  return slides
+}
+
+export function importedDeck(presentation: Presentation, progress?: (value: {completed: number; total: number}) => void): Deck {
+  const slides = importedSlides(presentation, (base, parsed, shape, spans) => {
+      const runs=spans.map((node,spanIndex)=>{
+        const run=parsed.nodes.filter(parent=>parent.local==="r" && within(parent,node)).at(-1)
+        const properties=run ? parsed.nodes.filter(child=>within(run,child)) : []
+        const style=properties.find(child=>child.local==="rPr"),font=properties.find(child=>child.local==="latin"),color=properties.find(child=>child.local==="srgbClr")
+        const paragraph=parsed.nodes.find(parent=>parent.local==="p" && within(parent,node)),previous=spans[spanIndex-1]
+        return {text:(previous && paragraph && !within(paragraph,previous) ? "\n" : "")+content(parsed.xml.slice(node.openEnd,node.closeStart)),bold:style?.attributes.b==="1",...(style?.attributes.i==="1" ? {italic:true} : {}),...(style?.attributes.u&&style.attributes.u!=="none" ? {underline:true} : {}),font:font?.attributes.typeface || "Aptos",size:Math.max(1,Number(style?.attributes.sz ?? 2400)/100*4/3),color:color?.attributes.val ? `#${color.attributes.val}` : "#171717"}
+      })
+    if (!runs[0]) return undefined
+    return {...base, runs: [runs[0], ...runs.slice(1)]}
+  }, progress)
+  if (!slides.every(isSlide)) throw new Error("invalid-import-slide")
+  return parseDeck({id: id("imported"), version: 0, slides, themes: []})
+}
+export function importedNativeDeck(presentation: Presentation, progress?: (value: {completed: number; total: number}) => void): NativeDeck {
+  const slides = importedSlides(presentation, (base, parsed, shape, spans): NativeText | undefined => {
+    const body = parsed.nodes.find(node => node.local === "txBody" && within(shape, node))
+    if (!body) return undefined
+    const bodyIndex = parsed.nodes.filter(node => node.local === "txBody").indexOf(body)
+    return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: readTextBody(parsed, body, base.id)}
+  }, progress)
+  return parseNativeArchiveV3({version: 3, deck: {id: id("imported"), version: 0, slides, themes: []}}).deck
 }

@@ -1,3 +1,6 @@
+import {writeNativeSavedPptx} from "../../../packages/pptx/src/export-deck.ts"
+import {importPptx} from "../../../packages/pptx/src/index.ts"
+import {importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
 import sharp from "sharp"
 import {validateImage} from "../../../packages/files/src/assets/validate.ts"
 import {uploadProvenance} from "../../../packages/files/src/assets/provenance.ts"
@@ -99,7 +102,7 @@ it("retains v2 export inputs, retires leases and cursors, and preserves agent re
       expect(next.snapshot.deck).toEqual(next.id === running.id ? deck : deleted)
       await native.exports.fail(next.id, next.lease, "retryable-artifact-failure")
       expect(await native.exports.retry(owner, next.id)).toMatchObject({kind: "queued"})
-      await expect(native.exports.submit(owner, "new-native", deck.id, options)).rejects.toThrow("requires-native-export")
+      await expect(native.exports.submit(owner, "new-native", deck.id, options)).rejects.toThrow("saved-version-changed")
       await expect(native.snapshots.resource(owner.personId, savedPage.snapshot)).rejects.toThrow("requires-new-snapshot")
       await expect(native.snapshots.page(owner.personId, "elements", {limit: 1, cursor: savedPage.nextCursor}, async () => {throw new Error("must-not-reload") })).rejects.toThrow("requires-new-snapshot")
       expect(await native.snapshots.resource(owner.personId, capture.resource.split("/").at(-1) ?? "")).toEqual({base64: Buffer.from("retained capture").toString("base64")})
@@ -165,6 +168,14 @@ it("serves authenticated legacy/native HTTP and native websocket reconnects with
       expect(await (await call("/api/decks/deck/commands", "POST", "malformed old command")).json()).toMatchObject({kind: "refused", code: "editing-protocol-mismatch"})
       const initial = parseParagraphSnapshot(await (await call("/api/decks/deck", "GET", undefined, true)).json())
       expect(initial.seq).toBe(1)
+      const exportOptions = {format: "pptx", timing: "now", slides: [], expectedSeq: 1, allowIssues: true, requestId: "native-http-export"}
+      const exported = await call("/api/catalog/deck/exports", "POST", exportOptions, true)
+      expect(exported.status).toBe(202)
+      const exportJob = await exported.json()
+      expect(await (await call("/api/catalog/deck/exports", "POST", exportOptions, true)).json()).toEqual(exportJob)
+      expect(await (await call("/api/catalog/deck/exports", "POST", exportOptions)).json()).toMatchObject({kind: "refused", code: "editing-protocol-mismatch"})
+      expect(await (await call("/api/catalog/deck/exports", "POST", exportOptions, true, stranger)).json()).toMatchObject({code: "deck-not-found"})
+      expect(await (await call(`/api/catalog/export-jobs/${exportJob.id}/cancel`, "POST", {}, true)).json()).toMatchObject({kind: "cancelled"})
       expect((await call("/api/decks", "POST", {version: 3, deck: {...initial.deck, id: "newNative"}}, true)).status).toBe(201)
       const createdRead = await call("/api/decks/newNative", "GET", undefined, true)
       const createdSnapshot = await createdRead.json()
@@ -216,3 +227,83 @@ it("serves authenticated legacy/native HTTP and native websocket reconnects with
     } finally {for (const socket of sockets) socket.terminate(); await server?.close(); await access.close()}
   })
 }, 30_000)
+
+it("persists new native export snapshots while retaining exact old job inputs and retry identities", async () => {
+  await database(async (sql, url, old) => {
+    const legacy = fixtureDeck(2), element = legacy.slides[0]!.elements[0]!
+    legacy.slides[0]!.elements[0] = {id: id("group"), kind: "group", box: {x: 10, y: 10, width: 900, height: 400}, source: {kind: "created"}, support: {kind: "native"}, theme: null, placeholder: null, overlap: null, children: [element]}
+    await old.create(owner, legacy)
+    const options: ExportOptions = {format: "pptx", slides: [], timing: "now", expectedSeq: 0, allowIssues: true}
+    const retained = await old.exports.submit(owner, "frozen-before", "deck", options)
+    const before = (await sql.query("SELECT snapshot::text FROM deck_export WHERE id=$1", [retained.id])).rows
+    await prepareParagraphCutover(sql)
+    await sql.query("ALTER TABLE deck_export DROP CONSTRAINT deck_export_snapshot_version_check")
+    await sql.query("ALTER TABLE deck_export ADD CONSTRAINT deck_export_snapshot_version_check CHECK(snapshot_version=2)")
+    await prepareParagraphCutover(sql)
+    await cutoverParagraphHistory(sql, cutover)
+    let native = createParagraphHistoryStore(url)
+    try {
+      expect(await native.exports.submit(owner, "frozen-before", "deck", options)).toEqual(retained)
+      await expect(native.exports.submit(owner, "frozen-before", "deck", {...options, slides: ["s0"]})).rejects.toThrow("request-id-payload-conflict")
+      expect((await sql.query("SELECT snapshot::text FROM deck_export WHERE id=$1", [retained.id])).rows).toEqual(before)
+      const oldLease = await native.exports.claim()
+      expect(oldLease?.snapshotVersion).toBe(2)
+      if (!oldLease) throw new Error("retained-export-required")
+      await native.exports.complete(oldLease.id, oldLease.lease, Buffer.from("old bytes"), {})
+      const state = await native.read(owner, "deck"), group = state.deck.slides[0]!.elements[0]!
+      if (group.kind !== "group") throw new Error("native-group-required")
+      const text = group.children[0]!
+      if (text.kind !== "text") throw new Error("native-text-required")
+      expect(await native.commit(owner, "deck", {version: 3, command: {id: "frame", kind: "patch", base: 0, run: null, target: text.body.frame.id, fields: {anchor: "bottom", insets: {top: 4, right: 8, bottom: 12, left: 16}}}})).toMatchObject({version: 3, receiptBytes: expect.stringContaining('"applied"')})
+      expect(await native.commit(owner, "deck", {version: 3, command: {id: "paragraph-edit", kind: "patch", base: 1, run: null, target: text.body.paragraphs[0].id, fields: {alignment: "right"}}})).toMatchObject({receiptBytes: expect.stringContaining('"applied"')})
+      expect(await native.commit(owner, "deck", {version: 3, command: {id: "paragraph-undo", kind: "undo", target: "paragraph-edit"}})).toMatchObject({receiptBytes: expect.stringContaining('"applied"')})
+      const job = await native.exports.submit(owner, "native-export", "deck", {...options, expectedSeq: 3})
+      await expect(native.exports.submit({personId: "other"}, "denied", "deck", {...options, expectedSeq: 3})).rejects.toThrow("deck-not-found")
+      await native.close()
+      native = createParagraphHistoryStore(url)
+      const lease = await native.exports.claim()
+      if (lease?.snapshotVersion !== 3) throw new Error("native-export-required")
+      expect(lease.id).toBe(job.id)
+      expect((await native.snapshot(owner, "deck")).deck).toEqual(lease.snapshot.deck)
+      expect(lease.snapshot.deck.slides[0]!.elements[0]).toMatchObject({kind: "group", children: [{body: {paragraphs: [{alignment: "left"}]}}]})
+      const reopened = importedNativeDeck(await importPptx(await writeNativeSavedPptx(lease.snapshot.deck, lease.snapshot.seq, null, {}, lease.snapshot.assets, lease.snapshot.templates)))
+      expect(reopened.slides[0]!.elements[0]).toMatchObject({body: {frame: {anchor: "bottom", insets: {top: 4, right: 8, bottom: 12, left: 16}}}})
+      await native.exports.fail(lease.id, lease.lease, "retryable")
+      expect(await native.exports.retry(owner, lease.id)).toMatchObject({id: lease.id, kind: "queued"})
+      const retry = await native.exports.claim()
+      expect(retry?.snapshot).toEqual(lease.snapshot)
+    } finally {await native.close()}
+  })
+}, 30_000)
+
+it("measures actual native PostgreSQL commit and reopen with 300 text nodes and 20 retained edits", async () => {
+  await database(async (sql, url, old) => {
+    const deck = fixtureDeck(300), first = deck.slides[0]!.elements[0]!
+    if (first.kind !== "text") throw new Error("text-required")
+    deck.slides[0]!.elements = deck.slides[0]!.elements.map(element => ({...first, id: element.id, box: element.box, runs: [{...first.runs[0], text: `Retained content ${element.id} with a realistic sentence and a second line\nContinuation.`}]}))
+    await old.create(owner, deck)
+    for (let index = 0; index < 20; index++) await old.commit(owner, "deck", {id: commandId(`prior${index}`), kind: "patch", base: index, run: null, target: id(`s0e${index}`), fields: {runs: [{...first.runs[0], text: `Historical content ${index}\nRetained line`}]}})
+    const immutableBefore = await immutable(sql)
+    await prepareParagraphCutover(sql)
+    const migration = await cutoverParagraphHistory(sql, cutover)
+    let native = createParagraphHistoryStore(url)
+    try {
+      const readStarted = performance.now(), state = await native.read(owner, "deck"), readMs = performance.now() - readStarted
+      const samples: number[] = []
+      const text = state.deck.slides[0]!.elements[0]!
+      if (text.kind !== "text") throw new Error("text-required")
+      for (let index = 0; index < 5; index++) {
+        const started = performance.now()
+        const result = await native.commit(owner, "deck", {version: 3, command: {id: `measured${index}`, kind: "patch", base: 20 + index, run: null, target: text.body.paragraphs[0].id, fields: {alignment: index % 2 ? "right" : "center"}}})
+        samples.push(performance.now() - started)
+        expect(JSON.parse(result.receiptBytes)).toMatchObject({kind: "applied", seq: 21 + index})
+      }
+      await native.close()
+      native = createParagraphHistoryStore(url)
+      const reopenedStarted = performance.now(), reopened = await native.read(owner, "deck"), reopenMs = performance.now() - reopenedStarted
+      expect(reopened.seq).toBe(25)
+      expect((await immutable(sql)).filter(row => !row.id.startsWith("measured"))).toEqual(immutableBefore)
+      process.stdout.write(JSON.stringify({path: "createParagraphHistoryStore.commit/person-paragraph-patch", fixture: "300 text elements, 20 retained legacy edits, 5 later person edits", nativeHistoryBytes: Buffer.byteLength(JSON.stringify(reopened)), readMs, commitMs: samples, reopenMs, migration, includes: "SQL transaction, complete-history validation, executor, index rebuild and persistence", excludes: "HTTP/browser, reader retirement and visible pause"}) + "\n")
+    } finally {await native.close()}
+  })
+}, 120_000)

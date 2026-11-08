@@ -26,12 +26,19 @@ export function parseNativeArchiveV3(input: unknown): NativeArchiveV3 {
     if (!isId(value) || used.has(value)) throw new Error("duplicate-native-node-id")
     used.add(value)
   }
+  const deck = input.deck
+  function references(node: NativeSlide | NativeElement) {
+    if (node.theme !== null && !deck.themes.some(theme => theme.id === node.theme)) throw new Error("invalid-theme-reference")
+    if ("placeholder" in node && node.placeholder !== null && !deck.placeholders?.includes(node.placeholder)) throw new Error("invalid-placeholder-reference")
+    if ("overlap" in node && node.overlap !== null && !deck.overlaps?.includes(node.overlap)) throw new Error("invalid-overlap-reference")
+  }
   function visit(element: NativeElement) {
+    references(element)
     reserve(element.id)
     if (element.kind === "group") element.children.forEach(visit)
     if (element.kind === "text") { reserve(element.body.frame.id); element.body.paragraphs.forEach(paragraph => reserve(paragraph.id)) }
   }
   reserve(input.deck.id)
-  input.deck.slides.forEach(slide => { reserve(slide.id); slide.elements.forEach(visit) })
+  input.deck.slides.forEach(slide => { reserve(slide.id); references(slide); slide.elements.forEach(visit) })
   return structuredClone({version: 3, deck: input.deck})
 }

@@ -1,7 +1,10 @@
+import type {Paragraph} from "../../deck/src/text/body.ts"
+import {isNativeSlide, type NativeElement} from "../../deck/src/text/native-v3.ts"
+import {textElements} from "../../deck/src/text/content.ts"
 import {UsageLimitError,usageLimitSchema} from "./activity.ts"
 import {createHash} from "node:crypto"
 import {z} from "zod"
-import {isSlide,flatten,type Element,type Slide} from "../../deck/src/index.ts"
+import {isSlide,type Element} from "../../deck/src/index.ts"
 import type {AgentAdapter,AgentTools} from "./harness.ts"
 const page=z.object({ok:z.literal(true),data:z.object({savedVersion:z.number().int(),items:z.array(z.unknown()),nextCursor:z.string().nullable().optional(),template:z.object({id:z.string(),version:z.number()}).nullable().optional()})})
 function read(result:Awaited<ReturnType<AgentTools>>){const text=result.content.find(item=>item.type==="text");if(!text||text.type!=="text")throw new Error("tool-response-missing");return page.parse(JSON.parse(text.text)).data}
@@ -29,9 +32,9 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     const result=await call("get_slide",{deckId:context.deckId,slideId:id})
     yield {kind:"tool",name:"get_slide",result}
     const slide=read(result).items[0]
-    if(!isSlide(slide))throw new Error("invalid-slide-response")
+    if(!isNativeSlide(slide) && !isSlide(slide))throw new Error("invalid-slide-response")
     if(selected.has(id))found.add(id)
-    for(const element of flatten(slide.elements))if(selected.has(element.id))found.add(element.id)
+    for(const element of textElements(slide.elements))if(selected.has(element.id))found.add(element.id)
   }
   if(selected.size&&found.size!==selected.size)throw new Error("selection-not-in-deck")
   for(const id of slideIds){
@@ -40,8 +43,8 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     const result=await call("get_slide",{deckId:context.deckId,slideId:id})
     yield {kind:"tool",name:"get_slide",result,scope:id}
     const data=read(result),slide=data.items[0]
-    if(!isSlide(slide))throw new Error("invalid-slide-response")
-    const attached=flatten(slide.elements).filter(element=>selected.has(element.id))
+    if(!isNativeSlide(slide) && !isSlide(slide))throw new Error("invalid-slide-response")
+    const attached=textElements(slide.elements).filter(element=>selected.has(element.id))
     if(selected.has(id))found.add(id)
     for(const element of attached)found.add(element.id)
     if(selected.size&&!selected.has(id)&&!attached.length)continue
@@ -51,8 +54,14 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
       const [first,...rest]=element.runs
       return {...element,runs:[{...first,font:brandFont},...rest.map(run=>({...run,font:brandFont}))]}
     }
-    const value:Slide={...slide,elements:slide.elements.map(update)}
-    const changes=attached.length ? attached.map(element=>({kind:"set" as const,target:element.id,value:update(element)})) : [{kind:"set" as const,target:slide.id,value}]
+    const updateNative = (element: NativeElement): NativeElement => {
+      if (element.kind === "group") return {...element, children: element.children.map(updateNative)}
+      if (element.kind !== "text" || !brandFont) return element
+      const font = brandFont, [first, ...rest] = element.body.paragraphs
+      const paragraphFont = (paragraph: Paragraph): Paragraph => ({...paragraph, endStyle: {...paragraph.endStyle, font}, runs: paragraph.runs.map(run => ({...run, style: {...run.style, font}}))})
+      return {...element, body: {...element.body, paragraphs: [paragraphFont(first), ...rest.map(paragraphFont)]}}
+    }
+    const changes = isNativeSlide(slide) ? selectedChanges(slide.elements.map(updateNative), slide, selected) : selectedChanges(slide.elements.map(update), slide, selected)
     const digest=createHash("sha256").update(JSON.stringify([context.run,id,context.request,context.selection])).digest("hex").slice(0,40)
     const write=await call("apply_changes",{deckId:context.deckId,base:data.savedVersion,requestId:`aira_${digest}`,changes})
     if(write.isError){
@@ -79,4 +88,9 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     yield {kind:"tool",name:"apply_changes",result:write,scope:context.deckId}
   }
   yield {kind:"message",text:slideIds.length ? "Updated the attached content. Review changes by slide below." : "Created an editable title slide. Review it below."}
+}
+
+function selectedChanges<T extends Element | NativeElement, S extends {id: string}>(elements: T[], slide: S, selected: Set<string>) {
+  const attached = textElements(elements).filter(element => selected.has(element.id))
+  return attached.length ? attached.map(element => ({kind: "set", target: element.id, value: element} satisfies {kind: "set"; target: string; value: Element | NativeElement})) : [{kind: "set", target: slide.id, value: {...slide, elements}}]
 }

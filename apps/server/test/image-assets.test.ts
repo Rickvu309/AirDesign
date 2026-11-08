@@ -57,7 +57,8 @@ it.each(["local-stock","heroicons"])("snapshots full resolution and immutable %s
     const job=await store.exports.submit(owner,"export",deck.id,{format:"pptx",slides:[],timing:"now",expectedSeq:0,allowIssues:true})
     const claimed=await store.exports.claim()
     expect(claimed).not.toBeNull()
-    const snapshot=claimed!.snapshot
+    if (claimed?.snapshotVersion !== 2) throw new Error("legacy-export-required")
+    const snapshot=claimed.snapshot
     expect.soft(snapshot).toHaveProperty("provenance",{[image.hash]:source.provenance})
     const bytes=Buffer.from(snapshot.assets![image.hash]!.split(",")[1]!,"base64")
     expect.soft(await sharp(bytes).metadata()).toMatchObject({width:1000,height:6000})

@@ -79,7 +79,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleImages=boundary(imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)}),request=>request.method==="GET")
   const handleTemplates = boundary(templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck)))
   const changed=async(deck:string)=>{await sync.refresh(deck);await aira.publish(deck)}
-  const handleDecks = boundary(decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates,paragraphs),request=>new URL(request.url).pathname.startsWith("/api/catalog/export-jobs/") || (request.method==="GET" && new URL(request.url).pathname.endsWith("/exports")))
+  const handleDecks = boundary(decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates,paragraphs),request=>new URL(request.url).pathname.startsWith("/api/catalog/export-jobs/") || new URL(request.url).pathname.endsWith("/exports"))
   const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
   const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin,paragraphs)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
