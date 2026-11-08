@@ -267,7 +267,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -280,7 +280,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -323,7 +323,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -342,7 +342,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -390,7 +390,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -409,7 +409,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -457,7 +457,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -476,7 +476,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -528,7 +528,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -547,7 +547,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -595,7 +595,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -608,7 +608,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -653,7 +653,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -670,7 +670,7 @@
         "total": "24"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -715,7 +715,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -728,7 +728,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",
@@ -781,7 +781,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -797,7 +797,7 @@
         "deck": "Pricing Strategy Review"
       }
     },
-    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits.",
+    "scenarioChangedBecause": "Require the designed sidebar Search searchbox by its actual accessible role and exact name; preserve keyboard Commands behavior, state, viewport and parity limits. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values.",
     "component": {
       "kind": "toast",
       "selector": "[data-sonner-toast]",
@@ -851,7 +851,7 @@
             "region": ".ad-sidebar .ad-search",
             "name": "search",
             "size": 16,
-            "color": "ink"
+            "color": "gray.500"
           }
         ],
         "textRoles": [
@@ -870,7 +870,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits."
+    "scenarioChangedBecause": "Studio shell v5 receipt refresh on accepted e694150 for S33.02: record Studio shell access and sidebar capture adapters at this stack layer; preserve design targets, budgets, assertions and steps. Require the real SearchField SVG in the shared Shell sidebar; retain icon geometry, size/color checks, scenario state and parity limits. Authoritative S31.02 and S31.04 Search crops share fully painted #909090 pixels, the gray.500 placeholder token; the shared Search icon color contract follows that evidence instead of ink. Exact 16px size and 1.5px stroke checks remain unchanged, without claiming raster recovery of those SVG values."
   },
   {
     "surface": "studio",

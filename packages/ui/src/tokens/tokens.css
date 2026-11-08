@@ -394,6 +394,7 @@ body {
 .ad-badge { padding:2px 6px;border-radius:var(--radius-compact);background:var(--muted);color:var(--muted-foreground);font-size:var(--text-helper); }
 .ad-avatar { width:24px;height:24px;border-radius:50%;background:var(--foreground);color:var(--card);display:inline-grid;place-items:center;font-size:var(--text-avatar);flex:none; }
 .ad-search { height:36px;display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:0 12px;color:var(--hint); }
+.ad-search > svg { flex-shrink:0; }
 .ad-search input { width:100%;min-width:0;background:transparent;border:0;font:inherit;color:var(--foreground);outline-offset:6px; }
 .ad-segmented { display:inline-flex;gap:2px;padding:4px;border-radius:var(--radius);background:var(--muted); }
 .ad-segmented button { display:grid;place-items:center;min-width:28px;height:28px;background:transparent;border:0;border-radius:var(--radius-compact);color:var(--muted-foreground);cursor:pointer; }
