@@ -1,12 +1,18 @@
-import {it,expect} from "vitest"
+import {it,expect,beforeAll,afterAll} from "vitest"
 import {chromium} from "playwright"
 import {preview} from "vite"
 import {execFileSync} from "node:child_process"
 import path from "node:path"
 import {mcpFixture} from "../../apps/server/test/mcp/fixture.ts"
-import {withPrivateBuildFolder} from "./private-build-folder.ts"
+import {mkdtemp,rm} from "node:fs/promises"
+import os from "node:os"
+let outDir=""
+beforeAll(async()=>{
+  outDir=await mkdtemp(path.join(os.homedir(),"tmp/payment-studio-"))
+  execFileSync("npm",["run","build","--workspace=@airdesign/studio","--","--outDir",outDir,"--emptyOutDir"],{stdio:"pipe",timeout:60000})
+},60000)
+afterAll(async()=>{if(outDir)await rm(outDir,{recursive:true,force:true})})
 it("built Studio exposes allowance and balances without unfinished payments in a normal start",async()=>{
-  await withPrivateBuildFolder(outDir=>{execFileSync("npm",["run","build","--workspace=@airdesign/studio","--","--outDir",outDir,"--emptyOutDir"],{stdio:"pipe"})},async outDir=>{
   const fixture=await mcpFixture()
   try{
   const browser=await chromium.launch({headless:true})
@@ -36,5 +42,4 @@ it("built Studio exposes allowance and balances without unfinished payments in a
   }finally{await new Promise<void>(resolve=>studio.httpServer.close(()=>resolve()))}
   }finally{await browser.close()}
   }finally{await fixture.close()}
-  })
 },60000)
