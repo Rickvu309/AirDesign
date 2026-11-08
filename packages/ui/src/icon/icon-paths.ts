@@ -17,3 +17,11 @@ export const iconPaths = {
   file: "M14 2H5v20h14V7zm0 0v6h5",
   upload: "M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5",
 }
+
+export type IconName = keyof typeof iconPaths
+export function isIconName(name:string):name is IconName{
+  return Object.hasOwn(iconPaths,name)
+}
+export function iconStrokeWidth(name:IconName):1.5|1.6{
+  return name==="undo"||name==="redo" ? 1.5 : 1.6
+}

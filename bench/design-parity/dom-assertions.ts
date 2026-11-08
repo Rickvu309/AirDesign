@@ -1,7 +1,7 @@
 import type {Page,Locator} from "playwright"
 import sharp from "sharp"
 import {createHash} from "node:crypto"
-import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
+import {iconPaths,iconStrokeWidth,isIconName} from "../../packages/ui/src/icon/icon-paths.ts"
 import {resolveCopy,type Scenario} from "./registry.ts"
 
 function failure(selector:string,check:string,expected:unknown,actual:unknown){
@@ -9,7 +9,7 @@ function failure(selector:string,check:string,expected:unknown,actual:unknown){
 }
 export const textRoleSizes={"landing-hero":[104,104,400],"pricing-title":[52,52,600],"page-title":[26,26,600],"access-error-title":[15,15,500],"dialog-title":[17,17,600],"module-title":[15,15,600],body:[13,14,400],helper:[12,12,400]}
 
-type IconInk={path:string,size:number,color:string}
+type IconInk={path:string,size:number,color:string,strokeWidth:ReturnType<typeof iconStrokeWidth>}
 function inkPixels(pixels:Buffer){
   const colors=new Map<number,number>()
   for(let index=0;index<pixels.length;index+=4){
@@ -48,7 +48,7 @@ export async function assertRendered(locator:Locator,control=false,icon?:IconInk
   }
   const [left,right]=await Promise.all([sharp(before).ensureAlpha().raw().toBuffer(),sharp(after).ensureAlpha().raw().toBuffer()])
   const beforeInk=inkPixels(left),afterInk=inkPixels(right)
-  const estimate=icon ? inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer()) : await locator.evaluate(element=>{
+  const estimate=icon ? inkPixels(await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${icon.size}" height="${icon.size}" viewBox="0 0 24 24"><rect width="24" height="24" fill="white"/><path d="${icon.path}" fill="none" stroke="${icon.color}" stroke-width="${icon.strokeWidth}" stroke-linecap="round" stroke-linejoin="round"/></svg>`)).ensureAlpha().raw().toBuffer()) : await locator.evaluate(element=>{
     const style=getComputedStyle(element),size=parseFloat(style.fontSize)
     const text=element instanceof HTMLInputElement||element instanceof HTMLTextAreaElement ? element.value||element.placeholder : element.textContent??""
     const textArea=[...text.replace(/\s/g,"")].length*size*size*0.18
@@ -126,15 +126,18 @@ async function assertStructure(page:Page,entry:Scenario){
   for(const icon of entry.assertions.structure.icons){
     const locator=page.locator(icon.region).locator(`svg[data-icon="${icon.name}"]`).first()
     if(!await locator.count())throw failure(locator.toString(),"required-icon",1,0)
-    const path=Reflect.get(iconPaths,icon.name)
-    if(typeof path!=="string")throw failure(locator.toString(),"icon-geometry","registered icon name",icon.name)
+    if(!isIconName(icon.name))throw failure(locator.toString(),"icon-geometry","registered icon name",icon.name)
+    const path=iconPaths[icon.name]
     const expectedColor={ink:"rgb(34, 34, 34)","gray.600":"rgb(102, 102, 102)","gray.500":"rgb(144, 144, 144)"}[icon.color]
     const appearance=await locator.evaluate(element=>{
       const box=element.getBoundingClientRect()
       return {width:box.width,height:box.height,parts:[...element.querySelectorAll("path")].map(part=>{const style=getComputedStyle(part);return {stroke:style.stroke,fill:style.fill,width:style.strokeWidth,opacity:style.opacity,strokeOpacity:style.strokeOpacity}})}
     })
     if(appearance.width!==icon.size||appearance.height!==icon.size)throw failure(locator.toString(),"icon-size",icon.size,appearance)
-    if(appearance.parts.some(part=>part.stroke!==expectedColor||part.fill!=="none"||part.width!=="1.5px"||part.opacity!=="1"||part.strokeOpacity!=="1"))throw failure(locator.toString(),"icon-color",expectedColor,appearance)
+    const expectedStroke=iconStrokeWidth(icon.name)
+    if(appearance.parts.some(part=>part.stroke!==expectedColor||part.fill!=="none"))throw failure(locator.toString(),"icon-color",expectedColor,appearance)
+    if(appearance.parts.some(part=>part.width!==expectedStroke+"px"))throw failure(locator.toString(),"icon-stroke",expectedStroke,appearance)
+    if(appearance.parts.some(part=>part.opacity!=="1"||part.strokeOpacity!=="1"))throw failure(locator.toString(),"icon-opacity",1,appearance)
     const geometry=await locator.evaluate((element,expectedPath)=>{
       const reference=document.createElementNS("http://www.w3.org/2000/svg","svg"),referencePath=document.createElementNS("http://www.w3.org/2000/svg","path")
       reference.setAttribute("style","position:fixed;inset:0;width:0;height:0;visibility:hidden!important")
@@ -150,7 +153,7 @@ async function assertStructure(page:Page,entry:Scenario){
     const expected=hash({viewBox:"0 0 24 24",transform:"none",parts:[{tag:"path",paintedPath:geometry.canonicalPath,transform:"none",attributes:[]}]})
     const actual=hash(geometry.actual)
     if(actual!==expected)throw failure(locator.toString(),"icon-geometry",expected,actual)
-    await assertRendered(locator,false,{path,size:icon.size,color:expectedColor})
+    await assertRendered(locator,false,{path,size:icon.size,color:expectedColor,strokeWidth:expectedStroke})
   }
   for(const text of entry.assertions.structure.textRoles){
     const locators=page.locator(text.selector)

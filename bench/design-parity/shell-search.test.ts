@@ -4,7 +4,7 @@ import {chromium} from "playwright"
 import {beforeAll,expect,it} from "vitest"
 import {assertScenarioDOM} from "./dom-assertions.ts"
 import {parseRegistry,readRegistry} from "./registry.ts"
-import {iconPaths} from "../../packages/ui/src/icon/icon-paths.ts"
+import {iconPaths,iconStrokeWidth} from "../../packages/ui/src/icon/icon-paths.ts"
 
 let shellScript="",shellStyles=""
 beforeAll(async()=>{
@@ -13,7 +13,7 @@ beforeAll(async()=>{
   const outputs=Array.isArray(built) ? built : [built]
   const files=outputs.flatMap(output=>"output" in output ? output.output : [])
   shellScript=files.filter(output=>output.type==="chunk").map(output=>output.code).join("\n")
-  shellStyles=files.filter(output=>output.type==="asset"&&output.fileName.endsWith(".css")).map(output=>typeof output.source==="string" ? output.source : new TextDecoder().decode(output.source)).join("\n")
+  shellStyles=files.flatMap(output=>output.type==="asset"&&output.fileName.endsWith(".css") ? [typeof output.source==="string" ? output.source : new TextDecoder().decode(output.source)] : []).join("\n")
 })
 
 it("requires the real sidebar Search searchbox and rejects its absence",async()=>{
@@ -102,6 +102,7 @@ it.each(["present","missing","wrong"])("finds the actual Shell SearchField icon 
     if(state==="missing")await icon.evaluate(element=>element.remove())
     if(state==="wrong")await icon.evaluate(element=>element.setAttribute("data-icon","trash"))
     if(state!=="present")await expect(assertScenarioDOM(page,entry)).rejects.toThrow("required-icon")
+    else await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
   }finally{await browser.close()}
 })
 
@@ -112,7 +113,7 @@ it.each([
   ["wrong-size","icon-size"],
   ["wrong-color","icon-color"],
   ["wrong-ink","icon-color"],
-  ["wrong-stroke","icon-color"],
+  ["wrong-stroke","icon-stroke"],
   ["wrong-geometry","icon-geometry"]
 ])("retains strict Search SVG checks in a canonical contract fixture: %s",async(state,check)=>{
   const original=(await readRegistry()).find(entry=>entry.code==="S31.02")!
@@ -120,14 +121,14 @@ it.each([
   const browser=await chromium.launch({headless:true})
   try{
     const page=await browser.newPage({viewport:entry.viewport})
-    await page.setContent(`<style>body{background:white;color:#222}input{font:14px Geist}</style><aside class="ad-sidebar"><label class="ad-search"><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24"><path d="${iconPaths.search}" stroke="#909090" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="search" aria-label="Search" placeholder="Search"/></label></aside><main class="workspace-home"></main>`)
+    await page.setContent(`<style>body{background:white;color:#222}input{font:14px Geist}</style><aside class="ad-sidebar"><label class="ad-search"><svg data-icon="search" width="16" height="16" viewBox="0 0 24 24"><path d="${iconPaths.search}" stroke="#909090" stroke-width="${iconStrokeWidth("search")}" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><input type="search" aria-label="Search" placeholder="Search"/></label></aside><main class="workspace-home"></main>`)
     const icon=page.locator('svg[data-icon="search"]')
     if(state==="missing")await icon.evaluate(element=>element.remove())
     if(state==="wrong-name")await icon.evaluate(element=>element.setAttribute("data-icon","trash"))
     if(state==="wrong-size")await icon.evaluate(element=>element.setAttribute("width","24"))
     if(state==="wrong-color")await icon.locator("path").evaluate(element=>element.style.stroke="rgb(255, 0, 0)")
     if(state==="wrong-ink")await icon.locator("path").evaluate(element=>element.style.stroke="rgb(34, 34, 34)")
-    if(state==="wrong-stroke")await icon.locator("path").evaluate(element=>element.setAttribute("stroke-width","1.6"))
+    if(state==="wrong-stroke")await icon.locator("path").evaluate(element=>element.setAttribute("stroke-width","1.5"))
     if(state==="wrong-geometry")await icon.locator("path").evaluate(element=>element.setAttribute("d","M2 2L14 14M14 2L2 14"))
     if(state==="canonical")await expect(assertScenarioDOM(page,entry)).resolves.toBeUndefined()
     else await expect(assertScenarioDOM(page,entry)).rejects.toThrow(check)

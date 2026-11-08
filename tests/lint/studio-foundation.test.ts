@@ -193,3 +193,15 @@ it("rejects alphabetical Decks ordering and invented title covers",()=>{
   expect(studioFoundationHits(file,source.replace("b.updated-a.updated","a.title.localeCompare(b.title)"))).toEqual([{line:1,reason:"studio-decks-must-sort-by-last-edit"}])
   expect(studioFoundationHits(file,source.replace("<DeckPreview entry={entry}/>","<strong>{entry.title}</strong>"))).toEqual([{line:1,reason:"studio-deck-covers-require-real-slide-previews"}])
 })
+
+it("rejects duplicated canonical stroke literals in renderer and both verifier consumers",()=>{
+  const renderer="packages/ui/src/icon/icon.tsx",verifier="bench/design-parity/dom-assertions.ts"
+  const currentRenderer=readFileSync(renderer,"utf8"),currentVerifier=readFileSync(verifier,"utf8")
+  expect(studioFoundationHits(renderer,currentRenderer)).toEqual([])
+  expect(studioFoundationHits(verifier,currentVerifier)).toEqual([])
+  const reason=[{line:1,reason:"canonical-icon-stroke-must-use-source-owned-width"}]
+  expect(studioFoundationHits(renderer,currentRenderer.replace("iconStrokeWidth(name)",'name === "undo" || name === "redo" ? "1.5" : "1.6"'))).toEqual(reason)
+  expect(studioFoundationHits(verifier,currentVerifier.replace('stroke-width="${icon.strokeWidth}"','stroke-width="1.5"'))).toEqual(reason)
+  expect(studioFoundationHits(verifier,currentVerifier.replace('part.width!==expectedStroke+"px"','part.width!=="1.5px"'))).toEqual(reason)
+  expect(studioFoundationHits("negative-fixture.test.ts",'stroke-width="1.5"')).toEqual([])
+})
