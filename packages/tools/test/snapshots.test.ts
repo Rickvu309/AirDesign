@@ -27,3 +27,7 @@ it("bounds UTF-8 envelopes and binds frozen cursors and subtree resources to the
     await expect(snapshots.resource("owner",page.snapshot)).rejects.toThrow("resource-not-found")
   }finally{await database.close()}
 })
+
+it("preserves typed pause retry semantics in the public tool envelope",()=>{
+  expect(JSON.parse(textResult({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"},true).content[0]!.text)).toMatchObject({ok:false,error:{retryable:true,details:{next:"retain-and-retry"}}})
+})

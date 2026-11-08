@@ -1,3 +1,4 @@
+import {initializeAccountDeletion} from "../src/account/deletion-store.ts"
 import {writeSavedPptx} from "../../../packages/pptx/src/export-deck.ts"
 import {PGlite} from "@electric-sql/pglite"
 import {createCatalog,initializeCatalog} from "../../../packages/catalog/src/index.ts"
@@ -15,6 +16,7 @@ it("upgrades an existing catalog without losing decks and preserves stars when i
   try{
     await database.query("CREATE TABLE editing_deck(id text PRIMARY KEY,owner text NOT NULL,state jsonb NOT NULL,deleted boolean NOT NULL DEFAULT false,title text NOT NULL,updated_at double precision NOT NULL)")
     await database.query("INSERT INTO editing_deck(id,owner,state,title,updated_at) VALUES($1,$2,$3,$4,$5)",[deck.id,owner.personId,initialHistory(deck),"Existing proposal",1234])
+    await initializeAccountDeletion(database)
     await initializeCatalog(database)
     const catalog=createCatalog(work=>database.transaction(work))
     expect((await catalog.list(owner)).map(({title,starred,created})=>({title,starred,created}))).toEqual([{title:"Existing proposal",starred:false,created:1234}])

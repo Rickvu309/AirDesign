@@ -1,3 +1,4 @@
+import type {TextAdmission} from "../../../../packages/rpc/src/text/protocol.ts"
 import {importSlideProgressSchema} from "../../../../packages/operations/src/import-progress.ts"
 import {WorkerArtifacts} from "./artifacts.ts"
 import path from "node:path"
@@ -16,7 +17,7 @@ const command = z.discriminatedUnion("kind",[
   z.object({kind:z.literal("fail"),queue:z.enum(["import","image"]),id:z.string().uuid(),lease:z.string().uuid(),reason:z.string().max(200)}),
 ])
 
-export function workerHandler(imports:OperationStore,images:OperationStore,secret:string,reconcile:()=>Promise<unknown>,artifactRoot?:string) {
+export function workerHandler(imports:OperationStore,images:OperationStore,secret:string,reconcile:()=>Promise<unknown>,artifactRoot?:string,admission:()=>Promise<TextAdmission>=async()=>({kind:"ready",protocol:"legacy-text-v2"})) {
   const artifacts=new WorkerArtifacts(artifactRoot ?? (process.env.AIRDESIGN_OPERATIONS_PATH ? path.join(path.dirname(process.env.AIRDESIGN_OPERATIONS_PATH),"worker-artifacts") : path.join(os.homedir(),"tmp",`worker-artifacts-${randomUUID()}`)))
   return async (request:Request):Promise<Response> => {
     if (!workerAuthorized(request.headers.get("authorization"),secret)) return Response.json({code:"unauthorized"},{status:401})
@@ -32,12 +33,15 @@ export function workerHandler(imports:OperationStore,images:OperationStore,secre
     if (!parsed.success) return Response.json({code:"invalid-worker-command"},{status:400})
     const input = parsed.data, store = input.queue === "import" ? imports : images
     if (input.kind === "claim") {
+      const state=await admission()
+      if(state.kind==="paused")return Response.json({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"},{status:409})
+      if(state.protocol==="paragraph-body-v3" && request.headers.get("x-worker-text-protocols")!=="legacy-text-v2,paragraph-body-v3")return Response.json({kind:"refused",code:"editing-protocol-mismatch",retryable:false,next:"retain-and-reconcile"},{status:409})
       const cleanup=store.recover().map(({id,lease})=>({id,lease}))
       if(cleanup.length)return Response.json({cleanup})
       await reconcile()
       for (const id of store.pending()) {
         const job = store.claim(id)
-        if (job) return Response.json({id,lease:job.lease,input:job.input.toString("base64")})
+        if (job) return Response.json({id,lease:job.lease,input:job.input.toString("base64"),textProtocol:state.protocol})
       }
       return Response.json(null)
     }

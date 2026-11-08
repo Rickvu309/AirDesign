@@ -1,3 +1,4 @@
+import type {TextProtocol} from "../../../packages/rpc/src/text/protocol.ts"
 import {drainRemoteQueue} from "./remote-queue.ts"
 import {TemplateStore} from "../../../packages/brand/src/template-store.ts"
 import {deliverAccountDeletion} from "./account-deletion/deliver.ts"
@@ -20,6 +21,7 @@ export async function runWorkerCycle(signal: AbortSignal) {
   const store = new OperationStore(database)
   const images = new OperationStore(database+".images")
   try {
+    let protocol:TextProtocol="legacy-text-v2"
     if (mode === "all" && process.env.AIRDESIGN_DATABASE_URL) {
       const {createHistoryStore} = await import("../../server/src/db/history-store.ts")
       const {createParagraphHistoryStore} = await import("../../server/src/db/paragraph-history-store.ts")
@@ -31,6 +33,7 @@ export async function runWorkerCycle(signal: AbortSignal) {
         signal.throwIfAborted()
         const admission = await paragraphs.protocol()
         if (admission.kind === "paused") throw new Error("editing-paused")
+        protocol=admission.protocol
         const active = admission.protocol === "paragraph-body-v3" ? paragraphs : history
         await recoverExports(active.exports,root)
         if (process.env.AIRDESIGN_WORKER_API_ORIGIN) await drainRemoteQueue(process.env.AIRDESIGN_WORKER_API_ORIGIN,process.env.AIRDESIGN_SECRET ?? "",root,signal)
@@ -40,7 +43,7 @@ export async function runWorkerCycle(signal: AbortSignal) {
           try { await deliverAccountDeletion(active,store,images,templates,root,signal) } finally { templates.close() }
         }
         signal.throwIfAborted()
-        if (admission.protocol === "legacy-text-v2") await purgeExpiredDecks(history.catalog)
+        await purgeExpiredDecks(active.catalog)
         while (!signal.aborted) {
           const result = await deliverExport(active.exports,root,signal)
           if (!result) break
@@ -69,7 +72,7 @@ export async function runWorkerCycle(signal: AbortSignal) {
     }
     if(mode==="all")for (const id of store.pending()) {
       signal.throwIfAborted()
-      const committed = await deliver(store, id, root, path.resolve(import.meta.dirname,"import.ts"),undefined,signal)
+      const committed = await deliver(store, id, root, path.resolve(import.meta.dirname,"import.ts"),undefined,signal,undefined,protocol)
       process.stdout.write(JSON.stringify({ id, committed }) + "\n")
     }
   } finally { images.close();store.close() }

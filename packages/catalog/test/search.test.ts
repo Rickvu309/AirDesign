@@ -9,6 +9,8 @@ it("searches owned visible deck text and notes without matching internal geometr
   const database=new PGlite(),owner={personId:"owner"},deck=fixtureDeck(2)
   try{
     await database.query("CREATE TABLE editing_deck(id text PRIMARY KEY,owner text NOT NULL,state jsonb NOT NULL,deleted boolean NOT NULL DEFAULT false)")
+    await database.query("CREATE TABLE account_deletion(owner text PRIMARY KEY,requested bigint NOT NULL,deadline bigint NOT NULL)")
+    await database.query("CREATE TABLE account_deletion_receipt(id text PRIMARY KEY,completed bigint)")
     await initializeCatalog(database)
     const catalog=createCatalog(work=>database.transaction(work)),slide=deck.slides[0]!
     slide.notes="Market forecast"

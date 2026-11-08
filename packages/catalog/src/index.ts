@@ -1,14 +1,16 @@
+import {lockRetainedAccount} from "../../access/src/account-retention.ts"
 import { randomUUID,createHash } from "node:crypto"
 import { id, parseDeck, themeId, type Deck } from "../../deck/src/index.ts"
-import { initialHistory, type History, type Principal } from "../../change-log/src/index.ts"
+import type {NativeDeck} from "../../deck/src/text/native-v3.ts"
+import { initialHistory, type History, type Principal, type RunState } from "../../change-log/src/index.ts"
 
 export type CatalogSql = { query<R>(sql:string,params?:unknown[]):Promise<{rows:R[]}> }
 export type CatalogTransaction = <T>(work:(tx:CatalogSql)=>Promise<T>)=>Promise<T>
 export type CatalogSource={bytes:Buffer;report:Record<string,unknown>}
-export type DeckEntry = { id:string;title:string;updated:number;deletedAt:number|null;generation:number;pendingRequest:string;slides:number;starred:boolean;created:number;preview:{slide:Deck["slides"][number];themes:Deck["themes"]}|null }
-type Row = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History;deleted:boolean;trash_generation:number;starred:boolean;created_at:number}
+export type DeckEntry<D extends Deck | NativeDeck = Deck> = { id:string;title:string;updated:number;deletedAt:number|null;generation:number;pendingRequest:string;slides:number;starred:boolean;created:number;preview:{slide:D["slides"][number];themes:D["themes"]}|null }
+type Row<D extends Deck | NativeDeck> = {id:string;title:string;updated_at:number;deleted_at:number|null;pending_request:string;state:History<D>;deleted:boolean;trash_generation:number;starred:boolean;created_at:number}
 const day=24*60*60*1000
-function entry(row:Row):DeckEntry {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,generation:Number(row.trash_generation),slides:row.state.deck.slides.length,starred:row.starred,created:Number(row.created_at),preview:row.state.deck.slides[0] ? {slide:row.state.deck.slides[0],themes:row.state.deck.themes} : null}}
+function entry<D extends Deck | NativeDeck>(row:Row<D>):DeckEntry<D> {return {id:row.id,title:row.title,updated:Number(row.updated_at),deletedAt:row.deleted_at===null ? null : Number(row.deleted_at),pendingRequest:row.pending_request,generation:Number(row.trash_generation),slides:row.state.deck.slides.length,starred:row.starred,created:Number(row.created_at),preview:row.state.deck.slides[0] ? {slide:row.state.deck.slides[0],themes:row.state.deck.themes} : null}}
 function title(value:string) {const text=value.trim();if(!text || text.length>200)throw new Error("invalid-deck-title");return text}
 function newId() {return id(`d${randomUUID().replaceAll("-","").slice(0,30)}`)}
 export async function initializeCatalog(tx:CatalogSql) {
@@ -25,9 +27,28 @@ export async function initializeCatalog(tx:CatalogSql) {
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_source(deck text PRIMARY KEY REFERENCES editing_deck(id) ON DELETE CASCADE,bytes bytea NOT NULL,report jsonb NOT NULL)")
   await tx.query("CREATE TABLE IF NOT EXISTS catalog_request(owner text NOT NULL, request text NOT NULL, input jsonb NOT NULL, deck text NOT NULL, PRIMARY KEY(owner,request))")
 }
+export type CatalogModel<D extends Deck | NativeDeck> = {
+  initial(input: unknown): History<D>
+  initialize(tx: CatalogSql, principal: Principal, history: History<D>): Promise<void>
+  read(tx: CatalogSql, deck: string, state: History<D>): Promise<History<D>>
+  projection(history: History<D>): History<D>
+  requestSource(input: unknown): unknown
+  textPath: string
+}
 export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
+  return catalogWithModel(transaction, clock, {
+    initial: input => initialHistory(parseDeck(input)),
+    initialize: async () => undefined,
+    read: async (_tx, _deck, state) => state,
+    projection: history => history,
+    requestSource: input => input,
+    textPath: '$.deck.slides[*].elements.** ? (@.kind == "text").runs[*].text'
+  })
+}
+export function catalogWithModel<D extends Deck | NativeDeck>(transaction:CatalogTransaction,clock:()=>number,model:CatalogModel<D>) {
   async function owned(tx:CatalogSql,principal:Principal,deck:string) {
-    const result=await tx.query<Row>("SELECT * FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,principal.personId])
+    await lockRetainedAccount(tx,principal.personId)
+    const result=await tx.query<Row<D>>("SELECT * FROM editing_deck WHERE id=$1 AND owner=$2 FOR UPDATE",[deck,principal.personId])
     const row=result.rows[0];if(!row)throw new Error("deck-not-found");return row
   }
   async function remove(tx:CatalogSql,deck:string) {
@@ -37,32 +58,35 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
   }
   return {
     async list(principal:Principal,trash=false,search="") {return transaction(async tx=>{
-      const result=await tx.query<Row>("SELECT * FROM editing_deck WHERE owner=$1 AND deleted=$2 AND strpos(lower(title||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].elements.** ? (@.kind == \"text\").runs[*].text') AS content(value)),'')||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].notes') AS notes(value)),'')),lower($3))>0 ORDER BY updated_at DESC,id",[principal.personId,trash,search])
+      await lockRetainedAccount(tx,principal.personId)
+      const result=await tx.query<Row<D>>("SELECT * FROM editing_deck WHERE owner=$1 AND deleted=$2 AND strpos(lower(title||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,$4::jsonpath) AS content(value)),'')||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].notes') AS notes(value)),'')),lower($3))>0 ORDER BY updated_at DESC,id",[principal.personId,trash,search,model.textPath])
       return result.rows.map(entry)
     })},
-    async create(principal:Principal,request:string,name:string,pendingRequest="",source?:Deck,original?:CatalogSource) {return transaction(async tx=>{
+    async create(principal:Principal,request:string,name:string,pendingRequest="",source?:D,original?:CatalogSource) {return transaction(async tx=>{
+      await lockRetainedAccount(tx,principal.personId)
       if(!/^[A-Za-z0-9_-]{1,100}$/.test(request) || pendingRequest.length>20000)throw new Error("invalid-create-request")
       const input={name:title(name),pendingRequest,source:source ?? null,original:original ? createHash("sha256").update(original.bytes).digest("hex") : null},deckId=newId()
       await tx.query("INSERT INTO catalog_request(owner,request,input,deck) VALUES ($1,$2,$3,$4) ON CONFLICT(owner,request) DO NOTHING",[principal.personId,request,JSON.stringify(input),deckId])
       const previous=await tx.query<{deck:string;input:typeof input}>("SELECT deck,input FROM catalog_request WHERE owner=$1 AND request=$2",[principal.personId,request])
       const prior=previous.rows[0];if(!prior)throw new Error("create-failed")
-      if(canonical(prior.input)!==canonical(input))throw new Error("request-id-payload-conflict")
+      if(canonical({...prior.input,source:model.requestSource(prior.input.source)})!==canonical({...input,source:model.requestSource(input.source)}))throw new Error("request-id-payload-conflict")
       if(prior.deck!==deckId)return entry(await owned(tx,principal,prior.deck))
-      const deck=source ? parseDeck({...source,id:deckId}) : {id:deckId,version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
-      await tx.query("INSERT INTO editing_deck(id,owner,state,title,updated_at,created_at,pending_request) VALUES ($1,$2,$3,$4,$5,$5,$6)",[deckId,principal.personId,JSON.stringify(initialHistory(deck)),input.name,clock(),pendingRequest])
+      const history=model.initial(source ? {...source,id:deckId,version:0} : {id:deckId,version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]})
+      await tx.query("INSERT INTO editing_deck(id,owner,state,title,updated_at,created_at,pending_request) VALUES ($1,$2,$3,$4,$5,$5,$6)",[deckId,principal.personId,JSON.stringify(model.projection(history)),input.name,clock(),pendingRequest])
+      await model.initialize(tx, principal, history)
       if(original)await tx.query("INSERT INTO catalog_source(deck,bytes,report) VALUES($1,$2,$3)",[deckId,original.bytes,JSON.stringify(original.report)])
       return entry(await owned(tx,principal,deckId))
     })},
     async original(principal:Principal,deck:string):Promise<CatalogSource|null> {return transaction(async tx=>{await owned(tx,principal,deck);const row=(await tx.query<{bytes:Uint8Array;report:Record<string,unknown>}>("SELECT bytes,report FROM catalog_source WHERE deck=$1",[deck])).rows[0];return row ? {bytes:Buffer.from(row.bytes),report:row.report} : null})},
     async details(principal:Principal,deck:string) {return transaction(async tx=>entry(await owned(tx,principal,deck)))},
-    async readDeleted(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);return {deck:row.state.deck,seq:row.state.seq,deleted:row.deleted}})},
+    async readDeleted(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);const history=await model.read(tx,deck,row.state);return {deck:history.deck,seq:history.seq,deleted:row.deleted}})},
     async rename(principal:Principal,deck:string,name:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");await tx.query("UPDATE editing_deck SET title=$2,updated_at=$3 WHERE id=$1",[deck,title(name),clock()]);return entry(await owned(tx,principal,deck))})},
     async star(principal:Principal,deck:string,starred:boolean) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");await tx.query("UPDATE editing_deck SET starred=$2 WHERE id=$1",[deck,starred]);return entry(await owned(tx,principal,deck))})},
     async pending(principal:Principal,deck:string,text:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted)throw new Error("deck-deleted");if(text.length>20000)throw new Error("request-too-long");await tx.query("UPDATE editing_deck SET pending_request=$2 WHERE id=$1",[deck,text]);return entry(await owned(tx,principal,deck))})},
     async trash(principal:Principal,deck:string) {return transaction(async tx=>{
       const row=await owned(tx,principal,deck)
       if(!row.deleted){
-        const state={...row.state,runs:row.state.runs.map(run=>run.kind==="open" ? {...run,kind:"closed" as const,epoch:run.epoch+1} : run)}
+        const state={...row.state,runs:row.state.runs.map((run):RunState=>run.kind==="open" ? {...run,kind:"closed",epoch:run.epoch+1} : run)}
         await tx.query("UPDATE editing_deck SET deleted=true,deleted_at=$2,trash_generation=trash_generation+1,state=$3 WHERE id=$1",[deck,clock(),JSON.stringify(state)])
         await tx.query("UPDATE editing_run SET payload=jsonb_set(jsonb_set(payload,'{kind}','\"closed\"'::jsonb),'{epoch}',to_jsonb((payload->>'epoch')::integer+1)) WHERE deck=$1 AND payload->>'kind'='open'",[deck])
         await tx.query("DELETE FROM editing_run_credential WHERE deck=$1",[deck])
@@ -71,6 +95,7 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
     })},
     async restore(principal:Principal,deck:string) {return transaction(async tx=>{const row=await owned(tx,principal,deck);if(row.deleted_at!==null && Number(row.deleted_at)<=clock()-30*day)throw new Error("deck-expired");await tx.query("UPDATE editing_deck SET deleted=false,deleted_at=NULL,updated_at=$2 WHERE id=$1",[deck,clock()]);return entry(await owned(tx,principal,deck))})},
     async emptyTrash(principal:Principal,confirmed:{id:string;generation:number}[]) {return transaction(async tx=>{
+      await lockRetainedAccount(tx,principal.personId)
       const removed:string[]=[]
       for(const target of [...confirmed].sort((a,b)=>a.id.localeCompare(b.id))){
         const row=(await tx.query<{id:string}>("SELECT id FROM editing_deck WHERE id=$1 AND owner=$2 AND deleted=true AND trash_generation=$3 FOR UPDATE",[target.id,principal.personId,target.generation])).rows[0]

@@ -12,7 +12,7 @@ import type {HistoryStore} from "../db/history-store.ts"
 import type {TemplateStore} from "../../../../packages/brand/src/template-store.ts"
 import type {OperationStore} from "../../../../packages/operations/src/index.ts"
 export function mcpHandler(access:Access,history:HistoryStore,templates:TemplateStore,operations:OperationStore,imageQueue:OperationStore,origin:string,secret:string,changed:(deck:string)=>Promise<void>,resourceOrigin=origin,paragraphs?:ParagraphHistoryStore){
-  const oauth=history.oauth(secret,resourceOrigin+"/mcp"),tools=domainTools(history,templates,operations,imageQueue,origin,changed)
+  const oauth=history.oauth(secret,resourceOrigin+"/mcp"),tools=domainTools(history,templates,operations,imageQueue,origin,changed,paragraphs)
   return {
     close:()=>tools.close(),
     async handle(request:Request):Promise<Response>{
@@ -21,7 +21,7 @@ export function mcpHandler(access:Access,history:HistoryStore,templates:Template
       if(url.pathname==="/api/mcp/uploads"&&request.method==="POST"){
         const rejected=mutationRejection(request,origin,["application/json","application/octet-stream"]);if(rejected)return Response.json(rejected,{status:rejected.status})
         const principal=await access.principal(request);if(!principal)return Response.json({code:"signed-out"},{status:401})
-        const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission
+        const admission=await paragraphFeatureAdmission(paragraphs,request,true);if(admission)return admission
         try{
           const mime=request.headers.get("content-type")?.split(";")[0] ?? ""
           let name:string,requestId:string,bytes:Buffer
@@ -40,7 +40,7 @@ export function mcpHandler(access:Access,history:HistoryStore,templates:Template
       if(url.pathname!=="/mcp")return Response.json({code:"not-found"},{status:404})
       const authorization=request.headers.get("authorization"),principal=authorization?.startsWith("Bearer ") ? await oauth.authenticate(authorization.slice(7),resourceOrigin+"/mcp") : null
       if(!principal)return Response.json({code:"invalid-token"},{status:401,headers:{"www-authenticate":`Bearer resource_metadata="${resourceOrigin}/.well-known/oauth-protected-resource/mcp"`}})
-      const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission
+      const admission=await paragraphFeatureAdmission(paragraphs,request,true);if(admission)return admission
       const protocol=request.headers.get("mcp-protocol-version")
       if(protocol&&protocol!==mcpPin.protocol)return Response.json({code:"unsupported-protocol-version",supported:[mcpPin.protocol]},{status:400})
       if(request.method==="POST"){
@@ -51,9 +51,9 @@ export function mcpHandler(access:Access,history:HistoryStore,templates:Template
       server.setRequestHandler(ListToolsRequestSchema,async()=>({tools:toolCatalog}))
       server.setRequestHandler(ListResourcesRequestSchema,async()=>({resources:[]}))
       server.setRequestHandler(ListResourceTemplatesRequestSchema,async()=>({resourceTemplates:[{name:"Owned file chunks",uriTemplate:"airdesign://files/{fileId}{?offset}",mimeType:"application/octet-stream"},{name:"Owned export chunks",uriTemplate:"airdesign://exports/{operationId}{?offset}",mimeType:"application/octet-stream"},{name:"Owned import chunks",uriTemplate:"airdesign://imports/{operationId}{?offset}",mimeType:"application/octet-stream"},{name:"Owned image chunks",uriTemplate:"airdesign://images/{operationId}{?offset}",mimeType:"application/octet-stream"},{name:"Owned capture chunks",uriTemplate:"airdesign://captures/{captureId}{?offset}",mimeType:"image/png"},{name:"Saved subtree chunks",uriTemplate:"airdesign://snapshots/{snapshot}{?index,offset}",mimeType:"application/json"}]}))
-      server.setRequestHandler(CallToolRequestSchema,async request=>{
-        try{const result=await tools.call(principal,request.params.name,request.params.arguments ?? {});if(Buffer.byteLength(JSON.stringify(result))>(result.content.some(item=>item.type==="image") ? 500000 : toolTextLimit))throw new Error("result-too-large-use-target-or-resource");return result}
-        catch(error){return textResult({code:error instanceof Error ? error.message.slice(0,200) : "tool-failed",retryable:false},true)}
+      server.setRequestHandler(CallToolRequestSchema,async call=>{
+        try{const result=await tools.call(principal,call.params.name,call.params.arguments ?? {});if(Buffer.byteLength(JSON.stringify(result))>(result.content.some(item=>item.type==="image") ? 500000 : toolTextLimit))throw new Error("result-too-large-use-target-or-resource");return result}
+        catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request,true);if(admission)return textResult(await admission.json(),true);return textResult({code:error instanceof Error ? error.message.slice(0,200) : "tool-failed",retryable:false},true)}
       })
       server.setRequestHandler(ReadResourceRequestSchema,async request=>{try{const result=await tools.resource(principal,request.params.uri);if(Buffer.byteLength(JSON.stringify(result))>toolTextLimit)throw new Error("resource-envelope-limit");return result}catch{throw new McpError(ErrorCode.InvalidParams,"resource-not-found-or-invalid-page")}})
       const transport=new WebStandardStreamableHTTPServerTransport({sessionIdGenerator:undefined,enableJsonResponse:true})

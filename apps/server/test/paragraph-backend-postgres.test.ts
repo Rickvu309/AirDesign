@@ -189,7 +189,7 @@ it("serves authenticated legacy/native HTTP and native websocket reconnects with
       expect(await stale.json()).toMatchObject({kind: "refused", code: "stale-base"})
       const replay = await (await call("/api/decks/deck/events", "GET", undefined, true)).json()
       expect(replay.events.map((event: {version: number}) => event.version)).toEqual([2, 3])
-      expect(await (await call("/api/catalog/import", "POST", "retained draft", true)).json()).toMatchObject({kind: "refused", code: "editing-feature-pending", next: "retain-and-reconcile"})
+      expect(await (await call("/api/catalog/import", "POST", "retained draft", true)).json()).toMatchObject({code: "missing-operation"})
       async function connect(protocol: string) {
         const socket = new WebSocket(`ws://127.0.0.1:${server?.port}/ws?deck=deck&textProtocol=${protocol}`, {origin, headers: {cookie}})
         sockets.push(socket)

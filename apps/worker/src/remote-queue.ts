@@ -7,12 +7,12 @@ import {OperationStore} from "../../../packages/operations/src/index.ts"
 import {deliver} from "./isolation.ts"
 
 const cleanup=z.object({cleanup:z.array(z.object({id:z.string().uuid(),lease:z.string().uuid()}))})
-const claim = z.object({id:z.string().uuid(),lease:z.string().uuid(),input:z.string()}).nullable()
+const claim = z.object({id:z.string().uuid(),lease:z.string().uuid(),input:z.string(),textProtocol:z.enum(["legacy-text-v2","paragraph-body-v3"]).default("legacy-text-v2")}).nullable()
 const active = z.object({active:z.boolean()})
 
 export function forwardImportProgress({origin,secret,id,lease,signal}:{origin:string;secret:string;id:string;lease:string;signal?:AbortSignal}):ImportProgressForwarder {
   return new ImportProgressForwarder(async(value,progressSignal)=>{
-      const response=await fetch(new URL("/internal/worker",origin),{method:"POST",headers:{authorization:`Bearer ${secret}`,"content-type":"application/json"},body:JSON.stringify({kind:"progress",queue:"import",id:id,lease:lease,progress:value}),signal:AbortSignal.any([progressSignal,...(signal ? [signal] : [])]),redirect:"error"})
+      const response=await fetch(new URL("/internal/worker",origin),{method:"POST",headers:{authorization:`Bearer ${secret}`,"content-type":"application/json","x-worker-text-protocols":"legacy-text-v2,paragraph-body-v3"},body:JSON.stringify({kind:"progress",queue:"import",id:id,lease:lease,progress:value}),signal:AbortSignal.any([progressSignal,...(signal ? [signal] : [])]),redirect:"error"})
       if(!response.ok)throw new Error("progress-unavailable")
       await response.body?.cancel()
     })
@@ -21,7 +21,7 @@ export function forwardImportProgress({origin,secret,id,lease,signal}:{origin:st
 export async function drainRemoteQueue(origin:string,secret:string,root:string,signal?:AbortSignal):Promise<void> {
   async function request(body:unknown) {
     signal?.throwIfAborted()
-    const response = await fetch(new URL("/internal/worker",origin),{method:"POST",headers:{authorization:`Bearer ${secret}`,"content-type":"application/json"},body:JSON.stringify(body),signal:AbortSignal.any([...(signal ? [signal] : []),AbortSignal.timeout(15000)]),redirect:"error"})
+    const response = await fetch(new URL("/internal/worker",origin),{method:"POST",headers:{authorization:`Bearer ${secret}`,"content-type":"application/json","x-worker-text-protocols":"legacy-text-v2,paragraph-body-v3"},body:JSON.stringify(body),signal:AbortSignal.any([...(signal ? [signal] : []),AbortSignal.timeout(15000)]),redirect:"error"})
     if (!response.ok) throw new Error(`worker-api-failed:${response.status}`)
     return response.json()
   }
@@ -53,7 +53,7 @@ export async function drainRemoteQueue(origin:string,secret:string,root:string,s
     },100)
     const progress=forwardImportProgress({origin,secret,id:job.id,lease:job.lease,signal})
     try {
-      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process),signal,queue==="import" ? value=>progress.publish(value) : undefined)
+      await deliver(store,local.id,root,path.join(import.meta.dirname,queue === "import" ? "import.ts" : "validate-image.ts"),process=>journal.started(job.lease,process),signal,queue==="import" ? value=>progress.publish(value) : undefined,job.textProtocol)
       clearInterval(cancellation)
       const status = store.status(principal,local.id)
       if (status.kind === "ready") {

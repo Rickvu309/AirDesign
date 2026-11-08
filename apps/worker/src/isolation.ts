@@ -1,3 +1,4 @@
+import type {TextProtocol} from "../../../packages/rpc/src/text/protocol.ts"
 import {ImportProgressDecoder,acceptImportProgress} from "./import-progress.ts"
 import type {ImportSlideProgress} from "../../../packages/operations/src/import-progress.ts"
 import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
@@ -7,7 +8,7 @@ import { mkdir, writeFile, readFile, rm, rmdir } from "node:fs/promises"
 import path from "node:path"
 import { OperationStore, type OperationId } from "../../../packages/operations/src/index.ts"
 
-export async function deliver(store: OperationStore, id: OperationId, root: string, program: string, started?:(job:{directory:string;unit:string;pid:number})=>void, signal?:AbortSignal, progress?:(value:ImportSlideProgress)=>void): Promise<boolean> {
+export async function deliver(store: OperationStore, id: OperationId, root: string, program: string, started?:(job:{directory:string;unit:string;pid:number})=>void, signal?:AbortSignal, progress?:(value:ImportSlideProgress)=>void, protocol:TextProtocol="legacy-text-v2"): Promise<boolean> {
   signal?.throwIfAborted()
   const claimed = store.claim(id)
   if (!claimed) return false
@@ -21,6 +22,7 @@ export async function deliver(store: OperationStore, id: OperationId, root: stri
     started?.({directory,unit,pid:0})
     await mkdir(directory, { recursive: true, mode: 0o700 })
     await writeFile(path.join(directory, "input.pptx"), claimed.input, { mode: 0o600 })
+    await writeFile(path.join(directory,"text-protocol.json"),JSON.stringify({protocol}),{mode:0o600})
     const repo = path.resolve(import.meta.dirname, "../../..")
     signal?.throwIfAborted()
     const child = isolationMode() === "container" ? spawnContainerJob(directory,program,pid=>started?.({directory,unit,pid})) : spawn("systemd-run", ["--user", "--scope", "--quiet", `--unit=${unit}`, "-p", "MemoryMax=536870912", "-p", "MemorySwapMax=0", "-p", "CPUQuota=100%", "prlimit", "--cpu=25", "--fsize=524288000", "--nofile=128", "--", "bwrap", "--unshare-all", "--die-with-parent", "--new-session", "--ro-bind", "/usr", "/usr", "--ro-bind", "/lib", "/lib", "--ro-bind-try", "/lib64", "/lib64", "--ro-bind", repo, repo, "--bind", directory, "/job", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp", "--chdir", "/job", "--clearenv", "--setenv", "PATH", "/usr/bin", "/usr/bin/node", "--max-old-space-size=256", program], { stdio: ["ignore", "ignore", "pipe"] })

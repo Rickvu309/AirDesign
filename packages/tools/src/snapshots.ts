@@ -6,7 +6,7 @@ export function textResult(value:unknown,isError=false){
   const fields=value&&typeof value==="object" ? Object.fromEntries(Object.entries(value)) : {}
   const code=typeof fields.code==="string" ? fields.code : typeof fields.kind==="string" ? fields.kind : "tool-failed"
   const recovery=code==="out-of-usage" ? "Open /settings/usage or wait for the weekly reset." : code==="stale-base" ? "Read the current deck version, rebase the complete batch, and use a new requestId." : "Read the target again, check ownership and arguments, and submit a corrected request."
-  const payload=isError ? {ok:false,error:{code,message:typeof fields.message==="string" ? fields.message : code.replaceAll("-"," "),retryable:false,recovery,details:value}} : {ok:true,data:value}
+  const payload=isError ? {ok:false,error:{code,message:typeof fields.message==="string" ? fields.message : code.replaceAll("-"," "),retryable:fields.retryable===true,recovery,details:value}} : {ok:true,data:value}
   return {content:[{type:"text" as const,text:JSON.stringify(payload)}],...(isError ? {isError:true} : {})}
 }
 export function boundedResult(value:unknown){const result=textResult(value);if(Buffer.byteLength(JSON.stringify(result))>toolTextLimit)throw new Error("result-too-large-use-target-or-resource");return result}

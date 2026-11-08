@@ -1,3 +1,4 @@
+import {decodeStoredCatalogSource} from "../../../../packages/catalog/src/text/seed.ts"
 import pg from "pg"
 import {randomUUID} from "node:crypto"
 import {accountDeletionStore} from "../account/deletion-store.ts"
@@ -7,7 +8,7 @@ import {toolSnapshots} from "../../../../packages/tools/src/snapshots.ts"
 import {agentStore} from "../agent/store.ts"
 import type {ParagraphSnapshot} from "../../../../packages/rpc/src/text/snapshot.ts"
 import {isDeepStrictEqual} from "node:util"
-import type {CatalogSql} from "../../../../packages/catalog/src/index.ts"
+import {catalogWithModel, type CatalogSql} from "../../../../packages/catalog/src/index.ts"
 import {commandId, executionMatches, projectHistory, type History, type Principal, type ExecutionIdentity} from "../../../../packages/change-log/src/index.ts"
 import {executeNative, initialNativeHistory, nativeHistoryModel} from "../../../../packages/change-log/src/text/native-model.ts"
 import {legacyRequestPayloadV2, legacyThemeOnlyV2} from "../../../../packages/change-log/src/text/legacy-request-v2.ts"
@@ -83,6 +84,18 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
     retry: (principal: Principal, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity = {kind: "person"}) => transaction(async tx => {
       await owned(tx, principal, deck)
       return receipt(tx, deck, request, identity)
+    }),
+    catalog: catalogWithModel(nativeTransaction, clock, {
+      initial: input => initialNativeHistory(parseNativeArchiveV3({version: 3, deck: input}).deck),
+      initialize: async (tx, principal, history) => {
+        await validateResources(tx, principal, history.deck)
+        await rebuildHistoryIndex(tx, history.deck.id, history)
+        await tx.query("INSERT INTO editing_paragraph(deck,version,metadata) VALUES($1,3,$2)", [history.deck.id, JSON.stringify({lifetimes: [], prefixes: [], convertedSeq: 0})])
+      },
+      read: validateHistory,
+      projection: currentProjection,
+      requestSource: decodeStoredCatalogSource,
+      textPath: '$.deck.slides[*].elements.** ? (@.kind == "text").body.paragraphs[*].runs[*].text'
     }),
     exports: exportStore(nativeTransaction, clock, "paragraph-body-v3"),
     deletions: accountDeletionStore(nativeTransaction, clock),
