@@ -3,7 +3,7 @@ import {build} from "vite"
 import {chromium,type Page,type Locator} from "playwright"
 import {beforeAll,expect,it} from "vitest"
 import {assertScenarioControls} from "../design-parity/dom-assertions.ts"
-import {readRegistry} from "../design-parity/registry.ts"
+import {readRegistry,resolveCopy} from "../design-parity/registry.ts"
 
 let script="",styles=""
 beforeAll(async()=>{
@@ -105,5 +105,28 @@ it("binds Export to the real visible manual toolbar and rejects wrong, hidden an
   await dialog.getByRole("button",{name:"Close export",exact:true}).press("Enter");await dialog.waitFor({state:"hidden"})
   await button.evaluate(element=>element.remove())
   await expect(assertScenarioControls(page,proof)).rejects.toThrow("required-control")
+ }finally{await browser.close()}
+})
+
+it("keeps the integrated Aira weekly-limit Export hit target outside the panel and opens its real dialog",async()=>{
+ const entry=(await readRegistry()).find(entry=>entry.code==="S92.01")
+ if(!entry)throw new Error("missing-weekly-limit-scenario")
+ const proof={...entry,assertions:{...entry.assertions,controls:entry.assertions.controls.filter(control=>"owner" in control)}}
+ const browser=await chromium.launch()
+ try{
+  const page=await browser.newPage({viewport:entry.viewport})
+  const mounted=await mount(page,"/editor?state=saved")
+  await page.route("**/api/aira/events?**",route=>route.fulfill({contentType:"text/event-stream",body:'data: '+JSON.stringify({enabled:true,remote:[],run:{id:"limited-proof",kind:"limited",request:"Build a deck",events:[{id:1,kind:"limit",limit:{kind:"out-of-usage",usage:{hit:"week-hit",paid:0,week:{resetsAt:1804483200000}}}}]}})+'\n\n'}))
+  await page.getByRole("button",{name:"Agent",exact:true}).click()
+  const panel=page.getByRole("complementary",{name:"Aira",exact:true})
+  await panel.getByText(resolveCopy("usage.limit_title"),{exact:true}).waitFor()
+  await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
+  const button=page.locator(".editor-export").getByRole("button",{name:"Export",exact:true})
+  await button.press("Enter")
+  const dialog=page.getByRole("dialog",{name:"Export",exact:true});await dialog.waitFor()
+  await expect(assertScenarioControls(page,proof)).rejects.toThrow("hit-test")
+  await dialog.getByRole("button",{name:"Close export",exact:true}).press("Enter");await dialog.waitFor({state:"hidden"})
+  await expect(assertScenarioControls(page,proof)).resolves.toBeUndefined()
+  expect(mounted.errors).toEqual([])
  }finally{await browser.close()}
 })
