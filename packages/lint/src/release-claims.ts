@@ -8,7 +8,7 @@ export function passedExternalClaim(claim:Extract<PublicClaim,{kind:"external-pa
   return cells[1]===claim.gate && cells[2]==="passed" && cells[3]===receipt
  })
 }
-const browserChromeNames=new Set(["viewport","theme-color"])
+const browserChromeNames=new Set(["viewport","theme-color","color-scheme"])
 const browserChromeAttributes=new Set(["name","content","media"])
 const copyAttributes=new Set(["alt","aria-label","content"])
 const inertElements=new Set(["script","style","template"])
