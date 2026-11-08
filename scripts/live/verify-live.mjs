@@ -17,16 +17,10 @@ import {operationTracker} from "./operation-trace.ts"
 import {within} from "./bounded.ts"
 import {railwaySshArguments,railwayTarget} from "./railway-ssh-arguments.ts"
 import {classifyPageAssets} from "./site-assets.ts"
+import {checkIdentity} from "./deployed-identity.ts"
+export {checkIdentity} from "./deployed-identity.ts"
 
 export const sitePages=["/","/pricing/","/examples/","/agents/","/agents/claude/","/agents/codex/","/status/"]
-export async function checkIdentity(base,route,sha){
-  const response=await fetch(new URL(route,base),{cache:"no-store",signal:AbortSignal.timeout(15000)})
-  assert.equal(response.status,200,"version endpoint must return 200")
-  const value=await response.json()
-  assert.equal(value.sha,sha,"deployed commit does not match --expect-sha")
-  assert.ok(Number.isFinite(Date.parse(value.builtAt)),"build time missing")
-  return value
-}
 export async function auditLinks(page,base){
   const links=await page.locator("a[href]").evaluateAll(nodes=>nodes.map(node=>node.href))
   const checked=[]
@@ -76,7 +70,7 @@ export async function verifyLive(options){
     assert.match(sha,/^[a-f0-9]{40}$/,"--expect-sha must be a full commit sha")
     assert.ok(email,"--smoke-email required")
     for(const origin of [site,studio,mcp]){const url=new URL(origin);assert.equal(url.origin,origin,"base URLs must be origins");assert.ok(url.protocol==="https:"||["127.0.0.1","localhost"].includes(url.hostname),"HTTP allowed only on loopback")}
-    await step("site-build-identity",()=>checkIdentity(site,"/version.json",sha))
+    await step("site-build-identity",()=>checkIdentity(site,"/version.json",sha,true))
     await step("studio-build-identity",()=>checkIdentity(studio,"/version",sha))
     await step("health-and-access-boundaries",async()=>{
       assert.equal((await fetch(studio+"/healthz",{signal:AbortSignal.timeout(15000)})).status,200)
