@@ -2,7 +2,9 @@
 
 `apps/site` is the marketing and sign-in site, built with Astro 7 and Tailwind 4. It ships as static files on the Cloudflare Worker `airdesign-landing`, which owns all of airdesign.app and www.airdesign.app. Requests that match no built file go to `apps/site/worker/old-deployment-passthrough.ts`, which forwards the paths it lists to the older deployment and returns 404 for the rest.
 
-## Map
+`apps/web` is the product UI, built with React 19, Vite and shadcn on Base UI. It is not deployed. Each designed screen state has its own page at `/screens/<lowercase screen id>-<name>`, registered by `src/<area>/<area>-screens.tsx` and using sample data. Run `pnpm dev` in `apps/web` to view them.
+
+## Map of apps/site
 
 Paths are relative to `apps/site/src`.
 
