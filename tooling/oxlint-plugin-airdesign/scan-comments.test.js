@@ -301,6 +301,51 @@ assertClean(
   ),
 )
 assertClean("html comment text in frontmatter", scanSource("page.astro", '---\nconst saved = "<!-- hidden -->"\n---\n'))
+assertHit(
+  "regex disable in a method",
+  scanSource(
+    "method.ts",
+    'const saved = {\n  m() {\n    /"/ /* oxlint-disable airdesign/no-comments */\n    return 1\n  },\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable in a class method",
+  scanSource(
+    "class.ts",
+    'class A {\n  m() {\n    /"/ /* oxlint-disable airdesign/no-comments */\n    return 1\n  }\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable in a static block",
+  scanSource(
+    "static.ts",
+    'class A {\n  static {\n    /"/ /* oxlint-disable airdesign/no-comments */\n    const saved = 1\n  }\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable in a jsx expression",
+  scanSource("node.tsx", 'export const node = <div>{/"/ /* oxlint-disable airdesign/no-comments */}</div>\n'),
+  1,
+  suppression,
+)
+assertHit("astro expression comment after code", scanSource("expr.astro", "{1 /* hidden */}\n"), 1, comment)
+assertHit(
+  "svelte expression comment after code",
+  scanSource("panel.svelte", "<div>{1 /* hidden */}</div>\n"),
+  1,
+  comment,
+)
+assertClean("astro template literal is not an html comment", scanSource("expr.astro", "{`<!-- hidden -->`}\n"))
+assertClean(
+  "style tag inside a script string",
+  scanSource("panel.vue", '<script>\nconst saved = "<style> /* hidden */ </style>"\n</script>\n'),
+)
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-scan-"))
 try {
@@ -311,6 +356,13 @@ try {
     "/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n",
   )
   assertHit("file-level disable under .fixture-run", collectHits(fixtureRoot, ["tooling"]), 1, suppression)
+  const generated = path.join(fixtureRoot, "scripts", ".astro")
+  fs.mkdirSync(generated, { recursive: true })
+  fs.writeFileSync(
+    path.join(generated, "sneak.ts"),
+    "/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n",
+  )
+  assertHit("file-level disable under .astro", collectHits(fixtureRoot, ["scripts"]), 1, suppression)
 } finally {
   fs.rmSync(fixtureRoot, { recursive: true, force: true })
 }
