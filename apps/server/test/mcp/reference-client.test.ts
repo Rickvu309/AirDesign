@@ -76,9 +76,21 @@ it("drives the pinned reference client through consent, complete tools, ownershi
     expect(job.kind).toBe("queued")
     expect((await other.client.callTool({name:"import_deck",arguments:{fileId:importFile.fileId,requestId:"steal"}})).isError).toBe(true)
     const worker=new OperationStore(fixture.operationsPath,fixture.now)
-    try{const claimed=worker.claim(operationId(job.operationId));if(!claimed)throw new Error("claim-required");const presentation=await importPptx(claimed.input);expect(worker.complete(operationId(job.operationId),claimed.lease,await exportPptx(presentation),{...presentation.report,deck:importedDeck(presentation)})).toBe(true)}finally{worker.close()}
+    try{
+      const claimed=worker.claim(operationId(job.operationId));if(!claimed)throw new Error("claim-required")
+      const presentation=await importPptx(claimed.input),artifact=await exportPptx(presentation)
+      const endpoint=new URL(fixture.apiOrigin+"/internal/worker"),headers={authorization:`Bearer ${process.env.AIRDESIGN_SECRET ?? "dev-only-secret-change-me-32chars"}`}
+      endpoint.search=new URLSearchParams({queue:"import",id:job.operationId,lease:claimed.lease}).toString()
+      expect((await fetch(endpoint,{method:"PUT",headers,body:new Uint8Array(artifact)})).status).toBe(200)
+      const completion={method:"POST",headers,body:JSON.stringify({kind:"complete",queue:"import",id:job.operationId,lease:claimed.lease,report:{...presentation.report,deck:importedDeck(presentation)}})}
+      expect((await Promise.all([fetch(endpoint,completion),fetch(endpoint,completion)])).map(response=>response.status)).toEqual([200,200])
+    }finally{worker.close()}
+    const beforePoll=await fixture.history.catalog.list(owner)
     const imported=await value("get_operation",{operationId:job.operationId});expect(imported.kind).toBe("ready");expect(imported.deck.id).toBeTruthy()
+    expect(await fixture.history.catalog.list(owner)).toEqual(beforePoll)
     expect((await value("get_operation",{operationId:job.operationId})).deck.id).toBe(imported.deck.id)
+    expect(await Promise.all([value("get_operation",{operationId:job.operationId}),value("get_operation",{operationId:job.operationId})])).toEqual([imported,imported])
+    expect(await fixture.history.catalog.list(owner)).toEqual(beforePoll)
     await expect(other.client.readResource({uri:imported.resource})).rejects.toThrow()
     const imageJob=await (await fixture.json("/api/assets/provider",{provider:"local-stock",item:"blue-marble",requestId:"stock-image"},owner.cookie)).json()
     expect((await value("get_operation",{operationId:imageJob.id})).kind).toBe("queued")

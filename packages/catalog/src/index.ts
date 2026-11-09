@@ -40,14 +40,30 @@ export function createCatalog(transaction:CatalogTransaction,clock=Date.now) {
       const result=await tx.query<Row>("SELECT * FROM editing_deck WHERE owner=$1 AND deleted=$2 AND strpos(lower(title||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].elements.** ? (@.kind == \"text\").runs[*].text') AS content(value)),'')||' '||coalesce((SELECT string_agg(value #>> '{}',' ') FROM jsonb_path_query(state,'$.deck.slides[*].notes') AS notes(value)),'')),lower($3))>0 ORDER BY updated_at DESC,id",[principal.personId,trash,search])
       return result.rows.map(entry)
     })},
-    async create(principal:Principal,request:string,name:string,pendingRequest="",source?:Deck,original?:CatalogSource) {return transaction(async tx=>{
+    async request(principal:Principal,request:string) {return transaction(async tx=>{const result=await tx.query<Row>("SELECT d.* FROM editing_deck d JOIN catalog_request r ON r.deck=d.id WHERE r.owner=$1 AND d.owner=$1 AND r.request=$2",[principal.personId,request]);return result.rows[0] ? entry(result.rows[0]) : null})},
+    async create(principal:Principal,request:string,name:string,pendingRequest="",source?:Deck,original?:CatalogSource,legacyRequest?:string) {return transaction(async tx=>{
       if(!/^[A-Za-z0-9_-]{1,100}$/.test(request) || pendingRequest.length>20000)throw new Error("invalid-create-request")
       const input={name:title(name),pendingRequest,source:source ?? null,original:original ? createHash("sha256").update(original.bytes).digest("hex") : null},deckId=newId()
+      if(legacyRequest){
+        const legacy=(await tx.query<{deck:string;input:typeof input}>("SELECT deck,input FROM catalog_request WHERE owner=$1 AND request=$2",[principal.personId,legacyRequest])).rows[0]
+        if(legacy){
+          if(canonical(legacy.input)!==canonical(input))throw new Error("request-id-payload-conflict")
+          await tx.query("INSERT INTO catalog_request(owner,request,input,deck) VALUES ($1,$2,$3,$4) ON CONFLICT(owner,request) DO NOTHING",[principal.personId,request,JSON.stringify(input),legacy.deck])
+          const alias=(await tx.query<{deck:string;input:typeof input}>("SELECT deck,input FROM catalog_request WHERE owner=$1 AND request=$2",[principal.personId,request])).rows[0]
+          if(!alias||alias.deck!==legacy.deck||canonical(alias.input)!==canonical(input))throw new Error("request-id-payload-conflict")
+          return entry(await owned(tx,principal,legacy.deck))
+        }
+      }
       await tx.query("INSERT INTO catalog_request(owner,request,input,deck) VALUES ($1,$2,$3,$4) ON CONFLICT(owner,request) DO NOTHING",[principal.personId,request,JSON.stringify(input),deckId])
       const previous=await tx.query<{deck:string;input:typeof input}>("SELECT deck,input FROM catalog_request WHERE owner=$1 AND request=$2",[principal.personId,request])
       const prior=previous.rows[0];if(!prior)throw new Error("create-failed")
       if(canonical(prior.input)!==canonical(input))throw new Error("request-id-payload-conflict")
       if(prior.deck!==deckId)return entry(await owned(tx,principal,prior.deck))
+      if(legacyRequest){
+        await tx.query("INSERT INTO catalog_request(owner,request,input,deck) VALUES ($1,$2,$3,$4) ON CONFLICT(owner,request) DO NOTHING",[principal.personId,legacyRequest,JSON.stringify(input),deckId])
+        const legacy=(await tx.query<{deck:string}>("SELECT deck FROM catalog_request WHERE owner=$1 AND request=$2",[principal.personId,legacyRequest])).rows[0]
+        if(legacy?.deck!==deckId)throw new Error("request-id-payload-conflict")
+      }
       const deck=source ? parseDeck({...source,id:deckId}) : {id:deckId,version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
       await tx.query("INSERT INTO editing_deck(id,owner,state,title,updated_at,created_at,pending_request) VALUES ($1,$2,$3,$4,$5,$5,$6)",[deckId,principal.personId,JSON.stringify(initialHistory(deck)),input.name,clock(),pendingRequest])
       if(original)await tx.query("INSERT INTO catalog_source(deck,bytes,report) VALUES($1,$2,$3)",[deckId,original.bytes,JSON.stringify(original.report)])

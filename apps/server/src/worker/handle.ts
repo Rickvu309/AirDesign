@@ -1,3 +1,5 @@
+import {parseDeck} from "../../../../packages/deck/src/index.ts"
+import type {HistoryStore} from "../db/history-store.ts"
 import {importSlideProgressSchema} from "../../../../packages/operations/src/import-progress.ts"
 import {WorkerArtifacts} from "./artifacts.ts"
 import path from "node:path"
@@ -16,7 +18,16 @@ const command = z.discriminatedUnion("kind",[
   z.object({kind:z.literal("fail"),queue:z.enum(["import","image"]),id:z.string().uuid(),lease:z.string().uuid(),reason:z.string().max(200)}),
 ])
 
-export function workerHandler(imports:OperationStore,images:OperationStore,secret:string,reconcile:()=>Promise<unknown>,artifactRoot?:string) {
+export async function reconcileImports(imports:OperationStore,history:HistoryStore) {
+  for(const job of imports.finalizations()){
+    if(job.publication.kind==="legacy"&&!imports.requiresFinalization(job.id)&&!await history.catalog.request(job.principal,`mcp_import_${job.id}`))continue
+    await history.catalog.create(job.principal,job.request,"Imported deck","",parseDeck(job.report.deck),{bytes:job.bytes,report:job.report},`mcp_import_${job.id}`)
+    if(job.publication.kind==="staged"&&!imports.completed(job.id,job.publication.lease)&&!imports.publish(job.id,job.publication.lease))throw new Error("import-publication-failed")
+    imports.reconciled(job.id)
+  }
+}
+
+export function workerHandler(imports:OperationStore,images:OperationStore,secret:string,reconcile:()=>Promise<unknown>,artifactRoot?:string,history?:HistoryStore) {
   const artifacts=new WorkerArtifacts(artifactRoot ?? (process.env.AIRDESIGN_OPERATIONS_PATH ? path.join(path.dirname(process.env.AIRDESIGN_OPERATIONS_PATH),"worker-artifacts") : path.join(os.homedir(),"tmp",`worker-artifacts-${randomUUID()}`)))
   return async (request:Request):Promise<Response> => {
     if (!workerAuthorized(request.headers.get("authorization"),secret)) return Response.json({code:"unauthorized"},{status:401})
@@ -32,6 +43,7 @@ export function workerHandler(imports:OperationStore,images:OperationStore,secre
     if (!parsed.success) return Response.json({code:"invalid-worker-command"},{status:400})
     const input = parsed.data, store = input.queue === "import" ? imports : images
     if (input.kind === "claim") {
+      if(history)await reconcileImports(imports,history)
       const cleanup=store.recover().map(({id,lease})=>({id,lease}))
       if(cleanup.length)return Response.json({cleanup})
       await reconcile()
@@ -47,10 +59,23 @@ export function workerHandler(imports:OperationStore,images:OperationStore,secre
     if (input.kind === "active") return Response.json({active:store.active(id,input.lease)})
     if (input.kind === "fail") {store.fail(id,input.lease,input.reason);await artifacts.erase(input.lease)}
     if(input.kind==="complete"){
+      if(input.queue==="import"&&imports.requiresFinalization(id)&&history){
+        if(imports.completed(id,input.lease))return Response.json({ok:true})
+        const staged=imports.finalizations().find(job=>job.id===id)
+        if(staged&&(staged.publication.kind==="legacy"||staged.publication.lease===input.lease)){await reconcileImports(imports,history);return Response.json({ok:true})}
+      }
       if(!store.active(id,input.lease)){await artifacts.erase(input.lease);return Response.json({code:"stale-lease"},{status:409})}
       const result=await artifacts.take(input.lease)
-      if(!result)return Response.json({code:"artifact-required"},{status:400})
-      if(!store.complete(id,input.lease,result,input.report))return Response.json({code:"stale-lease"},{status:409})
+      if(!result){
+        if(input.queue==="import"&&history&&(imports.completed(id,input.lease)||imports.finalizations().some(job=>job.id===id&&job.publication.kind==="staged"&&job.publication.lease===input.lease))){await reconcileImports(imports,history);return Response.json({ok:true})}
+        return Response.json({code:"artifact-required"},{status:400})
+      }
+      if(input.queue==="import"&&imports.requiresFinalization(id)){
+        if(!history)throw new Error("import-catalog-required")
+        parseDeck(input.report.deck)
+        if(!imports.stage(id,input.lease,result,input.report)&&!imports.finalizations().some(job=>job.id===id&&job.publication.kind==="staged"&&job.publication.lease===input.lease))return Response.json({code:"stale-lease"},{status:409})
+        await reconcileImports(imports,history)
+      }else if(!store.complete(id,input.lease,result,input.report))return Response.json({code:"stale-lease"},{status:409})
     }
     return Response.json({ok:true})
   }

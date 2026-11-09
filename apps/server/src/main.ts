@@ -1,7 +1,7 @@
 import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {access as accessFile} from "node:fs/promises"
 import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
-import {workerHandler} from "./worker/handle.ts"
+import {workerHandler,reconcileImports} from "./worker/handle.ts"
 import {productionEnvironment} from "./runtime/environment.ts"
 import {serveStudio} from "./runtime/studio.ts"
 import {createResendMail} from "../../../packages/access/src/resend-mail.ts"
@@ -71,6 +71,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const operations = new OperationStore(operationsPath, extras.clock)
   const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
   const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", client:memory, path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl, schema:"migrate" }, extras.clock)
+  await reconcileImports(operations,history)
   const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
   const handleImages=imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)})
   const handleTemplates = templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck))
@@ -85,7 +86,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const handleUsage = usageHandler(access,history,publicOrigin,extras.paymentProvider ? {kind:"configured"} : {kind:"unavailable"})
   const handleCommands = commandsHandler(access, history, publicOrigin, deck => sync.refresh(deck))
   const handleOperation = operationsHandler(access, operations, publicOrigin)
-  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"))
+  const handleWorker = workerHandler(operations,imageQueue,secret,()=>deliverAccountDeletion(history,operations,imageQueue,templates,process.env.AIRDESIGN_WORKER_TEMP ?? path.join(os.homedir(),"tmp/airdesign-jobs")),operationsPath===":memory:" ? undefined : path.join(path.dirname(operationsPath),"worker-artifacts"),history)
   const version = await readBuildIdentity()
   const server = createServer((request, response) => {
     response.setHeader("x-content-type-options", "nosniff")

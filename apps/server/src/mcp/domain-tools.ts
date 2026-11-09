@@ -1,9 +1,10 @@
+import {reconcileImports} from "../worker/handle.ts"
 import {createHash} from "node:crypto"
 import {toolInput} from "../../../../packages/tools/src/catalog.ts"
 import {boundedResult,textResult} from "../../../../packages/tools/src/snapshots.ts"
 import {nodes,type Principal,commandId} from "../../../../packages/change-log/src/index.ts"
 import {parseCommand} from "../../../../packages/rpc/src/parse-command.ts"
-import {apply,id,themeId,validate,parseDeck,type Deck,type Element} from "../../../../packages/deck/src/index.ts"
+import {apply,id,themeId,validate,type Deck,type Element} from "../../../../packages/deck/src/index.ts"
 import {applyTemplate,type Template} from "../../../../packages/brand/src/index.ts"
 import {assetProviders} from "../../../../packages/files/src/assets/providers.ts"
 import {fetchPublicFile} from "../../../../packages/files/src/fetch-public-file.ts"
@@ -29,7 +30,7 @@ export function domainTools(history:HistoryStore,templates:TemplateStore,operati
     catch(error){if(!(error instanceof Error)||error.message!=="export-not-found")throw error}
     let result,source:"imports"|"images"="imports"
     try{result=operations.status(principal,operationId(value))}catch(error){if(!(error instanceof Error)||error.message!=="operation-not-found")throw error;source="images";result=imageQueue.status(principal,operationId(value))}
-    const entry=result.kind==="ready"&&source==="imports" ? await history.catalog.create(principal,`mcp_import_${value}`,"Imported deck","",parseDeck(result.report.deck),{bytes:operations.artifact(principal,result.id),report:result.report}) : null
+    const entry=result.kind==="ready"&&source==="imports" ? await history.catalog.request(principal,operations.request(principal,result.id)) : null
     return {operationId:result.id,kind:result.kind,attempts:result.attempts,...(entry ? {deck:entry} : {}),...(result.kind==="failed" ? {reason:result.reason} : {}),...(result.kind==="ready" ? {resource:`airdesign://${source}/${result.id}`,sha256:result.sha256,expires:result.expires} : {})}
   }
   return {
@@ -56,7 +57,7 @@ export function domainTools(history:HistoryStore,templates:TemplateStore,operati
         case "create_deck":{const template=args.brandId ? templates.list(principal).filter(item=>item.id===args.brandId).sort((a,b)=>b.version-a.version)[0] : templates.default(principal);if(!template)throw new Error("brand-not-found");return boundedResult(await history.catalog.create(principal,string(args,"requestId"),string(args,"title"),"",brandedDeck(template)))}
         case "update_brand":{const tokens=args.tokens;if(!tokens||typeof tokens!=="object")throw new Error("invalid-tokens");const checked:Partial<Pick<Template,"font"|"background"|"foreground"|"accent">>={};for(const key of ["font","background","foreground","accent"] as const){const value=Reflect.get(tokens,key);if(typeof value==="string")checked[key]=value}return boundedResult(templates.update(principal,string(args,"requestId"),string(args,"brandId"),number(args,"base"),checked))}
         case "export_deck":{const format=string(args,"format");if(format!=="pptx"&&format!=="pdf")throw new Error("invalid-format");const job=await history.exports.submit(principal,string(args,"requestId"),string(args,"deckId"),{format,expectedSeq:number(args,"savedVersion"),slides:[],timing:"now",allowIssues:false});return boundedResult({operationId:job.id,kind:job.kind,pollAfterMs:1000})}
-        case "import_deck":{const file=await history.files.read(owner,string(args,"fileId"));if(file.content.length<4||file.content.readUInt32LE(0)!==0x04034b50)throw new Error("pptx-upload-required");const job=operations.submit(principal,string(args,"requestId"),file.content);return boundedResult({operationId:job.id,kind:job.kind,pollAfterMs:1000})}
+        case "import_deck":{const file=await history.files.read(owner,string(args,"fileId"));if(file.content.length<4||file.content.readUInt32LE(0)!==0x04034b50)throw new Error("pptx-upload-required");const job=operations.submit(principal,string(args,"requestId"),file.content,true);await reconcileImports(operations,history);return boundedResult({operationId:job.id,kind:job.kind,pollAfterMs:1000})}
         case "get_operation":return boundedResult(await operation(principal,string(args,"operationId")))
         case "capture_slide":{const current=await saved(principal,args);const {full,preview}=await captures.capture(principal,current.deck,string(args,"slideId"),number(args,"width",1280));const resource=await history.snapshots.binary(owner,full);return {content:[{type:"image" as const,mimeType:"image/png",data:preview.toString("base64")},...textResult({deckId:current.deck.id,slideId:args.slideId,savedVersion:current.seq,sha256:createHash("sha256").update(full).digest("hex"),...resource}).content]}}
         case "check_deck":return page(async()=>{const current=await saved(principal,args);validate(current.deck);const checks=Array.isArray(args.checks) ? args.checks : ["structure","support"];return {meta:{savedVersion:current.seq,valid:true,checks},items:(checks.includes("support") ? nodes(current.deck) : []).filter(node=>{const support=node.fields.support;return support&&typeof support==="object"&&!Array.isArray(support)&&support.kind!=="native"}).map(node=>({id:node.id,support:node.fields.support}))}})
