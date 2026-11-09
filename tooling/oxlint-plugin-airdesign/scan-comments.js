@@ -25,7 +25,7 @@ const directiveExtensions = new Set([
 const markupExtensions = new Set([".astro", ".vue", ".svelte"])
 const styleAttributeExtensions = new Set([...markupExtensions, ".jsx", ".tsx"])
 const scannedExtensions = new Set([...directiveExtensions, ".css", ".yml", ".yaml"])
-const skipDirectories = new Set(["node_modules", "dist", ".astro"])
+const skipDirectories = new Set(["node_modules", "dist"])
 const headerKeywords = new Set(["if", "while", "for", "with", "catch", "switch"])
 const expressionKeywords = new Set([
   "return",
@@ -81,6 +81,8 @@ const createLexer = () => ({
   pendingDeclaration: false,
   pendingLabel: false,
   pendingCase: false,
+  pendingBrace: false,
+  pendingNameBlock: false,
   postfix: false,
   context: "stmt",
 })
@@ -98,6 +100,8 @@ const finishWord = (lexer) => {
   lexer.pendingHeader = false
   lexer.pendingDeclaration = false
   lexer.pendingLabel = false
+  lexer.pendingBrace = false
+  lexer.pendingNameBlock = false
   if (headerKeywords.has(word)) {
     lexer.pendingHeader = true
     lexer.regexOk = false
@@ -119,6 +123,12 @@ const finishWord = (lexer) => {
     lexer.pendingBody = declaration ? "declaration" : "expression"
     lexer.regexOk = false
     lexer.context = "stmt"
+    return
+  }
+  if (word === "static") {
+    lexer.pendingNameBlock = true
+    lexer.regexOk = false
+    lexer.context = "expr"
     return
   }
   if (word === "default") {
@@ -149,10 +159,37 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.postfix = false
     lexer.pendingHeader = false
     lexer.pendingLabel = false
+    lexer.pendingBrace = false
+    lexer.pendingNameBlock = false
     lexer.regexOk = false
     lexer.context = "expr"
     return
   }
+  if (current === "{") {
+    let kind = "expr"
+    const body = lexer.parens.length === 0 && (lexer.pendingBrace || lexer.pendingNameBlock || lexer.context === "stmt")
+    if (lexer.parens.length === 0 && lexer.pendingBody === "declaration") kind = "block"
+    else if (lexer.parens.length === 0 && lexer.pendingBody === "expression") kind = "fn"
+    else if (body) kind = "block"
+    if (lexer.parens.length === 0) lexer.pendingBody = ""
+    lexer.pendingBrace = false
+    lexer.pendingNameBlock = false
+    lexer.braces.push(kind)
+    lexer.pendingHeader = false
+    lexer.pendingDeclaration = false
+    lexer.pendingLabel = false
+    if (kind === "block") {
+      lexer.regexOk = true
+      lexer.context = "stmt"
+    } else {
+      lexer.regexOk = false
+      lexer.context = "expr"
+    }
+    return
+  }
+  if (/\s/u.test(current)) return
+  lexer.pendingBrace = false
+  lexer.pendingNameBlock = false
   if (current === "(") {
     lexer.parens.push(lexer.pendingHeader ? "header" : "expr")
     lexer.pendingHeader = false
@@ -165,26 +202,8 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     const kind = lexer.parens.pop() ?? "expr"
     lexer.pendingHeader = false
     lexer.pendingLabel = false
+    lexer.pendingBrace = true
     if (kind === "header") {
-      lexer.regexOk = true
-      lexer.context = "stmt"
-    } else {
-      lexer.regexOk = false
-      lexer.context = "expr"
-    }
-    return
-  }
-  if (current === "{") {
-    let kind = "expr"
-    if (lexer.parens.length === 0 && lexer.pendingBody === "declaration") kind = "block"
-    else if (lexer.parens.length === 0 && lexer.pendingBody === "expression") kind = "fn"
-    else if (lexer.context === "stmt") kind = "block"
-    if (lexer.parens.length === 0) lexer.pendingBody = ""
-    lexer.braces.push(kind)
-    lexer.pendingHeader = false
-    lexer.pendingDeclaration = false
-    lexer.pendingLabel = false
-    if (kind === "block") {
       lexer.regexOk = true
       lexer.context = "stmt"
     } else {
@@ -244,6 +263,14 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
   if (current === ">" && previous === "=") {
     lexer.pendingHeader = false
     lexer.pendingBody = ""
+    lexer.pendingDeclaration = false
+    lexer.pendingLabel = false
+    lexer.regexOk = true
+    lexer.context = "stmt"
+    return
+  }
+  if (current === ">") {
+    lexer.pendingHeader = false
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
     lexer.regexOk = true
@@ -360,6 +387,8 @@ const readScriptEnd = (source, start) => {
         index += 2
         continue
       }
+      lexer.pendingBrace = false
+      lexer.pendingNameBlock = false
       if (lexer.regexOk) {
         index = consumeRegex(source, index)
         lexer.regexOk = false
@@ -432,19 +461,31 @@ const blankLiterals = (source, ranges) => {
   const expressionDepths = []
   const lexer = createLexer()
   let inJavaScript = false
+  let markupDepth = 0
   let index = 0
   while (index < chars.length) {
-    const covered = covers(ranges, index)
-    if (covered !== inJavaScript) {
-      inJavaScript = covered
+    const inRange = covers(ranges, index)
+    if (!inRange && markupDepth === 0) {
+      if (chars[index] === "{") {
+        markupDepth = 1
+        resetLexer(lexer)
+        lexer.regexOk = true
+        lexer.context = "expr"
+        state = "code"
+        quote = ""
+        expressionDepths.length = 0
+        index += 1
+        continue
+      }
+      index += 1
+      continue
+    }
+    if (inRange !== inJavaScript) {
+      inJavaScript = inRange
       state = "code"
       quote = ""
       expressionDepths.length = 0
-      if (covered) resetLexer(lexer)
-    }
-    if (!covered) {
-      index += 1
-      continue
+      if (inRange) resetLexer(lexer)
     }
     const current = chars[index]
     const next = chars[index + 1]
@@ -531,6 +572,8 @@ const blankLiterals = (source, ranges) => {
         index += 2
         continue
       }
+      lexer.pendingBrace = false
+      lexer.pendingNameBlock = false
       if (lexer.regexOk) {
         const after = consumeRegex(chars, index)
         for (let cursor = index; cursor < after; cursor += 1) {
@@ -579,6 +622,8 @@ const blankLiterals = (source, ranges) => {
     }
     noteSymbol(lexer, current, chars[index - 1] ?? "", chars[index - 2] ?? "", next)
     if (expressionDepths.length > 0 && current === "{") expressionDepths[expressionDepths.length - 1] += 1
+    else if (markupDepth > 0 && current === "{") markupDepth += 1
+    else if (markupDepth > 0 && current === "}") markupDepth -= 1
     index += 1
   }
   return chars.join("")
@@ -768,16 +813,25 @@ const readStyleBlock = (source, start) => {
   return { after: -1, comments }
 }
 
-const styleCommentLines = (source) => {
+const styleCommentLines = (source, ranges) => {
+  const chars = blankLiterals(source, ranges).split("")
+  if (ranges !== null) {
+    for (const range of ranges) {
+      for (let index = range[0]; index < range[1] && index < chars.length; index += 1) {
+        if (chars[index] !== "\n") chars[index] = " "
+      }
+    }
+  }
+  const visible = chars.join("")
   const found = []
   const open = /<style\b[^>]*>/giu
-  let match = open.exec(source)
+  let match = open.exec(visible)
   while (match) {
     const block = readStyleBlock(source, match.index + match[0].length)
     found.push(...block.comments)
     if (block.after === -1) break
     open.lastIndex = block.after
-    match = open.exec(source)
+    match = open.exec(visible)
   }
   return found
 }
@@ -851,20 +905,33 @@ const expressionCommentLines = (source, ranges) => {
   const text = blankLiterals(source, ranges)
   const found = []
   let line = 1
-  for (let index = 0; index < text.length; index += 1) {
+  let index = 0
+  while (index < text.length) {
     if (text[index] === "\n") {
       line += 1
+      index += 1
       continue
     }
-    if (text[index] !== "{") continue
-    if (covers(ranges, index)) continue
+    if (text[index] !== "{" || covers(ranges, index)) {
+      index += 1
+      continue
+    }
+    let depth = 1
     let cursor = index + 1
     let commentLine = line
-    while (cursor < text.length && /\s/u.test(text[cursor])) {
-      if (text[cursor] === "\n") commentLine += 1
+    while (cursor < text.length && depth > 0) {
+      if (text[cursor] === "\n") {
+        commentLine += 1
+        cursor += 1
+        continue
+      }
+      if (text.startsWith("/*", cursor) || text.startsWith("//", cursor)) found.push(commentLine)
+      if (text[cursor] === "{") depth += 1
+      if (text[cursor] === "}") depth -= 1
       cursor += 1
     }
-    if (text.startsWith("/*", cursor)) found.push(commentLine)
+    index = cursor
+    line = commentLine
   }
   return found
 }
@@ -1011,6 +1078,8 @@ const styleAttributeCommentLines = (source, ranges) => {
         index += 2
         continue
       }
+      lexer.pendingBrace = false
+      lexer.pendingNameBlock = false
       if (lexer.regexOk) {
         index = consumeRegex(source, index)
         lexer.regexOk = false
@@ -1073,7 +1142,7 @@ export const scanSource = (filename, source) => {
   }
   if (markupExtensions.has(extension)) {
     for (const line of unique(htmlCommentLines(source, ranges))) push(line, commentMessage)
-    for (const line of unique(styleCommentLines(source))) push(line, commentMessage)
+    for (const line of unique(styleCommentLines(source, ranges))) push(line, commentMessage)
     for (const line of unique(expressionCommentLines(source, ranges))) push(line, commentMessage)
   }
   if (styleAttributeExtensions.has(extension)) {
