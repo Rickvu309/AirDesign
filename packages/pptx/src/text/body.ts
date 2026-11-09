@@ -123,9 +123,9 @@ function shadowXml(style: TextStyle): string {
 }
 function propertiesXml(value: TextStyle, tag: string): string {
   const style: TextStyle = tag === "endParaRPr" ? {letterSpacing: 0, baseline: 0, kerning: 0, strike: false, capitalization: "none", ...value} : value
-  if (!/^#[0-9a-f]{6}$/i.test(style.color)) throw new Error("pptx-text-color-required")
+  if (style.color !== null && !/^#[0-9a-f]{6}$/i.test(style.color)) throw new Error("pptx-text-color-required")
   const extra = `${style.letterSpacing === undefined ? "" : ` spc="${Math.round(style.letterSpacing * 75)}"`}${style.baseline === undefined ? "" : ` baseline="${Math.round(style.baseline * 100000)}"`}${style.kerning === undefined ? "" : ` kern="${Math.round(style.kerning * 75)}"`}${style.strike === undefined ? "" : ` strike="${style.strike ? "sngStrike" : "noStrike"}"`}${style.capitalization === undefined ? "" : ` cap="${style.capitalization}"`}`
-  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}">${style.opacity === undefined ? "" : `<a:alpha val="${Math.round(style.opacity * 100000)}"/>`}</a:srgbClr></a:solidFill>${shadowXml(style)}${style.highlight ? `<a:highlight><a:srgbClr val="${style.highlight.slice(1)}"/></a:highlight>` : ""}<a:latin typeface="${escapeXml(style.font)}"/>${style.symbolFont ? `<a:sym typeface="${escapeXml(style.symbolFont)}"/>` : ""}</a:${tag}>`
+  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}">${style.color === null ? "<a:noFill/>" : `<a:solidFill><a:srgbClr val="${style.color.slice(1)}">${style.opacity === undefined ? "" : `<a:alpha val="${Math.round(style.opacity * 100000)}"/>`}</a:srgbClr></a:solidFill>`}${shadowXml(style)}${style.highlight ? `<a:highlight><a:srgbClr val="${style.highlight.slice(1)}"/></a:highlight>` : ""}<a:latin typeface="${escapeXml(style.font)}"/>${style.symbolFont ? `<a:sym typeface="${escapeXml(style.symbolFont)}"/>` : ""}</a:${tag}>`
 }
 export function writeTextBody(body: TextBody): string {
   const frame = body.frame, autofit = frame.autofit

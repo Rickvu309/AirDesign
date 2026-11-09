@@ -120,3 +120,14 @@ it("validates and detaches the complete outer text shadow contract", () => {
   shadow.scale.y = 2
   expect(parsed.paragraphs[0].endStyle.outerShadow!.scale.y).toBe(0.3)
 })
+
+it("roundtrips explicit no-fill through the shared JSON body contract", () => {
+  const value = body()
+  value.paragraphs[0].runs[0]!.style.color = null
+  value.paragraphs[0].endStyle.color = null
+  expect(parseTextBody(JSON.parse(JSON.stringify(value)))).toEqual(value)
+  expect(parseTextBody(body())).toEqual(body())
+  const missing = JSON.parse(JSON.stringify(value))
+  delete missing.paragraphs[0].endStyle.color
+  expect(() => parseTextBody(missing)).toThrow()
+})

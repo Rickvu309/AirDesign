@@ -94,3 +94,18 @@ it("renders the continued parent counter after a retained nested numbering schem
   expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["1.", "[numbering unavailable]", "2."])
   expect([...document.querySelectorAll("[data-text-run]")].map(node => node.textContent)).toEqual(["editable", "editable", "editable"])
 })
+
+it("lays out no-fill glyphs with independent visible neighbors and retained shadow paint", () => {
+  const body = decodeLegacyRunsV2([{text: "Invisible", font: "Geist", size: 20, color: "#123456", bold: false}, {text: "Visible", font: "Geist", size: 20, color: "#445566", bold: false}], id("frame"), id("first"))
+  body.paragraphs[0].runs[0]!.style.color = null
+  body.paragraphs[0].runs[0]!.style.outerShadow = {kind: "outer", color: "#112233", opacity: 0.5, blur: 2, distance: 3, direction: 45, scale: {x: 1, y: 1}, skew: {x: 0, y: 0}, alignment: "ctr", rotateWithShape: false}
+  body.paragraphs[0].endStyle.color = null
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  const runs = document.querySelectorAll<HTMLElement>("[data-text-run]")
+  expect(runs[0]!.textContent).toBe("Invisible")
+  expect(runs[0]!.style.color).toBe("transparent")
+  expect(runs[0]!.style.opacity).toBe("")
+  expect(runs[0]!.dataset.shadowColor).toBe("#112233")
+  expect(runs[1]!.style.color).toBe("#445566")
+  expect(document.querySelector<HTMLElement>("[data-paragraph]")!.style.color).toBe("transparent")
+})

@@ -113,3 +113,19 @@ it("ignores JSONB object ordering while preserving array and property changes", 
   expect(diffNodes([before], [{...reordered, fields: {...reordered.fields, runs: [{text: "two"}, {text: "one"}]}}])[0]?.keys).toEqual(["runs"])
   expect(diffNodes([before], [{...reordered, fields: {runs: reordered.fields.runs}}])[0]?.keys).toEqual(["style"])
 })
+
+it("persists no-fill through history replay, undo, redo and JSON reopen", () => {
+  let history = fixture()
+  const paragraph = text(history).body.paragraphs[0], before = structuredClone(paragraph), next = structuredClone(paragraph)
+  next.runs[0]!.style.color = null
+  next.endStyle.color = null
+  history = must(history, {id: commandId("paint"), kind: "edit", base: history.seq, run: null, changes: {changes: [{kind: "set", target: paragraph.id, value: next}]}})
+  expect(text(history).body.paragraphs[0]).toEqual(next)
+  expect(projectHistory(history, nativeHistoryModel)).toEqual(history.deck)
+  history = must(history, {id: commandId("undo-paint"), kind: "undo", target: commandId("paint")})
+  expect(text(history).body.paragraphs[0]).toEqual(before)
+  history = must(history, {id: commandId("redo-paint"), kind: "redo", target: commandId("paint")})
+  const reopened: History<NativeDeck> = JSON.parse(JSON.stringify(history))
+  expect(text(reopened).body.paragraphs[0]).toEqual(next)
+  expect(projectHistory(reopened, nativeHistoryModel)).toEqual(reopened.deck)
+})

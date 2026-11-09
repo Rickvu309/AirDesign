@@ -22,7 +22,7 @@ export async function cascadeSource(extra = "") {
 }
 
 export type CascadeLayer = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
-export const competingStyles: TextStyle[] = Array.from({length: 8}, (_, index) => ({font: `Cascade Family ${index}`, size: 16 + index * 4, color: `#${String(index + 1).repeat(6)}`, bold: index % 2 === 0, italic: index % 2 === 0}))
+export const competingStyles: (TextStyle & {color: string})[] = Array.from({length: 8}, (_, index) => ({font: `Cascade Family ${index}`, size: 16 + index * 4, color: `#${String(index + 1).repeat(6)}`, bold: index % 2 === 0, italic: index % 2 === 0}))
 export async function competingCascadeSource(layer: CascadeLayer, options: {missingLocalLevel?: boolean; slideIndex?: string; slideTypeAbsent?: boolean; invisibleRun?: boolean} = {}) {
   const original = await cascadeSource(), parts = new Map(original.parts)
   const properties = (index: number, tag = "a:defRPr") => {
@@ -64,4 +64,24 @@ export async function shadowTextSource() {
   const source = await retainedTextSource(), parts = new Map(source.parts), part = "ppt/slides/slide1.xml"
   parts.set(part, Buffer.from(parts.get(part)!.toString().replace('<a:sym typeface="Wingdings"', `${affineTextShadowXml}<a:sym typeface="Wingdings"`).replace('type="slidenum"><a:t>42</a:t></a:fld></a:p>', `type="slidenum"><a:t>42</a:t></a:fld><a:endParaRPr>${affineTextShadowXml}</a:endParaRPr></a:p>`)))
   return importPptx(await exportPptx({...source, parts}))
+}
+
+export const pairwiseLayers = ["presentation", "category", "master-list", "master-paragraph", "layout-list", "layout-paragraph", "shape-list", "paragraph", "run", "end"]
+export async function pairwiseCascadeSource(lower: number, upper: number, noFill = false, noFillAt = upper) {
+  const original = await cascadeSource(), parts = new Map(original.parts)
+  const properties = (index: number, tag = "defRPr") => index !== lower && index !== upper ? "" : `<a:${tag} sz="${index === upper ? 3000 : 1500}" b="${index === upper ? 0 : 1}" i="${index === upper ? 0 : 1}" u="${index === upper ? "none" : "sng"}">${noFill && index === noFillAt ? "<a:noFill/>" : `<a:solidFill><a:srgbClr val="${index === upper ? "224466" : "aa5500"}"/></a:solidFill>`}<a:latin typeface="${index === upper ? "Winner" : "Loser"}"/></a:${tag}>`
+  const list = (index: number) => `<a:lvl1pPr>${properties(index)}</a:lvl1pPr>`
+  const replaceBody = (part: string, listIndex: number, paragraphIndex: number) => {
+    const document = parseXml(parts.get(part)!), body = document.nodes.filter(node => node.local === "txBody").at(-1)!
+    const content = `<p:txBody><a:bodyPr/><a:lstStyle>${list(listIndex)}</a:lstStyle><a:p><a:pPr>${properties(paragraphIndex)}</a:pPr>${listIndex === 6 ? `<a:r>${properties(8, "rPr")}<a:t>Pairwise</a:t></a:r>${properties(9, "endParaRPr")}` : ""}</a:p></p:txBody>`
+    parts.set(part, Buffer.from(document.xml.slice(0, body.start) + content + document.xml.slice(body.end)))
+  }
+  const main = "ppt/presentation.xml", xml = parts.get(main)!.toString(), defaults = `<p:defaultTextStyle>${list(0)}</p:defaultTextStyle>`
+  parts.set(main, Buffer.from(xml.includes("<p:defaultTextStyle") ? xml.replace(/<p:defaultTextStyle[\s\S]*?<\/p:defaultTextStyle>/, defaults) : xml.replace("</p:presentation>", defaults + "</p:presentation>")))
+  const master = "ppt/slideMasters/slideMaster1.xml"
+  parts.set(master, Buffer.from(parts.get(master)!.toString().replace(/<p:bodyStyle>[\s\S]*?<\/p:bodyStyle>/, `<p:bodyStyle>${list(1)}</p:bodyStyle>`)))
+  replaceBody(master, 2, 3)
+  replaceBody("ppt/slideLayouts/slideLayout1.xml", 4, 5)
+  replaceBody("ppt/slides/slide1.xml", 6, 7)
+  return importPptx(await exportPptx({...original, parts}))
 }

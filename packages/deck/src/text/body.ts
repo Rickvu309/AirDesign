@@ -1,7 +1,7 @@
 import type {Id} from "../model.ts"
 
 export type TextOuterShadow = {kind: "outer"; blur: number; distance: number; direction: number; scale: {x: number; y: number}; skew: {x: number; y: number}; alignment: "tl" | "t" | "tr" | "l" | "ctr" | "r" | "bl" | "b" | "br"; rotateWithShape: boolean; color: string; opacity: number}
-export type TextStyle = {outerShadow?: TextOuterShadow; bold: boolean; italic?: boolean; opacity?: number; highlight?: string; underline?: boolean; letterSpacing?: number; baseline?: number; strike?: boolean; capitalization?: "none" | "small" | "all"; kerning?: number; symbolFont?: string; font: string; size: number; color: string}
+export type TextStyle = {outerShadow?: TextOuterShadow; bold: boolean; italic?: boolean; opacity?: number; highlight?: string; underline?: boolean; letterSpacing?: number; baseline?: number; strike?: boolean; capitalization?: "none" | "small" | "all"; kerning?: number; symbolFont?: string; font: string; size: number; color: string | null}
 export type InlineRun = {kind: "text"; text: string; style: TextStyle} | {kind: "break"; style: TextStyle}
 export type NumberFormat = "decimal" | "alphaLower" | "alphaUpper" | "romanLower" | "romanUpper"
 export type MarkerPresentation = {color?: string; size?: {kind: "multiple" | "points"; value: number}}
