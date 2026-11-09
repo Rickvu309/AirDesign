@@ -1146,6 +1146,14 @@
       "files": [
         "apps/site/index.html"
       ]
+    },
+    {
+      "id": "operator-design-21",
+      "text": "Built-in agent",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
     }
   ],
   "blocked": [

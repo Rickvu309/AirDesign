@@ -56,7 +56,7 @@ it("restores accepted X03 copy and the designed landing text",()=>{
  expect(landing.querySelector("#capture-description")).toBeNull()
  for(const file of ["index.html","pricing/index.html"]){
   const document=parseSiteHtml(readFileSync(`apps/site/${file}`,"utf8"))
-  expect([...document.querySelectorAll(".price li")].map(row=>row.textContent?.trim())).toContain("Aira built in")
+  expect([...document.querySelectorAll(".price li")].map(row=>row.textContent?.trim())).toContain(file==="index.html"?"Built-in agent":"Aira built in")
  }
 })
 it("retains actual capture provenance while serving the designed exhibit",()=>{
@@ -73,7 +73,7 @@ it("retains actual capture provenance while serving the designed exhibit",()=>{
 
 it("records the design exhibit sources and output",()=>{
  const provenance=JSON.parse(readFileSync("apps/site/public/design-product-exhibit.json","utf8"))
- expect(provenance).toMatchObject({kind:"design-source-composite",editor:"ed1.jsx",overlay:"ed54.jsx",sourceSize:[1470,923],outputSize:[1248,784]})
+ expect(provenance).toMatchObject({kind:"design-source-composite",editor:"ed1.jsx",overlay:"ed54.jsx",corrections:["selected thumbnail title: Enterprise drove growth","speaker notes background: paper-gray-200"],sourceSize:[1470,923],outputSize:[1248,784]})
  const digest=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex")
  expect(provenance.generatorSha256).toBe(digest("docs/design/v0.1/source/gen-editor.mjs"))
  expect(provenance.postprocessorSha256).toBe(digest("docs/design/v0.1/source/landing-post.sh"))
@@ -86,9 +86,17 @@ it("matches the approved pricing copy on both pages",()=>{
   const document=parseSiteHtml(renderSiteTerms(readFileSync(`apps/site/${file}`,"utf8")))
   expect(document.querySelector(".price .amount")?.textContent).toBe("$0")
   expect(document.querySelector(".price small")?.textContent).toBe("forever")
-  expect([...document.querySelectorAll(".price li")].map(row=>row.textContent?.trim())).toEqual(["Unlimited decks","Aira built in","Bring Claude or Codex","PowerPoint import and export","Usage resets every week"])
+  expect([...document.querySelectorAll(".price li")].map(row=>row.textContent?.trim())).toEqual(["Unlimited decks",file==="index.html"?"Built-in agent":"Aira built in","Bring Claude or Codex","PowerPoint import and export","Usage resets every week"])
   expect(document.querySelector(".reset-note")?.textContent).toBe("Don't want to wait for the weekly reset? You can pay to reset.")
  }
+})
+it("shows decorative directions for each deck check",()=>{
+ const document=parseSiteHtml(readFileSync("apps/site/index.html","utf8"))
+ const checks=[...document.querySelectorAll(".deck-checks > span")]
+ expect(checks.map(row=>row.querySelector("svg")?.getAttribute("data-direction"))).toEqual(["up","up","up","up","down","up","up"])
+ expect(checks.every(row=>row.querySelector("svg")?.getAttribute("aria-hidden")==="true")).toBe(true)
+ expect(checks.map(row=>row.querySelector("svg path")?.getAttribute("d"))).toEqual(["M4.5 1 8 8H1z","M4.5 1 8 8H1z","M4.5 1 8 8H1z","M4.5 1 8 8H1z","M1 1h7L4.5 8z","M4.5 1 8 8H1z","M4.5 1 8 8H1z"])
+ expect(checks.map(row=>row.textContent?.trim())).toEqual(["ACTION TITLES 8/8","MECE Pass","SO WHAT Clear","GHOST DECK Final","SLIDES 80 to 8","FOOTNOTES SOURCED 100%","EBITDA BRIDGE Tied out"])
 })
 it("shows build identity without inferring deployment status",async()=>{
  const {createServer}=await import("vite")
