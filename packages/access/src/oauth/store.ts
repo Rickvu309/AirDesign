@@ -20,7 +20,7 @@ function validRedirect(value:string) {
   const url=new URL(value)
   return !url.username && !url.password && !url.hash && (url.protocol === "https:" || url.protocol === "http:" && ["127.0.0.1","[::1]","localhost"].includes(url.hostname))
 }
-export function oauthStore(transaction:Transactions, secret:string, resource:string, clock=Date.now) {
+export function oauthStore(transaction:Transactions, secret:string, {resource,issuer}:{resource:string;issuer:string}, clock=Date.now) {
   async function client(tx:OAuthTransaction,id:string) {
     const found=(await tx.query<{data:Client}>("SELECT data FROM oauth_client WHERE id=$1",[id])).rows[0]?.data
     if(!found)throw new Error("invalid-client")
@@ -82,7 +82,7 @@ export function oauthStore(transaction:Transactions, secret:string, resource:str
         await tx.query("UPDATE oauth_approval SET data=$2 WHERE id=$1",[hash(intent),JSON.stringify(approval)])
         const redirect=new URL(approval.redirect)
         if(approval.state)redirect.searchParams.set("state",approval.state)
-        redirect.searchParams.set("iss",new URL(resource).origin)
+        redirect.searchParams.set("iss",issuer)
         if(!allow)redirect.searchParams.set("error","access_denied")
         else {
           const code=token()
