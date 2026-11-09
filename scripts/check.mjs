@@ -10,10 +10,13 @@ const steps = [
   ["actionlint", "node", ["scripts/actionlint.mjs"]],
   ["typecheck", "pnpm", ["typecheck"]],
   ["boundaries", "pnpm", ["check:boundaries"]],
+  ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
   ["test", "pnpm", ["test"]],
   ["browser", "pnpm", ["test:browser"]],
   ["build", "pnpm", ["build"]],
 ]
+
+const showOnSuccess = new Set(["bug-rule"])
 
 for (const [name, command, args] of steps) {
   const result = spawnSync(command, args, {
@@ -31,5 +34,6 @@ for (const [name, command, args] of steps) {
     console.error(`fail ${name}`)
     process.exit(result.status ?? 1)
   }
+  if (showOnSuccess.has(name) && result.stdout) process.stdout.write(result.stdout)
   console.log(`ok ${name}`)
 }
