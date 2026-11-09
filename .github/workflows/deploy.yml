@@ -41,7 +41,9 @@ jobs:
       - run: mkdir -p "$HOME/tmp/airdesign-live-verify/receipt"
       - run: npm ci
       - run: npm run build --workspace @airdesign/site
-      - run: npm install --prefix "$HOME/tmp/release-tools" --no-save wrangler@4.158.0 @railway/cli@5.71.0
+      - name: Install release tools
+        timeout-minutes: 7
+        run: bash scripts/release/install-tools.sh
       - run: echo "$HOME/tmp/release-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npx --no-install playwright install --with-deps chromium
       - run: |

@@ -153,10 +153,13 @@ it("requires the single deploy controller and rejects native CI wait cycles", ()
   for (const condition of ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == github.repository"]) {
     expect(deploymentWorkflowHits(deploy.replace(condition, "false"), railway)).not.toEqual([])
   }
-  for (const command of ["npm ci", "npm install --prefix", "npx --no-install playwright"]) {
+  for (const command of ["npm ci", "npx --no-install playwright"]) {
     const broken = deploy.replace(`- run: ${command}`, `- env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
     expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   }
+  const brokenInstall = deploy.replace("        run: bash scripts/release/install-tools.sh", "        env:\n          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n        run: bash scripts/release/install-tools.sh")
+  expect(brokenInstall).not.toBe(deploy)
+  expect(deploymentWorkflowHits(brokenInstall, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   const inherited = deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:")
   expect(deploymentWorkflowHits(inherited, railway)).toContain("deploy-secrets-must-be-step-scoped")
 })
