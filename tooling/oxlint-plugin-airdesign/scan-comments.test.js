@@ -260,6 +260,103 @@ assertHit(
   suppression,
 )
 assertHit(
+  "division after an async function expression",
+  scanSource("fn.ts", "const fn = async function () {} / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "division after a class expression",
+  scanSource("fn.ts", "const A = class {} / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "regex disable in a function expression",
+  scanSource("fn.ts", 'const fn = function () {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return 1\n}\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in an async function expression",
+  scanSource(
+    "fn.ts",
+    'const fn = async function () {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return 1\n}\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in a generator function expression",
+  scanSource("fn.ts", 'const fn = function* () {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return 1\n}\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in a default async function",
+  scanSource(
+    "fn.ts",
+    'export default async function () {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return 1\n}\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex after a default async function",
+  scanSource(
+    "fn.ts",
+    'export default async function () {}\n/"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in an immediate function",
+  scanSource("fn.ts", '(function () {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return 1\n})()\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in a nested function block",
+  scanSource(
+    "fn.ts",
+    'const fn = function () {\n  {\n    /"/ /* oxlint-disable airdesign/no-comments */\n    return 1\n  }\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable in a callback function",
+  scanSource(
+    "fn.ts",
+    'items.map(function (item) {\n  /"/ /* oxlint-disable airdesign/no-comments */\n  return item\n})\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable in a jsx attribute",
+  scanSource(
+    "node.tsx",
+    'export const node = <div x={/"/ /* oxlint-disable airdesign/no-comments */} />\nexport const saved = 1\n',
+  ),
+  1,
+  suppression,
+)
+assertHit(
+  "regex disable in a generic jsx attribute",
+  scanSource(
+    "node.tsx",
+    'export const node = <Box<string> x={/"/ /* oxlint-disable airdesign/no-comments */} />\nexport const saved = 1\n',
+  ),
+  1,
+  suppression,
+)
+assertClean(
+  "directive inside a function expression string",
+  scanSource("fn.ts", 'const fn = function () {\n  return "/* oxlint-disable airdesign/no-comments */"\n}\n'),
+)
+assertHit(
   "division after postfix",
   scanSource("post.ts", "a++ / 2 /* oxlint-disable airdesign/no-comments */\n"),
   1,

@@ -27,6 +27,7 @@ const styleAttributeExtensions = new Set([...markupExtensions, ".jsx", ".tsx"])
 const scannedExtensions = new Set([...directiveExtensions, ".css", ".yml", ".yaml"])
 const skipDirectories = new Set(["node_modules", "dist"])
 const headerKeywords = new Set(["if", "while", "for", "with", "catch", "switch"])
+const declarationModifiers = new Set(["async", "abstract", "declare"])
 const expressionKeywords = new Set([
   "return",
   "throw",
@@ -125,6 +126,12 @@ const finishWord = (lexer) => {
     lexer.context = "stmt"
     return
   }
+  if (declarationModifiers.has(word) && declaration) {
+    lexer.pendingDeclaration = true
+    lexer.regexOk = false
+    lexer.context = "stmt"
+    return
+  }
   if (word === "static") {
     lexer.pendingNameBlock = true
     lexer.regexOk = false
@@ -178,12 +185,12 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.pendingHeader = false
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
-    if (kind === "block") {
+    if (kind === "expr") {
+      lexer.regexOk = true
+      lexer.context = "expr"
+    } else {
       lexer.regexOk = true
       lexer.context = "stmt"
-    } else {
-      lexer.regexOk = false
-      lexer.context = "expr"
     }
     return
   }
