@@ -19,7 +19,6 @@ export function transport(client: SyncClient, person: string, deck: string, erro
   let stopped=false
   let generation=0
   let resumed=false
-  let saveFailed=false
   let offlineAt=Date.now()
   let previous:Snapshot|undefined
   let pending:Snapshot|undefined
@@ -100,7 +99,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
                 }else if(message.kind==="signed-out"){client.stop("signed-out");active.close()}
                 else if(message.kind==="error"){
                   if(message.code==="deck-deleted"){client.stop("deleted");active.close()}
-                  else {saveFailed=true;error(message.code)}
+                  else error(message.code)
                 }
               }
               if(receipts.length)await afterPaint()
@@ -110,7 +109,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
                 client.receive(latest)
                 if(!resumed){resumed=true;attempts=0;clearTimeout(slow);slow=undefined;client.connected(command=>{if(active.readyState===WebSocket.OPEN)active.send(JSON.stringify(command))})}
                 const checkpoint=cache(latest,recovering)
-                if(receipts.length)void client.acknowledgeBatch(receipts,checkpoint).then(()=>{if(client.queue.length===0){recovering=false;if(saveFailed){saveFailed=false;error("")}}}).catch(failure=>error(String(failure)))
+                if(receipts.length)void client.acknowledgeBatch(receipts,checkpoint).then(()=>{if(client.queue.length===0)recovering=false}).catch(failure=>error(String(failure)))
               }
               if(recovering && client.queue.length===0)recovering=false
             }catch(failure){error(String(failure));active.close()}
@@ -129,7 +128,7 @@ export function transport(client: SyncClient, person: string, deck: string, erro
     if (attempts>=3) return
     timer=setTimeout(()=>void connect(),[500,1000,2000][attempts++] ?? 2000)
   }
-  const online=()=>{if(!saveFailed && resumed && socket?.readyState===WebSocket.OPEN)return;attempts=0;void connect()}
+  const online=()=>{if(resumed && socket?.readyState===WebSocket.OPEN)return;attempts=0;void connect()}
   const offline=()=>socket?.close()
   window.addEventListener("online",online)
   window.addEventListener("offline",offline)

@@ -24,10 +24,3 @@ it("keeps event metadata outside the per-property JSON records",()=>{
   expect(historyQuerySafetyHits("apps/server/src/db/history-index.ts",'await tx.query("INSERT INTO editing_property SELECT p.node,p.key,p.seq,p.payload FROM jsonb_to_recordset($1::jsonb) AS p(node text,key text,seq integer,payload jsonb)")')).toMatchObject([{reason:"history-property-rows-must-share-event-metadata"}])
   expect(historyQuerySafetyHits("apps/server/src/db/history-index.ts",'await tx.query("INSERT INTO editing_property SELECT p.node,p.key,$2,$3 FROM jsonb_to_recordset($1::jsonb) AS p(node text,key text)")')).toEqual([])
 })
-
-it("rejects worker schema maintenance and requires connect-only history stores",()=>{
-  const file="apps/worker/src/main.ts"
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url})')).toMatchObject([{reason:"worker-history-store-must-connect-without-migrations"}])
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"migrate"})')).toHaveLength(1)
-  expect(historyQuerySafetyHits(file,'createHistoryStore({kind:"postgres",url,schema:"connect"})')).toEqual([])
-})

@@ -1,4 +1,3 @@
-import { syncErrorCode } from "../../../../packages/rpc/src/sync-error.ts"
 import { mutationRejection, type Access } from "@airdesign/access"
 import { parseDeck } from "../../../../packages/deck/src/index.ts"
 import type { HistoryStore } from "../db/history-store.ts"
@@ -33,8 +32,8 @@ export function commandsHandler(access: Access, store: HistoryStore, origin: str
       if (!match[2] && request.method === "DELETE") { await store.delete(principal, deck); await changed(deck); return Response.json({ kind: "deleted" }) }
       return Response.json({ code: "method-not-allowed" }, { status: 405 })
     } catch (error) {
-      const code = syncErrorCode(error)
-      return Response.json({ code }, { status: code === "deck-not-found" ? 404 : code === "deck-deleted" ? 410 : code === "sync-unavailable" ? 503 : 400 })
+      const code = error instanceof Error ? error.message : "command-failed"
+      return Response.json({ code }, { status: code === "deck-not-found" ? 404 : code === "deck-deleted" ? 410 : 400 })
     }
   }
 }

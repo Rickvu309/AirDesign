@@ -93,7 +93,7 @@
     "file": "tests/lint/recovery-safety.test.ts",
     "reason": "regression-tests-need-committed-fixtures-not-local-git-history",
     "revision": "0e7778f",
-    "source": " const original=execFileSync(\"git\",[\"show\",`ad44379:${file}`],{encoding:\"utf8\"})\n  const original=execFileSync(\"git\",[\"show\",`accaae1:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`214362b:${file}`],{encoding:\"utf8\"})\n  const original=execFileSync(\"git\",[\"show\",`de13aa9:${file}`],{encoding:\"utf8\"})"
+    "source": " const original=execFileSync(\"git\",[\"show\",`ad44379:${file}`],{encoding:\"utf8\"})\n  const original=execFileSync(\"git\",[\"show\",`accaae1:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`26c883d:${file}`],{encoding:\"utf8\"})\n const original=execFileSync(\"git\",[\"show\",`214362b:${file}`],{encoding:\"utf8\"})"
   },
   {
     "file": "tests/lint/release-runtime.test.ts",
@@ -106,23 +106,5 @@
     "reason": "await-selectionchange-before-command-insertion-in-browser-fixtures",
     "revision": "8ac9c1e",
     "source": "    await field.evaluate(node => {\n      const text = node.lastChild.firstChild\n      document.getSelection().setBaseAndExtent(text, 0, text, 4)\n    })"
-  },
-  {
-    "file": "apps/studio/src/editor/manual-editor.tsx",
-    "reason": "render-reviewed-error-copy-instead-of-raw-errors",
-    "revision": "de13aa9",
-    "source": "{error}"
-  },
-  {
-    "file": "apps/server/src/rpc/websocket.ts",
-    "reason": "map-sync-failures-to-typed-public-codes",
-    "revision": "de13aa9",
-    "source": "error.message\nerror.message\nerror.message"
-  },
-  {
-    "file": "apps/server/src/commands/handle.ts",
-    "reason": "map-sync-failures-to-typed-public-codes",
-    "revision": "de13aa9",
-    "source": "error.message"
   }
 ]

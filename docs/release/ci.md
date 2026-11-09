@@ -1,6 +1,6 @@
 # CI and production delivery
 
-Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate. GitHub Actions deploys production only after main push CI succeeds. Pushes to `ci-landing` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci-landing` from the push branch list after this branch lands.
+Every pull request runs the same gate as `npm run gate`. Pushes to `main` run the full gate. Railway waits for CI and emits a deployment status after deploying. Pushes to `ci-landing` also run CI so this initial workflow can be verified before a pull request exists. Remove `ci-landing` from the push branch list after this branch lands.
 
 ## Run locally
 
@@ -24,7 +24,7 @@ Setup restores the npm download cache, installs once, and builds the site, Studi
 | `studio-mcp` | 05, 07 | 106.37 | PostgreSQL, Chromium, isolated worker |
 | `release` | 01, 09 | 89.28 | PostgreSQL, Chromium, package registry |
 
-These baseline sums guide grouping. They exclude CI runtime setup and the new LibreOffice conversion. Both unit shards need PostgreSQL, Chromium and isolated workers. Their verbose logs name each passing test file so critical PostgreSQL coverage can be checked directly.
+These baseline sums guide grouping. They exclude CI runtime setup and the new LibreOffice conversion. Both unit shards need PostgreSQL, Chromium and isolated workers.
 
 The shared plan is `scripts/gate/plan.ts`. CI derives its verification matrix from that plan, and local execution reads the same plan. Vitest discovers `test` and `spec` files across every workspace, including TypeScript, JSX and JavaScript module extensions, across two shards. `scripts/gate/unit-sharding.ts` greedily balances the recorded baseline durations in `scripts/gate/unit-durations.json`; unknown files receive a one-second estimate and are always included. Refresh the estimates from a passing Vitest results cache after material suite changes. The baseline hash split estimated 200.0 versus 129.0 seconds of test work; the measured split estimates 164.5 seconds each before worker startup overhead. The lint policy rejects omitted PR verifiers, filtered workspace discovery, incomplete shards and unpinned actions; mutation tests demonstrate those failures.
 
@@ -38,34 +38,26 @@ Worker tests exercise both systemd/Bubblewrap and container drivers. Unit shards
 
 ## Deployment
 
-`.github/workflows/deploy.yml` is the only production deploy controller. It accepts completed CI runs for main pushes from this repository with conclusion success. The single `production` concurrency group uses `cancel-in-progress: false`: a running deployment finishes verification before another starts. GitHub keeps one pending run and replaces older pending runs. Queue order is not guaranteed, so the controller checks current main immediately before its first Railway request and records stale runs without deploying.
+`deploy.yml` runs only on `deployment_status`. The revision job accepts successful events from `railway-app[bot]` for `airdesign / production`. It checks the event SHA against current `main` before publishing. Every checkout, the site build identity, and the live-check expectation use `github.event.deployment.sha`.
 
-The workflow uses the existing GitHub environment `airdesign / production`. It preserves that environment's protection rules and secrets instead of creating an unrelated environment named `production`. All dependency, browser, CLI and LibreOffice installation finishes before any secret is exposed. Wrangler 4.158.0 and Railway CLI 5.71.0 are installed under `~/tmp/release-tools`; publication executes the local Wrangler binary without a package fetch.
+Only CI runs on push. The post-deploy workflow creates no push or workflow-run check suite for Railway to wait on. A newer successful production event cancels the older production run. Other status events have separate concurrency groups and cannot cancel production verification.
 
-`scripts/release/railway-production.ts` requests worker then web using `railway deployment redeploy --project <project> --environment production --service <worker|web> --commit <sha> --yes`. Both requests build from the connected GitHub source at the approved CI SHA. CLI 5.71.0's `railway deployment redeploy --help` documents `--commit <SHA>` as deploying a specific commit from the connected repository once without pinning it. This keeps `RAILWAY_GIT_COMMIT_SHA` aligned with build identity. See [Railway CLI source at v5.71.0](https://github.com/railwayapp/cli/tree/v5.71.0) and [deployment commands](https://docs.railway.com/cli/deployment).
+The site job builds `apps/site` with `AIRDESIGN_BUILD_SHA` set to the verified commit, then publishes Cloudflare Pages project `airdesign`. Railway independently deploys `web` and `worker` from GitHub. `.railway/railway.ts` enables `checkSuites: true`; the coordinator must apply that configuration after merge. Keep Railway's GitHub integration enabled. No workflow calls `railway up`.
 
-The controller has a 20-minute deadline and a 60-second limit per CLI call. It requires a new deployment ID for each service, with `meta.commitHash` equal to the selected SHA and status `SUCCESS`. Previous successful deployments cannot satisfy the wait. A failed or crashed deployment fails immediately. Studio `/version` must then report the same SHA. Only after this barrier does the workflow publish Cloudflare Pages project `airdesign` with that SHA and run `verify:live --expect-sha ... --smoke-email smoke@airdesign.app --railway`. The verifier exercises the worker import journey and checks worker identity as well as Studio, MCP and Pages. Verification still runs after a Pages publication failure if the Railway barrier succeeded.
+A success event can come from either Railway service. The live job installs Chromium, LibreOffice Impress, and Railway CLI 5.71.0. It links to the production project, waits at most 20 minutes for Studio `/version` to report the expected commit, then runs the existing `verify:live` journey with `--expect-sha`, `--smoke-email smoke@airdesign.app`, and `--railway`. Worker identity is checked by the verifier's real import journey. A failed wait or journey fails the workflow. Receipt, screenshots, and export evidence upload even when the journey fails. There is no verification skip or automatic rollback.
 
-The controller writes `railway-deploy.json` on success, stale selection, timeout or failure. The always-run upload includes this receipt and any live verification evidence. There is no rollback or verification bypass. A failed deployment request or readiness barrier stops publication and the live journey, with failure evidence retained.
-
-### One-time production setup before enabling the controller
-
-In Railway project `airdesign`, environment `production`, open **web → Settings → Source** and click **Disable** for automatic GitHub deployments. Repeat for **worker → Settings → Source**. Keep `Rickvu309/AirDesign` connected to branch `main` for both services. Turn **Wait for CI** off for both services (`source.checkSuites: false`, declared in `.railway/railway.ts`). Do not disconnect the GitHub source. [Railway documents the Disable control and Wait for CI](https://docs.railway.com/deployments/github-autodeploys).
-
-Railway TypeScript SDK 3.16.0's `ServiceSource` and `SourceConfig` declarations expose `repo`, `branch`, `commitSha` and `checkSuites`, but no GitHub automatic-trigger flag. `autoUpdates` applies only to image sources. The automatic-trigger toggle must therefore be set in the dashboard. It is outside the IaC schema, so plan cannot declare, detect or repair drift in that toggle. The connected source and `checkSuites: false` remain declared and should have no source drift after setup; unrelated live drift is not covered by that claim. Confirm the two Disable states separately whenever reviewing a plan. No Railway setting was applied during implementation.
-
-Configure these GitHub secrets in the existing `airdesign / production` environment or retain their existing repository scope:
+Configure these secrets in GitHub's `production` environment before a main deployment:
 
 | Secret | Scope |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | Pages Edit for existing project `airdesign` |
-| `CLOUDFLARE_ACCOUNT_ID` | Account owning that Pages project |
-| `RAILWAY_API_TOKEN` | Account or workspace API token with production deploy and SSH access |
-| `RAILWAY_SSH_PRIVATE_KEY` | Unencrypted Ed25519 key registered with that Railway account or workspace |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare Pages Edit for the account owning existing project `airdesign` |
+| `CLOUDFLARE_ACCOUNT_ID` | Account owning Pages project `airdesign` |
+| `RAILWAY_API_TOKEN` | Account or workspace API token with access to the production project and its registered SSH key |
+| `RAILWAY_SSH_PRIVATE_KEY` | Dedicated, unencrypted Ed25519 private key whose public key the coordinator registers with that Railway account or workspace |
 
-Set `RAILWAY_PROJECT_ID` to the existing project's UUID. The Railway token is scoped to the deploy controller, SSH link and verifier steps. Cloudflare credentials are scoped to publication. The SSH key appears only in its setup step, is written with owner-only permissions and is deleted by the final cleanup. Install steps receive no secret. See [Railway CLI tokens](https://docs.railway.com/cli) and [SSH authentication](https://docs.railway.com/cli/ssh).
+Set production environment variable `RAILWAY_PROJECT_ID` to the existing project's UUID. It is not a secret. Railway's project token `RAILWAY_TOKEN` cannot manage SSH keys; use `RAILWAY_API_TOKEN` for the key lookup and service resolution. The CLI uses native system SSH, so a token alone is insufficient. The API token is present only in the Railway link and live-verification steps. The SSH private-key secret is present only in the key-installation and link step. Cloudflare credentials are present only in the Pages publish step. Dependency installation receives no deployment secrets. The workflow installs the key with owner-only permissions, derives its public key, and deletes both key files in its final cleanup step. It never prints the one-use smoke sign-in credential. See [Railway CLI tokens](https://docs.railway.com/cli) and [Railway SSH authentication](https://docs.railway.com/cli/ssh).
 
-Tests simulate web-first and worker-first completion, failed services, stale runs, old successful deployment IDs, wrong SHAs, timeout and boundary errors. The workflow policy rejects the old native Wait for CI topology, missing guards, cancellation and installer secret exposure. Production delivery remains unproved until the one-time setup is complete and the workflow runs on main. Implementation does not merge, deploy or apply Railway configuration.
+No secrets, branch rules, live configuration, or deployments were changed during implementation. Production delivery remains unproved until the coordinator sets these inputs, applies the Railway configuration after merge, and observes a successful main workflow.
 
 ## Enable the pending checks
 

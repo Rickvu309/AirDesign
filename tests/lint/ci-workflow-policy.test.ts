@@ -117,40 +117,48 @@ it("keeps project npm installer permissions out of inherited CLI flags", () => {
   }
 })
 
-it("requires the single deploy controller and rejects native CI wait cycles", () => {
+it("rejects manual Railway deploys, disabled smoke checks, missing evidence and bypassed CI", () => {
   const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
   const railway = readFileSync(".railway/railway.ts", "utf8")
   expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
-  expect(deploymentWorkflowHits(deploy, railway.replace("checkSuites: false", "checkSuites: true"))).toContain("deploy-native-ci-wait-cycle: disable native autodeploy and CI wait")
-  expect(deploymentWorkflowHits(deploy, railway.replace("checkSuites: false", "checkSuites: false, autoDeploy: true"))).not.toEqual([])
   for (const broken of [
-    deploy.replace("workflow_run:", "deployment_status:"),
-    deploy.replace("branches: [main]", "branches: [preview]"),
-    deploy.replace("cancel-in-progress: false", "cancel-in-progress: true"),
-    deploy.replace("group: production", "group: ${{ github.run_id }}"),
-    deploy.replace("environment: airdesign / production", "environment: production"),
-    deploy.replace("node scripts/release/railway-production.ts", "echo skipped"),
+    deploy.replace("  live:\n", "  live:\n    if: ${{ false }}\n"),
+    deploy.replace("node scripts/live/wait-for-deploy.ts", "echo skipped"),
     deploy.replace("npm run verify:live", "echo skipped"),
+    deploy.replace("npm run verify:live", "npx --yes @railway/cli@5.71.0 up"),
     deploy.replace("--smoke-email smoke@airdesign.app", ""),
     deploy.replace("libreoffice-impress", ""),
     deploy.replace("--with-deps chromium", ""),
-    deploy.replaceAll("github.event.workflow_run.head_sha", "github.sha"),
     deploy.replace("secrets.RAILWAY_API_TOKEN", "secrets.RAILWAY_TOKEN"),
     deploy.replace("secrets.RAILWAY_SSH_PRIVATE_KEY", ""),
     deploy.replace("actions/upload-artifact@", "actions/missing-artifact@"),
-    deploy.replace("always() && steps.railway.outputs.ready", "steps.railway.outputs.ready"),
-    deploy.replace('"$HOME/tmp/release-tools/node_modules/.bin/wrangler"', "npx wrangler"),
-  ]) {
-    expect(broken).not.toBe(deploy)
-    expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
+    deploy.replace("AIRDESIGN_BUILD_SHA:", "MISSING_BUILD_SHA:"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
+  expect(deploymentWorkflowHits(deploy, railway.replace("checkSuites: true", "checkSuites: false"))).toContain("railway-source-must-wait-for-ci")
+})
+
+it("rejects deploy check-suite deadlocks and secrets inherited by installers", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
+  for (const trigger of ["push", "workflow_run"]) {
+    expect(deploymentWorkflowHits(deploy.replace("  deployment_status:", `  ${trigger}:`), railway)).toContain("deploy-trigger-must-be-deployment-status-only")
+    expect(deploymentWorkflowHits(deploy.replace("  deployment_status:", `  deployment_status:\n  ${trigger}:`), railway)).toContain("deploy-trigger-must-be-deployment-status-only")
   }
-  for (const condition of ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == github.repository"]) {
-    expect(deploymentWorkflowHits(deploy.replace(condition, "false"), railway)).not.toEqual([])
-  }
-  for (const command of ["npm ci", "npm install --prefix", "npx --no-install playwright"]) {
-    const broken = deploy.replace(`- run: ${command}`, `- env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
+  for (const broken of [
+    deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:"),
+    deploy.replace("    env:\n      AIRDESIGN_LIBREOFFICE:", "    env:\n      RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n      AIRDESIGN_LIBREOFFICE:"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secrets-must-be-step-scoped")
+  for (const command of ["npm ci", "npm install --global @railway/cli@5.71.0", "node scripts/live/wait-for-deploy.ts \"$EXPECT_SHA\""]) {
+    const broken = deploy.replace(`run: ${command}`, `env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
     expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   }
-  const inherited = deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:")
-  expect(deploymentWorkflowHits(inherited, railway)).toContain("deploy-secrets-must-be-step-scoped")
+  for (const broken of [
+    deploy.replaceAll("state == 'success'", "state == 'in_progress'"),
+    deploy.replaceAll("airdesign / production", "preview"),
+    deploy.replaceAll("railway-app[bot]", "other-app[bot]"),
+    deploy.replace("cancel-in-progress: true", "cancel-in-progress: false"),
+    deploy.replace('"$latest" == "$EXPECT_SHA"', '"true" == "true"'),
+    deploy.replaceAll("github.event.deployment.sha", "github.sha"),
+  ]) expect(deploymentWorkflowHits(broken, railway)).not.toEqual([])
 })

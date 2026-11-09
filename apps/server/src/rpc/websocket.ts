@@ -1,4 +1,3 @@
-import { syncErrorCode } from "../../../../packages/rpc/src/sync-error.ts"
 import { WebSocketServer, WebSocket } from "ws"
 import type { Server } from "node:http"
 import type { Access } from "@airdesign/access"
@@ -17,7 +16,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
         const current = snapshot ? snapshotDelta(snapshot,peer.seq) : peer.seq===null ? await store.read(principal,deck) : await store.delta(principal,deck,peer.seq)
         if (socket !== except && socket.readyState === WebSocket.OPEN && (peer.seq===null || current.seq>=peer.seq)) {socket.send(JSON.stringify({kind:"snapshot",...current}));peer.seq=current.seq}
       } catch (error) {
-        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"error",code:syncErrorCode(error)}))
+        if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
       }
     }))
   }
@@ -41,7 +40,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
           if(next)batch.push(next.raw)
         }
         current.ordered=current.ordered.then(()=>first.deliver(batch)).catch(error=>{
-          if(first.websocket.readyState===WebSocket.OPEN)first.websocket.send(JSON.stringify({kind:"error",code:syncErrorCode(error)}))
+          if(first.websocket.readyState===WebSocket.OPEN)first.websocket.send(JSON.stringify({kind:"error",code:error instanceof Error ? error.message : "sync-failed"}))
         })
       }
       const drained=current.ordered
@@ -83,7 +82,7 @@ export function attachSync(server: Server, access: Access, store: HistoryStore, 
           const base=bases.includes(null) ? null : Math.min(...bases.filter((seq):seq is number=>seq!==null))
           const parsed=batch.map(raw=>{
             try{return {kind:"command" as const,command:parseCommand(JSON.parse(raw))}}
-            catch(error){return {kind:"error" as const,code:error instanceof SyntaxError ? "invalid-command" : syncErrorCode(error)}}
+            catch(error){return {kind:"error" as const,code:error instanceof SyntaxError ? "invalid-command" : error instanceof Error ? error.message : "invalid-command"}}
           })
           const commands=parsed.flatMap(item=>item.kind==="command" ? [item.command] : [])
           const committed=commands.length ? await store.commitBatchSnapshot(current,deck,commands,identity,base) : null

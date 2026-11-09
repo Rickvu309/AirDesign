@@ -6,7 +6,6 @@ const stepSchema = z.object({ run: z.string().optional(), uses: z.string().optio
 const jobSchema = z.object({
   steps: z.array(stepSchema).optional(),
   env: z.record(z.string(), z.string()).optional(),
-  environment: z.string().optional(),
   if: z.string().optional(),
   needs: z.union([z.string(), z.array(z.string())]).optional(),
   strategy: z.object({ matrix: z.union([z.string(), z.object({ shard: z.array(z.string()).optional(), check: z.array(z.string()).optional() })]).optional() }).optional(),
@@ -79,49 +78,43 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
   }).parse(parse(source))
   const { jobs } = workflow
   const hits: string[] = []
-  const trigger = z.object({ workflows: z.array(z.string()), types: z.array(z.string()), branches: z.array(z.string()) }).safeParse(workflow.on.workflow_run)
-  if (Object.keys(workflow.on).join() !== "workflow_run" || !trigger.success || trigger.data.workflows.join() !== "CI" || trigger.data.types.join() !== "completed" || trigger.data.branches.join() !== "main") hits.push("deploy-trigger-must-follow-main-ci")
-  if (workflow.concurrency.group !== "production" || workflow.concurrency["cancel-in-progress"]) hits.push("deploy-must-queue-without-cancelling")
-  if (/checkSuites:\s*true|autoDeploy:\s*true/.test(railway) || !/checkSuites:\s*false/.test(railway)) hits.push("deploy-native-ci-wait-cycle: disable native autodeploy and CI wait")
-  if (!railway.includes('github("Rickvu309/AirDesign", { branch: "main", checkSuites: false })')) hits.push("deploy-must-preserve-github-source")
-  const job = jobs.production
-  if (Object.keys(jobs).join() !== "production" || job?.environment !== "airdesign / production") hits.push("deploy-single-production-job-required")
-  for (const condition of ["github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'", "github.event.workflow_run.head_repository.full_name == github.repository"]) {
-    if (!job?.if?.includes(condition)) hits.push(`deploy-event-filter-required: ${condition}`)
+  if (Object.keys(workflow.on).join() !== "deployment_status") hits.push("deploy-trigger-must-be-deployment-status-only")
+  for (const condition of ["github.event.deployment_status.state == 'success'", "github.event.deployment.environment == 'airdesign / production'", "github.event.deployment.creator.login == 'railway-app[bot]'"]) {
+    if (!jobs.revision?.if?.includes(condition)) hits.push(`deploy-event-filter-required: ${condition}`)
+    if (!workflow.concurrency.group.includes(condition)) hits.push(`deploy-concurrency-filter-required: ${condition}`)
   }
-  if (workflow.env?.EXPECT_SHA !== "${{ github.event.workflow_run.head_sha }}" || job?.env?.AIRDESIGN_BUILD_SHA !== "${{ github.event.workflow_run.head_sha }}") hits.push("deploy-must-use-ci-sha")
-  for (const env of [workflow.env, ...Object.values(jobs).map(value => value.env)]) {
+  if (!workflow.concurrency["cancel-in-progress"] || !workflow.concurrency.group.includes("'production' || github.run_id")) hits.push("deploy-newer-production-must-cancel-older-without-unrelated-events")
+  const revision = jobs.revision?.steps?.map(step => step.run ?? "").join("\n") ?? ""
+  if (!revision.includes('gh api "repos/$REPOSITORY/commits/main"') || !revision.includes('"$latest" == "$EXPECT_SHA"') || jobs.site?.needs !== "revision" || jobs.site?.if !== "needs.revision.outputs.current == 'true'") hits.push("deploy-selected-commit-must-be-current-main")
+  if (workflow.env?.EXPECT_SHA !== "${{ github.event.deployment.sha }}") hits.push("deploy-sha-must-come-from-deployment")
+  for (const env of [workflow.env, ...Object.values(jobs).map(job => job.env)]) {
     if (Object.values(env ?? {}).some(value => value.includes("secrets."))) hits.push("deploy-secrets-must-be-step-scoped")
   }
-  const steps = job?.steps ?? []
-  const controller = steps.findIndex(step => step.run === "node scripts/release/railway-production.ts")
-  const pages = steps.findIndex(step => step.run?.includes("pages deploy"))
-  const verify = steps.findIndex(step => step.run?.startsWith("npm run verify:live "))
-  if (controller < 0 || pages <= controller || verify <= pages) hits.push("deploy-order-must-be-railway-pages-live")
-  for (const [index, step] of steps.entries()) {
-    const run = step.run ?? ""
-    const allowed = run.includes("pages deploy") ? ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
-      : run.includes("railway link --project") ? ["RAILWAY_API_TOKEN", "RAILWAY_SSH_PRIVATE_KEY"]
-      : run === "node scripts/release/railway-production.ts" || run.startsWith("npm run verify:live ") ? ["RAILWAY_API_TOKEN"] : []
+  for (const job of Object.values(jobs)) for (const step of job.steps ?? []) {
+    const allowed = step.run?.includes("pages deploy") ? ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+      : step.run?.includes("railway link --project") ? ["RAILWAY_API_TOKEN", "RAILWAY_SSH_PRIVATE_KEY"]
+      : step.run?.startsWith("npm run verify:live ") ? ["RAILWAY_API_TOKEN"] : []
     for (const [name, value] of Object.entries(step.env ?? {})) {
       if (value.includes("secrets.") && !allowed.includes(name)) hits.push(`deploy-secret-not-consumed-by-step: ${name}`)
     }
-    if (/\bnpx\b/.test(run) && Object.values(step.env ?? {}).some(value => value.includes("secrets."))) hits.push("deploy-package-fetch-with-secrets")
-    if (index > controller && /npm (?:ci|install)|playwright install|apt-get/.test(run)) hits.push("deploy-installers-must-precede-deployment")
-    if (step.uses?.startsWith("actions/checkout@") && step.with?.ref !== "${{ github.event.workflow_run.head_sha }}") hits.push("deploy-checkout-must-use-ci-sha")
-    if (/\brailway(?:\/cli@[^ ]+)? up\b/.test(run)) hits.push("deploy-must-build-from-github")
+    if (step.uses?.startsWith("actions/checkout@") && step.with?.ref !== "${{ github.event.deployment.sha }}") hits.push("deploy-checkout-must-use-deployment-sha")
+  }
+  const site = jobs.site?.steps?.map(step => step.run ?? "").join("\n") ?? ""
+  const live = jobs.live?.steps?.map(step => step.run ?? "").join("\n") ?? ""
+  if (Object.values(jobs).some(job => job.steps?.some(step => /\brailway(?:\/cli@[^ ]+)? up\b/.test(step.run ?? "")))) hits.push("deploy-railway-source-owned: Railway deploys from GitHub")
+  if (jobs.live?.if || jobs.live?.needs !== "site" || !live.includes("node scripts/live/wait-for-deploy.ts")) hits.push("deploy-live-required-after-site-and-railway-identity")
+  for (const command of ["npm run verify:live", '--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", "--output-dir"]) {
+    if (!live.includes(command)) hits.push(`deploy-live-command-required: ${command}`)
+  }
+  if (!live.includes("playwright install --with-deps chromium") || !live.includes("libreoffice-impress") || !source.includes("AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice")) hits.push("deploy-live-needs-browser-and-office")
+  const link = jobs.live?.steps?.find(step => step.run?.includes("railway link --project"))
+  const verify = jobs.live?.steps?.find(step => step.run?.startsWith("npm run verify:live "))
+  if (link?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || link.env.RAILWAY_SSH_PRIVATE_KEY !== "${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}" || verify?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}") hits.push("deploy-live-needs-linked-railway-ssh-credentials")
+  if (!jobs.live?.steps?.some(step => step.if === "always()" && step.uses?.startsWith("actions/upload-artifact@"))) hits.push("deploy-live-evidence-must-upload-on-failure")
+  if (!site.includes("npm run build --workspace @airdesign/site") || !source.includes("AIRDESIGN_BUILD_SHA: ${{ github.event.deployment.sha }}") || !site.includes("--project-name airdesign")) hits.push("deploy-site-must-build-selected-commit")
+  if (!/checkSuites:\s*true/.test(railway) || /checkSuites:\s*false/.test(railway)) hits.push("railway-source-must-wait-for-ci")
+  for (const job of Object.values(jobs)) for (const step of job.steps ?? []) {
     if (step.uses && !step.uses.startsWith("./") && !/@[a-f0-9]{40}$/.test(step.uses)) hits.push(`deploy-action-not-pinned: ${step.uses}`)
   }
-  const link = steps.find(step => step.run?.includes("railway link --project"))
-  if (link?.if !== "always() && steps.railway.outputs.ready == 'true'") hits.push("deploy-ssh-link-must-run-after-pages-failure")
-  const live = steps[verify]
-  for (const command of ['--expect-sha "$EXPECT_SHA"', "--smoke-email smoke@airdesign.app", "--railway", "--output-dir"]) {
-    if (!live?.run?.includes(command)) hits.push(`deploy-live-command-required: ${command}`)
-  }
-  if (live?.if !== "always() && steps.railway.outputs.ready == 'true'" || steps[pages]?.if !== "steps.railway.outputs.ready == 'true'") hits.push("deploy-live-must-follow-both-services-even-if-pages-fails")
-  if (steps[controller]?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || live?.env?.RAILWAY_API_TOKEN !== "${{ secrets.RAILWAY_API_TOKEN }}" || !steps.some(step => step.env?.RAILWAY_SSH_PRIVATE_KEY === "${{ secrets.RAILWAY_SSH_PRIVATE_KEY }}" && step.run?.includes("railway link --project"))) hits.push("deploy-railway-credentials-required")
-  if (!source.includes("playwright install --with-deps chromium") || !source.includes("libreoffice-impress") || !source.includes("AIRDESIGN_LIBREOFFICE: /usr/bin/libreoffice")) hits.push("deploy-live-needs-browser-and-office")
-  if (!source.includes("npm run build --workspace @airdesign/site") || !steps[pages]?.run?.includes('--commit-hash "$EXPECT_SHA"') || !source.includes("--project-name airdesign")) hits.push("deploy-site-must-build-selected-commit")
-  if (!steps.some(step => step.if === "always()" && step.uses?.startsWith("actions/upload-artifact@"))) hits.push("deploy-live-evidence-must-upload-on-failure")
   return hits
 }

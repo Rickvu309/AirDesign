@@ -1,12 +1,11 @@
-import { syncErrorCode,type SyncErrorCode } from "./sync-error.ts"
 import { commandId, type Command, type Receipt } from "../../change-log/src/index.ts"
 import { parseCommand } from "./parse-command.ts"
 import { parseSnapshot, type Snapshot } from "./client.ts"
-export type Message = ({kind:"snapshot"} & Snapshot) | ({kind:"receipt";receipt:Receipt} & Snapshot) | {kind:"replay";head:number;events:{seq:number;command:Command}[]} | {kind:"signed-out"} | {kind:"error";code:SyncErrorCode}
+export type Message = ({kind:"snapshot"} & Snapshot) | ({kind:"receipt";receipt:Receipt} & Snapshot) | {kind:"replay";head:number;events:{seq:number;command:Command}[]} | {kind:"signed-out"} | {kind:"error";code:string}
 export function parseMessage(value: unknown,previous?:Snapshot): Message {
   if (!value || typeof value !== "object" || !("kind" in value)) throw new Error("invalid-message")
   if (value.kind === "signed-out") return {kind:"signed-out"}
-  if (value.kind === "error" && "code" in value && typeof value.code === "string") return {kind:"error",code:syncErrorCode(value.code)}
+  if (value.kind === "error" && "code" in value && typeof value.code === "string") return {kind:"error",code:value.code}
   if (value.kind === "snapshot") return {kind:"snapshot",...parseSnapshot(value,previous)}
   if (value.kind === "replay" && "head" in value && typeof value.head === "number" && Number.isSafeInteger(value.head) && value.head>=0 && "events" in value && Array.isArray(value.events)) {
     const head=value.head
