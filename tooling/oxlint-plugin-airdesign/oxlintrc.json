@@ -1,0 +1,20 @@
+{
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "pedantic": "off",
+    "perf": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "jsPlugins": [
+    {
+      "name": "airdesign",
+      "specifier": "./index.js"
+    }
+  ],
+  "rules": {
+    "airdesign/no-comments": "error"
+  }
+}

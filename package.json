@@ -8,10 +8,10 @@
   "scripts": {
     "check": "node scripts/check.mjs",
     "new:package": "node scripts/new-package.mjs",
-    "lint": "pnpm -r --if-present run lint",
+    "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
     "typecheck": "tsc -b",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "test": "vitest run",
+    "test": "vitest run && node tooling/oxlint-plugin-airdesign/run-tests.js",
     "test:browser": "playwright test",
     "build": "pnpm -r --if-present run build"
   },
@@ -19,6 +19,7 @@
     "@playwright/test": "1.65.0",
     "fast-check": "4.10.2",
     "oxfmt": "0.78.0",
+    "oxlint": "^1.90.0",
     "typescript": "catalog:",
     "vitest": "5.1.0"
   }

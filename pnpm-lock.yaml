@@ -181,6 +181,9 @@ importers:
       oxfmt:
         specifier: 0.78.0
         version: 0.78.0(@astrojs/compiler-rs@0.5.2)
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
