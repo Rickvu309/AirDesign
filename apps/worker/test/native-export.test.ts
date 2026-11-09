@@ -7,8 +7,9 @@ import os from "node:os"
 import {fixtureDeck} from "../../../packages/deck/src/fixture.ts"
 import {initialHistory} from "../../../packages/change-log/src/index.ts"
 import {transduceLegacyHistory} from "../../../packages/change-log/src/text/history-transducer.ts"
-import {importPptx} from "../../../packages/pptx/src/index.ts"
-import {importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
+import {importPptx, exportPptx} from "../../../packages/pptx/src/index.ts"
+import {importedDeck, importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
+import {cascadeSource} from "../../../packages/pptx/test/text-cascade-fixture.ts"
 
 it("executes frozen legacy and native export jobs through the actual worker entry", async () => {
   const directory = await mkdtemp(path.join(os.homedir(), "tmp/paragraph-export-"))
@@ -39,3 +40,23 @@ it("executes frozen legacy and native export jobs through the actual worker entr
     }
   } finally {await rm(directory, {recursive: true, force: true})}
 }, 90000)
+
+it("visibly refuses an unsafe migrated source edit without consuming frozen input or publishing output", async () => {
+  const directory = await mkdtemp(path.join(os.homedir(), "tmp/paragraph-export-refusal-"))
+  const original = await cascadeSource(), source = await exportPptx(original)
+  const conversion = transduceLegacyHistory({version: 2, history: initialHistory(importedDeck(original)), immutable: {version: 2, events: [], receipts: []}})
+  const deck = structuredClone(conversion.history.deck), text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.source.kind === "original" && element.source.textVersion === 2)
+  if (text?.kind !== "text") throw new Error("migrated-text-required")
+  text.body.paragraphs[0].alignment = "right"
+  const retained = JSON.stringify(conversion)
+  const input = JSON.stringify({snapshotVersion: 3, snapshot: {deck, seq: conversion.history.seq, title: "Retained person input", source: source.toString("base64")}, options: {format: "pptx", slides: deck.slides.map(slide => slide.id), allowIssues: true}})
+  try {
+    await writeFile(path.join(directory, "input.json"), input)
+    await expect(promisify(execFile)(process.execPath, [path.resolve("apps/worker/src/export/entry.ts")], {env: {...process.env, AIRDESIGN_JOB_DIRECTORY: directory}, timeout: 30000, maxBuffer: 8192})).rejects.toMatchObject({code: 1})
+    expect(JSON.parse(await readFile(path.join(directory, "failure.json"), "utf8"))).toMatchObject({code: expect.stringMatching(/^source-text-format-preservation-required/)})
+    expect(await readFile(path.join(directory, "input.json"), "utf8")).toBe(input)
+    await expect(readFile(path.join(directory, "result.bin"))).rejects.toMatchObject({code: "ENOENT"})
+    expect(JSON.stringify(conversion)).toBe(retained)
+    expect(await exportPptx(original)).toEqual(source)
+  } finally {await rm(directory, {recursive: true, force: true})}
+}, 30000)

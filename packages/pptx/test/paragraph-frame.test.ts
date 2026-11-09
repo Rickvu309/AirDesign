@@ -58,13 +58,11 @@ it("inherits trailing empty insertion styles and visibly refuses unknown source 
   const original = await importPptx(await writeNativeSavedPptx(deck, 0, null, {})), parts = new Map(original.parts)
   parts.set("ppt/slides/slide1.xml", Buffer.from(parts.get("ppt/slides/slide1.xml")!.toString().replace('<a:bodyPr anchor=', '<a:bodyPr vert="vert" anchor=')))
   const source = await exportPptx({...original, parts}), imported = importedNativeDeck(await importPptx(source)), element = imported.slides[0]!.elements[0]!
-  if (element.kind !== "text") throw new Error("text-required")
-  element.body.frame.id = id("retainedLifetimeFrame")
-  element.body.paragraphs.forEach((paragraph, index) => {paragraph.id = id(`retainedLifetimeP${index}`)})
+  expect(element.support.kind).toBe("kept")
   const unchanged = await importPptx(await writeNativeSavedPptx(imported, 0, source, {}))
   for (const [part, bytes] of parts) if (part !== "airdesign/saved-version.json") expect(unchanged.parts.get(part), part).toEqual(bytes)
-  element.body.frame.anchor = "middle"
-  await expect(writeNativeSavedPptx(imported, 1, source, {})).rejects.toThrow("source-text-format-preservation-required")
+  element.box.width += 1
+  await expect(writeNativeSavedPptx(imported, 1, source, {})).rejects.toThrow("source-object-change-requires-fix")
 })
 
 it("keeps original text body identities when earlier edits change the number of XML runs", async () => {

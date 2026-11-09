@@ -1,7 +1,7 @@
 import type {NativeDeck, NativeElement} from "../../deck/src/text/native-v3.ts"
 import {flatten} from "../../deck/src/elements.ts"
 import {writeTextBody, replaceTextBody} from "./text/body.ts"
-import type {TextBody} from "../../deck/src/text/body.ts"
+import {bodyFormatting, preserveLegacySourceV2} from "./text/legacy-source-v2.ts"
 import { attachTemplateLayouts } from "./template-layouts.ts"
 import {patchTextColor} from "./edit/text-color.ts"
 import {patchSlideBackground} from "./edit/slide-background.ts"
@@ -16,9 +16,6 @@ import { appendCreatedPictures } from "./append-pictures.ts"
 import { parseXml,escapeXml } from "./xml.ts"
 
 const presentationType="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
-function bodyFormatting(body: TextBody) {
-  return {frame: {...body.frame, id: undefined}, paragraphs: body.paragraphs.map(paragraph => ({...paragraph, id: undefined}))}
-}
 function addElement(slide:PptxGenJS.Slide,element:Element | NativeElement,assets:Record<string,string>,offset={x:0,y:0}) {
   if(element.support.kind!=="native")return
   const box={x:(element.box.x+offset.x)/96,y:(element.box.y+offset.y)/96,w:element.box.width/96,h:element.box.height/96}
@@ -141,17 +138,25 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
   let parts=native
   if(source){
     let original=await importPptx(source)
-    const baseline=version === 3 ? importedNativeDeck(original) : importedDeck(original)
+    const legacyBaseline=importedDeck(original)
+    const baseline=version === 3 ? importedNativeDeck(original) : legacyBaseline
     for(const slide of deck.slides)if(slide.source.kind==="original"){
       if(slide.background)original=patchSlideBackground(original,slide.source.part,slide.background)
       const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
       if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
       const retained = parseXml(original.parts.get(source.part)!), bodies = retained.nodes.filter(node => node.local === "txBody")
       for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
-        const previous=old.elements[index]
+        if(element.source.kind!=="original")continue
+        const identity=element.source
+        const legacy=legacyBaseline.slides.find(candidate=>candidate.source.kind==="original" && candidate.source.part===source.part)?.elements.find(candidate=>candidate.source.kind==="original" && candidate.source.objectId===identity.objectId)
+        const nativePrevious=old.elements.find(candidate=>candidate.source.kind==="original" && candidate.source.objectId===identity.objectId) ?? old.elements[index]
+        const preserved=element.kind==="text" && "body" in element && element.source.textVersion===2 && legacy?.kind==="text" ? preserveLegacySourceV2(original,legacy,element.body) : undefined
+        if(element.kind==="text" && "body" in element && element.source.textVersion===2 && !preserved)throw new Error("source-text-format-preservation-required: legacy projection")
+        const previous=preserved ? legacy : nativePrevious
         if(!previous)throw new Error("source-slide-structure-change-requires-fix")
-        const withoutText=(value:Element | NativeElement)=>({...value,support:undefined,...(value.kind==="text" ? "body" in value ? {body:undefined} : {runs:undefined} : {}),source:value.source.kind==="original" ? {...value.source,objectType:undefined} : value.source})
+        const withoutText=(value:Element | NativeElement)=>({...value,support:undefined,...(value.kind==="text" ? {body:undefined,runs:undefined} : {}),source:value.source.kind==="original" ? {...value.source,objectType:undefined,textVersion:undefined} : value.source})
         if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
+        if (preserved) { original=preserved; continue }
         if (element.kind === "text" && "body" in element && previous.kind === "text" && "body" in previous) {
           if (!isDeepStrictEqual(bodyFormatting(element.body), bodyFormatting(previous.body))) {
             if (element.support.kind !== "native") throw new Error("kept-object-change-requires-fix")

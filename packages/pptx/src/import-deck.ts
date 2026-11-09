@@ -1,3 +1,4 @@
+import {textContext, UnsupportedTextFormat} from "./text/cascade.ts"
 import {readTextBody} from "./text/body.ts"
 import {isNativeSlide, parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../deck/src/text/native-v3.ts"
 import { SaxesParser } from "saxes"
@@ -115,7 +116,13 @@ export function importedNativeDeck(presentation: Presentation, progress?: (value
     const body = parsed.nodes.find(node => node.local === "txBody" && within(shape, node))
     if (!body) return undefined
     const bodyIndex = parsed.nodes.filter(node => node.local === "txBody").indexOf(body)
-    return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: readTextBody(parsed, body, base.id)}
+    try {
+      const part = base.source.kind === "original" ? base.source.part : ""
+      return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: readTextBody(parsed, body, base.id, textContext(presentation, part, parsed, shape))}
+    } catch (error) {
+      if (error instanceof UnsupportedTextFormat) return undefined
+      throw error
+    }
   }, isNativeSlide, progress)
   return parseNativeArchiveV3({version: 3, deck: {id: id("imported"), version: 0, slides, themes: []}}).deck
 }

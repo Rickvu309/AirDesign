@@ -68,7 +68,7 @@ function convertDeck(deck: Deck, lifetime: (element: Id) => TextLifetimeAllocati
     if (value.kind === "group") return {...value, children: value.children.map(element)}
     if (value.kind !== "text") return value
     const allocation = lifetime(value.id), {runs, ...base} = value
-    return {...base, body: decodeLegacyRunsV2(runs, allocation.frame, allocation.paragraph)}
+    return {...base, source: base.source.kind === "original" ? {...base.source, textVersion: 2} : base.source, body: decodeLegacyRunsV2(runs, allocation.frame, allocation.paragraph)}
   }
   return parseNativeArchiveV3({version: 3, deck: {...deck, slides: deck.slides.map(slide => ({...slide, elements: slide.elements.map(element)}))}}).deck
 }

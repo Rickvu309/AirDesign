@@ -6,7 +6,7 @@ function record(v: unknown): v is Record<string, unknown> { return v !== null &&
 function finite(v: unknown): v is number { return typeof v === "number" && Number.isFinite(v) }
 function nullable(v: unknown): v is string | null { return v === null || typeof v === "string" }
 function source(v: unknown): v is Source {
-  return record(v) && (v.kind === "created" || (v.kind === "original" && typeof v.part === "string" && typeof v.sha256 === "string" && /^[a-f0-9]{64}$/.test(v.sha256) && typeof v.objectId === "string" && (v.objectType === undefined || v.objectType === "chart" || v.objectType === "table") && Array.isArray(v.dependencies) && v.dependencies.every(p => typeof p === "string")))
+  return record(v) && (v.kind === "created" || (v.kind === "original" && typeof v.part === "string" && typeof v.sha256 === "string" && /^[a-f0-9]{64}$/.test(v.sha256) && typeof v.objectId === "string" && (v.objectType === undefined || v.objectType === "chart" || v.objectType === "table") && (v.textVersion === undefined || v.textVersion === 2) && Array.isArray(v.dependencies) && v.dependencies.every(p => typeof p === "string")))
 }
 function support(v: unknown): v is Support {
   return record(v) && (v.kind === "native" || (v.kind === "kept" && nullable(v.preview)) || (v.kind === "flagged" && (v.preservation === undefined || v.preservation === "removed" || v.preservation === "partial" || v.preservation === "reported") && typeof v.reason === "string" && nullable(v.preview)))
