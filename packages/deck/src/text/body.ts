@@ -6,7 +6,10 @@ export type InlineRun = {kind: "text"; text: string; style: TextStyle} | {kind: 
 export type NumberFormat = "decimal" | "alphaLower" | "alphaUpper" | "romanLower" | "romanUpper"
 export type MarkerPresentation = {color?: string; size?: {kind: "multiple" | "points"; value: number}}
 export type ParagraphSpace = number | {kind: "multiple"; value: number}
-export type ParagraphMarker = {kind: "none"} | ({kind: "bullet"; character: string; font?: string} & MarkerPresentation) | ({kind: "number"; format: NumberFormat; start: number | null} & MarkerPresentation)
+export type NumberPunctuation = "period" | "right-parenthesis" | "parentheses"
+export type SupportedNumberPresentation = {format: "decimal"; punctuation?: NumberPunctuation | "plain"} | {format: Exclude<NumberFormat, "decimal">; punctuation?: NumberPunctuation}
+export type RetainedNumberScheme = "circleNumDbPlain" | "circleNumWdBlackPlain" | "circleNumWdWhitePlain" | "arabicDbPeriod" | "arabicDbPlain" | "ea1ChsPeriod" | "ea1ChsPlain" | "ea1ChtPeriod" | "ea1ChtPlain" | "ea1JpnChsDbPeriod" | "ea1JpnKorPlain" | "ea1JpnKorPeriod" | "arabic1Minus" | "arabic2Minus" | "hebrew2Minus" | "thaiAlphaPeriod" | "thaiAlphaParenR" | "thaiAlphaParenBoth" | "thaiNumPeriod" | "thaiNumParenR" | "thaiNumParenBoth" | "hindiAlphaPeriod" | "hindiNumPeriod" | "hindiNumParenR" | "hindiAlpha1Period"
+export type ParagraphMarker = {kind: "none"} | ({kind: "bullet"; character: string; font?: string} & MarkerPresentation) | ({kind: "number"; start: number | null} & SupportedNumberPresentation & MarkerPresentation) | ({kind: "source-number"; scheme: RetainedNumberScheme; start: number | null} & MarkerPresentation)
 export type LineSpacing = {kind: "multiple"; value: number} | {kind: "points"; value: number}
 export type Paragraph = {
   id: Id

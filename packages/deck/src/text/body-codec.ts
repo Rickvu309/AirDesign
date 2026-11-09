@@ -1,3 +1,4 @@
+import {isNumberPresentation, isRetainedNumberScheme} from "./number-marker.ts"
 import {isId} from "../model.ts"
 import type {InlineRun, Paragraph, TextBody, TextFrame, TextStyle} from "./body.ts"
 
@@ -30,7 +31,8 @@ export function isParagraph(value: unknown): value is Paragraph {
   switch (marker.kind) {
     case "none": return exact(marker, ["kind"])
     case "bullet": return exact(marker, ["kind", "character", "font", "color", "size"]) && presentation(marker) && (marker.font === undefined || typeof marker.font === "string" && marker.font.length > 0) && typeof marker.character === "string" && Array.from(marker.character).length === 1 && !/[\r\n]/.test(marker.character)
-    case "number": return exact(marker, ["kind", "format", "start", "color", "size"]) && presentation(marker) && ["decimal", "alphaLower", "alphaUpper", "romanLower", "romanUpper"].includes(String(marker.format)) && (marker.start === null || typeof marker.start === "number" && Number.isSafeInteger(marker.start) && marker.start > 0)
+    case "number": return exact(marker, ["kind", "format", "punctuation", "start", "color", "size"]) && presentation(marker) && isNumberPresentation({format: marker.format, punctuation: marker.punctuation}) && (marker.start === null || typeof marker.start === "number" && Number.isSafeInteger(marker.start) && marker.start > 0)
+    case "source-number": return exact(marker, ["kind", "scheme", "start", "color", "size"]) && presentation(marker) && isRetainedNumberScheme(marker.scheme) && (marker.start === null || typeof marker.start === "number" && Number.isInteger(marker.start) && marker.start > 0 && marker.start <= 32767)
     default: return false
   }
 }

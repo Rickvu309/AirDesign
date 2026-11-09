@@ -29,7 +29,7 @@ it("renders bounded large numbering and alphabetical rollover", () => {
   body.paragraphs.push({...structuredClone(first), id: id("second"), marker: {kind: "number", format: "alphaLower", start: 27}})
   const html = renderToStaticMarkup(<Body body={body}/>)
   document.body.innerHTML = html
-  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["4000.", "aa."])
+  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["[numbering unavailable]", "aa."])
 })
 
 
@@ -68,4 +68,18 @@ it("paints numeric state for empty items, repeated starts, child return and inte
   add(0, null)
   document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
   expect([...document.querySelectorAll("[data-paragraph]")].map(node => node.querySelector("[data-marker]")?.textContent ?? null)).toEqual(["z.", "aa.", "z.", "ee.", "a.", "ff.", null, "a."])
+})
+
+
+it("renders supported punctuation without changing text or inventing unsupported markers", () => {
+  const body = decodeLegacyRunsV2([{text: "editable", font: "Geist", size: 20, color: "#123456", bold: false}], id("punctuation"), id("punctuationFirst"))
+  const first = body.paragraphs[0]
+  first.marker = {kind: "number", format: "decimal", punctuation: "plain", start: 4}
+  body.paragraphs.push({...structuredClone(first), id: id("right"), marker: {kind: "number", format: "alphaLower", punctuation: "right-parenthesis", start: 27}})
+  body.paragraphs.push({...structuredClone(first), id: id("both"), marker: {kind: "number", format: "romanUpper", punctuation: "parentheses", start: 4}})
+  body.paragraphs.push({...structuredClone(first), id: id("retained"), marker: {kind: "source-number", scheme: "thaiAlphaPeriod", start: 1}})
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["4", "aa)", "(IV)", "[numbering unavailable]"])
+  expect(document.querySelectorAll("[data-paragraph]")).toHaveLength(4)
+  expect(document.body.textContent).toContain("editable")
 })

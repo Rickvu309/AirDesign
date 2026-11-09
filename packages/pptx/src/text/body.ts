@@ -1,6 +1,7 @@
 import {SaxesParser} from "saxes"
 import {id, type Id} from "../../../deck/src/model.ts"
-import type {TextBody, TextStyle, Paragraph, ParagraphMarker, NumberFormat} from "../../../deck/src/text/body.ts"
+import type {TextBody, TextStyle, Paragraph, ParagraphMarker} from "../../../deck/src/text/body.ts"
+import {numberMarkerFromScheme, numberMarkerScheme} from "../../../deck/src/text/number-marker.ts"
 import {parseTextBody} from "../../../deck/src/text/body-codec.ts"
 import {escapeXml, type XmlNode} from "../xml.ts"
 
@@ -9,7 +10,6 @@ import {selectiveTextBody} from "./selective.ts"
 import {type TextContext, type LocatedNode, resolvedStyle, resolvedColor, emptyContext, assertTextSupported, UnsupportedTextFormat} from "./cascade.ts"
 
 const drawing = "http://schemas.openxmlformats.org/drawingml/2006/main"
-const numbering = {decimal: "arabicPeriod", alphaLower: "alphaLcPeriod", alphaUpper: "alphaUcPeriod", romanLower: "romanLcPeriod", romanUpper: "romanUcPeriod"} satisfies Record<NumberFormat, string>
 function text(document: Document, node: XmlNode): string {
   let result = ""
   const parser = new SaxesParser({xmlns: true})
@@ -35,11 +35,8 @@ function markerValue(document: Document, properties: XmlNode | undefined, inheri
     return {kind: "bullet", character: bullet.attributes.char ?? "•", ...(font ? {font} : inherited.kind === "bullet" && inherited.font && !child(document, properties, "buFontTx") ? {font: inherited.font} : {})}
   }
   if (numeric) {
-    const entry = Object.entries(numbering).find(([, value]) => value === numeric.attributes.type)
-    if (!entry) throw new UnsupportedTextFormat("numbering")
-    const format = entry[0]
-    if (format !== "decimal" && format !== "alphaLower" && format !== "alphaUpper" && format !== "romanLower" && format !== "romanUpper") throw new UnsupportedTextFormat("numbering")
-    return {kind: "number", format, start: numeric.attributes.startAt === undefined ? null : Number(numeric.attributes.startAt)}
+    try { return numberMarkerFromScheme(numeric.attributes.type ?? "", numeric.attributes.startAt === undefined ? null : Number(numeric.attributes.startAt)) }
+    catch { throw new UnsupportedTextFormat("numbering") }
   }
   if (inherited.kind === "bullet") {
     const typeface = child(document, properties, "buFont")?.attributes.typeface
@@ -135,7 +132,7 @@ export function writeTextBody(body: TextBody): string {
   const paragraphs = body.paragraphs.map(paragraph => {
     const marker = paragraph.marker, line = paragraph.spacing.line
     const presentation = marker.kind === "none" ? "" : `${marker.color ? `<a:buClr><a:srgbClr val="${marker.color.slice(1)}"/></a:buClr>` : ""}${marker.size ? `<a:buSz${marker.size.kind === "multiple" ? "Pct" : "Pts"} val="${Math.round(marker.size.value * (marker.size.kind === "multiple" ? 100000 : 75))}"/>` : ""}`
-    const bullet = marker.kind === "none" ? "<a:buNone/>" : marker.kind === "bullet" ? `${marker.font ? `<a:buFont typeface="${escapeXml(marker.font)}"/>` : ""}<a:buChar char="${escapeXml(marker.character)}"/>` : `<a:buAutoNum type="${numbering[marker.format]}"${marker.start === null ? "" : ` startAt="${marker.start}"`}/>`
+    const bullet = marker.kind === "none" ? "<a:buNone/>" : marker.kind === "bullet" ? `${marker.font ? `<a:buFont typeface="${escapeXml(marker.font)}"/>` : ""}<a:buChar char="${escapeXml(marker.character)}"/>` : `<a:buAutoNum type="${numberMarkerScheme(marker)}"${marker.start === null ? "" : ` startAt="${marker.start}"`}/>`
     const alignment = {left: "l", center: "ctr", right: "r", justify: "just"}[paragraph.alignment]
     const properties = `<a:pPr${paragraph.tabSize === undefined ? "" : ` defTabSz="${Math.round(paragraph.tabSize * 9525)}"`}${paragraph.glyphAlignment === undefined ? "" : ` fontAlgn="${{baseline: "base", top: "t", center: "ctr", bottom: "b"}[paragraph.glyphAlignment]}"`} algn="${alignment}" lvl="${paragraph.level}" marL="${Math.round(paragraph.indentation.left * 9525)}" marR="${Math.round(paragraph.indentation.right * 9525)}" indent="${Math.round(paragraph.indentation.firstLine * 9525)}"><a:lnSpc><a:${line.kind === "multiple" ? "spcPct" : "spcPts"} val="${Math.round(line.value * (line.kind === "multiple" ? 100000 : 75))}"/></a:lnSpc><a:spcBef>${space(paragraph.spacing.before)}</a:spcBef><a:spcAft>${space(paragraph.spacing.after)}</a:spcAft>${presentation}${bullet}</a:pPr>`
     return `<a:p>${properties}${paragraph.runs.map(run => run.kind === "break" ? `<a:br>${propertiesXml(run.style, "rPr")}</a:br>` : `<a:r>${propertiesXml(run.style, "rPr")}<a:t xml:space="preserve">${escapeXml(run.text)}</a:t></a:r>`).join("")}${propertiesXml(paragraph.endStyle, "endParaRPr")}</a:p>`
