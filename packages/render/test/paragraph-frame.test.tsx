@@ -31,3 +31,41 @@ it("renders bounded large numbering and alphabetical rollover", () => {
   document.body.innerHTML = html
   expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["4000.", "aa."])
 })
+
+
+it("renders DrawingML repeated-letter alphabetic numbering independently of numeric state", () => {
+  const body = decodeLegacyRunsV2([{text: "item", font: "Geist", size: 20, color: "#123456", bold: false}], id("letters"), id("letter")), first = body.paragraphs[0]
+  first.marker = {kind: "number", format: "alphaLower", start: 26}
+  for (const start of [27, 28, 52, 53]) body.paragraphs.push({...structuredClone(first), id: id(`letter${start}`), marker: {kind: "number", format: "alphaLower", start}})
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["z.", "aa.", "bb.", "zz.", "aaa."])
+})
+
+it("reduces percentage line spacing but preserves fixed point spacing under saved autofit", () => {
+  const body = decodeLegacyRunsV2([{text: "saved", font: "Geist", size: 32, color: "#123456", bold: false}], id("saved"), id("point")), first = body.paragraphs[0]
+  first.spacing.line = {kind: "points", value: 40}
+  body.paragraphs.push({...structuredClone(first), id: id("percentage"), spacing: {...first.spacing, line: {kind: "multiple", value: 1.5}}})
+  body.frame.autofit = {kind: "shrink", fontScale: 0.625, lineReduction: 0.2}
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll<HTMLElement>("[data-paragraph]")].map(node => node.style.lineHeight)).toEqual(["25px", "1.2"])
+})
+
+
+it("continues alphabetic counters past the maximum explicit DrawingML start without a clamp", () => {
+  const body = decodeLegacyRunsV2([{text: "", font: "Geist", size: 20, color: "#123456", bold: false}], id("bounded"), id("boundedParagraph"))
+  body.paragraphs[0].marker = {kind: "number", format: "alphaLower", start: 32767}
+  body.paragraphs.push({...structuredClone(body.paragraphs[0]), id: id("continuedParagraph"), marker: {kind: "number", format: "alphaLower", start: null}})
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["g".repeat(1261) + ".", "h".repeat(1261) + "."])
+})
+
+it("paints numeric state for empty items, repeated starts, child return and interruption", () => {
+  const body = decodeLegacyRunsV2([{text: "", font: "Geist", size: 20, color: "#123456", bold: false}], id("state"), id("stateFirst")), first = body.paragraphs[0]
+  first.marker = {kind: "number", format: "alphaLower", start: 26}
+  const add = (level: number, start: number | null) => body.paragraphs.push({...structuredClone(first), id: id(`state${body.paragraphs.length}`), level, marker: {kind: "number", format: "alphaLower", start}})
+  add(0, null); add(0, 26); add(0, 31); add(1, null); add(0, null)
+  body.paragraphs.push({...structuredClone(first), id: id("stateInterruption"), marker: {kind: "none"}})
+  add(0, null)
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll("[data-paragraph]")].map(node => node.querySelector("[data-marker]")?.textContent ?? null)).toEqual(["z.", "aa.", "z.", "ee.", "a.", "ff.", null, "a."])
+})

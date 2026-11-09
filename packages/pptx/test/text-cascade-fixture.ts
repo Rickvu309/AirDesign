@@ -1,5 +1,7 @@
 import {createNativePresentation} from "../src/native.ts"
 import {importPptx, exportPptx} from "../src/index.ts"
+import {parseXml} from "../src/xml.ts"
+import type {TextStyle} from "../../deck/src/text/body.ts"
 
 const drawing = "http://schemas.openxmlformats.org/drawingml/2006/main"
 const presentation = "http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -17,6 +19,33 @@ export async function cascadeSource(extra = "") {
   const shape = placeholder(`<a:bodyPr rIns="47625"/><a:lstStyle><a:lvl2pPr><a:spcBef><a:spcPts val="225"/></a:spcBef></a:lvl2pPr></a:lstStyle>${paragraphs}${extra}`)
   parts.set("ppt/slides/slide1.xml", Buffer.from(parts.get("ppt/slides/slide1.xml")!.toString().replace("</p:spTree>", shape + "</p:spTree>")))
   return importPptx(await exportPptx({...source, parts}))
+}
+
+export type CascadeLayer = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+export const competingStyles: TextStyle[] = Array.from({length: 8}, (_, index) => ({font: `Cascade Family ${index}`, size: 16 + index * 4, color: `#${String(index + 1).repeat(6)}`, bold: index % 2 === 0, italic: index % 2 === 0}))
+export async function competingCascadeSource(layer: CascadeLayer, options: {missingLocalLevel?: boolean; slideIndex?: string; slideTypeAbsent?: boolean; invisibleRun?: boolean} = {}) {
+  const original = await cascadeSource(), parts = new Map(original.parts)
+  const properties = (index: number, tag = "a:defRPr") => {
+    const style = competingStyles[index]!
+    return `<${tag} sz="${style.size * 75}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}">${options.invisibleRun && index === 6 ? '<a:noFill/>' : `<a:solidFill><a:srgbClr val="${style.color.slice(1)}"/></a:solidFill>`}<a:latin typeface="${style.font}"/></${tag}>`
+  }
+  const list = (index: number, missing = false) => layer < index ? "" : `<a:lvl${missing ? 2 : 1}pPr>${properties(index)}</a:lvl${missing ? 2 : 1}pPr>`
+  const replaceBody = (part: string, body: string) => {
+    const document = parseXml(parts.get(part)!), node = document.nodes.filter(node => node.local === "txBody").at(-1)!
+    parts.set(part, Buffer.from(document.xml.slice(0, node.start) + `<p:txBody>${body}</p:txBody>` + document.xml.slice(node.end)))
+  }
+  const main = "ppt/presentation.xml", xml = parts.get(main)!.toString(), defaults = `<p:defaultTextStyle>${list(0)}</p:defaultTextStyle>`
+  parts.set(main, Buffer.from(xml.includes("<p:defaultTextStyle") ? xml.replace(/<p:defaultTextStyle[\s\S]*?<\/p:defaultTextStyle>/, defaults) : xml.replace("</p:presentation>", defaults + "</p:presentation>")))
+  const master = "ppt/slideMasters/slideMaster1.xml"
+  parts.set(master, Buffer.from(parts.get(master)!.toString().replace(/<p:bodyStyle>[\s\S]*?<\/p:bodyStyle>/, `<p:bodyStyle>${list(1)}</p:bodyStyle>`)))
+  replaceBody(master, `<a:bodyPr/><a:lstStyle>${list(2)}</a:lstStyle><a:p/>`)
+  replaceBody("ppt/slideLayouts/slideLayout1.xml", `<a:bodyPr/><a:lstStyle>${list(3)}</a:lstStyle><a:p/>`)
+  const slide = "ppt/slides/slide1.xml"
+  replaceBody(slide, `<a:bodyPr/><a:lstStyle>${list(4, options.missingLocalLevel)}</a:lstStyle><a:p><a:pPr>${layer >= 5 ? properties(5) : ""}</a:pPr><a:r>${layer >= 6 ? properties(6, "a:rPr") : ""}<a:t>Competing inheritance</a:t></a:r>${layer >= 7 ? properties(7, "a:endParaRPr") : ""}</a:p>`)
+  parts.set(slide, Buffer.from(parts.get(slide)!.toString().replace('<p:ph type="body" idx="7"/>', `<p:ph${options.slideTypeAbsent ? "" : ' type="body"'} idx="${options.slideIndex ?? "7"}"/>`).replace(/(<p:spPr\/>)(<p:txBody><a:bodyPr\/><a:lstStyle>)/, '$1<p:style><a:lnRef idx="0"><a:schemeClr val="accent1"/></a:lnRef><a:fillRef idx="0"><a:schemeClr val="accent1"/></a:fillRef><a:effectRef idx="0"><a:schemeClr val="accent1"/></a:effectRef><a:fontRef idx="major"><a:srgbClr val="010203"/></a:fontRef></p:style>$2')))
+  const theme = "ppt/theme/theme1.xml"
+  parts.set(theme, Buffer.from(parts.get(theme)!.toString().replace(/(<a:majorFont>\s*<a:latin typeface=")[^"]*/, '$1Cascade Theme Major')))
+  return importPptx(await exportPptx({...original, parts}))
 }
 
 export async function retainedTextSource() {

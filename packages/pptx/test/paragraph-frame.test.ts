@@ -1,5 +1,6 @@
 import {expect, it} from "vitest"
 import {fixtureDeck} from "../../deck/src/fixture.ts"
+import {paragraphNumbers} from "../../deck/src/text/numbering.ts"
 import {id} from "../../deck/src/model.ts"
 import {initialHistory} from "../../change-log/src/index.ts"
 import {transduceLegacyHistory} from "../../change-log/src/text/history-transducer.ts"
@@ -82,4 +83,42 @@ it("keeps original text body identities when earlier edits change the number of 
   const actual = reopened.slides[0]!.elements.filter(element => element.kind === "text")
   expect(actual[0]!.body.paragraphs[0].runs).toEqual([])
   expect(actual[1]!.body.paragraphs[0].runs).toMatchObject([{text: "Second body changed"}])
+})
+
+
+it.each(["<a:normAutofit/>", '<a:normAutofit fontScale="100000"/>', '<a:normAutofit fontScale="62500" lnSpcReduction="12345"/>', '<a:normAutofit fontScale="+62500" lnSpcReduction="+12345"/>', '<a:normAutofit fontScale=" 62500 " lnSpcReduction=" 12345 "/>', '<a:normAutofit fontScale="62.5%" lnSpcReduction="12.345%"/>'])("retains saved autofit source exactly across unrelated edits and repeated saves: %s", async fit => {
+  const {deck} = fixture(), initial = await importPptx(await writeNativeSavedPptx(deck, 0, null, {})), parts = new Map(initial.parts), part = "ppt/slides/slide1.xml"
+  parts.set(part, Buffer.from(parts.get(part)!.toString().replace(/<a:normAutofit[^>]*\/>/, fit)))
+  let source = await exportPptx({...initial, parts})
+  for (const seq of [1, 2]) {
+    const original = await importPptx(source), current = importedNativeDeck(original), text = current.slides[0]!.elements.find(element => element.kind === "text")
+    if (text?.kind !== "text") throw new Error("native-saved-autofit-required")
+    expect(text.body.frame.autofit).toEqual(fit.includes("62500") || fit.includes("62.5%") ? {kind: "shrink", fontScale: 0.625, lineReduction: 0.12345} : {kind: "shrink", fontScale: 1, lineReduction: 0})
+    text.body.paragraphs[0].alignment = seq === 1 ? "center" : "left"
+    source = await writeNativeSavedPptx(current, seq, source, {})
+    const saved = await importPptx(source)
+    expect(saved.parts.get(part)!.toString()).toContain(fit)
+    for (const [name, bytes] of original.parts) if (![part, "airdesign/saved-version.json"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
+  }
+})
+
+it("separates numeric state from period scheme XML for empty, restart and interrupted paragraphs", () => {
+  const {text} = fixture(), first = text.body.paragraphs[0]
+  first.marker = {kind: "number", format: "alphaLower", start: 26}
+  first.level = 0
+  first.runs = []
+  text.body.paragraphs = [first]
+  const add = (level: number, start: number | null) => text.body.paragraphs.push({...structuredClone(first), id: id(`counter${text.body.paragraphs.length}`), level, marker: {kind: "number", format: "alphaLower", start}})
+  add(0, null); add(0, 26); add(0, 31); add(1, null); add(0, null)
+  text.body.paragraphs.push({...structuredClone(first), id: id("interruption"), marker: {kind: "none"}})
+  add(0, null)
+  const xml = writeTextBody(text.body), document = parseXml(Buffer.from(xml)), reopened = readTextBody(document, document.nodes[0]!, id("counters"))
+  expect(paragraphNumbers(reopened.paragraphs)).toEqual([26, 27, 26, 31, 1, 32, null, 1])
+  expect(document.nodes.filter(node => node.local === "buAutoNum").map(node => node.attributes)).toEqual([26, null, 26, 31, null, null, null].map(start => ({type: "alphaLcPeriod", ...(start === null ? {} : {startAt: String(start)})})))
+})
+
+
+it.each(["%", "  %", "NaN", "0.125", "12%%"])("refuses malformed autofit percentage lexemes: %s", value => {
+  const {text} = fixture(), xml = writeTextBody(text.body).replace('lnSpcReduction="10000"', `lnSpcReduction="${value}"`), document = parseXml(Buffer.from(xml))
+  expect(() => readTextBody(document, document.nodes[0]!, id("invalidFit"))).toThrow()
 })

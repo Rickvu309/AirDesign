@@ -10,8 +10,7 @@ function style(value: TextStyle, scale: number, inline = true): CSSProperties {
 function numeral(value: number, format: NumberFormat): string {
   if (format === "decimal") return String(value)
   if (format === "alphaLower" || format === "alphaUpper") {
-    let text = "", remaining = value
-    while (remaining > 0) { remaining--; text = String.fromCharCode(97 + remaining % 26) + text; remaining = Math.floor(remaining / 26) }
+    const text = String.fromCharCode(97 + (value - 1) % 26).repeat(Math.ceil(value / 26))
     return format === "alphaUpper" ? text.toUpperCase() : text
   }
   if (value > 3999) return String(value)
@@ -43,14 +42,14 @@ export function Body({body}: {body: TextBody}) {
     <div data-text="" style={{flex: "0 0 auto", minWidth: 0, whiteSpace: frame.wrap === "none" ? "pre" : "pre-wrap", overflowWrap: "break-word"}}>{body.paragraphs.map((paragraph, index) => {
       const marker = paragraph.marker
       const maximumSize = Math.max(paragraph.endStyle.size, ...paragraph.runs.map(run => run.style.size)) * scale
-      const line = paragraph.spacing.line.kind === "multiple" ? paragraph.spacing.line.value * maximumSize * reduction : paragraph.spacing.line.value * scale * reduction
+      const line = paragraph.spacing.line.kind === "multiple" ? paragraph.spacing.line.value * maximumSize * reduction : paragraph.spacing.line.value * scale
       const glyphAlignment = paragraph.glyphAlignment === "top" ? "text-top" : paragraph.glyphAlignment === "center" ? "middle" : paragraph.glyphAlignment === "bottom" ? "text-bottom" : "baseline"
       let label = ""
       if (marker.kind === "bullet") label = marker.character
       if (marker.kind === "number") {
         label = `${numeral(numbers[index]!, marker.format)}.`
       }
-      return <div key={paragraph.id} data-paragraph={paragraph.id} data-level={paragraph.level} style={{...style(paragraph.endStyle, scale, false), position: "relative", textAlign: paragraph.alignment, tabSize: `${(paragraph.tabSize ?? 96) * scale}px`, marginTop: index === 0 && !frame.spacingAtEdges ? 0 : paragraphSpace(paragraph.spacing.before, line), marginBottom: index === body.paragraphs.length - 1 && !frame.spacingAtEdges ? 0 : paragraphSpace(paragraph.spacing.after, line), paddingLeft: paragraph.indentation.left, paddingRight: paragraph.indentation.right, textIndent: paragraph.indentation.firstLine, lineHeight: paragraph.spacing.line.kind === "multiple" ? frame.compatibilityLineSpacing ? `${line}px` : paragraph.spacing.line.value * reduction : `${paragraph.spacing.line.value * scale * reduction}px`, minHeight: `${paragraph.endStyle.size * scale}px`}}>
+      return <div key={paragraph.id} data-paragraph={paragraph.id} data-level={paragraph.level} style={{...style(paragraph.endStyle, scale, false), position: "relative", textAlign: paragraph.alignment, tabSize: `${(paragraph.tabSize ?? 96) * scale}px`, marginTop: index === 0 && !frame.spacingAtEdges ? 0 : paragraphSpace(paragraph.spacing.before, line), marginBottom: index === body.paragraphs.length - 1 && !frame.spacingAtEdges ? 0 : paragraphSpace(paragraph.spacing.after, line), paddingLeft: paragraph.indentation.left, paddingRight: paragraph.indentation.right, textIndent: paragraph.indentation.firstLine, lineHeight: paragraph.spacing.line.kind === "multiple" ? frame.compatibilityLineSpacing ? `${line}px` : paragraph.spacing.line.value * reduction : `${paragraph.spacing.line.value * scale}px`, minHeight: `${paragraph.endStyle.size * scale}px`}}>
         {label && <span data-marker="" aria-hidden="true" style={{display: "inline-block", textIndent: 0, marginRight: "0.3em", color: marker.kind === "none" ? undefined : marker.color, fontSize: marker.kind === "none" || !marker.size ? undefined : marker.size.kind === "multiple" ? `${marker.size.value}em` : marker.size.value * scale, fontFamily: marker.kind === "bullet" && marker.font ? fontFamily(marker.font) : undefined}}>{label}</span>}
         {paragraph.runs.map((run, index) => run.kind === "break" ? <br key={index}/> : <span key={index} data-text-run={index} data-text-shadow={run.style.outerShadow ? "" : undefined} data-shadow-blur={run.style.outerShadow ? run.style.outerShadow.blur * scale : undefined} data-shadow-distance={run.style.outerShadow ? run.style.outerShadow.distance * scale : undefined} data-shadow-direction={run.style.outerShadow?.direction} data-shadow-sx={run.style.outerShadow?.scale.x} data-shadow-sy={run.style.outerShadow?.scale.y} data-shadow-kx={run.style.outerShadow?.skew.x} data-shadow-ky={run.style.outerShadow?.skew.y} data-shadow-alignment={run.style.outerShadow?.alignment} data-shadow-color={run.style.outerShadow?.color} data-shadow-opacity={run.style.outerShadow ? run.style.outerShadow.opacity * (run.style.opacity ?? 1) : undefined} style={{...style(run.style, scale), verticalAlign: glyphAlignment}}>{run.style.symbolFont ? Array.from(run.text).map((character, index) => <span key={index} style={{fontFamily: character.codePointAt(0)! >= 0xf000 && character.codePointAt(0)! <= 0xf0ff ? fontFamily(run.style.symbolFont!) : undefined}}>{character}</span>) : run.text}</span>)}
         {(paragraph.runs.length === 0 || paragraph.runs.at(-1)?.kind === "break") && <br data-paragraph-end=""/>}

@@ -20,6 +20,11 @@ function text(document: Document, node: XmlNode): string {
 function number(value: string | undefined, fallback: number): number {
   return value === undefined ? fallback : Number(value)
 }
+function savedPercentage(value: string | undefined, fallback: number): number {
+  if (value === undefined) return fallback
+  if (!/^-?\d+(?:\.\d+)?%$/.test(value) && !/^[+-]?\d+$/.test(value.trim())) throw new UnsupportedTextFormat("autofit percentage")
+  return value.endsWith("%") ? Number(value.slice(0, -1)) / 100 : Number(value) / 100000
+}
 function markerValue(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
   if (!properties) return inherited
   if (child(document, properties, "buNone")) return {kind: "none"}
@@ -65,9 +70,9 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
   if (ownFrame && !frames.some(value => value.node === ownFrame)) frames.push({document, node: ownFrame})
   for (const layer of [...lists, ...frames]) if (layer.document === document || layer.node.local === "bodyPr") assertTextSupported(layer.document, layer.node, false, true)
   const attributes = frames.reduce<Record<string, string>>((value, layer) => ({...value, ...layer.node.attributes}), {})
-  const fit = frames.flatMap(({document, node}) => children(document, node).map(child => ({document, node: child}))).at(-1)
+  const fit = frames.flatMap(({document, node}) => children(document, node).filter(child => ["normAutofit", "noAutofit", "spAutoFit"].includes(child.local)).map(child => ({document, node: child}))).at(-1)
   const normal = fit?.node.local === "normAutofit" ? fit.node : undefined
-  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", ...(attributes.spcFirstLastPara === undefined ? {} : {spacingAtEdges: ["1", "true"].includes(attributes.spcFirstLastPara)}), ...(attributes.wrap === undefined ? {} : {wrap: attributes.wrap === "none" ? "none" : "square"}), ...(attributes.compatLnSpc === undefined ? {} : {compatibilityLineSpacing: ["1", "true"].includes(attributes.compatLnSpc)}), ...(attributes.vert === undefined ? {} : {verticalFlow: attributes.vert === "vert270" ? "vertical270" : "horizontal"}), anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: number(normal.attributes.fontScale, 100000) / 100000, lineReduction: number(normal.attributes.lnSpcReduction, 0) / 100000} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
+  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", ...(attributes.spcFirstLastPara === undefined ? {} : {spacingAtEdges: ["1", "true"].includes(attributes.spcFirstLastPara)}), ...(attributes.wrap === undefined ? {} : {wrap: attributes.wrap === "none" ? "none" : "square"}), ...(attributes.compatLnSpc === undefined ? {} : {compatibilityLineSpacing: ["1", "true"].includes(attributes.compatLnSpc)}), ...(attributes.vert === undefined ? {} : {verticalFlow: attributes.vert === "vert270" ? "vertical270" : "horizontal"}), anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: savedPercentage(normal.attributes.fontScale, 1), lineReduction: savedPercentage(normal.attributes.lnSpcReduction, 0)} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
   let inherited: TextStyle = {font: "Aptos", size: 32, bold: false, color: "#171717"}, previousLevel = -1
   if (context.font) {
     const {document, node} = context.font, prefix = node.attributes.idx === "major" ? "+mj-lt" : node.attributes.idx === "minor" ? "+mn-lt" : null

@@ -1,5 +1,5 @@
 import {expect, it} from "vitest"
-import {cascadeSource} from "./text-cascade-fixture.ts"
+import {cascadeSource, competingCascadeSource, competingStyles, type CascadeLayer} from "./text-cascade-fixture.ts"
 import {importPptx, exportPptx} from "../src/index.ts"
 import {importedNativeDeck} from "../src/import-deck.ts"
 import {writeNativeSavedPptx} from "../src/export-deck.ts"
@@ -114,4 +114,71 @@ it("keeps inherited vertical frame text instead of discarding its direction", as
   expect(deck.slides[0]!.elements.at(-1)!.support.kind).toBe("kept")
   const saved = await importPptx(await writeNativeSavedPptx(deck, 0, source, {}))
   for (const [part, bytes] of parts) if (part !== "[Content_Types].xml") expect(saved.parts.get(part), part).toEqual(bytes)
+})
+
+
+it.each([false, true])("honors pairwise local list/paragraph/run values and explicit false with run=%s", async explicitRun => {
+  const list = '<a:lvl1pPr><a:defRPr sz="1500" b="1" i="1"><a:solidFill><a:srgbClr val="112233"/></a:solidFill><a:latin typeface="List Family"/></a:defRPr></a:lvl1pPr>'
+  const paragraph = '<a:pPr><a:defRPr sz="2250" b="0" i="0"><a:solidFill><a:srgbClr val="445566"/></a:solidFill><a:latin typeface="Paragraph Family"/></a:defRPr></a:pPr>'
+  const run = '<a:rPr sz="3000" b="1" i="1"><a:solidFill><a:srgbClr val="778899"/></a:solidFill><a:latin typeface="Run Family"/></a:rPr>'
+  const original = await cascadeSource(`<a:p>${paragraph}<a:r>${explicitRun ? run : ""}<a:t>Pairwise</a:t></a:r><a:endParaRPr b="0"/></a:p>`), parts = new Map(original.parts), part = "ppt/slides/slide1.xml"
+  parts.set(part, Buffer.from(parts.get(part)!.toString().replace('<a:lstStyle><a:lvl2pPr>', `<a:lstStyle>${list}<a:lvl2pPr>`)))
+  const source = await exportPptx({...original, parts}), imported = await importPptx(source), deck = importedNativeDeck(imported), text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 10)
+  if (text?.kind !== "text") throw new Error("pairwise-native-required")
+  const selected = text.body.paragraphs[9]!, expected = explicitRun ? {font: "Run Family", size: 40, color: "#778899", bold: true, italic: true} : {font: "Paragraph Family", size: 30, color: "#445566", bold: false, italic: false}
+  expect(selected.runs[0]!.style).toMatchObject(expected)
+  expect(selected.endStyle).toMatchObject({...expected, bold: false})
+  selected.alignment = "center"
+  const saved = await importPptx(await writeNativeSavedPptx(deck, 1, source, {})), reopened = importedNativeDeck(saved).slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 10)
+  expect(reopened).toMatchObject({body: {paragraphs: expect.arrayContaining([expect.objectContaining({runs: [expect.objectContaining({style: expect.objectContaining(expected)})]})])}})
+  for (const [name, bytes] of imported.parts) if (![part, "airdesign/saved-version.json", "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
+})
+
+it.each([-1, 0, 1, 2, 3, 4, 5, 6, 7] satisfies CascadeLayer[])("characterizes distinct competing inheritance values through layer %s and selective save", async layer => {
+  const original = await competingCascadeSource(layer), source = await exportPptx(original), deck = importedNativeDeck(original)
+  const text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs[0].runs.some(run => run.kind === "text" && run.text === "Competing inheritance"))
+  if (text?.kind !== "text") throw new Error("competing-native-text-required")
+  const paragraph = text.body.paragraphs[0], expected = layer === -1 ? {font: "Cascade Theme Major", color: "#010203", size: 32, bold: false} : competingStyles[Math.min(layer, 6)]!
+  expect(paragraph.runs[0]!.style).toMatchObject(expected)
+  expect(paragraph.endStyle).toMatchObject(layer === 7 ? competingStyles[7]! : expected)
+  paragraph.alignment = "center"
+  const saved = await importPptx(await writeNativeSavedPptx(deck, 1, source, {})), reopened = importedNativeDeck(saved).slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs[0].runs.some(run => run.kind === "text" && run.text === "Competing inheritance"))
+  expect(reopened).toMatchObject({body: {paragraphs: [expect.objectContaining({alignment: "center", runs: [expect.objectContaining({style: expect.objectContaining(expected)})], endStyle: expect.objectContaining(layer === 7 ? competingStyles[7]! : expected)})]}})
+  const fragments = (bytes: Uint8Array) => {
+    const document = parseXml(Buffer.from(bytes))
+    return document.nodes.filter(node => ["r", "endParaRPr", "lstStyle", "fontRef"].includes(node.local)).map(node => document.xml.slice(node.start, node.end))
+  }
+  expect(fragments(saved.parts.get("ppt/slides/slide1.xml")!)).toEqual(fragments(original.parts.get("ppt/slides/slide1.xml")!))
+  for (const [name, bytes] of original.parts) if (!["ppt/slides/slide1.xml", "airdesign/saved-version.json", "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
+})
+
+it.each([
+  {options: {missingLocalLevel: true}, expected: 3},
+  {options: {slideIndex: "9"}, expected: 2},
+  {options: {slideTypeAbsent: true}, expected: 3}
+])("resolves missing levels and placeholder matching: %j", async ({options, expected}) => {
+  const source = await competingCascadeSource(options.missingLocalLevel ? 4 : 3, options), deck = importedNativeDeck(source)
+  const text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs[0].runs.some(run => run.kind === "text" && run.text === "Competing inheritance"))
+  expect(text).toMatchObject({body: {paragraphs: [expect.objectContaining({runs: [expect.objectContaining({style: expect.objectContaining(competingStyles[expected]!)})]})]}})
+})
+
+it("retains an explicitly invisible run source instead of inheriting a visible fill", async () => {
+  const source = await competingCascadeSource(6, {invisibleRun: true}), bytes = await exportPptx(source), deck = importedNativeDeck(source)
+  expect(deck.slides[0]!.elements.at(-1)!.support.kind).toBe("kept")
+  const saved = await importPptx(await writeNativeSavedPptx(deck, 0, bytes, {}))
+  for (const [name, original] of source.parts) if (!["airdesign/saved-version.json", "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(original)
+})
+
+it("inherits the actual autofit choice when local body properties contain only an unwarped preset", async () => {
+  const original = await cascadeSource(), parts = new Map(original.parts), layout = "ppt/slideLayouts/slideLayout1.xml", slide = "ppt/slides/slide1.xml"
+  const warp = '<a:prstTxWarp prst="textNoShape"><a:avLst/></a:prstTxWarp>'
+  parts.set(layout, Buffer.from(parts.get(layout)!.toString().replace('<a:bodyPr tIns="28575"/>', '<a:bodyPr tIns="28575"><a:normAutofit fontScale="80000" lnSpcReduction="10000"/></a:bodyPr>')))
+  parts.set(slide, Buffer.from(parts.get(slide)!.toString().replace('<a:bodyPr rIns="47625"/>', `<a:bodyPr rIns="47625">${warp}</a:bodyPr>`)))
+  const source = await exportPptx({...original, parts}), deck = importedNativeDeck(await importPptx(source)), text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 9)
+  if (text?.kind !== "text") throw new Error("inherited-autofit-text-required")
+  expect(text.body.frame.autofit).toEqual({kind: "shrink", fontScale: 0.8, lineReduction: 0.1})
+  text.body.paragraphs[0].alignment = "left"
+  const saved = await importPptx(await writeNativeSavedPptx(deck, 1, source, {}))
+  expect(saved.parts.get(slide)!.toString()).toContain(warp)
+  for (const [name, bytes] of parts) if (![slide, "airdesign/saved-version.json", "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
 })
