@@ -73,7 +73,7 @@ it("retains actual capture provenance while serving the designed exhibit",()=>{
 
 it("records the design exhibit sources and output",()=>{
  const provenance=JSON.parse(readFileSync("apps/site/public/design-product-exhibit.json","utf8"))
- expect(provenance).toMatchObject({kind:"design-source-composite",editor:"ed1.jsx",overlay:"ed54.jsx",corrections:["selected thumbnail title: Enterprise drove growth","speaker notes background: paper-gray-200"],sourceSize:[1470,923],outputSize:[1248,784]})
+ expect(provenance).toMatchObject({kind:"design-source-composite",editor:"ed1.jsx",overlay:"ed54.jsx",corrections:["selected thumbnail title: Enterprise drove growth","speaker notes background: paper-gray-200","usage ring: preserve SVG stroke dash array"],sourceSize:[1470,923],outputSize:[1248,784]})
  const digest=(file:string)=>createHash("sha256").update(readFileSync(file)).digest("hex")
  expect(provenance.generatorSha256).toBe(digest("docs/design/v0.1/source/gen-editor.mjs"))
  expect(provenance.postprocessorSha256).toBe(digest("docs/design/v0.1/source/landing-post.sh"))
