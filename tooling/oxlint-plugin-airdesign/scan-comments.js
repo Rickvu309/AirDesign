@@ -9,7 +9,7 @@ const commentMessage = "Remove this comment."
 const directivePattern = new RegExp("(?:eslint-disable|oxlint-disable)\\b", "u")
 const commentMarkPattern = new RegExp("//|/\\*|\\*/", "u")
 
-const directiveExtensions = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".mts", ".astro"])
+const directiveExtensions = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".cts", ".mts", ".astro"])
 const scannedExtensions = new Set([...directiveExtensions, ".css", ".yml", ".yaml"])
 const skipDirectories = new Set(["node_modules", "dist", ".astro", ".fixture-run"])
 
@@ -251,18 +251,69 @@ const yamlCommentLines = (source) => {
   return found
 }
 
+const readStyleBlock = (source, start) => {
+  const comments = []
+  let line = source.slice(0, start).split("\n").length
+  let state = "code"
+  let quote = ""
+  let index = start
+  while (index < source.length) {
+    const current = source[index]
+    const next = source[index + 1]
+    if (current === "\n") {
+      line += 1
+      index += 1
+      continue
+    }
+    if (state === "comment") {
+      if (current === "*" && next === "/") {
+        state = "code"
+        index += 2
+        continue
+      }
+      index += 1
+      continue
+    }
+    if (state === "string") {
+      if (current === "\\") {
+        index += next === undefined ? 1 : 2
+        continue
+      }
+      if (current === quote) state = "code"
+      index += 1
+      continue
+    }
+    if (current === "<" && source.slice(index, index + 7).toLowerCase() === "</style") {
+      let cursor = index + 7
+      while (cursor < source.length && /\s/u.test(source[cursor])) cursor += 1
+      if (source[cursor] === ">") return { after: cursor + 1, comments }
+    }
+    if (current === "/" && next === "*") {
+      comments.push(line)
+      state = "comment"
+      index += 2
+      continue
+    }
+    if (current === "'" || current === '"') {
+      quote = current
+      state = "string"
+      index += 1
+      continue
+    }
+    index += 1
+  }
+  return { after: -1, comments }
+}
+
 const styleCommentLines = (source) => {
   const found = []
   const open = /<style\b[^>]*>/giu
   let match = open.exec(source)
   while (match) {
-    const start = match.index + match[0].length
-    const end = source.toLowerCase().indexOf("</style>", start)
-    if (end === -1) break
-    const baseLine = source.slice(0, start).split("\n").length
-    const inner = source.slice(start, end)
-    for (const line of cssCommentLines(inner)) found.push(baseLine + line - 1)
-    open.lastIndex = end + "</style>".length
+    const block = readStyleBlock(source, match.index + match[0].length)
+    found.push(...block.comments)
+    if (block.after === -1) break
+    open.lastIndex = block.after
     match = open.exec(source)
   }
   return found
