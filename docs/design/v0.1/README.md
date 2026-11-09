@@ -4,6 +4,7 @@ How v0.1 looks and behaves. Read this index to choose a screen or a rule file. I
 
 Exported from the Brilliant project "airdesign", Screens canvas, on 2026-11-04.
 
+- [HTML](html/): every screen as one self-contained page with inline CSS, exported on 2026-11-09 and named like its image in `screens/`. Layout is absolute positions, so it is a pixel reference and not product code. Read when checking a screen's exact sizes, colors or type.
 - [Components](components.md): slots, variants, states and where each part is used. Read when drawing or building a visual part.
 - [Logic](logic.md): the state machine of each flow and the rules to keep. Read when defining states, transitions or screen rules.
 - [Tokens](tokens.md): colors, type, radii, elevation and the signature button. Read when setting a visual value.
