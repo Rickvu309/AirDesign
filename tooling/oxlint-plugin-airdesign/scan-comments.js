@@ -25,7 +25,52 @@ const directiveExtensions = new Set([
 const markupExtensions = new Set([".astro", ".vue", ".svelte"])
 const styleAttributeExtensions = new Set([...markupExtensions, ".jsx", ".tsx"])
 const scannedExtensions = new Set([...directiveExtensions, ".css", ".yml", ".yaml"])
-const skipDirectories = new Set(["node_modules", "dist", ".astro", ".fixture-run"])
+const skipDirectories = new Set(["node_modules", "dist", ".astro"])
+const regexKeywords = new Set([
+  "return",
+  "throw",
+  "case",
+  "delete",
+  "void",
+  "typeof",
+  "instanceof",
+  "in",
+  "of",
+  "yield",
+  "await",
+  "else",
+  "do",
+])
+
+const consumeRegex = (source, index) => {
+  let cursor = index + 1
+  let inClass = false
+  while (cursor < source.length) {
+    const current = source[cursor]
+    if (current === "\n") return cursor
+    if (current === "\\") {
+      cursor += source[cursor + 1] === undefined ? 1 : 2
+      continue
+    }
+    if (inClass) {
+      if (current === "]") inClass = false
+      cursor += 1
+      continue
+    }
+    if (current === "[") {
+      inClass = true
+      cursor += 1
+      continue
+    }
+    if (current === "/") {
+      cursor += 1
+      while (cursor < source.length && /[a-z]/iu.test(source[cursor])) cursor += 1
+      return cursor
+    }
+    cursor += 1
+  }
+  return cursor
+}
 
 export const requiredComments = []
 
@@ -37,6 +82,8 @@ const blankLiterals = (source) => {
   let state = "code"
   let quote = ""
   const expressionDepths = []
+  let regexOk = true
+  let word = ""
   let index = 0
   while (index < chars.length) {
     const current = chars[index]
@@ -68,7 +115,11 @@ const blankLiterals = (source) => {
         continue
       }
       chars[index] = " "
-      if (current === quote) state = "code"
+      if (current === quote) {
+        state = "code"
+        regexOk = false
+        word = ""
+      }
       index += 1
       continue
     }
@@ -86,6 +137,8 @@ const blankLiterals = (source) => {
       if (current === "`") {
         chars[index] = " "
         state = "code"
+        regexOk = false
+        word = ""
         index += 1
         continue
       }
@@ -101,14 +154,32 @@ const blankLiterals = (source) => {
       index += 1
       continue
     }
-    if (current === "/" && next === "/") {
-      state = "line"
-      index += 2
-      continue
-    }
-    if (current === "/" && next === "*") {
-      state = "block"
-      index += 2
+    if (current === "/") {
+      if (word.length > 0) {
+        regexOk = regexKeywords.has(word)
+        word = ""
+      }
+      if (next === "/") {
+        state = "line"
+        index += 2
+        continue
+      }
+      if (next === "*") {
+        state = "block"
+        index += 2
+        continue
+      }
+      if (regexOk) {
+        const after = consumeRegex(chars, index)
+        for (let cursor = index; cursor < after; cursor += 1) {
+          if (chars[cursor] !== "\n") chars[cursor] = " "
+        }
+        index = after
+        regexOk = false
+        continue
+      }
+      regexOk = true
+      index += 1
       continue
     }
     if (current === "'" || current === '"') {
@@ -133,6 +204,15 @@ const blankLiterals = (source) => {
           state = "template"
         }
       }
+    }
+    if (/[A-Za-z0-9_$]/u.test(current)) {
+      word += current
+    } else {
+      if (word.length > 0) {
+        regexOk = regexKeywords.has(word)
+        word = ""
+      }
+      if (!/\s/u.test(current)) regexOk = "([{=,:;!?&|~^%*+-<>".includes(current)
     }
     index += 1
   }
@@ -403,7 +483,14 @@ const expressionCommentLines = (source) => {
       line += 1
       continue
     }
-    if (text.startsWith("{/*", index)) found.push(line)
+    if (text[index] !== "{") continue
+    let cursor = index + 1
+    let commentLine = line
+    while (cursor < text.length && /\s/u.test(text[cursor])) {
+      if (text[cursor] === "\n") commentLine += 1
+      cursor += 1
+    }
+    if (text.startsWith("/*", cursor)) found.push(commentLine)
   }
   return found
 }
@@ -439,11 +526,18 @@ const styleAttributeCommentLines = (source) => {
   const found = []
   let state = "code"
   let quote = ""
+  let regexOk = true
+  let word = ""
   let index = 0
   while (index < source.length) {
     const current = source[index]
     const next = source[index + 1]
     if (current === "\n") {
+      if (state === "string") {
+        state = "code"
+        regexOk = false
+        word = ""
+      }
       index += 1
       continue
     }
@@ -461,7 +555,11 @@ const styleAttributeCommentLines = (source) => {
         index += next === undefined ? 1 : 2
         continue
       }
-      if ((state === "string" && current === quote) || (state === "template" && current === "`")) state = "code"
+      if ((state === "string" && current === quote) || (state === "template" && current === "`")) {
+        state = "code"
+        regexOk = false
+        word = ""
+      }
       index += 1
       continue
     }
@@ -474,13 +572,15 @@ const styleAttributeCommentLines = (source) => {
       }
       if (current === ">") {
         state = "code"
+        regexOk = false
+        word = ""
         index += 1
         continue
       }
-      const word = source.slice(index, index + 5).toLowerCase()
+      const attribute = source.slice(index, index + 5).toLowerCase()
       const before = index === 0 ? " " : source[index - 1]
       const after = source[index + 5] ?? " "
-      if (word === "style" && !/[A-Za-z0-9_-]/u.test(before) && !/[A-Za-z0-9_-]/u.test(after)) {
+      if (attribute === "style" && !/[A-Za-z0-9_-]/u.test(before) && !/[A-Za-z0-9_-]/u.test(after)) {
         let cursor = index + 5
         while (cursor < source.length && /\s/u.test(source[cursor])) cursor += 1
         if (source[cursor] === "=") {
@@ -499,11 +599,32 @@ const styleAttributeCommentLines = (source) => {
       index += 1
       continue
     }
-    if (startsTag(source, index)) {
-      state = "tag"
+    if (current === "/") {
+      if (word.length > 0) {
+        regexOk = regexKeywords.has(word)
+        word = ""
+      }
+      if (regexOk && next !== "/" && next !== "*") {
+        index = consumeRegex(source, index)
+        regexOk = false
+        continue
+      }
+      regexOk = true
       index += 1
       continue
     }
+    if (startsTag(source, index)) {
+      state = "tag"
+      word = ""
+      index += 1
+      continue
+    }
+    if (/[A-Za-z0-9_$]/u.test(current)) word += current
+    else if (word.length > 0) {
+      regexOk = regexKeywords.has(word)
+      word = ""
+    }
+    if (!/[A-Za-z0-9_$\s]/u.test(current)) regexOk = "([{=,:;!?&|~^%*+-<>".includes(current)
     if (current === "'" || current === '"') {
       quote = current
       state = "string"
