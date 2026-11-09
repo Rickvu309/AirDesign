@@ -1,4 +1,5 @@
 import {expect, it} from "vitest"
+import type {ParagraphMarker} from "../../deck/src/text/body.ts"
 import {renderToStaticMarkup} from "react-dom/server"
 import {Body} from "../src/text/body.tsx"
 import {decodeLegacyRunsV2} from "../../deck/src/text/legacy-v2.ts"
@@ -109,3 +110,26 @@ it("lays out no-fill glyphs with independent visible neighbors and retained shad
   expect(runs[1]!.style.color).toBe("#445566")
   expect(document.querySelector<HTMLElement>("[data-paragraph]")!.style.color).toBe("transparent")
 })
+
+for (const marker of [{kind: "bullet", character: "•"}, {kind: "number", format: "decimal", start: null}] satisfies ParagraphMarker[]) {
+  it(`renders ${marker.kind} paint from the first text run independently of the paragraph end`, () => {
+    const body = decodeLegacyRunsV2([{text: "Visible", font: "Geist", size: 20, color: "#204060", bold: false}, {text: "Hidden", font: "Geist", size: 20, color: "#112233", bold: false}], id("frame"), id("first"))
+    const paragraph = body.paragraphs[0]
+    paragraph.marker = marker
+    paragraph.endStyle.color = null
+    paragraph.runs[1]!.style.color = null
+    document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+    expect(document.querySelector<HTMLElement>("[data-marker]")!.style.color).toBe("#204060")
+    paragraph.marker = {...marker, color: "#aabbcc"}
+    document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+    expect(document.querySelector<HTMLElement>("[data-marker]")!.style.color).toBe("#aabbcc")
+    paragraph.marker = marker
+    paragraph.runs[0]!.style.color = null
+    paragraph.endStyle.color = "#ffffff"
+    document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+    expect(document.querySelector<HTMLElement>("[data-marker]")!.style.color).toBe("transparent")
+    paragraph.runs = []
+    document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+    expect(document.querySelector<HTMLElement>("[data-marker]")!.style.color).toBe("#ffffff")
+  })
+}
