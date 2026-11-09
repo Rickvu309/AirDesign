@@ -6,7 +6,7 @@ it("binds PKCE, redirect, audience and consent, rotates once and revokes on refr
   const database=new PGlite()
   let now=Date.parse("2026-11-06T03:00:00Z")
   await initializeOAuth(database)
-  const store=oauthStore(work=>database.transaction(work),"test-secret-with-at-least-32-characters","http://127.0.0.1/mcp",()=>now)
+  const store=oauthStore(work=>database.transaction(work),"test-secret-with-at-least-32-characters",{resource:"http://127.0.0.1/mcp",issuer:"http://127.0.0.1"},()=>now)
   try {
     const registered=await store.register({name:"Reference client",redirects:["http://127.0.0.1:5912/return"]})
     const verifier="a".repeat(64),challenge=createHash("sha256").update(verifier).digest("base64url")

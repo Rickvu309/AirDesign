@@ -130,7 +130,7 @@ export async function createHistoryStore(driver: { kind: "pglite"; path?: string
     agents:agentStore(transaction,clock),
     files:ownedFiles(transaction),
     snapshots:toolSnapshots(transaction,clock),
-    oauth:(secret:string,resource:string)=>oauthStore(transaction,secret,resource,clock),
+    oauth:(secret:string,origins:{resource:string;issuer:string})=>oauthStore(transaction,secret,origins,clock),
     usage:usageLedger(transaction,clock),
     images:imageStore(transaction),
     templateSources:templateSources(transaction),

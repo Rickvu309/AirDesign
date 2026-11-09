@@ -11,7 +11,7 @@ import {getDocument} from "pdfjs-dist/legacy/build/pdf.mjs"
 import {importPptx} from "../../packages/pptx/src/index.ts"
 import {libreOfficeFastCheck} from "../../packages/pptx/test/libreoffice.ts"
 import {retiredRouteHits} from "../../packages/lint/src/release-claims.ts"
-import {validateMcpMetadata} from "./mcp-metadata.ts"
+import {validateMcpMetadata,validateMcpAuthorizationMetadata} from "./mcp-metadata.ts"
 import {checkWorkerIdentity} from "./worker-identity.ts"
 import {operationTracker} from "./operation-trace.ts"
 import {within} from "./bounded.ts"
@@ -76,6 +76,8 @@ export async function verifyLive(options){
       assert.equal((await fetch(studio+"/healthz",{signal:AbortSignal.timeout(15000)})).status,200)
       const metadata=await fetch(mcp+"/.well-known/oauth-protected-resource",{signal:AbortSignal.timeout(15000)});assert.equal(metadata.status,200)
       validateMcpMetadata(await metadata.json(),studio,mcp)
+      const authorizationMetadata=await fetch(studio+"/.well-known/oauth-authorization-server",{signal:AbortSignal.timeout(15000)});assert.equal(authorizationMetadata.status,200)
+      validateMcpAuthorizationMetadata(await authorizationMetadata.json(),studio)
       const unauthorized=await fetch(mcp+"/mcp",{signal:AbortSignal.timeout(15000),method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({jsonrpc:"2.0",id:1,method:"initialize",params:{}})})
       assert.equal(unauthorized.status,401);assert.equal(unauthorized.headers.get("www-authenticate"),`Bearer resource_metadata="${mcp}/.well-known/oauth-protected-resource/mcp"`)
       assert.equal((await fetch(studio+"/api/dev/inbox?to=smoke@example.com",{signal:AbortSignal.timeout(15000)})).status,404,"production inbox exposed")

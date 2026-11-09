@@ -10,7 +10,7 @@ import type {HistoryStore} from "../db/history-store.ts"
 import type {TemplateStore} from "../../../../packages/brand/src/template-store.ts"
 import type {OperationStore} from "../../../../packages/operations/src/index.ts"
 export function mcpHandler(access:Access,history:HistoryStore,templates:TemplateStore,operations:OperationStore,imageQueue:OperationStore,origin:string,secret:string,changed:(deck:string)=>Promise<void>,resourceOrigin=origin){
-  const oauth=history.oauth(secret,resourceOrigin+"/mcp"),tools=domainTools(history,templates,operations,imageQueue,origin,changed)
+  const oauth=history.oauth(secret,{resource:resourceOrigin+"/mcp",issuer:origin}),tools=domainTools(history,templates,operations,imageQueue,origin,changed)
   return {
     close:()=>tools.close(),
     async handle(request:Request):Promise<Response>{
