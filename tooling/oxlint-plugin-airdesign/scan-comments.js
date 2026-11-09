@@ -84,6 +84,10 @@ const createLexer = () => ({
   pendingCase: false,
   pendingBrace: false,
   pendingNameBlock: false,
+  pendingLabelWord: false,
+  pendingModule: false,
+  pendingType: false,
+  typeCanEnd: false,
   postfix: false,
   context: "stmt",
 })
@@ -98,11 +102,14 @@ const finishWord = (lexer) => {
   if (word.length === 0) return
   lexer.word = ""
   const declaration = lexer.context === "stmt" || lexer.pendingDeclaration
+  const wasHeader = lexer.pendingHeader
+  const afterBreak = lexer.pendingLabelWord
   lexer.pendingHeader = false
   lexer.pendingDeclaration = false
   lexer.pendingLabel = false
   lexer.pendingBrace = false
   lexer.pendingNameBlock = false
+  lexer.pendingLabelWord = false
   if (headerKeywords.has(word)) {
     lexer.pendingHeader = true
     lexer.regexOk = false
@@ -150,12 +157,82 @@ const finishWord = (lexer) => {
     lexer.context = "expr"
     return
   }
+  if (word === "break" || word === "continue") {
+    lexer.pendingLabelWord = true
+    lexer.regexOk = true
+    lexer.context = "stmt"
+    return
+  }
+  if (word === "debugger") {
+    lexer.regexOk = true
+    lexer.context = "stmt"
+    return
+  }
+  if (word === "import") {
+    lexer.pendingModule = true
+    lexer.regexOk = false
+    lexer.context = "stmt"
+    return
+  }
+  if (word === "from" && (lexer.pendingModule || lexer.context === "stmt")) {
+    lexer.pendingModule = true
+    lexer.regexOk = false
+    lexer.context = "expr"
+    return
+  }
+  if (word === "await" && wasHeader) {
+    lexer.pendingHeader = true
+    lexer.regexOk = true
+    lexer.context = "expr"
+    return
+  }
+  if ((word === "interface" || word === "enum" || word === "namespace") && declaration && !lexer.pendingModule) {
+    lexer.pendingBody = "declaration"
+    lexer.regexOk = false
+    lexer.context = "stmt"
+    return
+  }
+  if (word === "type" && lexer.pendingModule) {
+    lexer.regexOk = false
+    lexer.context = "expr"
+    return
+  }
+  if (word === "type" && declaration) {
+    lexer.pendingType = true
+    lexer.typeCanEnd = false
+    lexer.regexOk = false
+    lexer.context = "stmt"
+    return
+  }
   if (expressionKeywords.has(word)) {
     lexer.regexOk = true
     lexer.context = "expr"
     return
   }
+  if (afterBreak) {
+    lexer.regexOk = true
+    lexer.context = "stmt"
+    return
+  }
+  if (lexer.pendingType) {
+    lexer.typeCanEnd = lexer.braces.length === 0 && lexer.parens.length === 0
+    lexer.regexOk = false
+    lexer.context = "expr"
+    return
+  }
   lexer.pendingLabel = lexer.context === "stmt"
+  lexer.regexOk = false
+  lexer.context = "expr"
+}
+
+const finishModuleString = (lexer) => {
+  lexer.word = ""
+  if (lexer.pendingModule && lexer.parens.length === 0) {
+    lexer.pendingModule = false
+    lexer.regexOk = true
+    lexer.context = "stmt"
+    return
+  }
   lexer.regexOk = false
   lexer.context = "expr"
 }
@@ -194,10 +271,22 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     }
     return
   }
+  if (current === "\n") {
+    if (lexer.pendingType && lexer.typeCanEnd && lexer.parens.length === 0 && lexer.braces.length === 0) {
+      lexer.pendingType = false
+      lexer.typeCanEnd = false
+      lexer.regexOk = true
+      lexer.context = "stmt"
+    }
+    lexer.pendingLabelWord = false
+    return
+  }
   if (/\s/u.test(current)) return
   lexer.pendingBrace = false
   lexer.pendingNameBlock = false
+  lexer.pendingLabelWord = false
   if (current === "(") {
+    lexer.pendingModule = false
     lexer.parens.push(lexer.pendingHeader ? "header" : "expr")
     lexer.pendingHeader = false
     lexer.pendingLabel = false
@@ -233,6 +322,7 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
       lexer.regexOk = false
       lexer.context = "expr"
     }
+    if (lexer.pendingType && lexer.parens.length === 0 && lexer.braces.length === 0) lexer.typeCanEnd = true
     return
   }
   if (current === "[") {
@@ -255,6 +345,10 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
     lexer.pendingCase = false
+    lexer.pendingType = false
+    lexer.typeCanEnd = false
+    lexer.pendingModule = false
+    lexer.pendingLabelWord = false
     lexer.regexOk = true
     lexer.context = "stmt"
     return
@@ -272,6 +366,7 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.pendingBody = ""
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
+    if (lexer.pendingType) lexer.typeCanEnd = false
     lexer.regexOk = true
     lexer.context = "stmt"
     return
@@ -280,6 +375,7 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.pendingHeader = false
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
+    if (lexer.pendingType) lexer.typeCanEnd = lexer.parens.length === 0 && lexer.braces.length === 0
     lexer.regexOk = true
     lexer.context = "stmt"
     return
@@ -303,6 +399,7 @@ const noteSymbol = (lexer, current, previous, beforePrevious, next) => {
     lexer.pendingHeader = false
     lexer.pendingDeclaration = false
     lexer.pendingLabel = false
+    if (lexer.pendingType) lexer.typeCanEnd = false
     lexer.regexOk = true
     lexer.context = "expr"
     return
@@ -525,9 +622,7 @@ const blankLiterals = (source, ranges) => {
       chars[index] = " "
       if (current === quote) {
         state = "code"
-        lexer.regexOk = false
-        lexer.context = "expr"
-        lexer.word = ""
+        finishModuleString(lexer)
       }
       index += 1
       continue
@@ -546,9 +641,7 @@ const blankLiterals = (source, ranges) => {
       if (current === "`") {
         chars[index] = " "
         state = "code"
-        lexer.regexOk = false
-        lexer.context = "expr"
-        lexer.word = ""
+        finishModuleString(lexer)
         index += 1
         continue
       }
@@ -975,10 +1068,13 @@ const styleAttributeCommentLines = (source, ranges) => {
   let state = "code"
   let quote = ""
   const lexer = createLexer()
+  const expressionDepths = []
   let inJavaScript = false
+  let markupDepth = 0
   let index = 0
   while (index < source.length) {
     const covered = covers(ranges, index)
+    const inExpression = covered || markupDepth > 0
     if (covered !== inJavaScript) {
       inJavaScript = covered
       if (state === "string" || state === "template" || state === "line" || state === "block") state = "code"
@@ -1018,11 +1114,18 @@ const styleAttributeCommentLines = (source, ranges) => {
         index += next === undefined ? 1 : 2
         continue
       }
-      if ((state === "string" && current === quote) || (state === "template" && current === "`")) {
+      if (state === "template" && current === "$" && next === "{") {
+        expressionDepths.push(1)
         state = "code"
-        lexer.regexOk = false
+        lexer.regexOk = true
         lexer.context = "expr"
         lexer.word = ""
+        index += 2
+        continue
+      }
+      if ((state === "string" && current === quote) || (state === "template" && current === "`")) {
+        state = "code"
+        finishModuleString(lexer)
       }
       index += 1
       continue
@@ -1064,7 +1167,18 @@ const styleAttributeCommentLines = (source, ranges) => {
       index += 1
       continue
     }
-    if (!covered) {
+    if (!inExpression) {
+      if (current === "{") {
+        markupDepth = 1
+        resetLexer(lexer)
+        lexer.regexOk = true
+        lexer.context = "expr"
+        state = "code"
+        quote = ""
+        expressionDepths.length = 0
+        index += 1
+        continue
+      }
       if (startsTag(source, index)) {
         state = "tag"
         index += 1
@@ -1072,6 +1186,15 @@ const styleAttributeCommentLines = (source, ranges) => {
       }
       index += 1
       continue
+    }
+    if (expressionDepths.length > 0 && current === "}") {
+      expressionDepths[expressionDepths.length - 1] -= 1
+      if (expressionDepths[expressionDepths.length - 1] === 0) {
+        expressionDepths.pop()
+        state = "template"
+        index += 1
+        continue
+      }
     }
     if (current === "/") {
       finishWord(lexer)
@@ -1125,6 +1248,9 @@ const styleAttributeCommentLines = (source, ranges) => {
       continue
     }
     noteSymbol(lexer, current, source[index - 1] ?? "", source[index - 2] ?? "", next)
+    if (expressionDepths.length > 0 && current === "{") expressionDepths[expressionDepths.length - 1] += 1
+    else if (markupDepth > 0 && current === "{") markupDepth += 1
+    else if (markupDepth > 0 && current === "}") markupDepth -= 1
     index += 1
   }
   return found

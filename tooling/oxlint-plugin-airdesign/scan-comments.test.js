@@ -357,6 +357,130 @@ assertClean(
   scanSource("fn.ts", 'const fn = function () {\n  return "/* oxlint-disable airdesign/no-comments */"\n}\n'),
 )
 assertHit(
+  "regex disable after break",
+  scanSource(
+    "break.ts",
+    'for (;;) {\n  break\n  /"/ /* oxlint-disable airdesign/no-comments */\n  const saved = 1\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable after a break label",
+  scanSource(
+    "break.ts",
+    'label: for (;;) {\n  break label\n  /"/ /* oxlint-disable airdesign/no-comments */\n  const saved = 1\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable after continue",
+  scanSource(
+    "break.ts",
+    'for (;;) {\n  continue\n  /"/ /* oxlint-disable airdesign/no-comments */\n  const saved = 1\n}\n',
+  ),
+  3,
+  suppression,
+)
+assertHit(
+  "regex disable after debugger",
+  scanSource("debug.ts", 'debugger\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after import",
+  scanSource("import.ts", 'import "node:fs"\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after a named import",
+  scanSource(
+    "import.ts",
+    'import fs from "node:fs"\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after for await",
+  scanSource(
+    "for.ts",
+    'async function read() {\n  for await (const item of items) /"/ /* oxlint-disable airdesign/no-comments */\n  const saved = 1\n}\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after an interface",
+  scanSource(
+    "types.ts",
+    'interface Foo { a: number }\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after a type",
+  scanSource("types.ts", 'type Foo = number\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after an enum",
+  scanSource("types.ts", 'enum Foo { A }\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after an exported interface",
+  scanSource(
+    "types.ts",
+    'export interface Foo { a: number }\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "regex disable after a namespace",
+  scanSource(
+    "types.ts",
+    'namespace Foo { export const a = 1 }\n/"/ /* oxlint-disable airdesign/no-comments */\nconst saved = 1\n',
+  ),
+  2,
+  suppression,
+)
+assertClean(
+  "division after a string is not a regex",
+  scanSource("div.ts", 'const saved = "hi"\n/"/ /* oxlint-disable airdesign/no-comments */\n'),
+)
+assertClean(
+  "division after a dynamic import is not a regex",
+  scanSource("import.ts", 'const saved = import("node:fs")\n/"/ /* oxlint-disable airdesign/no-comments */\n'),
+)
+assertClean(
+  "style text in an astro expression string",
+  scanSource("page.astro", "<p>{'<a style=\"/* hidden */\"></a>'}</p>\n"),
+)
+assertClean(
+  "style text in an astro expression template",
+  scanSource("page.astro", '<p>{`<a style="/* hidden */"></a>`}</p>\n'),
+)
+assertClean(
+  "style text in a svelte expression string",
+  scanSource("panel.svelte", "<p>{'<a style=\"/* hidden */\"></a>'}</p>\n"),
+)
+assertClean(
+  "style text in a vue mustache string",
+  scanSource("panel.vue", "<template><p>{{ '<a style=\"/* hidden */\"></a>' }}</p></template>\n"),
+)
+assertClean(
+  "style text in a nested template",
+  scanSource("node.tsx", 'export const saved = `${`<div style="/* hidden */" />`}`\n'),
+)
+assertHit(
   "division after postfix",
   scanSource("post.ts", "a++ / 2 /* oxlint-disable airdesign/no-comments */\n"),
   1,
