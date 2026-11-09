@@ -1,41 +1,45 @@
 # AirDesign
 
-`apps/site` is the marketing and sign-in site, built with Astro 7 and Tailwind 4. It ships as static files on the Cloudflare Worker `airdesign-landing`, which owns all of airdesign.app and www.airdesign.app. Requests that match no built file go to `apps/site/worker/old-deployment-passthrough.ts`, which forwards the paths it lists to the older deployment and returns 404 for the rest.
+AirDesign makes slide decks from an idea or a PowerPoint. A person and their AI agents edit a deck together, and it exports back to PowerPoint with no loss.
 
-`apps/web` is the product UI, built with React 19, Vite and shadcn on Base UI. It is not deployed. Each designed screen state has its own page at `/screens/<lowercase screen id>-<name>`, registered by `src/<area>/<area>-screens.tsx` and using sample data. Run `pnpm dev` in `apps/web` to view them.
+## What we never compromise
 
-## Map of apps/site
+1. **No-loss PowerPoint.** Content nobody touched survives byte for byte. Real PowerPoint is the judge, not our own re-import.
+2. **The user's machine does the work.** Painting, import, export, capture and the agent loop run on the device. The server keeps the order of edits, storage, the Claude key and the MCP address.
+3. **One path for agents.** A person connects their own agent over MCP or uses Aira. Both get the same tools, permissions and limits.
+4. **An edit paints before the network.**
 
-Paths are relative to `apps/site/src`.
-
-| URL | Page | Feature code |
-|---|---|---|
-| `/` | `pages/index.astro` | `landing/` has one folder per section: `header`, `hero`, `product-demo`, `agents`, `pricing`, `footer` |
-| `/sign-in` | `pages/sign-in.astro` | `access/sign-in/` |
-| `/sign-in/check` | `pages/sign-in/check.astro` | `access/check-email/` |
-| `/sign-in/expired` | `pages/sign-in/expired.astro` | None, the page holds it all |
-
-`site/` holds what every page shares: the document shell, the theme, the brand mark and the check icon.
-
-## Where to change things
-
-- Colors, easing and every shared CSS class: `site/site-theme.css`.
-- Product demo timing, cursor path and typing speed: the constants and the `cues` table at the top of `landing/product-demo/editor-demo-animation.ts`.
-- Product demo content: `landing/product-demo/editor-demo-markup.html`. Search tools skip this 84 KB file through `apps/site/.ignore`, so pass its path explicitly and search for a `data-demo-part` name from the `cues` table. Do not read it whole.
-- Nav highlight per section: `landing/header/active-section-highlight.ts`.
-- Sign-in email handoff between pages: `access/pending-sign-in-email.ts`.
+Prefer the simple system. Do not keep complexity because it exists, or add machinery because it looks impressive. Fight scope creep.
 
 ## Commands
 
-Run these in `apps/site`.
+- `pnpm check` runs exactly what CI runs. Run it after your last edit, before every push. Never `--no-verify`.
+- `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
+- `pnpm dev` inside `apps/web` or `apps/site` starts that app.
+- `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
 
-- `pnpm dev` starts the local site.
-- `pnpm build` builds to `dist`.
-- `pnpm run deploy` builds and publishes to Cloudflare. Pushing to `main` deploys nothing.
+`main` only accepts commits that passed the `gate` check, so every change goes through a PR.
+
+## Ways to hurt yourself
+
+1. **Searching the demo markup.** `apps/site/src/landing/product-demo/editor-demo-markup.html` is 84 KB, and search tools skip it. Pass its path and search for a `data-demo-part` name. Do not read it whole.
+2. **Breaking old production.** `studio.` and `mcp.airdesign.app` still run the old backend. `apps/site/worker/old-deployment-passthrough.ts` forwards the paths it lists to it.
+3. **Treating screens as a working app.** `apps/web` screens are static with sample data, and sign-in sends nothing. Nothing saves yet.
+
+## Where code lives
+
+- `apps/site` is the marketing and sign-in site. Shared classes and theme are in `src/site/site-theme.css`.
+- `apps/web` is the product UI. Product screens go here, never in `apps/site`. Each designed state is a page at `/screens/<id>-<name>`, registered in `src/<area>/<area>-screens.tsx`. Use shadcn parts, Sonner for toasts, and AI Elements for agent chat.
+- `packages/*` are shared packages. The build refuses a deep import, an undeclared dependency, or a browser or Node API in a pure package.
 
 ## Rules
 
 - Code has no comments. If code needs explaining, use a better name.
-- Copy and layout follow the design. Screens are on the `planning/v0.1` branch at `docs/design/v0.1/screens/<screen id>.png`, for example `git show origin/planning/v0.1:docs/design/v0.1/screens/S21.01-access-sign-in-default.png`.
-- With reduced motion on, every page shows its finished design with no movement.
-- Sign-in has no backend yet. The form keeps the email in `sessionStorage` and sends nothing.
+- Never name a file or folder `utils`, `helpers` or `common`. Name it after what it contains.
+- Use one word per idea, everywhere. The same name appears in the code, the test and the tool, so one search finds all of it.
+- Every package exposes only its `index.ts`, and tests sit beside the code.
+- Extend what exists before building a parallel version.
+- Copy and layout follow the existing screens. Do not invent product copy.
+- With reduced motion on, a page shows its finished state with no movement.
+- Test behavior that can break, at the lowest layer that fails. Tests never retry.
+- Do not commit plans, research notes or scratch files. A merged PR is the record.
