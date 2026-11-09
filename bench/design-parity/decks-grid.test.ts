@@ -103,6 +103,7 @@ it.each(["recent","all"])("requires %s New deck nominal opaque-label footprint c
     const page=await browser.newPage({viewport:{width:1470,height:923},deviceScaleFactor:1,reducedMotion:"reduce"}),errors=await workspace(page,browse)
     await newDeckMenuRoundTrip(page)
     const measured=await newDeckLabelContrast(page)
+    expect(measured.label.color).toBe("rgb(34, 34, 34)")
     expect(errors).toEqual([])
     expect(measured.minimum,JSON.stringify(measured)).toBeGreaterThanOrEqual(4.5)
   }finally{await browser.close()}

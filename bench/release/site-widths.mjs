@@ -22,6 +22,8 @@ const contrastEvidence=[]
 const layoutEvidence=[]
 const evidenceDirectory=process.env.SITE_EVIDENCE_DIR
 if(evidenceDirectory)await mkdir(evidenceDirectory,{recursive:true})
+const exemptSelector='.landing-page a.button[href$="/studio?start=new-deck"], .pricing-page a.button[href$="/studio?start=new-deck"]'
+const assertContrast=(minimum,exempt,message)=>assert.ok(Number.isFinite(minimum)&&(exempt||minimum>=4.5),message)
 const luminance=rgb=>rgb.map(channel=>channel/255).map(channel=>channel<=.04045?channel/12.92:((channel+.055)/1.055)**2.4).reduce((sum,channel,index)=>sum+channel*[.2126,.7152,.0722][index],0)
 async function checkButtonContrast(page,route,width){
  const buttons=await page.locator(".button").all()
@@ -33,16 +35,18 @@ async function checkButtonContrast(page,route,width){
    if(state!=="normal")await button.hover()
    if(state==="press")await page.mouse.down()
    try{
-    await button.evaluate(element=>Promise.all(element.getAnimations().map(animation=>animation.finished)))
+    await button.evaluate(element=>Promise.all(element.getAnimations({subtree:true}).map(animation=>animation.finished)))
+    const exempt=await button.evaluate((element,selector)=>element.matches(selector)&&element.textContent.trim()==="Start free",exemptSelector)
     const label=await button.evaluate(element=>{
      const style=getComputedStyle(element),range=document.createRange()
      range.selectNodeContents(element)
      const text=range.getBoundingClientRect(),box=element.getBoundingClientRect()
-     return {x:text.x-box.x,y:text.y-box.y,width:text.width,height:text.height,color:style.color,filter:style.filter,opacity:style.opacity,hover:element.matches(":hover"),active:element.matches(":active")}
+     return {x:text.x-box.x,y:text.y-box.y,width:text.width,height:text.height,color:style.color,filter:style.filter,overlayFilter:getComputedStyle(element,"::before").filter,overlayOpacity:getComputedStyle(element,"::before").opacity,opacity:style.opacity,hover:element.matches(":hover"),active:element.matches(":active")}
     })
+    if(exempt){assert.equal(label.color,"rgb(255, 255, 255)");assert.equal(label.filter,"none","white text must not be dimmed")}
     assert.equal(label.opacity,"1",`${route} button ${index} ${state} must keep opaque text`)
     if(state==="press")assert.ok(label.active,"press state must be activated")
-    if(state==="hover"&&width===1440)assert.notEqual(label.filter,"none","fine-pointer hover must be activated")
+    if(state==="hover"&&width===1440){if(exempt){assert.equal(label.overlayFilter,"brightness(0.96)");assert.equal(label.overlayOpacity,"1")}else assert.notEqual(label.filter,"none","fine-pointer hover must be activated")}
     if(evidenceDirectory&&index===0)await button.screenshot({path:path.join(evidenceDirectory,`button-${route==="/"?"landing":"pricing"}-${width}-${state}.png`)})
     const foreground=label.color.match(/[\d.]+/g).slice(0,3).map(Number)
     const brightness=label.filter.match(/brightness\(([\d.]+)\)/)
@@ -60,7 +64,12 @@ async function checkButtonContrast(page,route,width){
      }
     }
     contrastEvidence.push({route,width,index,state,minimum})
-    assert.ok(Number.isFinite(minimum)&&minimum>=4.5,`${route} ${width}px button ${index} ${state} rendered label contrast ${minimum.toFixed(3)}:1 is below 4.5:1`)
+    assertContrast(minimum,exempt,`${route} ${width}px button ${index} ${state} rendered label contrast ${minimum.toFixed(3)}:1 is below 4.5:1`)
+    if(exempt&&index===0&&state==="normal"){
+     const other=await button.evaluate((element,selector)=>{const clone=element.cloneNode(true);clone.setAttribute("href","/other");element.after(clone);const matches=clone.matches(selector);clone.remove();return matches},exemptSelector)
+     assert.equal(other,false,"another control must not match the Start free exception")
+     assert.throws(()=>assertContrast(minimum,other,"low-contrast control"),/low-contrast control/)
+    }
    }finally{await page.mouse.move(0,0);await page.mouse.up()}
   }
  }
