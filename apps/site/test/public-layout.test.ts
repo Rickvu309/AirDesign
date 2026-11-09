@@ -87,6 +87,10 @@ it("navigates landing sections from the header on desktop and phone",async()=>{
   for(const mobile of [true,false]){
    const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1440,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:"reduce"})
    await page.goto(url)
+   await page.keyboard.press("Tab")
+   const skip=page.getByRole("link",{name:"Skip to content"})
+   await expect(skip).toBeFocused()
+   expect(await skip.evaluate(element=>{const box=element.getBoundingClientRect();return document.elementFromPoint(box.x+box.width/2,box.y+box.height/2)===element})).toBe(true)
    for(const [name,target] of [["Agents",".agent-section h2"],["Pricing",".landing-pricing h2"],["Product",".hero h1"]] as const){
     await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).click()
     await expect.poll(()=>page.evaluate(()=>location.pathname)).toBe("/")
@@ -107,6 +111,7 @@ it("navigates landing sections from the header on desktop and phone",async()=>{
   for(const path of ["/pricing/","/agents/","/agents/claude/","/agents/codex/","/status/"]){
    for(const name of path==="/pricing/"?["Pricing"]:["Product","Agents","Pricing"]){
     await page.goto(new URL(path,url).href)
+    if(path==="/pricing/")expect(await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name:"Pricing",exact:true}).getAttribute("aria-current")).toBeNull()
     await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name:name==="Agents"?"Agent guides":name,exact:true}).click()
     expect(new URL(page.url()).pathname).toBe("/")
     await expect.poll(()=>page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).getAttribute("aria-current"),{message:`${path} ${name}`}).toBe("location")
