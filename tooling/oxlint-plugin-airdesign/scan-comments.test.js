@@ -81,6 +81,71 @@ assertHit(
   1,
   suppression,
 )
+assertHit(
+  "file-level disable in a vue file",
+  scanSource("panel.vue", "<script>\n/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n</script>\n"),
+  2,
+  suppression,
+)
+assertHit(
+  "file-level disable in a svelte file",
+  scanSource(
+    "panel.svelte",
+    "<script>\n/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n</script>\n",
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "astro expression comment",
+  scanSource("expr.astro", "---\nconst saved = 1\n---\n{/* hidden */}\n"),
+  4,
+  comment,
+)
+assertClean(
+  "expression comment inside a string",
+  scanSource("expr.astro", '---\nconst saved = "{/* hidden */}"\n---\n'),
+)
+assertHit(
+  "astro style attribute comment",
+  scanSource("attr.astro", '<div style="color: black /* hidden */"></div>\n'),
+  1,
+  comment,
+)
+assertHit(
+  "style attribute after another attribute",
+  scanSource("attr.astro", '<div class="x" style="color: black /* hidden */"></div>\n'),
+  1,
+  comment,
+)
+assertClean(
+  "javascript style string is not a style attribute",
+  scanSource("attr.astro", 'const style = "/* hidden */"\n'),
+)
+assertHit(
+  "tsx style attribute comment",
+  scanSource("attr.tsx", 'export const node = <div style="color: black /* hidden */" />\n'),
+  1,
+  comment,
+)
+assertClean(
+  "tsx style string is not a style attribute",
+  scanSource("attr.tsx", 'const style = "/* hidden */"\nexport const node = <div />\n'),
+)
+assertHit("vue html comment", scanSource("panel.vue", "<template>\n<!-- hidden -->\n</template>\n"), 2, comment)
+assertHit("vue expression comment", scanSource("panel.vue", "<template>\n{/* hidden */}\n</template>\n"), 2, comment)
+assertHit(
+  "svelte style block comment",
+  scanSource("panel.svelte", "<style>\n.a { color: black /* hidden */ }\n</style>\n"),
+  2,
+  comment,
+)
+assertHit(
+  "css comment after an unclosed quote",
+  scanSource("note.css", 'body { content: "\n/* hidden */ }\n'),
+  2,
+  comment,
+)
 
 assertClean("quoted yaml color", scanSource("color.yaml", 'color: "#222222"\n'))
 assertClean("quoted yaml url hash", scanSource("url.yml", 'url: "https://example.com/a#b"\n'))

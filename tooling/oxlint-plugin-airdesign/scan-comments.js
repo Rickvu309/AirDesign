@@ -9,7 +9,21 @@ const commentMessage = "Remove this comment."
 const directivePattern = new RegExp("(?:eslint-disable|oxlint-disable)\\b", "u")
 const commentMarkPattern = new RegExp("//|/\\*|\\*/", "u")
 
-const directiveExtensions = new Set([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs", ".cts", ".mts", ".astro"])
+const directiveExtensions = new Set([
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".mjs",
+  ".cjs",
+  ".cts",
+  ".mts",
+  ".astro",
+  ".vue",
+  ".svelte",
+])
+const markupExtensions = new Set([".astro", ".vue", ".svelte"])
+const styleAttributeExtensions = new Set([...markupExtensions, ".jsx", ".tsx"])
 const scannedExtensions = new Set([...directiveExtensions, ".css", ".yml", ".yaml"])
 const skipDirectories = new Set(["node_modules", "dist", ".astro", ".fixture-run"])
 
@@ -167,7 +181,13 @@ const cssCommentLines = (source) => {
   while (index < source.length) {
     const current = source[index]
     const next = source[index + 1]
+    if (state === "string" && current === "\\") {
+      if (next === "\n") line += 1
+      index += next === undefined ? 1 : 2
+      continue
+    }
     if (current === "\n") {
+      if (state === "string") state = "code"
       line += 1
       index += 1
       continue
@@ -182,10 +202,6 @@ const cssCommentLines = (source) => {
       continue
     }
     if (state === "string") {
-      if (current === "\\") {
-        index += next === undefined ? 1 : 2
-        continue
-      }
       if (current === quote) state = "code"
       index += 1
       continue
@@ -260,7 +276,13 @@ const readStyleBlock = (source, start) => {
   while (index < source.length) {
     const current = source[index]
     const next = source[index + 1]
+    if (state === "string" && current === "\\") {
+      if (next === "\n") line += 1
+      index += next === undefined ? 1 : 2
+      continue
+    }
     if (current === "\n") {
+      if (state === "string") state = "code"
       line += 1
       index += 1
       continue
@@ -275,10 +297,6 @@ const readStyleBlock = (source, start) => {
       continue
     }
     if (state === "string") {
-      if (current === "\\") {
-        index += next === undefined ? 1 : 2
-        continue
-      }
       if (current === quote) state = "code"
       index += 1
       continue
@@ -376,6 +394,132 @@ const blankJavaScriptComments = (source) => {
 
 const unique = (lines) => [...new Set(lines)]
 
+const expressionCommentLines = (source) => {
+  const text = blankLiterals(source)
+  const found = []
+  let line = 1
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === "\n") {
+      line += 1
+      continue
+    }
+    if (text.startsWith("{/*", index)) found.push(line)
+  }
+  return found
+}
+
+const startsTag = (source, index) => {
+  if (source[index] !== "<") return false
+  const next = source[index + 1]
+  if (/[A-Za-z]/u.test(next ?? "")) return true
+  return next === "/" && /[A-Za-z]/u.test(source[index + 2] ?? "")
+}
+
+const readQuoted = (source, index) => {
+  const quote = source[index]
+  let cursor = index + 1
+  let value = ""
+  while (cursor < source.length) {
+    const current = source[cursor]
+    const next = source[cursor + 1]
+    if (current === "\\") {
+      value += current
+      if (next !== undefined) value += next
+      cursor += next === undefined ? 1 : 2
+      continue
+    }
+    if (current === quote) return { value, after: cursor + 1 }
+    value += current
+    cursor += 1
+  }
+  return { value, after: source.length }
+}
+
+const styleAttributeCommentLines = (source) => {
+  const found = []
+  let state = "code"
+  let quote = ""
+  let index = 0
+  while (index < source.length) {
+    const current = source[index]
+    const next = source[index + 1]
+    if (current === "\n") {
+      index += 1
+      continue
+    }
+    if (state === "attr") {
+      if (current === "\\") {
+        index += next === undefined ? 1 : 2
+        continue
+      }
+      if (current === quote) state = "tag"
+      index += 1
+      continue
+    }
+    if (state === "string" || state === "template") {
+      if (current === "\\") {
+        index += next === undefined ? 1 : 2
+        continue
+      }
+      if ((state === "string" && current === quote) || (state === "template" && current === "`")) state = "code"
+      index += 1
+      continue
+    }
+    if (state === "tag") {
+      if (current === "'" || current === '"') {
+        quote = current
+        state = "attr"
+        index += 1
+        continue
+      }
+      if (current === ">") {
+        state = "code"
+        index += 1
+        continue
+      }
+      const word = source.slice(index, index + 5).toLowerCase()
+      const before = index === 0 ? " " : source[index - 1]
+      const after = source[index + 5] ?? " "
+      if (word === "style" && !/[A-Za-z0-9_-]/u.test(before) && !/[A-Za-z0-9_-]/u.test(after)) {
+        let cursor = index + 5
+        while (cursor < source.length && /\s/u.test(source[cursor])) cursor += 1
+        if (source[cursor] === "=") {
+          cursor += 1
+          while (cursor < source.length && /\s/u.test(source[cursor])) cursor += 1
+          if (source[cursor] === "'" || source[cursor] === '"') {
+            const valueStart = cursor + 1
+            const quoted = readQuoted(source, cursor)
+            const baseLine = source.slice(0, valueStart).split("\n").length
+            for (const line of cssCommentLines(quoted.value)) found.push(baseLine + line - 1)
+            index = quoted.after
+            continue
+          }
+        }
+      }
+      index += 1
+      continue
+    }
+    if (startsTag(source, index)) {
+      state = "tag"
+      index += 1
+      continue
+    }
+    if (current === "'" || current === '"') {
+      quote = current
+      state = "string"
+      index += 1
+      continue
+    }
+    if (current === "`") {
+      state = "template"
+      index += 1
+      continue
+    }
+    index += 1
+  }
+  return found
+}
+
 export const scanSource = (filename, source) => {
   const extension = path.extname(filename).toLowerCase()
   const hits = []
@@ -392,9 +536,13 @@ export const scanSource = (filename, source) => {
   if (extension === ".yml" || extension === ".yaml") {
     for (const line of yamlCommentLines(source)) push(line, commentMessage)
   }
-  if (extension === ".astro") {
+  if (markupExtensions.has(extension)) {
     for (const line of unique(htmlCommentLines(source))) push(line, commentMessage)
     for (const line of unique(styleCommentLines(source))) push(line, commentMessage)
+    for (const line of unique(expressionCommentLines(source))) push(line, commentMessage)
+  }
+  if (styleAttributeExtensions.has(extension)) {
+    for (const line of unique(styleAttributeCommentLines(source))) push(line, commentMessage)
   }
   return hits
 }
