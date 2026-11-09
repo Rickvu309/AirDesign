@@ -93,7 +93,7 @@ it.each(["<a:normAutofit/>", '<a:normAutofit fontScale="100000"/>', '<a:normAuto
   for (const seq of [1, 2]) {
     const original = await importPptx(source), current = importedNativeDeck(original), text = current.slides[0]!.elements.find(element => element.kind === "text")
     if (text?.kind !== "text") throw new Error("native-saved-autofit-required")
-    expect(text.body.frame.autofit).toEqual(fit.includes("62500") || fit.includes("62.5%") ? {kind: "shrink", fontScale: 0.625, lineReduction: 0.12345} : {kind: "shrink", fontScale: 1, lineReduction: 0})
+    expect(text.body.frame.autofit).toEqual(fit.includes("62500") || fit.includes("62.5%") ? {kind: "shrink", fontScale: 0.625, lineReduction: 0.12345} : {kind: "shrink", fontScale: fit.includes("100000") ? 1 : null, lineReduction: null})
     text.body.paragraphs[0].alignment = seq === 1 ? "center" : "left"
     source = await writeNativeSavedPptx(current, seq, source, {})
     const saved = await importPptx(source)
@@ -119,6 +119,30 @@ it("separates numeric state from period scheme XML for empty, restart and interr
 
 
 it.each(["%", "  %", "NaN", "0.125", "12%%"])("refuses malformed autofit percentage lexemes: %s", value => {
-  const {text} = fixture(), xml = writeTextBody(text.body).replace('lnSpcReduction="10000"', `lnSpcReduction="${value}"`), document = parseXml(Buffer.from(xml))
+  const {text} = fixture(), xml = writeTextBody(text.body).replace(/lnSpcReduction="[^"]*"/, `lnSpcReduction="${value}"`), document = parseXml(Buffer.from(xml))
+  expect(document.nodes.find(node => node.local === "normAutofit")?.attributes.lnSpcReduction).toBe(value)
   expect(() => readTextBody(document, document.nodes[0]!, id("invalidFit"))).toThrow()
+})
+
+
+it("roundtrips every positive thousandth-percent autofit scale without double rounding", () => {
+  const {text} = fixture(), paragraph = text.body.paragraphs[0]
+  paragraph.runs = []
+  text.body.paragraphs = [paragraph]
+  const changed: number[] = []
+  for (let integer = 1; integer <= 100000; integer++) {
+    const value = integer / 100000
+    text.body.frame.autofit = {kind: "shrink", fontScale: value, lineReduction: value === 1 ? 0 : value}
+    const document = parseXml(Buffer.from(writeTextBody(text.body)))
+    const fit = readTextBody(document, document.nodes[0]!, id("grid")).frame.autofit
+    if (fit.kind !== "shrink" || fit.fontScale !== value || fit.lineReduction !== (value === 1 ? 0 : value)) changed.push(integer)
+  }
+  expect({count: changed.length, first: changed.slice(0, 10)}).toEqual({count: 0, first: []})
+}, 60000)
+
+it.each([Number.MIN_VALUE, 1e-310, 1e-10, 1e-7, 0.00007, 0.00009, 0.62512345, 0.12345678901234566, 0.9999999999999999, 1])("roundtrips exact autofit doubles including exponent boundaries: %s", value => {
+  const {text} = fixture()
+  text.body.frame.autofit = {kind: "shrink", fontScale: value, lineReduction: value === 1 ? 0 : value}
+  const document = parseXml(Buffer.from(writeTextBody(text.body)))
+  expect(readTextBody(document, document.nodes[0]!, id("precision")).frame.autofit).toEqual(text.body.frame.autofit)
 })

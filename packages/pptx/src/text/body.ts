@@ -23,14 +23,14 @@ function number(value: string | undefined, fallback: number): number {
 function savedPercentage(value: string | undefined): number | null {
   if (value === undefined) return null
   if (!/^-?\d+(?:\.\d+)?%$/.test(value) && !/^[+-]?\d+$/.test(value.trim())) throw new UnsupportedTextFormat("autofit percentage")
-  return value.endsWith("%") ? Number(value.slice(0, -1)) / 100 : Number(value) / 100000
+  return value.endsWith("%") ? Number(`${value.slice(0, -1)}e-2`) : Number(`${value.trim()}e-5`)
 }
 function percentage(value: number): string {
   const [mantissa = "", exponent = "0"] = String(value).split("e")
   const [integer = "", fraction = ""] = mantissa.split(".")
   const digits = integer + fraction, point = integer.length + Number(exponent) + 2
   const decimal = point <= 0 ? `0.${"0".repeat(-point)}${digits}` : point >= digits.length ? digits + "0".repeat(point - digits.length) : `${digits.slice(0, point)}.${digits.slice(point)}`
-  return `${decimal}%`
+  return `${decimal.replace(/^0+(?=\d)/, "")}%`
 }
 function markerValue(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
   if (!properties) return inherited
