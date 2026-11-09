@@ -1,3 +1,4 @@
+import {layoutTextShadows} from "../../../../packages/render/src/text/shadow-layout.ts"
 import type {NativeDeck, NativeElement} from "../../../../packages/deck/src/text/native-v3.ts"
 import {chromium,type Browser} from "playwright"
 import {readFile} from "node:fs/promises"
@@ -20,7 +21,7 @@ export function slideCaptures(history:HistoryStore){
       const renderer:{captureDocument:(deck:Deck|NativeDeck,slide:string,css:string,assets:Record<string,string>)=>string}=await import(modulePath)
       browser??=chromium.launch({headless:true})
       const page=await (await browser).newPage({viewport:{width:Math.ceil(slide.size.width),height:Math.ceil(slide.size.height)},deviceScaleFactor:1})
-      try{await page.setContent(renderer.captureDocument(deck,slideId,(await fonts).join(""),assets));await page.evaluate(()=>document.fonts.ready.then(()=>undefined));const bytes=await page.locator("[data-slide]").screenshot({animations:"disabled"});let preview=await sharp(bytes).resize({width}).png().toBuffer()
+      try{await page.setContent(renderer.captureDocument(deck,slideId,(await fonts).join(""),assets));await page.evaluate(()=>document.fonts.ready.then(()=>undefined));await page.evaluate(layoutTextShadows);const bytes=await page.locator("[data-slide]").screenshot({animations:"disabled"});let preview=await sharp(bytes).resize({width}).png().toBuffer()
         let previewWidth=width
         while(Buffer.byteLength(preview.toString("base64"))+2000>490000){previewWidth=Math.max(1,Math.floor(previewWidth*0.75));preview=await sharp(bytes).resize({width:previewWidth}).png().toBuffer()}
         return {full:bytes,preview}}finally{await page.close()}

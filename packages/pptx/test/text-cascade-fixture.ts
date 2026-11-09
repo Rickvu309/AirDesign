@@ -29,3 +29,10 @@ export async function retainedTextSource() {
   parts.set(part, Buffer.from(xml.slice(0, start) + group("78", '<a:off x="952500" y="476250"/><a:ext cx="5715000" cy="3810000"/><a:chOff x="190500" y="95250"/><a:chExt cx="2857500" cy="1905000"/>', nested) + xml.slice(end)))
   return importPptx(await exportPptx({...source, parts}))
 }
+
+export const affineTextShadowXml = '<a:effectLst><a:outerShdw blurRad="60007" dist="310007" dir="7680000" sy="30000" kx="1300200" algn="ctr" rotWithShape="0"><a:prstClr val="black"><a:alpha val="32000"/></a:prstClr></a:outerShdw></a:effectLst>'
+export async function shadowTextSource() {
+  const source = await retainedTextSource(), parts = new Map(source.parts), part = "ppt/slides/slide1.xml"
+  parts.set(part, Buffer.from(parts.get(part)!.toString().replace('<a:sym typeface="Wingdings"', `${affineTextShadowXml}<a:sym typeface="Wingdings"`).replace('type="slidenum"><a:t>42</a:t></a:fld></a:p>', `type="slidenum"><a:t>42</a:t></a:fld><a:endParaRPr>${affineTextShadowXml}</a:endParaRPr></a:p>`)))
+  return importPptx(await exportPptx({...source, parts}))
+}

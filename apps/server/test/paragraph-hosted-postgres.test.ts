@@ -1,6 +1,6 @@
 import {readFile} from "node:fs/promises"
 import {performance} from "node:perf_hooks"
-import {retainedTextSource} from "../../../packages/pptx/test/text-cascade-fixture.ts"
+import {shadowTextSource, affineTextShadowXml} from "../../../packages/pptx/test/text-cascade-fixture.ts"
 import {importPptx,exportPptx} from "../../../packages/pptx/src/index.ts"
 import {importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
 import {writeNativeSavedPptx} from "../../../packages/pptx/src/export-deck.ts"
@@ -296,11 +296,16 @@ it("routes native template and image prepared edits through atomic history and r
 it("admits independent imported text edits and refuses destructive field edits before sequence mutation with durable retries and frozen export", async()=>{
   const f=await hostedFixture()
   try{
-    const original=await retainedTextSource(),bytes=await exportPptx(original)
+    const original=await shadowTextSource(),bytes=await exportPptx(original)
     const entry=await f.native.catalog.create(f.owner,"source-capability","Source capability","",importedNativeDeck(original),{bytes,report:{...original.report}})
     let current=await f.native.read(f.owner,entry.id)
     const text=flatten(current.deck.slides[0]!.elements).find(element=>element.kind==="text"&&element.body.paragraphs.length===10)
     if(text?.kind!=="text")throw new Error("source-text-required")
+    expect(text.body.paragraphs[9]!.runs[0]!.style.outerShadow).toMatchObject({scale:{x:1,y:0.3},skew:{x:21.67,y:0},rotateWithShape:false,opacity:0.32})
+    const readback=await f.tool("get_slide",{deckId:entry.id,slideId:current.deck.slides[0]!.id,rootId:text.body.paragraphs[9]!.id,format:"json"})
+    expect(readback.items[0].runs[0].style.outerShadow).toEqual(text.body.paragraphs[9]!.runs[0]!.style.outerShadow)
+    const jsx=await f.tool("get_slide",{deckId:entry.id,slideId:current.deck.slides[0]!.id,rootId:text.body.paragraphs[9]!.id,format:"jsx"})
+    expect(jsx.items[0].jsx).toContain("outerShadow")
     expect(text.body.frame.spacingAtEdges).toBe(true)
     expect(text.body.paragraphs[9]!.tabSize).toBe(48)
     expect(text.body.paragraphs[9]!.runs[0]!.style.symbolFont).toBe("Wingdings")
@@ -317,6 +322,7 @@ it("admits independent imported text edits and refuses destructive field edits b
     expect(xml).toContain('type="slidenum"><a:t>42</a:t>')
     expect(xml).toContain('<a:hlinkClick r:id="retained-link" tooltip="Original"/>')
     expect(xml).toContain("Retained person input")
+    expect(xml.split(affineTextShadowXml).length).toBe(3)
     expect(xml).toContain('<a:sym typeface="Wingdings" pitchFamily="2" charset="2"/>')
     for(const [part,value]of original.parts)if(!["[Content_Types].xml","ppt/slides/slide1.xml"].includes(part))expect(exported.parts.get(part),part).toEqual(value)
     const destructive={deckId:entry.id,base:current.seq,requestId:"destructive-source-edit",changes:[{kind:"set",target:paragraph.id,value:{...input.changes[0]!.value,runs:paragraph.runs.map((run,index)=>index===1&&run.kind==="text"?{...run,text:"Caller draft retained"}:run)}}]}
@@ -325,6 +331,21 @@ it("admits independent imported text edits and refuses destructive field edits b
     expect(await f.tool("apply_changes",destructive)).toEqual(refused)
     expect(await f.tool("apply_changes",{...destructive,changes:input.changes})).toMatchObject({code:"request-id-payload-mismatch"})
     expect(await f.native.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})
+    const shadowDraft={deckId:entry.id,base:current.seq,requestId:"source-shadow-draft",changes:[{kind:"set",target:paragraph.id,value:{...input.changes[0]!.value,runs:input.changes[0]!.value.runs.map((run,index)=>index===0&&run.style.outerShadow?{...run,style:{...run.style,outerShadow:{...run.style.outerShadow,distance:99}}}:run)}}]}
+    const shadowHeads=(await f.sql.query("SELECT * FROM editing_key WHERE deck=$1 ORDER BY node,key",[entry.id])).rows
+    const immutableEvents=(await f.sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 ORDER BY seq",[entry.id])).rows
+    const shadowRefusal=await f.tool("apply_changes",shadowDraft)
+    const immutableShadowReceipt=(await f.sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 AND receipt->>'code'=$2",[entry.id,shadowRefusal.code])).rows
+    expect(shadowRefusal).toMatchObject({kind:"refused",code:expect.stringContaining("source text shadow is source controlled")})
+    expect(await f.tool("apply_changes",shadowDraft)).toEqual(shadowRefusal)
+    expect(await f.tool("apply_changes",{...shadowDraft,changes:input.changes})).toMatchObject({code:"request-id-payload-mismatch"})
+    expect(await f.native.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})
+    expect((await f.sql.query("SELECT * FROM editing_key WHERE deck=$1 ORDER BY node,key",[entry.id])).rows).toEqual(shadowHeads)
+    expect((await f.sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 AND receipt->>'code'=$2",[entry.id,shadowRefusal.code])).rows).toEqual(immutableShadowReceipt)
+    expect(immutableShadowReceipt).toHaveLength(1)
+    expect(JSON.stringify(immutableShadowReceipt)).toContain("Retained person input")
+    expect(JSON.stringify(immutableShadowReceipt)).toContain("99")
+    expect((await f.sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 ORDER BY seq",[entry.id])).rows).toEqual(immutableEvents)
     const group=current.deck.slides[0]!.elements.find(element=>element.kind==="group")
     if(group?.kind!=="group"||!group.coordinateSpace)throw new Error("source-group-required")
     const beforeIndexes=(await f.sql.query("SELECT * FROM editing_key WHERE deck=$1 ORDER BY node,key",[entry.id])).rows
@@ -368,3 +389,31 @@ it("measures the real hosted source-edit path with DALRRD and twenty persisted c
     try{expect(await reopened.read(f.owner,entry.id)).toMatchObject({seq:20,deck:current.deck})}finally{await reopened.close()}
   }finally{await f.close()}
 },120000)
+
+it("persists edits, undo and frozen exports for the three original corpus shadow identities", async () => {
+  const f = await hostedFixture()
+  try {
+    for (const fixture of [{name: "dalrrd", slide: 3, objectId: "text:1"}, {name: "dalrrd", slide: 22, objectId: "text:3"}, {name: "performance", slide: 1, objectId: "text:0,1,2"}]) {
+      const bytes = await readFile(new URL(`../../../packages/pptx/test/corpus/${fixture.name}.pptx`, import.meta.url)), source = await importPptx(bytes), part = `ppt/slides/slide${fixture.slide}.xml`
+      const entry = await f.native.catalog.create(f.owner, `shadow-${fixture.name}-${fixture.slide}`, "Source shadow", "", importedNativeDeck(source), {bytes, report: source.report})
+      const initial = await f.native.read(f.owner, entry.id), slide = initial.deck.slides.find(slide => slide.source.kind === "original" && slide.source.part === part)!, text = flatten(slide.elements).find(element => element.source.kind === "original" && element.source.objectId === fixture.objectId)
+      if (text?.kind !== "text") throw new Error("original-shadow-native-required")
+      const paragraph = text.body.paragraphs.at(-1)!, value = {...paragraph, runs: paragraph.runs.map(run => ({...run, style: {...run.style, bold: !run.style.bold}}))}
+      const request = {deckId: entry.id, base: initial.seq, requestId: "original-shadow-edit", changes: [{kind: "set", target: paragraph.id, value}]}, applied = await f.tool("apply_changes", request)
+      expect(applied).toMatchObject({kind: "applied"})
+      expect(await f.tool("apply_changes", request)).toEqual(applied)
+      const current = await f.native.read(f.owner, entry.id), reopened = createParagraphHistoryStore(f.url, f.now)
+      try {expect(await reopened.read(f.owner, entry.id)).toEqual(current)} finally {await reopened.close()}
+      const frozen = await f.tool("export_deck", {deckId: entry.id, savedVersion: current.seq, format: "pptx", requestId: `original-shadow-freeze-${entry.id}`}), claim = await f.native.exports.claim()
+      expect(frozen).toMatchObject({operationId:expect.any(String)})
+      expect(claim).toMatchObject({id: frozen.operationId, snapshotVersion: 3})
+      if (!claim || claim.snapshotVersion !== 3) throw new Error("native-shadow-freeze-required")
+      const saved = await importPptx(await writeNativeSavedPptx(claim.snapshot.deck, claim.snapshot.seq, bytes, {})), target = flatten(importedNativeDeck(saved).slides.find(slide => slide.source.kind === "original" && slide.source.part === part)!.elements).find(element => element.id === text.id)
+      expect(target).toMatchObject({kind: "text", body: {paragraphs: expect.arrayContaining([expect.objectContaining({runs: value.runs})])}})
+      expect(await f.tool("undo_change", {deckId: entry.id, base: current.seq, requestId: "original-shadow-undo", changeId: applied.changeId})).toMatchObject({kind: "applied"})
+      const undone = await f.native.read(f.owner, entry.id)
+      expect(nativeNodes(undone.deck).find(node => node.id === paragraph.id)?.fields.runs).toEqual(paragraph.runs)
+      expect(claim.snapshot.deck).toEqual(current.deck)
+    }
+  } finally {await f.close()}
+}, 180000)

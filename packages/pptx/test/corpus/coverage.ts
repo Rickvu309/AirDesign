@@ -35,7 +35,9 @@ export async function corpusCoverage() {
       }
     }
     if (new Set(boxes).size !== boxes.length || JSON.stringify(boxes) !== JSON.stringify(entry.boxes)) throw new Error(`corpus-denominator-mismatch:${entry.id}`)
-    results.push({id: entry.id, boxes: boxes.length, baseline: entry.baselineNative.length, editable: editable.length, lost: entry.baselineNative.filter(key => !editable.includes(key)), pass: editable.length >= entry.baselineNative.length})
+    const requiredShadows = entry.id === "dalrrd" ? ["ppt/slides/slide3.xml#7", "ppt/slides/slide22.xml#2"] : entry.id === "performance" ? ["ppt/slides/slide1.xml#4"] : []
+    const missingShadows = requiredShadows.filter(key => !editable.includes(key))
+    results.push({missingShadows, id: entry.id, boxes: boxes.length, baseline: entry.baselineNative.length, editable: editable.length, lost: entry.baselineNative.filter(key => !editable.includes(key)), pass: editable.length >= entry.baselineNative.length && missingShadows.length === 0})
   }
   return results
 }

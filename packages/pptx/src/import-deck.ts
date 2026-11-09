@@ -142,7 +142,12 @@ export function importedNativeDeck(presentation: Presentation, progress?: (value
     const bodyIndex = parsed.nodes.filter(node => node.local === "txBody").indexOf(body)
     try {
       const part = base.source.kind === "original" ? base.source.part : ""
-      return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: readTextBody(parsed, body, base.id, textContext(presentation, part, parsed, shape))}
+      const text = readTextBody(parsed, body, base.id, textContext(presentation, part, parsed, shape))
+      if (text.paragraphs.some(paragraph => paragraph.endStyle.outerShadow || paragraph.runs.some(run => run.style.outerShadow))) {
+        const transformed = parsed.nodes.filter(node => node.local === "xfrm" && within(shape, node))
+        if (transformed.some(node => Object.entries(node.attributes).some(([key, value]) => key === "rot" ? Number(value) % 21600000 !== 0 : ["flipH", "flipV"].includes(key) && !["0", "false"].includes(value)))) throw new UnsupportedTextFormat("rotated text shadow requires shape rotation")
+      }
+      return {...base, source: {...base.source, ...(base.source.kind === "original" && !spans.length ? {objectId: `body:${bodyIndex}`} : {})}, body: text}
     } catch (error) {
       if (error instanceof UnsupportedTextFormat) return undefined
       throw error

@@ -113,11 +113,15 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
   })
   return parseTextBody({frame, paragraphs})
 }
+function shadowXml(style: TextStyle): string {
+  const value = style.outerShadow
+  return value ? `<a:effectLst><a:outerShdw blurRad="${Math.round(value.blur * 9525)}" dist="${Math.round(value.distance * 9525)}" dir="${Math.round(value.direction * 60000)}" sx="${Math.round(value.scale.x * 100000)}" sy="${Math.round(value.scale.y * 100000)}" kx="${Math.round(value.skew.x * 60000)}" ky="${Math.round(value.skew.y * 60000)}" algn="${value.alignment}" rotWithShape="${value.rotateWithShape ? 1 : 0}"><a:srgbClr val="${value.color.slice(1)}"><a:alpha val="${Math.round(value.opacity * 100000)}"/></a:srgbClr></a:outerShdw></a:effectLst>` : ""
+}
 function propertiesXml(value: TextStyle, tag: string): string {
-  const style = tag === "endParaRPr" ? {letterSpacing: 0, baseline: 0, kerning: 0, strike: false, capitalization: "none", ...value} : value
+  const style: TextStyle = tag === "endParaRPr" ? {letterSpacing: 0, baseline: 0, kerning: 0, strike: false, capitalization: "none", ...value} : value
   if (!/^#[0-9a-f]{6}$/i.test(style.color)) throw new Error("pptx-text-color-required")
   const extra = `${style.letterSpacing === undefined ? "" : ` spc="${Math.round(style.letterSpacing * 75)}"`}${style.baseline === undefined ? "" : ` baseline="${Math.round(style.baseline * 100000)}"`}${style.kerning === undefined ? "" : ` kern="${Math.round(style.kerning * 75)}"`}${style.strike === undefined ? "" : ` strike="${style.strike ? "sngStrike" : "noStrike"}"`}${style.capitalization === undefined ? "" : ` cap="${style.capitalization}"`}`
-  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}">${style.opacity === undefined ? "" : `<a:alpha val="${Math.round(style.opacity * 100000)}"/>`}</a:srgbClr></a:solidFill>${style.highlight ? `<a:highlight><a:srgbClr val="${style.highlight.slice(1)}"/></a:highlight>` : ""}<a:latin typeface="${escapeXml(style.font)}"/>${style.symbolFont ? `<a:sym typeface="${escapeXml(style.symbolFont)}"/>` : ""}</a:${tag}>`
+  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}">${style.opacity === undefined ? "" : `<a:alpha val="${Math.round(style.opacity * 100000)}"/>`}</a:srgbClr></a:solidFill>${shadowXml(style)}${style.highlight ? `<a:highlight><a:srgbClr val="${style.highlight.slice(1)}"/></a:highlight>` : ""}<a:latin typeface="${escapeXml(style.font)}"/>${style.symbolFont ? `<a:sym typeface="${escapeXml(style.symbolFont)}"/>` : ""}</a:${tag}>`
 }
 export function writeTextBody(body: TextBody): string {
   const frame = body.frame, autofit = frame.autofit

@@ -47,6 +47,8 @@ export function selectiveTextBody(document: Document, root: XmlNode, previous: T
     const locals = new Set([...children(before, oldNode), ...children(after, newNode)].map(node => node.local))
     for (const local of locals) {
       const oldChild = child(before, oldNode, local), newChild = child(after, newNode, local)
+      if (["effectLst", "latin", "sym"].includes(local) && child(document, target, local) && oldChild && newChild && raw(before, oldChild) === raw(after, newChild)) continue
+      if (local === "effectLst" && child(document, target, local)) throw new UnsupportedTextFormat("source text shadow is source controlled")
       if (!pin && oldChild && newChild && raw(before, oldChild) === raw(after, newChild)) continue
       const existing = child(document, target, local)
       if (existing && ["latin", "sym"].includes(local) && Object.keys(existing.attributes).some(name => name !== "typeface" && !name.startsWith("xmlns"))) throw new UnsupportedTextFormat("font fallback metadata requires unchanged font")

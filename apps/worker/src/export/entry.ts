@@ -1,3 +1,4 @@
+import {layoutTextShadows} from "../../../../packages/render/src/text/shadow-layout.ts"
 import type {Slide} from "../../../../packages/deck/src/model.ts"
 import type {NativeSlide} from "../../../../packages/deck/src/text/native-v3.ts"
 import {decodeExportSnapshot, selectExportSlides} from "../../../../packages/rpc/src/text/export-snapshot.ts"
@@ -39,6 +40,7 @@ try {
       await page.route("**/*",route=>route.abort())
       await page.setContent(renderDocument(saved,seq,fonts.join(""),digest,input.snapshot.assets ?? {}),{waitUntil:"load"})
       await page.evaluate(async()=>{const fonts=await Promise.all([document.fonts.load("400 16px Geist"),document.fonts.load("600 16px Geist")]);await document.fonts.ready;if(fonts.some(faces=>!faces.length))throw new Error("pinned-fonts-unavailable")})
+      await page.evaluate(layoutTextShadows)
       output=await page.pdf({width:`${first.size.width}px`,height:`${first.size.height}px`,printBackground:true,margin:{top:0,right:0,bottom:0,left:0}})
       await page.locator(".export-slide").first().screenshot({path:jobPath("internal.png"),animations:"disabled"})
     }finally{await browser.close()}

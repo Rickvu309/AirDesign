@@ -1,4 +1,4 @@
-import type {TextStyle} from "../../../deck/src/text/body.ts"
+import type {TextStyle, TextOuterShadow} from "../../../deck/src/text/body.ts"
 import type {Presentation} from "../index.ts"
 import {parseXml, type XmlNode} from "../xml.ts"
 import {children, child, type Document} from "./nodes.ts"
@@ -117,6 +117,20 @@ function capitalization(value: string): NonNullable<TextStyle["capitalization"]>
   if (value !== "none" && value !== "small" && value !== "all") throw new UnsupportedTextFormat("capitalization")
   return value
 }
+function outerShadow(document: Document, effects: XmlNode, context: TextContext): TextOuterShadow | undefined {
+  const nodes = children(document, effects)
+  if (nodes.length === 0) return undefined
+  if (nodes.length !== 1 || nodes[0]!.local !== "outerShdw") throw new UnsupportedTextFormat("text effects")
+  const node = nodes[0]!, a = node.attributes
+  const number = (name: string, fallback: number) => a[name] === undefined ? fallback : Number(a[name])
+  const alignment = a.algn ?? "b"
+  if (alignment !== "tl" && alignment !== "t" && alignment !== "tr" && alignment !== "l" && alignment !== "ctr" && alignment !== "r" && alignment !== "bl" && alignment !== "b" && alignment !== "br") throw new UnsupportedTextFormat("shadow alignment")
+  if (a.rotWithShape !== undefined && !["0", "1", "false", "true"].includes(a.rotWithShape)) throw new UnsupportedTextFormat("shadow rotation")
+  if (children(document, node).length !== 1) throw new UnsupportedTextFormat("shadow color")
+  const result: TextOuterShadow = {kind: "outer", blur: number("blurRad", 0) / 9525, distance: number("dist", 0) / 9525, direction: number("dir", 0) / 60000, scale: {x: number("sx", 100000) / 100000, y: number("sy", 100000) / 100000}, skew: {x: number("kx", 0) / 60000, y: number("ky", 0) / 60000}, alignment, rotateWithShape: a.rotWithShape !== "0" && a.rotWithShape !== "false", color: resolvedColor(document, node, context), opacity: resolvedOpacity(document, node)}
+  if (![result.blur, result.distance, result.direction, result.scale.x, result.scale.y, result.skew.x, result.skew.y].every(Number.isFinite) || result.blur < 0 || result.distance < 0 || result.direction < 0 || result.direction >= 360 || Math.abs(result.skew.x) >= 90 || Math.abs(result.skew.y) >= 90) throw new UnsupportedTextFormat("shadow geometry")
+  return result
+}
 export function resolvedStyle(properties: LocatedNode | undefined, inherited: TextStyle, context: TextContext): TextStyle {
   if (!properties) return inherited
   if (properties.node.attributes.u && !["none", "sng"].includes(properties.node.attributes.u)) throw new UnsupportedTextFormat("underline")
@@ -124,10 +138,12 @@ export function resolvedStyle(properties: LocatedNode | undefined, inherited: Te
   const typeface = latin?.attributes.typeface ?? inherited.font, font = typeface.startsWith("+") ? context.fonts[typeface] : typeface
   if (!font) throw new UnsupportedTextFormat()
   if (highlight && resolvedOpacity(document, highlight) !== 1) throw new UnsupportedTextFormat("highlight alpha")
-  return {...inherited, ...(symbol?.attributes.typeface ? {symbolFont: symbol.attributes.typeface} : {}), ...(highlight ? {highlight: resolvedColor(document, highlight, context)} : {}), ...(fill && (inherited.opacity !== undefined || children(document, children(document, fill)[0]!).some(node => node.local === "alpha")) ? {opacity: resolvedOpacity(document, fill)} : {}), ...(attributes.spc === undefined ? {} : {letterSpacing: Number(attributes.spc) / 75}), ...(attributes.baseline === undefined ? {} : {baseline: Number(attributes.baseline) / 100000}), ...(attributes.strike === undefined ? {} : {strike: attributes.strike === "sngStrike"}), ...(attributes.cap === undefined ? {} : {capitalization: capitalization(attributes.cap)}), ...(attributes.kern === undefined ? {} : {kerning: Number(attributes.kern) / 75}), font, size: attributes.sz === undefined ? inherited.size : Number(attributes.sz) / 75, bold: attributes.b === undefined ? inherited.bold : ["1", "true"].includes(attributes.b), ...(attributes.i === undefined ? {} : {italic: ["1", "true"].includes(attributes.i)}), ...(attributes.u === undefined ? {} : {underline: attributes.u !== "none"}), color: fill ? resolvedColor(document, fill, context) : inherited.color}
+  const effects = child(document, node, "effectLst"), {outerShadow: inheritedShadow, ...plain} = inherited
+  const shadow = effects ? outerShadow(document, effects, context) : inheritedShadow
+  return {...plain, ...(shadow ? {outerShadow: shadow} : {}), ...(symbol?.attributes.typeface ? {symbolFont: symbol.attributes.typeface} : {}), ...(highlight ? {highlight: resolvedColor(document, highlight, context)} : {}), ...(fill && (inherited.opacity !== undefined || children(document, children(document, fill)[0]!).some(node => node.local === "alpha")) ? {opacity: resolvedOpacity(document, fill)} : {}), ...(attributes.spc === undefined ? {} : {letterSpacing: Number(attributes.spc) / 75}), ...(attributes.baseline === undefined ? {} : {baseline: Number(attributes.baseline) / 100000}), ...(attributes.strike === undefined ? {} : {strike: attributes.strike === "sngStrike"}), ...(attributes.cap === undefined ? {} : {capitalization: capitalization(attributes.cap)}), ...(attributes.kern === undefined ? {} : {kerning: Number(attributes.kern) / 75}), font, size: attributes.sz === undefined ? inherited.size : Number(attributes.sz) / 75, bold: attributes.b === undefined ? inherited.bold : ["1", "true"].includes(attributes.b), ...(attributes.i === undefined ? {} : {italic: ["1", "true"].includes(attributes.i)}), ...(attributes.u === undefined ? {} : {underline: attributes.u !== "none"}), color: fill ? resolvedColor(document, fill, context) : inherited.color}
 }
 const styleAttributes = ["spc", "baseline", "strike", "cap", "kern"]
-const attributes: Record<string, string[]> = {txBody: [], bodyPr: ["anchor", "lIns", "rIns", "tIns", "bIns", "wrap", "rtlCol", "vert", "compatLnSpc", "spcFirstLastPara"], noAutofit: [], normAutofit: ["fontScale", "lnSpcReduction"], spAutoFit: [], lstStyle: [], defaultTextStyle: [], titleStyle: [], bodyStyle: [], otherStyle: [], p: [], pPr: ["defTabSz", "algn", "lvl", "marL", "marR", "indent", "fontAlgn"], lnSpc: [], spcPct: ["val"], spcPts: ["val"], spcBef: [], spcAft: [], highlight: [], alpha: ["val"], buClr: [], buSzPct: ["val"], buSzPts: ["val"], buNone: [], buChar: ["char"], buAutoNum: ["type", "startAt"], r: [], br: [], t: ["xml:space"], rPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], endParaRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], defRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], solidFill: [], srgbClr: ["val"], schemeClr: ["val"], sysClr: ["val", "lastClr"], sym: ["typeface"], latin: ["typeface"], ea: ["typeface"], cs: ["typeface"]}
+const attributes: Record<string, string[]> = {effectLst: [], outerShdw: ["blurRad", "dist", "dir", "sx", "sy", "kx", "ky", "algn", "rotWithShape"], txBody: [], bodyPr: ["anchor", "lIns", "rIns", "tIns", "bIns", "wrap", "rtlCol", "vert", "compatLnSpc", "spcFirstLastPara"], noAutofit: [], normAutofit: ["fontScale", "lnSpcReduction"], spAutoFit: [], lstStyle: [], defaultTextStyle: [], titleStyle: [], bodyStyle: [], otherStyle: [], p: [], pPr: ["defTabSz", "algn", "lvl", "marL", "marR", "indent", "fontAlgn"], lnSpc: [], spcPct: ["val"], spcPts: ["val"], spcBef: [], spcAft: [], highlight: [], alpha: ["val"], buClr: [], buSzPct: ["val"], buSzPts: ["val"], buNone: [], buChar: ["char"], buAutoNum: ["type", "startAt"], r: [], br: [], t: ["xml:space"], rPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], endParaRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], defRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], solidFill: [], srgbClr: ["val"], schemeClr: ["val"], sysClr: ["val", "lastClr"], sym: ["typeface"], latin: ["typeface"], ea: ["typeface"], cs: ["typeface"]}
 export function assertTextSupported(document: Document, root: XmlNode, retainedDefaults = false, preserveSource = false): void {
   for (const node of document.nodes.filter(node => node.start >= root.start && node.end <= root.end)) {
     const known = /^lvl[1-9]pPr$/.test(node.local) || node.local === "defPPr" ? attributes.pPr : attributes[node.local]
@@ -137,6 +153,11 @@ export function assertTextSupported(document: Document, root: XmlNode, retainedD
     const retained = retainedDefaults && (node.local === "pPr" || /^lvl[1-9]pPr$/.test(node.local) || node.local === "defPPr") ? ["defTabSz", "rtl", "eaLnBrk", "latinLnBrk", "hangingPunct"] : retainedDefaults && node.local === "defRPr" ? ["kern"] : []
     if (Object.keys(node.attributes).some(name => !name.startsWith("xmlns") && !supported.includes(name) && !retained.includes(name) && !(preserveSource && projectionAttributes(node).includes(name)))) throw new UnsupportedTextFormat(`${node.name} attributes ${Object.keys(node.attributes).join(",")}`)
     validateProjectionDefaults(node)
+    if (!preserveSource && node.local === "effectLst" && children(document, node).length) throw new UnsupportedTextFormat("source text effects require selective edits")
+    if (node.local === "outerShdw") {
+      const parent = document.nodes.find(parent => parent.local === "effectLst" && children(document, parent).includes(node))
+      if (!parent || !document.nodes.some(ancestor => ["rPr", "defRPr", "endParaRPr"].includes(ancestor.local) && children(document, ancestor).includes(parent))) throw new UnsupportedTextFormat("shadow ancestry")
+    }
     if (preserveSource) {
       if (node.local === "ln" && !(node.attributes.w === "0" && children(document, node).length === 0) && !(children(document, node).length === 1 && children(document, node)[0]!.local === "noFill")) throw new UnsupportedTextFormat("visible text outline")
       if (node.local === "noFill" && !document.nodes.some(parent => parent.local === "ln" && parent.start < node.start && parent.end > node.end)) throw new UnsupportedTextFormat("invisible text fill")
@@ -147,7 +168,7 @@ export function assertTextSupported(document: Document, root: XmlNode, retainedD
     if (node.attributes.rtl && !["0", "false"].includes(node.attributes.rtl)) throw new UnsupportedTextFormat("right-to-left text")
     if (node.attributes.wrap && !["square", "none"].includes(node.attributes.wrap) || node.attributes.rtlCol && !["0", "false"].includes(node.attributes.rtlCol) || node.attributes.anchor && !["t", "ctr", "b"].includes(node.attributes.anchor)) throw new UnsupportedTextFormat()
     if (node.attributes.u && !["sng", "none"].includes(node.attributes.u)) throw new UnsupportedTextFormat()
-    if (node.attributes.algn && !["l", "ctr", "r", "just"].includes(node.attributes.algn)) throw new UnsupportedTextFormat()
+    if (node.local !== "outerShdw" && node.attributes.algn && !["l", "ctr", "r", "just"].includes(node.attributes.algn)) throw new UnsupportedTextFormat()
     if (!retainedDefaults && !preserveSource && ["ea", "cs"].includes(node.local) && node.attributes.typeface) throw new UnsupportedTextFormat()
   }
 }

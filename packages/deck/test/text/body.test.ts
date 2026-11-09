@@ -54,6 +54,7 @@ describe("native text body boundary", () => {
     (v: TextBody) => { v.paragraphs[0].tabSize = 0 },
     (v: TextBody) => { v.paragraphs[0].tabSize = Infinity },
     (v: TextBody) => { v.paragraphs[0].endStyle.symbolFont = "" },
+    (v: TextBody) => { Object.assign(v.paragraphs[0].endStyle, {outerShadow: {kind: "outer"}}) },
     (v: TextBody) => { Object.assign(v.frame, {spacingAtEdges: "true"}) },
     (v: TextBody) => { Object.assign(v.frame, {warp: "unknown"}) }
   ])("rejects malformed canonical input %#", mutate => {
@@ -96,4 +97,18 @@ describe("native text body boundary", () => {
     function numbered(level: number, start: number | null = null): Paragraph { return {...body().paragraphs[0], level, marker: {kind: "number", format: "decimal", start}} }
     expect(paragraphNumbers([numbered(0), numbered(1), numbered(1), numbered(0), numbered(1), numbered(0, 4), numbered(1), body().paragraphs[0], numbered(0)])).toEqual([1, 1, 2, 2, 3, 4, 1, null, 1])
   })
+})
+
+it("validates and detaches the complete outer text shadow contract", () => {
+  const input = body(), shadow = {kind: "outer", blur: 4, distance: 12, direction: 128, scale: {x: 1, y: 0.3}, skew: {x: 21.67, y: 0}, alignment: "ctr", rotateWithShape: false, color: "#000000", opacity: 0.32} satisfies NonNullable<TextBody["paragraphs"][0]["endStyle"]["outerShadow"]>
+  input.paragraphs[0].endStyle.outerShadow = shadow
+  expect(parseTextBody(input)).toEqual(input)
+  for (const invalid of [{blur: -1}, {distance: Infinity}, {direction: 360}, {skew: {x: 90, y: 0}}, {scale: {x: 1, y: NaN}}, {rotateWithShape: 0}, {opacity: 1.1}, {color: "black"}, {alignment: "center"}, {unknown: 1}]) {
+    const value = structuredClone(input)
+    Object.assign(value.paragraphs[0].endStyle.outerShadow!, invalid)
+    expect(() => parseTextBody(value)).toThrow()
+  }
+  const parsed = parseTextBody(input)
+  shadow.scale.y = 2
+  expect(parsed.paragraphs[0].endStyle.outerShadow!.scale.y).toBe(0.3)
 })
