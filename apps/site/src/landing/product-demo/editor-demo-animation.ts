@@ -1,14 +1,14 @@
-type FilmMotion = "fade" | "rise" | "reveal-up" | "draw";
+type DemoMotion = "fade" | "rise" | "reveal-up" | "draw";
 
-interface FilmCue {
+interface DemoCue {
   part: string;
   startMs: number;
   durationMs: number;
-  motion: FilmMotion;
+  motion: DemoMotion;
   exitStartMs?: number;
 }
 
-interface FilmEasings {
+interface DemoEasings {
   micro: string;
   panel: string;
 }
@@ -108,25 +108,25 @@ const cursorOpacityPoints: OpacityPoint[] = [
   { ms: loopMs, opacity: 0 },
 ];
 
-const hiddenFrames: Record<FilmMotion, Keyframe> = {
+const hiddenFrames: Record<DemoMotion, Keyframe> = {
   fade: { opacity: 0 },
   rise: { opacity: 0, transform: "translateY(4px)" },
   "reveal-up": { opacity: 1, clipPath: "inset(100% 0% 0% 0%)" },
   draw: { opacity: 1, clipPath: "inset(-4px 100% -4px -4px)" },
 };
 
-const shownFrames: Record<FilmMotion, Keyframe> = {
+const shownFrames: Record<DemoMotion, Keyframe> = {
   fade: { opacity: 1 },
   rise: { opacity: 1, transform: "translateY(0)" },
   "reveal-up": { opacity: 1, clipPath: "inset(0% 0% 0% 0%)" },
   draw: { opacity: 1, clipPath: "inset(-4px -4px -4px -4px)" },
 };
 
-function agentCue(part: string, delayMs: number, durationMs: number, motion: FilmMotion): FilmCue {
+function agentCue(part: string, delayMs: number, durationMs: number, motion: DemoMotion): DemoCue {
   return { part, startMs: agentStartMs + delayMs, durationMs, motion };
 }
 
-const cues: FilmCue[] = [
+const cues: DemoCue[] = [
   { part: "user-message", startMs: composerCollapseMs, durationMs: 300, motion: "rise" },
   agentCue("thread-title", 200, 300, "fade"),
   agentCue("deck-title", 300, 300, "fade"),
@@ -145,8 +145,8 @@ const cues: FilmCue[] = [
   { part: "answer-title", startMs: titleSwapStartMs, durationMs: 300, motion: "rise" },
   { part: "unit", startMs: titleSwapStartMs + 80, durationMs: 300, motion: "fade" },
   { part: "legend", startMs: columnStartsMs[0], durationMs: 300, motion: "fade" },
-  ...columnStartsMs.flatMap((columnStartMs, column): FilmCue[] => [
-    ...segmentOffsetsMs.map((offsetMs, segment): FilmCue => ({
+  ...columnStartsMs.flatMap((columnStartMs, column): DemoCue[] => [
+    ...segmentOffsetsMs.map((offsetMs, segment): DemoCue => ({
       part: `bar-${column}-${segment}`,
       startMs: columnStartMs + offsetMs,
       durationMs: columnGrowMs,
@@ -160,7 +160,7 @@ const cues: FilmCue[] = [
   agentCue("cagr-head", 5240, 160, "fade"),
   agentCue("cagr-highlight", 5300, 260, "fade"),
   agentCue("table-head", 5500, 260, "fade"),
-  ...tableRowStartsMs.map((startMs, row): FilmCue => ({
+  ...tableRowStartsMs.map((startMs, row): DemoCue => ({
     part: `table-row-${row}`,
     startMs,
     durationMs: 280,
@@ -173,7 +173,7 @@ function offsetAt(ms: number): number {
   return ms / loopMs;
 }
 
-function cueKeyframes(cue: FilmCue, easings: FilmEasings): Keyframe[] {
+function cueKeyframes(cue: DemoCue, easings: DemoEasings): Keyframe[] {
   const hidden = hiddenFrames[cue.motion];
   const shown = shownFrames[cue.motion];
   const enterEasing = cue.motion === "draw" ? easings.panel : easings.micro;
@@ -194,7 +194,7 @@ function opacityKeyframes(points: OpacityPoint[], easing: string): Keyframe[] {
   return points.map(({ ms, opacity }) => ({ opacity, offset: offsetAt(ms), easing }));
 }
 
-function draftTitleKeyframes(easings: FilmEasings): Keyframe[] {
+function draftTitleKeyframes(easings: DemoEasings): Keyframe[] {
   return opacityKeyframes(
     [
       { ms: 0, opacity: 0 },
@@ -208,7 +208,7 @@ function draftTitleKeyframes(easings: FilmEasings): Keyframe[] {
   );
 }
 
-function composerPlaceholderKeyframes(easings: FilmEasings): Keyframe[] {
+function composerPlaceholderKeyframes(easings: DemoEasings): Keyframe[] {
   return opacityKeyframes(
     [
       { ms: 0, opacity: 1 },
@@ -222,7 +222,7 @@ function composerPlaceholderKeyframes(easings: FilmEasings): Keyframe[] {
   );
 }
 
-function composerDraftKeyframes(easings: FilmEasings): Keyframe[] {
+function composerDraftKeyframes(easings: DemoEasings): Keyframe[] {
   return [
     { opacity: 1, clipPath: composerShortClip, offset: 0 },
     { opacity: 1, clipPath: composerShortClip, offset: offsetAt(composerExpandMs), easing: easings.panel },
@@ -236,7 +236,7 @@ function composerDraftKeyframes(easings: FilmEasings): Keyframe[] {
   ];
 }
 
-function cursorMoveKeyframes(easings: FilmEasings): Keyframe[] {
+function cursorMoveKeyframes(easings: DemoEasings): Keyframe[] {
   const lastStop = cursorStops[cursorStops.length - 1];
   return [...cursorStops, { ...lastStop, ms: loopMs }].map(({ ms, x, y }) => ({
     transform: `translate(${x - cursorTip}px, ${y - cursorTip}px)`,
@@ -245,7 +245,7 @@ function cursorMoveKeyframes(easings: FilmEasings): Keyframe[] {
   }));
 }
 
-function cursorPressKeyframes(easings: FilmEasings): Keyframe[] {
+function cursorPressKeyframes(easings: DemoEasings): Keyframe[] {
   const pressFrames = cursorPressesMs.flatMap((pressMs): Keyframe[] => [
     { transform: "scale(1)", offset: offsetAt(pressMs), easing: easings.micro },
     { transform: `scale(${cursorPressScale})`, offset: offsetAt(pressMs + cursorPressDownMs), easing: easings.micro },
@@ -311,7 +311,7 @@ function caretKeyframes(spans: HTMLSpanElement[], typedTimesMs: number[]): Keyfr
   ];
 }
 
-function blankStageKeyframes(easings: FilmEasings): Keyframe[] {
+function blankStageKeyframes(easings: DemoEasings): Keyframe[] {
   return opacityKeyframes(
     [
       { ms: 0, opacity: 1 },
@@ -337,14 +337,14 @@ function splitIntoWords(element: Element): HTMLSpanElement[] {
   return spans;
 }
 
-function animateStreamedReply(film: Element, easings: FilmEasings): Animation[] {
-  const reply = film.querySelector('[data-film-cue="log-summary"]');
+function animateStreamedReply(demo: Element, easings: DemoEasings): Animation[] {
+  const reply = demo.querySelector('[data-demo-part="log-summary"]');
   if (!reply) {
     return [];
   }
   let startMs = agentStartMs + logSummaryDelayMs;
   return splitIntoWords(reply).map((word, index) => {
-    const cue: FilmCue = { part: "log-summary", startMs, durationMs: streamWordDurationMs, motion: "rise" };
+    const cue: DemoCue = { part: "log-summary", startMs, durationMs: streamWordDurationMs, motion: "rise" };
     startMs += streamWordGapPattern[index % streamWordGapPattern.length];
     return startPaused(word, cueKeyframes(cue, easings));
   });
@@ -370,8 +370,8 @@ function buildingShimmerStartsMs(): number[] {
   return Array.from({ length: count }, (_, index) => firstSweepMs + index * shimmerRepeatMs);
 }
 
-function animateShimmer(film: Element, part: string, sweepStartsMs: number[]): Animation[] {
-  const line = film.querySelector<HTMLElement>(`[data-film-cue="${part}"]`);
+function animateShimmer(demo: Element, part: string, sweepStartsMs: number[]): Animation[] {
+  const line = demo.querySelector<HTMLElement>(`[data-demo-part="${part}"]`);
   if (!line) {
     return [];
   }
@@ -383,7 +383,7 @@ function animateShimmer(film: Element, part: string, sweepStartsMs: number[]): A
   return [startPaused(band, shimmerKeyframes(sweepStartsMs, travel))];
 }
 
-function sparkMoveKeyframes(easings: FilmEasings): Keyframe[] {
+function sparkMoveKeyframes(easings: DemoEasings): Keyframe[] {
   const at = (y: number) => `translateY(${y}px)`;
   let currentY = 0;
   const moves = sparkSlots.flatMap(({ delayMs, y }): Keyframe[] => {
@@ -398,7 +398,7 @@ function sparkMoveKeyframes(easings: FilmEasings): Keyframe[] {
   return [{ transform: at(0), offset: 0 }, ...moves, { transform: at(currentY), offset: 1 }];
 }
 
-function sparkOpacityKeyframes(easings: FilmEasings): Keyframe[] {
+function sparkOpacityKeyframes(easings: DemoEasings): Keyframe[] {
   return opacityKeyframes(
     [
       { ms: 0, opacity: 0 },
@@ -418,7 +418,7 @@ function spinPaused(element: Element, keyframes: Keyframe[], durationMs: number)
   return animation;
 }
 
-function animateAgentPresence(film: Element, easings: FilmEasings): Animation[] {
+function animateAgentPresence(demo: Element, easings: DemoEasings): Animation[] {
   const sparkPulse: Keyframe[] = [
     { transform: "rotate(0deg) scale(0.82)" },
     { transform: "rotate(180deg) scale(1.1)" },
@@ -426,15 +426,15 @@ function animateAgentPresence(film: Element, easings: FilmEasings): Animation[] 
   ];
   const glowSpin: Keyframe[] = [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }];
   return [
-    ...animateAll(film, "[data-film-spark]", sparkMoveKeyframes(easings)),
-    ...animateAll(film, "[data-film-spark]", sparkOpacityKeyframes(easings)),
-    ...Array.from(film.querySelectorAll("[data-film-spark-spin]"), (spark) => spinPaused(spark, sparkPulse, sparkSpinMs)),
-    ...Array.from(film.querySelectorAll("[data-film-glow-spin]"), (glow) => spinPaused(glow, glowSpin, glowSpinMs)),
-    ...animateCue(film, "blank-stage", blankStageKeyframes(easings)),
+    ...animateAll(demo, "[data-demo-spark]", sparkMoveKeyframes(easings)),
+    ...animateAll(demo, "[data-demo-spark]", sparkOpacityKeyframes(easings)),
+    ...Array.from(demo.querySelectorAll("[data-demo-spark-spin]"), (spark) => spinPaused(spark, sparkPulse, sparkSpinMs)),
+    ...Array.from(demo.querySelectorAll("[data-demo-glow-spin]"), (glow) => spinPaused(glow, glowSpin, glowSpinMs)),
+    ...animateCue(demo, "blank-stage", blankStageKeyframes(easings)),
   ];
 }
 
-function readEasings(): FilmEasings {
+function readEasings(): DemoEasings {
   const rootStyle = getComputedStyle(document.documentElement);
   return {
     micro: rootStyle.getPropertyValue("--ease-micro").trim(),
@@ -448,17 +448,17 @@ function startPaused(element: Element, keyframes: Keyframe[]): Animation {
   return animation;
 }
 
-function animateAll(film: Element, selector: string, keyframes: Keyframe[]): Animation[] {
-  return Array.from(film.querySelectorAll(selector), (element) => startPaused(element, keyframes));
+function animateAll(demo: Element, selector: string, keyframes: Keyframe[]): Animation[] {
+  return Array.from(demo.querySelectorAll(selector), (element) => startPaused(element, keyframes));
 }
 
-function animateCue(film: Element, part: string, keyframes: Keyframe[]): Animation[] {
-  return animateAll(film, `[data-film-cue="${part}"]`, keyframes);
+function animateCue(demo: Element, part: string, keyframes: Keyframe[]): Animation[] {
+  return animateAll(demo, `[data-demo-part="${part}"]`, keyframes);
 }
 
-function animateTyping(film: Element): Animation[] {
-  const typing = film.querySelector<HTMLElement>("[data-film-typing]");
-  const caret = film.querySelector("[data-film-caret]");
+function animateTyping(demo: Element): Animation[] {
+  const typing = demo.querySelector<HTMLElement>("[data-demo-typing]");
+  const caret = demo.querySelector("[data-demo-caret]");
   if (!typing || !caret) {
     return [];
   }
@@ -470,7 +470,7 @@ function animateTyping(film: Element): Animation[] {
   ];
 }
 
-export async function playEditorDemoAnimation(film: Element): Promise<void> {
+export async function playEditorDemoAnimation(demo: Element): Promise<void> {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return;
   }
@@ -479,19 +479,19 @@ export async function playEditorDemoAnimation(film: Element): Promise<void> {
 
   const easings = readEasings();
   const animations = [
-    ...animateCue(film, "draft-title", draftTitleKeyframes(easings)),
-    ...animateCue(film, "composer-draft", composerDraftKeyframes(easings)),
-    ...animateCue(film, "composer-placeholder", composerPlaceholderKeyframes(easings)),
-    ...cues.flatMap((cue) => animateCue(film, cue.part, cueKeyframes(cue, easings))),
-    ...animateTyping(film),
-    ...animateStreamedReply(film, easings),
-    ...animateShimmer(film, "log-read", [agentStartMs + logReadDelayMs + 120]),
-    ...animateShimmer(film, "log-built", [agentStartMs + logBuiltDelayMs + 120]),
-    ...animateShimmer(film, "log-building", buildingShimmerStartsMs()),
-    ...animateAgentPresence(film, easings),
-    ...animateAll(film, "[data-film-cursor]", cursorMoveKeyframes(easings)),
-    ...animateAll(film, "[data-film-cursor]", opacityKeyframes(cursorOpacityPoints, "linear")),
-    ...animateAll(film, "[data-film-cursor-press]", cursorPressKeyframes(easings)),
+    ...animateCue(demo, "draft-title", draftTitleKeyframes(easings)),
+    ...animateCue(demo, "composer-draft", composerDraftKeyframes(easings)),
+    ...animateCue(demo, "composer-placeholder", composerPlaceholderKeyframes(easings)),
+    ...cues.flatMap((cue) => animateCue(demo, cue.part, cueKeyframes(cue, easings))),
+    ...animateTyping(demo),
+    ...animateStreamedReply(demo, easings),
+    ...animateShimmer(demo, "log-read", [agentStartMs + logReadDelayMs + 120]),
+    ...animateShimmer(demo, "log-built", [agentStartMs + logBuiltDelayMs + 120]),
+    ...animateShimmer(demo, "log-building", buildingShimmerStartsMs()),
+    ...animateAgentPresence(demo, easings),
+    ...animateAll(demo, "[data-demo-cursor]", cursorMoveKeyframes(easings)),
+    ...animateAll(demo, "[data-demo-cursor]", opacityKeyframes(cursorOpacityPoints, "linear")),
+    ...animateAll(demo, "[data-demo-cursor-press]", cursorPressKeyframes(easings)),
   ];
 
   new IntersectionObserver(
@@ -499,5 +499,5 @@ export async function playEditorDemoAnimation(film: Element): Promise<void> {
       animations.forEach((animation) => (entry.isIntersecting ? animation.play() : animation.pause()));
     },
     { threshold: visibleInViewThreshold },
-  ).observe(film);
+  ).observe(demo);
 }

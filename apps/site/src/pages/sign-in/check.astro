@@ -1,0 +1,40 @@
+---
+import CheckEmailCard from "../../access/check-email/check-email-card.astro";
+import AirdesignMark from "../../site/airdesign-mark.astro";
+import SiteDocument from "../../site/site-document.astro";
+---
+
+<SiteDocument title="Check your email">
+  <div class="flex min-h-dvh items-center justify-center bg-canvas px-4 py-8">
+    <main class="w-full max-w-[440px]">
+      <div class="flex flex-col items-center">
+        <AirdesignMark size={40} weight="bold" />
+        <h1 class="mt-5 text-center text-[26px] leading-[1.2] font-semibold tracking-[-0.5px]">Check your email</h1>
+      </div>
+      <div class="mt-[27px]">
+        <CheckEmailCard />
+      </div>
+      <div class="mt-[29px] flex justify-center">
+        <a class="text-link flex items-center gap-1 text-[14px] leading-[1.43] font-semibold text-muted-foreground" href="/sign-in">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"></path></svg>
+          Use a different email
+        </a>
+      </div>
+    </main>
+  </div>
+</SiteDocument>
+
+<script>
+  import { connectSixDigitCodeEntry } from "../../access/check-email/six-digit-code-entry";
+  import { readPendingEmail } from "../../access/pending-sign-in-email";
+
+  const pendingEmail = readPendingEmail();
+  if (pendingEmail === null) {
+    location.replace("/sign-in");
+  } else {
+    document.querySelectorAll("[data-pending-email]").forEach((element) => {
+      element.textContent = pendingEmail;
+    });
+    document.querySelectorAll("[data-six-digit-code]").forEach((entry) => connectSixDigitCodeEntry(entry));
+  }
+</script>

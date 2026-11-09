@@ -1,5 +1,5 @@
 ---
-import CheckIcon from "../../icons/check-icon.astro";
+import CheckIcon from "../../site/check-icon.astro";
 import editorDemoMarkup from "./editor-demo-markup.html?raw";
 ---
 
@@ -28,5 +28,5 @@ import editorDemoMarkup from "./editor-demo-markup.html?raw";
 <script>
   import { playEditorDemoAnimation } from "./editor-demo-animation";
 
-  document.querySelectorAll("[data-editor-demo]").forEach((film) => playEditorDemoAnimation(film));
+  document.querySelectorAll("[data-editor-demo]").forEach((demo) => playEditorDemoAnimation(demo));
 </script>

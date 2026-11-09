@@ -1,0 +1,24 @@
+---
+import SignInForm from "../access/sign-in/sign-in-form.astro";
+import AirdesignMark from "../site/airdesign-mark.astro";
+import SiteDocument from "../site/site-document.astro";
+---
+
+<SiteDocument title="Sign in or create an account">
+  <div class="flex min-h-dvh flex-col bg-canvas px-4">
+    <main class="mx-auto w-full max-w-[440px] pt-[clamp(48px,14.3vh,132px)]">
+      <div class="flex flex-col items-center">
+        <AirdesignMark size={40} weight="bold" />
+        <h1 class="mt-5 text-center text-[26px] leading-[1.2] font-semibold tracking-[-0.5px]">Sign in or create an account</h1>
+      </div>
+      <div class="mt-7">
+        <SignInForm />
+      </div>
+    </main>
+    <footer class="mt-auto flex justify-center gap-1 pt-8 pb-4 text-[14px] leading-[1.43] text-muted-foreground">
+      <a class="text-link" href="/terms">Terms of Service</a>
+      <span>and</span>
+      <a class="text-link" href="/privacy">Privacy Policy</a>
+    </footer>
+  </div>
+</SiteDocument>

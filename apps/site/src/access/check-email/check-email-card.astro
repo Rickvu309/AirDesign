@@ -1,0 +1,43 @@
+---
+const codeBoxes = [0, 1, 2, 3, 4, 5];
+const mailButtonClass =
+  "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[15px] font-medium shadow-[0_0_0_1px_#d7d7d6,0_1px_2px_#0000000d] transition-[filter] duration-150 hover:brightness-[0.98]";
+---
+
+<div class="flex flex-col items-center rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_#00000012,0px_1px_2px_0px_#00000008,0px_12px_32px_0px_#0000000a] max-sm:p-6">
+  <div class="my-px flex size-[46px] items-center justify-center rounded-xl bg-[linear-gradient(180deg,#93b8ef_0%,#4d94fb_100%)] text-white shadow-[inset_0_1px_0_#ffffff59,0_0_0_1px_#2d6fcd,0_1px_2px_#0000001f]">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+  </div>
+
+  <p class="mt-[25px] text-[15px] leading-[1.5] text-muted-foreground">Sign-in link sent to</p>
+  <p class="mt-1 text-[15px] leading-[1.5] font-semibold break-all" data-pending-email></p>
+
+  <p class="mt-[23px] text-[13px] leading-[1.31] text-muted-foreground" id="six-digit-code-label">Or enter the 6-digit code</p>
+  <div class="relative mt-2.5 grid h-12 w-full max-w-[304px] grid-cols-6 gap-2" data-six-digit-code>
+    {codeBoxes.map(() => <div class="code-box" data-code-box aria-hidden="true"></div>)}
+    <input
+      class="absolute inset-0 size-full cursor-text opacity-0"
+      name="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      aria-labelledby="six-digit-code-label"
+      autofocus
+    />
+  </div>
+
+  <div class="mt-6 grid w-full grid-cols-2 gap-2.5">
+    <a class={mailButtonClass} href="https://outlook.live.com/mail/" target="_blank" rel="noreferrer">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="4" width="15" height="16" rx="2" fill="#28a8ea"></rect><rect x="2" y="7" width="12" height="12" rx="1.5" fill="#0364b8"></rect><ellipse cx="8" cy="13" rx="2.6" ry="3.1" fill="none" stroke="#ffffff" stroke-width="1.6"></ellipse></svg>
+      Open Outlook
+    </a>
+    <a class={mailButtonClass} href="https://mail.google.com/" target="_blank" rel="noreferrer">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#4285f4" d="M3.5 20H7v-9.2L2 7v11.5A1.5 1.5 0 0 0 3.5 20z"></path><path fill="#34a853" d="M17 20h3.5a1.5 1.5 0 0 0 1.5-1.5V7l-5 3.8z"></path><path fill="#fbbc04" d="M17 4.6v6.2l5-3.8V5.3c0-1.85-2.1-2.9-3.6-1.8z"></path><path fill="#ea4335" d="M7 10.8V4.6l5 3.8 5-3.8v6.2l-5 3.8z"></path><path fill="#c5221f" d="M2 5.3V7l5 3.8V4.6L5.6 3.5C4.1 2.4 2 3.45 2 5.3z"></path></svg>
+      Open Gmail
+    </a>
+  </div>
+
+  <p class="mt-[25px] text-[14px] leading-[1.43] text-muted-foreground">
+    Didn't get it?{" "}
+    <button class="cursor-pointer font-semibold text-primary-strong" type="button">Send it again</button>
+  </p>
+</div>
