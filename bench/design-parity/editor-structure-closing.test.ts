@@ -34,7 +34,7 @@ it("keeps editor status and Sonner feedback below the history controls and rejec
   }finally{await browser.close()}
 })
 
-it.each(["S92.02","S91.03"])("waits for actual final dialog copy without accepting absent or stale content: %s",async code=>{
+it.each(["S92.02","S91.03","S61.01","S61.02"])("waits for actual final dialog copy without accepting absent or stale content: %s",async code=>{
   const entry=(await readRegistry()).find(entry=>entry.code===code)!,browser=await chromium.launch()
   try{
     const page=await browser.newPage();page.setDefaultTimeout(300)
@@ -44,6 +44,7 @@ it.each(["S92.02","S91.03"])("waits for actual final dialog copy without accepti
     await page.locator('dialog').evaluate(element=>(element as HTMLDialogElement).showModal())
     await expect(waitForScenarioDialog(page,entry)).rejects.toThrow()
     await page.locator('dialog').evaluate((element,texts)=>{element.replaceChildren(...texts.map(text=>{const p=document.createElement('p');p.textContent=text;return p}))},copy)
+    if(code.startsWith("S61"))await page.locator('dialog').evaluate(element=>{const action=document.createElement("button");action.textContent="Export";element.append(action)})
     await waitForScenarioDialog(page,entry)
     await expect(assertScenarioOwnedCopy(page,entry)).resolves.toBeUndefined()
     if(code==="S91.03"){
@@ -51,7 +52,11 @@ it.each(["S92.02","S91.03"])("waits for actual final dialog copy without accepti
       await expect(waitForScenarioDialog(page,entry)).rejects.toThrow()
       await page.locator('dialog p').nth(1).evaluate((element,text)=>{element.textContent=text},copy[1]!)
     }
-    await page.locator('dialog p').first().evaluate(element=>element.remove())
+    await page.locator('dialog').evaluate((element,text)=>{for(const child of [...element.children])if(child.textContent===text)child.remove()},copy[0]!)
     await expect(waitForScenarioDialog(page,entry)).rejects.toThrow()
+    if(code.startsWith("S61")){
+      await page.locator('dialog').evaluate((element,texts)=>{element.replaceChildren(...texts.map(text=>{const p=document.createElement('p');p.textContent=text;p.hidden=true;return p}))},copy)
+      await expect(waitForScenarioDialog(page,entry)).rejects.toThrow()
+    }
   }finally{await browser.close()}
 })

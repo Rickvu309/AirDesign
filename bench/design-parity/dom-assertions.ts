@@ -419,5 +419,5 @@ export async function waitForScenarioDialog(page:Page,entry:Scenario){
   if(entry.component?.kind!=="dialog")return
   const dialog=page.locator(entry.component.selector)
   await dialog.waitFor({state:"visible"})
-  for(const key of entry.assertions.copyKeys)await dialog.getByText(resolveCopy(key,entry.assertions.copyValues),{exact:true}).waitFor({state:"visible"})
+  for(const key of entry.assertions.copyKeys)await dialog.getByText(resolveCopy(key,entry.assertions.copyValues),{exact:true}).filter({visible:true}).first().waitFor({state:"visible"})
 }
