@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -18,26 +19,30 @@ const extensions = new Set([
 ])
 const skipDirectories = new Set(["node_modules", "dist", "fixtures", "boundary-fixtures"])
 
+const trackedFiles = (root) => {
+  const result = spawnSync("git", ["ls-files", "-z"], {
+    cwd: root,
+    encoding: "utf8",
+  })
+  if (result.status !== 0) throw new Error(result.stderr || "git ls-files failed")
+  return result.stdout.split("\0").filter((file) => file !== "")
+}
+
 export const sourceLines = (root, relative) => {
-  const directory = path.join(root, relative)
-  if (!fs.existsSync(directory)) return 0
+  const prefix = `${relative}/`
   let lines = 0
-  const walk = (current) => {
-    for (const name of fs.readdirSync(current)) {
-      if (skipDirectories.has(name)) continue
-      const file = path.join(current, name)
-      const info = fs.statSync(file)
-      if (info.isDirectory()) {
-        walk(file)
-        continue
-      }
-      if (!info.isFile() || name.includes(".test.") || !extensions.has(path.extname(name))) continue
-      for (const line of fs.readFileSync(file, "utf8").split("\n")) {
-        if (line.trim() !== "") lines += 1
-      }
+  for (const file of trackedFiles(root)) {
+    if (!file.startsWith(prefix)) continue
+    const parts = file.split("/")
+    if (parts.some((part) => skipDirectories.has(part))) continue
+    const name = parts[parts.length - 1]
+    if (name.includes(".test.") || !extensions.has(path.extname(name))) continue
+    const absolute = path.join(root, file)
+    if (!fs.existsSync(absolute)) continue
+    for (const line of fs.readFileSync(absolute, "utf8").split("\n")) {
+      if (line.trim() !== "") lines += 1
     }
   }
-  walk(directory)
   return lines
 }
 
