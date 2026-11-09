@@ -19,8 +19,14 @@ import editorRunFrame from "./editor-run-frame.html?raw";
         data-fit-frame
         aria-hidden="true"
       >
-        <div class="fit-frame-content" set:html={editorRunFrame} />
+        <div class="fit-frame-content" data-editor-run-film set:html={editorRunFrame} />
       </div>
     </div>
   </div>
 </section>
+
+<script>
+  import { playEditorRunFilm } from "./editor-run-film";
+
+  document.querySelectorAll("[data-editor-run-film]").forEach((film) => playEditorRunFilm(film));
+</script>

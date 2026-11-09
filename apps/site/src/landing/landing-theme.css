@@ -18,7 +18,9 @@
   --navy: #0f2433;
   --positive: #16a34a;
   --negative: #dc2626;
-  --transition-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-micro: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-panel: cubic-bezier(0.32, 0.72, 0, 1);
+  --transition-micro: 150ms var(--ease-micro);
 }
 
 @theme inline {
