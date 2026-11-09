@@ -197,6 +197,17 @@ it("pins Railway's SSH host key that a fresh runner refused to trust in the firs
   expect(railwayKnownHostsHits(knownHosts + "evil.example ssh-ed25519 AAAA\n")).not.toEqual([])
 })
 
+it("requires release tool helpers before the deployment controller", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  const install = "      - name: Install release tools\n        timeout-minutes: 7\n        run: bash scripts/release/install-tools.sh\n"
+  expect(deploy).toContain(install)
+  const moved = deploy.replace(install, "").replace("        run: node scripts/release/railway-production.ts\n", `        run: node scripts/release/railway-production.ts\n${install}`)
+  expect(moved).not.toBe(deploy)
+  expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
+  expect(deploymentWorkflowHits(moved, railway)).toContain("deploy-installers-must-precede-deployment")
+})
+
 it("rejects local uploads in the Railway controller", () => {
   const source = readFileSync("scripts/release/railway-production.ts", "utf8")
   expect(railwayControllerHits(source)).toEqual([])

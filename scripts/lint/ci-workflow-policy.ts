@@ -111,7 +111,7 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
       if (value.includes("secrets.") && !allowed.includes(name)) hits.push(`deploy-secret-not-consumed-by-step: ${name}`)
     }
     if (/\bnpx\b/.test(run) && Object.values(step.env ?? {}).some(value => value.includes("secrets."))) hits.push("deploy-package-fetch-with-secrets")
-    if (index > controller && /npm (?:ci|install)|playwright install|apt-get/.test(run)) hits.push("deploy-installers-must-precede-deployment")
+    if (index > controller && /npm (?:ci|install)|playwright install|apt-get|scripts\/release\/install-tools\.sh/.test(run)) hits.push("deploy-installers-must-precede-deployment")
     if (step.uses?.startsWith("actions/checkout@") && step.with?.ref !== "${{ github.event.workflow_run.head_sha }}") hits.push("deploy-checkout-must-use-ci-sha")
     if (/\brailway(?:\/cli@[^ ]+)? up\b/.test(run)) hits.push("deploy-must-build-from-github")
     if (/\brailway link\b/.test(run)) hits.push("deploy-railway-link-needs-account-token")
