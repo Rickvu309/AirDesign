@@ -87,7 +87,7 @@ it("navigates landing sections from the header on desktop and phone",async()=>{
   for(const mobile of [true,false]){
    const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1440,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:"reduce"})
    await page.goto(url)
-   for(const [name,target] of [["Agents",".agent-section h2"],["Pricing",".landing-pricing h2"],["Product",".hero h1"]]){
+   for(const [name,target] of [["Agents",".agent-section h2"],["Pricing",".landing-pricing h2"],["Product",".hero h1"]] as const){
     await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).click()
     await expect.poll(()=>page.evaluate(()=>location.pathname)).toBe("/")
     await expect.poll(()=>page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).getAttribute("aria-current")).toBe("location")
