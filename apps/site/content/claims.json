@@ -153,7 +153,7 @@
     },
     {
       "id": "public-024",
-      "text": "Choose a connection guide. Client connections are not yet verified.",
+      "text": "Explore agent guides. Client connections are not yet verified.",
       "kind": "blocked",
       "gate": "X05"
     },
@@ -972,7 +972,7 @@
     },
     {
       "id": "site-capture-mobile",
-      "text": "Slide 3 of 8 · Swipe to explore",
+      "text": "Slide 3 of 8",
       "kind": "proven",
       "receipt": "P09/report.md"
     },

@@ -65,7 +65,7 @@ async function checkButtonContrast(page,route,width){
   }
  }
 }
-let focusedCapture=false
+let verifiedCapture=false
 const origin=`http://127.0.0.1:${server.address().port}`,browser=await chromium.launch(),overflows=[]
 try{
  for(const width of widths){
@@ -122,27 +122,23 @@ try{
     assert.ok(chartPixels>1000,"the mobile frame must paint the captured chart rather than an empty surface")
     const image=await page.locator("#product img").evaluate(element=>({source:element.currentSrc,width:element.getBoundingClientRect().width,naturalWidth:element.naturalWidth}))
     assert.ok(image.source.endsWith("/studio-capture-mobile.png"),"phones must receive the focused Studio crop")
-    assert.ok(image.width>=640&&image.naturalWidth>=image.width,"the captured slide must remain readable and sharp")
+    assert.ok(image.width<=width&&image.naturalWidth>=image.width,"the complete captured slide must fit and remain sharp")
     const navigation=await page.locator("header").boundingBox()
     assert.ok(navigation.height<=140,"mobile navigation must keep both rows compact")
     for(const link of await page.locator("header a").all()){
      const box=await link.boundingBox()
      assert.ok(box.width>=44&&box.height>=44,`mobile navigation needs 44px tap targets: ${await link.textContent()} ${box.width}x${box.height}`)
     }
-    await exhibit.focus()
-    await page.keyboard.press("ArrowRight")
-    await page.waitForFunction(()=>document.querySelector(".demo-workspace").scrollLeft>0)
-    assert.ok(await exhibit.evaluate(element=>element.matches(":focus-visible")),"the keyboard scroll frame needs a visible focus ring")
-    focusedCapture=true
+    verifiedCapture=true
    }
   }
   await page.close()
  }
 }finally{await browser.close();server.close()}
-assert.ok(focusedCapture,"focused capture check did not run")
+assert.ok(verifiedCapture,"mobile capture check did not run")
 const expectedContrastSamples=Object.values(signatureButtons).reduce((sum,count)=>sum+count,0)*buttonStates.length*contrastWidths.length
 assert.equal(contrastEvidence.length,expectedContrastSamples,"every signature button state must be contrast checked")
 assert.ok(contrastEvidence.every(item=>Number.isFinite(item.minimum)),"every contrast sample must be measured")
 assert.deepEqual(overflows,[],`site pages wider than the viewport: ${JSON.stringify(overflows)}`)
 if(evidenceDirectory)await writeFile(path.join(evidenceDirectory,"checks.json"),JSON.stringify({contrastEvidence,layoutEvidence},null,2))
-console.log(JSON.stringify({contrastMinimum:Math.min(...contrastEvidence.map(item=>item.minimum)),contrastSamples:contrastEvidence.length,layoutEvidence,siteWidths:"pass",routes:routes.length,widths,focusedCapture}))
+console.log(JSON.stringify({contrastMinimum:Math.min(...contrastEvidence.map(item=>item.minimum)),contrastSamples:contrastEvidence.length,layoutEvidence,siteWidths:"pass",routes:routes.length,widths,verifiedCapture}))
