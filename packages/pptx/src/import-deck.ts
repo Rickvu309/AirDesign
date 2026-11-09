@@ -1,6 +1,6 @@
 import {textContext, UnsupportedTextFormat} from "./text/cascade.ts"
 import {readTextBody} from "./text/body.ts"
-import {isNativeSlide, parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../deck/src/text/native-v3.ts"
+import {isNativeElement, isNativeSlide, parseNativeArchiveV3, type NativeDeck, type NativeElement, type NativeText} from "../../deck/src/text/native-v3.ts"
 import { SaxesParser } from "saxes"
 import { id,isSlide,parseDeck,type Deck,type Element,type Source } from "../../deck/src/index.ts"
 import { hash,type Presentation } from "./index.ts"
@@ -38,7 +38,7 @@ function notesBody(bytes:Buffer):string {
 }
 type TextElement = Extract<Element, {kind: "text"}>
 type TextFactory<T extends TextElement | NativeText> = (base: Omit<TextElement, "runs">, parsed: ReturnType<typeof parseXml>, shape: XmlNode, spans: XmlNode[]) => T | undefined
-function importedSlides<T extends TextElement | NativeText>(presentation:Presentation, textElement: TextFactory<T>, validSlide: (slide: unknown) => boolean, progress?:(value:{completed:number;total:number})=>void) {
+function importedSlides<T extends TextElement | NativeText>(presentation:Presentation, textElement: TextFactory<T>, validSlide: (slide: unknown) => boolean, progress?:(value:{completed:number;total:number})=>void, nativeGroups = false) {
   const main=presentation.parts.get("ppt/presentation.xml");if(!main)throw new Error("presentation-required")
   const document=parseXml(main),size=document.nodes.find(node=>node.local==="sldSz")
   const width=Number(size?.attributes.cx ?? 12192000)/9525,height=Number(size?.attributes.cy ?? 6858000)/9525
@@ -50,12 +50,12 @@ function importedSlides<T extends TextElement | NativeText>(presentation:Present
   })
   progress?.({completed:0,total:ordered.length})
   const slides=ordered.map(({part,bytes},index)=>{
-    const source:Source={kind:"original",part,sha256:hash(bytes),objectId:"slide",dependencies:presentation.report.relationships.filter(rel=>rel.part===part).map(rel=>rel.target)}
+    const source={kind:"original",part,sha256:hash(bytes),objectId:"slide",dependencies:presentation.report.relationships.filter(rel=>rel.part===part).map(rel=>rel.target)} satisfies Source
     const parsed=parseXml(bytes),texts=parsed.nodes.filter(node=>node.local==="t" && node.uri.endsWith("/drawingml/2006/main"))
     const containers=["graphicFrame","pic","cxnSp","grpSp"]
     const objects=parsed.nodes.filter(node=>containers.includes(node.local) && !parsed.nodes.some(parent=>containers.includes(parent.local)&&within(parent,node)))
     const shapes=parsed.nodes.filter(node=>node.local==="sp"&&!objects.some(parent=>within(parent,node)))
-    const elements:(Exclude<Element, {kind: "text"} | {kind: "group"}> | T)[]=[]
+    const elements:(Element | NativeElement)[]=[]
     function box(node:XmlNode) {
       const children=parsed.nodes.filter(child=>within(node,child)),offset=children.find(child=>child.local==="off"),extent=children.find(child=>child.local==="ext")
       return {x:Number(offset?.attributes.x ?? 0)/9525,y:Number(offset?.attributes.y ?? 0)/9525,width:Number(extent?.attributes.cx ?? width*9525)/9525,height:Number(extent?.attributes.cy ?? height*9525)/9525}
@@ -67,7 +67,31 @@ function importedSlides<T extends TextElement | NativeText>(presentation:Present
       if(element) elements.push(element)
       else objects.push(shape)
     }
+    function nested(node: XmlNode, identity: string): NativeElement {
+      const children = parsed.nodes.filter(child => within(node, child))
+      const name = children.find(child => child.local === "cNvPr")?.attributes.id
+      const base = {id: id(identity), box: box(node), source: {...source, objectId: `nested:${node.local}:${name}`}, support: {kind: "kept", preview: null} satisfies Element["support"], theme: null, placeholder: null, overlap: null}
+      if (node.local === "sp") {
+        const spans = texts.filter(child => within(node, child)), body = children.find(child => child.local === "txBody")
+        if (body) {
+          const capable = spans.every(child => presentation.report.capabilities.some(item => item.part === part && item.scope.kind === "text-span" && item.scope.index === texts.indexOf(child) && item.support === "native"))
+          const text = textElement({...base, kind: "text", source: {...source, objectId: spans.length ? `text:${spans.map(child => texts.indexOf(child)).join(",")}` : `body:${parsed.nodes.filter(child => child.local === "txBody").indexOf(body)}`}, support: capable ? {kind: "native"} : base.support}, parsed, node, spans)
+          if (isNativeElement(text)) return text
+        }
+      }
+      if (node.local === "grpSp") {
+        const properties = children.find(child => child.local === "grpSpPr"), transform = properties && children.find(child => within(properties, child) && child.local === "xfrm")
+        const coordinate = (local: string) => transform && children.find(child => within(transform, child) && child.local === local)
+        const offset = coordinate("chOff"), extent = coordinate("chExt")
+        if (transform && !Object.keys(transform.attributes).some(key => !key.startsWith("xmlns")) && offset && extent && Number(extent.attributes.cx) > 0 && Number(extent.attributes.cy) > 0) {
+          const direct = children.filter(child => ["sp", ...containers].includes(child.local) && !children.some(parent => ["sp", ...containers].includes(parent.local) && within(parent, child)))
+          return {...base, kind: "group", source: {...source, objectId: identity.startsWith(`s${index}k`) ? `grpSp:${objects.indexOf(node)}` : `group:${name}`}, support: {kind: "native"}, coordinateSpace: {x: Number(offset.attributes.x) / 9525, y: Number(offset.attributes.y) / 9525, width: Number(extent.attributes.cx) / 9525, height: Number(extent.attributes.cy) / 9525}, children: direct.map(child => nested(child, `s${index}n${parsed.nodes.find(candidate => within(child, candidate) && candidate.local === "cNvPr")?.attributes.id}`))}
+        }
+      }
+      return {...base, kind: "shape", geometry: "rectangle", fill: "#ffffff"}
+    }
     for(const [objectIndex,node] of objects.entries()){
+      if (nativeGroups && node.local === "grpSp") { elements.push(nested(node, `s${index}k${objectIndex}`)); continue }
       const objectType=node.local==="graphicFrame" ? parsed.nodes.some(child=>within(node,child)&&child.local==="chart"&&["http://schemas.openxmlformats.org/drawingml/2006/chart","http://purl.oclc.org/ooxml/drawingml/chart"].includes(child.uri)) ? "chart" : parsed.nodes.some(child=>within(node,child)&&child.local==="tbl"&&["http://schemas.openxmlformats.org/drawingml/2006/main","http://purl.oclc.org/ooxml/drawingml/main"].includes(child.uri)) ? "table" : undefined : undefined
       elements.push({id:id(`s${index}k${objectIndex}`),kind:"shape",geometry:"rectangle",fill:"#ffffff",box:box(node),source:{...source,objectId:`${node.local}:${objectIndex}`,...objectType ? {objectType} : {}},support:{kind:"kept",preview:null},theme:null,placeholder:null,overlap:null})
     }
@@ -123,6 +147,6 @@ export function importedNativeDeck(presentation: Presentation, progress?: (value
       if (error instanceof UnsupportedTextFormat) return undefined
       throw error
     }
-  }, isNativeSlide, progress)
+  }, isNativeSlide, progress, true)
   return parseNativeArchiveV3({version: 3, deck: {id: id("imported"), version: 0, slides, themes: []}}).deck
 }

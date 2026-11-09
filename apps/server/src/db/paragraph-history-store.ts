@@ -167,7 +167,7 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
       await nativeParagraphCapability(tx)
       if (result.receipt.kind === "applied") {
         const source = (await tx.query<{bytes: Buffer}>("SELECT bytes FROM catalog_source WHERE deck=$1", [deck])).rows[0]
-        if (source) try {await assertNativeSourceTextEdits(source.bytes, result.history.deck)} catch (error) {
+        if (source) try {await assertNativeSourceTextEdits(source.bytes, result.history.deck, history.deck)} catch (error) {
           if (!(error instanceof UnsupportedTextFormat)) throw error
           result = {history, receipt: {id: command.id, seq: history.seq, kind: "refused", code: error.message, command}}
         }

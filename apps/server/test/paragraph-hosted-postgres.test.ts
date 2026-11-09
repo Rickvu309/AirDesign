@@ -1,6 +1,6 @@
 import {readFile} from "node:fs/promises"
 import {performance} from "node:perf_hooks"
-import {cascadeSource} from "../../../packages/pptx/test/text-cascade-fixture.ts"
+import {retainedTextSource} from "../../../packages/pptx/test/text-cascade-fixture.ts"
 import {importPptx,exportPptx} from "../../../packages/pptx/src/index.ts"
 import {importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
 import {writeNativeSavedPptx} from "../../../packages/pptx/src/export-deck.ts"
@@ -18,6 +18,7 @@ import {fontDeck} from "./agent/font-fixture.ts"
 import {localAdapter} from "../../../packages/agent/src/local-adapter.ts"
 import type {AgentAdapter} from "../../../packages/agent/src/harness.ts"
 import {id} from "../../../packages/deck/src/index.ts"
+import {flatten} from "../../../packages/deck/src/elements.ts"
 import {nativeNodes} from "../../../packages/change-log/src/text/native-model.ts"
 import {createParagraphHistoryStore} from "../src/db/paragraph-history-store.ts"
 import {prepareParagraphCutover,pauseParagraphEditing} from "../src/db/paragraph-protocol.ts"
@@ -295,11 +296,14 @@ it("routes native template and image prepared edits through atomic history and r
 it("admits independent imported text edits and refuses destructive field edits before sequence mutation with durable retries and frozen export", async()=>{
   const f=await hostedFixture()
   try{
-    const original=await cascadeSource('<a:p><a:r><a:rPr><a:hlinkClick r:id="retained-link" tooltip="Original"/></a:rPr><a:t>Editable input</a:t></a:r><a:fld id="source-field" type="slidenum"><a:t>42</a:t></a:fld></a:p>'),bytes=await exportPptx(original)
+    const original=await retainedTextSource(),bytes=await exportPptx(original)
     const entry=await f.native.catalog.create(f.owner,"source-capability","Source capability","",importedNativeDeck(original),{bytes,report:{...original.report}})
     let current=await f.native.read(f.owner,entry.id)
-    const text=current.deck.slides[0]!.elements.find(element=>element.kind==="text"&&element.body.paragraphs.length===10)
+    const text=flatten(current.deck.slides[0]!.elements).find(element=>element.kind==="text"&&element.body.paragraphs.length===10)
     if(text?.kind!=="text")throw new Error("source-text-required")
+    expect(text.body.frame.spacingAtEdges).toBe(true)
+    expect(text.body.paragraphs[9]!.tabSize).toBe(48)
+    expect(text.body.paragraphs[9]!.runs[0]!.style.symbolFont).toBe("Wingdings")
     const paragraph=text.body.paragraphs[9]!,input={deckId:entry.id,base:current.seq,requestId:"independent-source-edit",changes:[{kind:"set",target:paragraph.id,value:{...paragraph,runs:paragraph.runs.map((run,index)=>index===0&&run.kind==="text"?{...run,text:"Retained person input"}:run)}}]}
     const started=performance.now(),applied=await f.tool("apply_changes",input)
     console.log(JSON.stringify({measurement:"hosted-source-cascade-10-paragraph-edit",milliseconds:performance.now()-started,sourceBytes:bytes.length,result:applied}))
@@ -313,6 +317,7 @@ it("admits independent imported text edits and refuses destructive field edits b
     expect(xml).toContain('type="slidenum"><a:t>42</a:t>')
     expect(xml).toContain('<a:hlinkClick r:id="retained-link" tooltip="Original"/>')
     expect(xml).toContain("Retained person input")
+    expect(xml).toContain('<a:sym typeface="Wingdings" pitchFamily="2" charset="2"/>')
     for(const [part,value]of original.parts)if(!["[Content_Types].xml","ppt/slides/slide1.xml"].includes(part))expect(exported.parts.get(part),part).toEqual(value)
     const destructive={deckId:entry.id,base:current.seq,requestId:"destructive-source-edit",changes:[{kind:"set",target:paragraph.id,value:{...input.changes[0]!.value,runs:paragraph.runs.map((run,index)=>index===1&&run.kind==="text"?{...run,text:"Caller draft retained"}:run)}}]}
     const refused=await f.tool("apply_changes",destructive)
@@ -320,6 +325,15 @@ it("admits independent imported text edits and refuses destructive field edits b
     expect(await f.tool("apply_changes",destructive)).toEqual(refused)
     expect(await f.tool("apply_changes",{...destructive,changes:input.changes})).toMatchObject({code:"request-id-payload-mismatch"})
     expect(await f.native.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})
+    const group=current.deck.slides[0]!.elements.find(element=>element.kind==="group")
+    if(group?.kind!=="group"||!group.coordinateSpace)throw new Error("source-group-required")
+    const beforeIndexes=(await f.sql.query("SELECT * FROM editing_key WHERE deck=$1 ORDER BY node,key",[entry.id])).rows
+    const geometry={deckId:entry.id,base:current.seq,requestId:"source-geometry-draft",changes:[{kind:"set",target:group.id,value:{...group,coordinateSpace:{...group.coordinateSpace,x:group.coordinateSpace.x+1}}}]}
+    const geometryRefusal=await f.tool("apply_changes",geometry)
+    expect(geometryRefusal).toMatchObject({kind:"refused",code:expect.stringContaining("source group coordinates or topology")})
+    expect(await f.tool("apply_changes",geometry)).toEqual(geometryRefusal)
+    expect(await f.native.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})
+    expect((await f.sql.query("SELECT * FROM editing_key WHERE deck=$1 ORDER BY node,key",[entry.id])).rows).toEqual(beforeIndexes)
     const stored=(await f.sql.query("SELECT receipt FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='refused'",[entry.id])).rows
     expect(JSON.stringify(stored)).toContain("Caller draft retained")
     const reopened=createParagraphHistoryStore(f.url,f.now)

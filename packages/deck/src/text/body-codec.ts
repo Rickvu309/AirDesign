@@ -7,7 +7,7 @@ function finite(value: unknown): value is number { return typeof value === "numb
 function nonnegative(value: unknown): value is number { return finite(value) && value >= 0 }
 function positive(value: unknown): value is number { return finite(value) && value > 0 }
 function style(value: unknown): value is TextStyle {
-  return record(value) && exact(value, ["font", "size", "color", "bold", "italic", "underline", "letterSpacing", "baseline", "strike", "capitalization", "kerning", "opacity", "highlight"]) && typeof value.font === "string" && positive(value.size) && typeof value.color === "string" && typeof value.bold === "boolean" && (value.italic === undefined || typeof value.italic === "boolean") && (value.underline === undefined || typeof value.underline === "boolean") && (value.letterSpacing === undefined || finite(value.letterSpacing)) && (value.baseline === undefined || finite(value.baseline)) && (value.strike === undefined || typeof value.strike === "boolean") && (value.capitalization === undefined || ["none", "small", "all"].includes(String(value.capitalization))) && (value.highlight === undefined || typeof value.highlight === "string" && /^#[a-f0-9]{6}$/i.test(value.highlight)) && (value.opacity === undefined || nonnegative(value.opacity) && value.opacity <= 1) && (value.kerning === undefined || nonnegative(value.kerning))
+  return record(value) && exact(value, ["font", "size", "color", "bold", "italic", "underline", "letterSpacing", "baseline", "strike", "capitalization", "kerning", "opacity", "highlight", "symbolFont"]) && (value.symbolFont === undefined || typeof value.symbolFont === "string" && value.symbolFont.length > 0) && typeof value.font === "string" && positive(value.size) && typeof value.color === "string" && typeof value.bold === "boolean" && (value.italic === undefined || typeof value.italic === "boolean") && (value.underline === undefined || typeof value.underline === "boolean") && (value.letterSpacing === undefined || finite(value.letterSpacing)) && (value.baseline === undefined || finite(value.baseline)) && (value.strike === undefined || typeof value.strike === "boolean") && (value.capitalization === undefined || ["none", "small", "all"].includes(String(value.capitalization))) && (value.highlight === undefined || typeof value.highlight === "string" && /^#[a-f0-9]{6}$/i.test(value.highlight)) && (value.opacity === undefined || nonnegative(value.opacity) && value.opacity <= 1) && (value.kerning === undefined || nonnegative(value.kerning))
 }
 function space(value: unknown): boolean { return nonnegative(value) || record(value) && exact(value, ["kind", "value"]) && value.kind === "multiple" && nonnegative(value.value) }
 function presentation(value: Record<string, unknown>): boolean { return (value.color === undefined || typeof value.color === "string" && /^#[a-f0-9]{6}$/i.test(value.color)) && (value.size === undefined || record(value.size) && exact(value.size, ["kind", "value"]) && ["multiple", "points"].includes(String(value.size.kind)) && positive(value.size.value)) }
@@ -16,7 +16,8 @@ function inline(value: unknown): value is InlineRun {
   return value.kind === "text" ? exact(value, ["kind", "text", "style"]) && typeof value.text === "string" && !/[\r\n]/.test(value.text) : value.kind === "break" && exact(value, ["kind", "style"])
 }
 export function isParagraph(value: unknown): value is Paragraph {
-  if (!record(value) || !exact(value, ["id", "kind", "runs", "endStyle", "alignment", "level", "indentation", "marker", "spacing", "glyphAlignment"]) || !isId(value.id) || value.kind !== "paragraph" || !Array.isArray(value.runs) || !value.runs.every(inline) || !style(value.endStyle)) return false
+  if (!record(value) || !exact(value, ["id", "kind", "runs", "endStyle", "alignment", "level", "indentation", "marker", "spacing", "glyphAlignment", "tabSize"]) || !isId(value.id) || value.kind !== "paragraph" || !Array.isArray(value.runs) || !value.runs.every(inline) || !style(value.endStyle)) return false
+  if (value.tabSize !== undefined && !positive(value.tabSize)) return false
   if (value.glyphAlignment !== undefined && !["baseline", "top", "center", "bottom"].includes(String(value.glyphAlignment))) return false
   if (!["left", "center", "right", "justify"].includes(String(value.alignment)) || typeof value.level !== "number" || !Number.isInteger(value.level) || value.level < 0 || value.level > 8) return false
   const indent = value.indentation, marker = value.marker, spacing = value.spacing
@@ -31,7 +32,8 @@ export function isParagraph(value: unknown): value is Paragraph {
   }
 }
 export function isTextFrame(value: unknown): value is TextFrame {
-  if (!record(value) || !exact(value, ["id", "kind", "anchor", "insets", "autofit", "compatibilityLineSpacing", "verticalFlow", "wrap"]) || !isId(value.id) || value.kind !== "text-frame" || !["top", "middle", "bottom"].includes(String(value.anchor))) return false
+  if (!record(value) || !exact(value, ["id", "kind", "anchor", "insets", "autofit", "compatibilityLineSpacing", "verticalFlow", "wrap", "spacingAtEdges"]) || !isId(value.id) || value.kind !== "text-frame" || !["top", "middle", "bottom"].includes(String(value.anchor))) return false
+  if (value.spacingAtEdges !== undefined && typeof value.spacingAtEdges !== "boolean") return false
   if (value.wrap !== undefined && value.wrap !== "square" && value.wrap !== "none") return false
   if (value.compatibilityLineSpacing !== undefined && typeof value.compatibilityLineSpacing !== "boolean" || value.verticalFlow !== undefined && !["horizontal", "vertical270"].includes(String(value.verticalFlow))) return false
   const insets = value.insets, autofit = value.autofit

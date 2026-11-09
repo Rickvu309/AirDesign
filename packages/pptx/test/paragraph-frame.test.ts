@@ -56,7 +56,8 @@ it("inherits trailing empty insertion styles and visibly refuses unknown source 
   const body = readTextBody(parsed, parsed.nodes[0]!, id("inherit"))
   expect(body.paragraphs[1]!.endStyle).toEqual(body.paragraphs[0].endStyle)
   const original = await importPptx(await writeNativeSavedPptx(deck, 0, null, {})), parts = new Map(original.parts)
-  parts.set("ppt/slides/slide1.xml", Buffer.from(parts.get("ppt/slides/slide1.xml")!.toString().replace('<a:bodyPr anchor=', '<a:bodyPr vert="vert" anchor=')))
+  parts.set("ppt/slides/slide1.xml", Buffer.from(parts.get("ppt/slides/slide1.xml")!.toString().replace('<a:bodyPr ', '<a:bodyPr vert="vert" ')))
+  expect(parseXml(parts.get("ppt/slides/slide1.xml")!).nodes.find(node => node.local === "bodyPr")?.attributes.vert).toBe("vert")
   const source = await exportPptx({...original, parts}), imported = importedNativeDeck(await importPptx(source)), element = imported.slides[0]!.elements[0]!
   expect(element.support.kind).toBe("kept")
   const unchanged = await importPptx(await writeNativeSavedPptx(imported, 0, source, {}))

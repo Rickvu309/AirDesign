@@ -1,17 +1,21 @@
-import type {Deck, Element, Slide} from "../model.ts"
+import type {Box, Deck, Element, Slide} from "../model.ts"
 import {isId} from "../model.ts"
 import {deckShape, elementShape, slideShape} from "../parse.ts"
 import {isTextBody} from "./body-codec.ts"
 import type {TextBody} from "./body.ts"
 
 export type NativeText = Omit<Extract<Element, {kind: "text"}>, "runs"> & {body: TextBody}
-export type NativeElement = Exclude<Element, {kind: "text"} | {kind: "group"}> | NativeText | (Omit<Extract<Element, {kind: "group"}>, "children"> & {children: NativeElement[]})
+export type NativeElement = Exclude<Element, {kind: "text"} | {kind: "group"}> | NativeText | (Omit<Extract<Element, {kind: "group"}>, "children"> & {children: NativeElement[]; coordinateSpace?: Box})
 export type NativeSlide = Omit<Slide, "elements"> & {elements: NativeElement[]}
 export type NativeDeck = Omit<Deck, "slides"> & {slides: NativeSlide[]}
 export type NativeArchiveV3 = {version: 3; deck: NativeDeck}
 
 function record(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value) }
 export function isNativeElement(value: unknown): value is NativeElement {
+  if (record(value) && value.coordinateSpace !== undefined) {
+    const space = value.coordinateSpace
+    if (value.kind !== "group" || !record(space) || Object.keys(space).some(key => !["x", "y", "width", "height"].includes(key)) || ![space.x, space.y, space.width, space.height].every(value => typeof value === "number" && Number.isFinite(value)) || typeof space.width !== "number" || typeof space.height !== "number" || space.width <= 0 || space.height <= 0) return false
+  }
   return elementShape(value, text => {
     if ("runs" in text) return false
     return isTextBody(text.body)

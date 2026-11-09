@@ -30,7 +30,7 @@ it("resolves nine list levels through master, matching layout, shape and explici
   const strip = (parsed: ReturnType<typeof parseXml>) => {const body = parsed.nodes.filter(node => node.local === "txBody").at(-1)!; return parsed.xml.slice(0, body.start) + parsed.xml.slice(body.end)}
   expect(strip(after)).toBe(strip(before))
 })
-it.each(['<a:r><a:rPr u="dbl"/><a:t>Underline</a:t></a:r>', '<a:tab/>', '<a:r><a:t>literal\ttab</a:t></a:r>'])("keeps unrepresented source text noneditable and byte exact: %s", async payload => {
+it.each(['<a:r><a:rPr u="dbl"/><a:t>Underline</a:t></a:r>', '<a:tab/>'])("keeps unrepresented source text noneditable and byte exact: %s", async payload => {
   const original = await cascadeSource(`<a:p>${payload}</a:p>`), deck = importedNativeDeck(original)
   expect(deck.slides[0]!.elements.filter(element => element.kind === "text")).toHaveLength(1)
   expect(deck.slides[0]!.elements.at(-1)!.support.kind).toBe("kept")

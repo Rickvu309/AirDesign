@@ -49,7 +49,7 @@ export function selectiveTextBody(document: Document, root: XmlNode, previous: T
       const oldChild = child(before, oldNode, local), newChild = child(after, newNode, local)
       if (!pin && oldChild && newChild && raw(before, oldChild) === raw(after, newChild)) continue
       const existing = child(document, target, local)
-      if (existing && local === "latin" && Object.keys(existing.attributes).some(name => name !== "typeface" && !name.startsWith("xmlns"))) throw new UnsupportedTextFormat("font fallback metadata requires unchanged font")
+      if (existing && ["latin", "sym"].includes(local) && Object.keys(existing.attributes).some(name => name !== "typeface" && !name.startsWith("xmlns"))) throw new UnsupportedTextFormat("font fallback metadata requires unchanged font")
       if (existing) edits.push({start: existing.start, end: existing.end, value: newChild ? raw(after, newChild).replace(/^<a:([^\s/>]+)/, '<a:$1 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"') : ""})
       else if (newChild) append(target, raw(after, newChild))
     }
@@ -69,7 +69,7 @@ export function selectiveTextBody(document: Document, root: XmlNode, previous: T
       if (oldRun.kind === "text" && newRun.kind === "text" && oldRun.text !== newRun.text) {
         if (run.local === "fld") throw new UnsupportedTextFormat("field value is source controlled")
         const text = child(document, run, "t")
-        if (!text || /[\r\n\t]/.test(newRun.text)) throw new UnsupportedTextFormat("selective text structure")
+        if (!text || /[\r\n]/.test(newRun.text)) throw new UnsupportedTextFormat("selective text structure")
         if (text.openEnd === text.end) edits.push({start: text.start, end: text.end, value: `<${text.name} xml:space="preserve">${escapeXml(newRun.text)}</${text.name}>`})
         else { attributes(text, {"xml:space": "preserve"}); edits.push({start: text.openEnd, end: text.closeStart, value: escapeXml(newRun.text)}) }
       }

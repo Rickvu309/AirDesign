@@ -3,6 +3,7 @@ import {createHash} from "node:crypto"
 import {importPptx} from "../../src/index.ts"
 import {importedNativeDeck} from "../../src/import-deck.ts"
 import {parseXml} from "../../src/xml.ts"
+import {flatten} from "../../../deck/src/elements.ts"
 import {nativeHistoryModel} from "../../../change-log/src/text/native-model.ts"
 
 export async function corpusCoverage() {
@@ -26,7 +27,7 @@ export async function corpusCoverage() {
         const key = `${part}#${identity}`, spans = texts.filter(within)
         boxes.push(key)
         const sourceId = spans.length ? `text:${spans.map(node => texts.indexOf(node)).join(",")}` : `body:${bodies.indexOf(body)}`
-        const element = slide.elements.find(element => element.source.kind === "original" && element.source.objectId === sourceId)
+        const element = flatten(slide.elements).find(element => element.source.kind === "original" && element.source.objectId === sourceId)
         if (element?.kind !== "text" || element.support.kind !== "native") continue
         const paragraph = element.body.paragraphs[0]
         const edit = nativeHistoryModel.apply(deck, {changes: [{kind: "set", target: paragraph.id, value: {...paragraph, alignment: paragraph.alignment === "left" ? "center" : "left"}}]})

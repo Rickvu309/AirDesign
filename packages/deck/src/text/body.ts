@@ -1,6 +1,6 @@
 import type {Id} from "../model.ts"
 
-export type TextStyle = {bold: boolean; italic?: boolean; opacity?: number; highlight?: string; underline?: boolean; letterSpacing?: number; baseline?: number; strike?: boolean; capitalization?: "none" | "small" | "all"; kerning?: number; font: string; size: number; color: string}
+export type TextStyle = {bold: boolean; italic?: boolean; opacity?: number; highlight?: string; underline?: boolean; letterSpacing?: number; baseline?: number; strike?: boolean; capitalization?: "none" | "small" | "all"; kerning?: number; symbolFont?: string; font: string; size: number; color: string}
 export type InlineRun = {kind: "text"; text: string; style: TextStyle} | {kind: "break"; style: TextStyle}
 export type NumberFormat = "decimal" | "alphaLower" | "alphaUpper" | "romanLower" | "romanUpper"
 export type MarkerPresentation = {color?: string; size?: {kind: "multiple" | "points"; value: number}}
@@ -13,6 +13,7 @@ export type Paragraph = {
   runs: InlineRun[]
   endStyle: TextStyle
   alignment: "left" | "center" | "right" | "justify"
+  tabSize?: number
   glyphAlignment?: "baseline" | "top" | "center" | "bottom"
   level: number
   indentation: {left: number; right: number; firstLine: number}
@@ -23,6 +24,7 @@ export type TextFrame = {
   id: Id
   kind: "text-frame"
   wrap?: "square" | "none"
+  spacingAtEdges?: boolean
   compatibilityLineSpacing?: boolean
   verticalFlow?: "horizontal" | "vertical270"
   anchor: "top" | "middle" | "bottom"

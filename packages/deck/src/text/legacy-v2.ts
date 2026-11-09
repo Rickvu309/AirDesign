@@ -16,5 +16,5 @@ export function decodeLegacyRunsV2(runs: [Run, ...Run[]], frameId: Id, paragraph
   const last = runs[runs.length - 1]
   if (!last) throw new Error("invalid-legacy-runs")
   const endStyle: TextStyle = {font: last.font, size: last.size, color: last.color, bold: last.bold, ...(last.italic === undefined ? {} : {italic: last.italic}), ...(last.underline === undefined ? {} : {underline: last.underline})}
-  return parseTextBody({frame: {id: frameId, kind: "text-frame", anchor: "top", insets: {top: 0, right: 0, bottom: 0, left: 0}, autofit: {kind: "none"}}, paragraphs: [{id: paragraphId, kind: "paragraph", runs: inline, endStyle, alignment: "left", level: 0, indentation: {left: 0, right: 0, firstLine: 0}, marker: {kind: "none"}, spacing: {before: 0, after: 0, line: {kind: "multiple", value: 1.2}}}]})
+  return parseTextBody({frame: {id: frameId, kind: "text-frame", anchor: "top", spacingAtEdges: true, insets: {top: 0, right: 0, bottom: 0, left: 0}, autofit: {kind: "none"}}, paragraphs: [{id: paragraphId, kind: "paragraph", runs: inline, endStyle, alignment: "left", level: 0, indentation: {left: 0, right: 0, firstLine: 0}, marker: {kind: "none"}, spacing: {before: 0, after: 0, line: {kind: "multiple", value: 1.2}}}]})
 }

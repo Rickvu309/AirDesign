@@ -128,7 +128,12 @@ const Item = memo(function Item({ element, commit, pointerDown, themes, inherite
     content = <KeptContent element={element} bounds={placements[element.id] ?? keptBounds(element,canvas)} />
   } else {
     switch (element.kind) {
-      case "group": content = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} canvas={canvas} placements={placements} />); break
+      case "group": {
+        const space = "coordinateSpace" in element ? element.coordinateSpace : undefined
+        const children = element.children.map(child => <Item key={child.id} element={child} commit={commit} history={history} pointerDown={pointerDown} themes={themes} inheritedTheme={element.theme ?? inheritedTheme} imageSources={imageSources} canvas={canvas} placements={placements} />)
+        content = space ? <div data-group-coordinates="" style={{position: "absolute", width: space.width, height: space.height, transformOrigin: "0 0", transform: `scale(${element.box.width / space.width}, ${element.box.height / space.height}) translate(${-space.x}px, ${-space.y}px)`}}>{children}</div> : children
+        break
+      }
       case "text": content = "body" in element ? <Body body={element.body}/> : <Text element={element} commit={commit} history={history} themeFont={theme?.font} />; break
       case "image": {const crop=element.image.crop;content=<div style={{position:"relative",inlineSize:"100%",blockSize:"100%",overflow:"hidden",borderRadius:element.image.mask==="ellipse" ? "50%" : 0}}><img draggable={false} src={imageSources?.[element.image.asset] ?? `/api/assets/${element.image.asset}/media`} alt={element.image.alt} style={{position:"absolute",maxInlineSize:"none",inlineSize:`${100/crop.width}%`,blockSize:`${100/crop.height}%`,insetInlineStart:`${-crop.x/crop.width*100}%`,insetBlockStart:`${-crop.y/crop.height*100}%`}}/></div>;break}
       case "shape": content = <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label={contentLabel(element)} style={{pointerEvents:"none"}}><path d={shapeGeometry[element.geometry].path} fill={element.fill} style={{pointerEvents:"visiblePainted"}}/></svg>;break

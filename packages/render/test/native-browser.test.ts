@@ -1,3 +1,7 @@
+import {retainedTextSource} from "../../pptx/test/text-cascade-fixture.ts"
+import {importedNativeDeck} from "../../pptx/src/import-deck.ts"
+import {flatten} from "../../deck/src/elements.ts"
+import {fontReport} from "../src/fonts.ts"
 import {expect, it} from "vitest"
 import {chromium} from "playwright"
 import {readFile, mkdir} from "node:fs/promises"
@@ -67,5 +71,26 @@ it("renders vertical frame flow and paragraph glyph alignment without changing n
     expect(await page.locator("[data-marker]").evaluate(element => getComputedStyle(element).fontSize)).toBe(`${text.body.paragraphs[0].endStyle.size * 0.75}px`)
     expect(await page.locator("[data-paragraph]").evaluate(element => getComputedStyle(element).lineHeight)).toBe(`${text.body.paragraphs[0].endStyle.size * text.body.paragraphs[0].spacing.line.value}px`)
     expect(await page.locator("[data-text-frame]").getAttribute("data-text-frame")).toBe(text.body.frame.id)
+  } finally {await browser.close()}
+})
+
+
+it("composes nested source coordinates and exposes tab, edge spacing and symbol font layout in shared Slide capture", async () => {
+  const source = await retainedTextSource(), deck = importedNativeDeck(source), text = flatten(deck.slides[0]!.elements).find(element => element.kind === "text" && element.body.paragraphs.length === 10)
+  if (text?.kind !== "text") throw new Error("nested-text-required")
+  expect(fontReport(deck.slides[0]!).missing).toContain("Wingdings")
+  const browser = await chromium.launch({args: ["--no-sandbox"]})
+  try {
+    const page = await browser.newPage({offline: true})
+    await page.route("**/*", route => route.abort())
+    await page.setContent(captureDocument(deck, "s0", "", {}))
+    const box = await page.locator(`[data-element="${text.id}"]`).boundingBox()
+    expect(box).toEqual({x: 140, y: 100, width: 400, height: 300})
+    const paragraph = page.locator(`[data-paragraph="${text.body.paragraphs[9]!.id}"]`)
+    expect(await paragraph.evaluate(element => getComputedStyle(element).tabSize)).toBe("48px")
+    expect(await paragraph.locator("span span").last().evaluate(element => getComputedStyle(element).fontFamily)).toContain("Wingdings")
+    expect(await paragraph.evaluate(element => getComputedStyle(element).marginBottom)).toBe("2px")
+    const artifacts = process.env.AIRDESIGN_PARAGRAPH_ARTIFACTS
+    if (artifacts) {await mkdir(artifacts, {recursive: true}); await page.screenshot({path: path.join(artifacts, "retained-text-nested-layout.png")})}
   } finally {await browser.close()}
 })

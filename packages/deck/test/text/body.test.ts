@@ -51,6 +51,10 @@ describe("native text body boundary", () => {
     (v: TextBody) => { Object.assign(v.frame, {compatibilityLineSpacing: "true"}) },
     (v: TextBody) => { Object.assign(v.frame, {wrap: "invented"}) },
     (v: TextBody) => { Object.assign(v.paragraphs[0], {glyphAlignment: "invented"}) },
+    (v: TextBody) => { v.paragraphs[0].tabSize = 0 },
+    (v: TextBody) => { v.paragraphs[0].tabSize = Infinity },
+    (v: TextBody) => { v.paragraphs[0].endStyle.symbolFont = "" },
+    (v: TextBody) => { Object.assign(v.frame, {spacingAtEdges: "true"}) },
     (v: TextBody) => { Object.assign(v.frame, {warp: "unknown"}) }
   ])("rejects malformed canonical input %#", mutate => {
     const value = body(); mutate(value)

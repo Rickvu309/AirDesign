@@ -1,7 +1,7 @@
 import {isDeepStrictEqual} from "node:util"
 import type {Id} from "../../../deck/src/model.ts"
 import type {TextBody} from "../../../deck/src/text/body.ts"
-import type {NativeDeck} from "../../../deck/src/text/native-v3.ts"
+import type {NativeDeck, NativeElement} from "../../../deck/src/text/native-v3.ts"
 import {flatten} from "../../../deck/src/elements.ts"
 import {importPptx, type Presentation} from "../index.ts"
 import {importedDeck, importedNativeDeck} from "../import-deck.ts"
@@ -34,13 +34,28 @@ export function patchNativeSourceText(source: Presentation, original: Presentati
   if (!isDeepStrictEqual(semantics(projected), semantics(next))) throw new UnsupportedTextFormat("selective edit projection differs")
   return {...original, parts: new Map(original.parts).set(part, Buffer.from(replacement))}
 }
-export async function assertNativeSourceTextEdits(bytes: Buffer, deck: NativeDeck): Promise<void> {
+export async function assertNativeSourceTextEdits(bytes: Buffer, deck: NativeDeck, previousDeck?: NativeDeck): Promise<void> {
   const original = await importPptx(bytes), native = importedNativeDeck(original), legacy = importedDeck(original)
+  const topology = (elements: NativeElement[], parent = ""): unknown[] => elements.flatMap(element => element.source.kind !== "original" ? [] : [{id: element.id, kind: element.kind, source: element.source.objectId, parent}, ...(element.kind === "group" ? topology(element.children, element.id) : [])])
+  for (const slide of deck.slides) {
+    if (slide.source.kind !== "original") continue
+    const source = slide.source, before = (previousDeck ?? native).slides.find(candidate => candidate.source.kind === "original" && candidate.source.part === source.part)
+    if (before && !isDeepStrictEqual(topology(before.elements), topology(slide.elements))) throw new UnsupportedTextFormat("source topology")
+  }
   for (const slide of deck.slides) for (const element of flatten(slide.elements)) {
-    if (element.kind !== "text" || element.source.kind !== "original") continue
+    if (element.source.kind !== "original") continue
     const source = element.source
     const oldSlide = native.slides.find(slide => slide.source.kind === "original" && slide.source.part === source.part)
-    const previous = oldSlide && flatten(oldSlide.elements).find(element => element.kind === "text" && element.source.kind === "original" && element.source.objectId === source.objectId)
+    const previous = oldSlide && flatten(oldSlide.elements).find(element => element.source.kind === "original" && element.source.objectId === source.objectId)
+    if (previous && element.support.kind === "native") {
+      if (!isDeepStrictEqual(previous.box, element.box)) throw new UnsupportedTextFormat("source geometry")
+      if (element.kind === "group" && "coordinateSpace" in element) {
+        if (previous.kind !== "group" || !isDeepStrictEqual(previous.coordinateSpace, element.coordinateSpace) || !isDeepStrictEqual(previous.children.map(child => child.source), element.children.map(child => child.source))) throw new UnsupportedTextFormat("source group coordinates or topology")
+      }
+      const ancestry = (elements: typeof slide.elements) => flatten(elements).filter(parent => parent.kind === "group" && flatten(parent.children).some(child => child.source.kind === "original" && child.source.objectId === source.objectId)).map(parent => parent.source)
+      if (oldSlide && !isDeepStrictEqual(ancestry(oldSlide.elements), ancestry(slide.elements))) throw new UnsupportedTextFormat("source group ancestry")
+    }
+    if (element.kind !== "text") continue
     if (source.textVersion === 2) {
       const old = legacy.slides.find(slide => slide.source.kind === "original" && slide.source.part === source.part)?.elements.find(element => element.kind === "text" && element.source.kind === "original" && element.source.objectId === source.objectId)
       if (old?.kind !== "text" || !preserveLegacySourceV2(original, old, element.body)) throw new UnsupportedTextFormat("legacy projection")

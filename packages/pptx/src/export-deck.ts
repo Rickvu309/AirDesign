@@ -134,6 +134,7 @@ function copyGeneratedDependencies(parts:Map<string,Buffer>,native:Map<string,Bu
   }
 }
 async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,manifest:Record<string,unknown>,assets:Record<string,string>={},templates:Record<string,string>={},version:2|3=2):Promise<Buffer> {
+  if (!source && deck.slides.some(slide => flatten(slide.elements).some(element => element.kind === "group" && "coordinateSpace" in element && element.coordinateSpace))) throw new Error("source-group-archive-required")
   const native=await generated(deck,assets)
   await attachTemplateLayouts(native,deck,templates)
   let parts=native
@@ -145,17 +146,24 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
     for(const slide of deck.slides)if(slide.source.kind==="original"){
       if(slide.background)original=patchSlideBackground(original,slide.source.part,slide.background)
       const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
-      if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
-      for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
+      const current = flatten(slide.elements), legacySlide = legacyBaseline.slides.find(candidate => candidate.source.kind === "original" && candidate.source.part === source.part)
+      const comparison = (elements: (Element | NativeElement)[]): (Element | NativeElement)[] => elements.flatMap(element => {
+        const identity = element.source
+        const retained = element.kind === "group" && identity.kind === "original" && current.some(candidate => candidate.kind === "shape" && candidate.support.kind === "kept" && candidate.source.kind === "original" && candidate.source.objectId === identity.objectId) ? legacySlide?.elements.find(candidate => candidate.source.kind === "original" && candidate.source.objectId === identity.objectId) : undefined
+        return retained ? [retained] : [element, ...(element.kind === "group" ? comparison(element.children) : [])]
+      })
+      const previousElements = old ? comparison(old.elements) : []
+      if(!old || !isDeepStrictEqual(old.size,slide.size) || previousElements.length!==current.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
+      for(const [index,element] of flatten(slide.elements).filter(element=>element.source.kind==="original").entries()){
         if(element.source.kind!=="original")continue
         const identity=element.source
         const legacy=legacyBaseline.slides.find(candidate=>candidate.source.kind==="original" && candidate.source.part===source.part)?.elements.find(candidate=>candidate.source.kind==="original" && candidate.source.objectId===identity.objectId)
-        const nativePrevious=old.elements.find(candidate=>candidate.source.kind==="original" && candidate.source.objectId===identity.objectId) ?? old.elements[index]
+        const nativePrevious=previousElements.find(candidate=>candidate.source.kind==="original" && candidate.source.objectId===identity.objectId) ?? previousElements[index]
         const preserved=element.kind==="text" && "body" in element && element.source.textVersion===2 && legacy?.kind==="text" ? preserveLegacySourceV2(original,legacy,element.body) : undefined
         if(element.kind==="text" && "body" in element && element.source.textVersion===2 && !preserved)throw new Error("source-text-format-preservation-required: legacy projection")
         const previous=preserved ? legacy : nativePrevious
         if(!previous)throw new Error("source-slide-structure-change-requires-fix")
-        const withoutText=(value:Element | NativeElement)=>({...value,support:undefined,...(value.kind==="text" ? {body:undefined,runs:undefined} : {}),source:value.source.kind==="original" ? {...value.source,objectType:undefined,textVersion:undefined} : value.source})
+        const withoutText=(value:Element | NativeElement)=>({...value,support:undefined,...(value.kind==="group" ? {children:value.children.map(child=>child.id)} : {}),...(value.kind==="text" ? {body:undefined,runs:undefined} : {}),source:value.source.kind==="original" ? {...value.source,objectType:undefined,textVersion:undefined} : value.source})
         if(!isDeepStrictEqual(withoutText(element),withoutText(previous)))throw new Error("source-object-change-requires-fix")
         if (preserved) { original=preserved; continue }
         if (element.kind === "text" && "body" in element && previous.kind === "text" && "body" in previous) {
