@@ -11,20 +11,16 @@ export function runSlideStates(deck:Deck,run:AgentRun|null):Map<Id,"queued"|"wor
   for(const slide of targets)states.set(slide.id,completed.has(slide.id) ? "complete" : slide.id===active ? "working" : "queued")
   return states
 }
-export function runMilestones(deck:Deck,run:AgentRun,style:"detailed"|"compact"="detailed"):string[] {
+export function runMilestones(deck:Deck,run:AgentRun):string[] {
   const messages:string[]=[]
   const tools=run.events.filter(event=>event.kind==="tool")
-  const files=new Set(tools.flatMap(event=>event.fileName ? [event.fileName] : []))
-  const brand=tools.some(event=>event.brandApplied)
-  if(files.size)messages.push(`Read ${files.size} ${files.size===1 ? "file" : "files"}${brand&&style==="detailed" ? `, applied ${deck.template?.id==="halden" ? "Halden " : ""}brand` : ""}`)
-  else if(brand)messages.push("Applied brand")
-  else if(tools.some(event=>event.name==="get_deck"))messages.push("Read deck content")
+  for(const event of tools)if(event.fileName&&!messages.includes(`Read ${event.fileName}`))messages.push(`Read ${event.fileName}`)
+  if(tools.some(event=>event.name==="get_deck"))messages.push("Read deck content")
+  if(tools.some(event=>event.name==="get_slide"))messages.push("Read slide content")
+  if(tools.some(event=>event.brandApplied))messages.push("Applied brand")
   const states=runSlideStates(deck,run),completed=[...states.values()].filter(state=>state==="complete").length
-  const completedSlides=deck.slides.flatMap((slide,index)=>states.get(slide.id)==="complete" ? [index+1] : [])
-  const prefix=completedSlides.every((number,index)=>number===index+1)
-  if(style==="compact"&&completed)messages.push(completed===1 ? `Built slide ${completedSlides[0]}` : prefix ? `Built slides 1 to ${completed}` : `Built ${completed} of ${states.size} slides`)
-  else if(completed)messages.push(completed===2&&[...states.values()].slice(0,2).every(state=>state==="complete") ? "Built slides 1 and 2" : `Built ${completed} of ${states.size} slides`)
+  if(completed)messages.push(`Built ${completed} of ${states.size} slides`)
   const current=[...states.values()].indexOf("working")
-  if(run.kind==="working"&&current>=0&&tools.some(event=>event.name==="get_slide"))messages.push(`Building slide ${current+1} of ${states.size}`)
+  if(run.kind==="working"&&current>=0)messages.push(`Building slide ${current+1} of ${states.size}`)
   return messages
 }

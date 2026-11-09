@@ -1,6 +1,3 @@
-import {importPptx} from "../../packages/pptx/src/index.ts"
-import {importedDeck} from "../../packages/pptx/src/import-deck.ts"
-import {seedStockImages} from "../editor/stock-fixture.mjs"
 import {clipboardSource} from "../../apps/studio/src/editor/editor-model.ts"
 import {createHash} from "node:crypto"
 import {fixtureDeck} from "../../packages/deck/src/fixture.ts"
@@ -25,18 +22,10 @@ export async function seed(stack,entry){
       stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now()-age*86400000)
       await stack.request(owner,"/api/decks",deck,201)
       await stack.request(owner,`/api/catalog/${id}/rename`,{title})
-      if(entry.seed.startsWith("deck-")){
-        const name="Q3 board notes.txt",uploadResponse=await fetch(stack.origin+"/api/mcp/uploads",{method:"POST",headers:{cookie:owner.cookie,origin:stack.origin,"content-type":"application/json"},body:JSON.stringify({requestId:`notes_${id}`,name,text:"Q3 investor update. Revenue: Q3 24 $4.1M, Q4 24 $4.6M, Q1 25 $5M, Q2 25 $5.4M, Q3 25 $5.7M. Revenue grew 39% year over year. Gross margin 71%. Two enterprise deals. Customers, Product, Hiring plan, Next quarter."})})
-        if(uploadResponse.status!==201)throw new Error("notes-upload-failed")
-        const uploaded=await uploadResponse.json()
-        const {client}=await stack.fixture.authorize(owner.cookie,"Codex"),file=await client.callTool({name:"add_file",arguments:{sourceUrl:uploaded.sourceUrl,name,requestId:`ingest_${id}`}})
-        stack.runSources.set(id,{fileId:JSON.parse(file.content.find(item=>item.type==="text").text).data.fileId,name})
-      }
       if(entry.seed==="trash-with-items")await stack.request(owner,`/api/catalog/${id}/trash`,{})
     }
     stack.fixture.advance(Date.parse("2026-11-06T03:00:00Z")-stack.fixture.now())
   }
-  if(entry.code==="S43.03")await seedStockImages(stack,owner)
   if(entry.seed.startsWith("deck-limited")){
     const usage=stack.fixture.history.usage
     await usage.reserve(owner.personId,{id:"fill"+entry.code,actor:"user-agent",request:"Prepare the next deck",units:10000})
@@ -76,11 +65,10 @@ export async function perform(page,step,stack,owner){
       const deck=fixtureDeck(1,step.count)
       for(const [index,slide] of deck.slides.entries()){
         const title=slide.elements.find(element=>element.kind==="text");title.runs=[{text:index===0 ? "Market share by region" : "Churn is down to 4%",font:"Geist",size:48,bold:true,color:"#1f1f1f"}];title.box={x:70.4,y:70.4,width:819.2,height:60}
-        slide.elements=[title]
+        const base={source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null,kind:"shape",geometry:"rectangle"}
+        slide.elements=[title,...(index===0 ? [46,34,58,26].map((height,n)=>({...base,id:`pastebar${index}n${n}`,box:{x:70.4+n*116.8,y:470.4-height*3.2,width:83.2,height:height*3.2},fill:"#8a8a8a"})) : [180,150,164].map((width,n)=>({...base,id:`pasteline${index}n${n}`,box:{x:70.4,y:168+n*41.6,width:width*3.2,height:16},fill:"#d7d7d6"})))]
       }
-      const imported=importedDeck(await importPptx(await writeSavedPptx(deck,0,null,{})))
-      if(imported.slides.some(slide=>slide.source.kind!=="original" || slide.elements.some(element=>element.support.kind!=="native")))throw new Error("PowerPoint fixture must contain qualified native imported content")
-      const source=clipboardSource(imported,imported.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted from PowerPoint`,{exact:true}).waitFor();break
+      const source=clipboardSource(deck,deck.slides.map(slide=>slide.id));await page.context().grantPermissions(["clipboard-read","clipboard-write"]);await page.evaluate(source=>navigator.clipboard.writeText(source),source);await page.locator(".studio-editor").focus();await page.keyboard.press("Control+V");await page.getByText(`${step.count} slides pasted`,{exact:true}).waitFor();break
     }
     case "wait-text":await page.getByText(step.text,{exact:true}).waitFor();break
     case "click":await page.getByRole("button",{name:step.name,exact:true}).first().click();break
@@ -106,9 +94,7 @@ export async function perform(page,step,stack,owner){
     case "agent":{
       const deck=page.url().split("/deck/")[1]
       if(!await page.getByLabel("Message Aira",{exact:true}).isVisible())await page.getByRole("button",{name:"Agent",exact:true}).click()
-      await page.getByLabel("Attach",{exact:true}).selectOption("whole")
       if(step.outcome==="remote"){
-        await stack.run(owner,deck,"Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
         const {client}=await stack.fixture.authorize(owner.cookie,"Claude"),current=await stack.request(owner,`/api/decks/${deck}`),title=current.deck.slides[0].elements.find(element=>element.id==="s0e0")
         const response=await client.callTool({name:"apply_changes",arguments:{deckId:deck,base:current.seq,requestId:"design-parity-remote",changes:[{kind:"set",target:"s0e0",value:{...title,runs:[{text:"Q3 Investor Update",font:"Geist",size:40,bold:true,color:"#111827"}]}}]}})
         if(response.isError)throw new Error("remote-fixture-write-failed")
@@ -126,7 +112,7 @@ export async function perform(page,step,stack,owner){
           await page.getByText("Your weekly usage is used up. Changes so far stay. You can keep editing manually.",{exact:true}).waitFor()
           break
         }
-        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after",step.outcome==="working"||step.outcome==="failed" ? 2 : 0)
+        const source=await stack.stream(owner,deck),hold=stack.hold(step.outcome==="failed",step.outcome==="working" ? "before" : "after")
         stack.parityFinish=async()=>{hold.release.resolve()}
         await page.getByLabel("Message Aira",{exact:true}).fill("Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.")
         await page.getByRole("button",{name:"Send",exact:true}).click()

@@ -7,8 +7,7 @@ export function Toaster() {
     <SonnerToaster
       theme="light"
       position="top-center"
-      offset="calc(12px + env(safe-area-inset-top, 0px))"
-      mobileOffset={{top:"calc(12px + env(safe-area-inset-top, 0px))",left:"calc(16px + env(safe-area-inset-left, 0px))",right:"calc(16px + env(safe-area-inset-right, 0px))"}}
+      offset={12}
       toastOptions={{
         style: {
           background: "var(--foreground)",

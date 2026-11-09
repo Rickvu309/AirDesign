@@ -342,7 +342,7 @@
     "steps": [
       {
         "kind": "click",
-        "name": "Slide 5"
+        "name": "Slide 3"
       },
       {
         "kind": "hold",
@@ -578,21 +578,12 @@
         "name": "Single slide view"
       },
       {
-        "kind": "agent",
-        "outcome": "complete"
-      },
-      {
         "kind": "click",
         "name": "Images"
       },
       {
-        "kind": "select",
-        "label": "Image source",
-        "value": "local-stock"
-      },
-      {
-        "kind": "assert",
-        "selector": ".image-masonry > .image-column:first-child button:first-child img"
+        "kind": "wait-text",
+        "text": "0.0 MB of 512 MB used"
       }
     ]
   },

@@ -3,7 +3,7 @@ import { mutationRejection,type Access } from "@airdesign/access"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
 import { commandId } from "../../../../packages/change-log/src/index.ts"
 import { flatten,id,isImagePlacement,type Element } from "../../../../packages/deck/src/index.ts"
-import { assetLimits,readValidatedAsset,validateImage } from "../../../../packages/files/src/assets/validate.ts"
+import { assetLimits,readValidatedAsset } from "../../../../packages/files/src/assets/validate.ts"
 import { uploadProvenance } from "../../../../packages/files/src/assets/provenance.ts"
 import { assetProviders } from "../../../../packages/files/src/assets/providers.ts"
 import type { HistoryStore } from "../db/history-store.ts"
@@ -21,12 +21,6 @@ export function imagesHandler(access:Access,queue:OperationStore,history:History
         const provider=assetProviders.find(provider=>provider.id===(url.searchParams.get("provider") ?? "local-stock"));if(!provider)throw new Error("provider-not-found")
         const query=url.searchParams.get("q") ?? "";if(query.length>200)throw new Error("query-too-long")
         return Response.json({query,provider:provider.id,items:provider.search(query).map(({id,name,provenance})=>({id,name,provenance}))})
-      }
-      const preview=/^\/api\/assets\/providers\/([^/]+)\/([^/]+)\/thumbnail$/.exec(url.pathname)
-      if(preview&&request.method==="GET"){
-        const provider=assetProviders.find(provider=>provider.id===preview[1]);if(!provider)throw new Error("provider-not-found")
-        const item=await provider.read(preview[2]!),image=await validateImage(item.bytes)
-        return new Response(new Uint8Array(Buffer.from(image.thumbnail,"base64")),{headers:{"content-type":"image/png","cache-control":"private, max-age=3600"}})
       }
       if((url.pathname==="/api/assets/ingest" || url.pathname==="/api/assets/provider") && request.method==="POST"){
         const body=record(await request.json()),requestId=text(body.requestId)
