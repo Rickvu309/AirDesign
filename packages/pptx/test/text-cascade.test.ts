@@ -5,6 +5,7 @@ import {importPptx, exportPptx} from "../src/index.ts"
 import {importedNativeDeck} from "../src/import-deck.ts"
 import {writeNativeSavedPptx} from "../src/export-deck.ts"
 import {parseXml} from "../src/xml.ts"
+import {readTextBody, writeTextBody} from "../src/text/body.ts"
 
 it("resolves nine list levels through master, matching layout, shape and explicit styles", async () => {
   const original = await cascadeSource(), deck = importedNativeDeck(original), text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 9)!
@@ -246,4 +247,30 @@ it("keeps neighboring runs editable when one run explicitly suppresses inherited
   const reopened = importedNativeDeck(saved).slides[0]!.elements.find(element => element.id === text.id)!
   if (reopened.kind !== "text") throw new Error("reopened-neighbor-required")
   expect(reopened.body.paragraphs[9]!.runs.map(run => run.style.color)).toEqual([null, "#204060", "#456789"])
+})
+
+it.each([
+  ["", null, null],
+  [' fontScale="0.00000001%" lnSpcReduction="0.00000001%"', 1e-10, 1e-10],
+  [' fontScale="100000"', 1, null],
+  [' fontScale="62500" lnSpcReduction="20000"', 0.625, 0.2],
+  [' fontScale="62.5%" lnSpcReduction="12.5%"', 0.625, 0.125],
+  [' fontScale="62.512345%" lnSpcReduction="0%"', 0.62512345, 0]
+])("retains autofit attribute presence and exact saved values through selective export: %s", async (attributes, fontScale, lineReduction) => {
+  const original = await cascadeSource(), parts = new Map(original.parts), slide = "ppt/slides/slide1.xml"
+  parts.set(slide, Buffer.from(parts.get(slide)!.toString().replace('<a:bodyPr rIns="47625"/>', `<a:bodyPr rIns="47625"><a:normAutofit${attributes}/></a:bodyPr>`)))
+  const source = await exportPptx({...original, parts}), deck = importedNativeDeck(await importPptx(source))
+  const text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 9)
+  if (text?.kind !== "text") throw new Error("autofit-text-required")
+  expect(text.body.frame.autofit).toEqual({kind: "shrink", fontScale, lineReduction})
+  const generated = parseXml(Buffer.from(writeTextBody(text.body))), generatedBody = generated.nodes.find(node => node.local === "txBody")
+  if (!generatedBody) throw new Error("generated-body-required")
+  expect(readTextBody(generated, generatedBody, text.id).frame.autofit).toEqual(text.body.frame.autofit)
+  const untouched = await importPptx(await writeNativeSavedPptx(deck, 0, source, {}))
+  expect(untouched.parts.get(slide)).toEqual(parts.get(slide))
+  text.body.paragraphs[0].endStyle.color = "#abcdef"
+  const saved = await importPptx(await writeNativeSavedPptx(deck, 1, source, {}))
+  const reopened = importedNativeDeck(saved).slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 9)
+  expect(reopened).toMatchObject({body: {frame: {autofit: {kind: "shrink", fontScale, lineReduction}}}})
+  for (const [name, bytes] of parts) if (![slide, "airdesign/saved-version.json", "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
 })

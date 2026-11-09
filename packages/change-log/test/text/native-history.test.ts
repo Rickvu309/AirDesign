@@ -2,7 +2,7 @@ import {describe, expect, it} from "vitest"
 import {fixtureDeck} from "../../../deck/src/fixture.ts"
 import {id} from "../../../deck/src/model.ts"
 import type {NativeChangeSet} from "../../../deck/src/text/operations.ts"
-import type {NativeDeck, NativeText} from "../../../deck/src/text/native-v3.ts"
+import {parseNativeArchiveV3, type NativeDeck, type NativeText} from "../../../deck/src/text/native-v3.ts"
 import {parseDeck} from "../../../deck/src/parse.ts"
 import {commandId, diffNodes, initialHistory, projectHistory, type Command, type History} from "../../src/index.ts"
 import {executeNative, nativeHistoryModel} from "../../src/text/native-model.ts"
@@ -127,5 +127,23 @@ it("persists no-fill through history replay, undo, redo and JSON reopen", () => 
   history = must(history, {id: commandId("redo-paint"), kind: "redo", target: commandId("paint")})
   const reopened: History<NativeDeck> = JSON.parse(JSON.stringify(history))
   expect(text(reopened).body.paragraphs[0]).toEqual(next)
+  expect(projectHistory(reopened, nativeHistoryModel)).toEqual(reopened.deck)
+})
+
+it.each([null, 1, 0.625])("preserves saved autofit %s through native paint history, undo, redo and validated reopen", fontScale => {
+  let history = fixture()
+  const element = text(history), frame = {...element.body.frame, autofit: {kind: "shrink", fontScale, lineReduction: null} satisfies NativeText["body"]["frame"]["autofit"]}
+  history = must(history, {id: commandId("saved-fit"), kind: "edit", base: history.seq, run: null, changes: {changes: [{kind: "set", target: frame.id, value: frame}]}})
+  const paragraph = text(history).body.paragraphs[0], painted = {...paragraph, endStyle: {...paragraph.endStyle, color: "#abcdef"}}
+  history = must(history, {id: commandId("fit-paint"), kind: "edit", base: history.seq, run: null, changes: {changes: [{kind: "set", target: paragraph.id, value: painted}]}})
+  expect(text(history).body.frame).toEqual(frame)
+  history = must(history, {id: commandId("undo-fit-paint"), kind: "undo", target: commandId("fit-paint")})
+  expect(text(history).body.paragraphs[0]).toEqual(paragraph)
+  expect(text(history).body.frame).toEqual(frame)
+  history = must(history, {id: commandId("redo-fit-paint"), kind: "redo", target: commandId("fit-paint")})
+  const reopened: History<NativeDeck> = JSON.parse(JSON.stringify(history))
+  expect(parseNativeArchiveV3({version: 3, deck: reopened.deck}).deck).toEqual(history.deck)
+  expect(text(reopened).body.frame).toEqual(frame)
+  expect(text(reopened).body.paragraphs[0]).toEqual(painted)
   expect(projectHistory(reopened, nativeHistoryModel)).toEqual(reopened.deck)
 })

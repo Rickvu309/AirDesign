@@ -131,3 +131,14 @@ it("roundtrips explicit no-fill through the shared JSON body contract", () => {
   delete missing.paragraphs[0].endStyle.color
   expect(() => parseTextBody(missing)).toThrow()
 })
+
+it.each([
+  {kind: "shrink", fontScale: null, lineReduction: null},
+  {kind: "shrink", fontScale: 1, lineReduction: null},
+  {kind: "shrink", fontScale: null, lineReduction: 0.125},
+  {kind: "shrink", fontScale: 0.625, lineReduction: 0.2}
+] satisfies TextBody["frame"]["autofit"][])("decodes saved autofit omission and preexisting numeric archives without reinterpretation: %j", autofit => {
+  const value = body()
+  value.frame.autofit = autofit
+  expect(parseTextBody(JSON.parse(JSON.stringify(value)))).toEqual(value)
+})

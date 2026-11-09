@@ -45,7 +45,7 @@ export function isTextFrame(value: unknown): value is TextFrame {
   if (!record(insets) || !exact(insets, ["top", "right", "bottom", "left"]) || ![insets.top, insets.right, insets.bottom, insets.left].every(nonnegative) || !record(autofit)) return false
   switch (autofit.kind) {
     case "none": case "resize-shape": return exact(autofit, ["kind"])
-    case "shrink": return exact(autofit, ["kind", "fontScale", "lineReduction"]) && positive(autofit.fontScale) && autofit.fontScale <= 1 && nonnegative(autofit.lineReduction) && autofit.lineReduction < 1
+    case "shrink": return exact(autofit, ["kind", "fontScale", "lineReduction"]) && (autofit.fontScale === null || positive(autofit.fontScale) && autofit.fontScale <= 1) && (autofit.lineReduction === null || nonnegative(autofit.lineReduction) && autofit.lineReduction < 1)
     default: return false
   }
 }

@@ -1,6 +1,6 @@
 import {expect, it} from "vitest"
 import {chromium} from "playwright"
-import {mkdir, writeFile} from "node:fs/promises"
+import {mkdir, readFile, writeFile} from "node:fs/promises"
 import {id} from "../../deck/src/model.ts"
 import {fixtureDeck} from "../../deck/src/fixture.ts"
 import {initialHistory} from "../../change-log/src/index.ts"
@@ -69,6 +69,56 @@ it("paints imported competing inheritance layers after selective save in shared 
       await mkdir(artifacts, {recursive: true})
       await writeFile(`${artifacts}/inheritance-paint.json`, JSON.stringify(receipts, null, 2))
       await page.screenshot({path: `${artifacts}/inheritance-paint.png`})
+    }
+  } finally {await browser.close()}
+})
+
+
+it("measures saved and omitted autofit without mutating either in loaded-font shared rendering", async () => {
+  const deck = transduceLegacyHistory({version: 2, history: initialHistory(fixtureDeck(1, 1)), immutable: {version: 2, events: [], receipts: []}}).history.deck
+  const text = deck.slides[0]!.elements[0]!
+  if (text.kind !== "text") throw new Error("autofit-measure-text-required")
+  text.box = {x: 20, y: 20, width: 320, height: 240}
+  const first = text.body.paragraphs[0]
+  first.endStyle = {...first.endStyle, font: "Geist", size: 24, bold: false}
+  first.runs = [{kind: "text", text: "Hidden advance", style: {...first.endStyle, color: null}}, {kind: "break", style: {...first.endStyle, size: 30}}, {kind: "text", text: "Visible line", style: first.endStyle}]
+  first.marker = {kind: "number", format: "decimal", start: 3}
+  text.body.paragraphs.push({...structuredClone(first), id: id("fitBullet"), marker: {kind: "bullet", character: "•"}, runs: [{kind: "text", text: "Bullet", style: first.endStyle}]}, {...structuredClone(first), id: id("fitEmpty"), runs: []})
+  const font = await readFile(new URL("../../ui/fonts/geist-latin-400.woff2", import.meta.url))
+  const browser = await chromium.launch({args: ["--no-sandbox"]})
+  try {
+    const page = await browser.newPage({viewport: {width: 960, height: 540}, offline: true}), receipts = []
+    for (const fontScale of [null, 1, 0.625]) {
+      text.body.frame.autofit = {kind: "shrink", fontScale, lineReduction: fontScale === 0.625 ? 0.2 : null}
+      const before = structuredClone(text)
+      await page.setContent(captureDocument(deck, deck.slides[0]!.id, `@font-face{font-family:Geist;font-weight:400;src:url(data:font/woff2;base64,${font.toString("base64")})}`, {}))
+      const geometry = await page.evaluate(async () => {
+        await document.fonts.ready
+        const frame = document.querySelector("[data-text-frame]")!, paragraphs = [...document.querySelectorAll("[data-paragraph]")]
+        const lines = paragraphs.map(paragraph => {
+          const range = document.createRange()
+          range.selectNodeContents(paragraph)
+          return {box: paragraph.getBoundingClientRect().toJSON(), lines: [...range.getClientRects()].map(rect => rect.toJSON())}
+        })
+        const hidden = document.querySelector("[data-text-run]")!
+        return {loaded: document.fonts.check("24px Geist"), frame: frame.getBoundingClientRect().toJSON(), paragraphs: lines, hidden: hidden.getBoundingClientRect().toJSON(), markers: [...document.querySelectorAll("[data-marker]")].map(marker => marker.textContent)}
+      })
+      expect(geometry.loaded).toBe(true)
+      expect(geometry.frame).toMatchObject(text.box)
+      expect(geometry.markers).toEqual(["3.", "•", "3."])
+      expect(geometry.hidden.width).toBeGreaterThan(0)
+      expect(geometry.paragraphs).toHaveLength(3)
+      expect(geometry.paragraphs[2]!.box.height).toBeGreaterThan(0)
+      expect(text).toEqual(before)
+      receipts.push({fontScale, inputFrame: text.box, geometry})
+    }
+    expect(receipts[0]!.geometry).toEqual(receipts[1]!.geometry)
+    expect(receipts[2]!.geometry.paragraphs[0]!.box.height).toBeLessThan(receipts[0]!.geometry.paragraphs[0]!.box.height)
+    const artifacts = process.env.AIRDESIGN_PARAGRAPH_ARTIFACTS
+    if (artifacts) {
+      await mkdir(artifacts, {recursive: true})
+      await writeFile(`${artifacts}/autofit-saved-geometry.json`, JSON.stringify(receipts, null, 2))
+      await page.screenshot({path: `${artifacts}/autofit-saved-geometry.png`})
     }
   } finally {await browser.close()}
 })

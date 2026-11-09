@@ -21,8 +21,8 @@ export function Body({body}: {body: TextBody}) {
     document.fonts.addEventListener("loadingdone", layout)
     return () => { observer.disconnect(); document.fonts.removeEventListener("loadingdone", layout) }
   }, [body])
-  const frame = body.frame, scale = frame.autofit.kind === "shrink" ? frame.autofit.fontScale : 1
-  const reduction = frame.autofit.kind === "shrink" ? 1 - frame.autofit.lineReduction : 1
+  const frame = body.frame, scale = frame.autofit.kind === "shrink" ? frame.autofit.fontScale ?? 1 : 1
+  const reduction = frame.autofit.kind === "shrink" ? 1 - (frame.autofit.lineReduction ?? 0) : 1
   const numbers = paragraphNumbers(body.paragraphs)
   return <div ref={ref} data-text-frame={frame.id} style={{position: "relative", isolation: "isolate",writingMode: frame.verticalFlow === "vertical270" ? "sideways-lr" : "horizontal-tb", display: "flex", flexDirection: "column", justifyContent: frame.anchor === "top" ? "flex-start" : frame.anchor === "middle" ? "center" : "flex-end", boxSizing: "border-box", width: "100%", height: "100%", padding: `${frame.insets.top}px ${frame.insets.right}px ${frame.insets.bottom}px ${frame.insets.left}px`}}>
     <div data-text-shadow-layers="" aria-hidden="true" style={{position: "absolute", inset: 0, pointerEvents: "none", zIndex: -1}}/>

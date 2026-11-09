@@ -20,10 +20,17 @@ function text(document: Document, node: XmlNode): string {
 function number(value: string | undefined, fallback: number): number {
   return value === undefined ? fallback : Number(value)
 }
-function savedPercentage(value: string | undefined, fallback: number): number {
-  if (value === undefined) return fallback
+function savedPercentage(value: string | undefined): number | null {
+  if (value === undefined) return null
   if (!/^-?\d+(?:\.\d+)?%$/.test(value) && !/^[+-]?\d+$/.test(value.trim())) throw new UnsupportedTextFormat("autofit percentage")
   return value.endsWith("%") ? Number(value.slice(0, -1)) / 100 : Number(value) / 100000
+}
+function percentage(value: number): string {
+  const [mantissa = "", exponent = "0"] = String(value).split("e")
+  const [integer = "", fraction = ""] = mantissa.split(".")
+  const digits = integer + fraction, point = integer.length + Number(exponent) + 2
+  const decimal = point <= 0 ? `0.${"0".repeat(-point)}${digits}` : point >= digits.length ? digits + "0".repeat(point - digits.length) : `${digits.slice(0, point)}.${digits.slice(point)}`
+  return `${decimal}%`
 }
 function markerValue(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
   if (!properties) return inherited
@@ -71,7 +78,7 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
   const attributes = frames.reduce<Record<string, string>>((value, layer) => ({...value, ...layer.node.attributes}), {})
   const fit = frames.flatMap(({document, node}) => children(document, node).filter(child => ["normAutofit", "noAutofit", "spAutoFit"].includes(child.local)).map(child => ({document, node: child}))).at(-1)
   const normal = fit?.node.local === "normAutofit" ? fit.node : undefined
-  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", ...(attributes.spcFirstLastPara === undefined ? {} : {spacingAtEdges: ["1", "true"].includes(attributes.spcFirstLastPara)}), ...(attributes.wrap === undefined ? {} : {wrap: attributes.wrap === "none" ? "none" : "square"}), ...(attributes.compatLnSpc === undefined ? {} : {compatibilityLineSpacing: ["1", "true"].includes(attributes.compatLnSpc)}), ...(attributes.vert === undefined ? {} : {verticalFlow: attributes.vert === "vert270" ? "vertical270" : "horizontal"}), anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: savedPercentage(normal.attributes.fontScale, 1), lineReduction: savedPercentage(normal.attributes.lnSpcReduction, 0)} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
+  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", ...(attributes.spcFirstLastPara === undefined ? {} : {spacingAtEdges: ["1", "true"].includes(attributes.spcFirstLastPara)}), ...(attributes.wrap === undefined ? {} : {wrap: attributes.wrap === "none" ? "none" : "square"}), ...(attributes.compatLnSpc === undefined ? {} : {compatibilityLineSpacing: ["1", "true"].includes(attributes.compatLnSpc)}), ...(attributes.vert === undefined ? {} : {verticalFlow: attributes.vert === "vert270" ? "vertical270" : "horizontal"}), anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: savedPercentage(normal.attributes.fontScale), lineReduction: savedPercentage(normal.attributes.lnSpcReduction)} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
   let inherited: TextStyle = {font: "Aptos", size: 32, bold: false, color: "#171717"}, previousLevel = -1
   if (context.font) {
     const {document, node} = context.font, prefix = node.attributes.idx === "major" ? "+mj-lt" : node.attributes.idx === "minor" ? "+mn-lt" : null
@@ -129,7 +136,7 @@ function propertiesXml(value: TextStyle, tag: string): string {
 }
 export function writeTextBody(body: TextBody): string {
   const frame = body.frame, autofit = frame.autofit
-  const fit = autofit.kind === "shrink" ? `<a:normAutofit fontScale="${Math.round(autofit.fontScale * 100000)}" lnSpcReduction="${Math.round(autofit.lineReduction * 100000)}"/>` : autofit.kind === "resize-shape" ? "<a:spAutoFit/>" : "<a:noAutofit/>"
+  const fit = autofit.kind === "shrink" ? `<a:normAutofit${autofit.fontScale === null ? "" : ` fontScale="${percentage(autofit.fontScale)}"`}${autofit.lineReduction === null ? "" : ` lnSpcReduction="${percentage(autofit.lineReduction)}"`}/>` : autofit.kind === "resize-shape" ? "<a:spAutoFit/>" : "<a:noAutofit/>"
   const space = (value: Paragraph["spacing"]["before"]) => typeof value === "number" ? `<a:spcPts val="${Math.round(value * 75)}"/>` : `<a:spcPct val="${Math.round(value.value * 100000)}"/>`
   const paragraphs = body.paragraphs.map(paragraph => {
     const marker = paragraph.marker, line = paragraph.spacing.line

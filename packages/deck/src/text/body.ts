@@ -33,6 +33,6 @@ export type TextFrame = {
   verticalFlow?: "horizontal" | "vertical270"
   anchor: "top" | "middle" | "bottom"
   insets: {top: number; right: number; bottom: number; left: number}
-  autofit: {kind: "none"} | {kind: "shrink"; fontScale: number; lineReduction: number} | {kind: "resize-shape"}
+  autofit: {kind: "none"} | {kind: "shrink"; fontScale: number | null; lineReduction: number | null} | {kind: "resize-shape"}
 }
 export type TextBody = {frame: TextFrame; paragraphs: [Paragraph, ...Paragraph[]]}
