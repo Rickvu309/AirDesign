@@ -178,6 +178,129 @@ assertHit(
   1,
   comment,
 )
+assertHit(
+  "regex after if",
+  scanSource("if.ts", 'if (true) /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n'),
+  1,
+  suppression,
+)
+assertHit(
+  "regex after default",
+  scanSource("default.ts", 'export default /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n'),
+  1,
+  suppression,
+)
+assertHit(
+  "regex after a block",
+  scanSource("block.ts", 'if (true) {}\n/"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex after a function with a pattern",
+  scanSource("pattern.ts", 'function foo({ a }) {}\n/"/ /* oxlint-disable airdesign/no-comments */\n'),
+  2,
+  suppression,
+)
+assertHit(
+  "regex after a case block",
+  scanSource("case.ts", 'switch (0) {\ncase 1: {}\n/"/ /* oxlint-disable airdesign/no-comments */\n}\n'),
+  3,
+  suppression,
+)
+assertHit(
+  "vue regex after if",
+  scanSource(
+    "if.vue",
+    '<script>\nif (true) /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n</script>\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "astro frontmatter regex after if",
+  scanSource(
+    "if.astro",
+    '---\nif (true) /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n---\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "svelte regex after if",
+  scanSource(
+    "if.svelte",
+    '<script>\nif (true) /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n</script>\n',
+  ),
+  2,
+  suppression,
+)
+assertHit(
+  "svelte module regex after if",
+  scanSource("if.svelte.ts", 'if (true) /"/ /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n'),
+  1,
+  suppression,
+)
+assertHit(
+  "division after a call",
+  scanSource("call.ts", "foo() / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "division after an object",
+  scanSource("object.ts", "const x = { a: 1 } / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "division after a function expression",
+  scanSource("fn.ts", "const fn = function () {} / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "division after postfix",
+  scanSource("post.ts", "a++ / 2 /* oxlint-disable airdesign/no-comments */\n"),
+  1,
+  suppression,
+)
+assertHit(
+  "regex after spread",
+  scanSource("spread.ts", 'const items = [.../"/ /* oxlint-disable airdesign/no-comments */]\n'),
+  1,
+  suppression,
+)
+assertHit(
+  "astro text quote before an expression comment",
+  scanSource("quote-expr.astro", '" { /* hidden */ }\n'),
+  1,
+  comment,
+)
+assertHit("astro text quote before an html comment", scanSource("quote-html.astro", '" <!-- hidden -->\n'), 1, comment)
+assertHit(
+  "astro text quote before a style attribute",
+  scanSource("quote-style.astro", "\" <div style='color: black /* hidden */'></div>\n"),
+  1,
+  comment,
+)
+assertHit(
+  "disable after a script string that mentions the close tag",
+  scanSource(
+    "close.vue",
+    '<script>\nconst saved = "</script>"\n/* oxlint-disable airdesign/no-comments */\n</script>\n',
+  ),
+  3,
+  suppression,
+)
+assertClean(
+  "disable text inside a script string",
+  scanSource(
+    "close.vue",
+    '<script>\nconst saved = "</script> /* oxlint-disable airdesign/no-comments */"\n</script>\n',
+  ),
+)
+assertClean("html comment text in frontmatter", scanSource("page.astro", '---\nconst saved = "<!-- hidden -->"\n---\n'))
 
 const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-scan-"))
 try {
