@@ -153,7 +153,7 @@
     },
     {
       "id": "public-024",
-      "text": "Choose a connection guide. Client connections are not yet verified.",
+      "text": "Explore agent guides. Client connections are not yet verified.",
       "kind": "blocked",
       "gate": "X05"
     },
@@ -972,7 +972,7 @@
     },
     {
       "id": "site-capture-mobile",
-      "text": "Slide 3 of 8 · Swipe to explore",
+      "text": "Slide 3 of 8",
       "kind": "proven",
       "receipt": "P09/report.md"
     },
@@ -981,6 +981,179 @@
       "text": "Actual Studio capture of the eight-slide Halden investor deck with stacked revenue bars and Aira working",
       "kind": "proven",
       "receipt": "P09/report.md"
+    },
+    {
+      "id": "operator-design-1",
+      "text": "Every feature, every week. No plan, no trial.",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html",
+        "apps/site/pricing/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-2",
+      "text": "forever",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html",
+        "apps/site/pricing/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-3",
+      "text": "Unlimited decks",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html",
+        "apps/site/pricing/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-4",
+      "text": "Bring Claude or Codex",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html",
+        "apps/site/pricing/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-5",
+      "text": "Don't want to wait for the weekly reset? You can pay to reset.",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html",
+        "apps/site/pricing/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-6",
+      "text": "Zero follow-up questions.",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-7",
+      "text": "Illustrated deck checks",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-8",
+      "text": "MECE",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-9",
+      "text": "Pass",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-10",
+      "text": "GHOST DECK",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-11",
+      "text": "Final",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-12",
+      "text": "80 to 8",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-13",
+      "text": "FOOTNOTES SOURCED",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-14",
+      "text": "100%",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-15",
+      "text": "EBITDA BRIDGE",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-16",
+      "text": "Tied out",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-17",
+      "text": "Illustration of an investor deck in AirDesign",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-18",
+      "text": "Claude, Codex or your own. Work however you like.",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-19",
+      "text": "Privacy",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-20",
+      "text": "Terms",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
+    },
+    {
+      "id": "operator-design-21",
+      "text": "Built-in agent",
+      "kind": "operator-design",
+      "files": [
+        "apps/site/index.html"
+      ]
     }
   ],
   "blocked": [

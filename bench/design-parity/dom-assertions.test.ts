@@ -148,3 +148,39 @@ it("requires actual focus-visible keyboard close ink and rejects permanently con
   await expect(assertScenarioControls(page,entry)).rejects.toThrow()
  }finally{await browser.close()}
 })
+
+it("requires painted Pricing links in both landing regions",async()=>{
+ const entry=(await readRegistry()).find(entry=>entry.code==="S11.01")!
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage({viewport:entry.viewport})
+  const header='<header><a href="/pricing/">Pricing</a></header>'
+  const footer='<footer><a href="/pricing/">Pricing</a></footer>'
+  const body=(top:string,bottom:string)=>`<style>body{margin:0}header,footer{padding:20px}main{height:1200px}</style>${top}<main></main>${bottom}`
+  await page.setContent(body(header,footer))
+  const previous={...entry,assertions:{...entry.assertions,controls:[{role:"link" as const,nameKey:"site.pricing"}]}}
+  await expect(assertScenarioControls(page,previous)).rejects.toThrow("required-control")
+  await expect(assertScenarioControls(page,entry)).resolves.toBeUndefined()
+  for(const html of [body('<header></header>',footer),body(header,'<footer></footer>')]){
+   await page.setContent(html)
+   await expect(assertScenarioControls(page,entry)).rejects.toThrow('required-control')
+  }
+ }finally{await browser.close()}
+})
+
+it("probes the pricing header home link and rejects a substitute outside it",async()=>{
+ const entry=(await readRegistry()).find(entry=>entry.code==="S12.01")!
+ const browser=await chromium.launch({headless:true})
+ try{
+  const page=await browser.newPage();page.setDefaultTimeout(500)
+  let header='<a href="/">AirDesign</a>'
+  await page.route('http://site.test/**',route=>route.fulfill({contentType:'text/html',body:`<header>${header}</header><main><a href="/">AirDesign</a></main>`}))
+  await page.goto('http://site.test/pricing/')
+  const previous={...entry,assertions:{...entry.assertions,probe:{kind:'navigate' as const,name:'Product',path:'/#product'}}}
+  await expect(probeScenarioInteraction(page,previous)).rejects.toThrow()
+  await expect(probeScenarioInteraction(page,entry)).resolves.toBeUndefined()
+  header=''
+  await page.reload()
+  await expect(probeScenarioInteraction(page,entry)).rejects.toThrow('required-control')
+ }finally{await browser.close()}
+})

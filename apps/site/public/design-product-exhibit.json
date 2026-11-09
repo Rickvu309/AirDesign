@@ -1,0 +1,25 @@
+{
+  "kind": "design-source-composite",
+  "generator": "docs/design/v0.1/source/gen-editor.mjs",
+  "generatorSha256": "6f35e682b9cd24d9edfc5fe52d2f41327cf51dc53ef6e21f41fe559ec11073ec",
+  "postprocessor": "docs/design/v0.1/source/landing-post.sh",
+  "postprocessorSha256": "b97908490000d96f3a550166a0ffdee712e7aca2dee069fc19cbdfa8bd8047c7",
+  "copy": "docs/design/v0.1/copy-kit.json",
+  "copySha256": "a399007c606e9bbcaa87fb372a3dfeec3e8e191cdb6db1b2015b6dadce69a872",
+  "editor": "ed1.jsx",
+  "overlay": "ed54.jsx",
+  "corrections": [
+    "selected thumbnail title: Enterprise drove growth",
+    "speaker notes background: paper-gray-200",
+    "usage ring: preserve SVG stroke dash array"
+  ],
+  "sourceSize": [
+    1470,
+    923
+  ],
+  "outputSize": [
+    1248,
+    784
+  ],
+  "sha256": "347dc0e9a0bde8d212fb10d48e5fa100373d642cd68732baaa14a8125f2cc4fe"
+}
