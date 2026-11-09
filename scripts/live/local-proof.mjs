@@ -50,8 +50,13 @@ try{
   assert.equal(typeof failedExport.screenshot,"string")
   assert.deepEqual((await readFile(path.join(root,"deliberate-export-failure",failedExport.screenshot))).subarray(0,8),Buffer.from([137,80,78,71,13,10,26,10]))
   assert.equal(wrong.steps.find(step=>step.name===wrong.failedStep).screenshot,null)
+  const privacyLeak=await verifyLive({...base,output:path.join(root,"deliberate-privacy-leak"),configureContext:async context=>context.addInitScript(()=>{window.addEventListener("pageshow",event=>{event.stopImmediatePropagation()},{capture:true})})})
+  assert.equal(privacyLeak.failedStep,"signed-out-back-privacy")
+  assert.match(privacyLeak.error,/touch: visible private content: (Settings|\.ad-shell|live-smoke@example\.com)/)
   const passed=await verifyLive({...base,output:path.join(root,"pass")});assert.equal(passed.status,"pass",passed.failedStep+": "+passed.error)
-  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,studioError:studioFailure.failedStep,staleWorker:mismatch.failedStep,exportFailure:path.join(root,"deliberate-export-failure/receipt.json"),pass:path.join(root,"pass/receipt.json")},null,2))
+  const privacy=passed.steps.find(step=>step.name==="signed-out-back-privacy")
+  assert.deepEqual(privacy.evidence.map(({label,restored,session})=>({label,restored,session})),[{label:"touch",restored:true,session:"signed-out"},{label:"desktop",restored:true,session:"signed-out"}])
+  await writeFile(path.join(root,"proof.json"),JSON.stringify({sha,status:"pass",wrongSha:wrong.failedStep,brokenLink:bad.failedStep,studioError:studioFailure.failedStep,staleWorker:mismatch.failedStep,exportFailure:path.join(root,"deliberate-export-failure/receipt.json"),privacyLeak:path.join(root,"deliberate-privacy-leak/receipt.json"),pass:path.join(root,"pass/receipt.json")},null,2))
   process.stdout.write(`pass: ${root}/proof.json\n`)
 }finally{
   if(site){site.closeAllConnections();await new Promise(resolve=>site.close(resolve))}
