@@ -1,11 +1,7 @@
 {
   "name": "airdesign-landing",
+  "main": "worker/old-deployment-passthrough.ts",
   "compatibility_date": "2026-11-09",
   "assets": { "directory": "./dist" },
-  "routes": [
-    "airdesign.app/",
-    "airdesign.app/_astro/*",
-    "airdesign.app/favicon.svg",
-    "airdesign.app/sign-in*"
-  ]
+  "routes": ["airdesign.app/*", "www.airdesign.app/*"]
 }
