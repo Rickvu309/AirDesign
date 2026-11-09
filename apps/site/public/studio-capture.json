@@ -1,5 +1,5 @@
 {
-  "head": "4f71aa4ed51298c600a735acc1dc3e423e1b5175",
+  "head": "8fc185d3401895f6f6331e26468368e20d721ad5",
   "kind": "actual-built-studio",
   "adapter": "deterministic-local",
   "template": "Halden",
@@ -15,12 +15,12 @@
   "refresh": "heavy --label site-capture -- node bench/release/site-capture.mjs --publish",
   "fixture": "bench/release/site-investor-deck.ts",
   "fixtureSource": "design-parity/bench/design-parity/investor-deck.ts",
-  "fixtureSha256": "5be1c476478c1ab086cd26d2376c3ee82de7394db88bd30a3a8474356d74fa2e",
+  "fixtureSha256": "8de8157141e2eac2fe03430a60e57149f480930afcda40fbb722d32b115a95f0",
   "mobileCrop": {
     "x": 279,
     "y": 86,
     "width": 770,
     "height": 433.125
   },
-  "sha256": "c3c1abf4c6b33c601be2a5a55d993488f39f9fec960f775123f7c740a2389b8e"
+  "sha256": "e74135bf83b84a39d170cc9b3b9859019e729ac45d1577a634fba63800224306"
 }
