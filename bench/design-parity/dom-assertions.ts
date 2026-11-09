@@ -293,7 +293,7 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
       controlOwner=root
     }
     if("owner" in control&&control.owner!=="manual-editor"&&control.owner){
-      const selectors={"editor-shell":".studio-editor .editor-bar","aira-panel":".aira-panel","images-panel":".image-panel","slide-navigation":".editor-filmstrip"}
+      const selectors={"editor-shell":".studio-editor .editor-bar","aira-panel":".aira-panel","images-panel":".image-panel","slide-navigation":".editor-filmstrip","header":"header","footer":"footer"}
       controlOwner=page.locator(selectors[control.owner])
       if(await controlOwner.count()!==1||!await controlOwner.isVisible())throw failure(controlOwner.toString(),"required-control-owner",control.owner,"missing or hidden")
     }
@@ -315,6 +315,9 @@ export async function assertScenarioControls(page:Page,entry:Scenario){
       if(!await locator.isEnabled()||!await locator.evaluate(element=>{const box=element.getBoundingClientRect(),hit=document.elementFromPoint(box.x+box.width/2,box.y+box.height/2);return hit!==null&&element.contains(hit)}))throw failure(locator.toString(),"required-navigation-hit-test",true,false)
       if(await number.textContent()!==entry.assertions.copyValues?.slide)throw failure(number.toString(),"required-slide-number",entry.assertions.copyValues?.slide,await number.textContent())
       await assertControlPaint(number)
+    }else if("owner" in control&&control.owner==="footer"){
+      const position=await page.evaluate(()=>({x:window.scrollX,y:window.scrollY}))
+      try{await locator.scrollIntoViewIfNeeded();await assertControlPaint(locator)}finally{await page.evaluate(({x,y})=>window.scrollTo(x,y),position)}
     }else await assertControlPaint(locator,"paint" in control&&control.paint==="icon" ? "icon" : undefined)
   }
 }
@@ -387,7 +390,10 @@ async function probeInteraction(page:Page,entry:Scenario){
     }
     case "navigate":{
       const original=page.url()
-      await page.getByRole("link",{name:probe.name,exact:true}).first().click()
+      const owner=probe.owner==="header" ? page.locator("header") : page
+      const link=owner.getByRole("link",{name:probe.name,exact:true})
+      if(probe.owner&&await link.count()!==1)throw failure(link.toString(),"required-control",1,await link.count())
+      await link.first().click()
       await page.waitForURL(url=>url.pathname+url.hash===probe.path)
       await page.goto(original)
       break

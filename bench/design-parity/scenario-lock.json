@@ -29,13 +29,20 @@
       "controls": [
         {
           "role": "link",
-          "nameKey": "site.pricing"
+          "nameKey": "site.pricing",
+          "owner": "header"
+        },
+        {
+          "role": "link",
+          "nameKey": "site.pricing",
+          "owner": "footer"
         }
       ],
       "probe": {
         "kind": "navigate",
         "name": "Pricing",
-        "path": "/pricing/"
+        "path": "/pricing/",
+        "owner": "header"
       }
     }
   },
@@ -69,13 +76,20 @@
       "controls": [
         {
           "role": "link",
-          "nameKey": "site.pricing"
+          "nameKey": "site.pricing",
+          "owner": "header"
+        },
+        {
+          "role": "link",
+          "nameKey": "shell.brand",
+          "owner": "header"
         }
       ],
       "probe": {
         "kind": "navigate",
-        "name": "Product",
-        "path": "/#product"
+        "name": "AirDesign",
+        "path": "/",
+        "owner": "header"
       }
     }
   },

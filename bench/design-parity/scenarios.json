@@ -21,13 +21,20 @@
       "controls": [
         {
           "role": "link",
-          "nameKey": "site.pricing"
+          "nameKey": "site.pricing",
+          "owner": "header"
+        },
+        {
+          "role": "link",
+          "nameKey": "site.pricing",
+          "owner": "footer"
         }
       ],
       "probe": {
         "kind": "navigate",
         "name": "Pricing",
-        "path": "/pricing/"
+        "path": "/pricing/",
+        "owner": "header"
       },
       "structure": {
         "icons": [],
@@ -41,7 +48,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
+    "scenarioChangedBecause": "The landing reference places Pricing in both header and footer; require each painted link independently and probe the header link."
   },
   {
     "surface": "site",
@@ -65,13 +72,20 @@
       "controls": [
         {
           "role": "link",
-          "nameKey": "site.pricing"
+          "nameKey": "site.pricing",
+          "owner": "header"
+        },
+        {
+          "role": "link",
+          "nameKey": "shell.brand",
+          "owner": "header"
         }
       ],
       "probe": {
         "kind": "navigate",
-        "name": "Product",
-        "path": "/#product"
+        "name": "AirDesign",
+        "path": "/",
+        "owner": "header"
       },
       "structure": {
         "icons": [],
@@ -85,7 +99,7 @@
         ]
       }
     },
-    "scenarioChangedBecause": "Editor completion v8: Record the shared Editor state-entry adapter source receipt; preserve this scenario, seed, content, assertions and strict measurements."
+    "scenarioChangedBecause": "The pricing reference uses the AirDesign header home link, not a Product link; require and probe that header link."
   },
   {
     "surface": "studio",
