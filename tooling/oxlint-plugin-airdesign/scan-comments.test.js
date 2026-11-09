@@ -57,6 +57,30 @@ assertClean(
   "astro style quoted comment text",
   scanSource("styled-quoted.astro", '<style>\n.a { content: "/* hidden */" }\n</style>\n'),
 )
+assertHit(
+  "astro style comment after a quoted close tag",
+  scanSource("styled-bypass.astro", '<style>\n.a { content: "</style>" }\n/* hidden */\n</style>\n'),
+  3,
+  comment,
+)
+assertHit(
+  "astro style comment after a close tag inside a comment",
+  scanSource("styled-comment-close.astro", "<style>\n/* </style> */\n.a { /* hidden */ }\n</style>\n"),
+  3,
+  comment,
+)
+assertHit(
+  "second astro style block after a quoted close tag",
+  scanSource("styled-second.astro", '<style>\n.a { content: "</style>" }\n</style>\n<style>\n/* hidden */\n</style>\n'),
+  5,
+  comment,
+)
+assertHit(
+  "file-level disable in a cts file",
+  scanSource("module.cts", "/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n"),
+  1,
+  suppression,
+)
 
 assertClean("quoted yaml color", scanSource("color.yaml", 'color: "#222222"\n'))
 assertClean("quoted yaml url hash", scanSource("url.yml", 'url: "https://example.com/a#b"\n'))
