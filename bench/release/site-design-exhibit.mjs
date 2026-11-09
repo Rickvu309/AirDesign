@@ -20,7 +20,9 @@ if(!overlay.includes(slot))throw new Error("Missing Run 04 Shot slot")
 const title="Revenue grew 39%"
 const notes='data-node-label="Notes" className="flex w-[800px] h-12 items-center rounded-[10px] [background-color:var(--paper-gray-100)] px-4"'
 if(!editor.includes(title)||!editor.includes(notes))throw new Error("Missing design correction target")
-const correctedEditor=editor.replace(title,"Enterprise drove growth").replace(notes,notes.replace("--paper-gray-100","--paper-gray-200"))
+const usageRing='strokeDasharray="16.0 100"'
+if(editor.split(usageRing).length!==2)throw new Error("Missing unique working usage ring")
+const correctedEditor=editor.replace(title,"Enterprise drove growth").replace(notes,notes.replace("--paper-gray-100","--paper-gray-200")).replace(usageRing,'stroke-dasharray="16.0 100"')
 const jsx=overlay.replace(slot,slot.replace("</div>",`${correctedEditor}</div>`))
 const candidates=[...jsx.matchAll(/className="([^"]*)"/g)].flatMap(match=>match[1].split(/\s+/))
 const compiled=await compile('@import "tailwindcss";',{base:process.cwd(),onDependency:()=>{}})
@@ -39,6 +41,6 @@ try{
  image=await sharp(await page.screenshot({animations:"disabled",caret:"hide"})).resize(1248,784,{fit:"fill"}).png().toBuffer()
 }finally{await browser.close()}
 const digest=value=>createHash("sha256").update(value).digest("hex")
-const provenance={kind:"design-source-composite",generator:generatorPath,generatorSha256:digest(generator),postprocessor:postprocessorPath,postprocessorSha256:digest(postprocessor),copy:copyPath,copySha256:digest(copy),editor:"ed1.jsx",overlay:"ed54.jsx",corrections:["selected thumbnail title: Enterprise drove growth","speaker notes background: paper-gray-200"],sourceSize:[1470,923],outputSize:[1248,784],sha256:digest(image)}
+const provenance={kind:"design-source-composite",generator:generatorPath,generatorSha256:digest(generator),postprocessor:postprocessorPath,postprocessorSha256:digest(postprocessor),copy:copyPath,copySha256:digest(copy),editor:"ed1.jsx",overlay:"ed54.jsx",corrections:["selected thumbnail title: Enterprise drove growth","speaker notes background: paper-gray-200","usage ring: preserve SVG stroke dash array"],sourceSize:[1470,923],outputSize:[1248,784],sha256:digest(image)}
 await writeFile("apps/site/public/design-product-exhibit.png",image)
 await writeFile("apps/site/public/design-product-exhibit.json",JSON.stringify(provenance,null,2)+"\n")

@@ -114,7 +114,7 @@ header nav a { text-decoration: none; }
 .deck-checks > * { display: flex; gap: 12px; align-items: center; padding: 12px 24px; border-inline-end: 1px solid var(--border); }
 .deck-checks strong { background: var(--site-navy); color: var(--card); font-family: var(--font-sans); }
 .deck-checks span { color: var(--site-subtle); }
-.deck-checks b { color: var(--foreground); }
+.deck-checks b { color: var(--foreground); font-family: var(--font-sans); font-size: 13px; font-weight: 500; letter-spacing: normal; }
 .deck-checks svg { inline-size: 9px; block-size: 9px; fill: var(--site-check-up); margin-inline-start: -8px; }
 .deck-checks svg[data-direction="down"] { fill: var(--site-check-down); }
 .section-inner { max-inline-size: 1248px; margin-inline: auto; }
@@ -156,7 +156,7 @@ header nav a { text-decoration: none; }
 .price small { font-size: 14px; }
 .price ul { list-style: none; padding: 0; margin: 26px 0; }
 .price li { display: flex; gap: 14px; font-size: 13px; line-height: 1.5; margin-block: 12px; }
-.price li svg { margin-block-start: 2px; color: var(--site-brand); }
+.price li svg { margin-block-start: 2px; color: var(--site-brand); stroke-width: 1.75; }
 .price .button { min-block-size: 46px; font-size: 14px; border-radius: 10px; }
 .reset-note { margin: 32px auto 0; color: var(--site-quiet); font-size: 12px; }
 .landing-pricing .reset-note { font-size: 15px; line-height: 1.3; }
