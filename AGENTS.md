@@ -18,7 +18,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
 
-`main` only accepts commits that passed the `gate` check, so every change goes through a PR.
+`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship.
 
 ## Ways to hurt yourself
 
