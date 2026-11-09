@@ -24,7 +24,14 @@ export function AgentPromo() {
         </span>
         <span className="absolute top-[35px] left-[85px] flex size-[54px] items-center justify-center rounded-[14px] bg-background shadow-[0_0_0_1px_rgb(0_0_0/6%),0_8px_20px_rgb(77_148_251/28%)]">
           <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">
-            <path d="M6.09 26.72 L15 3.28 L23.91 26.72" fill="none" stroke="#222222" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M6.09 26.72 L15 3.28 L23.91 26.72"
+              fill="none"
+              stroke="#222222"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
             <line x1="2.81" y1="20.63" x2="27.19" y2="14.06" stroke="#ff58ae" strokeWidth="2.3" strokeLinecap="round" />
           </svg>
         </span>
@@ -44,7 +51,15 @@ export function AgentPromo() {
         </span>
         <span className="absolute top-2 left-[192px] flex size-6 items-center justify-center rounded-full bg-white/85 text-muted-foreground shadow-[0_0_0_1px_var(--line)]">
           <svg width="13" height="13" viewBox="0 0 13 13" aria-hidden="true">
-            <line x1="2.71" y1="6.5" x2="10.29" y2="6.5" stroke="currentColor" strokeWidth="1.19" strokeLinecap="round" />
+            <line
+              x1="2.71"
+              y1="6.5"
+              x2="10.29"
+              y2="6.5"
+              stroke="currentColor"
+              strokeWidth="1.19"
+              strokeLinecap="round"
+            />
           </svg>
         </span>
       </div>

@@ -14,5 +14,10 @@ export function GridAddHold() {
 }
 
 export function GridPasted() {
-  return <SlideGrid state="pasted" toast={<EditorToast kind="success" text="2 slides pasted from PowerPoint" action="Undo" />} />
+  return (
+    <SlideGrid
+      state="pasted"
+      toast={<EditorToast kind="success" text="2 slides pasted from PowerPoint" action="Undo" />}
+    />
+  )
 }

@@ -1,5 +1,19 @@
 import { editorRoutes } from "@/editor/editor-routes"
-import { ActionsScreen, AgentComplete, AgentLong, AgentOwn, AgentWorking, DesignPanelScreen, ImagesScreen, Offline, RunFailed, ShapesExpandedScreen, ShapesScreen, TemplatePickerScreen, TextScreen } from "@/editor/screens/slide-views"
+import {
+  ActionsScreen,
+  AgentComplete,
+  AgentLong,
+  AgentOwn,
+  AgentWorking,
+  DesignPanelScreen,
+  ImagesScreen,
+  Offline,
+  RunFailed,
+  ShapesExpandedScreen,
+  ShapesScreen,
+  TemplatePickerScreen,
+  TextScreen,
+} from "@/editor/screens/slide-views"
 import { GridAddHold, GridAddHover, GridDefault, GridPasted } from "@/editor/screens/grid-views"
 
 export const screens = {

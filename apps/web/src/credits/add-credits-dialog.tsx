@@ -29,7 +29,11 @@ export function AddCreditsDialog({
     <ScrimDialog className="flex w-[440px] flex-col gap-5 p-6">
       <div className="flex h-7 items-center justify-between">
         <h2 className="text-[17px] leading-[22px] font-semibold text-foreground">{productCopy.creditsAdd}</h2>
-        <button type="button" aria-label={productCopy.close} className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas">
+        <button
+          type="button"
+          aria-label={productCopy.close}
+          className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas"
+        >
           <CloseGlyph />
         </button>
       </div>

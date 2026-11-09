@@ -4,7 +4,10 @@ type ScreenRegistry = { screens: Record<string, ComponentType> }
 
 const registries = import.meta.glob<ScreenRegistry>("./**/*-screens.tsx", { eager: true })
 
-const screens = Object.assign({}, ...Object.values(registries).map((registry) => registry.screens)) as ScreenRegistry["screens"]
+const screens = Object.assign(
+  {},
+  ...Object.values(registries).map((registry) => registry.screens),
+) as ScreenRegistry["screens"]
 
 export default function App() {
   const path = window.location.pathname.replace(/\/$/, "") || "/"

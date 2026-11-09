@@ -6,7 +6,13 @@ import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
 import { cn } from "@/lib/utils"
 
-const sections: { id: DeckSection; label: string; href: string; glyph: "clock" | "decks" | "trash" | "gear"; size: number }[] = [
+const sections: {
+  id: DeckSection
+  label: string
+  href: string
+  glyph: "clock" | "decks" | "trash" | "gear"
+  size: number
+}[] = [
   { id: "recents", label: "Recents", href: deckRoutes.recentsGrid, glyph: "clock", size: 16 },
   { id: "all-decks", label: "All decks", href: deckRoutes.allDecksGrid, glyph: "decks", size: 16 },
   { id: "trash", label: "Trash", href: deckRoutes.trash, glyph: "trash", size: 15 },
@@ -27,7 +33,10 @@ export function DecksShell({
   return (
     <div className="flex h-full w-full">
       <aside className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
-        <button type="button" className="flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+        <button
+          type="button"
+          className="flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[10px] leading-none font-semibold text-white">
             {account.initials}
           </span>

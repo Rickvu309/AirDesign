@@ -7,7 +7,15 @@ import { ConfirmResetDialog } from "@/credits/screens/settings-dialogs"
 import { SlideThumb } from "@/editor/slide-thumb"
 import { EditorView } from "@/editor/screens/editor-view"
 
-function EditorBackdrop({ phase, toast, mark = "tile" }: { phase: "limit" | "reset"; toast?: ReactNode; mark?: "tile" | "ring" }) {
+function EditorBackdrop({
+  phase,
+  toast,
+  mark = "tile",
+}: {
+  phase: "limit" | "reset"
+  toast?: ReactNode
+  mark?: "tile" | "ring"
+}) {
   return (
     <EditorView
       run="done"

@@ -20,7 +20,11 @@ export function ResultDialog({
     <ScrimDialog className="flex h-[207.5px] w-[400px] flex-col gap-4 p-6">
       <div className="flex h-10 items-start justify-between">
         {icon}
-        <button type="button" aria-label={productCopy.close} className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas">
+        <button
+          type="button"
+          aria-label={productCopy.close}
+          className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas"
+        >
           <CloseGlyph />
         </button>
       </div>
@@ -43,7 +47,14 @@ export function OkTile() {
   return (
     <span className={blueTile}>
       <svg width="11" height="8" viewBox="0 0 11 8" aria-hidden="true">
-        <path d="M0 4.5 L3.6 8 L11 0" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M0 4.5 L3.6 8 L11 0"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   )
@@ -76,7 +87,14 @@ export function ExpiredTile() {
     >
       <span className="relative size-[18px] rounded-full shadow-[inset_0_0_0_2px_#ffffff]">
         <svg className="absolute top-[3px] left-[7px]" width="3" height="7" viewBox="0 0 3 6.5" aria-hidden="true">
-          <path d="M0 0 L0 4.5 L3 6.5" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M0 0 L0 4.5 L3 6.5"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </span>
     </span>

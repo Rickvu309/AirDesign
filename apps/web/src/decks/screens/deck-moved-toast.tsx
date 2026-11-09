@@ -9,7 +9,10 @@ const toastWidth = "322.07px"
 
 function MovedToast() {
   return (
-    <div className="flex h-10 items-center rounded-[10px] bg-foreground pr-4 pl-4 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]" style={{ width: toastWidth }}>
+    <div
+      className="flex h-10 items-center rounded-[10px] bg-foreground pr-4 pl-4 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
+      style={{ width: toastWidth }}
+    >
       <span className="min-w-0 flex-1 truncate">Pricing Strategy Review moved to Trash</span>
       <button type="button" className="font-medium text-white">
         Undo
@@ -35,7 +38,12 @@ export function DeckMovedToast() {
           <DeckCard key={deck.name} name={deck.name} edited={deck.edited} />
         ))}
       </DeckGrid>
-      <Toaster position="top-center" offset={12} style={{ "--width": toastWidth } as CSSProperties} className="![left:calc(50%+124px)]" />
+      <Toaster
+        position="top-center"
+        offset={12}
+        style={{ "--width": toastWidth } as CSSProperties}
+        className="![left:calc(50%+124px)]"
+      />
     </DeckBrowser>
   )
 }

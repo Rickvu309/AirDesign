@@ -6,11 +6,13 @@ const iconPaths = {
   chevl: '<path d="m15 6-6 6 6 6"/>',
   slide: '<rect x="2.5" y="4" width="19" height="16" rx="1.2"/><rect x="6.5" y="8" width="11" height="8" rx="0.4"/>',
   grid: '<rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
-  cursor: '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.12 1.58a2 2 0 0 0-1.44 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
+  cursor:
+    '<path d="M4.04 4.69a.5.5 0 0 1 .65-.65l16 6.5a.5.5 0 0 1-.06.95l-6.12 1.58a2 2 0 0 0-1.44 1.43l-1.58 6.13a.5.5 0 0 1-.95.06z"/>',
   text: '<path d="M5 6V4.5h14V6M12 4.5v15M9 19.5h6"/>',
   shape: '<rect x="3.5" y="3.5" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>',
   image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
-  actions: '<path d="m7 3 4 4-4 4-4-4z"/><circle cx="17" cy="7" r="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M17 14v7M13.5 17.5h7"/>',
+  actions:
+    '<path d="m7 3 4 4-4 4-4-4z"/><circle cx="17" cy="7" r="3.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.2"/><path d="M17 14v7M13.5 17.5h7"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
@@ -61,8 +63,18 @@ export function EditorIcon({
 export function SparkIcon({ size = 14, className }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className={cn("shrink-0", className)} aria-hidden="true">
-      <path d="M4.5 20.5 9.4 10.2M19.5 20.5 14.6 10.2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path fill="currentColor" d="M12 1.6c.43 2.37 1.63 3.57 4 4-2.37.43-3.57 1.63-4 4-.43-2.37-1.63-3.57-4-4 2.37-.43 3.57-1.63 4-4z" />
+      <path
+        d="M4.5 20.5 9.4 10.2M19.5 20.5 14.6 10.2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        fill="currentColor"
+        d="M12 1.6c.43 2.37 1.63 3.57 4 4-2.37.43-3.57 1.63-4 4-.43-2.37-1.63-3.57-4-4 2.37-.43 3.57-1.63 4-4z"
+      />
     </svg>
   )
 }

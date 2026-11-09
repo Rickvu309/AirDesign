@@ -58,7 +58,14 @@ export function SettingsSelect({ value }: { value: string }) {
     >
       {value}
       <svg width="8" height="4" viewBox="0 0 8 4" className="text-muted-foreground" aria-hidden="true">
-        <path d="M0 0 L4 4 L8 0" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d="M0 0 L4 4 L8 0"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </button>
   )

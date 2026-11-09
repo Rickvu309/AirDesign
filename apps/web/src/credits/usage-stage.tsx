@@ -36,7 +36,11 @@ export function UsageStage({
         detail={balance}
         description={settingsCopy.facts}
         align="end"
-        actions={<SettingsButton tone="brand" width={99.26}>{settingsCopy.addCredits}</SettingsButton>}
+        actions={
+          <SettingsButton tone="brand" width={99.26}>
+            {settingsCopy.addCredits}
+          </SettingsButton>
+        }
       >
         {banner ? <div className="mb-3.5">{banner}</div> : null}
         <div className="flex items-center justify-between gap-4 pt-3.5 shadow-[inset_0_1px_0_0_var(--line)]">
@@ -75,7 +79,17 @@ export function WaitingBanner() {
               <circle cx="8" cy="8" r="8" />
             </clipPath>
           </defs>
-          <circle cx="8" cy="8" r="8" fill="none" stroke="#4d94fb" strokeWidth="4" strokeDasharray="14 30" strokeLinecap="butt" clipPath="url(#credits-wait-dash)" />
+          <circle
+            cx="8"
+            cy="8"
+            r="8"
+            fill="none"
+            stroke="#4d94fb"
+            strokeWidth="4"
+            strokeDasharray="14 30"
+            strokeLinecap="butt"
+            clipPath="url(#credits-wait-dash)"
+          />
         </svg>
         <span className="truncate text-[13px] leading-[17px] font-medium text-[#2d6fcd]">{creditsCopy.waiting}</span>
       </span>
@@ -83,7 +97,10 @@ export function WaitingBanner() {
         <button type="button" className="text-[13px] leading-[17px] font-medium text-[#2d6fcd] hover:underline">
           {productCopy.payOpen}
         </button>
-        <button type="button" className="text-[13px] leading-[17px] font-medium text-muted-foreground hover:text-foreground">
+        <button
+          type="button"
+          className="text-[13px] leading-[17px] font-medium text-muted-foreground hover:text-foreground"
+        >
           {productCopy.cancel}
         </button>
       </span>

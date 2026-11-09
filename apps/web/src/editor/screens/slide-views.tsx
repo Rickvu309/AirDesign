@@ -50,5 +50,10 @@ export function RunFailed() {
 }
 
 export function Offline() {
-  return <EditorView run="offline" toast={<EditorToast kind="info" text="You're offline. Edits are saved on this device." place="canvas" />} />
+  return (
+    <EditorView
+      run="offline"
+      toast={<EditorToast kind="info" text="You're offline. Edits are saved on this device." place="canvas" />}
+    />
+  )
 }

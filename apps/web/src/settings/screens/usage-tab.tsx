@@ -24,7 +24,11 @@ export function UsageTab({ children }: { children?: ReactNode }) {
         detail={settingsCopy.balance}
         description={settingsCopy.facts}
         align="end"
-        actions={<SettingsButton tone="brand" width={99.26}>{settingsCopy.addCredits}</SettingsButton>}
+        actions={
+          <SettingsButton tone="brand" width={99.26}>
+            {settingsCopy.addCredits}
+          </SettingsButton>
+        }
       >
         <div className="flex items-center justify-between gap-4 pt-3.5 shadow-[inset_0_1px_0_0_var(--line)]">
           <div className="min-w-0">

@@ -1,1 +1,1 @@
-export const response = fetch("https://example.com");
+export const response = fetch("https://example.com")

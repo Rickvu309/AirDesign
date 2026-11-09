@@ -1,6 +1,13 @@
 import { Dialog as BaseDialog } from "@base-ui/react/dialog"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogClose,
+  DialogDescription,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { trashDeckCards } from "@/decks/sample-decks"
@@ -33,13 +40,23 @@ function EmptyTrashDialog() {
           </div>
           <DialogClose className="absolute top-0 left-[324px] flex size-7 items-center justify-center rounded-md text-muted-foreground">
             <svg width="10" height="10" viewBox="9 9 10 10" aria-hidden="true">
-              <path d="M9 9 L19 19 M19 9 L9 19" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path
+                d="M9 9 L19 19 M19 9 L9 19"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
             <span className="sr-only">Close</span>
           </DialogClose>
           <div className="px-6 pt-20">
-            <DialogTitle className="text-[17px] leading-[22px] font-semibold text-foreground">Delete 3 decks for good?</DialogTitle>
-            <DialogDescription className="mt-1.5 text-[13px] leading-[19.5px] text-muted-foreground">This can't be undone.</DialogDescription>
+            <DialogTitle className="text-[17px] leading-[22px] font-semibold text-foreground">
+              Delete 3 decks for good?
+            </DialogTitle>
+            <DialogDescription className="mt-1.5 text-[13px] leading-[19.5px] text-muted-foreground">
+              This can't be undone.
+            </DialogDescription>
             <div className="mt-5 flex items-center justify-end gap-2">
               <Button
                 type="button"

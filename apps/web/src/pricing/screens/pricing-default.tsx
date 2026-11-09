@@ -44,7 +44,9 @@ export function PricingDefault() {
         <p className="mt-3 text-[18px] leading-[1.56] text-muted-foreground">{pricingCopy.subtitle}</p>
         <section className="mt-12 flex w-[440px] flex-col gap-6 rounded-[18px] bg-white p-7 shadow-[inset_0_0_0_1px_#e3e3e1,0_12px_40px_0_rgb(0_0_0/5%)]">
           <div className="flex h-14 items-end gap-2">
-            <p className="text-[56px] leading-none font-semibold tracking-[-1.5px] text-foreground">{pricingCopy.price}</p>
+            <p className="text-[56px] leading-none font-semibold tracking-[-1.5px] text-foreground">
+              {pricingCopy.price}
+            </p>
             <p className="flex h-[30px] items-start text-[16px] leading-[1.5] text-faint">{pricingCopy.forever}</p>
           </div>
           <ul className="flex flex-col gap-3">

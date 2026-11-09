@@ -12,7 +12,9 @@ export function PanelSwitch({ active }: { active: "agent" | "design" }) {
         aria-pressed={agent}
         className={cn(
           "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
-          agent ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white" : "text-quiet hover:bg-transparent",
+          agent
+            ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white"
+            : "text-quiet hover:bg-transparent",
         )}
       >
         <SparkIcon size={14} className={agent ? "text-primary" : "text-quiet"} />
@@ -24,7 +26,9 @@ export function PanelSwitch({ active }: { active: "agent" | "design" }) {
         aria-pressed={!agent}
         className={cn(
           "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
-          agent ? "text-quiet hover:bg-transparent" : "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white",
+          agent
+            ? "text-quiet hover:bg-transparent"
+            : "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white",
         )}
       >
         <EditorIcon name="sliders" size={14} />

@@ -1,17 +1,17 @@
-const pendingEmailKey = "airdesign.pending-sign-in-email";
+const pendingEmailKey = "airdesign.pending-sign-in-email"
 
 export function rememberPendingEmail(email: string): void {
   try {
-    sessionStorage.setItem(pendingEmailKey, email);
+    sessionStorage.setItem(pendingEmailKey, email)
   } catch {
-    return;
+    return
   }
 }
 
 export function readPendingEmail(): string | null {
   try {
-    return sessionStorage.getItem(pendingEmailKey);
+    return sessionStorage.getItem(pendingEmailKey)
   } catch {
-    return null;
+    return null
   }
 }

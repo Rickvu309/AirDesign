@@ -99,7 +99,9 @@ function MenuRow({
 }) {
   return (
     <div className="flex h-8 items-center gap-2.5 rounded-[7px] pr-2.5 pl-2 text-white">
-      <span className="flex size-4 items-center justify-center">{checked ? <EditorIcon name="check" size={14} /> : null}</span>
+      <span className="flex size-4 items-center justify-center">
+        {checked ? <EditorIcon name="check" size={14} /> : null}
+      </span>
       <EditorIcon name={icon} size={16} />
       <span className="flex-1 text-[13px]">{label}</span>
       <span className="text-xs text-[#8c8c8c]">{shortcut}</span>

@@ -20,7 +20,12 @@ export function SlideSidebar({ run }: { run: SidebarRun }) {
             <EditorIcon name="chev" size={13} className="text-faint" />
           </span>
           <span className="block h-8 w-px bg-[#d7d7d6]" />
-          <Button type="button" variant="ghost" className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0" aria-label="Add slide">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0"
+            aria-label="Add slide"
+          >
             <EditorIcon name="plus" size={15} />
           </Button>
         </div>
@@ -66,7 +71,9 @@ function StripItem({ index, run, queuedFrom }: { index: number; run: SidebarRun;
   return (
     <div className={cn("flex items-start gap-2 rounded-[10px] p-2", active && "bg-[#e8f1fe]")}>
       <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
-        <span className={cn("text-xs", active ? "font-medium text-[var(--primary-strong)]" : "text-faint")}>{index}</span>
+        <span className={cn("text-xs", active ? "font-medium text-[var(--primary-strong)]" : "text-faint")}>
+          {index}
+        </span>
         {working ? <span className="block size-1.5 rounded-full bg-primary" /> : null}
       </span>
       <SlideThumb index={index} width={thumbWidth} queued={queuedFrom > 0 && index >= queuedFrom} />

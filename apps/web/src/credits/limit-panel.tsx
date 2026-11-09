@@ -1,7 +1,13 @@
 import { Button } from "@/components/ui/button"
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation"
 import { Message, MessageContent } from "@/components/ai-elements/message"
-import { PromptInput, PromptInputBody, PromptInputButton, PromptInputChip, PromptInputText } from "@/components/ai-elements/prompt-input"
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputChip,
+  PromptInputText,
+} from "@/components/ai-elements/prompt-input"
 import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { productCopy } from "@/copy/product-copy"
 import { creditsCopy } from "@/credits/credits-sample"
@@ -33,7 +39,13 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
           <span className="flex size-6 items-center justify-center rounded-[6px]">
             <UsageMeter tone={phase === "limit" ? "limit" : "clear"} />
           </span>
-          <Button type="button" variant="ghost" size="icon" className="size-7 rounded-[7px] text-quiet active:translate-y-0" aria-label={creditsCopy.newChat}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 rounded-[7px] text-quiet active:translate-y-0"
+            aria-label={creditsCopy.newChat}
+          >
             <EditorIcon name="pen" size={15} />
           </Button>
         </span>
@@ -41,7 +53,9 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
       <Conversation>
         <ConversationContent>
           <Message from="user">
-            <MessageContent className="rounded-[14px] bg-line px-3.5 py-2.5 leading-[1.5]">{creditsCopy.ask}</MessageContent>
+            <MessageContent className="rounded-[14px] bg-line px-3.5 py-2.5 leading-[1.5]">
+              {creditsCopy.ask}
+            </MessageContent>
             <span className="flex h-7 items-center gap-1.5 rounded-[8px] px-2 text-xs text-quiet shadow-[0px_0px_0px_1px_#d7d7d6]">
               <EditorIcon name="doc" size={13} />
               {creditsCopy.notesFile}
@@ -55,9 +69,7 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
           </Message>
         </ConversationContent>
       </Conversation>
-      <div className="flex flex-col px-3 pb-3">
-        {phase === "limit" ? <LimitComposer /> : <ReadyComposer />}
-      </div>
+      <div className="flex flex-col px-3 pb-3">{phase === "limit" ? <LimitComposer /> : <ReadyComposer />}</div>
     </aside>
   )
 }
@@ -98,7 +110,14 @@ function ResetCard() {
       <span className="flex items-center gap-2">
         <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,#93b8ef,#4d94fb)] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_#2d6fcd,0_1px_2px_rgb(0_0_0/12%)]">
           <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
-            <path d="M2.3 5.7 4.3 7.7 8.7 3.3" fill="none" stroke="#ffffff" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M2.3 5.7 4.3 7.7 8.7 3.3"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="1.65"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </span>
         <span className="text-[13px] leading-[17px] font-semibold text-foreground">{productCopy.historyReset}</span>
@@ -164,8 +183,23 @@ function UsageMeter({ tone }: { tone: "limit" | "clear" }) {
   return (
     <span className="relative block size-4">
       <span className="absolute top-0.5 left-0.5 size-3 rounded-full shadow-[0_0_0_1px_#d7d7d6,inset_0_0_0_1px_#d7d7d6]" />
-      <svg viewBox="0 0 12 12" width="12" height="12" className="absolute top-0.5 left-0.5 -rotate-90 overflow-visible" aria-hidden="true">
-        <circle cx="6" cy="6" r="5" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeDasharray={dash} />
+      <svg
+        viewBox="0 0 12 12"
+        width="12"
+        height="12"
+        className="absolute top-0.5 left-0.5 -rotate-90 overflow-visible"
+        aria-hidden="true"
+      >
+        <circle
+          cx="6"
+          cy="6"
+          r="5"
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeDasharray={dash}
+        />
       </svg>
     </span>
   )

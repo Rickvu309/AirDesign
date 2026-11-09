@@ -1,3 +1,3 @@
-import { orderKeyBetween } from "@airdesign/document";
+import { orderKeyBetween } from "@airdesign/document"
 
-export const key = orderKeyBetween(null, null);
+export const key = orderKeyBetween(null, null)

@@ -9,7 +9,14 @@ const failedPlace = "!transform-none ![left:488.11px] ![top:12px]"
 function CheckMark() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M3.63 8.31 L6.44 11.13 L12.38 5.19" fill="none" stroke="#ffffff" strokeWidth="1.09" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3.63 8.31 L6.44 11.13 L12.38 5.19"
+        fill="none"
+        stroke="#ffffff"
+        strokeWidth="1.09"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -51,7 +58,15 @@ export function DownloadedToast() {
       "276.89px",
     )
   }, [])
-  return <Toaster position="top-center" offset={12} visibleToasts={1} style={{ "--width": "276.89px" } as CSSProperties} className={downloadedPlace} />
+  return (
+    <Toaster
+      position="top-center"
+      offset={12}
+      visibleToasts={1}
+      style={{ "--width": "276.89px" } as CSSProperties}
+      className={downloadedPlace}
+    />
+  )
 }
 
 export function FailedToast() {
@@ -61,12 +76,23 @@ export function FailedToast() {
       <div className="flex h-10 w-[381.78px] items-center rounded-[10px] bg-foreground pr-1.5 pl-3.5 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
         <ErrorMark />
         <span className="ml-2.5 whitespace-nowrap">{exportCopy.failed}</span>
-        <button type="button" className="ml-auto flex h-7 shrink-0 items-center rounded-[7px] px-2.5 font-medium whitespace-nowrap">
+        <button
+          type="button"
+          className="ml-auto flex h-7 shrink-0 items-center rounded-[7px] px-2.5 font-medium whitespace-nowrap"
+        >
           {exportCopy.tryAgain}
         </button>
       </div>,
       "381.78px",
     )
   }, [])
-  return <Toaster position="top-center" offset={12} visibleToasts={1} style={{ "--width": "381.78px" } as CSSProperties} className={failedPlace} />
+  return (
+    <Toaster
+      position="top-center"
+      offset={12}
+      visibleToasts={1}
+      style={{ "--width": "381.78px" } as CSSProperties}
+      className={failedPlace}
+    />
+  )
 }

@@ -2,13 +2,7 @@ import { cn } from "@/lib/utils"
 import { deckRoutes } from "@/decks/deck-routes"
 import { DeckGlyph } from "@/decks/deck-glyph"
 
-export function ViewSwitch({
-  active,
-  scope = "recents",
-}: {
-  active: "grid" | "list"
-  scope?: "recents" | "all"
-}) {
+export function ViewSwitch({ active, scope = "recents" }: { active: "grid" | "list"; scope?: "recents" | "all" }) {
   const gridHref = scope === "recents" ? deckRoutes.recentsGrid : deckRoutes.allDecksGrid
   const listHref = scope === "recents" ? deckRoutes.recentsList : deckRoutes.allDecksList
   return (
@@ -17,7 +11,9 @@ export function ViewSwitch({
         href={gridHref}
         className={cn(
           "flex size-7 items-center justify-center rounded-md",
-          active === "grid" ? "bg-background text-foreground shadow-[0_0_0_1px_#eaeae7,0_1px_2px_rgb(0_0_0/4%)]" : "text-muted-foreground",
+          active === "grid"
+            ? "bg-background text-foreground shadow-[0_0_0_1px_#eaeae7,0_1px_2px_rgb(0_0_0/4%)]"
+            : "text-muted-foreground",
         )}
         aria-current={active === "grid" ? "page" : undefined}
       >
@@ -27,7 +23,9 @@ export function ViewSwitch({
         href={listHref}
         className={cn(
           "flex size-7 items-center justify-center rounded-md",
-          active === "list" ? "bg-background text-foreground shadow-[0_0_0_1px_#eaeae7,0_1px_2px_rgb(0_0_0/4%)]" : "text-muted-foreground",
+          active === "list"
+            ? "bg-background text-foreground shadow-[0_0_0_1px_#eaeae7,0_1px_2px_rgb(0_0_0/4%)]"
+            : "text-muted-foreground",
         )}
         aria-current={active === "list" ? "page" : undefined}
       >

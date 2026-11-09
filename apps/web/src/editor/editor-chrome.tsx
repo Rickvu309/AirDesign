@@ -67,7 +67,13 @@ export function SidebarHead({ trailing }: { trailing?: ReactNode }) {
         <DeckTitle />
       </span>
       {trailing ?? (
-        <Button type="button" variant="ghost" size="icon" className="size-8 rounded-[7px] text-quiet active:translate-y-0" aria-label="Grid">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 rounded-[7px] text-quiet active:translate-y-0"
+          aria-label="Grid"
+        >
           <EditorIcon name="grid" size={16} />
         </Button>
       )}
@@ -80,7 +86,11 @@ export function SurfaceButton({ children, className }: { children: ReactNode; cl
     <Button
       type="button"
       variant="ghost"
-      className={cn("h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0", surfaceShadow, className)}
+      className={cn(
+        "h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+        surfaceShadow,
+        className,
+      )}
     >
       {children}
     </Button>

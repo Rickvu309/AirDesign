@@ -4,7 +4,15 @@ import { DesignPanel } from "@/editor/design-panel"
 import { EditorToolbar, type EditorTool } from "@/editor/editor-toolbar"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun } from "@/editor/slide-sidebar"
-import { ActionsMenu, ImagesPanel, ShapesPanel, ShapeTray, SlideColumn, TemplatePicker, TextPanel } from "@/editor/tool-panels"
+import {
+  ActionsMenu,
+  ImagesPanel,
+  ShapesPanel,
+  ShapeTray,
+  SlideColumn,
+  TemplatePicker,
+  TextPanel,
+} from "@/editor/tool-panels"
 
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 

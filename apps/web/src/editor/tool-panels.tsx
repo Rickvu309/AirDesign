@@ -42,7 +42,16 @@ function ShapeSvg({ markup, size, stroke = "#2D6FCD" }: { markup: string; size: 
 
 function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
   return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="#222222" strokeWidth={size > 24 ? 1.5 : 1.6} strokeLinecap="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="#222222"
+      strokeWidth={size > 24 ? 1.5 : 1.6}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
       <path d="M5 19 19 5" />
       {arrow ? <path d="M11 5h8v8" /> : null}
     </svg>
@@ -64,7 +73,9 @@ export function ShapeTray() {
         </span>
       ))}
       <span className="mx-1 block h-6 w-px bg-[#d7d7d6]" />
-      <span className="flex h-8 shrink-0 items-center rounded-[8px] px-2.5 text-xs font-medium text-foreground">More shapes</span>
+      <span className="flex h-8 shrink-0 items-center rounded-[8px] px-2.5 text-xs font-medium text-foreground">
+        More shapes
+      </span>
     </div>
   )
 }
@@ -105,7 +116,18 @@ function ActionGlyph({ name }: { name: "chart" | "table" | "icon" | "rmbg" | "hd
     hd: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M10 10v4M7 12h3M13 10v4h1.5a2 2 0 0 0 0-4z"/>',
   }
   return (
-    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: paths[name] }} />
+    <svg
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: paths[name] }}
+    />
   )
 }
 
@@ -153,7 +175,14 @@ export function ImagesPanel() {
         </div>
       </div>
       <div className="shrink-0 border-t border-line p-3">
-        <Button type="button" variant="ghost" className={cn("h-9 w-full gap-2 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0", surfaceShadow)}>
+        <Button
+          type="button"
+          variant="ghost"
+          className={cn(
+            "h-9 w-full gap-2 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+            surfaceShadow,
+          )}
+        >
           <EditorIcon name="upload" size={15} />
           Upload image
         </Button>
@@ -166,7 +195,11 @@ function PhotoColumn({ tiles }: { tiles: [number, string][] }) {
   return (
     <div className="flex flex-1 flex-col gap-2">
       {tiles.map(([height, color]) => (
-        <span key={`${color}-${height}`} className="block w-full rounded-[6px]" style={{ height, backgroundColor: color }} />
+        <span
+          key={`${color}-${height}`}
+          className="block w-full rounded-[6px]"
+          style={{ height, backgroundColor: color }}
+        />
       ))}
     </div>
   )
@@ -217,7 +250,9 @@ function ShapeMark({ art }: { art: ShapeArt }) {
       />
     )
   }
-  return <span className="absolute" style={{ left: art.x, top: art.y }} dangerouslySetInnerHTML={{ __html: art.markup }} />
+  return (
+    <span className="absolute" style={{ left: art.x, top: art.y }} dangerouslySetInnerHTML={{ __html: art.markup }} />
+  )
 }
 
 function ShapeTile({ arts }: { arts: ShapeArt[] }) {
@@ -270,7 +305,14 @@ export function TextPanel() {
         <span className="text-sm font-semibold text-foreground">Text</span>
       </div>
       <div className="flex border-b border-line px-3 pb-3">
-        <Button type="button" variant="ghost" className={cn("h-8 w-full gap-1.5 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0", surfaceShadow)}>
+        <Button
+          type="button"
+          variant="ghost"
+          className={cn(
+            "h-8 w-full gap-1.5 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+            surfaceShadow,
+          )}
+        >
           <EditorIcon name="text" size={14} />
           Add text box
         </Button>
@@ -295,7 +337,15 @@ export function SlideColumn() {
   ]
   return (
     <div className="flex h-full w-[96px] shrink-0 flex-col items-center overflow-hidden border-r border-line bg-white pt-3">
-      <Button type="button" variant="ghost" className={cn("h-8 w-[64px] shrink-0 rounded-[8px] bg-white px-0 text-foreground hover:bg-white active:translate-y-0", surfaceShadow)} aria-label="Add slide">
+      <Button
+        type="button"
+        variant="ghost"
+        className={cn(
+          "h-8 w-[64px] shrink-0 rounded-[8px] bg-white px-0 text-foreground hover:bg-white active:translate-y-0",
+          surfaceShadow,
+        )}
+        aria-label="Add slide"
+      >
         <EditorIcon name="plus" size={15} />
       </Button>
       <span className="mt-5 mb-5 block h-px w-full bg-line" />
@@ -303,7 +353,14 @@ export function SlideColumn() {
         <div key={group[0]} className="flex flex-col items-center">
           {groupIndex > 0 ? <span className="my-5 block h-px w-8 bg-[#d7d7d6]" /> : null}
           {group.map((index, itemIndex) => (
-            <span key={index} className={cn("rounded-[4px] p-[2px]", itemIndex > 0 && "mt-2", index === 3 && "shadow-[0px_0px_0px_2px_var(--primary)]")}>
+            <span
+              key={index}
+              className={cn(
+                "rounded-[4px] p-[2px]",
+                itemIndex > 0 && "mt-2",
+                index === 3 && "shadow-[0px_0px_0px_2px_var(--primary)]",
+              )}
+            >
               <SlideThumb index={index} width={60} />
             </span>
           ))}
@@ -315,7 +372,12 @@ export function SlideColumn() {
 
 export function TemplatePicker() {
   return (
-    <div className={cn("absolute top-3 left-[256px] z-20 flex w-[496px] flex-col overflow-hidden rounded-[14px] bg-white pb-5", floatShadow)}>
+    <div
+      className={cn(
+        "absolute top-3 left-[256px] z-20 flex w-[496px] flex-col overflow-hidden rounded-[14px] bg-white pb-5",
+        floatShadow,
+      )}
+    >
       <div className="border-b border-line p-3">
         <span className="flex h-10 items-center gap-2 rounded-[10px] bg-line px-3 text-[13px] text-faint">
           <EditorIcon name="search" size={15} />
@@ -330,8 +392,20 @@ export function TemplatePicker() {
         <div className="flex flex-col gap-3">
           <span className="text-[13px] font-semibold text-foreground">Basic</span>
           <div className="flex gap-4">
-            <TemplateCard name="Light slides" className="bg-white shadow-[0px_0px_0px_1px_#d7d7d6]" title="Slide title" titleColor="#222222" line="#d7d7d6" />
-            <TemplateCard name="Dark slides" className="bg-[#111111]" title="Slide title" titleColor="#ffffff" line="#ffffff40" />
+            <TemplateCard
+              name="Light slides"
+              className="bg-white shadow-[0px_0px_0px_1px_#d7d7d6]"
+              title="Slide title"
+              titleColor="#222222"
+              line="#d7d7d6"
+            />
+            <TemplateCard
+              name="Dark slides"
+              className="bg-[#111111]"
+              title="Slide title"
+              titleColor="#ffffff"
+              line="#ffffff40"
+            />
           </div>
         </div>
       </div>

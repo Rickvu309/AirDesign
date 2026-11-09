@@ -26,15 +26,35 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
               <AirdesignMark size={20} />
             </span>
             <DeckTitle className="pr-2 pl-0.5" />
-            <Button type="button" variant="ghost" className={cn("h-7 gap-1 rounded-[7px] bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0", surfaceShadow)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(
+                "h-7 gap-1 rounded-[7px] bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
+                surfaceShadow,
+              )}
+            >
               <EditorIcon name="plus" size={13} />
               New slide
             </Button>
             <span className="mx-1 block h-5 w-px bg-[#d7d7d6]" />
-            <Button type="button" variant="ghost" size="icon" className="size-8 rounded-[7px] text-faint hover:bg-transparent active:translate-y-0" aria-label="Slides">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-[7px] text-faint hover:bg-transparent active:translate-y-0"
+              aria-label="Slides"
+            >
               <EditorIcon name="slide" size={16} />
             </Button>
-            <Button type="button" variant="ghost" size="icon" className="size-8 rounded-[7px] bg-line text-foreground hover:bg-line active:translate-y-0" aria-label="Grid" aria-pressed>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-[7px] bg-line text-foreground hover:bg-line active:translate-y-0"
+              aria-label="Grid"
+              aria-pressed
+            >
               <EditorIcon name="grid" size={16} />
             </Button>
           </Island>
@@ -48,7 +68,12 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
       <div className="flex h-full flex-col">
         <div className="flex w-[1296px] flex-col gap-9 px-[87px]">
           {sections.map((section, index) => (
-            <Section key={section.name} name={section.name} items={itemsFor(section.items, index, state)} state={state} />
+            <Section
+              key={section.name}
+              name={section.name}
+              items={itemsFor(section.items, index, state)}
+              state={state}
+            />
           ))}
         </div>
         <div className="mt-auto flex justify-center pb-6">
@@ -66,15 +91,7 @@ function itemsFor(items: number[], index: number, state: GridState) {
   return items
 }
 
-function Section({
-  name,
-  items,
-  state,
-}: {
-  name: string
-  items: (number | string)[]
-  state: GridState
-}) {
+function Section({ name, items, state }: { name: string; items: (number | string)[]; state: GridState }) {
   const showHandle = name === "Performance" && (state === "hover" || state === "hold")
   let number = startNumber(name, state)
   return (
@@ -84,7 +101,9 @@ function Section({
         <span className="block h-px flex-1 bg-line" />
       </div>
       <div className="relative flex gap-8">
-        {showHandle ? <span className="absolute top-1/2 left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[#a7c5f2]" /> : null}
+        {showHandle ? (
+          <span className="absolute top-1/2 left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[#a7c5f2]" />
+        ) : null}
         {state === "hover" && name === "Performance" ? <InsertMark className="left-[308px] size-4" /> : null}
         {state === "hold" && name === "Performance" ? <InsertMark className="left-[966px] size-7" large /> : null}
         {items.map((item) => {
@@ -134,7 +153,12 @@ function GridCard({ item, label, state }: { item: number | string; label: string
 
 function InsertMark({ className, large = false }: { className: string; large?: boolean }) {
   return (
-    <span className={cn("absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white", className)}>
+    <span
+      className={cn(
+        "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white",
+        className,
+      )}
+    >
       <EditorIcon name="plus" size={large ? 14 : 10} strokeWidth={3.2} />
     </span>
   )

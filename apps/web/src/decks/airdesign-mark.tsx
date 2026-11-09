@@ -5,13 +5,7 @@ const strokes: Record<MarkWeight, { color: string; stem: string; bar: string }> 
   bold: { color: "#222222", stem: "5.76", bar: "4.16" },
 }
 
-export function AirdesignMark({
-  size,
-  weight = "regular",
-}: {
-  size: number
-  weight?: MarkWeight
-}) {
+export function AirdesignMark({ size, weight = "regular" }: { size: number; weight?: MarkWeight }) {
   const stroke = strokes[weight]
   return (
     <svg viewBox="0 0 64 64" width={size} height={size} className="shrink-0" aria-hidden="true">
@@ -23,13 +17,7 @@ export function AirdesignMark({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M6 44l52-14"
-        fill="none"
-        stroke="#FF58AE"
-        strokeWidth={stroke.bar}
-        strokeLinecap="round"
-      />
+      <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={stroke.bar} strokeLinecap="round" />
     </svg>
   )
 }

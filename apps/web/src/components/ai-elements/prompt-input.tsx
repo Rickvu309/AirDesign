@@ -4,10 +4,7 @@ import { cn } from "@/lib/utils"
 export function PromptInput({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "flex rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#d7d7d6,0px_2px_8px_#0000000d]",
-        className,
-      )}
+      className={cn("flex rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#d7d7d6,0px_2px_8px_#0000000d]", className)}
       {...props}
     />
   )
@@ -31,7 +28,12 @@ export function PromptInputButton({ className, ...props }: ButtonHTMLAttributes<
 
 export function PromptInputChip({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <span className={cn("flex h-6 shrink-0 items-center gap-1 rounded-[6px] bg-line pr-1 pl-2 text-xs text-quiet", className)}>
+    <span
+      className={cn(
+        "flex h-6 shrink-0 items-center gap-1 rounded-[6px] bg-line pr-1 pl-2 text-xs text-quiet",
+        className,
+      )}
+    >
       {children}
     </span>
   )

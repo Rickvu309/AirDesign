@@ -2,15 +2,7 @@ import { cn } from "@/lib/utils"
 
 const bars = [4.1, 4.6, 5, 5.4, 5.7]
 
-export function SlideThumb({
-  index,
-  width,
-  queued = false,
-}: {
-  index: number
-  width: number
-  queued?: boolean
-}) {
+export function SlideThumb({ index, width, queued = false }: { index: number; width: number; queued?: boolean }) {
   const height = Math.round((width * 9) / 16)
   const scale = width / 160
   const px = (value: number) => Math.max(1, Math.round(value * scale * 10) / 10)
@@ -28,7 +20,10 @@ export function SlideThumb({
   const gap = px(5)
   const titleSize = px(10)
   const line = (length: number, color = "#d7d7d6", thickness = 3) => (
-    <span className="block shrink-0 rounded-full" style={{ width: px(length), height: px(thickness), backgroundColor: color }} />
+    <span
+      className="block shrink-0 rounded-full"
+      style={{ width: px(length), height: px(thickness), backgroundColor: color }}
+    />
   )
   const title = (text: string, color = "#222222") => (
     <span className="block font-semibold" style={{ fontSize: titleSize, color, lineHeight: 1.2 }}>
@@ -114,7 +109,12 @@ export function SlideThumb({
   const fill = index === 1 ? "bg-navy" : index === 6 ? "bg-[#a9c4d2]" : index === 8 ? "bg-[#1d6b8f]" : "bg-white"
   return (
     <div
-      className={cn("flex shrink-0 flex-col overflow-hidden rounded-[2px]", fill, white && hairline, index === 4 && "justify-center")}
+      className={cn(
+        "flex shrink-0 flex-col overflow-hidden rounded-[2px]",
+        fill,
+        white && hairline,
+        index === 4 && "justify-center",
+      )}
       style={{ width, height, padding: pad, gap }}
     >
       {body}

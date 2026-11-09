@@ -1,6 +1,12 @@
 import { creditsRoutes } from "@/credits/credits-routes"
 import { AddCreditsFirst, ConfirmReset, LimitReached, ResetComplete } from "@/credits/screens/editor-dialogs"
-import { AddCreditsAmount, CreditsAdded, PaymentExpired, PaymentFailed, WaitingForPayment } from "@/credits/screens/settings-dialogs"
+import {
+  AddCreditsAmount,
+  CreditsAdded,
+  PaymentExpired,
+  PaymentFailed,
+  WaitingForPayment,
+} from "@/credits/screens/settings-dialogs"
 
 export const screens = {
   [creditsRoutes.amount]: AddCreditsAmount,

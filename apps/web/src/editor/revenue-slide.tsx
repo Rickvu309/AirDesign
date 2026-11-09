@@ -22,7 +22,9 @@ export function RevenueSlide({
     <div
       className={cn(
         "relative flex shrink-0 flex-col gap-1.5 bg-white px-14 pt-11 pb-7",
-        working ? "rounded-[4px]" : "rounded-[2px] shadow-[0px_0px_0px_1px_#0000000f,0px_2px_8px_#0000000d,0px_12px_32px_#00000008]",
+        working
+          ? "rounded-[4px]"
+          : "rounded-[2px] shadow-[0px_0px_0px_1px_#0000000f,0px_2px_8px_#0000000d,0px_12px_32px_#00000008]",
       )}
       style={{ width, height: Math.round((width * 9) / 16) }}
     >

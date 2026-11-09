@@ -21,7 +21,12 @@ export function WaitingForPayment() {
 export function CreditsAdded() {
   return (
     <UsageStage balance={addedBalance} history={addedHistory}>
-      <ResultDialog icon={<OkTile />} title={creditsCopy.addedTitle} body={creditsCopy.addedBody} primary={productCopy.done} />
+      <ResultDialog
+        icon={<OkTile />}
+        title={creditsCopy.addedTitle}
+        body={creditsCopy.addedBody}
+        primary={productCopy.done}
+      />
     </UsageStage>
   )
 }

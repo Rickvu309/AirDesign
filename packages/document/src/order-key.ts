@@ -1,171 +1,171 @@
-declare const orderKeyBrand: unique symbol;
+declare const orderKeyBrand: unique symbol
 
-export type OrderKey = string & { readonly [orderKeyBrand]: true };
+export type OrderKey = string & { readonly [orderKeyBrand]: true }
 
-const digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-const heads = digits.slice(10);
-const zero = digits[0] ?? "0";
-const lastDigit = digits[digits.length - 1] ?? "z";
-const half = heads.length / 2;
-const smallestInteger = (heads[0] ?? "A") + zero.repeat(half);
+const digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+const heads = digits.slice(10)
+const zero = digits[0] ?? "0"
+const lastDigit = digits[digits.length - 1] ?? "z"
+const half = heads.length / 2
+const smallestInteger = (heads[0] ?? "A") + zero.repeat(half)
 
 function mustDigit(alphabet: string, index: number): string {
-  const digit = alphabet[index];
+  const digit = alphabet[index]
   if (digit === undefined) {
-    throw new Error("order key digit out of range");
+    throw new Error("order key digit out of range")
   }
-  return digit;
+  return digit
 }
 
 function headIndex(head: string): number {
-  const index = heads.indexOf(head);
+  const index = heads.indexOf(head)
   if (index < 0) {
-    throw new Error(`invalid order key head: ${head}`);
+    throw new Error(`invalid order key head: ${head}`)
   }
-  return index;
+  return index
 }
 
 function digitIndex(digit: string): number {
-  const index = digits.indexOf(digit);
+  const index = digits.indexOf(digit)
   if (index < 0) {
-    throw new Error(`invalid order key digit: ${digit}`);
+    throw new Error(`invalid order key digit: ${digit}`)
   }
-  return index;
+  return index
 }
 
 function integerLength(head: string): number {
-  const index = headIndex(head);
-  return index < half ? half - index + 1 : index - half + 2;
+  const index = headIndex(head)
+  return index < half ? half - index + 1 : index - half + 2
 }
 
 function integerPart(key: string): string {
-  const head = key[0];
+  const head = key[0]
   if (head === undefined) {
-    throw new Error(`invalid order key: ${key}`);
+    throw new Error(`invalid order key: ${key}`)
   }
-  const length = integerLength(head);
+  const length = integerLength(head)
   if (length > key.length) {
-    throw new Error(`invalid order key: ${key}`);
+    throw new Error(`invalid order key: ${key}`)
   }
-  return key.slice(0, length);
+  return key.slice(0, length)
 }
 
 function validateOrderKey(key: string): void {
   if (key === smallestInteger) {
-    throw new Error(`invalid order key: ${key}`);
+    throw new Error(`invalid order key: ${key}`)
   }
-  const integer = integerPart(key);
-  const fraction = key.slice(integer.length);
+  const integer = integerPart(key)
+  const fraction = key.slice(integer.length)
   if (fraction.endsWith(zero)) {
-    throw new Error(`invalid order key: ${key}`);
+    throw new Error(`invalid order key: ${key}`)
   }
 }
 
 function midpoint(left: string, right: string | null): string {
   if (right && left >= right) {
-    throw new Error(`${left} >= ${right}`);
+    throw new Error(`${left} >= ${right}`)
   }
   if (left.endsWith(zero) || (right && right.endsWith(zero))) {
-    throw new Error("trailing zero");
+    throw new Error("trailing zero")
   }
   if (right) {
-    let shared = 0;
+    let shared = 0
     while ((left[shared] ?? zero) === right[shared]) {
-      shared += 1;
+      shared += 1
     }
     if (shared > 0) {
-      return right.slice(0, shared) + midpoint(left.slice(shared), right.slice(shared));
+      return right.slice(0, shared) + midpoint(left.slice(shared), right.slice(shared))
     }
   }
-  const leftDigit = left === "" ? 0 : digitIndex(left[0] ?? "");
-  const rightDigit = right ? digitIndex(right[0] ?? "") : digits.length;
+  const leftDigit = left === "" ? 0 : digitIndex(left[0] ?? "")
+  const rightDigit = right ? digitIndex(right[0] ?? "") : digits.length
   if (rightDigit - leftDigit > 1) {
-    return mustDigit(digits, Math.round(0.5 * (leftDigit + rightDigit)));
+    return mustDigit(digits, Math.round(0.5 * (leftDigit + rightDigit)))
   }
   if (right && right.length > 1) {
-    return right.slice(0, 1);
+    return right.slice(0, 1)
   }
-  return mustDigit(digits, leftDigit) + midpoint(left.slice(1), null);
+  return mustDigit(digits, leftDigit) + midpoint(left.slice(1), null)
 }
 
 function changeInteger(value: string, direction: 1 | -1): string | null {
-  const head = value[0];
+  const head = value[0]
   if (head === undefined) {
-    throw new Error(`invalid order key: ${value}`);
+    throw new Error(`invalid order key: ${value}`)
   }
-  const pad = direction > 0 ? zero : lastDigit;
-  let trailing = "";
+  const pad = direction > 0 ? zero : lastDigit
+  let trailing = ""
   for (let index = value.length - 1; index >= 1; index -= 1) {
-    const next = digitIndex(value[index] ?? "") + direction;
+    const next = digitIndex(value[index] ?? "") + direction
     if (next === digits.length || next === -1) {
-      trailing = pad + trailing;
-      continue;
+      trailing = pad + trailing
+      continue
     }
-    return head + value.slice(1, index) + mustDigit(digits, next) + trailing;
+    return head + value.slice(1, index) + mustDigit(digits, next) + trailing
   }
-  const nextHeadIndex = headIndex(head) + direction;
+  const nextHeadIndex = headIndex(head) + direction
   if (nextHeadIndex < 0 || nextHeadIndex >= heads.length) {
-    return null;
+    return null
   }
-  const nextHead = mustDigit(heads, nextHeadIndex);
-  const lengthDelta = integerLength(nextHead) - integerLength(head);
-  const digitsPart = lengthDelta > 0 ? trailing + pad : lengthDelta < 0 ? trailing.slice(1) : trailing;
-  return nextHead + digitsPart;
+  const nextHead = mustDigit(heads, nextHeadIndex)
+  const lengthDelta = integerLength(nextHead) - integerLength(head)
+  const digitsPart = lengthDelta > 0 ? trailing + pad : lengthDelta < 0 ? trailing.slice(1) : trailing
+  return nextHead + digitsPart
 }
 
 function generate(before: string | null, after: string | null): string {
   if (before !== null) {
-    validateOrderKey(before);
+    validateOrderKey(before)
   }
   if (after !== null) {
-    validateOrderKey(after);
+    validateOrderKey(after)
   }
   if (before !== null && after !== null && before >= after) {
-    throw new Error(`${before} >= ${after}`);
+    throw new Error(`${before} >= ${after}`)
   }
   if (before === null && after === null) {
-    return mustDigit(heads, half) + zero;
+    return mustDigit(heads, half) + zero
   }
   if (before === null && after !== null) {
-    const integer = integerPart(after);
-    const fraction = after.slice(integer.length);
+    const integer = integerPart(after)
+    const fraction = after.slice(integer.length)
     if (integer === smallestInteger) {
-      return integer + midpoint("", fraction);
+      return integer + midpoint("", fraction)
     }
     if (integer < after) {
-      return integer;
+      return integer
     }
-    const decremented = changeInteger(integer, -1);
+    const decremented = changeInteger(integer, -1)
     if (decremented === null) {
-      throw new Error("cannot decrement any more");
+      throw new Error("cannot decrement any more")
     }
-    return decremented;
+    return decremented
   }
   if (before !== null && after === null) {
-    const integer = integerPart(before);
-    const fraction = before.slice(integer.length);
-    const incremented = changeInteger(integer, 1);
-    return incremented === null ? integer + midpoint(fraction, null) : incremented;
+    const integer = integerPart(before)
+    const fraction = before.slice(integer.length)
+    const incremented = changeInteger(integer, 1)
+    return incremented === null ? integer + midpoint(fraction, null) : incremented
   }
   if (before === null || after === null) {
-    throw new Error("missing order key bound");
+    throw new Error("missing order key bound")
   }
-  const lowerInteger = integerPart(before);
-  const lowerFraction = before.slice(lowerInteger.length);
-  const upperInteger = integerPart(after);
+  const lowerInteger = integerPart(before)
+  const lowerFraction = before.slice(lowerInteger.length)
+  const upperInteger = integerPart(after)
   if (lowerInteger === upperInteger) {
-    return lowerInteger + midpoint(lowerFraction, after.slice(upperInteger.length));
+    return lowerInteger + midpoint(lowerFraction, after.slice(upperInteger.length))
   }
-  const incremented = changeInteger(lowerInteger, 1);
+  const incremented = changeInteger(lowerInteger, 1)
   if (incremented === null) {
-    throw new Error("cannot increment any more");
+    throw new Error("cannot increment any more")
   }
   if (incremented < after) {
-    return incremented;
+    return incremented
   }
-  return lowerInteger + midpoint(lowerFraction, null);
+  return lowerInteger + midpoint(lowerFraction, null)
 }
 
 export function orderKeyBetween(before: OrderKey | null, after: OrderKey | null): OrderKey {
-  return generate(before, after) as OrderKey;
+  return generate(before, after) as OrderKey
 }

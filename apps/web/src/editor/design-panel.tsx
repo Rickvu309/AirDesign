@@ -52,9 +52,11 @@ export function DesignPanel() {
 function Swatch({ color, name, edged = false }: { color: string; name: string; edged?: boolean }) {
   return (
     <span className="flex h-9 items-center gap-2.5 rounded-[8px] bg-white px-3 shadow-[0px_0px_0px_1px_#d7d7d6]">
-      <span className={edged ? "size-4 rounded-[4px] shadow-[0px_0px_0px_1px_#d7d7d6]" : "size-4 rounded-[4px]"} style={{ backgroundColor: color }} />
+      <span
+        className={edged ? "size-4 rounded-[4px] shadow-[0px_0px_0px_1px_#d7d7d6]" : "size-4 rounded-[4px]"}
+        style={{ backgroundColor: color }}
+      />
       <span className="text-[13px] text-foreground">{name}</span>
     </span>
   )
 }
-

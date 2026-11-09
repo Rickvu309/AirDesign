@@ -4,7 +4,14 @@ import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/sonner"
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
-import { PromptInput, PromptInputBody, PromptInputButton, PromptInputChip, PromptInputFooter, PromptInputText } from "@/components/ai-elements/prompt-input"
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputChip,
+  PromptInputFooter,
+  PromptInputText,
+} from "@/components/ai-elements/prompt-input"
 import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { EditorIcon } from "@/editor/editor-icons"
 import { brandShadow, ExportButton, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
@@ -35,7 +42,13 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
           <span className={cn("flex size-6 items-center justify-center rounded-[6px]", usageOpen && "bg-line")}>
             <UsageRing fraction={fraction} />
           </span>
-          <Button type="button" variant="ghost" size="icon" className="size-7 rounded-[7px] text-quiet active:translate-y-0" aria-label="New chat">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-7 rounded-[7px] text-quiet active:translate-y-0"
+            aria-label="New chat"
+          >
             <EditorIcon name="pen" size={15} />
           </Button>
         </span>
@@ -95,10 +108,21 @@ function AgentTurn({ run }: { run: SidebarRun }) {
           </span>
           <p className="text-[12.5px] leading-[1.5] text-quiet">Your work so far is saved.</p>
           <span className="flex items-center gap-2">
-            <Button type="button" variant="brand" className={cn("h-8 rounded-[8px] px-3 text-[13px] font-medium active:translate-y-0", brandShadow)}>
+            <Button
+              type="button"
+              variant="brand"
+              className={cn("h-8 rounded-[8px] px-3 text-[13px] font-medium active:translate-y-0", brandShadow)}
+            >
               Resume
             </Button>
-            <Button type="button" variant="ghost" className={cn("h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0", surfaceShadow)}>
+            <Button
+              type="button"
+              variant="ghost"
+              className={cn(
+                "h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+                surfaceShadow,
+              )}
+            >
               Undo
             </Button>
           </span>
@@ -137,7 +161,9 @@ function Composer({ run }: { run: SidebarRun }) {
             </PromptInputChip>
           </span>
           <div className="relative h-[145.61px] w-[311px] overflow-hidden">
-            <PromptInputText className="relative text-foreground leading-[1.6] [inset-block-start:1px]">{longAsk}</PromptInputText>
+            <PromptInputText className="relative text-foreground leading-[1.6] [inset-block-start:1px]">
+              {longAsk}
+            </PromptInputText>
             <span className="absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,#ffffff00_0%,#ffffff_100%)]" />
           </div>
           <PromptInputFooter>
@@ -145,7 +171,11 @@ function Composer({ run }: { run: SidebarRun }) {
               <EditorIcon name="plus" size={17} />
             </PromptInputButton>
             <PromptInputButton
-              className={cn("size-8 rounded-full text-white", brandShadow, "bg-[linear-gradient(180deg,var(--primary-top),var(--primary))]")}
+              className={cn(
+                "size-8 rounded-full text-white",
+                brandShadow,
+                "bg-[linear-gradient(180deg,var(--primary-top),var(--primary))]",
+              )}
               aria-label="Send"
             >
               <EditorIcon name="up" size={16} />
@@ -170,7 +200,9 @@ function Composer({ run }: { run: SidebarRun }) {
               <EditorIcon name="x" size={11} className="text-faint" />
             </PromptInputChip>
           )}
-          <PromptInputText>{offline ? "Waits for connection" : working ? "Add to the request" : "Ask Aira"}</PromptInputText>
+          <PromptInputText>
+            {offline ? "Waits for connection" : working ? "Add to the request" : "Ask Aira"}
+          </PromptInputText>
         </PromptInputBody>
         {working ? (
           <PromptInputButton className="size-7 rounded-full bg-ink" aria-label="Stop">
@@ -197,7 +229,14 @@ function FileGlyph() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path d="M7.58 1.63V4.33h2.71" fill="none" stroke="#666666" strokeWidth="0.95" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M7.58 1.63V4.33h2.71"
+        fill="none"
+        stroke="#666666"
+        strokeWidth="0.95"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }
@@ -269,8 +308,21 @@ export function EditorToast({
         >
           {kind === "success" ? (
             <span className="relative block size-4 shrink-0">
-              <svg className="absolute top-[5.19px] left-[3.63px] block" viewBox="3.13 4.69 8.75 5.94" width="8.75" height="5.94" aria-hidden="true">
-                <path d="M3.13 7.81 5.94 10.63 11.88 4.69" fill="none" stroke="#ffffff" strokeWidth="1.09" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                className="absolute top-[5.19px] left-[3.63px] block"
+                viewBox="3.13 4.69 8.75 5.94"
+                width="8.75"
+                height="5.94"
+                aria-hidden="true"
+              >
+                <path
+                  d="M3.13 7.81 5.94 10.63 11.88 4.69"
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="1.09"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </span>
           ) : null}
@@ -296,4 +348,3 @@ export function EditorToast({
     />
   )
 }
-

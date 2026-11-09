@@ -3,13 +3,7 @@ import { Dialog as BaseDialog } from "@base-ui/react/dialog"
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
-export function ScrimDialog({
-  children,
-  className,
-}: {
-  children: ReactNode
-  className: string
-}) {
+export function ScrimDialog({ children, className }: { children: ReactNode; className: string }) {
   return (
     <Dialog open>
       <DialogPortal>

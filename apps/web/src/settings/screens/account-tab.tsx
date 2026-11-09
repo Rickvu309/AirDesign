@@ -32,7 +32,11 @@ export function AccountTab() {
           <ModuleRow
             title={settingsCopy.deleteAccount}
             status={settingsCopy.deleteBody}
-            action={<SettingsButton tone="danger" width={122.75}>{settingsCopy.deleteAccount}</SettingsButton>}
+            action={
+              <SettingsButton tone="danger" width={122.75}>
+                {settingsCopy.deleteAccount}
+              </SettingsButton>
+            }
           />
         </div>
       </ModuleCard>
