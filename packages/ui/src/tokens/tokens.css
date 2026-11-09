@@ -123,30 +123,7 @@ body {
   font-weight: 600;
 }
 
-.ad-field-control {
-  display: grid;
-  align-items: center;
-  min-inline-size: 0;
-}
-
-.ad-field-control > * {
-  grid-area: 1 / 1;
-}
-
-.ad-field-control > svg {
-  margin-inline-start: 12px;
-  color: var(--muted-foreground);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.ad-field-control-icon > input {
-  padding-inline-start: 36px;
-}
-
 .ad-field-input {
-  inline-size: 100%;
-  min-inline-size: 0;
   height: 44px;
   border-radius: var(--radius);
   border: 1px solid var(--input);

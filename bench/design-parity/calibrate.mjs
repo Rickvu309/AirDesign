@@ -2,29 +2,23 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import os from "node:os"
 import vm from "node:vm"
+import sharp from "sharp"
 import {compile} from "@tailwindcss/node"
 import {chromium} from "playwright"
-import {compareComponent,faithfulReference} from "./component-metric.mjs"
 import {compareDesign,metricVersion} from "./metric.mjs"
-const args=process.argv.slice(2),baseline=args[0],out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration")
+const args=process.argv.slice(2),baseline=args[0],out=args[1]??path.join(os.homedir(),"tmp/airdesign-polish/parity/calibration-r2")
 if(!baseline)throw new Error("usage: node bench/design-parity/calibrate.mjs BASELINE OUT")
 await fs.mkdir(out,{recursive:true})
-const editorOnly=args.includes("--editor-only"),referencesOnly=args.includes("--references-only")
+const editorOnly=args.includes("--editor-only")
 const entries=JSON.parse(await fs.readFile("bench/design-parity/scenarios.json","utf8")),results=editorOnly ? JSON.parse(await fs.readFile(path.join(out,"calibration.json"),"utf8")).results : []
-const summary=({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})=>({score,globalScore,colorLoss,localLoss,worstRegion,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})
+const summary=({score,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})=>({score,ratio,foregroundLoss,edgeLoss,sizeLoss,backgroundLoss})
 for(const entry of editorOnly ? [] : entries){
-  const design=await fs.readFile(entry.design)
-  const shifted=await faithfulReference(design)
+  const design=await fs.readFile(entry.design),meta=await sharp(design).metadata()
+  const shifted=await sharp(design).extract({left:0,top:0,width:meta.width-1,height:meta.height-1}).extend({left:1,top:1,right:0,bottom:0,background:"#ffffff"}).blur(0.3).png().toBuffer()
   const reference=summary(await compareDesign(design,shifted))
   let measured
-  if(!referencesOnly&&entry.status==="reachable")measured=summary(await compareDesign(design,await fs.readFile(path.join(baseline,entry.code,"capture.png"))))
-  let component
-  if(entry.component){
-    const box=entry.component.designBox
-    const reference=summary((await compareComponent(design,shifted,box,{...box,left:box.left+1,top:box.top+1})).metric)
-    component={...entry.component,reference,target:(Math.ceil(reference.score*100)+1)/100}
-  }
-  results.push({code:entry.code,surface:entry.surface,reference,measured,component})
+  if(entry.status==="reachable")measured=summary(await compareDesign(design,await fs.readFile(path.join(baseline,entry.code,"capture.png"))))
+  results.push({code:entry.code,surface:entry.surface,reference,measured})
   process.stdout.write(`${entry.code} reference=${reference.score} baseline=${measured?.score}\n`)
 }
 await fs.writeFile(path.join(out,"calibration.json"),JSON.stringify({metric:metricVersion,results,editor:[]},null,2)+"\n")
@@ -47,10 +41,7 @@ try{
     try{
       const page=await context.newPage()
       await page.setContent(`<style>${css} ${fonts} :root{${tokens}}body{margin:0}</style>${html}`)
-      await page.evaluate(async()=>{
-        await Promise.all([document.fonts.load("400 14px Geist"),document.fonts.load("600 14px Geist")])
-        await document.fonts.ready
-      })
+      await page.evaluate(()=>document.fonts.ready)
       const capture=await page.screenshot({animations:"disabled"})
       await fs.writeFile(path.join(out,`${code}-source.png`),capture)
       await fs.writeFile(path.join(out,`${code}-source.html`),`<style>${css} ${fonts} :root{${tokens}}body{margin:0}</style>${html}`)
@@ -59,10 +50,6 @@ try{
     }finally{await context.close()}
   }
 }finally{await browser.close()}
-const targets=Object.fromEntries(["site","studio"].map(surface=>{
-  const faithful=[...results.filter(row=>row.surface===surface).map(row=>row.reference.score),...(surface==="studio" ? editor.map(row=>row.score) : [])]
-  return [surface,(Math.ceil(Math.max(...faithful)*100)+1)/100]
-}))
-const report={metric:metricVersion,targets,results,editor}
+const report={metric:metricVersion,results,editor}
 await fs.writeFile(path.join(out,"calibration.json"),JSON.stringify(report,null,2)+"\n")
 process.stdout.write(JSON.stringify({editor,maximumShift:Math.max(...results.map(row=>row.reference.score))})+"\n")
