@@ -1,5 +1,8 @@
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import { lintSource } from "./harness.js"
-import { scanSource } from "./scan-comments.js"
+import { collectHits, scanSource } from "./scan-comments.js"
 
 const rule = { "airdesign/no-comments": "error" }
 const suppression =
@@ -146,6 +149,48 @@ assertHit(
   2,
   comment,
 )
+
+assertHit(
+  "disable after a regex quote on the same line",
+  scanSource("re.ts", 'const re = /"/g /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n'),
+  1,
+  suppression,
+)
+assertHit(
+  "vue disable after a regex quote",
+  scanSource(
+    "panel.vue",
+    '<script>\nconst re = /"/g /* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n</script>\n',
+  ),
+  2,
+  suppression,
+)
+assertHit("astro expression comment with space", scanSource("spaced.astro", "{ /* hidden */ }\n"), 1, comment)
+assertHit(
+  "style attribute after a regex quote",
+  scanSource("regex-attr.astro", '---\nconst re = /"/g\n---\n<div style="color: black /* hidden */"></div>\n'),
+  4,
+  comment,
+)
+assertHit(
+  "style attribute on the same line as a regex quote",
+  scanSource("regex-attr-line.astro", 'const re = /"/g <div style="color: black /* hidden */"></div>\n'),
+  1,
+  comment,
+)
+
+const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-scan-"))
+try {
+  const hidden = path.join(fixtureRoot, "tooling", ".fixture-run")
+  fs.mkdirSync(hidden, { recursive: true })
+  fs.writeFileSync(
+    path.join(hidden, "sneak.ts"),
+    "/* oxlint-disable airdesign/no-comments */\nexport const saved = 1\n",
+  )
+  assertHit("file-level disable under .fixture-run", collectHits(fixtureRoot, ["tooling"]), 1, suppression)
+} finally {
+  fs.rmSync(fixtureRoot, { recursive: true, force: true })
+}
 
 assertClean("quoted yaml color", scanSource("color.yaml", 'color: "#222222"\n'))
 assertClean("quoted yaml url hash", scanSource("url.yml", 'url: "https://example.com/a#b"\n'))
