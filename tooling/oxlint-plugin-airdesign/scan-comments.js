@@ -251,6 +251,23 @@ const yamlCommentLines = (source) => {
   return found
 }
 
+const styleCommentLines = (source) => {
+  const found = []
+  const open = /<style\b[^>]*>/giu
+  let match = open.exec(source)
+  while (match) {
+    const start = match.index + match[0].length
+    const end = source.toLowerCase().indexOf("</style>", start)
+    if (end === -1) break
+    const baseLine = source.slice(0, start).split("\n").length
+    const inner = source.slice(start, end)
+    for (const line of cssCommentLines(inner)) found.push(baseLine + line - 1)
+    open.lastIndex = end + "</style>".length
+    match = open.exec(source)
+  }
+  return found
+}
+
 const htmlCommentLines = (source) => {
   const withoutJsComments = blankJavaScriptComments(blankLiterals(source))
   const found = []
@@ -326,6 +343,7 @@ export const scanSource = (filename, source) => {
   }
   if (extension === ".astro") {
     for (const line of unique(htmlCommentLines(source))) push(line, commentMessage)
+    for (const line of unique(styleCommentLines(source))) push(line, commentMessage)
   }
   return hits
 }

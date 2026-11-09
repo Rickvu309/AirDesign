@@ -47,6 +47,16 @@ assertHit(
   4,
   comment,
 )
+assertHit(
+  "astro style comment",
+  scanSource("styled.astro", "<style>\n.a { color: black /* hidden */ }\n</style>\n"),
+  2,
+  comment,
+)
+assertClean(
+  "astro style quoted comment text",
+  scanSource("styled-quoted.astro", '<style>\n.a { content: "/* hidden */" }\n</style>\n'),
+)
 
 assertClean("quoted yaml color", scanSource("color.yaml", 'color: "#222222"\n'))
 assertClean("quoted yaml url hash", scanSource("url.yml", 'url: "https://example.com/a#b"\n'))
