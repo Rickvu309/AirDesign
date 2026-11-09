@@ -27,6 +27,9 @@ for(const mode of ["capture","screenshot-error","request-failure"]){
       }else if(route==="/.well-known/oauth-protected-resource"){
         response.setHeader("content-type","application/json")
         response.end(JSON.stringify({resource:origin+"/mcp",authorization_servers:[origin]}))
+      }else if(route==="/.well-known/oauth-authorization-server"){
+        response.setHeader("content-type","application/json")
+        response.end(JSON.stringify({issuer:origin}))
       }else if(route==="/mcp"){
         response.writeHead(401,{"www-authenticate":`Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp"`});response.end()
       }else if(route==="/api/dev/inbox"){
