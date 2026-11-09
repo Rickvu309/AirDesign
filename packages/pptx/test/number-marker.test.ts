@@ -11,6 +11,31 @@ import {writeNativeSavedPptx} from "../src/export-deck.ts"
 import {commandId} from "../../change-log/src/index.ts"
 import {executeNative, initialNativeHistory} from "../../change-log/src/text/native-model.ts"
 
+it.each(["arabicPeriod", "thaiAlphaPeriod"])("preserves a %s shape with invalid startAt without refusing the deck", async scheme => {
+  const baseline = importedNativeDeck(await cascadeSource())
+  const keptShapes = (value: typeof baseline) => value.slides[0]!.elements.filter(element => element.support.kind === "kept" && element.source.kind === "original" && element.source.objectId.startsWith("sp:"))
+  for (const start of ["0", "32768", "foo", "-1", "1.5", ""]) {
+    const fragment = `<a:buAutoNum type="${scheme}" startAt="${start}"/>`
+    const original = await cascadeSource(`<a:p><a:pPr>${fragment}</a:pPr><a:r><a:t>Preserved invalid marker</a:t></a:r></a:p>`)
+    const source = await exportPptx(original), deck = importedNativeDeck(original)
+    expect(deck.slides[0]!.elements.some(element => element.kind === "text")).toBe(true)
+    expect(deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 10)).toBeUndefined()
+    expect(keptShapes(deck)).toHaveLength(keptShapes(baseline).length + 1)
+    const preserved = await importPptx(await writeNativeSavedPptx(deck, 0, source, {}))
+    expect(preserved.parts.get("ppt/slides/slide1.xml")).toEqual(original.parts.get("ppt/slides/slide1.xml"))
+    expect(preserved.parts.get("ppt/slides/slide1.xml")!.toString()).toContain(fragment)
+  }
+})
+
+it.each(["arabicPeriod", "thaiAlphaPeriod"])("admits valid %s startAt boundary values", async scheme => {
+  for (const start of ["1", "32767", "+01", " 4 "]) {
+    const original = await cascadeSource(`<a:p><a:pPr><a:buAutoNum type="${scheme}" startAt="${start}"/></a:pPr><a:r><a:t>Editable boundary</a:t></a:r></a:p>`)
+    const deck = importedNativeDeck(original), text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 10)
+    if (text?.kind !== "text") throw new Error("native-text-required")
+    expect(text.body.paragraphs[9]!.marker).toMatchObject({start: Number(start)})
+  }
+})
+
 it.each([...Object.keys(supportedNumberSchemes), ...retainedNumberSchemes])("keeps %s native through edit, undo, redo and two saved exports", async scheme => {
   const fragment = `<a:buAutoNum type="${scheme}" startAt="4"/>`
   const original = await cascadeSource(`<a:p><a:pPr>${fragment}</a:pPr><a:r><a:t>Editable marker neighbor</a:t></a:r></a:p>`)

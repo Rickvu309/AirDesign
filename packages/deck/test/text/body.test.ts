@@ -97,6 +97,14 @@ describe("native text body boundary", () => {
     function numbered(level: number, start: number | null = null): Paragraph { return {...body().paragraphs[0], level, marker: {kind: "number", format: "decimal", start}} }
     expect(paragraphNumbers([numbered(0), numbered(1), numbered(1), numbered(0), numbered(1), numbered(0, 4), numbered(1), body().paragraphs[0], numbered(0)])).toEqual([1, 1, 2, 2, 3, 4, 1, null, 1])
   })
+  it("continues a parent list across nested retained numbering schemes", () => {
+    const parent: Paragraph = {...body().paragraphs[0], level: 0, marker: {kind: "number", format: "decimal", start: null}}
+    const retained: Paragraph = {...parent, level: 1, marker: {kind: "source-number", scheme: "thaiAlphaPeriod", start: null}}
+    const changed: Paragraph = {...retained, marker: {kind: "source-number", scheme: "hindiAlphaPeriod", start: null}}
+    expect(paragraphNumbers([parent, retained, retained, changed, parent, retained])).toEqual([1, 1, 2, 1, 2, 1])
+    expect(paragraphNumbers([parent, retained, {...parent, marker: {kind: "number", format: "decimal", start: 4}}, retained])).toEqual([1, 1, 4, 1])
+    expect(paragraphNumbers([parent, retained, body().paragraphs[0], parent])).toEqual([1, 1, null, 1])
+  })
 })
 
 it("validates and detaches the complete outer text shadow contract", () => {

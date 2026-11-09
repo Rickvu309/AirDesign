@@ -83,3 +83,14 @@ it("renders supported punctuation without changing text or inventing unsupported
   expect(document.querySelectorAll("[data-paragraph]")).toHaveLength(4)
   expect(document.body.textContent).toContain("editable")
 })
+
+it("renders the continued parent counter after a retained nested numbering scheme", () => {
+  const body = decodeLegacyRunsV2([{text: "editable", font: "Arial", size: 20, color: "#123456", bold: false}], id("nestedFrame"), id("parentFirst"))
+  const first = body.paragraphs[0]
+  first.marker = {kind: "number", format: "decimal", start: null}
+  body.paragraphs.push({...structuredClone(first), id: id("nestedRetained"), level: 1, marker: {kind: "source-number", scheme: "thaiAlphaPeriod", start: null}})
+  body.paragraphs.push({...structuredClone(first), id: id("parentReturn")})
+  document.body.innerHTML = renderToStaticMarkup(<Body body={body}/>)
+  expect([...document.querySelectorAll("[data-marker]")].map(node => node.textContent)).toEqual(["1.", "[numbering unavailable]", "2."])
+  expect([...document.querySelectorAll("[data-text-run]")].map(node => node.textContent)).toEqual(["editable", "editable", "editable"])
+})

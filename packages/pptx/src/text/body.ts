@@ -35,7 +35,9 @@ function markerValue(document: Document, properties: XmlNode | undefined, inheri
     return {kind: "bullet", character: bullet.attributes.char ?? "•", ...(font ? {font} : inherited.kind === "bullet" && inherited.font && !child(document, properties, "buFontTx") ? {font: inherited.font} : {})}
   }
   if (numeric) {
-    try { return numberMarkerFromScheme(numeric.attributes.type ?? "", numeric.attributes.startAt === undefined ? null : Number(numeric.attributes.startAt)) }
+    const rawStart = numeric.attributes.startAt?.trim(), start = rawStart === undefined ? null : Number(rawStart)
+    if (start !== null && (!/^\+?\d+$/.test(rawStart ?? "") || !Number.isInteger(start) || start < 1 || start > 32767)) throw new UnsupportedTextFormat("numbering")
+    try { return numberMarkerFromScheme(numeric.attributes.type ?? "", start) }
     catch { throw new UnsupportedTextFormat("numbering") }
   }
   if (inherited.kind === "bullet") {
