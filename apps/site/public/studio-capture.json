@@ -1,5 +1,5 @@
 {
-  "head": "a768e2fca4b595d1421e53de9b3e180ec6a9336f",
+  "head": "4f71aa4ed51298c600a735acc1dc3e423e1b5175",
   "kind": "actual-built-studio",
   "adapter": "deterministic-local",
   "template": "Halden",
@@ -17,10 +17,10 @@
   "fixtureSource": "design-parity/bench/design-parity/investor-deck.ts",
   "fixtureSha256": "5be1c476478c1ab086cd26d2376c3ee82de7394db88bd30a3a8474356d74fa2e",
   "mobileCrop": {
-    "x": 91.1875,
-    "y": 177.5,
-    "width": 960,
-    "height": 540.875
+    "x": 279,
+    "y": 86,
+    "width": 770,
+    "height": 433.125
   },
-  "sha256": "7529632b8a8904b8a470a634088266c28705308e3a1065b23f85eb46a1d68886"
+  "sha256": "c3c1abf4c6b33c601be2a5a55d993488f39f9fec960f775123f7c740a2389b8e"
 }
