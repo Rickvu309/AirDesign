@@ -19,9 +19,13 @@ printf '%s\n' "$1" >> "$TEST_DIR/delays"
 SCRIPT
 cat > "$work/bin/timeout" <<'SCRIPT'
 #!/usr/bin/env bash
-[ "$1" = --kill-after=5s ] && [ "$2" = 120s ]
+[ "$1" = --kill-after=5s ] && [ "$2" = 120s ] || exit 1
 shift 2
 exec /usr/bin/timeout --kill-after=1s 0.2s "$@"
+SCRIPT
+cat > "$work/bin/rg" <<'SCRIPT'
+#!/usr/bin/env bash
+exit 127
 SCRIPT
 chmod +x "$work/bin/"*
 export PATH="$work/bin:$PATH" TEST_DIR="$work" HOME="$work"
@@ -37,5 +41,5 @@ for scenario in recover fail hang; do
   [ "$(sort -u "$work/attempts")" = "install --prefix $HOME/tmp/release-tools --no-save wrangler@4.158.0 @railway/cli@5.71.0" ]
   printf '%s: status=%s attempts=3 delays=5,10\n' "$scenario" "$status"
 done
-rg -q 'run: bash scripts/release/install-tools.sh' "$root/.github/workflows/deploy.yml"
-rg -q 'timeout-minutes: 7' "$root/.github/workflows/deploy.yml"
+grep -Fq 'run: bash scripts/release/install-tools.sh' "$root/.github/workflows/deploy.yml"
+grep -Fq 'timeout-minutes: 7' "$root/.github/workflows/deploy.yml"
