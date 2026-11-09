@@ -24,7 +24,7 @@ describe("tokens", () => {
     }
     expect(css).toMatch(/\.ad-button-primary\s*\{[^}]*background: var\(--signature-gradient\)/)
     for (const file of ["apps/site/src/site.css"]) {
-      expect(await readFile(file, "utf8")).toMatch(/background:\s*var\(--signature-gradient\)/)
+      expect(await readFile(file, "utf8")).toMatch(/\.button\s*\{[^}]*background:\s*var\(--signature-gradient\)/)
     }
   })
   it("keeps light semantic tokens and reduced motion in one stylesheet", async () => {

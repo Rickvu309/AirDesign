@@ -54,6 +54,7 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
   --site-orb-top: #93b8ef;
   --site-button-top: #93b8ef;
   --site-button-bottom: #4d94fb;
+  --signature-gradient: linear-gradient(var(--site-button-top),var(--site-button-bottom));
   --site-subtle: #666666;
   --site-quiet: #909090;
   --site-check-up: #16a34a;
@@ -74,7 +75,7 @@ footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4
 .brand { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; font-size: 14px; }
 .brand .brand-mark { inline-size: 22px; block-size: 22px; margin: 0; fill: none; stroke: var(--foreground); stroke-width: 3.063; stroke-linecap: round; stroke-linejoin: round; }
 .brand-mark .brand-crossbar { stroke: var(--site-brand-accent); stroke-width: 2.188; }
-.button { background: linear-gradient(var(--site-button-top),var(--site-button-bottom)); color: var(--site-navy); border: 1px solid color-mix(in srgb, var(--site-button-bottom) 65%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro); }
+.button { background: var(--signature-gradient); color: var(--site-navy); border: 1px solid color-mix(in srgb, var(--site-button-bottom) 65%, var(--site-button-top)); box-shadow: var(--site-button-shadow); transition: filter var(--motion-micro), transform var(--motion-micro); }
 .button:active { transform: translateY(1px); opacity: 1; }
 @media (hover: hover) and (pointer: fine) { .button:hover { filter: brightness(.96); } }
 .landing-page main { max-inline-size: none; padding: 0; }
