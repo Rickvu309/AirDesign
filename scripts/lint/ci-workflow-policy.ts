@@ -89,6 +89,8 @@ export function deploymentWorkflowHits(source: string, railway: string): string[
   if (/checkSuites:\s*true|autoDeploy:\s*true/.test(railway) || !/checkSuites:\s*false/.test(railway)) hits.push("deploy-native-ci-wait-cycle: disable native autodeploy and CI wait")
   if (!railway.includes('github("Rickvu309/AirDesign", { branch: "main", checkSuites: false })')) hits.push("deploy-must-preserve-github-source")
   const job = jobs.production
+  const releaseInstall = job?.steps?.find(step => step.run === "bash scripts/release/install-tools.sh")
+  if (releaseInstall?.env?.GH_TOKEN !== "${{ github.token }}") hits.push("deploy-release-install-needs-github-token")
   if (Object.keys(jobs).join() !== "production" || job?.environment !== "airdesign / production") hits.push("deploy-single-production-job-required")
   for (const condition of ["github.event.workflow_run.conclusion == 'success'", "github.event.workflow_run.event == 'push'", "github.event.workflow_run.head_branch == 'main'", "github.event.workflow_run.head_repository.full_name == github.repository"]) {
     if (!job?.if?.includes(condition)) hits.push(`deploy-event-filter-required: ${condition}`)

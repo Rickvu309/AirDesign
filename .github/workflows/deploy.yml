@@ -43,6 +43,8 @@ jobs:
       - run: npm run build --workspace @airdesign/site
       - name: Install release tools
         timeout-minutes: 7
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/release/install-tools.sh
       - run: echo "$HOME/tmp/release-tools/node_modules/.bin" >> "$GITHUB_PATH"
       - run: npx --no-install playwright install --with-deps chromium

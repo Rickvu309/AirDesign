@@ -157,7 +157,7 @@ it("requires the single deploy controller and rejects native CI wait cycles", ()
     const broken = deploy.replace(`- run: ${command}`, `- env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
     expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   }
-  const brokenInstall = deploy.replace("        run: bash scripts/release/install-tools.sh", "        env:\n          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n        run: bash scripts/release/install-tools.sh")
+  const brokenInstall = deploy.replace("          GH_TOKEN: ${{ github.token }}\n        run: bash scripts/release/install-tools.sh", "          GH_TOKEN: ${{ github.token }}\n          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n        run: bash scripts/release/install-tools.sh")
   expect(brokenInstall).not.toBe(deploy)
   expect(deploymentWorkflowHits(brokenInstall, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   const inherited = deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:")
@@ -200,7 +200,7 @@ it("pins Railway's SSH host key that a fresh runner refused to trust in the firs
 it("requires release tool helpers before the deployment controller", () => {
   const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
   const railway = readFileSync(".railway/railway.ts", "utf8")
-  const install = "      - name: Install release tools\n        timeout-minutes: 7\n        run: bash scripts/release/install-tools.sh\n"
+  const install = "      - name: Install release tools\n        timeout-minutes: 7\n        env:\n          GH_TOKEN: ${{ github.token }}\n        run: bash scripts/release/install-tools.sh\n"
   expect(deploy).toContain(install)
   const moved = deploy.replace(install, "").replace("        run: node scripts/release/railway-production.ts\n", `        run: node scripts/release/railway-production.ts\n${install}`)
   expect(moved).not.toBe(deploy)
@@ -212,4 +212,12 @@ it("rejects local uploads in the Railway controller", () => {
   const source = readFileSync("scripts/release/railway-production.ts", "utf8")
   expect(railwayControllerHits(source)).toEqual([])
   expect(railwayControllerHits(source.replace('["deployment", "redeploy", ...common', '["up", ...common'))).toEqual(["deploy-controller-must-build-from-github"])
+})
+it("requires authenticated release asset installation", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  const missing = deploy.replace("        env:\n          GH_TOKEN: ${{ github.token }}\n        run: bash scripts/release/install-tools.sh", "        run: bash scripts/release/install-tools.sh")
+  expect(missing).not.toBe(deploy)
+  expect(deploymentWorkflowHits(missing, railway)).toContain("deploy-release-install-needs-github-token")
+  expect(deploymentWorkflowHits(deploy, railway)).not.toContain("deploy-release-install-needs-github-token")
 })
