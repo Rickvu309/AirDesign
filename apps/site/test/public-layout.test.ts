@@ -8,7 +8,9 @@ it("keeps the public controls and mobile hero within the viewport",async()=>{
  const browser=await chromium.launch()
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true})
-  await page.goto(server.resolvedUrls!.local[0])
+  const url=server.resolvedUrls?.local[0]
+  if(!url)throw new Error("Site server has no local URL")
+  await page.goto(url)
   const layout=await page.evaluate(()=>{
    const header=document.querySelector("header")!.getBoundingClientRect()
    const badge=document.querySelector(".chart-callout")!.getBoundingClientRect()
