@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -25,10 +26,19 @@ const sample = () => {
   return root
 }
 
-const counted = sourceLines(sample(), "apps")
+const track = (root) => {
+  execFileSync("git", ["init", "-q"], { cwd: root })
+  execFileSync("git", ["add", "-A"], { cwd: root })
+}
+
+const countedRoot = sample()
+track(countedRoot)
+const counted = sourceLines(countedRoot, "apps")
 if (counted !== 2) throw new Error(`apps count skipped a real line or kept a blank one: ${counted}`)
 
-const under = budget(sample())
+const underRoot = sample()
+track(underRoot)
+const under = budget(underRoot)
 if (under.product !== 3 || under.processLines !== 2 || under.over) {
   throw new Error(`small trees stay under the cap\n${JSON.stringify(under)}`)
 }
@@ -36,6 +46,7 @@ if (under.product !== 3 || under.processLines !== 2 || under.over) {
 const wide = sample()
 write(wide, "apps/more.ts", `${"export const saved = 1\n".repeat(1999)}`)
 write(wide, "tooling/more.js", `${"export const rule = 1\n".repeat(201)}`)
+track(wide)
 const open = budget(wide)
 if (open.product !== 2002 || open.processLines !== 203 || !open.over) {
   throw new Error(`a wide tree must retire a rule\n${JSON.stringify(open)}`)
@@ -48,6 +59,7 @@ if (!lines.includes("product 2002") || !lines.includes("tooling and scripts 203"
 const capped = sample()
 write(capped, "apps/more.ts", `${"export const saved = 1\n".repeat(1997)}`)
 write(capped, "tooling/more.js", `${"export const rule = 1\n".repeat(500)}`)
+track(capped)
 const resting = budget(capped)
 if (resting.product !== 2000 || resting.over) {
   throw new Error(`the cap waits until product code passes 2000 lines\n${JSON.stringify(resting)}`)
@@ -64,5 +76,14 @@ if (missing.length !== 1 || missing[0] !== "no-comments has no test") {
 }
 write(plugin, `${rules}/no-comments.test.js`, "export const saved = 1\n")
 if (ruleGaps(plugin).length !== 0) throw new Error("a wired rule was reported as a gap")
+
+const dirty = sample()
+write(dirty, "apps/site/.gitignore", ".astro/\n")
+write(dirty, "apps/site/.astro/content.d.ts", `${"export type Saved = number\n".repeat(140)}`)
+write(dirty, "apps/site/.astro/types.d.ts", "export type X = number\nexport type Y = number\n")
+track(dirty)
+write(dirty, "apps/extra.ts", "export const saved = 1\n")
+const stable = sourceLines(dirty, "apps")
+if (stable !== 2) throw new Error(`files outside git changed the budget: ${stable}`)
 
 console.log("bug-rule tests passed")
