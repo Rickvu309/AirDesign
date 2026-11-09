@@ -1,5 +1,7 @@
 # Landing alignment audit — 2026-11-09
 
+> Historical audit before fixes. The operator subsequently required exact S11/S12 design copy and a design-source product illustration. Those decisions supersede the truthful-copy and real-capture recommendations below. Privacy and Terms remain visually matching plain text until destinations exist.
+
 Base: main `4f71aa4ed51298c600a735acc1dc3e423e1b5175`, confirmed with GitHub API. Fresh branch `landing/design-alignment`. Live captures taken at desktop CSS width 1440 and phone width 390 after font/image readiness and scrolling every section. Browser desktop snapshots are capped at 1280 bitmap pixels; the composites normalize those to CSS pixels. Section positions were measured in the DOM. Before images are in `before/` beside this report. Design images and calibration remain untouched.
 
 Authoritative public targets: S11.01 (landing, 1440×3924) and S12.01 (pricing, 1470×923), plus tokens/copy kit. No phone or other-public-route PNG exists in the design set; mobile is checked for the same hierarchy and usable responsive behavior. S11.01 has no valid calibrated score; these comparisons are visual judgments.

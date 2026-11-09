@@ -1,6 +1,6 @@
 # Landing design alignment
 
-The operator reported that the live landing page did not match the design. The ranked audit was saved before edits. The authoritative references are S11.01 and S12.01 under `docs/design/v0.1`. Desktop captures use CSS width 1440 and phone captures use width 390. The browser returned some desktop bitmaps at 1280 pixels; those are normalized to the requested CSS width in these comparisons.
+The operator reported that the live landing did not match the design. The ranked audit and before images were saved before edits. S11.01 and S12.01 PNGs are authoritative; desktop captures use CSS width 1440 and phone captures width 390. There is no separate phone design PNG.
 
 ## Images read during verification
 
@@ -9,18 +9,24 @@ The operator reported that the live landing page did not match the design. The r
 - [Landing design beside final desktop](design-after-desktop.png) and [phone](design-after-phone.png)
 - [Pricing before](before-pricing.png), [after desktop](after-pricing.png) and [after phone](after-pricing-phone.png)
 - [Pricing design beside final desktop](design-after-pricing.png) and [phone](design-after-pricing-phone.png)
-- [Designed link regions](design-link-regions.png): landing header, landing footer, pricing header. Pricing appears in both landing regions. The pricing header has an AirDesign home link and no Product link.
+- [Designed link regions](design-link-regions.png): Pricing in both landing header and footer; pricing header has an AirDesign home link and no Product link.
 
-The final Studio exhibit was captured from the current built Studio with eight sample slides and three accepted agent changes. Its fixture payload is tested against the real agent tool response limit. The earlier oversized payload failed that behavior test. The mobile exhibit shows the complete slide within its frame.
+## Operator decisions
+
+Landing and pricing reproduce the design copy, including unlimited decks, the weekly reset sentence, agent choice, hero callout and stats values. Exact text exceptions in the release-claims registry apply only to these two source pages. Tests reject the same claim on Status and Studio. Other surfaces retain their checks.
+
+Privacy and Terms match the design as plain footer text until pages exist; tests prove they have no link hover, focus or cursor behavior, and site-audit remains unchanged for missing routes.
+
+CTA labels stay dark on the gradient per the operator's earlier contrast decision. The product exhibit is a deterministic composition of the editor and Run 04 from the design generator, following the landing postprocessor; its manifest records source/output hashes and two PNG corrections (selected thumbnail title and notes background). It is identified as an illustration, with no claim of actual capture provenance. Existing real-capture checks remain intact for the separate capture asset.
 
 ## Structure proof
 
-Root authorized only two public structure-contract corrections. S11.01 requires one Pricing link in the header and one in the footer, with painted controls and a header navigation probe. S12.01 requires and probes the AirDesign home link in the header. Tests reject either missing Pricing link and reject an outside substitute for the missing header home link. The old contracts are also exercised and fail against the designed structure. The focused paint, structure, registry and interaction suite passed 50 tests.
+Only two public structure contracts change. S11 requires one Pricing link in the header and one in the footer. S12 requires and probes the AirDesign home link in the header, without requiring a Product link absent from the PNG. Negative tests reject either missing Pricing link and an outside substitute for the header home link. The old contracts fail against the designed structure.
 
-Only those two scenario identities changed. Targets, budgets, metric, fixtures and design images remain unchanged. S11.01 is uncalibrated because its generator source differs from its PNG; a numeric parity pass is not visual approval. These side-by-sides were read directly.
+Targets, budgets, metric, parity fixtures and design images remain unchanged. S11 is uncalibrated because its generator source differs from its PNG; a numeric parity pass is not visual approval. The saved side-by-sides are read directly.
 
-## Remaining design conflicts
+The design covers only landing and pricing as public routes. Existing agent guides, examples and status routes receive shared styling and responsive checks without adding pages.
 
-Truthful copy replaces unproven promises about unlimited decks forever, verified external-agent connections, paid resets, zero follow-up questions, MECE approval, final deck quality and financial tie-outs. Available Status and recovery replaces unavailable legal destinations. CTA text stays navy because the target white text fails the existing contrast gate. The exhibit shows the actual current Studio, including its current navigation and agent log, rather than fabricated product chrome. The sample slide retains CAGR text but has no trend line because the slide model does not have a native line primitive.
+## Final visual verification
 
-No other public route has a design PNG. Existing agent guides, examples and status routes receive shared styling and responsive checks without adding pages.
+The final desktop and phone comparisons above were read directly after the source exhibit, selected thumbnail title, notes bar, pricing row and strip arrows were restored. Both S11/S12 structure and pixel regression checks pass. Desktop section comparisons and their phone counterparts are retained in `~/tmp/airdesign-polish/owners/landing/design-alignment/final-sections`. The full frozen-head gate and natural PR checks are reported in the PR.
