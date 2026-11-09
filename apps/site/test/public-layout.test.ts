@@ -89,7 +89,7 @@ it("navigates landing sections from the header on desktop and phone",async()=>{
    await page.goto(url)
    await page.keyboard.press("Tab")
    const skip=page.getByRole("link",{name:"Skip to content"})
-   await expect(skip).toBeFocused()
+   expect(await skip.evaluate(element=>document.activeElement===element)).toBe(true)
    expect(await skip.evaluate(element=>{const box=element.getBoundingClientRect();return document.elementFromPoint(box.x+box.width/2,box.y+box.height/2)===element})).toBe(true)
    for(const [name,target] of [["Agents",".agent-section h2"],["Pricing",".landing-pricing h2"],["Product",".hero h1"]] as const){
     await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).click()
