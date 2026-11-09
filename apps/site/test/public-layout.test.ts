@@ -35,5 +35,23 @@ it("keeps the public controls and mobile hero within the viewport",async()=>{
   expect(layout.badgeRight).toBeLessThanOrEqual(layout.viewport-16)
   expect(layout.background).toContain("rgb(147, 184, 239)")
   expect(layout.background).toContain("rgb(77, 148, 251)")
+  for(const text of ["Privacy","Terms"]){
+   const label=page.locator("footer").getByText(text,{exact:true})
+   const appearance=()=>label.evaluate(element=>{
+    const style=getComputedStyle(element)
+    return {tag:element.tagName,tabIndex:element.tabIndex,role:element.getAttribute("role"),href:element.getAttribute("href"),cursor:style.cursor,color:style.color,decoration:style.textDecorationLine,font:style.font}
+   })
+   const normal=await appearance()
+   expect(normal.tag).toBe("SPAN")
+   expect(normal.tabIndex).toBe(-1)
+   expect(normal.role).toBeNull()
+   expect(normal.href).toBeNull()
+   expect(normal.cursor).not.toBe("pointer")
+   expect(normal.decoration).toBe("none")
+   await label.hover()
+   expect(await appearance()).toEqual(normal)
+   await label.evaluate(element=>element.focus())
+   expect(await label.evaluate(element=>document.activeElement===element)).toBe(false)
+  }
  }finally{await browser.close();await server.close()}
 })

@@ -57,7 +57,7 @@ for (const file of files) {
   for (const hit of sandboxDependencyHits(file,source)) failures.push(`${file}: ${hit}`)
   for (const hit of sharedBuildOutputHits(file,source)) failures.push(`${file}: ${hit}`)
   for (const hit of productCaptureHits(file,source)) failures.push(`${file}: ${hit}`)
-  if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims,capabilities)]) failures.push(`${file}: ${hit}`)
+  if (file.includes("/apps/site/") && /\.(html|txt)$/.test(file)) for (const hit of [...publicAmountHits(source),...releaseClaimHits(renderSiteTerms(source),claims,capabilities,path.relative(repoRoot,file).replaceAll("\\","/"))]) failures.push(`${file}: ${hit}`)
   if (!/\.(?:ts|tsx|js|mjs|css)$/.test(file)) continue
   for(const hit of recoverySafetyHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)
   for(const hit of formSubmitButtonHits(file,source))failures.push(`${path.relative(repoRoot,file)}:${hit.line} ${hit.reason}`)

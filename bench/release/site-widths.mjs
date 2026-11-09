@@ -83,7 +83,7 @@ try{
    }
    if(route==="/"){
     const spacing=await page.evaluate(()=>{
-     const section=document.querySelector(".product-section"),note=document.querySelector(".capture-note"),style=getComputedStyle(section)
+     const section=document.querySelector(".product-section"),note=document.querySelector(".studio-demo"),style=getComputedStyle(section)
      return {padding:parseFloat(style.paddingBlockEnd),gap:section.getBoundingClientRect().bottom-note.getBoundingClientRect().bottom}
     })
     layoutEvidence.push({width,...spacing})
@@ -119,10 +119,10 @@ try{
      const red=painted.data[offset],green=painted.data[offset+1],blue=painted.data[offset+2]
      if(red<80&&blue>red+30&&green>red+20)chartPixels++
     }
-    assert.ok(chartPixels>1000,"the mobile frame must paint the captured chart rather than an empty surface")
+    assert.ok(chartPixels>1000,"the mobile frame must paint the design chart rather than an empty surface")
     const image=await page.locator("#product img").evaluate(element=>({source:element.currentSrc,width:element.getBoundingClientRect().width,naturalWidth:element.naturalWidth}))
-    assert.ok(image.source.endsWith("/studio-capture-mobile.png"),"phones must receive the focused Studio crop")
-    assert.ok(image.width<=width&&image.naturalWidth>=image.width,"the complete captured slide must fit and remain sharp")
+    assert.ok(image.source.endsWith("/design-product-exhibit.png"),"phones must receive the design exhibit")
+    assert.ok(image.width<=width&&image.naturalWidth>=image.width,"the complete design exhibit must fit and remain sharp")
     const navigation=await page.locator("header").boundingBox()
     assert.ok(navigation.height<=140,"mobile navigation must keep both rows compact")
     for(const link of await page.locator("header a").all()){

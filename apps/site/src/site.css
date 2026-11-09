@@ -120,8 +120,6 @@ header nav a { text-decoration: none; }
 .demo-workspace picture { display: block; inline-size: 100%; block-size: 100%; }
 .demo-workspace img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; border: 0; box-shadow: none; border-radius: 0; }
 .mobile-capture-hint { display: none; }
-.capture-note { max-inline-size: none; font-size: 11px; line-height: 1.6; color: var(--site-subtle); margin-block: 20px 0; }
-.capture-note a { white-space: nowrap; }
 .agent-section { block-size: 840px; padding: 120px max(24px,calc((100% - 1248px)/2)) 0; border-block-end: 1px solid var(--border); }
 .agent-diagram { position: relative; display: grid; grid-template-columns: minmax(0,248fr) minmax(0,252fr) minmax(0,200fr) minmax(0,68fr) minmax(0,480fr); align-items: center; margin-block-start: 92px; min-block-size: 360px; }
 .agent-pills { display: grid; gap: 56px; grid-column: 1; z-index: 1; }
@@ -223,11 +221,10 @@ footer a { text-decoration: none; }
 
 @media (pointer: coarse) {
   a,summary { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-  .landing-page header a,.pricing-page header a,footer a,summary { min-block-size: 44px; min-inline-size: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .landing-page header a,.pricing-page header a,footer a,footer .legal-label,summary { min-block-size: 44px; min-inline-size: 44px; display: inline-flex; align-items: center; justify-content: center; }
   .landing-page header .button,.pricing-page header .button { min-block-size: 44px; }
   .nav-segments a { padding-inline: 10px; }
   .hero .actions > a,.agent-hub .brand { min-block-size: 44px; }
-  .capture-note a { display: inline-block; padding-block: 14px; margin-block: -14px; }
 }
 
 @media (prefers-reduced-motion: reduce) { .button { transition: none; } .button:active { transform: none; } }

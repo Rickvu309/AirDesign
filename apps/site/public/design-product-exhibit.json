@@ -1,0 +1,20 @@
+{
+  "kind": "design-source-composite",
+  "generator": "docs/design/v0.1/source/gen-editor.mjs",
+  "generatorSha256": "6f35e682b9cd24d9edfc5fe52d2f41327cf51dc53ef6e21f41fe559ec11073ec",
+  "postprocessor": "docs/design/v0.1/source/landing-post.sh",
+  "postprocessorSha256": "b97908490000d96f3a550166a0ffdee712e7aca2dee069fc19cbdfa8bd8047c7",
+  "copy": "docs/design/v0.1/copy-kit.json",
+  "copySha256": "a399007c606e9bbcaa87fb372a3dfeec3e8e191cdb6db1b2015b6dadce69a872",
+  "editor": "ed1.jsx",
+  "overlay": "ed54.jsx",
+  "sourceSize": [
+    1470,
+    923
+  ],
+  "outputSize": [
+    1248,
+    784
+  ],
+  "sha256": "4ec10693f7b15b83c9de1e7f2c71927e63d5b192d24ad1ab2c45c070acf4868d"
+}
