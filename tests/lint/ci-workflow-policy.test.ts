@@ -153,10 +153,13 @@ it("requires the single deploy controller and rejects native CI wait cycles", ()
   for (const condition of ["conclusion == 'success'", "event == 'push'", "head_branch == 'main'", "head_repository.full_name == github.repository"]) {
     expect(deploymentWorkflowHits(deploy.replace(condition, "false"), railway)).not.toEqual([])
   }
-  for (const command of ["npm ci", "npm install --prefix", "npx --no-install playwright"]) {
+  for (const command of ["npm ci", "npx --no-install playwright"]) {
     const broken = deploy.replace(`- run: ${command}`, `- env:\n          RAILWAY_API_TOKEN: \${{ secrets.RAILWAY_API_TOKEN }}\n        run: ${command}`)
     expect(deploymentWorkflowHits(broken, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   }
+  const brokenInstall = deploy.replace("        run: bash scripts/release/install-tools.sh", "        env:\n          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n        run: bash scripts/release/install-tools.sh")
+  expect(brokenInstall).not.toBe(deploy)
+  expect(deploymentWorkflowHits(brokenInstall, railway)).toContain("deploy-secret-not-consumed-by-step: RAILWAY_API_TOKEN")
   const inherited = deploy.replace("env:\n  EXPECT_SHA:", "env:\n  RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}\n  EXPECT_SHA:")
   expect(deploymentWorkflowHits(inherited, railway)).toContain("deploy-secrets-must-be-step-scoped")
 })
@@ -192,6 +195,17 @@ it("pins Railway's SSH host key that a fresh runner refused to trust in the firs
   expect(railwayKnownHostsHits("")).not.toEqual([])
   expect(railwayKnownHostsHits(knownHosts.replace("ssh.railway.com", "*.railway.com"))).not.toEqual([])
   expect(railwayKnownHostsHits(knownHosts + "evil.example ssh-ed25519 AAAA\n")).not.toEqual([])
+})
+
+it("requires release tool helpers before the deployment controller", () => {
+  const deploy = readFileSync(".github/workflows/deploy.yml", "utf8")
+  const railway = readFileSync(".railway/railway.ts", "utf8")
+  const install = "      - name: Install release tools\n        timeout-minutes: 7\n        run: bash scripts/release/install-tools.sh\n"
+  expect(deploy).toContain(install)
+  const moved = deploy.replace(install, "").replace("        run: node scripts/release/railway-production.ts\n", `        run: node scripts/release/railway-production.ts\n${install}`)
+  expect(moved).not.toBe(deploy)
+  expect(deploymentWorkflowHits(deploy, railway)).toEqual([])
+  expect(deploymentWorkflowHits(moved, railway)).toContain("deploy-installers-must-precede-deployment")
 })
 
 it("rejects local uploads in the Railway controller", () => {
