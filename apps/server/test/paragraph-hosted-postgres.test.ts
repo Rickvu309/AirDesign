@@ -69,9 +69,10 @@ it("executes hosted native reads, independent formatting and protected undo thro
     expect(await f.tool("get_slide",{deckId,slideId:slide.id,rootId:text.id,format:"jsx"})).toMatchObject({items:[{jsx:expect.stringContaining('"body"')}]})
     expect((await f.tool("find_elements",{deckId,query:"clear direction",kind:"text"})).items).toContainEqual(expect.objectContaining({id:text.id,text:"A clear direction with evidence\nA clear direction with evidence"}))
     expect(await f.tool("find_elements",{deckId,kind:"paragraph"})).toMatchObject({items:expect.arrayContaining([expect.objectContaining({id:first.id,parent:text.id,kind:"paragraph"})])})
-    const base=insert.savedVersion,change={deckId,base,requestId:"format-first",changes:[{kind:"set",target:first.id,value:{...first,alignment:"center",marker:{kind:"bullet",character:"•"},spacing:{...first.spacing,after:12},endStyle:{...first.endStyle,italic:true}}}]}
+    const base=insert.savedVersion,change={deckId,base,requestId:"format-first",changes:[{kind:"set",target:first.id,value:{...first,alignment:"center",marker:{kind:"bullet",character:"•",font:"Arial"},spacing:{...first.spacing,after:12},endStyle:{...first.endStyle,italic:true,letterSpacing:2,baseline:0.25,strike:true,capitalization:"small",kerning:12}}}]}
     const edited=await f.tool("apply_changes",change)
     expect(edited).toMatchObject({kind:"applied"})
+    expect((await f.tool("get_slide",{deckId,slideId:slide.id,rootId:first.id})).items).toEqual([change.changes[0]!.value])
     expect(await f.tool("apply_changes",change)).toEqual(edited)
     expect(await f.tool("apply_changes",{...change,changes:[]})).toMatchObject({code:expect.any(String)})
     expect(await f.tool("apply_changes",{...change,changes:[{kind:"set",target:first.id,value:first}]})).toMatchObject({code:"request-id-payload-mismatch"})

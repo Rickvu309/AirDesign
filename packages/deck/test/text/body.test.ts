@@ -39,6 +39,11 @@ describe("native text body boundary", () => {
     (v: TextBody) => { v.frame.autofit = {kind: "shrink", fontScale: 1, lineReduction: 1} },
     (v: TextBody) => { v.paragraphs[0].runs = [{kind: "text", text: "a\nb", style: v.paragraphs[0].endStyle}] },
     (v: TextBody) => { v.paragraphs[0].marker = {kind: "number", format: "decimal", start: 0} },
+    (v: TextBody) => { v.paragraphs[0].endStyle.letterSpacing = Infinity },
+    (v: TextBody) => { v.paragraphs[0].endStyle.baseline = NaN },
+    (v: TextBody) => { v.paragraphs[0].endStyle.kerning = -1 },
+    (v: TextBody) => { Object.assign(v.paragraphs[0].endStyle, {capitalization: "invented"}) },
+    (v: TextBody) => { v.paragraphs[0].marker = {kind: "bullet", character: "•", font: ""} },
     (v: TextBody) => { Object.assign(v.frame, {warp: "unknown"}) }
   ])("rejects malformed canonical input %#", mutate => {
     const value = body(); mutate(value)

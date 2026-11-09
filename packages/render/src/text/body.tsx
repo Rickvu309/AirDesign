@@ -3,8 +3,8 @@ import type {CSSProperties} from "react"
 import type {TextBody, TextStyle, NumberFormat} from "../../../deck/src/text/body.ts"
 import {fontFamily} from "../fonts.ts"
 
-function style(value: TextStyle, scale: number): CSSProperties {
-  return {fontFamily: fontFamily(value.font), fontSize: value.size * scale, fontWeight: value.bold ? 600 : 400, fontStyle: value.italic ? "italic" : "normal", textDecoration: value.underline ? "underline" : "none", color: value.color}
+function style(value: TextStyle, scale: number, inline = true): CSSProperties {
+  return {fontFamily: fontFamily(value.font), fontSize: value.size * scale, fontWeight: value.bold ? 600 : 400, fontStyle: value.italic ? "italic" : "normal", textDecoration: [value.underline ? "underline" : "", value.strike ? "line-through" : ""].filter(Boolean).join(" ") || "none", letterSpacing: (value.letterSpacing ?? 0) * scale, position: inline && value.baseline ? "relative" : undefined, top: inline ? -(value.baseline ?? 0) * value.size * scale : undefined, fontVariantCaps: value.capitalization === "small" ? "small-caps" : "normal", textTransform: value.capitalization === "all" ? "uppercase" : "none", fontKerning: value.kerning === undefined ? "auto" : value.size >= value.kerning ? "normal" : "none", color: value.color}
 }
 function numeral(value: number, format: NumberFormat): string {
   if (format === "decimal") return String(value)
@@ -33,8 +33,8 @@ export function Body({body}: {body: TextBody}) {
       if (marker.kind === "number") {
         label = `${numeral(numbers[index]!, marker.format)}.`
       }
-      return <div key={paragraph.id} data-paragraph={paragraph.id} data-level={paragraph.level} style={{...style(paragraph.endStyle, scale), position: "relative", textAlign: paragraph.alignment, marginTop: paragraph.spacing.before, marginBottom: paragraph.spacing.after, paddingLeft: paragraph.indentation.left, paddingRight: paragraph.indentation.right, textIndent: paragraph.indentation.firstLine, lineHeight: paragraph.spacing.line.kind === "multiple" ? paragraph.spacing.line.value * reduction : `${paragraph.spacing.line.value * scale * reduction}px`, minHeight: `${paragraph.endStyle.size * scale}px`}}>
-        {label && <span data-marker="" aria-hidden="true" style={{display: "inline-block", textIndent: 0, marginRight: "0.3em"}}>{label}</span>}
+      return <div key={paragraph.id} data-paragraph={paragraph.id} data-level={paragraph.level} style={{...style(paragraph.endStyle, scale, false), position: "relative", textAlign: paragraph.alignment, marginTop: paragraph.spacing.before, marginBottom: paragraph.spacing.after, paddingLeft: paragraph.indentation.left, paddingRight: paragraph.indentation.right, textIndent: paragraph.indentation.firstLine, lineHeight: paragraph.spacing.line.kind === "multiple" ? paragraph.spacing.line.value * reduction : `${paragraph.spacing.line.value * scale * reduction}px`, minHeight: `${paragraph.endStyle.size * scale}px`}}>
+        {label && <span data-marker="" aria-hidden="true" style={{display: "inline-block", textIndent: 0, marginRight: "0.3em", fontFamily: marker.kind === "bullet" && marker.font ? fontFamily(marker.font) : undefined}}>{label}</span>}
         {paragraph.runs.map((run, index) => run.kind === "break" ? <br key={index}/> : <span key={index} style={style(run.style, scale)}>{run.text}</span>)}
         {(paragraph.runs.length === 0 || paragraph.runs.at(-1)?.kind === "break") && <br data-paragraph-end=""/>}
       </div>

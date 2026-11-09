@@ -30,7 +30,7 @@ it("resolves nine list levels through master, matching layout, shape and explici
   const strip = (parsed: ReturnType<typeof parseXml>) => {const body = parsed.nodes.filter(node => node.local === "txBody").at(-1)!; return parsed.xml.slice(0, body.start) + parsed.xml.slice(body.end)}
   expect(strip(after)).toBe(strip(before))
 })
-it.each(['<a:fld id="field" type="slidenum"><a:t>1</a:t></a:fld>', '<a:r><a:rPr u="dbl"/><a:t>Underline</a:t></a:r>', '<a:r><a:rPr><a:hlinkClick r:id="link"/></a:rPr><a:t>Link</a:t></a:r>', '<a:tab/>', '<a:r><a:t>literal\ttab</a:t></a:r>', '<a:pPr><a:tabLst><a:tab pos="91440" algn="l"/></a:tabLst></a:pPr>'])("keeps unrepresented source text noneditable and byte exact: %s", async payload => {
+it.each(['<a:r><a:rPr u="dbl"/><a:t>Underline</a:t></a:r>', '<a:tab/>', '<a:r><a:t>literal\ttab</a:t></a:r>'])("keeps unrepresented source text noneditable and byte exact: %s", async payload => {
   const original = await cascadeSource(`<a:p>${payload}</a:p>`), deck = importedNativeDeck(original)
   expect(deck.slides[0]!.elements.filter(element => element.kind === "text")).toHaveLength(1)
   expect(deck.slides[0]!.elements.at(-1)!.support.kind).toBe("kept")
@@ -69,7 +69,7 @@ it("retains nested source groups while changing supported text outside the group
   for (const [name, bytes] of parts) if (![part, "[Content_Types].xml"].includes(name)) expect(saved.parts.get(name), name).toEqual(bytes)
 })
 
-it.each(['<a:tabLst><a:tab pos="91440" algn="l"/></a:tabLst>', '<a:buFont typeface="Wingdings"/>', '<a:defRPr baseline="1000"/>', '<a:defRPr u="dbl"/>', '<a:defRPr><a:solidFill><a:schemeClr val="tx1"><a:tint val="50000"/></a:schemeClr></a:solidFill></a:defRPr>'])("keeps unsupported inherited properties instead of materializing a lossy body: %s", async formatting => {
+it.each(['<a:defRPr u="dbl"/>'])("keeps unsupported inherited properties instead of materializing a lossy body: %s", async formatting => {
   const original = await cascadeSource(), parts = new Map(original.parts)
   const name = "ppt/slideLayouts/slideLayout1.xml"
   parts.set(name, Buffer.from(parts.get(name)!.toString().replace('<a:lstStyle>', `<a:lstStyle><a:lvl1pPr>${formatting}</a:lvl1pPr>`)))

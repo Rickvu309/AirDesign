@@ -14,8 +14,8 @@ it("lays out native paragraphs and bottom anchored frame in the shared capture r
   if (text.kind !== "text") throw new Error("text-required")
   text.box = {x: 40, y: 40, width: 600, height: 350}
   const first = text.body.paragraphs[0]
-  first.endStyle = {...first.endStyle, size: 24}
-  first.runs = [{kind: "text", text: "A native paragraph", style: first.endStyle}, {kind: "break", style: first.endStyle}, {kind: "text", text: "Explicit second line", style: {...first.endStyle, italic: true}}]
+  first.endStyle = {...first.endStyle, size: 24, baseline: 0.25}
+  first.runs = [{kind: "text", text: "A native paragraph", style: {...first.endStyle, letterSpacing: 2, strike: true, capitalization: "small", kerning: 12}}, {kind: "break", style: first.endStyle}, {kind: "text", text: "Explicit second line", style: {...first.endStyle, italic: true}}]
   first.marker = {kind: "number", format: "decimal", start: 3}
   first.spacing.line = {kind: "multiple", value: 1.5}
   text.body.paragraphs.push({...structuredClone(first), id: id("trailing"), marker: {kind: "number", format: "decimal", start: null}, runs: []})
@@ -30,8 +30,10 @@ it("lays out native paragraphs and bottom anchored frame in the shared capture r
     await page.evaluate(async () => {await document.fonts.ready})
     const geometry = await page.evaluate(() => {
       const frame = document.querySelector("[data-text-frame]")!, paragraphs = [...document.querySelectorAll("[data-paragraph]")]
-      return {frame: frame.getBoundingClientRect().toJSON(), paragraphs: paragraphs.map(paragraph => ({box: paragraph.getBoundingClientRect().toJSON(), lineHeight: getComputedStyle(paragraph).lineHeight})), markers: [...document.querySelectorAll("[data-marker]")].map(marker => marker.textContent), italic: getComputedStyle(document.querySelector('[data-paragraph] span:last-of-type')!).fontStyle}
+      const run = getComputedStyle(document.querySelector('[data-paragraph] span:not([data-marker])')!)
+      return {style: {letterSpacing: run.letterSpacing, top: run.top, strike: run.textDecorationLine, capitalization: run.fontVariantCaps, kerning: run.fontKerning, paragraphTop: getComputedStyle(paragraphs[0]!).top}, frame: frame.getBoundingClientRect().toJSON(), paragraphs: paragraphs.map(paragraph => ({box: paragraph.getBoundingClientRect().toJSON(), lineHeight: getComputedStyle(paragraph).lineHeight})), markers: [...document.querySelectorAll("[data-marker]")].map(marker => marker.textContent), italic: getComputedStyle(document.querySelector('[data-paragraph] span:last-of-type')!).fontStyle}
     })
+    expect(geometry.style).toEqual({letterSpacing: "2px", top: "-6px", strike: "line-through", capitalization: "small-caps", kerning: "normal", paragraphTop: "0px"})
     expect(geometry.frame).toMatchObject({x: 40, y: 40, width: 600, height: 350})
     expect(geometry.markers).toEqual(["3.", "4."])
     expect(geometry.paragraphs[0]!.lineHeight).toBe("36px")

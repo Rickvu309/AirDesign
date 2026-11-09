@@ -7,7 +7,7 @@ function finite(value: unknown): value is number { return typeof value === "numb
 function nonnegative(value: unknown): value is number { return finite(value) && value >= 0 }
 function positive(value: unknown): value is number { return finite(value) && value > 0 }
 function style(value: unknown): value is TextStyle {
-  return record(value) && exact(value, ["font", "size", "color", "bold", "italic", "underline"]) && typeof value.font === "string" && positive(value.size) && typeof value.color === "string" && typeof value.bold === "boolean" && (value.italic === undefined || typeof value.italic === "boolean") && (value.underline === undefined || typeof value.underline === "boolean")
+  return record(value) && exact(value, ["font", "size", "color", "bold", "italic", "underline", "letterSpacing", "baseline", "strike", "capitalization", "kerning"]) && typeof value.font === "string" && positive(value.size) && typeof value.color === "string" && typeof value.bold === "boolean" && (value.italic === undefined || typeof value.italic === "boolean") && (value.underline === undefined || typeof value.underline === "boolean") && (value.letterSpacing === undefined || finite(value.letterSpacing)) && (value.baseline === undefined || finite(value.baseline)) && (value.strike === undefined || typeof value.strike === "boolean") && (value.capitalization === undefined || ["none", "small", "all"].includes(String(value.capitalization))) && (value.kerning === undefined || nonnegative(value.kerning))
 }
 function inline(value: unknown): value is InlineRun {
   if (!record(value) || !style(value.style)) return false
@@ -22,7 +22,7 @@ export function isParagraph(value: unknown): value is Paragraph {
   if (!record(line) || !exact(line, ["kind", "value"]) || !["multiple", "points"].includes(String(line.kind)) || !positive(line.value)) return false
   switch (marker.kind) {
     case "none": return exact(marker, ["kind"])
-    case "bullet": return exact(marker, ["kind", "character"]) && typeof marker.character === "string" && Array.from(marker.character).length === 1 && !/[\r\n]/.test(marker.character)
+    case "bullet": return exact(marker, ["kind", "character", "font"]) && (marker.font === undefined || typeof marker.font === "string" && marker.font.length > 0) && typeof marker.character === "string" && Array.from(marker.character).length === 1 && !/[\r\n]/.test(marker.character)
     case "number": return exact(marker, ["kind", "format", "start"]) && ["decimal", "alphaLower", "alphaUpper", "romanLower", "romanUpper"].includes(String(marker.format)) && (marker.start === null || typeof marker.start === "number" && Number.isSafeInteger(marker.start) && marker.start > 0)
     default: return false
   }

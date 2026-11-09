@@ -5,6 +5,7 @@ import {parseTextBody} from "../../../deck/src/text/body-codec.ts"
 import {escapeXml, type XmlNode} from "../xml.ts"
 
 import {children, child, type Document} from "./nodes.ts"
+import {selectiveTextBody} from "./selective.ts"
 import {type TextContext, type LocatedNode, resolvedStyle, resolvedColor, emptyContext, assertTextSupported, UnsupportedTextFormat} from "./cascade.ts"
 
 const drawing = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -20,11 +21,15 @@ function text(document: Document, node: XmlNode): string {
 function number(value: string | undefined, fallback: number): number {
   return value === undefined ? fallback : Number(value)
 }
-function marker(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker): ParagraphMarker {
+function marker(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
   if (!properties) return inherited
   if (child(document, properties, "buNone")) return {kind: "none"}
   const bullet = child(document, properties, "buChar"), numeric = child(document, properties, "buAutoNum")
-  if (bullet) return {kind: "bullet", character: bullet.attributes.char ?? "•"}
+  if (bullet) {
+    const typeface = child(document, properties, "buFont")?.attributes.typeface, font = typeface?.startsWith("+") ? context.fonts[typeface] : typeface
+    if (typeface && !font) throw new UnsupportedTextFormat("bullet font")
+    return {kind: "bullet", character: bullet.attributes.char ?? "•", ...(font ? {font} : inherited.kind === "bullet" && inherited.font && !child(document, properties, "buFontTx") ? {font: inherited.font} : {})}
+  }
   if (numeric) {
     const entry = Object.entries(numbering).find(([, value]) => value === numeric.attributes.type)
     if (!entry) throw new UnsupportedTextFormat("numbering")
@@ -32,15 +37,22 @@ function marker(document: Document, properties: XmlNode | undefined, inherited: 
     if (format !== "decimal" && format !== "alphaLower" && format !== "alphaUpper" && format !== "romanLower" && format !== "romanUpper") throw new UnsupportedTextFormat("numbering")
     return {kind: "number", format, start: numeric.attributes.startAt === undefined ? null : Number(numeric.attributes.startAt)}
   }
+  if (inherited.kind === "bullet") {
+    const typeface = child(document, properties, "buFont")?.attributes.typeface
+    const font = typeface?.startsWith("+") ? context.fonts[typeface] : typeface
+    if (typeface && !font) throw new UnsupportedTextFormat("bullet font")
+    if (font) return {...inherited, font}
+    if (child(document, properties, "buFontTx")) { return {kind: "bullet", character: inherited.character} }
+  }
   return inherited
 }
 export function readTextBody(document: Document, body: XmlNode, identity: Id, context: TextContext = emptyContext()): TextBody {
-  assertTextSupported(document, body)
+  assertTextSupported(document, body, false, true)
   const local = child(document, body, "lstStyle"), lists = [...context.lists]
   if (local && !lists.some(value => value.node === local)) lists.push({document, node: local})
   const frames = [...context.frames], ownFrame = child(document, body, "bodyPr")
   if (ownFrame && !frames.some(value => value.node === ownFrame)) frames.push({document, node: ownFrame})
-  for (const layer of [...lists, ...frames]) if (layer.document === document || layer.node.local === "bodyPr") assertTextSupported(layer.document, layer.node)
+  for (const layer of [...lists, ...frames]) if (layer.document === document || layer.node.local === "bodyPr") assertTextSupported(layer.document, layer.node, false, true)
   const attributes = frames.reduce<Record<string, string>>((value, layer) => ({...value, ...layer.node.attributes}), {})
   const fit = frames.flatMap(({document, node}) => children(document, node).map(child => ({document, node: child}))).at(-1)
   const normal = fit?.node.local === "normAutofit" ? fit.node : undefined
@@ -59,7 +71,7 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
     const properties = child(document, paragraph, "pPr"), level = number(properties?.attributes.lvl, 0)
     const defaults: LocatedNode[] = lists.flatMap(({document, node}) => node.local === "pPr" ? number(node.attributes.lvl, 0) === level ? [{document, node}] : [] : [child(document, node, "defPPr"), child(document, node, `lvl${level + 1}pPr`)].flatMap(node => node ? [{document, node}] : []))
     const layers = [...defaults, ...(properties ? [{document, node: properties}] : [])]
-    for (const layer of defaults) assertTextSupported(layer.document, layer.node, true)
+    for (const layer of defaults) assertTextSupported(layer.document, layer.node, true, true)
     let initial = level === previousLevel && !defaults.length && !children(document, paragraph).some(node => node.local === "r") ? inherited : base
     for (const {document, node} of layers) {
       const properties = child(document, node, "defRPr")
@@ -70,9 +82,13 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
     for (const run of children(document, paragraph)) {
       const properties = child(document, run, "rPr")
       if (run.local === "br") { last = resolvedStyle(properties ? {document, node: properties} : undefined, last, context); runs.push({kind: "break", style: last}) }
-      if (run.local === "r") {
+      if (run.local === "r" || run.local === "fld") {
         last = resolvedStyle(properties ? {document, node: properties} : undefined, initial, context)
-        for (const value of children(document, run).filter(node => node.local === "t")) runs.push({kind: "text", text: text(document, value), style: last})
+        for (const value of children(document, run).filter(node => node.local === "t")) {
+          const content = text(document, value)
+          if ([...layers, ...(properties ? [{document, node: properties}] : [])].some(layer => layer.document.nodes.some(node => node.start > layer.node.start && node.end < layer.node.end && ["ea", "cs"].includes(node.local) && node.attributes.typeface)) && Array.from(content).some(character => { const point = character.codePointAt(0)!; return point > 0x024f && (point < 0x2000 || point > 0x206f) && (point < 0x20a0 || point > 0x22ff) })) throw new UnsupportedTextFormat("script-specific font projection")
+          runs.push({kind: "text", text: content, style: last})
+        }
       }
     }
     const end = child(document, paragraph, "endParaRPr"), endStyle = resolvedStyle(end ? {document, node: end} : undefined, last, context)
@@ -80,28 +96,33 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
     const attribute = (name: string) => layers.map(value => value.node.attributes[name]).findLast(value => value !== undefined)
     const property = (name: string) => layers.flatMap(({document, node}) => {const found = child(document, node, name); return found ? [{document, node: found}] : []}).at(-1)
     const alignment = attribute("algn"), line = property("lnSpc"), percent = line && child(line.document, line.node, "spcPct"), points = line && child(line.document, line.node, "spcPts")
-    const pointSpace = (name: string) => {const value = property(name), points = value && child(value.document, value.node, "spcPts"); if (value && !points) throw new UnsupportedTextFormat(); return points ? Number(points.attributes.val) / 75 : 0}
-    return {id: id(`${identity}p${index}`), kind: "paragraph", runs, endStyle, alignment: alignment === "ctr" ? "center" : alignment === "r" ? "right" : alignment === "just" ? "justify" : "left", level, indentation: {left: number(attribute("marL"), 0) / 9525, right: number(attribute("marR"), 0) / 9525, firstLine: number(attribute("indent"), 0) / 9525}, marker: layers.reduce<ParagraphMarker>((value, layer) => marker(layer.document, layer.node, value), {kind: "none"} satisfies ParagraphMarker), spacing: {before: pointSpace("spcBef"), after: pointSpace("spcAft"), line: points ? {kind: "points", value: Number(points.attributes.val) / 75} : {kind: "multiple", value: percent ? Number(percent.attributes.val) / 100000 : 1.2}}}
+    const pointSpace = (name: string) => {const value = property(name), points = value && child(value.document, value.node, "spcPts"); if (value && !points && Number(child(value.document, value.node, "spcPct")?.attributes.val) !== 0) throw new UnsupportedTextFormat("percentage paragraph spacing"); return points ? Number(points.attributes.val) / 75 : 0}
+    return {id: id(`${identity}p${index}`), kind: "paragraph", runs, endStyle, alignment: alignment === "ctr" ? "center" : alignment === "r" ? "right" : alignment === "just" ? "justify" : "left", level, indentation: {left: number(attribute("marL"), 0) / 9525, right: number(attribute("marR"), 0) / 9525, firstLine: number(attribute("indent"), 0) / 9525}, marker: layers.reduce<ParagraphMarker>((value, layer) => marker(layer.document, layer.node, value, context), {kind: "none"} satisfies ParagraphMarker), spacing: {before: pointSpace("spcBef"), after: pointSpace("spcAft"), line: points ? {kind: "points", value: Number(points.attributes.val) / 75} : {kind: "multiple", value: percent ? Number(percent.attributes.val) / 100000 : 1.2}}}
   })
   return parseTextBody({frame, paragraphs})
 }
 function propertiesXml(style: TextStyle, tag: string): string {
   if (!/^#[0-9a-f]{6}$/i.test(style.color)) throw new Error("pptx-text-color-required")
-  return `<a:${tag} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}"/></a:solidFill><a:latin typeface="${escapeXml(style.font)}"/></a:${tag}>`
+  const extra = `${style.letterSpacing === undefined ? "" : ` spc="${Math.round(style.letterSpacing * 75)}"`}${style.baseline === undefined ? "" : ` baseline="${Math.round(style.baseline * 100000)}"`}${style.kerning === undefined ? "" : ` kern="${Math.round(style.kerning * 75)}"`}${style.strike === undefined ? "" : ` strike="${style.strike ? "sngStrike" : "noStrike"}"`}${style.capitalization === undefined ? "" : ` cap="${style.capitalization}"`}`
+  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}"/></a:solidFill><a:latin typeface="${escapeXml(style.font)}"/></a:${tag}>`
 }
 export function writeTextBody(body: TextBody): string {
   const frame = body.frame, autofit = frame.autofit
   const fit = autofit.kind === "shrink" ? `<a:normAutofit fontScale="${Math.round(autofit.fontScale * 100000)}" lnSpcReduction="${Math.round(autofit.lineReduction * 100000)}"/>` : autofit.kind === "resize-shape" ? "<a:spAutoFit/>" : "<a:noAutofit/>"
   const paragraphs = body.paragraphs.map(paragraph => {
     const marker = paragraph.marker, line = paragraph.spacing.line
-    const bullet = marker.kind === "none" ? "<a:buNone/>" : marker.kind === "bullet" ? `<a:buChar char="${escapeXml(marker.character)}"/>` : `<a:buAutoNum type="${numbering[marker.format]}"${marker.start === null ? "" : ` startAt="${marker.start}"`}/>`
+    const bullet = marker.kind === "none" ? "<a:buNone/>" : marker.kind === "bullet" ? `${marker.font ? `<a:buFont typeface="${escapeXml(marker.font)}"/>` : ""}<a:buChar char="${escapeXml(marker.character)}"/>` : `<a:buAutoNum type="${numbering[marker.format]}"${marker.start === null ? "" : ` startAt="${marker.start}"`}/>`
     const alignment = {left: "l", center: "ctr", right: "r", justify: "just"}[paragraph.alignment]
     const properties = `<a:pPr algn="${alignment}" lvl="${paragraph.level}" marL="${Math.round(paragraph.indentation.left * 9525)}" marR="${Math.round(paragraph.indentation.right * 9525)}" indent="${Math.round(paragraph.indentation.firstLine * 9525)}"><a:lnSpc><a:${line.kind === "multiple" ? "spcPct" : "spcPts"} val="${Math.round(line.value * (line.kind === "multiple" ? 100000 : 75))}"/></a:lnSpc><a:spcBef><a:spcPts val="${Math.round(paragraph.spacing.before * 75)}"/></a:spcBef><a:spcAft><a:spcPts val="${Math.round(paragraph.spacing.after * 75)}"/></a:spcAft>${bullet}</a:pPr>`
     return `<a:p>${properties}${paragraph.runs.map(run => run.kind === "break" ? `<a:br>${propertiesXml(run.style, "rPr")}</a:br>` : `<a:r>${propertiesXml(run.style, "rPr")}<a:t xml:space="preserve">${escapeXml(run.text)}</a:t></a:r>`).join("")}${propertiesXml(paragraph.endStyle, "endParaRPr")}</a:p>`
   }).join("")
   return `<p:txBody xmlns:a="${drawing}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:bodyPr anchor="${frame.anchor === "middle" ? "ctr" : frame.anchor === "bottom" ? "b" : "t"}" lIns="${Math.round(frame.insets.left * 9525)}" rIns="${Math.round(frame.insets.right * 9525)}" tIns="${Math.round(frame.insets.top * 9525)}" bIns="${Math.round(frame.insets.bottom * 9525)}">${fit}</a:bodyPr><a:lstStyle/>${paragraphs}</p:txBody>`
 }
-export function replaceTextBody(document: Document, node: XmlNode, body: TextBody): string {
+export function replaceTextBody(document: Document, node: XmlNode, body: TextBody, previous?: TextBody): string {
+  if (previous) {
+    const selective = selectiveTextBody(document, node, previous, body, writeTextBody(previous), writeTextBody(body))
+    if (selective !== undefined) return selective
+  }
   assertTextSupported(document, node)
   return document.xml.slice(0, node.start) + writeTextBody(body) + document.xml.slice(node.end)
 }

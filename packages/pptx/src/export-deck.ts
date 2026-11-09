@@ -1,6 +1,7 @@
 import type {NativeDeck, NativeElement} from "../../deck/src/text/native-v3.ts"
 import {flatten} from "../../deck/src/elements.ts"
-import {writeTextBody, replaceTextBody} from "./text/body.ts"
+import {writeTextBody, replaceTextBody, readTextBody} from "./text/body.ts"
+import {textContext, UnsupportedTextFormat} from "./text/cascade.ts"
 import {bodyFormatting, preserveLegacySourceV2} from "./text/legacy-source-v2.ts"
 import { attachTemplateLayouts } from "./template-layouts.ts"
 import {patchTextColor} from "./edit/text-color.ts"
@@ -165,7 +166,22 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
             const ordinal = identity.objectId.startsWith("body:") ? Number(identity.objectId.split(":")[1]) : bodies.findIndex(node => retained.nodes.filter(node => node.local === "t" && node.uri.endsWith("/drawingml/2006/main")).some((span, index) => index === Number(identity.objectId.split(":")[1]?.split(",")[0]) && span.start > node.start && span.end < node.end))
             const parsed = parseXml(original.parts.get(source.part)!), body = parsed.nodes.filter(node => node.local === "txBody")[ordinal]
             if (!body) throw new Error("source-text-body-required")
-            original = {...original, parts: new Map(original.parts).set(source.part, Buffer.from(replaceTextBody(parsed, body, element.body)))}
+            const shape = parsed.nodes.find(node => node.local === "sp" && node.start < body.start && node.end > body.end)
+            if (!shape) throw new Error("source-text-shape-required")
+            const context = textContext(original, source.part, parsed, shape)
+            const replacement = replaceTextBody(parsed, body, element.body, previous.body), checked = parseXml(Buffer.from(replacement))
+            const nextBody = checked.nodes.filter(node => node.local === "txBody")[ordinal]
+            if (!nextBody) throw new UnsupportedTextFormat("selective body structure")
+            const projected = readTextBody(checked, nextBody, element.id, context)
+            const semantics = (body: typeof projected) => JSON.stringify(bodyFormatting(body), (key, value: unknown) => {
+              if (key === "style" || key === "endStyle") {
+                if (!value || typeof value !== "object") throw new Error("text-style-required")
+                return Object.fromEntries(Object.entries({italic: false, underline: false, strike: false, letterSpacing: 0, baseline: 0, capitalization: "none", ...value}).sort(([a], [b]) => a.localeCompare(b)))
+              }
+              return value
+            })
+            if (semantics(projected) !== semantics(element.body)) throw new UnsupportedTextFormat("selective edit projection differs")
+            original = {...original, parts: new Map(original.parts).set(source.part, Buffer.from(replacement))}
           }
         }
         if(element.kind==="text" && !("body" in element) && previous.kind==="text" && !("body" in previous) && element.source.kind==="original"){

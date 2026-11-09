@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process"
+const corpus = spawnSync(process.execPath, ["scripts/verify-paragraph-corpus.mjs"], {stdio: "inherit"})
+if (corpus.status !== 0) process.exit(corpus.status ?? 1)
 const result = spawnSync("npx", ["vitest", "run", "packages/pptx/test/roundtrip.test.ts"], { stdio: "inherit" })
 if (result.status !== 0) process.exit(result.status ?? 1)
 const { libreOfficeFastCheck } = await import("../packages/pptx/test/libreoffice.ts")
