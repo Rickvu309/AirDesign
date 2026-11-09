@@ -93,10 +93,25 @@ export function resolvedColor(document: Document, fill: XmlNode, context: TextCo
   let channels = [0, 2, 4].map(offset => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255)
   for (const transform of children(document, color)) {
     const amount = Number(transform.attributes.val) / 100000
-    if (!Number.isFinite(amount) || amount < 0 || amount > 1 || !["tint", "shade"].includes(transform.local)) throw new UnsupportedTextFormat(`color transform ${transform.local}`)
-    channels = channels.map(value => transform.local === "tint" ? value * amount + 1 - amount : value * amount)
+    if (!Number.isFinite(amount) || amount < 0 || amount > 1 || !["tint", "shade", "lumMod", "lumOff", "alpha"].includes(transform.local)) throw new UnsupportedTextFormat(`color transform ${transform.local}`)
+    if (transform.local === "alpha") continue
+    if (transform.local === "lumMod" || transform.local === "lumOff") {
+      const maximum = Math.max(...channels), minimum = Math.min(...channels), luminance = (maximum + minimum) / 2
+      const delta = maximum - minimum, saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * luminance - 1))
+      const light = Math.max(0, Math.min(1, transform.local === "lumMod" ? luminance * amount : luminance + amount))
+      const chroma = (1 - Math.abs(2 * light - 1)) * saturation
+      channels = channels.map(value => light - chroma / 2 + (delta === 0 ? 0 : (value - minimum) / delta * chroma))
+    } else channels = channels.map(value => transform.local === "tint" ? value * amount + 1 - amount : value * amount)
   }
   return `#${channels.map(value => Math.round(value * 255).toString(16).padStart(2, "0")).join("")}`
+}
+export function resolvedOpacity(document: Document, fill: XmlNode): number {
+  const color = children(document, fill)[0]
+  if (!color) throw new UnsupportedTextFormat("color")
+  const alpha = children(document, color).filter(node => node.local === "alpha").at(-1)
+  const value = alpha ? Number(alpha.attributes.val) / 100000 : 1
+  if (!Number.isFinite(value) || value < 0 || value > 1) throw new UnsupportedTextFormat("alpha")
+  return value
 }
 function capitalization(value: string): NonNullable<TextStyle["capitalization"]> {
   if (value !== "none" && value !== "small" && value !== "all") throw new UnsupportedTextFormat("capitalization")
@@ -105,23 +120,24 @@ function capitalization(value: string): NonNullable<TextStyle["capitalization"]>
 export function resolvedStyle(properties: LocatedNode | undefined, inherited: TextStyle, context: TextContext): TextStyle {
   if (!properties) return inherited
   if (properties.node.attributes.u && !["none", "sng"].includes(properties.node.attributes.u)) throw new UnsupportedTextFormat("underline")
-  const {document, node} = properties, attributes = node.attributes, latin = child(document, node, "latin"), fill = child(document, node, "solidFill")
+  const {document, node} = properties, attributes = node.attributes, latin = child(document, node, "latin"), fill = child(document, node, "solidFill"), highlight = child(document, node, "highlight")
   const typeface = latin?.attributes.typeface ?? inherited.font, font = typeface.startsWith("+") ? context.fonts[typeface] : typeface
   if (!font) throw new UnsupportedTextFormat()
-  return {...inherited, ...(attributes.spc === undefined ? {} : {letterSpacing: Number(attributes.spc) / 75}), ...(attributes.baseline === undefined ? {} : {baseline: Number(attributes.baseline) / 100000}), ...(attributes.strike === undefined ? {} : {strike: attributes.strike === "sngStrike"}), ...(attributes.cap === undefined ? {} : {capitalization: capitalization(attributes.cap)}), ...(attributes.kern === undefined ? {} : {kerning: Number(attributes.kern) / 75}), font, size: attributes.sz === undefined ? inherited.size : Number(attributes.sz) / 75, bold: attributes.b === undefined ? inherited.bold : ["1", "true"].includes(attributes.b), ...(attributes.i === undefined ? {} : {italic: ["1", "true"].includes(attributes.i)}), ...(attributes.u === undefined ? {} : {underline: attributes.u !== "none"}), color: fill ? resolvedColor(document, fill, context) : inherited.color}
+  if (highlight && resolvedOpacity(document, highlight) !== 1) throw new UnsupportedTextFormat("highlight alpha")
+  return {...inherited, ...(highlight ? {highlight: resolvedColor(document, highlight, context)} : {}), ...(fill && (inherited.opacity !== undefined || children(document, children(document, fill)[0]!).some(node => node.local === "alpha")) ? {opacity: resolvedOpacity(document, fill)} : {}), ...(attributes.spc === undefined ? {} : {letterSpacing: Number(attributes.spc) / 75}), ...(attributes.baseline === undefined ? {} : {baseline: Number(attributes.baseline) / 100000}), ...(attributes.strike === undefined ? {} : {strike: attributes.strike === "sngStrike"}), ...(attributes.cap === undefined ? {} : {capitalization: capitalization(attributes.cap)}), ...(attributes.kern === undefined ? {} : {kerning: Number(attributes.kern) / 75}), font, size: attributes.sz === undefined ? inherited.size : Number(attributes.sz) / 75, bold: attributes.b === undefined ? inherited.bold : ["1", "true"].includes(attributes.b), ...(attributes.i === undefined ? {} : {italic: ["1", "true"].includes(attributes.i)}), ...(attributes.u === undefined ? {} : {underline: attributes.u !== "none"}), color: fill ? resolvedColor(document, fill, context) : inherited.color}
 }
 const styleAttributes = ["spc", "baseline", "strike", "cap", "kern"]
-const attributes: Record<string, string[]> = {txBody: [], bodyPr: ["anchor", "lIns", "rIns", "tIns", "bIns", "wrap", "rtlCol"], noAutofit: [], normAutofit: ["fontScale", "lnSpcReduction"], spAutoFit: [], lstStyle: [], defaultTextStyle: [], titleStyle: [], bodyStyle: [], otherStyle: [], p: [], pPr: ["algn", "lvl", "marL", "marR", "indent"], lnSpc: [], spcPct: ["val"], spcPts: ["val"], spcBef: [], spcAft: [], buNone: [], buChar: ["char"], buAutoNum: ["type", "startAt"], r: [], br: [], t: ["xml:space"], rPr: ["sz", "b", "i", "u", "lang", "dirty"], endParaRPr: ["sz", "b", "i", "u", "lang", "dirty"], defRPr: ["sz", "b", "i", "u", "lang", "dirty"], solidFill: [], srgbClr: ["val"], schemeClr: ["val"], sysClr: ["val", "lastClr"], latin: ["typeface"], ea: ["typeface"], cs: ["typeface"]}
+const attributes: Record<string, string[]> = {txBody: [], bodyPr: ["anchor", "lIns", "rIns", "tIns", "bIns", "wrap", "rtlCol", "vert", "compatLnSpc"], noAutofit: [], normAutofit: ["fontScale", "lnSpcReduction"], spAutoFit: [], lstStyle: [], defaultTextStyle: [], titleStyle: [], bodyStyle: [], otherStyle: [], p: [], pPr: ["algn", "lvl", "marL", "marR", "indent", "fontAlgn"], lnSpc: [], spcPct: ["val"], spcPts: ["val"], spcBef: [], spcAft: [], highlight: [], alpha: ["val"], buClr: [], buSzPct: ["val"], buSzPts: ["val"], buNone: [], buChar: ["char"], buAutoNum: ["type", "startAt"], r: [], br: [], t: ["xml:space"], rPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], endParaRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], defRPr: ["sz", "b", "i", "u", "lang", "dirty", ...styleAttributes], solidFill: [], srgbClr: ["val"], schemeClr: ["val"], sysClr: ["val", "lastClr"], latin: ["typeface"], ea: ["typeface"], cs: ["typeface"]}
 export function assertTextSupported(document: Document, root: XmlNode, retainedDefaults = false, preserveSource = false): void {
   for (const node of document.nodes.filter(node => node.start >= root.start && node.end <= root.end)) {
     const known = /^lvl[1-9]pPr$/.test(node.local) || node.local === "defPPr" ? attributes.pPr : attributes[node.local]
-    const retainedNodes: Record<string, string[]> = {fld: ["id", "type"], ln: ["w"], noFill: [], uLnTx: [], uFillTx: [], prstTxWarp: ["prst"], avLst: [], prstClr: ["val"], tint: ["val"], shade: ["val"], effectLst: [], tabLst: [], tab: ["pos", "algn"], buFont: ["typeface", "panose", "pitchFamily", "charset"], buFontTx: [], buClrTx: [], buSzTx: [], hlinkClick: ["r:id", "tooltip", "action", "history", "highlightClick", "endSnd", "tgtFrame"], hlinkMouseOver: ["r:id", "tooltip", "action", "history", "highlightClick", "endSnd", "tgtFrame"]}
+    const retainedNodes: Record<string, string[]> = {fld: ["id", "type"], ln: ["w"], noFill: [], uLnTx: [], uFillTx: [], prstTxWarp: ["prst"], avLst: [], prstClr: ["val"], tint: ["val"], shade: ["val"], effectLst: [], tabLst: [], tab: ["pos", "algn"], buFont: ["typeface", "panose", "pitchFamily", "charset"], buFontTx: [], highlight: [], buClrTx: [], buClr: [], buSzTx: [], buSzPct: ["val"], buSzPts: ["val"], lumMod: ["val"], lumOff: ["val"], alpha: ["val"], hlinkClick: ["r:id", "tooltip", "action", "history", "highlightClick", "endSnd", "tgtFrame"], hlinkMouseOver: ["r:id", "tooltip", "action", "history", "highlightClick", "endSnd", "tgtFrame"]}
     const supported = known ?? (preserveSource ? retainedNodes[node.local] : undefined)
     if (!supported || (!node.uri.endsWith("/drawingml/2006/main") && !(node === root && ["txBody", "defaultTextStyle", "titleStyle", "bodyStyle", "otherStyle"].includes(node.local) && node.uri.endsWith("/presentationml/2006/main")))) throw new UnsupportedTextFormat(node.name)
     const retained = retainedDefaults && (node.local === "pPr" || /^lvl[1-9]pPr$/.test(node.local) || node.local === "defPPr") ? ["defTabSz", "rtl", "eaLnBrk", "latinLnBrk", "hangingPunct"] : retainedDefaults && node.local === "defRPr" ? ["kern"] : []
     if (Object.keys(node.attributes).some(name => !name.startsWith("xmlns") && !supported.includes(name) && !retained.includes(name) && !(preserveSource && projectionAttributes(node).includes(name)))) throw new UnsupportedTextFormat(`${node.name} attributes ${Object.keys(node.attributes).join(",")}`)
+    validateProjectionDefaults(node)
     if (preserveSource) {
-      validateProjectionDefaults(node)
       if (node.local === "ln" && !(node.attributes.w === "0" && children(document, node).length === 0) && !(children(document, node).length === 1 && children(document, node)[0]!.local === "noFill")) throw new UnsupportedTextFormat("visible text outline")
       if (node.local === "noFill" && !document.nodes.some(parent => parent.local === "ln" && parent.start < node.start && parent.end > node.end)) throw new UnsupportedTextFormat("invisible text fill")
       if (node.local === "prstTxWarp" && node.attributes.prst !== "textNoShape") throw new UnsupportedTextFormat("text warp")
@@ -129,7 +145,7 @@ export function assertTextSupported(document: Document, root: XmlNode, retainedD
       if (node.local === "tab" && !document.nodes.some(parent => parent.local === "tabLst" && parent.start < node.start && parent.end > node.end)) throw new UnsupportedTextFormat("inline tab")
     }
     if (node.attributes.rtl && !["0", "false"].includes(node.attributes.rtl)) throw new UnsupportedTextFormat("right-to-left text")
-    if (node.attributes.wrap && node.attributes.wrap !== "square" || node.attributes.rtlCol && !["0", "false"].includes(node.attributes.rtlCol) || node.attributes.anchor && !["t", "ctr", "b"].includes(node.attributes.anchor)) throw new UnsupportedTextFormat()
+    if (node.attributes.wrap && !["square", "none"].includes(node.attributes.wrap) || node.attributes.rtlCol && !["0", "false"].includes(node.attributes.rtlCol) || node.attributes.anchor && !["t", "ctr", "b"].includes(node.attributes.anchor)) throw new UnsupportedTextFormat()
     if (node.attributes.u && !["sng", "none"].includes(node.attributes.u)) throw new UnsupportedTextFormat()
     if (node.attributes.algn && !["l", "ctr", "r", "just"].includes(node.attributes.algn)) throw new UnsupportedTextFormat()
     if (!retainedDefaults && !preserveSource && ["ea", "cs"].includes(node.local) && node.attributes.typeface) throw new UnsupportedTextFormat()
@@ -144,6 +160,6 @@ function projectionAttributes(node: XmlNode): string[] {
   return []
 }
 function validateProjectionDefaults(node: XmlNode): void {
-  const values: Record<string, string[]> = {vert: ["horz"], numCol: ["1"], spcCol: ["0"], anchorCtr: ["0", "false"], compatLnSpc: ["0", "false"], forceAA: ["0", "false"], fromWordArt: ["0", "false"], upright: ["0", "false"], kumimoji: ["0", "false"], normalizeH: ["0", "false"], fontAlgn: ["auto", "base"], strike: ["noStrike", "sngStrike"]}
+  const values: Record<string, string[]> = {vert: ["horz", "vert270"], numCol: ["1"], spcCol: ["0"], anchorCtr: ["0", "false"], compatLnSpc: ["0", "false", "1", "true"], forceAA: ["0", "false"], fromWordArt: ["0", "false"], upright: ["0", "false"], kumimoji: ["0", "false"], normalizeH: ["0", "false"], fontAlgn: ["auto", "base", "t", "ctr", "b"], strike: ["noStrike", "sngStrike"]}
   for (const [name, allowed] of Object.entries(values)) if (node.attributes[name] !== undefined && !allowed.includes(node.attributes[name]!)) throw new UnsupportedTextFormat(`${node.name}@${name}=${node.attributes[name]}`)
 }

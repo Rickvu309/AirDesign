@@ -1,3 +1,9 @@
+import {readFile} from "node:fs/promises"
+import {performance} from "node:perf_hooks"
+import {cascadeSource} from "../../../packages/pptx/test/text-cascade-fixture.ts"
+import {importPptx,exportPptx} from "../../../packages/pptx/src/index.ts"
+import {importedNativeDeck} from "../../../packages/pptx/src/import-deck.ts"
+import {writeNativeSavedPptx} from "../../../packages/pptx/src/export-deck.ts"
 import {expect,it} from "vitest"
 import pg from "pg"
 import {assetProviders} from "../../../packages/files/src/assets/providers.ts"
@@ -69,7 +75,7 @@ it("executes hosted native reads, independent formatting and protected undo thro
     expect(await f.tool("get_slide",{deckId,slideId:slide.id,rootId:text.id,format:"jsx"})).toMatchObject({items:[{jsx:expect.stringContaining('"body"')}]})
     expect((await f.tool("find_elements",{deckId,query:"clear direction",kind:"text"})).items).toContainEqual(expect.objectContaining({id:text.id,text:"A clear direction with evidence\nA clear direction with evidence"}))
     expect(await f.tool("find_elements",{deckId,kind:"paragraph"})).toMatchObject({items:expect.arrayContaining([expect.objectContaining({id:first.id,parent:text.id,kind:"paragraph"})])})
-    const base=insert.savedVersion,change={deckId,base,requestId:"format-first",changes:[{kind:"set",target:first.id,value:{...first,alignment:"center",marker:{kind:"bullet",character:"•",font:"Arial"},spacing:{...first.spacing,after:12},endStyle:{...first.endStyle,italic:true,letterSpacing:2,baseline:0.25,strike:true,capitalization:"small",kerning:12}}}]}
+    const base=insert.savedVersion,change={deckId,base,requestId:"format-first",changes:[{kind:"set",target:first.id,value:{...first,alignment:"center",marker:{kind:"bullet",character:"•",font:"Arial",color:"#336699",size:{kind:"multiple",value:0.75}},glyphAlignment:"center",spacing:{...first.spacing,before:{kind:"multiple",value:0.5},after:12},endStyle:{...first.endStyle,italic:true,opacity:0.5,highlight:"#ffff00",letterSpacing:2,baseline:0.25,strike:true,capitalization:"small",kerning:12}}}]}
     const edited=await f.tool("apply_changes",change)
     expect(edited).toMatchObject({kind:"applied"})
     expect((await f.tool("get_slide",{deckId,slideId:slide.id,rootId:first.id})).items).toEqual([change.changes[0]!.value])
@@ -86,7 +92,7 @@ it("executes hosted native reads, independent formatting and protected undo thro
     current=await f.native.read(f.owner,deckId)
     expect(nativeNodes(current.deck).find(node=>node.id===first.id)?.fields).toMatchObject({alignment:"justify",marker:first.marker,endStyle:first.endStyle})
     expect(nativeNodes(current.deck).find(node=>node.id===second.id)?.fields.alignment).toBe("right")
-    const frame={...text.body.frame,anchor:"bottom",insets:{top:4,right:5,bottom:6,left:7},autofit:{kind:"shrink",fontScale:0.9,lineReduction:0.1}}
+    const frame={...text.body.frame,wrap:"none",compatibilityLineSpacing:true,verticalFlow:"vertical270",anchor:"bottom",insets:{top:4,right:5,bottom:6,left:7},autofit:{kind:"shrink",fontScale:0.9,lineReduction:0.1}}
     expect(await f.tool("apply_changes",{deckId,base:current.seq,requestId:"frame",changes:[{kind:"set",target:frame.id,value:frame}]})).toMatchObject({kind:"applied"})
     current=await f.native.read(f.owner,deckId)
     const protectedDeck=current.deck
@@ -284,3 +290,67 @@ it("routes native template and image prepared edits through atomic history and r
     expect((await f.sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 AND history_version=2 ORDER BY id",[deckId])).rows).toEqual(f.archivedReceipts)
   }finally{await f.close()}
 })
+
+
+it("admits independent imported text edits and refuses destructive field edits before sequence mutation with durable retries and frozen export", async()=>{
+  const f=await hostedFixture()
+  try{
+    const original=await cascadeSource('<a:p><a:r><a:rPr><a:hlinkClick r:id="retained-link" tooltip="Original"/></a:rPr><a:t>Editable input</a:t></a:r><a:fld id="source-field" type="slidenum"><a:t>42</a:t></a:fld></a:p>'),bytes=await exportPptx(original)
+    const entry=await f.native.catalog.create(f.owner,"source-capability","Source capability","",importedNativeDeck(original),{bytes,report:{...original.report}})
+    let current=await f.native.read(f.owner,entry.id)
+    const text=current.deck.slides[0]!.elements.find(element=>element.kind==="text"&&element.body.paragraphs.length===10)
+    if(text?.kind!=="text")throw new Error("source-text-required")
+    const paragraph=text.body.paragraphs[9]!,input={deckId:entry.id,base:current.seq,requestId:"independent-source-edit",changes:[{kind:"set",target:paragraph.id,value:{...paragraph,runs:paragraph.runs.map((run,index)=>index===0&&run.kind==="text"?{...run,text:"Retained person input"}:run)}}]}
+    const started=performance.now(),applied=await f.tool("apply_changes",input)
+    console.log(JSON.stringify({measurement:"hosted-source-cascade-10-paragraph-edit",milliseconds:performance.now()-started,sourceBytes:bytes.length,result:applied}))
+    expect(applied).toMatchObject({kind:"applied"})
+    expect(await f.tool("apply_changes",input)).toEqual(applied)
+    current=await f.native.read(f.owner,entry.id)
+    const frozen=await f.tool("export_deck",{deckId:entry.id,savedVersion:current.seq,format:"pptx",requestId:"source-freeze"}),claim=await f.native.exports.claim()
+    expect(claim).toMatchObject({id:frozen.operationId,snapshotVersion:3})
+    if(!claim||claim.snapshotVersion!==3)throw new Error("native-frozen-source-required")
+    const exported=await importPptx(await writeNativeSavedPptx(claim.snapshot.deck,claim.snapshot.seq,bytes,{})),xml=exported.parts.get("ppt/slides/slide1.xml")!.toString()
+    expect(xml).toContain('type="slidenum"><a:t>42</a:t>')
+    expect(xml).toContain('<a:hlinkClick r:id="retained-link" tooltip="Original"/>')
+    expect(xml).toContain("Retained person input")
+    for(const [part,value]of original.parts)if(!["[Content_Types].xml","ppt/slides/slide1.xml"].includes(part))expect(exported.parts.get(part),part).toEqual(value)
+    const destructive={deckId:entry.id,base:current.seq,requestId:"destructive-source-edit",changes:[{kind:"set",target:paragraph.id,value:{...input.changes[0]!.value,runs:paragraph.runs.map((run,index)=>index===1&&run.kind==="text"?{...run,text:"Caller draft retained"}:run)}}]}
+    const refused=await f.tool("apply_changes",destructive)
+    expect(refused).toMatchObject({kind:"refused",code:expect.stringContaining("source-text-format-preservation-required")})
+    expect(await f.tool("apply_changes",destructive)).toEqual(refused)
+    expect(await f.tool("apply_changes",{...destructive,changes:input.changes})).toMatchObject({code:"request-id-payload-mismatch"})
+    expect(await f.native.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})
+    const stored=(await f.sql.query("SELECT receipt FROM editing_receipt WHERE deck=$1 AND receipt->>'kind'='refused'",[entry.id])).rows
+    expect(JSON.stringify(stored)).toContain("Caller draft retained")
+    const reopened=createParagraphHistoryStore(f.url,f.now)
+    try{expect(await reopened.read(f.owner,entry.id)).toMatchObject({seq:current.seq,deck:current.deck})}finally{await reopened.close()}
+    expect(await f.tool("undo_change",{deckId:entry.id,base:current.seq,requestId:"undo-source",changeId:applied.changeId})).toMatchObject({kind:"applied"})
+    const undone=await f.native.read(f.owner,entry.id)
+    expect(nativeNodes(undone.deck).find(node=>node.id===paragraph.id)?.fields.runs).toEqual(paragraph.runs)
+    expect(claim.snapshot.deck).toEqual(current.deck)
+  }finally{await f.close()}
+})
+
+
+it("measures the real hosted source-edit path with DALRRD and twenty persisted commands", async()=>{
+  const f=await hostedFixture()
+  try{
+    const bytes=await readFile(new URL("../../../packages/pptx/test/corpus/dalrrd.pptx",import.meta.url)),original=await importPptx(bytes),deck=importedNativeDeck(original)
+    const entry=await f.native.catalog.create(f.owner,"measured-dalrrd","DALRRD command path","",deck,{bytes,report:{...original.report}})
+    let current=await f.native.read(f.owner,entry.id)
+    const text=current.deck.slides[0]!.elements.find(element=>element.kind==="text")
+    if(text?.kind!=="text")throw new Error("corpus-text-required")
+    const paragraph=text.body.paragraphs[0],timings:number[]=[]
+    for(let index=0;index<20;index++){
+      const started=performance.now(),result=await f.tool("apply_changes",{deckId:entry.id,base:current.seq,requestId:`measured-source-${index}`,changes:[{kind:"set",target:paragraph.id,value:{...paragraph,alignment:index%2===0?"center":"right"}}]})
+      timings.push(performance.now()-started)
+      expect(result).toMatchObject({kind:"applied"})
+      current=await f.native.read(f.owner,entry.id)
+    }
+    const count=(await f.sql.query("SELECT count(*)::integer AS count FROM editing_event WHERE deck=$1",[entry.id])).rows[0].count
+    expect(count).toBe(20)
+    console.log(JSON.stringify({measurement:"hosted-dalrrd-source-edit-20-command-history",sourceBytes:bytes.length,slides:deck.slides.length,commands:count,milliseconds:timings}))
+    const reopened=createParagraphHistoryStore(f.url,f.now)
+    try{expect(await reopened.read(f.owner,entry.id)).toMatchObject({seq:20,deck:current.deck})}finally{await reopened.close()}
+  }finally{await f.close()}
+},120000)

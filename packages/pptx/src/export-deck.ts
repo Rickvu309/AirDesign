@@ -1,7 +1,7 @@
 import type {NativeDeck, NativeElement} from "../../deck/src/text/native-v3.ts"
 import {flatten} from "../../deck/src/elements.ts"
-import {writeTextBody, replaceTextBody, readTextBody} from "./text/body.ts"
-import {textContext, UnsupportedTextFormat} from "./text/cascade.ts"
+import {writeTextBody} from "./text/body.ts"
+import {patchNativeSourceText} from "./text/source-edits.ts"
 import {bodyFormatting, preserveLegacySourceV2} from "./text/legacy-source-v2.ts"
 import { attachTemplateLayouts } from "./template-layouts.ts"
 import {patchTextColor} from "./edit/text-color.ts"
@@ -139,13 +139,13 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
   let parts=native
   if(source){
     let original=await importPptx(source)
+    const retainedSource=original
     const legacyBaseline=importedDeck(original)
     const baseline=version === 3 ? importedNativeDeck(original) : legacyBaseline
     for(const slide of deck.slides)if(slide.source.kind==="original"){
       if(slide.background)original=patchSlideBackground(original,slide.source.part,slide.background)
       const source=slide.source,old=baseline.slides.find(candidate=>candidate.source.kind==="original"&&candidate.source.part===source.part)
       if(!old || !isDeepStrictEqual(old.size,slide.size) || old.elements.length!==slide.elements.filter(element=>element.source.kind==="original").length)throw new Error("source-slide-structure-change-requires-fix")
-      const retained = parseXml(original.parts.get(source.part)!), bodies = retained.nodes.filter(node => node.local === "txBody")
       for(const [index,element] of slide.elements.filter(element=>element.source.kind==="original").entries()){
         if(element.source.kind!=="original")continue
         const identity=element.source
@@ -161,27 +161,7 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
         if (element.kind === "text" && "body" in element && previous.kind === "text" && "body" in previous) {
           if (!isDeepStrictEqual(bodyFormatting(element.body), bodyFormatting(previous.body))) {
             if (element.support.kind !== "native") throw new Error("kept-object-change-requires-fix")
-            const identity = element.source
-            if (identity.kind !== "original") throw new Error("source-text-body-required")
-            const ordinal = identity.objectId.startsWith("body:") ? Number(identity.objectId.split(":")[1]) : bodies.findIndex(node => retained.nodes.filter(node => node.local === "t" && node.uri.endsWith("/drawingml/2006/main")).some((span, index) => index === Number(identity.objectId.split(":")[1]?.split(",")[0]) && span.start > node.start && span.end < node.end))
-            const parsed = parseXml(original.parts.get(source.part)!), body = parsed.nodes.filter(node => node.local === "txBody")[ordinal]
-            if (!body) throw new Error("source-text-body-required")
-            const shape = parsed.nodes.find(node => node.local === "sp" && node.start < body.start && node.end > body.end)
-            if (!shape) throw new Error("source-text-shape-required")
-            const context = textContext(original, source.part, parsed, shape)
-            const replacement = replaceTextBody(parsed, body, element.body, previous.body), checked = parseXml(Buffer.from(replacement))
-            const nextBody = checked.nodes.filter(node => node.local === "txBody")[ordinal]
-            if (!nextBody) throw new UnsupportedTextFormat("selective body structure")
-            const projected = readTextBody(checked, nextBody, element.id, context)
-            const semantics = (body: typeof projected) => JSON.stringify(bodyFormatting(body), (key, value: unknown) => {
-              if (key === "style" || key === "endStyle") {
-                if (!value || typeof value !== "object") throw new Error("text-style-required")
-                return Object.fromEntries(Object.entries({italic: false, underline: false, strike: false, letterSpacing: 0, baseline: 0, capitalization: "none", ...value}).sort(([a], [b]) => a.localeCompare(b)))
-              }
-              return value
-            })
-            if (semantics(projected) !== semantics(element.body)) throw new UnsupportedTextFormat("selective edit projection differs")
-            original = {...original, parts: new Map(original.parts).set(source.part, Buffer.from(replacement))}
+            original = patchNativeSourceText(retainedSource, original, source.part, element.source.objectId, element.id, previous.body, element.body)
           }
         }
         if(element.kind==="text" && !("body" in element) && previous.kind==="text" && !("body" in previous) && element.source.kind==="original"){

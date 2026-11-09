@@ -35,18 +35,19 @@ export function selectiveTextBody(document: Document, root: XmlNode, previous: T
     }
     edits.push({start: node.start, end: node.openEnd, value: opening})
   }
-  const reconcile = (parent: XmlNode, local: string, oldNode: XmlNode | undefined, newNode: XmlNode | undefined) => {
+  const reconcile = (parent: XmlNode, local: string, oldNode: XmlNode | undefined, newNode: XmlNode | undefined, pin = false) => {
     if (!oldNode || !newNode) throw new UnsupportedTextFormat("selective source structure")
     const target = child(document, parent, local)
-    if (!target) { if (!isDeepStrictEqual(oldNode.attributes, newNode.attributes) || raw(before, oldNode) !== raw(after, newNode)) append(parent, raw(after, newNode)); return }
+    if (!target) { if (pin || !isDeepStrictEqual(oldNode.attributes, newNode.attributes) || raw(before, oldNode) !== raw(after, newNode)) append(parent, raw(after, newNode)); return }
     const changed: Record<string, string | undefined> = {}
-    for (const name of new Set([...Object.keys(oldNode.attributes), ...Object.keys(newNode.attributes)])) if (!name.startsWith("xmlns") && oldNode.attributes[name] !== newNode.attributes[name]) changed[name] = newNode.attributes[name]
+    for (const name of new Set([...Object.keys(oldNode.attributes), ...Object.keys(newNode.attributes)])) if (!name.startsWith("xmlns") && (pin || oldNode.attributes[name] !== newNode.attributes[name])) changed[name] = newNode.attributes[name]
     if (["spc", "baseline", "kern", "strike", "cap"].some(name => Object.hasOwn(changed, name) && changed[name] === undefined)) throw new UnsupportedTextFormat("clearing inherited character formatting")
+    if (pin) for (const [name, value] of Object.entries({spc: "0", baseline: "0", kern: "0", strike: "noStrike", cap: "none"})) if (newNode.attributes[name] === undefined) changed[name] = value
     if (Object.keys(changed).length) attributes(target, changed)
     const locals = new Set([...children(before, oldNode), ...children(after, newNode)].map(node => node.local))
     for (const local of locals) {
       const oldChild = child(before, oldNode, local), newChild = child(after, newNode, local)
-      if (oldChild && newChild && raw(before, oldChild) === raw(after, newChild)) continue
+      if (!pin && oldChild && newChild && raw(before, oldChild) === raw(after, newChild)) continue
       const existing = child(document, target, local)
       if (existing && local === "latin" && Object.keys(existing.attributes).some(name => name !== "typeface" && !name.startsWith("xmlns"))) throw new UnsupportedTextFormat("font fallback metadata requires unchanged font")
       if (existing) edits.push({start: existing.start, end: existing.end, value: newChild ? raw(after, newChild).replace(/^<a:([^\s/>]+)/, '<a:$1 xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"') : ""})
@@ -59,7 +60,7 @@ export function selectiveTextBody(document: Document, root: XmlNode, previous: T
   for (const [index, paragraph] of paragraphs.entries()) {
     const prior = previous.paragraphs[index]!, current = next.paragraphs[index]!, oldParagraph = oldParagraphs[index]!, newParagraph = newParagraphs[index]!
     reconcile(paragraph, "pPr", child(before, oldParagraph, "pPr"), child(after, newParagraph, "pPr"))
-    reconcile(paragraph, "endParaRPr", child(before, oldParagraph, "endParaRPr"), child(after, newParagraph, "endParaRPr"))
+    reconcile(paragraph, "endParaRPr", child(before, oldParagraph, "endParaRPr"), child(after, newParagraph, "endParaRPr"), isDeepStrictEqual(prior.endStyle, current.endStyle) && !isDeepStrictEqual(prior.runs.at(-1)?.style, current.runs.at(-1)?.style))
     const runs = children(document, paragraph).filter(node => ["r", "br", "fld"].includes(node.local)), oldRuns = children(before, oldParagraph).filter(node => ["r", "br"].includes(node.local)), newRuns = children(after, newParagraph).filter(node => ["r", "br"].includes(node.local))
     if (runs.length !== prior.runs.length) throw new UnsupportedTextFormat("selective run structure")
     for (const [index, run] of runs.entries()) {

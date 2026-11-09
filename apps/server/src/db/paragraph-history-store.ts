@@ -1,3 +1,5 @@
+import {assertNativeSourceTextEdits} from "../../../../packages/pptx/src/text/source-edits.ts"
+import {UnsupportedTextFormat} from "../../../../packages/pptx/src/text/cascade.ts"
 import {templateSources} from "../templates/source-store.ts"
 import type {NativeChangeSet} from "../../../../packages/deck/src/text/operations.ts"
 import {decodeStoredCatalogSource} from "../../../../packages/catalog/src/text/seed.ts"
@@ -163,6 +165,13 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
       if (admission?.kind === "hosted" && identity.kind === "run" && !history.runs.some(run => run.id === identity.run)) history.runs.push({id: identity.run, epoch: history.seq, kind: "open"})
       let result = executeNative(history, command, identity)
       await nativeParagraphCapability(tx)
+      if (result.receipt.kind === "applied") {
+        const source = (await tx.query<{bytes: Buffer}>("SELECT bytes FROM catalog_source WHERE deck=$1", [deck])).rows[0]
+        if (source) try {await assertNativeSourceTextEdits(source.bytes, result.history.deck)} catch (error) {
+          if (!(error instanceof UnsupportedTextFormat)) throw error
+          result = {history, receipt: {id: command.id, seq: history.seq, kind: "refused", code: error.message, command}}
+        }
+      }
       if (result.receipt.kind === "applied") {
         if (!legacyThemeOnlyV2(history.deck, result.history.deck) && identity.kind === "run" && (command.kind === "edit" || command.kind === "patch" || command.kind === "undo-change")) {
           const ledger = usageLedger(work => work(tx), clock)

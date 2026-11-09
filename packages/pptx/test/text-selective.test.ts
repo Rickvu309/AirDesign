@@ -122,16 +122,18 @@ it("preserves only the neutral no-shape text warp", async () => {
 })
 
 
-it("saves explicit run and paragraph end formatting together", async () => {
+it("pins independent paragraph end formatting when final run formatting changes", async () => {
   const original = await cascadeSource(), deck = importedNativeDeck(original)
   const text = deck.slides[0]!.elements.find(element => element.kind === "text" && element.body.paragraphs.length === 9)
   if (text?.kind !== "text") throw new Error("native-text-required")
   const paragraph = text.body.paragraphs[0]
   paragraph.runs[0]!.style = {...paragraph.runs[0]!.style, italic: false, underline: false, letterSpacing: 2, baseline: 0.1, strike: true, capitalization: "small", kerning: 12}
   const bytes = await exportPptx(original)
-  await expect(writeNativeSavedPptx(deck, 1, bytes, {})).rejects.toThrow("selective edit projection differs")
+  const independentlySaved = importedNativeDeck(await importPptx(await writeNativeSavedPptx(deck, 1, bytes, {})))
+  expect(independentlySaved.slides[0]!.elements.find(element => element.id === text.id)).toMatchObject({kind: "text", body: {paragraphs: expect.arrayContaining([expect.objectContaining({runs: paragraph.runs, endStyle: expect.objectContaining(paragraph.endStyle)})])}})
+  expect(independentlySaved.slides[0]!.elements.find(element => element.id === text.id)).toMatchObject({body: {paragraphs: [expect.objectContaining({endStyle: expect.objectContaining({letterSpacing: 0, baseline: 0, strike: false, capitalization: "none"})}), ...text.body.paragraphs.slice(1).map(() => expect.anything())]}})
   paragraph.endStyle = {...paragraph.runs[0]!.style}
   const saved = importedNativeDeck(await importPptx(await writeNativeSavedPptx(deck, 1, bytes, {})))
   const reopened = saved.slides[0]!.elements.find(element => element.id === text.id)
-  expect(reopened).toMatchObject({kind: "text", body: {paragraphs: expect.arrayContaining([expect.objectContaining({runs: paragraph.runs, endStyle: paragraph.endStyle})])}})
+  expect(reopened).toMatchObject({kind: "text", body: {paragraphs: expect.arrayContaining([expect.objectContaining({runs: paragraph.runs, endStyle: expect.objectContaining(paragraph.endStyle)})])}})
 })

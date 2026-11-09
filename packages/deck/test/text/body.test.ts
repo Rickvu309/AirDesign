@@ -44,6 +44,13 @@ describe("native text body boundary", () => {
     (v: TextBody) => { v.paragraphs[0].endStyle.kerning = -1 },
     (v: TextBody) => { Object.assign(v.paragraphs[0].endStyle, {capitalization: "invented"}) },
     (v: TextBody) => { v.paragraphs[0].marker = {kind: "bullet", character: "•", font: ""} },
+    (v: TextBody) => { v.paragraphs[0].endStyle.opacity = 1.1 },
+    (v: TextBody) => { v.paragraphs[0].endStyle.highlight = "invalid" },
+    (v: TextBody) => { v.paragraphs[0].spacing.before = {kind: "multiple", value: -1} },
+    (v: TextBody) => { v.paragraphs[0].marker = {kind: "bullet", character: "•", size: {kind: "points", value: 0}} },
+    (v: TextBody) => { Object.assign(v.frame, {compatibilityLineSpacing: "true"}) },
+    (v: TextBody) => { Object.assign(v.frame, {wrap: "invented"}) },
+    (v: TextBody) => { Object.assign(v.paragraphs[0], {glyphAlignment: "invented"}) },
     (v: TextBody) => { Object.assign(v.frame, {warp: "unknown"}) }
   ])("rejects malformed canonical input %#", mutate => {
     const value = body(); mutate(value)

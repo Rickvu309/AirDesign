@@ -10,9 +10,12 @@ it("roundtrips body-only JSX and refuses legacy runs, duplicate body IDs and mis
   const nativeText = deck.slides[0]!.elements[0]!
   if (nativeText.kind !== "text") throw new Error("text-required")
   const paragraph = nativeText.body.paragraphs[0]
-  paragraph.endStyle = {...paragraph.endStyle, letterSpacing: 2, baseline: 0.25, strike: true, capitalization: "small", kerning: 12}
+  paragraph.endStyle = {...paragraph.endStyle, letterSpacing: 2, baseline: 0.25, strike: true, capitalization: "small", kerning: 12, opacity: 0.5, highlight: "#ffff00"}
   paragraph.runs = [{kind: "text", text: "Native style", style: paragraph.endStyle}]
-  paragraph.marker = {kind: "bullet", character: "•", font: "Arial"}
+  paragraph.marker = {kind: "bullet", character: "•", font: "Arial", color: "#336699", size: {kind: "points", value: 18}}
+  paragraph.spacing.before = {kind: "multiple", value: 0.5}
+  paragraph.glyphAlignment = "center"
+  nativeText.body.frame = {...nativeText.body.frame, compatibilityLineSpacing: true, verticalFlow: "vertical270", wrap: "none"}
   expect(fromJsx(toJsx(deck, adapter), adapter)).toEqual(deck)
   expect(() => fromJsx(JSON.stringify(fixtureDeck(1)), adapter)).toThrow("invalid-native-archive-v3")
   const text = deck.slides[0]!.elements[0]!

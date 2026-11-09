@@ -21,7 +21,7 @@ function text(document: Document, node: XmlNode): string {
 function number(value: string | undefined, fallback: number): number {
   return value === undefined ? fallback : Number(value)
 }
-function marker(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
+function markerValue(document: Document, properties: XmlNode | undefined, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
   if (!properties) return inherited
   if (child(document, properties, "buNone")) return {kind: "none"}
   const bullet = child(document, properties, "buChar"), numeric = child(document, properties, "buAutoNum")
@@ -46,6 +46,18 @@ function marker(document: Document, properties: XmlNode | undefined, inherited: 
   }
   return inherited
 }
+function marker(document: Document, properties: XmlNode, inherited: ParagraphMarker, context: TextContext): ParagraphMarker {
+  const value = markerValue(document, properties, inherited, context)
+  if (value.kind === "none") return value
+  const fill = child(document, properties, "buClr"), percent = child(document, properties, "buSzPct"), points = child(document, properties, "buSzPts")
+  const color = fill ? resolvedColor(document, fill, context) : child(document, properties, "buClrTx") ? undefined : inherited.kind === "none" ? undefined : inherited.color
+  if (fill && document.nodes.some(node => node.local === "alpha" && node.start > fill.start && node.end < fill.end)) throw new UnsupportedTextFormat("bullet alpha")
+  const size = percent ? {kind: "multiple", value: Number(percent.attributes.val) / 100000} satisfies NonNullable<typeof value.size> : points ? {kind: "points", value: Number(points.attributes.val) / 75} satisfies NonNullable<typeof value.size> : child(document, properties, "buSzTx") ? undefined : inherited.kind === "none" ? undefined : inherited.size
+  const result = {...value}
+  delete result.color
+  delete result.size
+  return {...result, ...(color ? {color} : {}), ...(size ? {size} : {})}
+}
 export function readTextBody(document: Document, body: XmlNode, identity: Id, context: TextContext = emptyContext()): TextBody {
   assertTextSupported(document, body, false, true)
   const local = child(document, body, "lstStyle"), lists = [...context.lists]
@@ -56,7 +68,7 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
   const attributes = frames.reduce<Record<string, string>>((value, layer) => ({...value, ...layer.node.attributes}), {})
   const fit = frames.flatMap(({document, node}) => children(document, node).map(child => ({document, node: child}))).at(-1)
   const normal = fit?.node.local === "normAutofit" ? fit.node : undefined
-  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: number(normal.attributes.fontScale, 100000) / 100000, lineReduction: number(normal.attributes.lnSpcReduction, 0) / 100000} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
+  const frame: TextBody["frame"] = {id: id(`${identity}f`), kind: "text-frame", ...(attributes.wrap === undefined ? {} : {wrap: attributes.wrap === "none" ? "none" : "square"}), ...(attributes.compatLnSpc === undefined ? {} : {compatibilityLineSpacing: ["1", "true"].includes(attributes.compatLnSpc)}), ...(attributes.vert === undefined ? {} : {verticalFlow: attributes.vert === "vert270" ? "vertical270" : "horizontal"}), anchor: attributes.anchor === "ctr" ? "middle" : attributes.anchor === "b" ? "bottom" : "top", insets: {top: number(attributes.tIns, 45720) / 9525, right: number(attributes.rIns, 91440) / 9525, bottom: number(attributes.bIns, 45720) / 9525, left: number(attributes.lIns, 91440) / 9525}, autofit: normal ? {kind: "shrink", fontScale: number(normal.attributes.fontScale, 100000) / 100000, lineReduction: number(normal.attributes.lnSpcReduction, 0) / 100000} : fit?.node.local === "spAutoFit" ? {kind: "resize-shape"} : {kind: "none"}}
   let inherited: TextStyle = {font: "Aptos", size: 32, bold: false, color: "#171717"}, previousLevel = -1
   if (context.font) {
     const {document, node} = context.font, prefix = node.attributes.idx === "major" ? "+mj-lt" : node.attributes.idx === "minor" ? "+mn-lt" : null
@@ -96,27 +108,31 @@ export function readTextBody(document: Document, body: XmlNode, identity: Id, co
     const attribute = (name: string) => layers.map(value => value.node.attributes[name]).findLast(value => value !== undefined)
     const property = (name: string) => layers.flatMap(({document, node}) => {const found = child(document, node, name); return found ? [{document, node: found}] : []}).at(-1)
     const alignment = attribute("algn"), line = property("lnSpc"), percent = line && child(line.document, line.node, "spcPct"), points = line && child(line.document, line.node, "spcPts")
-    const pointSpace = (name: string) => {const value = property(name), points = value && child(value.document, value.node, "spcPts"); if (value && !points && Number(child(value.document, value.node, "spcPct")?.attributes.val) !== 0) throw new UnsupportedTextFormat("percentage paragraph spacing"); return points ? Number(points.attributes.val) / 75 : 0}
-    return {id: id(`${identity}p${index}`), kind: "paragraph", runs, endStyle, alignment: alignment === "ctr" ? "center" : alignment === "r" ? "right" : alignment === "just" ? "justify" : "left", level, indentation: {left: number(attribute("marL"), 0) / 9525, right: number(attribute("marR"), 0) / 9525, firstLine: number(attribute("indent"), 0) / 9525}, marker: layers.reduce<ParagraphMarker>((value, layer) => marker(layer.document, layer.node, value, context), {kind: "none"} satisfies ParagraphMarker), spacing: {before: pointSpace("spcBef"), after: pointSpace("spcAft"), line: points ? {kind: "points", value: Number(points.attributes.val) / 75} : {kind: "multiple", value: percent ? Number(percent.attributes.val) / 100000 : 1.2}}}
+    const pointSpace = (name: string) => { const value = property(name), points = value && child(value.document, value.node, "spcPts"), percent = value && child(value.document, value.node, "spcPct"); return points ? Number(points.attributes.val) / 75 : percent && Number(percent.attributes.val) !== 0 ? {kind: "multiple", value: Number(percent.attributes.val) / 100000} satisfies Paragraph["spacing"]["before"] : 0 }
+    const glyph = attribute("fontAlgn")
+    return {id: id(`${identity}p${index}`), kind: "paragraph", runs, endStyle, ...(glyph === undefined ? {} : {glyphAlignment: glyph === "t" ? "top" : glyph === "ctr" ? "center" : glyph === "b" ? "bottom" : "baseline"}), alignment: alignment === "ctr" ? "center" : alignment === "r" ? "right" : alignment === "just" ? "justify" : "left", level, indentation: {left: number(attribute("marL"), 0) / 9525, right: number(attribute("marR"), 0) / 9525, firstLine: number(attribute("indent"), 0) / 9525}, marker: layers.reduce<ParagraphMarker>((value, layer) => marker(layer.document, layer.node, value, context), {kind: "none"} satisfies ParagraphMarker), spacing: {before: pointSpace("spcBef"), after: pointSpace("spcAft"), line: points ? {kind: "points", value: Number(points.attributes.val) / 75} : {kind: "multiple", value: percent ? Number(percent.attributes.val) / 100000 : 1.2}}}
   })
   return parseTextBody({frame, paragraphs})
 }
-function propertiesXml(style: TextStyle, tag: string): string {
+function propertiesXml(value: TextStyle, tag: string): string {
+  const style = tag === "endParaRPr" ? {letterSpacing: 0, baseline: 0, kerning: 0, strike: false, capitalization: "none", ...value} : value
   if (!/^#[0-9a-f]{6}$/i.test(style.color)) throw new Error("pptx-text-color-required")
   const extra = `${style.letterSpacing === undefined ? "" : ` spc="${Math.round(style.letterSpacing * 75)}"`}${style.baseline === undefined ? "" : ` baseline="${Math.round(style.baseline * 100000)}"`}${style.kerning === undefined ? "" : ` kern="${Math.round(style.kerning * 75)}"`}${style.strike === undefined ? "" : ` strike="${style.strike ? "sngStrike" : "noStrike"}"`}${style.capitalization === undefined ? "" : ` cap="${style.capitalization}"`}`
-  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}"/></a:solidFill><a:latin typeface="${escapeXml(style.font)}"/></a:${tag}>`
+  return `<a:${tag}${extra} sz="${Math.round(style.size * 75)}" b="${style.bold ? 1 : 0}" i="${style.italic ? 1 : 0}" u="${style.underline ? "sng" : "none"}"><a:solidFill><a:srgbClr val="${style.color.slice(1)}">${style.opacity === undefined ? "" : `<a:alpha val="${Math.round(style.opacity * 100000)}"/>`}</a:srgbClr></a:solidFill>${style.highlight ? `<a:highlight><a:srgbClr val="${style.highlight.slice(1)}"/></a:highlight>` : ""}<a:latin typeface="${escapeXml(style.font)}"/></a:${tag}>`
 }
 export function writeTextBody(body: TextBody): string {
   const frame = body.frame, autofit = frame.autofit
   const fit = autofit.kind === "shrink" ? `<a:normAutofit fontScale="${Math.round(autofit.fontScale * 100000)}" lnSpcReduction="${Math.round(autofit.lineReduction * 100000)}"/>` : autofit.kind === "resize-shape" ? "<a:spAutoFit/>" : "<a:noAutofit/>"
+  const space = (value: Paragraph["spacing"]["before"]) => typeof value === "number" ? `<a:spcPts val="${Math.round(value * 75)}"/>` : `<a:spcPct val="${Math.round(value.value * 100000)}"/>`
   const paragraphs = body.paragraphs.map(paragraph => {
     const marker = paragraph.marker, line = paragraph.spacing.line
+    const presentation = marker.kind === "none" ? "" : `${marker.color ? `<a:buClr><a:srgbClr val="${marker.color.slice(1)}"/></a:buClr>` : ""}${marker.size ? `<a:buSz${marker.size.kind === "multiple" ? "Pct" : "Pts"} val="${Math.round(marker.size.value * (marker.size.kind === "multiple" ? 100000 : 75))}"/>` : ""}`
     const bullet = marker.kind === "none" ? "<a:buNone/>" : marker.kind === "bullet" ? `${marker.font ? `<a:buFont typeface="${escapeXml(marker.font)}"/>` : ""}<a:buChar char="${escapeXml(marker.character)}"/>` : `<a:buAutoNum type="${numbering[marker.format]}"${marker.start === null ? "" : ` startAt="${marker.start}"`}/>`
     const alignment = {left: "l", center: "ctr", right: "r", justify: "just"}[paragraph.alignment]
-    const properties = `<a:pPr algn="${alignment}" lvl="${paragraph.level}" marL="${Math.round(paragraph.indentation.left * 9525)}" marR="${Math.round(paragraph.indentation.right * 9525)}" indent="${Math.round(paragraph.indentation.firstLine * 9525)}"><a:lnSpc><a:${line.kind === "multiple" ? "spcPct" : "spcPts"} val="${Math.round(line.value * (line.kind === "multiple" ? 100000 : 75))}"/></a:lnSpc><a:spcBef><a:spcPts val="${Math.round(paragraph.spacing.before * 75)}"/></a:spcBef><a:spcAft><a:spcPts val="${Math.round(paragraph.spacing.after * 75)}"/></a:spcAft>${bullet}</a:pPr>`
+    const properties = `<a:pPr${paragraph.glyphAlignment === undefined ? "" : ` fontAlgn="${{baseline: "base", top: "t", center: "ctr", bottom: "b"}[paragraph.glyphAlignment]}"`} algn="${alignment}" lvl="${paragraph.level}" marL="${Math.round(paragraph.indentation.left * 9525)}" marR="${Math.round(paragraph.indentation.right * 9525)}" indent="${Math.round(paragraph.indentation.firstLine * 9525)}"><a:lnSpc><a:${line.kind === "multiple" ? "spcPct" : "spcPts"} val="${Math.round(line.value * (line.kind === "multiple" ? 100000 : 75))}"/></a:lnSpc><a:spcBef>${space(paragraph.spacing.before)}</a:spcBef><a:spcAft>${space(paragraph.spacing.after)}</a:spcAft>${presentation}${bullet}</a:pPr>`
     return `<a:p>${properties}${paragraph.runs.map(run => run.kind === "break" ? `<a:br>${propertiesXml(run.style, "rPr")}</a:br>` : `<a:r>${propertiesXml(run.style, "rPr")}<a:t xml:space="preserve">${escapeXml(run.text)}</a:t></a:r>`).join("")}${propertiesXml(paragraph.endStyle, "endParaRPr")}</a:p>`
   }).join("")
-  return `<p:txBody xmlns:a="${drawing}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:bodyPr anchor="${frame.anchor === "middle" ? "ctr" : frame.anchor === "bottom" ? "b" : "t"}" lIns="${Math.round(frame.insets.left * 9525)}" rIns="${Math.round(frame.insets.right * 9525)}" tIns="${Math.round(frame.insets.top * 9525)}" bIns="${Math.round(frame.insets.bottom * 9525)}">${fit}</a:bodyPr><a:lstStyle/>${paragraphs}</p:txBody>`
+  return `<p:txBody xmlns:a="${drawing}" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><a:bodyPr${frame.wrap === undefined ? "" : ` wrap="${frame.wrap}"`}${frame.compatibilityLineSpacing === undefined ? "" : ` compatLnSpc="${frame.compatibilityLineSpacing ? 1 : 0}"`}${frame.verticalFlow === undefined ? "" : ` vert="${frame.verticalFlow === "vertical270" ? "vert270" : "horz"}"`} anchor="${frame.anchor === "middle" ? "ctr" : frame.anchor === "bottom" ? "b" : "t"}" lIns="${Math.round(frame.insets.left * 9525)}" rIns="${Math.round(frame.insets.right * 9525)}" tIns="${Math.round(frame.insets.top * 9525)}" bIns="${Math.round(frame.insets.bottom * 9525)}">${fit}</a:bodyPr><a:lstStyle/>${paragraphs}</p:txBody>`
 }
 export function replaceTextBody(document: Document, node: XmlNode, body: TextBody, previous?: TextBody): string {
   if (previous) {
