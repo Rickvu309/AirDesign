@@ -154,7 +154,7 @@ it("requires painted Pricing links in both landing regions",async()=>{
  const browser=await chromium.launch({headless:true})
  try{
   const page=await browser.newPage({viewport:entry.viewport})
-  const header='<header><a href="/pricing/">Pricing</a></header>'
+  const header='<header><a href="/#pricing">Pricing</a></header>'
   const footer='<footer><a href="/pricing/">Pricing</a></footer>'
   const body=(top:string,bottom:string)=>`<style>body{margin:0}header,footer{padding:20px}main{height:1200px}</style>${top}<main></main>${bottom}`
   await page.setContent(body(header,footer))

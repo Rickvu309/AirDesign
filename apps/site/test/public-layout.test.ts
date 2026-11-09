@@ -76,3 +76,42 @@ it("keeps the CTA gradient on hover on landing and pricing",async()=>{
   }
  }finally{await browser.close();await server.close()}
 })
+
+it("navigates landing sections from the header on desktop and phone",async()=>{
+ const server=await createServer({root:"apps/site",configFile:"apps/site/vite.config.ts",server:{host:"127.0.0.1",port:0},optimizeDeps:{noDiscovery:true,include:[]}})
+ await server.listen()
+ const browser=await chromium.launch()
+ try{
+  const url=server.resolvedUrls?.local[0]
+  if(!url)throw new Error("Site server has no local URL")
+  for(const mobile of [true,false]){
+   const page=await browser.newPage({viewport:mobile?{width:390,height:844}:{width:1440,height:900},isMobile:mobile,hasTouch:mobile,reducedMotion:"reduce"})
+   await page.goto(url)
+   for(const [name,target] of [["Agents",".agent-section h2"],["Pricing",".landing-pricing h2"],["Product",".hero h1"]]){
+    await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).click()
+    await expect.poll(()=>page.evaluate(()=>location.pathname)).toBe("/")
+    await expect.poll(()=>page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).getAttribute("aria-current")).toBe("location")
+    const bounds=await page.locator(target).evaluate(element=>({top:element.getBoundingClientRect().top,bottom:element.getBoundingClientRect().bottom}))
+    const headerBottom=await page.locator("header").evaluate(element=>element.getBoundingClientRect().bottom)
+    expect(bounds.top).toBeGreaterThanOrEqual(headerBottom)
+    expect(bounds.bottom).toBeLessThanOrEqual(mobile?844:900)
+   }
+   await page.locator(".agent-section h2").evaluate(element=>window.scrollTo(0,window.scrollY+element.getBoundingClientRect().top-120))
+   await expect.poll(()=>page.getByRole("link",{name:"Agents",exact:true}).getAttribute("aria-current")).toBe("location")
+   const pricing=page.getByRole("navigation",{name:"Main"}).getByRole("link",{name:"Pricing",exact:true})
+   await pricing.focus();await page.keyboard.press("Enter")
+   await expect.poll(()=>pricing.getAttribute("aria-current")).toBe("location")
+   await page.close()
+  }
+  const page=await browser.newPage({reducedMotion:"reduce"})
+  for(const path of ["/pricing/","/agents/","/agents/claude/","/agents/codex/","/status/"]){
+   for(const name of path==="/pricing/"?["Pricing"]:["Product","Agents","Pricing"]){
+    await page.goto(new URL(path,url).href)
+    await page.getByRole("navigation",{name:"Main"}).getByRole("link",{name:name==="Agents"?"Agent guides":name,exact:true}).click()
+    expect(new URL(page.url()).pathname).toBe("/")
+    await expect.poll(()=>page.getByRole("navigation",{name:"Main"}).getByRole("link",{name,exact:true}).getAttribute("aria-current"),{message:`${path} ${name}`}).toBe("location")
+   }
+  }
+  await page.close()
+ }finally{await browser.close();await server.close()}
+},120000)
