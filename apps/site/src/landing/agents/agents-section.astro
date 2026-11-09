@@ -1,0 +1,102 @@
+---
+import { claudeLogo, openAiLogo } from "./agent-logos";
+import AirdesignMark from "../../brand/airdesign-mark.astro";
+
+const segments = [
+  [0.9, 1.3, 1.9, 2.6, 3.5],
+  [1.2, 1.2, 1.3, 1.4, 1.6],
+  [0.9, 0.9, 0.9, 1.0, 1.2],
+];
+const segmentColors = ["#0F2433", "#2D6FCD", "#C9DCF7"];
+const years = ["FY21", "FY22", "FY23", "FY24", "FY25E"];
+const pixelsPerMillion = 21;
+const barBaseline = 232;
+
+const columns = years.map((year, yearIndex) => {
+  let top = barBaseline;
+  const bars = segments.map((segment, segmentIndex) => {
+    const height = Math.round(segment[yearIndex] * pixelsPerMillion);
+    top -= height;
+    return { top, height, color: segmentColors[segmentIndex] };
+  });
+  return { year, left: 44 + yearIndex * 84, bars };
+});
+
+const agentCapClass =
+  "flex h-16 w-[248px] items-center gap-3.5 rounded-full bg-background pr-6 pl-2.5 text-[17px] font-semibold tracking-[-0.2px] whitespace-nowrap shadow-[0px_0px_0px_1px_#0f243314,0px_8px_24px_#0f24330a] lg:absolute lg:left-0";
+const agentTileClass = "flex size-11 shrink-0 items-center justify-center rounded-full";
+---
+
+<section id="agents" class="scroll-mt-6 border-t border-border bg-background py-[72px] lg:pt-[120px] lg:pb-[119px]">
+  <div class="page-column">
+    <h2 class="section-title">Bring any agent.</h2>
+    <p class="section-lead">Claude, Codex or your own. Work however you like.</p>
+
+    <div class="agents-frame mt-10 lg:mt-[97px]" data-fit-frame style="--frame-width: 1248; --frame-height: 360">
+      <div class="agents-stage flex flex-col items-center gap-4">
+        <svg class="absolute top-0 left-0 hidden lg:block" viewBox="0 0 1248 360" width="1248" height="360" fill="none" aria-hidden="true">
+          <path d="M248 60 C 390 60, 380 180, 500 180" stroke="#4D94FB" stroke-width="1.5"></path>
+          <path d="M248 180 L 500 180" stroke="#4D94FB" stroke-width="1.5"></path>
+          <path d="M248 300 C 390 300, 380 180, 500 180" stroke="#4D94FB" stroke-width="1.5"></path>
+          <path d="M700 180 L 768 180" stroke="#4D94FB" stroke-width="1.5"></path>
+          <circle cx="768" cy="180" r="3.5" fill="#4D94FB"></circle>
+        </svg>
+
+        <div class:list={[agentCapClass, "lg:top-[28px]"]}>
+          <span class:list={[agentTileClass, "bg-background text-[#D97757] shadow-[inset_0px_0px_0px_1px_#E6E8EB]"]}><span class="block size-[26px]" set:html={claudeLogo} /></span>
+          Claude
+        </div>
+        <div class:list={[agentCapClass, "lg:top-[148px]"]}>
+          <span class:list={[agentTileClass, "bg-[#222222] text-white"]}><span class="block size-[22px]" set:html={openAiLogo} /></span>
+          Codex
+        </div>
+        <div class:list={[agentCapClass, "lg:top-[268px]"]}>
+          <span class:list={[agentTileClass, "bg-[#EEF1F5] text-[#222222]"]}>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"></path></svg>
+          </span>
+          Your agent
+        </div>
+
+        <div class="flex h-[72px] w-[200px] items-center justify-center gap-3 rounded-full bg-background text-[19px] font-semibold tracking-[-0.3px] whitespace-nowrap shadow-[0px_0px_0px_1px_#2d6fcd40,0px_14px_34px_#2d6fcd2e,0px_2px_6px_#0f24330f] lg:absolute lg:top-[144px] lg:left-[500px]">
+          <AirdesignMark size={28} />
+          AirDesign
+        </div>
+
+        <div class="fit-frame w-full max-w-[480px] rounded-[6px] bg-background shadow-[0px_0px_0px_1px_#0000001a,0px_30px_80px_#2d6fcd26,0px_4px_12px_#0f24330d] lg:absolute lg:top-[45px] lg:left-[768px] lg:w-[480px]" data-fit-frame style="--frame-width: 480; --frame-height: 270">
+          <div class="fit-frame-content overflow-clip rounded-[6px]">
+            <span class="absolute top-6 left-7 text-[19px] font-semibold tracking-[-0.3px] whitespace-nowrap text-navy">Enterprise carried the quarter</span>
+            <span class="absolute top-[52px] left-7 text-[10px] whitespace-nowrap text-[#6B7A86]">Revenue by customer segment, $M. Sample data.</span>
+            {columns.map((column) => (
+              <>
+                {column.bars.map((bar) => (
+                  <div class="absolute w-12" style={{ left: `${column.left}px`, top: `${bar.top}px`, height: `${bar.height}px`, backgroundColor: bar.color }} />
+                ))}
+                <span class="absolute top-[238px] flex w-12 justify-center text-[9px] whitespace-nowrap text-[#3B4B57]" style={{ left: `${column.left}px` }}>{column.year}</span>
+              </>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  @media (min-width: 1024px) {
+    .agents-frame {
+      position: relative;
+      aspect-ratio: var(--frame-width) / var(--frame-height);
+    }
+
+    .agents-stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: block;
+      width: 1248px;
+      height: 360px;
+      transform: scale(var(--fit, 1));
+      transform-origin: 0 0;
+    }
+  }
+</style>

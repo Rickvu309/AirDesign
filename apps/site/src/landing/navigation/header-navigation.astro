@@ -1,0 +1,22 @@
+---
+import AirdesignMark from "../../brand/airdesign-mark.astro";
+---
+
+<header class="absolute inset-x-0 top-5 z-10 flex justify-center px-4">
+  <nav class="flex h-14 items-center gap-6 rounded-full bg-[#FFFFFFCC] pr-2 pl-5 shadow-[0px_0px_0px_1px_#0f243314,0px_10px_30px_#0f24331a,0px_2px_6px_#0f24330d,inset_0px_1px_0px_#ffffff] backdrop-blur-sm" aria-label="Main">
+    <a href="/" class="flex items-center gap-2.5">
+      <AirdesignMark size={22} />
+      <span class="text-[15px] font-semibold tracking-[-0.3px]">AirDesign</span>
+    </a>
+    <div class="hidden h-5 w-px bg-[#0f24331f] md:block"></div>
+    <div class="hidden h-10 items-center gap-0.5 rounded-full bg-[#0f24330a] p-1 shadow-[inset_0px_1px_2px_#0f24330f] md:flex">
+      <a href="#product" class="flex h-8 items-center rounded-full bg-background px-4 text-[14px] font-medium shadow-[0px_1px_3px_#0f24331f,0px_0px_0px_1px_#0f24330d]">Product</a>
+      <a href="#agents" class="text-link flex h-8 items-center rounded-full px-4 text-[14px] text-muted-foreground">Agents</a>
+      <a href="#pricing" class="text-link flex h-8 items-center rounded-full px-4 text-[14px] text-muted-foreground">Pricing</a>
+    </div>
+    <div class="flex items-center gap-4 pl-1">
+      <a href="/sign-in" class="text-[14px] font-medium">Sign in</a>
+      <a href="/sign-in" class="primary-button h-10 rounded-full px-5 text-[15px]">Start free</a>
+    </div>
+  </nav>
+</header>

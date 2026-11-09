@@ -1,0 +1,36 @@
+---
+import CheckIcon from "../../icons/check-icon.astro";
+
+const features = [
+  "Unlimited decks",
+  "Built-in agent",
+  "Bring Claude or Codex",
+  "PowerPoint import and export",
+  "Usage resets every week",
+];
+---
+
+<section id="pricing" class="scroll-mt-6 border-t border-border bg-background py-[72px] lg:pt-[120px] lg:pb-[91px]">
+  <div class="page-column flex flex-col items-center text-center">
+    <h2 class="section-title">AirDesign is free.</h2>
+    <p class="section-lead">Every feature, every week. No plan, no trial.</p>
+
+    <div class="mt-10 flex w-full max-w-[440px] flex-col gap-6 rounded-[18px] bg-background p-7 text-left shadow-[inset_0_0_0_1px_#e3e3e1,0px_12px_40px_#0000000d] lg:mt-[81px]">
+      <div class="flex items-end gap-2">
+        <span class="text-[56px] leading-none font-semibold tracking-[-1.5px]">$0</span>
+        <span class="pb-1.5 text-base text-faint-foreground">forever</span>
+      </div>
+      <ul class="flex flex-col gap-3">
+        {features.map((feature) => (
+          <li class="flex items-center gap-2.5 text-sm">
+            <span class="text-primary"><CheckIcon size={15} /></span>
+            {feature}
+          </li>
+        ))}
+      </ul>
+      <a href="/sign-in" class="primary-button h-11 rounded-[10px] text-[15px]">Start free</a>
+    </div>
+
+    <p class="mt-8 lg:mt-[33px] text-[15px] text-faint-foreground">Don't want to wait for the weekly reset? You can pay to reset.</p>
+  </div>
+</section>

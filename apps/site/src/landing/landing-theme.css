@@ -1,0 +1,186 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+@import "@fontsource-variable/newsreader";
+
+:root {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #222222;
+  --muted-foreground: #666666;
+  --faint-foreground: #909090;
+  --border: #eeeeec;
+  --primary: #4d94fb;
+  --primary-top: #93b8ef;
+  --primary-strong: #2d6fcd;
+  --primary-foreground: #ffffff;
+  --ring: #2d6fcd;
+  --navy: #0f2433;
+  --positive: #16a34a;
+  --negative: #dc2626;
+  --transition-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-faint-foreground: var(--faint-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-navy: var(--navy);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --font-sans: "Geist Variable", system-ui, sans-serif;
+  --font-serif: "Newsreader Variable", Georgia, serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
+}
+
+@keyframes ticker-run {
+  to {
+    transform: translateX(calc(-100% / 3));
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    line-height: normal;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer components {
+  .page-column {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 1440px;
+    padding-inline: clamp(16px, 6.667vw, 96px);
+  }
+
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: clamp(2.75rem, 8vw, 5.5rem);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.0341em;
+    text-wrap: balance;
+  }
+
+  .section-lead {
+    padding-top: 24px;
+    color: var(--muted-foreground);
+    font-size: clamp(1.125rem, 2vw, 1.5rem);
+    letter-spacing: -0.0167em;
+  }
+
+  .primary-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: linear-gradient(180deg, var(--primary-top) 0%, var(--primary) 100%);
+    box-shadow:
+      inset 0 1px 0 #ffffff59,
+      0 0 0 1px var(--primary-strong),
+      0 2px 6px #2d6fcd33;
+    color: var(--primary-foreground);
+    font-weight: 500;
+    transition: filter var(--transition-micro);
+  }
+
+  .primary-button:hover {
+    filter: brightness(1.06);
+  }
+
+  .status-pill {
+    display: inline-flex;
+    height: 52px;
+    align-items: center;
+    gap: 12px;
+    border-radius: 9999px;
+    background-color: var(--background);
+    box-shadow:
+      0 0 0 1px #0f243314,
+      0 14px 34px #2d6fcd2e,
+      0 2px 6px #0f24330f;
+    padding-left: 6px;
+    padding-right: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+  }
+
+  .status-pill-check {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background-image: linear-gradient(180deg, var(--primary-top) 0%, var(--primary) 100%);
+    box-shadow:
+      inset 0 1px 0 #ffffff66,
+      0 0 0 1px var(--primary-strong);
+    color: var(--primary-foreground);
+  }
+
+  .fit-frame {
+    position: relative;
+    aspect-ratio: var(--frame-width) / var(--frame-height);
+  }
+
+  .fit-frame-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(var(--frame-width) * 1px);
+    height: calc(var(--frame-height) * 1px);
+    transform: scale(var(--fit, 1));
+    transform-origin: 0 0;
+  }
+
+  .ticker-track {
+    animation: ticker-run 60s linear infinite;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ticker-track:hover {
+      animation-play-state: paused;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track {
+      animation: none;
+    }
+  }
+
+  .text-link {
+    transition: color var(--transition-micro);
+  }
+
+  .text-link:hover {
+    color: var(--foreground);
+  }
+}

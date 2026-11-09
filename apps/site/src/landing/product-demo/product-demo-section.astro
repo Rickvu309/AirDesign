@@ -1,0 +1,26 @@
+---
+import CheckIcon from "../../icons/check-icon.astro";
+import editorRunFrame from "./editor-run-frame.html?raw";
+---
+
+<section id="product" class="scroll-mt-6 border-t border-border bg-background py-[72px] lg:pt-[112px] lg:pb-[111px]">
+  <div class="page-column">
+    <h2 class="section-title">Make slides like magic.</h2>
+    <p class="section-lead">Drop in your notes. Watch the deck build itself.</p>
+
+    <div class="relative mt-8 lg:mt-[73px]">
+      <div class="status-pill mb-4 max-sm:text-[13px] md:absolute md:top-[-44px] md:right-[10.5%] md:z-10 md:mb-0">
+        <span class="status-pill-check"><CheckIcon size={18} /></span>
+        Building slide 3 of 8. Coffee optional.
+      </div>
+      <div
+        class="fit-frame overflow-clip rounded-[16px] bg-background shadow-[0px_0px_0px_1px_#0000001a,0px_30px_80px_#2d6fcd26,0px_4px_12px_#0f24330d]"
+        style="--frame-width: 1248; --frame-height: 784"
+        data-fit-frame
+        aria-hidden="true"
+      >
+        <div class="fit-frame-content" set:html={editorRunFrame} />
+      </div>
+    </div>
+  </div>
+</section>

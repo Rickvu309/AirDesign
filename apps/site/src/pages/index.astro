@@ -1,0 +1,36 @@
+---
+import AgentsSection from "../landing/agents/agents-section.astro";
+import FooterSection from "../landing/footer/footer-section.astro";
+import HeroSection from "../landing/hero/hero-section.astro";
+import ProductDemoSection from "../landing/product-demo/product-demo-section.astro";
+import PricingSection from "../landing/pricing/pricing-section.astro";
+import "../landing/landing-theme.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="So clear the CEO puts the phone down." />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>AirDesign</title>
+  </head>
+  <body>
+    <main>
+      <HeroSection />
+      <ProductDemoSection />
+      <AgentsSection />
+      <PricingSection />
+    </main>
+    <FooterSection />
+    <script is:inline>
+      document.querySelectorAll("[data-fit-frame]").forEach((frame) => {
+        const naturalWidth = Number(frame.style.getPropertyValue("--frame-width"));
+        new ResizeObserver(() => {
+          frame.style.setProperty("--fit", String(frame.clientWidth / naturalWidth));
+        }).observe(frame);
+      });
+    </script>
+  </body>
+</html>
