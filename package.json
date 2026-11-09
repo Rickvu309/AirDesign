@@ -7,7 +7,12 @@
   },
   "scripts": {
     "lint": "pnpm -r --if-present run lint",
+    "typecheck": "tsc -b",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
     "test": "pnpm -r --if-present run test",
     "build": "pnpm -r --if-present run build"
+  },
+  "devDependencies": {
+    "typescript": "catalog:"
   }
 }

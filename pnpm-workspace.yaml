@@ -1,2 +1,11 @@
 packages:
   - apps/*
+  - packages/*
+  - tooling/boundary-fixtures/*
+
+catalog:
+  typescript: ~7.0.2
+
+allowBuilds:
+  esbuild: true
+  workerd: true

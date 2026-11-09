@@ -1,0 +1,8 @@
+{
+  "name": "@airdesign/boundary-deep-import",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@airdesign/document": "workspace:*"
+  }
+}
