@@ -11,7 +11,8 @@
     "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
     "typecheck": "tsc -b",
     "check:boundaries": "node scripts/check-boundaries.mjs",
-    "test": "vitest run && node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs",
+    "check:specs": "node scripts/check-specs.mjs",
+    "test": "vitest run && node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/check-specs.test.mjs",
     "test:browser": "playwright test",
     "build": "pnpm -r --if-present run build"
   },
