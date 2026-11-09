@@ -2,7 +2,7 @@ import {id} from "../../deck/src/index.ts"
 import type {NativeText} from "../../deck/src/text/native-v3.ts"
 import type {Paragraph} from "../../deck/src/text/body.ts"
 import {isNativeSlide, type NativeElement} from "../../deck/src/text/native-v3.ts"
-import {textElements} from "../../deck/src/text/content.ts"
+import {flatten} from "../../deck/src/elements.ts"
 import {UsageLimitError,usageLimitSchema} from "./activity.ts"
 import {createHash} from "node:crypto"
 import {z} from "zod"
@@ -36,7 +36,7 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     const slide=read(result).items[0]
     if(!isNativeSlide(slide) && !isSlide(slide))throw new Error("invalid-slide-response")
     if(selected.has(id))found.add(id)
-    for(const element of textElements(slide.elements))if(selected.has(element.id))found.add(element.id)
+    for(const element of flatten(slide.elements))if(selected.has(element.id))found.add(element.id)
   }
   if(selected.size&&found.size!==selected.size)throw new Error("selection-not-in-deck")
   for(const id of slideIds){
@@ -46,7 +46,7 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
     yield {kind:"tool",name:"get_slide",result,scope:id}
     const data=read(result),slide=data.items[0]
     if(!isNativeSlide(slide) && !isSlide(slide))throw new Error("invalid-slide-response")
-    const attached=textElements(slide.elements).filter(element=>selected.has(element.id))
+    const attached=flatten(slide.elements).filter(element=>selected.has(element.id))
     if(selected.has(id))found.add(id)
     for(const element of attached)found.add(element.id)
     if(selected.size&&!selected.has(id)&&!attached.length)continue
@@ -96,6 +96,6 @@ export const localAdapter:AgentAdapter=async function*(context,call,signal){
 }
 
 function selectedChanges<T extends Element | NativeElement, S extends {id: string}>(elements: T[], slide: S, selected: Set<string>) {
-  const attached = textElements(elements).filter(element => selected.has(element.id))
+  const attached = flatten(elements).filter(element => selected.has(element.id))
   return attached.length ? attached.map(element => ({kind: "set", target: element.id, value: element} satisfies {kind: "set"; target: string; value: Element | NativeElement})) : [{kind: "set", target: slide.id, value: {...slide, elements}}]
 }

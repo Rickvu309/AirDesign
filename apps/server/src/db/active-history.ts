@@ -1,7 +1,9 @@
+import {parseNativeChangeSet, type NativeChangeSet} from "../../../../packages/deck/src/text/operations.ts"
+import {parseChangeSet} from "../../../../packages/deck/src/index.ts"
 import type {TextProtocol} from "../../../../packages/rpc/src/text/protocol.ts"
 import {z} from "zod"
 import type {History, Principal, ExecutionIdentity} from "../../../../packages/change-log/src/index.ts"
-import type {Deck} from "../../../../packages/deck/src/index.ts"
+import type {ChangeSet, Deck} from "../../../../packages/deck/src/index.ts"
 import type {NativeDeck} from "../../../../packages/deck/src/text/native-v3.ts"
 import {parseCommand} from "../../../../packages/rpc/src/parse-command.ts"
 import type {HistoryStore} from "./history-store.ts"
@@ -19,12 +21,15 @@ export async function activeHistory(history: HistoryStore, paragraphs?: Paragrap
   return {
     protocol,
     agents: native?.agents ?? history.agents,
+    images: native?.images ?? history.images,
+    templateSources: native?.templateSources ?? history.templateSources,
+    catalog: native?.catalog ?? history.catalog,
     async read(principal: Principal, deck: string): Promise<History<Deck | NativeDeck>> {
       return native ? native.read(principal, deck) : (await history.read(principal, deck)).contributions.history
     },
-    async commit(principal: Principal, deck: string, command: unknown, identity: ExecutionIdentity = {kind: "person"}, hostedBase?: number) {
-      if (native) return receipt.parse(JSON.parse((await native.commit(principal, deck, {version: 3, command}, identity, hostedBase === undefined ? undefined : {kind: "hosted"})).receiptBytes))
-      return history.commit(principal, deck, parseCommand(command), identity, undefined, hostedBase)
+    async commit(principal: Principal, deck: string, command: unknown, identity: ExecutionIdentity = {kind: "person"}, hostedBase?: number, preparation?: {key: string; changes: (deck: Deck | NativeDeck) => ChangeSet | NativeChangeSet}) {
+      if (native) return receipt.parse(JSON.parse((await native.commit(principal, deck, {version: 3, command}, identity, preparation ? {kind: "prepared", key: preparation.key, changes: deck => parseNativeChangeSet(preparation.changes(deck))} : hostedBase === undefined ? undefined : {kind: "hosted"})).receiptBytes))
+      return history.commit(principal, deck, parseCommand(command), identity, preparation ? {key: preparation.key, changes: deck => parseChangeSet(preparation.changes(deck))} : undefined, hostedBase)
     },
   }
 }

@@ -1,6 +1,6 @@
-import type {Id, Run} from "../model.ts"
+import type {Id} from "../model.ts"
 
-export type TextStyle = Omit<Run, "text">
+export type TextStyle = {bold: boolean; italic?: boolean; underline?: boolean; font: string; size: number; color: string}
 export type InlineRun = {kind: "text"; text: string; style: TextStyle} | {kind: "break"; style: TextStyle}
 export type NumberFormat = "decimal" | "alphaLower" | "alphaUpper" | "romanLower" | "romanUpper"
 export type ParagraphMarker = {kind: "none"} | {kind: "bullet"; character: string} | {kind: "number"; format: NumberFormat; start: number | null}

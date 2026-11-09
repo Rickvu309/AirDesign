@@ -1,5 +1,5 @@
 import {createParagraphHistoryStore} from "./db/paragraph-history-store.ts"
-import {paragraphLegacyBoundary} from "./rpc/paragraph-boundary.ts"
+import {paragraphBoundary} from "./rpc/paragraph-boundary.ts"
 import {readBuildIdentity} from "../../../packages/operations/src/build-identity.ts"
 import {access as accessFile} from "node:fs/promises"
 import {workerAuthorized,workerCompletionLimit} from "./worker/transport.ts"
@@ -74,12 +74,12 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
   const imageQueue=new OperationStore(operationsPath===":memory:" ? operationsPath : operationsPath+".images",extras.clock)
   const history = await createHistoryStore(databaseUrl === undefined ? { kind: "pglite", client:memory, path: extras.historyPath ?? process.env.AIRDESIGN_HISTORY_PATH ?? path.join(os.homedir(), ".local/share/airdesign/history") } : { kind: "postgres", url: databaseUrl, schema:"migrate" }, extras.clock)
   const paragraphs = databaseUrl === undefined ? undefined : createParagraphHistoryStore(databaseUrl, extras.clock)
-  const boundary=(handler:(request:Request)=>Promise<Response>,nativeAvailable?:(request:Request)=>boolean)=>paragraphLegacyBoundary(access,paragraphs,publicOrigin,handler,nativeAvailable)
+  const boundary=(handler:(request:Request)=>Promise<Response>)=>paragraphBoundary(access,paragraphs,publicOrigin,handler)
   const templates = new TemplateStore(extras.templatesPath ?? (operationsPath===":memory:" ? operationsPath : operationsPath+".templates"))
-  const handleImages=boundary(imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)}),request=>request.method==="GET")
-  const handleTemplates = boundary(templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck)))
+  const handleImages=boundary(imagesHandler(access,imageQueue,history,publicOrigin,async deck=>{await sync.refresh(deck)},paragraphs))
+  const handleTemplates = boundary(templatesHandler(access,templates,history,publicOrigin,deck=>sync.refresh(deck),paragraphs))
   const changed=async(deck:string)=>{await sync.refresh(deck);await aira.publish(deck)}
-  const handleDecks = boundary(decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates,paragraphs),()=>true)
+  const handleDecks = boundary(decksHandler(access,history,publicOrigin,deck=>sync.refresh(deck),operations,templates,paragraphs))
   const mcpOrigin=process.env.AIRDESIGN_MCP_ORIGIN ?? publicOrigin
   const mcp=mcpHandler(access,history,templates,operations,imageQueue,publicOrigin,secret,changed,mcpOrigin,paragraphs)
   const handleOAuth=oauthHandler(access,history,publicOrigin,secret,mcpOrigin)
@@ -104,7 +104,7 @@ export async function startServer(port = 0, extras: StartServerOptions = {}): Pr
       void history.health().then(() => { response.writeHead(200); response.end("ok") }).catch(() => { response.writeHead(503); response.end("database-unavailable") })
       return
     }
-    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, boundary(aira.handle,()=>true), handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
+    serve(access, handleOperation, handleCommands, handleDecks, handleTemplates, handleImages, handleUsage, handleOAuth, mcp.handle, boundary(aira.handle), handleBilling, request, response, publicOrigin, handleWorker).catch((error: unknown) => {
       writeHandlerError(response, error)
     })
   })

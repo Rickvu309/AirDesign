@@ -1,8 +1,11 @@
+import {paragraphFeatureAdmission} from "../rpc/paragraph-boundary.ts"
+import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
+import {activeHistory} from "../db/active-history.ts"
 import { imageJob } from "../../../../packages/files/src/assets/image-job.ts"
 import { mutationRejection,type Access } from "@airdesign/access"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
 import { commandId } from "../../../../packages/change-log/src/index.ts"
-import { flatten,id,isImagePlacement,type Element } from "../../../../packages/deck/src/index.ts"
+import { flatten,id,isImagePlacement } from "../../../../packages/deck/src/index.ts"
 import { assetLimits,readValidatedAsset,validateImage } from "../../../../packages/files/src/assets/validate.ts"
 import { uploadProvenance } from "../../../../packages/files/src/assets/provenance.ts"
 import { assetProviders } from "../../../../packages/files/src/assets/providers.ts"
@@ -10,12 +13,13 @@ import type { HistoryStore } from "../db/history-store.ts"
 
 function record(value:unknown):Record<string,unknown>{if(!value || typeof value!=="object" || Array.isArray(value))throw new Error("invalid-image-request");return Object.fromEntries(Object.entries(value))}
 function text(value:unknown):string{if(typeof value!=="string")throw new Error("invalid-image-request");return value}
-export function imagesHandler(access:Access,queue:OperationStore,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>) {
+export function imagesHandler(access:Access,queue:OperationStore,history:HistoryStore,origin:string,changed:(deck:string)=>Promise<void>,paragraphs?:ParagraphHistoryStore) {
   return async(request:Request):Promise<Response>=>{
     const rejection=mutationRejection(request,origin);if(rejection)return Response.json(rejection,{status:rejection.status})
     const principal=await access.principal(request);if(!principal)return Response.json({code:"signed-out"},{status:401})
-    const url=new URL(request.url),store=history.images
+    const url=new URL(request.url)
     try {
+      const backend=await activeHistory(history,paragraphs),store=backend.images
       if(url.pathname==="/api/assets" && request.method==="GET")return Response.json(await store.list(principal))
       if(url.pathname==="/api/assets/search" && request.method==="GET"){
         const provider=assetProviders.find(provider=>provider.id===(url.searchParams.get("provider") ?? "local-stock"));if(!provider)throw new Error("provider-not-found")
@@ -68,17 +72,17 @@ export function imagesHandler(access:Access,queue:OperationStore,history:History
         const asset=await store.get(principal,text(body.asset)),image={asset:asset.id,crop:body.crop ?? {x:0,y:0,width:1,height:1},focal:body.focal ?? {x:.5,y:.5},mask:body.mask ?? "rectangle",alt:body.alt ?? ""}
         if(!isImagePlacement(image))throw new Error("invalid-image-placement")
         const elementId=id(text(body.elementId)),slideId=update ? null : id(text(body.slide))
-        const receipt=await history.commit(principal,deckId,{id:commandId(requestId),kind:"edit",base:0,run:null,changes:{changes:[]}},{kind:"person"},{key:JSON.stringify({image,elementId,slideId,update}),changes:deck=>{
+        const receipt=await backend.commit(principal,deckId,{id:commandId(requestId),kind:"edit",base:0,run:null,changes:{changes:[]}},{kind:"person"},undefined,{key:JSON.stringify({image,elementId,slideId,update}),changes:deck=>{
           if(update){const element=deck.slides.flatMap(slide=>flatten(slide.elements)).find(element=>element.id===elementId);if(element?.kind!=="image")throw new Error("image-placement-not-found");return {changes:[{kind:"set",target:element.id,value:{...element,image}}]}}
           const slide=deck.slides.find(slide=>slide.id===slideId);if(!slide)throw new Error("slide-not-found")
           const width=Math.min(slide.size.width*.6,asset.width),height=width*asset.height/asset.width,scale=Math.min(1,slide.size.height*.7/height)
-          const element:Element={id:elementId,kind:"image",image,box:{x:40,y:40,width:width*scale,height:height*scale},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null}
+          const element:import("../../../../packages/deck/src/text/native-v3.ts").NativeElement={id:elementId,kind:"image",image,box:{x:40,y:40,width:width*scale,height:height*scale},source:{kind:"created"},support:{kind:"native"},theme:null,placeholder:null,overlap:null}
           return {changes:[{kind:"insert",parent:slide.id,index:slide.elements.length,value:element}]}
         }})
         await changed(deckId)
         return Response.json({receipt},{status:receipt.kind==="applied" ? 200 : 409})
       }
       return Response.json({code:"not-found"},{status:404})
-    }catch(error){const code=error instanceof Error ? error.message : "image-request-failed";return Response.json({code},{status:code.endsWith("not-found") ? 404 : code==="image-storage-full" ? 413 : 400})}
+    }catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission;const code=error instanceof Error ? error.message : "image-request-failed";return Response.json({code},{status:code.endsWith("not-found") ? 404 : code==="image-storage-full" ? 413 : 400})}
   }
 }

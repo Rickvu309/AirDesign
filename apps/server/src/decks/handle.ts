@@ -1,10 +1,10 @@
+import {parseNativeArchiveV3} from "../../../../packages/deck/src/text/native-v3.ts"
 import {paragraphFeatureAdmission} from "../rpc/paragraph-boundary.ts"
-import {decodeCatalogImportV3, decodeLegacyCatalogDeckV2} from "../../../../packages/catalog/src/text/seed.ts"
+import {decodeCatalogImportV3} from "../../../../packages/catalog/src/text/seed.ts"
 import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import {welcomeDeck} from "../../../../packages/catalog/src/welcome-deck.ts"
-import { applyTemplate } from "../../../../packages/brand/src/index.ts"
+import { templateDeck } from "../../../../packages/brand/src/index.ts"
 import type { TemplateStore } from "../../../../packages/brand/src/template-store.ts"
-import { apply, id, themeId } from "../../../../packages/deck/src/index.ts"
 import { parseDeck } from "../../../../packages/deck/src/index.ts"
 import { OperationStore,operationId } from "../../../../packages/operations/src/index.ts"
 import { exportFilename } from "./export-filename.ts"
@@ -44,8 +44,9 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
       if(url.pathname==="/api/catalog" && request.method==="GET")return Response.json(await catalog.list(principal,url.searchParams.get("trash")==="true",url.searchParams.get("search") ?? ""))
       if(url.pathname==="/api/catalog" && request.method==="POST") {
         const body:unknown=await request.json()
-        const source=body&&typeof body==="object"&&"starter" in body&&body.starter==="welcome" ? welcomeDeck() : templates ? defaultDeck(templates.default(principal)) : undefined
-        const entry=native ? await native.catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),source ? decodeLegacyCatalogDeckV2(source) : undefined) : await history.catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),source)
+        const welcome=body&&typeof body==="object"&&"starter" in body&&body.starter==="welcome"
+        const source=welcome ? (native ? welcomeDeck() : welcomeDeck("legacy-text-v2")) : templates ? templateDeck(templates.default(principal)) : undefined
+        const entry=native ? await native.catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),source ? parseNativeArchiveV3({version: 3, deck: source}).deck : undefined) : await history.catalog.create(principal,text(body,"requestId"),text(body,"title"),text(body,"pendingRequest"),source ? parseDeck(source) : undefined)
         return Response.json(entry,{status:201})
       }
       if(url.pathname==="/api/catalog/trash" && request.method==="DELETE") {const body:unknown=await request.json();if(text(body,"confirm")!=="empty-trash")throw new Error("confirmation-required");const confirmed=body && typeof body==="object" && "decks" in body ? body.decks : null;if(!Array.isArray(confirmed))throw new Error("confirmation-snapshot-required");const targets=confirmed.map((value:unknown)=>{if(!value || typeof value!=="object" || !("id" in value) || typeof value.id!=="string" || !("generation" in value) || typeof value.generation!=="number" || !Number.isSafeInteger(value.generation))throw new Error("invalid-confirmation-snapshot");return {id:value.id,generation:value.generation}});const removed=await catalog.emptyTrash(principal,targets);await Promise.all(removed.map(changed));return Response.json({removed})}
@@ -68,13 +69,6 @@ export function decksHandler(access:Access,history:HistoryStore,origin:string,ch
         case "restore": {const entry=await catalog.restore(principal,deck);await changed(deck);return Response.json(entry)}
         default:return Response.json({code:"not-found"},{status:404})
       }
-    }catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request,true);if(admission)return admission;const code=error instanceof Error ? error.message : "catalog-failed";return Response.json({code},{status:code==="deck-not-found" ? 404 : code==="deck-expired" ? 410 : 400})}
+    }catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission;const code=error instanceof Error ? error.message : "catalog-failed";return Response.json({code},{status:code==="deck-not-found" ? 404 : code==="deck-expired" ? 410 : 400})}
   }
-}
-
-function defaultDeck(template: import("../../../../packages/brand/src/index.ts").Template) {
-  const deck={id:id("newDeck"),version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
-  const result=apply(deck,applyTemplate(deck,template,{kind:"apply-deck"},undefined).changes)
-  if (!result.ok) throw new Error(result.error.code)
-  return result.deck
 }

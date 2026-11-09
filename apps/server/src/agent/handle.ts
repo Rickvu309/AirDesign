@@ -110,7 +110,7 @@ export function agentHandler(access:Access,history:HistoryStore,tools:ReturnType
         await launch(data);await save(data)
         return Response.json({id:data.id,kind:data.kind},{status:202})
       })
-    }catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request,true);if(admission)return admission;return Response.json({code:error instanceof Error ? error.message : "agent-failed"},{status:400})}
+    }catch(error){const admission=await paragraphFeatureAdmission(paragraphs,request);if(admission)return admission;return Response.json({code:error instanceof Error ? error.message : "agent-failed"},{status:400})}
   }
   return {handle,publish,stopOwner,async close(){await Promise.all([...runs.values()].filter(run=>run.data.kind==="working").map(stop));await tools.close()}}
 }

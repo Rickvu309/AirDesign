@@ -1,5 +1,5 @@
 import type {NativeSlide} from "../../deck/src/text/native-v3.ts"
-import {textElements} from "../../deck/src/text/content.ts"
+import {flatten} from "../../deck/src/elements.ts"
 import path from "node:path"
 import { type Slide } from "../../deck/src/index.ts"
 import { parseXml,escapeXml } from "./xml.ts"
@@ -8,7 +8,7 @@ export function appendCreatedPictures(parts:Map<string,Buffer>,native:Map<string
   if(slide.source.kind!=="original")return
   const part=slide.source.part,generatedPart=`ppt/slides/slide${index+1}.xml`,parsed=parseXml(native.get(generatedPart)!),original=parseXml(parts.get(part)!),tree=original.nodes.find(node=>node.local==="spTree")
   if(!tree)throw new Error("slide-shape-tree-required")
-  const additions=textElements(slide.elements).filter(element=>element.source.kind==="created")
+  const additions=flatten(slide.elements).filter(element=>element.source.kind==="created")
   if(additions.some(element=>element.kind!=="image"))throw new Error("source-slide-structure-change-requires-fix")
   const names=new Set<string>(additions.map(element=>element.id)),relationships=parseXml(native.get(`ppt/slides/_rels/slide${index+1}.xml.rels`)!),relPart=path.posix.dirname(part)+"/_rels/"+path.posix.basename(part)+".rels"
   let rels=parts.get(relPart)!.toString(),next=Math.max(1,...original.nodes.filter(node=>node.local==="cNvPr").map(node=>Number(node.attributes.id)))+1,content=""

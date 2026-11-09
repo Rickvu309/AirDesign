@@ -1,7 +1,7 @@
 import type {Slide} from "../../../../packages/deck/src/model.ts"
 import type {NativeSlide} from "../../../../packages/deck/src/text/native-v3.ts"
 import {decodeExportSnapshot, selectExportSlides} from "../../../../packages/rpc/src/text/export-snapshot.ts"
-import {textElements} from "../../../../packages/deck/src/text/content.ts"
+import {flatten} from "../../../../packages/deck/src/elements.ts"
 import {jobPath} from "../job-path.ts"
 import { readFile,writeFile } from "node:fs/promises"
 import { createHash } from "node:crypto"
@@ -20,7 +20,7 @@ try {
   const slides=selectExportSlides<Slide | NativeSlide>(deck.slides, selected)
   const saved={...deck,slides}
   const fonts=await Promise.all(fontManifest.faces.map(async face=>{const bytes=await readFile(new URL(`../../../../packages/ui/fonts/${face.file}`,import.meta.url));if(createHash("sha256").update(bytes).digest("hex")!==face.sha256)throw new Error("font-hash-mismatch");return `@font-face{font-family:Geist;font-weight:${face.weight};src:url(data:font/woff2;base64,${bytes.toString("base64")}) format('woff2')}`}))
-  const flags=slides.flatMap(slide=>textElements(slide.elements).filter(element=>element.support.kind!=="native").map(element=>({slide:slide.id,element:element.id,kind:element.support.kind})))
+  const flags=slides.flatMap(slide=>flatten(slide.elements).filter(element=>element.support.kind!=="native").map(element=>({slide:slide.id,element:element.id,kind:element.support.kind})))
   const missingFonts=[...new Set(slides.flatMap(slide=>fontReport(slide,deck.themes).missing))]
   const removals=input.snapshot.source ? (await importPptx(Buffer.from(input.snapshot.source,"base64"))).report.removals : []
   if((flags.length||missingFonts.length||removals.length)&&!input.options.allowIssues)throw new Error("export-needs-review")

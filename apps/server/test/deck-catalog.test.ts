@@ -108,7 +108,7 @@ it("supplies imported first-slide content and creates a real welcome proposal",a
     const retained=await store.catalog.create(owner,"import_preview","Imported","",imported,{bytes,report:{}})
     expect(retained.preview).toEqual({slide:imported.slides[0],themes:imported.themes})
     expect(retained.preview?.slide.elements.some(element=>element.kind==="text"&&element.runs.some(run=>run.text==="A clear direction"))).toBe(true)
-    const welcome=await store.catalog.create(owner,"welcome","Welcome to AirDesign","",welcomeDeck())
+    const welcome=await store.catalog.create(owner,"welcome","Welcome to AirDesign","",welcomeDeck("legacy-text-v2"))
     expect(welcome.slides).toBe(3)
     expect(welcome.preview?.slide.elements.some(element=>element.kind==="text"&&element.runs.some(run=>run.text==="A clear proposal. A confident decision."))).toBe(true)
   }finally{await store.close()}

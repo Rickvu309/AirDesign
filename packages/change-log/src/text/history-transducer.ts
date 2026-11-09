@@ -23,7 +23,7 @@ function comparableLegacyHistory(history: History) {
   })}))}
 }
 function originKey(value: TextLifetimeInput): string { return JSON.stringify([value.deck,value.element,value.lifetime]) }
-function textElements(deck: Deck): Extract<Element, {kind: "text"}>[] {
+function flatten(deck: Deck): Extract<Element, {kind: "text"}>[] {
   function visit(elements: Element[]): Extract<Element, {kind: "text"}>[] { return elements.flatMap(element => element.kind === "text" ? [element] : element.kind === "group" ? visit(element.children) : []) }
   return deck.slides.flatMap(slide => visit(slide.elements))
 }
@@ -111,7 +111,7 @@ export function transduceLegacyHistory(archive: LegacyHistoryArchiveV2 | Paragra
   if (archive.version !== 2 || archive.immutable.version !== 2) throw new Error("unsupported-history-archive-version")
   validateImmutable(archive.immutable)
   parseDeck(archive.history.initial); parseDeck(archive.history.deck)
-  const inputs: TextLifetimeInput[] = textElements(archive.history.initial).map(element => ({deck: archive.history.initial.id, element: element.id, lifetime: {kind: "initial"}}))
+  const inputs: TextLifetimeInput[] = flatten(archive.history.initial).map(element => ({deck: archive.history.initial.id, element: element.id, lifetime: {kind: "initial"}}))
   let legacy = initialHistory(archive.history.initial)
   const reserved = new Set<Id>(archive.history.usedIds)
   for (const node of nodes(archive.history.initial)) reserved.add(node.id)

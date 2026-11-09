@@ -1,4 +1,4 @@
-import {decodeCatalogImportV3, decodeLegacyCatalogDeckV2} from "../../../../packages/catalog/src/text/seed.ts"
+import {decodeCatalogImportV3} from "../../../../packages/catalog/src/text/seed.ts"
 import type {ParagraphHistoryStore} from "../db/paragraph-history-store.ts"
 import {createHash} from "node:crypto"
 import {toolInput} from "../../../../packages/tools/src/catalog.ts"
@@ -8,9 +8,10 @@ import {activeHistory} from "../db/active-history.ts"
 import {nativeNodes} from "../../../../packages/change-log/src/text/native-model.ts"
 import {isNativeDeck, parseNativeArchiveV3, type NativeElement, type NativeDeck, type NativeSlide} from "../../../../packages/deck/src/text/native-v3.ts"
 import type {Paragraph, TextFrame} from "../../../../packages/deck/src/text/body.ts"
-import {textElements, bodyText} from "../../../../packages/deck/src/text/content.ts"
-import {apply,id,themeId,validate,parseDeck,type Deck,type Element,type Slide} from "../../../../packages/deck/src/index.ts"
-import {applyTemplate,type Template} from "../../../../packages/brand/src/index.ts"
+import {flatten} from "../../../../packages/deck/src/elements.ts"
+import {bodyText} from "../../../../packages/deck/src/text/content.ts"
+import {validate,parseDeck,type Deck,type Element,type Slide} from "../../../../packages/deck/src/index.ts"
+import {templateDeck,type Template} from "../../../../packages/brand/src/index.ts"
 import {assetProviders} from "../../../../packages/files/src/assets/providers.ts"
 import {fetchPublicFile} from "../../../../packages/files/src/fetch-public-file.ts"
 import {fileLimits} from "../../../../packages/files/src/index.ts"
@@ -20,17 +21,11 @@ import type {HistoryStore} from "../db/history-store.ts"
 import {slideCaptures} from "./capture.ts"
 const deckNodes = (deck: Deck | NativeDeck) => isNativeDeck(deck) ? nativeNodes(deck) : nodes(deck)
 function slideValues(slide: Slide | NativeSlide) {
-  return textElements(slide.elements).flatMap<Element | NativeElement | Paragraph | TextFrame>(element => element.kind === "text" && "body" in element ? [element, element.body.frame, ...element.body.paragraphs] : [element])
+  return flatten(slide.elements).flatMap<Element | NativeElement | Paragraph | TextFrame>(element => element.kind === "text" && "body" in element ? [element, element.body.frame, ...element.body.paragraphs] : [element])
 }
 export type ToolPrincipal=Principal&{connection:string;airaRun?:string}
 const string=(args:Record<string,unknown>,key:string,fallback="")=>typeof args[key]==="string" ? args[key] : fallback
 const number=(args:Record<string,unknown>,key:string,fallback=0)=>typeof args[key]==="number" ? args[key] : fallback
-function brandedDeck(template:Template):Deck{
-  const deck={id:id("newDeck"),version:0,slides:[],themes:[{id:themeId("default"),font:"Geist",background:"#ffffff"}]}
-  const result=apply(deck,applyTemplate(deck,template,{kind:"apply-deck"},undefined).changes)
-  if(!result.ok)throw new Error(result.error.code)
-  return result.deck
-}
 export function domainTools(history:HistoryStore,templates:TemplateStore,operations:OperationStore,imageQueue:OperationStore,origin:string,changed:(deck:string)=>Promise<void>,paragraphs?:ParagraphHistoryStore){
   const captures=slideCaptures(history)
   async function saved(principal:Principal,args:Record<string,unknown>){const result=await (await activeHistory(history,paragraphs)).read(principal,string(args,"deckId"));if("savedVersion" in args && result.seq!==args.savedVersion)throw new Error("saved-version-changed");return result}
@@ -74,7 +69,7 @@ export function domainTools(history:HistoryStore,templates:TemplateStore,operati
         case "search_assets":return page(async()=>{const source=string(args,"source","local-stock"),query=string(args,"query");if(source==="library")return {meta:{source},items:(await history.images.list(principal)).assets.filter(item=>JSON.stringify(item).toLowerCase().includes(query.toLowerCase()))};const provider=assetProviders.find(item=>item.id===source);if(!provider)throw new Error("provider-not-found");return {meta:{source},items:provider.search(query).map(item=>({id:item.id,name:item.name,keywords:item.keywords,provenance:item.provenance,ingest:{provider:source,id:item.id}}))}})
         case "read_file":{const file=await history.files.read(owner,string(args,"fileId")),offset=number(args,"offset"),length=Math.min(number(args,"length",2000),2000),text=file.mime.startsWith("text/")||file.mime==="application/json";return boundedResult({fileId:file.fileId,name:file.name,mime:file.mime,bytes:file.bytes,sha256:file.sha256,...(text ? {text:file.content.toString("utf8").slice(offset,offset+length),nextOffset:offset+length<file.content.toString("utf8").length ? offset+length : null} : {resource:file.resource})})}
         case "add_file":{const source=string(args,"sourceUrl"),url=new URL(source);const local=url.origin===origin&&/^\/api\/mcp\/files\/[a-f0-9-]{36}$/.test(url.pathname)&&!url.search&&!url.hash;return boundedResult(await history.files.save(owner,string(args,"requestId"),JSON.stringify({source,name:args.name}),string(args,"name"),async()=>{if(local){const file=await history.files.read(owner,url.pathname.split("/").at(-1) ?? "");return {bytes:file.content,mime:file.mime}}return fetchPublicFile(source,fileLimits.compressed)}))}
-        case "create_deck":{const template=args.brandId ? templates.list(principal).filter(item=>item.id===args.brandId).sort((a,b)=>b.version-a.version)[0] : templates.default(principal);if(!template)throw new Error("brand-not-found");return boundedResult(native ? await native.catalog.create(principal,string(args,"requestId"),string(args,"title"),"",decodeLegacyCatalogDeckV2(brandedDeck(template))) : await history.catalog.create(principal,string(args,"requestId"),string(args,"title"),"",brandedDeck(template)))}
+        case "create_deck":{const template=args.brandId ? templates.list(principal).filter(item=>item.id===args.brandId).sort((a,b)=>b.version-a.version)[0] : templates.default(principal);if(!template)throw new Error("brand-not-found");return boundedResult(native ? await native.catalog.create(principal,string(args,"requestId"),string(args,"title"),"",templateDeck(template)) : await history.catalog.create(principal,string(args,"requestId"),string(args,"title"),"",parseDeck(templateDeck(template))))}
         case "update_brand":{const tokens=args.tokens;if(!tokens||typeof tokens!=="object")throw new Error("invalid-tokens");const checked:Partial<Pick<Template,"font"|"background"|"foreground"|"accent">>={};for(const key of ["font","background","foreground","accent"] as const){const value=Reflect.get(tokens,key);if(typeof value==="string")checked[key]=value}return boundedResult(templates.update(principal,string(args,"requestId"),string(args,"brandId"),number(args,"base"),checked))}
         case "export_deck":{const format=string(args,"format");if(format!=="pptx"&&format!=="pdf")throw new Error("invalid-format");const job=await (native?.exports ?? history.exports).submit(principal,string(args,"requestId"),string(args,"deckId"),{format,expectedSeq:number(args,"savedVersion"),slides:[],timing:"now",allowIssues:false});return boundedResult({operationId:job.id,kind:job.kind,pollAfterMs:1000})}
         case "import_deck":{const file=await history.files.read(owner,string(args,"fileId"));if(file.content.length<4||file.content.readUInt32LE(0)!==0x04034b50)throw new Error("pptx-upload-required");const job=operations.submit(principal,string(args,"requestId"),file.content);return boundedResult({operationId:job.id,kind:job.kind,pollAfterMs:1000})}

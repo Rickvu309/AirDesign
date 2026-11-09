@@ -1,3 +1,5 @@
+import {templateSources} from "../templates/source-store.ts"
+import type {NativeChangeSet} from "../../../../packages/deck/src/text/operations.ts"
 import {decodeStoredCatalogSource} from "../../../../packages/catalog/src/text/seed.ts"
 import pg from "pg"
 import {randomUUID} from "node:crypto"
@@ -63,9 +65,9 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
     if (!request.command || typeof request.command !== "object" || !("id" in request.command) || typeof request.command.id !== "string") throw new Error("invalid-command")
     return commandId(request.command.id)
   }
-  async function receipt(tx: CatalogSql, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity) {
+  async function receipt(tx: CatalogSql, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity, preparation?: string) {
     const id = requestId(request)
-    const payload = legacyRequestPayloadV2(request.command, identity, ("preparation" in request ? request.preparation : undefined))
+    const payload = legacyRequestPayloadV2(request.command, identity, (preparation ?? ("preparation" in request ? request.preparation : undefined)))
     const prior = (await tx.query<{payload: string; receiptBytes: string; version: 2 | 3}>("SELECT payload,receipt::text AS \"receiptBytes\",history_version AS version FROM editing_receipt WHERE deck=$1 AND id=$2", [deck, id])).rows[0]
     if (prior) {
       if (prior.payload !== payload) throw new Error("request-id-payload-mismatch")
@@ -100,6 +102,7 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
     exports: exportStore(nativeTransaction, clock, "paragraph-body-v3"),
     deletions: accountDeletionStore(nativeTransaction, clock),
     images: imageStore(nativeTransaction),
+    templateSources: templateSources(nativeTransaction),
     snapshots: toolSnapshots(nativeTransaction, clock, "paragraph-body-v3"),
     agents: agentStore(nativeTransaction, clock),
     create: (principal: Principal, deck: NativeDeck) => nativeTransaction(async tx => {
@@ -142,16 +145,21 @@ export function createParagraphHistoryStore(url: string, clock = Date.now) {
     }),
     close: () => pool.end(),
     read: (principal: Principal, deck: string) => transaction(async tx => validateHistory(tx, deck, await owned(tx, principal, deck))),
-    commit: (principal: Principal, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity = {kind: "person"}, admission?: {kind: "hosted"}) => transaction(async tx => {
+    commit: (principal: Principal, deck: string, request: ParagraphCommandRequest, identity: ExecutionIdentity = {kind: "person"}, admission?: {kind: "hosted"} | {kind: "prepared"; key: string; changes: (deck: NativeDeck) => NativeChangeSet}) => transaction(async tx => {
       const state = await owned(tx, principal, deck)
-      const prior = await receipt(tx, deck, request, identity)
+      const preparation = admission?.kind === "prepared" ? admission : undefined
+      const prior = await receipt(tx, deck, request, identity, preparation?.key)
       if (prior) return prior
       const id = requestId(request)
-      const payload = legacyRequestPayloadV2(request.command, identity, ("preparation" in request ? request.preparation : undefined))
+      const payload = legacyRequestPayloadV2(request.command, identity, preparation?.key ?? ("preparation" in request ? request.preparation : undefined))
       if (request.version !== 3 || ("preparation" in request ? request.preparation : undefined) !== undefined) throw new Error("legacy-command-reconciliation-required")
-      const command = parseNativeCommandV3(request)
+      let command = parseNativeCommandV3(request)
       if (!executionMatches(command, identity)) throw new Error("execution-identity-mismatch")
       const history = await validateHistory(tx, deck, state)
+      if (preparation) {
+        if (command.kind !== "edit" || identity.kind !== "person") throw new Error("person-edit-required")
+        command = {...command, base: history.seq, changes: preparation.changes(history.deck)}
+      }
       if (admission?.kind === "hosted" && identity.kind === "run" && !history.runs.some(run => run.id === identity.run)) history.runs.push({id: identity.run, epoch: history.seq, kind: "open"})
       let result = executeNative(history, command, identity)
       await nativeParagraphCapability(tx)

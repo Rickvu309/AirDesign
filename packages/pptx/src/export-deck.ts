@@ -1,5 +1,5 @@
 import type {NativeDeck, NativeElement} from "../../deck/src/text/native-v3.ts"
-import {textElements} from "../../deck/src/text/content.ts"
+import {flatten} from "../../deck/src/elements.ts"
 import {writeTextBody, replaceTextBody} from "./text/body.ts"
 import type {TextBody} from "../../deck/src/text/body.ts"
 import { attachTemplateLayouts } from "./template-layouts.ts"
@@ -44,7 +44,7 @@ async function generated(deck:Deck | NativeDeck,assets:Record<string,string>) {
     const part=`ppt/slides/slide${index+1}.xml`,bytes=parts.get(part)
     if(!bytes)throw new Error("slide-part-required")
     let bodyDocument = parseXml(bytes)
-    for (const element of textElements(source.elements)) if (element.kind === "text" && "body" in element) {
+    for (const element of flatten(source.elements)) if (element.kind === "text" && "body" in element) {
       const properties = bodyDocument.nodes.find(node => node.local === "cNvPr" && node.attributes.name === element.id)
       const shape = properties && bodyDocument.nodes.find(node => node.local === "sp" && node.start < properties.start && node.end > properties.end)
       const body = shape && bodyDocument.nodes.find(node => node.local === "txBody" && node.start > shape.start && node.end < shape.end)
@@ -56,7 +56,7 @@ async function generated(deck:Deck | NativeDeck,assets:Record<string,string>) {
     let xml=parsed.xml
     for(const picture of [...pictures].reverse()){
       const properties=parsed.nodes.find(node=>node.local==="cNvPr" && node.start>picture.start && node.end<picture.end)
-      const element=textElements(source.elements).find(element=>element.kind==="image" && element.id===properties?.attributes.name)
+      const element=flatten(source.elements).find(element=>element.kind==="image" && element.id===properties?.attributes.name)
       if(element?.kind!=="image")continue
       const crop=element.image.crop,rect=`<a:srcRect l="${Math.round(crop.x*100000)}" t="${Math.round(crop.y*100000)}" r="${Math.round((1-crop.x-crop.width)*100000)}" b="${Math.round((1-crop.y-crop.height)*100000)}"/>`
       let fragment=parsed.xml.slice(picture.start,picture.end)
@@ -184,7 +184,7 @@ async function writeSaved(deck:Deck | NativeDeck,seq:number,source:Buffer|null,m
     parts=new Map(original.parts)
     let generation=0,prefix="airdesign-generated/"
     while([...parts.keys()].some(name=>name.startsWith(prefix)))prefix=`airdesign-generated-${++generation}/`
-    for(const [index,slide] of deck.slides.entries())if(slide.source.kind==="original" && (slide.layout || textElements(slide.elements).some(element=>element.source.kind==="created"))){
+    for(const [index,slide] of deck.slides.entries())if(slide.source.kind==="original" && (slide.layout || flatten(slide.elements).some(element=>element.source.kind==="created"))){
       appendCreatedPictures(parts,native,slide,index,prefix)
     }
     const main=parseXml(parts.get("ppt/presentation.xml")!),list=main.nodes.find(node=>node.local==="sldIdLst")

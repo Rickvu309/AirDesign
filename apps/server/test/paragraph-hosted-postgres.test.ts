@@ -1,5 +1,7 @@
 import {expect,it} from "vitest"
 import pg from "pg"
+import {assetProviders} from "../../../packages/files/src/assets/providers.ts"
+import {validateImage} from "../../../packages/files/src/assets/validate.ts"
 import {Client} from "@modelcontextprotocol/sdk/client/index.js"
 import {InMemoryTransport} from "@modelcontextprotocol/sdk/inMemory.js"
 import {claudeAdapter,type SdkQuery} from "../../../packages/agent/src/sdk-adapter.ts"
@@ -15,7 +17,7 @@ import {createParagraphHistoryStore} from "../src/db/paragraph-history-store.ts"
 import {prepareParagraphCutover,pauseParagraphEditing} from "../src/db/paragraph-protocol.ts"
 import {cutoverParagraphHistory} from "../src/db/paragraph-cutover.ts"
 
-async function hostedFixture(adapter?:AgentAdapter){
+async function hostedFixture(adapter?:AgentAdapter,prepared=false){
   const f=await mcpFixture({agentAdapter:adapter}),sql=new pg.Client({connectionString:f.url}),native=createParagraphHistoryStore(f.url,f.now)
   try{
   await sql.connect()
@@ -26,6 +28,9 @@ async function hostedFixture(adapter?:AgentAdapter){
   const archivedRequest={deckId:entry.id,base:0,requestId:"archived-before-cutover",changes:[{kind:"set",target:slide.id,value:{...slide,notes:"Retained hosted input"}}]}
   const archivedResult=toolValue(await auth.client.callTool({name:"apply_changes",arguments:archivedRequest}))
   expect(archivedResult).toMatchObject({kind:"applied"})
+  const archivedBrand={deck:entry.id,id:"light",version:1,mode:"apply-deck",family:"basic",requestId:"archived-brand"}
+  const archivedBrandResult=prepared ? await (await f.json("/api/templates/apply",archivedBrand,owner.cookie)).json() : undefined
+  if(prepared)expect(archivedBrandResult).toMatchObject({receipt:{kind:"applied"}})
   const archivedEvents=(await sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 ORDER BY seq",[entry.id])).rows
   const archivedReceipts=(await sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 ORDER BY id",[entry.id])).rows
   expect((await f.json("/api/templates/from-deck",{deck:entry.id,id:"hosted-brand",name:"Hosted brand"},owner.cookie)).status).toBe(201)
@@ -40,7 +45,7 @@ async function hostedFixture(adapter?:AgentAdapter){
     return {response,body}
   }
   async function tool(name:string,args:Record<string,unknown>={}){const result=await rawTool(name,args);return result.response.ok ? toolValue(result.body.result) : result.body}
-  return {...f,owner,entry,sql,native,http,tool,rawTool,archivedRequest,archivedResult,archivedEvents,archivedReceipts,async close(){await native.close();await sql.end();await f.close()}}
+  return {...f,owner,entry,sql,native,http,tool,rawTool,archivedBrand,archivedBrandResult,archivedRequest,archivedResult,archivedEvents,archivedReceipts,async close(){await native.close();await sql.end();await f.close()}}
   }catch(error){await native.close();await sql.end();await f.close();throw error}
 }
 
@@ -213,5 +218,68 @@ it("dispatches a deterministic fake SDK model through the real native hosted too
       const reopened=createParagraphHistoryStore(f.url,f.now)
       try{expect(nativeNodes((await reopened.read(f.owner,f.entry.id)).deck).find(node=>node.id===formatted)?.fields.alignment).toBe("center")}finally{await reopened.close()}
     }finally{await stream.close()}
+  }finally{await f.close()}
+})
+
+it("routes native template and image prepared edits through atomic history and reopens without body loss",async()=>{
+  const f=await hostedFixture(undefined,true)
+  try{
+    const archivedRetry=await f.http("/api/templates/apply",f.archivedBrand)
+    expect(archivedRetry.status).toBe(200)
+    expect(await archivedRetry.json()).toMatchObject({receipt:f.archivedBrandResult.receipt})
+    expect(await (await f.http("/api/templates/apply",{...f.archivedBrand,id:"dark"})).json()).toMatchObject({code:"request-id-payload-mismatch"})
+    const deckId=f.entry.id,initial=await f.native.read(f.owner,deckId),slide=initial.deck.slides[0]!,text=slide.elements.find(element=>element.kind==="text")
+    if(text?.kind!=="text")throw new Error("native-text-required")
+    const rich=structuredClone(text)
+    rich.body.frame.anchor="bottom"
+    rich.body.frame.insets={top:1,right:2,bottom:3,left:4}
+    rich.body.frame.autofit={kind:"shrink",fontScale:0.9,lineReduction:0.1}
+    const first=rich.body.paragraphs[0]
+    first.alignment="right"
+    first.marker={kind:"bullet",character:"•"}
+    first.runs.push({kind:"break",style:{...first.endStyle,italic:true}})
+    rich.body.paragraphs.push({...structuredClone(first),id:id("httpTrailing"),runs:[],endStyle:{...first.endStyle,size:31,underline:true}})
+    expect(await f.tool("apply_changes",{deckId,base:initial.seq,requestId:"http-rich-body",changes:[{kind:"set",target:text.id,value:rich}]})).toMatchObject({kind:"applied"})
+    const before=structuredClone(rich.body),brand={deck:deckId,id:"dark",version:1,requestId:"http-brand",mode:"apply-deck",family:"basic"}
+    const applied=await f.http("/api/templates/apply",brand)
+    expect(applied.status).toBe(200)
+    const receipt=await applied.json()
+    expect(receipt).toMatchObject({receipt:{kind:"applied"}})
+    expect(await (await f.http("/api/templates/apply",brand)).json()).toMatchObject({receipt:receipt.receipt})
+    expect(await (await f.http("/api/templates/apply",{...brand,id:"light"})).json()).toMatchObject({code:"request-id-payload-mismatch"})
+    expect(await (await f.http("/api/templates/from-deck",{deck:deckId,id:"native-brand",name:"Native saved brand"})).json()).toMatchObject({id:"native-brand"})
+    expect((await f.native.read(f.owner,deckId)).deck.slides[0]!.elements.find(element=>element.id===text.id)).toMatchObject({body:before})
+    const source=await assetProviders[1]!.read("blue-marble")
+    const asset=await f.native.images.adopt(f.owner,await validateImage(source.bytes),source.provenance)
+    expect(asset).toHaveProperty("id")
+    const placement={deck:deckId,slide:slide.id,elementId:"httpPicture",requestId:"http-place",asset:asset.id,alt:"Retain paragraph draft"}
+    const placed=await f.http("/api/assets/place",placement)
+    expect(placed.status).toBe(200)
+    const placedReceipt=await placed.json()
+    expect(placedReceipt).toMatchObject({receipt:{kind:"applied"}})
+    expect(await (await f.http("/api/assets/place",placement)).json()).toEqual(placedReceipt)
+    expect(await (await f.http("/api/assets/place",{...placement,alt:"Changed"})).json()).toMatchObject({code:"request-id-payload-mismatch"})
+    const updated=await f.http("/api/assets/update",{...placement,requestId:"http-crop",crop:{x:0.1,y:0,width:0.9,height:1}})
+    expect(updated.status).toBe(200)
+    let current=await f.native.read(f.owner,deckId)
+    expect(nativeNodes(current.deck).find(node=>node.id==="httpPicture")?.fields).toMatchObject({kind:"image",image:{crop:{x:0.1}}})
+    expect(nativeNodes(current.deck).find(node=>node.id===before.frame.id)).toBeDefined()
+    expect(await (await f.http(`/api/decks/${deckId}/commands`,{version:3,command:{id:"undo-image",kind:"undo",target:"http-crop"}})).json()).toMatchObject({kind:"applied"})
+    current=await f.native.read(f.owner,deckId)
+    const stranger=await f.signIn("paragraph-callers-stranger@example.com")
+    expect((await f.http("/api/assets/place",placement,"paragraph-body-v3",stranger.cookie)).status).toBe(404)
+    expect((await f.http("/api/templates/apply",{...brand,requestId:"foreign"},"paragraph-body-v3",stranger.cookie)).status).toBe(404)
+    const reopened=createParagraphHistoryStore(f.url,f.now)
+    try{expect(await reopened.read(f.owner,deckId)).toEqual(current)}finally{await reopened.close()}
+    await pauseParagraphEditing(f.sql,true)
+    const retained={...placement,requestId:"paused-picture",alt:"Keep my unsaved input"}
+    expect(await (await f.http("/api/assets/place",retained)).json()).toEqual({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"})
+    expect(await (await f.http("/api/templates/apply",{...brand,requestId:"paused-brand"})).json()).toEqual({kind:"refused",code:"editing-paused",retryable:true,next:"retain-and-retry"})
+    expect((await f.sql.query("SELECT id FROM editing_receipt WHERE id LIKE 'paused-%'")).rows).toEqual([])
+    await pauseParagraphEditing(f.sql,false)
+    expect((await f.http("/api/assets/place",{...retained,elementId:"resumedPicture"})).status).toBe(200)
+    expect((await f.http("/api/templates/apply",brand,"legacy-text-v2")).status).toBe(409)
+    expect((await f.sql.query("SELECT command::text,receipt::text FROM editing_event WHERE deck=$1 AND history_version=2",[deckId])).rows).toEqual(f.archivedEvents)
+    expect((await f.sql.query("SELECT payload,receipt::text FROM editing_receipt WHERE deck=$1 AND history_version=2 ORDER BY id",[deckId])).rows).toEqual(f.archivedReceipts)
   }finally{await f.close()}
 })

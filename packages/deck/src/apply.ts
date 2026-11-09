@@ -1,3 +1,4 @@
+import {flatten} from "./elements.ts"
 import type { ApplyResult, Change, ChangeError, ChangeSet, Deck, Element, Id, Slide } from "./model.ts"
 import { isDeck, isElement, isSlide } from "./parse.ts"
 
@@ -6,9 +7,6 @@ class Rejected extends Error {
   constructor(code: ChangeError["code"], message: string) { super(message); this.code = code }
 }
 function reject(code: ChangeError["code"], message: string): never { throw new Rejected(code, message) }
-export function flatten(elements: readonly Element[]): Element[] {
-  return elements.flatMap(e => e.kind === "group" ? [e, ...flatten(e.children)] : [e])
-}
 export function validate(deck: Deck): void {
   const ids = new Set<Id>([deck.id])
   for (const slide of deck.slides) {

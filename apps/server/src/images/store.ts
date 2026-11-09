@@ -1,4 +1,4 @@
-import {textElements} from "../../../../packages/deck/src/text/content.ts"
+import {flatten} from "../../../../packages/deck/src/elements.ts"
 import type {NativeDeck} from "../../../../packages/deck/src/text/native-v3.ts"
 import type { CatalogSql,CatalogTransaction } from "../../../../packages/catalog/src/index.ts"
 import type { Principal } from "../../../../packages/change-log/src/index.ts"
@@ -14,7 +14,7 @@ export async function initializeAssets(tx:CatalogSql) {
 }
 function summary(row:AssetRow):AssetSummary{return {id:row.hash,mime:row.mime,width:row.width,height:row.height,bytes:row.bytes,provenance:row.provenance,listed:row.listed}}
 export async function ownedDeckAssets(tx:CatalogSql,principal:Principal,deck:Deck | NativeDeck,withBytes=false,provenance:Record<string,AssetProvenance>={}):Promise<Record<string,string>> {
-  const hashes=[...new Set(deck.slides.flatMap(slide=>textElements(slide.elements).flatMap(element=>element.kind==="image" ? [element.image.asset] : [])))]
+  const hashes=[...new Set(deck.slides.flatMap(slide=>flatten(slide.elements).flatMap(element=>element.kind==="image" ? [element.image.asset] : [])))]
   const sources:Record<string,string>={}
   for(const hash of hashes){
     const row=(await tx.query<{full_resolution:Uint8Array|null;export_mime:string;provenance:AssetProvenance}>(withBytes ? "SELECT hash,full_resolution,export_mime,provenance FROM image_asset WHERE owner=$1 AND hash=$2" : "SELECT hash FROM image_asset WHERE owner=$1 AND hash=$2",[principal.personId,hash])).rows[0]

@@ -1,3 +1,4 @@
+import type {TextStyle} from "./text/body.ts"
 import type {ShapeGeometry} from "./shape-geometry.ts"
 export type Id = string & { readonly __brand: "DeckNodeId" }
 
@@ -22,7 +23,7 @@ export function isOverlapId(value: unknown): value is OverlapId { return isId(va
 export type Source = { kind: "created" } | { kind: "original"; part: string; sha256: string; objectId: string; objectType?: "chart" | "table"; dependencies: string[] }
 export type Support = { kind: "native" } | { kind: "kept"; preview: string | null } | { kind: "flagged"; reason: string; preview: string | null; preservation?: "removed" | "partial" | "reported" }
 export type Box = { x: number; y: number; width: number; height: number }
-export type Run = { text: string; bold: boolean; italic?: boolean; underline?: boolean; font: string; size: number; color: string }
+export type Run = TextStyle & {text: string}
 type ElementBase = { styleLinks?: ("font" | "color" | "fill")[]; id: Id; box: Box; source: Source; support: Support; theme: ThemeId | null; placeholder: PlaceholderId | null; overlap: OverlapId | null }
 export type ImagePlacement = { asset: string; crop: { x: number; y: number; width: number; height: number }; focal: { x: number; y: number }; mask: "rectangle" | "ellipse"; alt: string }
 export type Element = ElementBase & (
