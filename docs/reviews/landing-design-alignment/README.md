@@ -17,7 +17,7 @@ Landing and pricing reproduce the design copy, including unlimited decks, the we
 
 Privacy and Terms match the design as plain footer text until pages exist; tests prove they have no link hover, focus or cursor behavior, and site-audit remains unchanged for missing routes.
 
-CTA labels stay dark on the gradient per the operator's earlier contrast decision. The product exhibit is a deterministic composition of the editor and Run 04 from the design generator, following the landing postprocessor; its manifest records source/output hashes and two PNG corrections (selected thumbnail title and notes background). It is identified as an illustration, with no claim of actual capture provenance. Existing real-capture checks remain intact for the separate capture asset.
+CTA labels stay dark on the gradient per the operator's earlier contrast decision. The product exhibit is a deterministic composition of the editor and Run 04 from the design generator, following the landing postprocessor; its manifest records source/output hashes and three rendering corrections (selected thumbnail title, notes background and SVG ring dash array). It is identified as an illustration, with no claim of actual capture provenance. Existing real-capture checks remain intact for the separate capture asset.
 
 ## Structure proof
 
@@ -29,4 +29,4 @@ The design covers only landing and pricing as public routes. Existing agent guid
 
 ## Final visual verification
 
-The final desktop and phone comparisons above were read directly after the source exhibit, selected thumbnail title, notes bar, pricing row and strip arrows were restored. Both S11/S12 structure and pixel regression checks pass. Desktop section comparisons and their phone counterparts are retained in `~/tmp/airdesign-polish/owners/landing/design-alignment/final-sections`. The full frozen-head gate and natural PR checks are reported in the PR.
+The final desktop and phone comparisons above were read directly after the source exhibit, selected thumbnail title, notes bar, pricing row and strip arrows were restored. The final narrow pass restores 13px medium sans values in the stats strip, the pricing check stroke at the PNG’s blue pigment, and the exhibit’s pale ring with a blue sector. Both S11/S12 structure and pixel regression checks pass. Desktop section comparisons and their phone counterparts are retained in `~/tmp/airdesign-polish/owners/landing/design-alignment/final-sections`. The full frozen-head gate and natural PR checks are reported in the PR.
