@@ -39,4 +39,14 @@ jobs:
         with:
           path: "**/*.tsbuildinfo"
           key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'tsconfig.json', 'tsconfig.base.json', 'apps/web/package.json', 'apps/web/tsconfig.json', 'apps/web/tsconfig.app.json', 'apps/web/tsconfig.node.json', 'apps/web/src/**/*.ts', 'apps/web/src/**/*.tsx', 'apps/site/package.json', 'apps/site/tsconfig.json', 'apps/site/src/**/*.ts', 'apps/site/src/**/*.astro', 'apps/site/worker/**/*.ts', 'packages/**/*.json', 'packages/**/*.ts', 'tests/**/*.ts', 'tooling/**/*.ts', 'tooling/**/*.json', 'playwright.config.ts', 'vitest.config.mts', 'scripts/**/*.mjs', '.oxfmtrc.json') }}
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: tla
+        with:
+          path: ~/.local/tla/tla2tools.jar
+          key: tla2tools-936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88
+      - if: steps.tla.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$HOME/.local/tla"
+          curl -fsSL -o "$HOME/.local/tla/tla2tools.jar" https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+          echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $HOME/.local/tla/tla2tools.jar" | sha256sum -c
       - run: pnpm check

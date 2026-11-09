@@ -11,12 +11,13 @@ const steps = [
   ["typecheck", "pnpm", ["typecheck"]],
   ["boundaries", "pnpm", ["check:boundaries"]],
   ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
+  ["specs", "pnpm", ["check:specs"]],
   ["test", "pnpm", ["test"]],
   ["browser", "pnpm", ["test:browser"]],
   ["build", "pnpm", ["build"]],
 ]
 
-const showOnSuccess = new Set(["bug-rule"])
+const showOnSuccess = new Set(["bug-rule", "specs"])
 
 for (const [name, command, args] of steps) {
   const result = spawnSync(command, args, {
