@@ -6,6 +6,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "check": "node scripts/check.mjs",
     "lint": "pnpm -r --if-present run lint",
     "typecheck": "tsc -b",
     "check:boundaries": "node scripts/check-boundaries.mjs",
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@playwright/test": "1.65.0",
     "fast-check": "4.10.2",
+    "oxfmt": "0.78.0",
     "typescript": "catalog:",
     "vitest": "5.1.0"
   }

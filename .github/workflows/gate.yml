@@ -35,9 +35,8 @@ jobs:
           key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm check:boundaries
-      - run: pnpm test
-      - run: pnpm test:browser
-      - run: pnpm build
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: "**/*.tsbuildinfo"
+          key: tsbuildinfo-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json', 'tsconfig.json', 'tsconfig.base.json', 'apps/web/package.json', 'apps/web/tsconfig.json', 'apps/web/tsconfig.app.json', 'apps/web/tsconfig.node.json', 'apps/web/src/**/*.ts', 'apps/web/src/**/*.tsx', 'apps/site/package.json', 'apps/site/tsconfig.json', 'apps/site/src/**/*.ts', 'apps/site/src/**/*.astro', 'apps/site/worker/**/*.ts', 'packages/**/*.json', 'packages/**/*.ts', 'tests/**/*.ts', 'tooling/**/*.ts', 'tooling/**/*.json', 'playwright.config.ts', 'vitest.config.mts', 'scripts/**/*.mjs', '.oxfmtrc.json') }}
+      - run: pnpm check

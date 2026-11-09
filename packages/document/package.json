@@ -12,9 +12,11 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc -b",
+    "lint": "oxlint",
     "typecheck": "tsc -b"
   },
   "devDependencies": {
+    "oxlint": "^1.90.0",
     "typescript": "catalog:"
   }
 }
