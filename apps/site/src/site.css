@@ -40,7 +40,7 @@ article h1 { font-size: clamp(2.6rem,5vw,4rem); }
 li { margin-block: .8rem; }
 pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--muted); padding: 1.5rem; }
 footer { border-block-start: 1px solid var(--border); padding: 2rem clamp(1rem,4vw,4rem); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem; }
-@media (hover: hover) and (pointer: fine) { a:hover { text-decoration-thickness: 2px; } .button:hover { background: var(--primary-top); } }
+@media (hover: hover) and (pointer: fine) { a:hover { text-decoration-thickness: 2px; } }
 
 @font-face {
   font-family: Newsreader;

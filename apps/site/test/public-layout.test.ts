@@ -55,3 +55,24 @@ it("keeps the public controls and mobile hero within the viewport",async()=>{
   }
  }finally{await browser.close();await server.close()}
 })
+
+
+it("keeps the CTA gradient on hover on landing and pricing",async()=>{
+ const server=await createServer({root:"apps/site",configFile:"apps/site/vite.config.ts",server:{host:"127.0.0.1",port:0},optimizeDeps:{noDiscovery:true,include:[]}})
+ await server.listen()
+ const browser=await chromium.launch()
+ try{
+  const page=await browser.newPage({viewport:{width:1440,height:900}})
+  const url=server.resolvedUrls?.local[0]
+  if(!url)throw new Error("Site server has no local URL")
+  for(const path of ["/","/pricing/"]){
+   await page.goto(new URL(path,url).href)
+   const button=page.locator("main .button").first()
+   const background=()=>button.evaluate(element=>getComputedStyle(element).backgroundImage)
+   const resting=await background()
+   expect(resting).toContain("linear-gradient")
+   await button.hover()
+   expect(await background()).toBe(resting)
+  }
+ }finally{await browser.close();await server.close()}
+})
