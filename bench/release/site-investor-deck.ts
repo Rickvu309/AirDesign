@@ -28,7 +28,6 @@ export function investorDeck(deckId:string) {
         slide.elements.push(text(`s2value${n}`,`$${value.toFixed(1)}M`,x,y-22,90,20,12),text(`s2label${n}`,labels[n]!,x,462,85,20,11,"#727272"),text(`s2growth${n}`,growth==="—"?growth:`+${growth}`,x,145,85,18,11,"#2a9b62"))
       }
       for(const [n,label] of ["Self-serve","Mid-market","Enterprise"].entries())slide.elements.push(text(`s2segment${n}`,label,44,325+n*43,110,22,11,"#727272"))
-      for(let n=0;n<36;n++)slide.elements.push(shape(`s2trend${n}`,189+n*12,350-n*3,13,1,"#102633"))
       slide.elements.push(text("s2annotation","+20% CAGR",365,270,140,22,12),shape("s2divider",712,150,1,320,"#d4d4d4"),text("s2tabletitle","Growth by segment",732,145,200,22,12))
       for(let n=2;n<5;n++)slide.elements.push(text(`s2tableyear${n}`,labels[n]!,760+(n-2)*52,180,50,20,10,"#727272"))
       for(const [row,series] of segments.entries()){
