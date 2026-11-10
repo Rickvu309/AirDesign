@@ -3,6 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { stampChecked, workingTree } from "./checked.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { timeMetric } from "./metrics.mjs"
 
@@ -81,10 +82,13 @@ const run = ([name, command, args, extra]) =>
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const release = await takeMachineLock()
   const checkStarted = Date.now()
+  const part = partOf(process.argv)
+  const onCi = process.env.CI === "true" || process.env.CI === "1"
+  const checkedTree = part === "all" && !onCi ? workingTree(root) : undefined
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
   process.env.TMPDIR = ownTemp
 
-  for (const stage of stagesFor(partOf(process.argv))) {
+  for (const stage of stagesFor(part)) {
     await Promise.all(stage.map(run))
     if (failed.length > 0 && !all) break
   }
@@ -99,5 +103,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)
     process.exit(1)
+  }
+  if (checkedTree !== undefined) {
+    stampChecked(root, checkedTree)
+    console.log(`checked ${checkedTree.slice(0, 8)}: a commit with exactly these files may be pushed`)
   }
 }
