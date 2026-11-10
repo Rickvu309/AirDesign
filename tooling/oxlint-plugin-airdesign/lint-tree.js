@@ -4,11 +4,11 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { rawExtensions, rawFindings } from "./rules/no-raw.js"
 import { scanSource, scannedExtensions } from "./scan-comments.js"
-import { nameFindings, wordExtensions, wordFindings } from "./scan-names.js"
+import { glossaryFindings, nameFindings, wordExtensions, wordFindings } from "./scan-names.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
-const wordPaths = ["AGENTS.md", ".github"]
+const wordPaths = ["AGENTS.md", ".github", "specs", "metrics.json", "package.json"]
 const skipDirectories = new Set(["node_modules", "dist"])
 
 const oxlint = spawnSync(
@@ -31,7 +31,7 @@ const filesUnder = (absolute) => {
   return fs.readdirSync(absolute).flatMap((name) => filesUnder(path.join(absolute, name)))
 }
 
-const hits = []
+const hits = glossaryFindings(new Date().toISOString().slice(0, 10))
 for (const relativePath of [...lintPaths, ...wordPaths]) {
   const wordsOnly = wordPaths.includes(relativePath)
   for (const file of filesUnder(path.resolve(root, relativePath))) {
