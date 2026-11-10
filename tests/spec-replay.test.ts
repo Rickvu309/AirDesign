@@ -37,7 +37,6 @@ type Graph = {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const run = "r"
-const readRun = "s"
 
 function parseValue(raw: string): Value {
   if (raw === "TRUE") return true
@@ -367,13 +366,15 @@ function nodeNames(hasA: boolean, hasB: boolean): NodeName[] {
 function structureRegister(spec: Spec): Register {
   const nodes = nodeNames(flag(spec, "nodeA"), flag(spec, "nodeB"))
   const readNodes = flag(spec, "didRead") ? nodeNames(flag(spec, "storedA"), flag(spec, "storedB")) : null
+  const phase = phaseOf(spec)
+  const runId = text(spec, "runId")
   return {
     ...openRegister("floor", "slide"),
-    phase: "stopped",
-    runId: readRun,
+    phase,
+    runId,
     nodes,
     readNodes,
-    b: flag(spec, "nodeB") ? { ...openRegister("floor", "slide"), phase: "stopped", runId: readRun } : null,
+    b: flag(spec, "nodeB") ? { ...openRegister("floor", "slide"), phase, runId } : null,
   }
 }
 
@@ -381,6 +382,8 @@ function structurePicture(register: Register) {
   return {
     nodes: register.nodes,
     readNodes: register.readNodes,
+    phase: register.phase,
+    runId: register.runId,
     personBefore: 0,
     personAfter: 0,
     agent: 0,
@@ -416,10 +419,25 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
         : edge.action === "RemoveNode"
           ? decide(register, { command: "remove", node: "b" })
           : edge.action === "SecondRunReads"
-            ? decide(register, { command: "read", runId: readRun, node: "a" })
+            ? decide(register, { command: "read", runId: text(source, "runId"), node: "a" })
             : null
     if (decision === null) {
       failures.push(`structure ${where} is not connected`)
+      continue
+    }
+    if (text(target, "lastKind") === "fenced") {
+      const held =
+        decision.decision === "refuse" &&
+        decision.code === "run-fenced" &&
+        flag(target, "nodeA") === flag(source, "nodeA") &&
+        flag(target, "nodeB") === flag(source, "nodeB") &&
+        flag(target, "didRead") === flag(source, "didRead") &&
+        flag(target, "storedA") === flag(source, "storedA") &&
+        flag(target, "storedB") === flag(source, "storedB") &&
+        text(target, "phase") === text(source, "phase") &&
+        text(target, "runId") === text(source, "runId")
+      if (!held) failures.push(`structure ${where} did not fence the read`)
+      else replayed += 1
       continue
     }
     if (decision.decision !== "apply") {
@@ -430,6 +448,8 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
     const expected = {
       nodes: nodeNames(flag(target, "nodeA"), flag(target, "nodeB")),
       readNodes: flag(target, "didRead") ? nodeNames(flag(target, "storedA"), flag(target, "storedB")) : null,
+      phase: phaseOf(target),
+      runId: text(target, "runId"),
       personBefore: num(target, "personBefore"),
       personAfter: num(target, "personAfter"),
       agent: num(target, "agent"),

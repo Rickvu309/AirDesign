@@ -20,6 +20,7 @@ const directory = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-edit-"))
 process.on("exit", () => fs.rmSync(directory, { recursive: true, force: true }))
 fs.cpSync(path.join(root, "specs/edit"), directory, { recursive: true })
 fs.writeFileSync(path.join(directory, "Edit.tla"), source.replace(guard, opened))
+fs.writeFileSync(path.join(directory, "Stamp.tla"), `---- MODULE Stamp ----\nStamp == ${Date.now()}\n====\n`)
 
 const java = javaBin()
 const jar = jarPath()
