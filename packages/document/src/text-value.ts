@@ -29,7 +29,7 @@ function integerAtLeast(value: unknown, floor: number): number | null {
   if (typeof value !== "number" || !Number.isInteger(value) || value < floor) {
     return null
   }
-  return value
+  return Object.is(value, -0) ? 0 : value
 }
 
 function readRun(value: unknown): TextRun | null {
