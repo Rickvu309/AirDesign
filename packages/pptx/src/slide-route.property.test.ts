@@ -104,7 +104,13 @@ function shapeById(elements: readonly MarkupElement[], id: string): MarkupElemen
 
 function routeFor(op: "text" | "move" | "resize" | "remove", target: Shape): SlideRoute {
   const shape = String(target.id)
-  if (op === "text" && target.kind === "p:sp") return { name: "text", part, shape, text: "A & B\u0001\t" }
+  if (op === "text" && target.kind === "p:sp") {
+    const runs = target.runs.map((run, index) => ({
+      from: index,
+      text: index === 0 ? "A & B\u0001\t" : `${run.text}Z${target.id}`,
+    }))
+    return { name: "text", part, shape, value: [{ from: 0, runs }] }
+  }
   if (op === "move") return { name: "move", part, shape, x: 3, y: 4 }
   if (op === "resize") return { name: "resize", part, shape, cx: 5, cy: 6 }
   return { name: "remove", part, shape }
@@ -126,14 +132,6 @@ it("edits only the requested shape in a mixed tree", () => {
         expect(document.wellFormed).toBe(true)
         const span = shapeById(document.elements, String(target.id))
         expect(span.kind).toBe(target.kind)
-        const onlyRun = target.kind === "p:sp" && target.runs.length === 1 ? target.runs[0] : undefined
-        const oneRun = onlyRun !== undefined && !onlyRun.empty && onlyRun.text !== ""
-        if (op === "text" && !oneRun) {
-          const saved = Uint8Array.from(before)
-          expect(() => applyRoute(new Map([[part, before]]), routeFor(op, target))).toThrow(/text-shape/)
-          expect(before).toEqual(saved)
-          return
-        }
         const edited = applyRoute(new Map([[part, before]]), routeFor(op, target))
         const after = edited.get(part)
         if (after === undefined) throw new Error("part")
@@ -161,10 +159,10 @@ it("edits only the requested shape in a mixed tree", () => {
           expect(after.includes(1)).toBe(false)
           expect(text).toContain("<a:t>A &amp; B\t</a:t>")
           expect(text).toContain(`lang="en-US"`)
-          expect(text).not.toContain(`Z${target.id}`)
-          expect(text).not.toContain(`b="1"`)
+          for (const run of target.runs.slice(1))
+            expect(text).toContain(`<a:rPr b="1"/><a:t>${run.text}Z${target.id}</a:t>`)
           const runs = parsed.elements.filter((item) => item.kind === "a:t")
-          expect(runs).toHaveLength(1)
+          expect(runs).toHaveLength(target.runs.length)
         }
         if (op === "move") expect(text).toContain(`<a:off x="3" y="4"/>`)
         if (op === "resize") expect(text).toContain(`<a:ext cx="5" cy="6"/>`)

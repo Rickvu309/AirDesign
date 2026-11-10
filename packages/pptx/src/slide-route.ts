@@ -1,10 +1,12 @@
+import type { TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { addTextShape, xmlText } from "./shape-write.js"
+import { addTextShape } from "./shape-write.js"
+import { markupChildren, textValueEdits } from "./text-value-route.js"
 
 export type SlideRoute =
-  | { readonly name: "text"; readonly part: string; readonly shape: string; readonly text: string }
+  | { readonly name: "text"; readonly part: string; readonly shape: string; readonly value: TextValue }
   | { readonly name: "move"; readonly part: string; readonly shape: string; readonly x: number; readonly y: number }
   | { readonly name: "resize"; readonly part: string; readonly shape: string; readonly cx: number; readonly cy: number }
   | {
@@ -19,10 +21,7 @@ export type SlideRoute =
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
 
 const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
-const runKinds = new Set(["a:r", "a:br", "a:fld"])
 const emptyBytes = new Uint8Array(0)
-const textOpen = encodeUtf8("<a:t>")
-const textClose = encodeUtf8("</a:t>")
 
 function emu(value: number): number {
   if (!Number.isInteger(value)) throw new Error("emu")
@@ -66,102 +65,6 @@ function owns(elements: readonly MarkupElement[], index: number, shape: MarkupEl
     parent = ancestor.parent
   }
   return false
-}
-
-function inside(elements: readonly MarkupElement[], index: number, ancestor: MarkupElement): boolean {
-  let parent = elements[index]?.parent ?? -1
-  while (parent >= 0) {
-    if (parent === ancestor.index) return true
-    const next = elements[parent]
-    if (next === undefined) return false
-    parent = next.parent
-  }
-  return false
-}
-
-function textElement(escaped: Uint8Array): Uint8Array {
-  const next = new Uint8Array(textOpen.length + escaped.length + textClose.length)
-  next.set(textOpen, 0)
-  next.set(escaped, textOpen.length)
-  next.set(textClose, textOpen.length + escaped.length)
-  return next
-}
-
-function textEdit(element: MarkupElement, escaped: Uint8Array): ByteEdit {
-  if (element.selfClosing) return { start: element.start, end: element.end, next: textElement(escaped) }
-  if (element.closeStart < element.openEnd) throw new Error("text")
-  return { start: element.openEnd, end: element.closeStart, next: escaped }
-}
-
-function oneTextRun(elements: readonly MarkupElement[], shape: MarkupElement): boolean {
-  let paragraphs = 0
-  let runs = 0
-  let carried = 0
-  let paragraph: MarkupElement | null = null
-  let run: MarkupElement | null = null
-  let text: MarkupElement | null = null
-  for (const element of elements) {
-    if (!owns(elements, element.index, shape)) continue
-    if (element.kind === "a:p") {
-      paragraphs += 1
-      paragraph = element
-    } else if (element.kind === "a:r") {
-      runs += 1
-      run = element
-    } else if (element.kind === "a:br" || element.kind === "a:fld") {
-      carried += 1
-    } else if (element.kind === "a:t") {
-      if (text !== null) return false
-      text = element
-    }
-  }
-  if (paragraphs !== 1 || runs !== 1 || carried !== 0) return false
-  if (paragraph === null || run === null || text === null) return false
-  if (!inside(elements, run.index, paragraph) || !inside(elements, text.index, run)) return false
-  return !text.selfClosing && text.closeStart > text.openEnd
-}
-
-function textEdits(elements: readonly MarkupElement[], shape: MarkupElement, text: string): readonly ByteEdit[] {
-  if (!oneTextRun(elements, shape)) throw new Error("text-shape")
-  const runs: MarkupElement[] = []
-  const texts: MarkupElement[] = []
-  for (const element of elements) {
-    if (!owns(elements, element.index, shape)) continue
-    if (runKinds.has(element.kind)) runs.push(element)
-    if (element.kind === "a:t") texts.push(element)
-  }
-  const firstRun = runs.find((element) => element.kind === "a:r")
-  const escaped = encodeUtf8(xmlText(text))
-  const edits: ByteEdit[] = []
-  const remove = (element: MarkupElement) => {
-    edits.push({ start: element.start, end: element.end, next: emptyBytes })
-  }
-  if (firstRun !== undefined) {
-    const inner = texts.filter((element) => inside(elements, element.index, firstRun))
-    const firstText = inner[0]
-    if (firstText === undefined) {
-      if (firstRun.closeStart < 0) throw new Error("text")
-      edits.push({ start: firstRun.closeStart, end: firstRun.closeStart, next: textElement(escaped) })
-    } else {
-      edits.push(textEdit(firstText, escaped))
-      for (const extra of inner.slice(1)) remove(extra)
-    }
-    for (const run of runs) {
-      if (run.index !== firstRun.index) remove(run)
-    }
-    for (const extra of texts) {
-      if (inside(elements, extra.index, firstRun)) continue
-      const covered = runs.some((run) => run.index !== firstRun.index && inside(elements, extra.index, run))
-      if (!covered) remove(extra)
-    }
-    return edits
-  }
-  const firstText = texts[0]
-  if (firstText === undefined) throw new Error("text")
-  edits.push(textEdit(firstText, escaped))
-  for (const extra of texts.slice(1)) remove(extra)
-  for (const run of runs) remove(run)
-  return edits
 }
 
 function attributeEdit(element: MarkupElement, name: string, value: string): ByteEdit {
@@ -225,7 +128,7 @@ function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name:
     case "text": {
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
-      return spliceBytes(bytes, textEdits(document.elements, shape, route.text))
+      return spliceBytes(bytes, textValueEdits(markupChildren(document.elements), bytes, shape, route.value))
     }
     case "move": {
       const x = emu(route.x)

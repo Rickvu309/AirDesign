@@ -1,6 +1,40 @@
 import { describe, expect, it } from "vitest"
-import { encodeUtf8 } from "./package-bytes.js"
+import { markupDocument } from "./element-span.js"
+import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
 import { partTouch, routeOperations, routeRuns, touchMatches } from "./route-parts.js"
+
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): {
+    readFileSync(path: string): Uint8Array
+    readdirSync(path: string): string[]
+    statSync(path: string): { size: number }
+  }
+}
+
+const fs = process.getBuiltinModule("node:fs")
+
+function sameBytes(left: Uint8Array | undefined, right: Uint8Array | undefined): boolean {
+  if (left === undefined || right === undefined) return left === right
+  return left.length === right.length && left.every((byte, index) => byte === right[index])
+}
+
+function commonPrefix(left: Uint8Array, right: Uint8Array): number {
+  let at = 0
+  while (at < left.length && at < right.length && left[at] === right[at]) at += 1
+  return at
+}
+
+function commonSuffix(left: Uint8Array, right: Uint8Array, prefix: number): number {
+  let at = 0
+  while (
+    at + prefix < left.length &&
+    at + prefix < right.length &&
+    left[left.length - 1 - at] === right[right.length - 1 - at]
+  )
+    at += 1
+  return at
+}
 
 function text(value: string): Uint8Array {
   return encodeUtf8(value)
@@ -32,7 +66,12 @@ function hosts(): Map<string, Uint8Array> {
 describe("partTouch", () => {
   it("says a text edit changes only that slide", () => {
     expect(
-      partTouch(hosts(), { name: "text", part: "ppt/slides/slide1.xml", shape: "2", text: "AirDesignProbe" }),
+      partTouch(hosts(), {
+        name: "text",
+        part: "ppt/slides/slide1.xml",
+        shape: "2",
+        value: [{ from: 0, runs: [{ from: 0, text: "AirDesignProbe" }] }],
+      }),
     ).toEqual({ changed: ["ppt/slides/slide1.xml"], added: [], removed: [] })
   })
 
@@ -71,4 +110,44 @@ describe("routeRuns", () => {
     const operations = routeRuns(hosts()).map((run) => run.operation)
     expect([...operations].sort()).toEqual([...routeOperations].sort())
   })
+
+  it("a text write on a real deck changes only the bytes of its own shape", async () => {
+    const root = `${process.cwd()}/scripts/pptx-fixtures`
+    const decks = fs
+      .readdirSync(root)
+      .filter((name) => name.endsWith(".pptx") && fs.statSync(`${root}/${name}`).size >= 100_000)
+    expect(decks.sort()).toEqual(["census-updating-spm.pptx", "doe-heat-pumps.pptx", "nasa-1d-cnn.pptx"])
+    for (const name of decks) {
+      const before = await readParts(fs.readFileSync(`${root}/${name}`))
+      const run = routeRuns(before).find((item) => item.operation === "text")
+      expect(run?.error).toBeNull()
+      const after = run?.parts
+      if (after === undefined || after === null) throw new Error("text run")
+      expect([...after.keys()]).toEqual([...before.keys()])
+      const changed = [...before.keys()].filter((key) => !sameBytes(before.get(key), after.get(key)))
+      expect(changed).toHaveLength(1)
+      const part = changed[0] ?? ""
+      const old = before.get(part) ?? new Uint8Array()
+      const next = after.get(part) ?? new Uint8Array()
+      const prefix = commonPrefix(old, next)
+      const suffix = commonSuffix(old, next, prefix)
+      const document = markupDocument(old)
+      const edited = document.elements.find(
+        (element) =>
+          element.kind === "a:t" &&
+          element.openEnd <= prefix &&
+          element.closeStart >= old.length - suffix &&
+          element.closeStart >= element.openEnd,
+      )
+      expect(edited).toBeDefined()
+      if (edited === undefined) throw new Error("a:t")
+      expect(next.subarray(0, edited.openEnd)).toEqual(old.subarray(0, edited.openEnd))
+      expect(next.subarray(next.length - (old.length - edited.closeStart))).toEqual(old.subarray(edited.closeStart))
+      const delta = next.length - old.length
+      expect(decodeUtf8(next.subarray(edited.openEnd, edited.closeStart + delta))).toMatch(/^AirDesignProbe2?$/)
+      const paragraph = document.elements[edited.parent]?.parent ?? -1
+      const runs = document.elements.filter((element) => element.parent === paragraph && element.kind === "a:r")
+      expect(runs.length).toBeGreaterThanOrEqual(2)
+    }
+  }, 30_000)
 })

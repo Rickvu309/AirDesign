@@ -1,6 +1,7 @@
+import type { TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { decodeUtf8 } from "./package-bytes.js"
 import type { ShapeBox } from "./shape-write.js"
+import { markupChildren, shapeTextValue } from "./text-value-route.js"
 
 export type ShapeKind = "p:sp" | "p:pic" | "p:graphicFrame" | "p:cxnSp" | "p:grpSp"
 
@@ -10,7 +11,7 @@ export type ReadShape = {
   readonly shape: string
   readonly kind: ShapeKind
   readonly box: ShapeBox | null
-  readonly text: string
+  readonly text: TextValue
   readonly locked: boolean
 }
 
@@ -53,34 +54,6 @@ const emu = (value: string | null): number | null => {
   return Number.isInteger(number) ? number : null
 }
 
-const plain = (value: string): string => {
-  let text = ""
-  let start = 0
-  for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== "&") continue
-    let end = index + 1
-    while (end < value.length && value[end] !== ";") end += 1
-    const token = value.slice(index + 1, end)
-    const decoded =
-      token === "amp"
-        ? "&"
-        : token === "lt"
-          ? "<"
-          : token === "gt"
-            ? ">"
-            : token === "quot"
-              ? '"'
-              : token === "apos"
-                ? "'"
-                : null
-    text += value.slice(start, index) + (decoded ?? value.slice(index, end < value.length ? end + 1 : value.length))
-    if (end >= value.length) return text
-    start = end + 1
-    index = end
-  }
-  return text + value.slice(start)
-}
-
 const slidePartName = (target: string): string => {
   if (target.startsWith("/")) return target.slice(1)
   if (target.startsWith("ppt/")) return target
@@ -121,6 +94,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     const slide = slides.get(part)
     if (slide === undefined) continue
     const { elements } = markupDocument(bytes)
+    const children = markupChildren(elements)
     const fallbackIds = new Set<string>()
     const kept: ReadShape[] = []
     for (const shape of elements) {
@@ -128,15 +102,11 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
       let id: string | null = null
       let off: MarkupElement | null = null
       let ext: MarkupElement | null = null
-      let text = ""
       for (const element of elements) {
         if (!owns(elements, element.index, shape)) continue
         if (id === null && element.kind === "p:cNvPr") id = element.id
         if (off === null && element.kind === "a:off") off = element
         if (ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) ext = element
-        if (element.kind === "a:t" && !element.selfClosing && element.closeStart >= element.openEnd) {
-          text += plain(decodeUtf8(bytes.subarray(element.openEnd, element.closeStart)))
-        }
       }
       if (id === null) continue
       if (inFallback(elements, shape.index)) {
@@ -153,7 +123,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
         shape: id,
         kind: shape.kind as ShapeKind,
         box: x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy },
-        text,
+        text: shapeTextValue(children, bytes, shape),
         locked: false,
       })
     }
