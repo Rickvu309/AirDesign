@@ -18,13 +18,17 @@ const steps = [
 ]
 
 const showOnSuccess = new Set(["bug-rule", "specs"])
+const all = process.argv.includes("--all")
+const failed = []
 
 for (const [name, command, args] of steps) {
+  const started = Date.now()
   const result = spawnSync(command, args, {
     cwd: root,
     encoding: "utf8",
     env: process.env,
   })
+  const seconds = ((Date.now() - started) / 1000).toFixed(1)
   if (result.status !== 0) {
     if (result.stdout) {
       process.stdout.write(result.stdout)
@@ -32,9 +36,16 @@ for (const [name, command, args] of steps) {
     if (result.stderr) {
       process.stderr.write(result.stderr)
     }
-    console.error(`fail ${name}`)
-    process.exit(result.status ?? 1)
+    console.error(`fail ${name} ${seconds}s`)
+    if (!all) process.exit(result.status ?? 1)
+    failed.push(name)
+    continue
   }
   if (showOnSuccess.has(name) && result.stdout) process.stdout.write(result.stdout)
-  console.log(`ok ${name}`)
+  console.log(`ok ${name} ${seconds}s`)
+}
+
+if (failed.length > 0) {
+  console.error(`failed: ${failed.join(", ")}`)
+  process.exit(1)
 }
