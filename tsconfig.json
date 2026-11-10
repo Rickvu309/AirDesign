@@ -6,6 +6,9 @@
     },
     {
       "path": "./packages/theme"
+    },
+    {
+      "path": "./packages/pptx"
     }
   ]
 }
