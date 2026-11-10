@@ -223,6 +223,33 @@ describe("oauth", () => {
     expect(dirty.grant).toEqual(clean.grant)
   })
 
+  it("no command can write an extra key into the grant", () => {
+    const extras = { principal: "intruder", actor: "intruder", deck: "258.8", revoked: true, code: "open" }
+    const cases: readonly (readonly [Grant, Command])[] = [
+      [openGrant(principal), { command: "exchange" }],
+      [exchanged(), { command: "call", generation: 1 }],
+      [exchanged(), { command: "rotate", generation: 1 }],
+      [exchanged(), { command: "revoke" }],
+    ]
+    for (const [grant, command] of cases) {
+      const clean = oauth(grant, command)
+      const dirty = oauth(grant, { ...command, ...extras } as Command)
+      expect(clean.accepted).toBe(true)
+      expect(dirty).toEqual(clean)
+      expect(dirty.grant.principal).toBe(principal)
+      expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked"])
+    }
+  })
+
+  it("a call with a generation that is not a number is refused", () => {
+    const grant = exchanged()
+    for (const generation of ["1", true, [1], null, undefined, { valueOf: () => 1 }]) {
+      const result = oauth(grant, { command: "call", generation } as unknown as Command)
+      expect(result.accepted).toBe(false)
+      expect(result.grant).toBe(grant)
+    }
+  })
+
   it("an extra deck key is ignored", () => {
     const grant = exchanged()
     const plain = { command: "call" as const, generation: 1 }
