@@ -47,7 +47,11 @@ export function createServer(session: Session): McpServer {
           openWorldHint: tool.openWorldHint,
         },
       },
-      async (args) => mcpResult(callTool(tool.name, args, session)),
+      async (args) => {
+        const result = callTool(tool.name, args, session)
+        if (result.ok) session.deck = result.deck
+        return mcpResult(result)
+      },
     )
   }
   return server
