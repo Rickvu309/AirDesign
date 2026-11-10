@@ -58,11 +58,11 @@ function applyEdits(deck: Deck, edits: readonly WireEdit[], commandFor: (edit: W
     if (next >= limits.bytes) {
       return refused("limit")
     }
-    const decision = decide({ ...register, bytes: next }, commandFor(edit))
+    const decision = decide(register, commandFor(edit))
     if (decision.decision === "refuse") {
       return refused(decision.code)
     }
-    register = decision.register
+    register = { ...decision.register, bytes: next }
   }
   const revision = deck.revision + 1
   const notified = notifyKey(deck.id, revision)
