@@ -55,6 +55,34 @@ describe("utf8", () => {
   })
 })
 
+describe("readParts", () => {
+  it("refuses a zip that names one part twice", async () => {
+    const zip = await zipOf({ "a.xml": "<first/>", "b.xml": "<last/>" })
+    const repeated = Uint8Array.from(zip)
+    let renamed = 0
+    for (let index = 0; index + 5 <= repeated.length; index += 1) {
+      if (decode(repeated.subarray(index, index + 5)) !== "b.xml") continue
+      repeated[index] = "a".charCodeAt(0)
+      renamed += 1
+    }
+    expect(renamed).toBe(2)
+    await expect(readParts(repeated)).rejects.toThrow("repeated part a.xml")
+  })
+
+  it("refuses a repeated name whose first copy claims to be a directory", async () => {
+    const zip = await zipOf({ "a.xml": "<first/>", "b.xml": "<last/>" })
+    const repeated = Uint8Array.from(zip)
+    for (let index = 0; index + 5 <= repeated.length; index += 1) {
+      if (decode(repeated.subarray(index, index + 5)) === "b.xml") repeated[index] = "a".charCodeAt(0)
+    }
+    let central = 0
+    while (decode(repeated.subarray(central, central + 4)) !== "PK\x01\x02") central += 1
+    repeated[central + 5] = 0
+    repeated[central + 38] = (repeated[central + 38] ?? 0) | 0x10
+    await expect(readParts(repeated)).rejects.toThrow("repeated part a.xml")
+  })
+})
+
 describe("roundTripPackage", () => {
   it("round-trips a dangling relationship part byte for byte", async () => {
     const packed = await zipOf({

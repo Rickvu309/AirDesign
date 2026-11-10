@@ -5,6 +5,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { freshBrowserExport } from "./browser-export.mjs"
 import { judge } from "./judge.mjs"
 import {
   changedSinceArgs,
@@ -29,10 +30,8 @@ const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
 const browserExportName = "exported-deck.pptx"
 const browserExportPath = path.join(root, "tests/browser", browserExportName)
-if (!fs.existsSync(browserExportPath)) {
-  console.error("missing tests/browser/exported-deck.pptx")
-  process.exit(1)
-}
+const browserShape = "2"
+const browserText = "Hello!"
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -84,6 +83,10 @@ const renderPages = async (file) => {
 }
 
 await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
+const browserSpec = freshBrowserExport({
+  file: browserExportPath,
+  run: () => run("pnpm", ["exec", "playwright", "test", "tests/browser/thin-deck.spec.ts"]),
+})
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
 await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
@@ -102,7 +105,10 @@ const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => (name === browserExportName ? browserExportPath : path.join(fixtures, name))
 const secondRender = (name) => `${name} again`
 const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
-const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))]
+const renderName = (render) => (render.endsWith(" again") ? render.slice(0, -" again".length) : render)
+const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))].filter(
+  (render) => renderName(render) !== browserExportName,
+)
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
@@ -134,6 +140,7 @@ const freshFails = freshMissFails({
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
+  if (name === browserExportName) continue
   parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 }
 const realDecks = fs
@@ -173,6 +180,15 @@ const judgedFiles = async () => {
   } finally {
     fs.rmSync(proofFolder, { recursive: true, force: true })
   }
+}
+const spec = await browserSpec
+console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
+if (spec.ok) {
+  parts.set(browserExportName, await pptx.readParts(fs.readFileSync(browserExportPath)))
+  waiting.push(browserExportName)
+} else {
+  const index = cases.findIndex((row) => row.name === "browser-text-export")
+  if (index >= 0) cases.splice(index, 1)
 }
 const [{ found: lists, planting }] = await Promise.all([
   judgedFiles(),
@@ -218,6 +234,19 @@ for (const run of runs) {
 }
 const plantedCount = runs.reduce((sum, run) => sum + run.planted.length, 0)
 console.log(`judge proof planted ${plantedCount} samples in ${planting.toFixed(1)} seconds`)
+if (!spec.ok) {
+  failed += 1
+  console.error(spec.line)
+  if (spec.detail !== "") console.error(spec.detail)
+} else {
+  const cleanParts = parts.get("clean.pptx")
+  const exportParts = parts.get(browserExportName)
+  if (cleanParts === undefined || exportParts === undefined) throw new Error("browser export")
+  for (const failure of pptx.browserExportFailures(cleanParts, exportParts, browserShape, browserText)) {
+    failed += 1
+    console.log(failure)
+  }
+}
 for (const row of cases) {
   const { errors, dupes } = judge(
     pptx,

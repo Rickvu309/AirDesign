@@ -60,7 +60,10 @@ export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, 
   const reader = new ZipReader(new Uint8ArrayReader(bytes))
   const entries = await reader.getEntries()
   const parts = new Map<string, Uint8Array>()
+  const names = new Set<string>()
   for (const entry of entries) {
+    if (names.has(entry.filename)) throw new Error(`repeated part ${entry.filename}`)
+    names.add(entry.filename)
     if (entry.directory) continue
     parts.set(entry.filename, await entry.getData(new Uint8ArrayWriter()))
   }
