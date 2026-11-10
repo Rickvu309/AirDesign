@@ -238,3 +238,61 @@ it("undoes each element of a run on its own", () => {
   expect(hidden?.phase).toBe("undone")
   expect(hidden?.landed).toEqual([{ actor: "agent", value: "right", visible: false, runId: run }])
 })
+
+it("returns the edited element's route", () => {
+  const part = elementId("258.7")
+  const added = decide(openRegister("floor", "slide"), { command: "add", node: part, floor: "one", route: "part" })
+  if (added.decision !== "apply") throw new Error("add")
+  expect(added.route).toBe("part")
+  for (const [node, route] of [
+    [part, "part"],
+    [elementId("a"), "slide"],
+  ] as const) {
+    const commandsInOrder: readonly Command[] = [
+      { command: "person", node, value: "v" },
+      { command: "start", node, runId: "run" },
+      { command: "agent", node, runId: "run", readAt: 1, value: "g" },
+      { command: "stop", node, runId: "run" },
+      { command: "undo", node, runId: "run" },
+      { command: "read", node, runId: "run" },
+    ]
+    let register = added.register
+    for (const command of commandsInOrder) {
+      const decision = decide(register, command)
+      expect(decision, `${node} ${command.command}`).toMatchObject({ decision: "apply", route })
+      if (decision.decision !== "apply") throw new Error(command.command)
+      register = decision.register
+    }
+    const removed = decide(register, { command: "remove", node })
+    expect(removed, `${node} remove`).toMatchObject({ decision: "apply", route })
+  }
+})
+
+it("leaves every other element unchanged after any sequence", () => {
+  const watched = [...ids, elementId("258.8")]
+  fc.assert(
+    fc.property(
+      fc.array(fc.tuple(fc.integer({ min: 0, max: ids.length - 1 }), fc.integer({ min: 0, max: kinds.length - 1 })), {
+        maxLength: 8,
+      }),
+      (steps) => {
+        let register = three()
+        for (const [idIndex, kindIndex] of steps) {
+          const target = ids[idIndex]
+          const kind = kinds[kindIndex]
+          if (target === undefined || kind === undefined) return false
+          const touched = kind === "add" ? elementId("258.8") : target
+          const before = watched.map((id) => picture(register, id))
+          const nodesBefore = register.nodes.filter((id) => id !== touched)
+          const decision = decide(register, commandFor(kind, target))
+          if (decision.decision === "apply") register = decision.register
+          const unchanged = watched.every((id, index) => id === touched || before[index] === picture(register, id))
+          const sameNodes =
+            JSON.stringify(register.nodes.filter((id) => id !== touched)) === JSON.stringify(nodesBefore)
+          if (!unchanged || !sameNodes) return false
+        }
+        return true
+      },
+    ),
+  )
+})

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest"
-import { decide, openRegister, version, type Command, type Phase, type Register, type Refusal } from "./decide.js"
-import { elementId } from "./element-id.js"
+import {
+  decide,
+  openRegister,
+  version,
+  type Command,
+  type NodeRegister,
+  type Phase,
+  type Register,
+  type Refusal,
+} from "./decide.js"
+import { elementId, type ElementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type RunState = "match" | "miss"
@@ -662,21 +671,71 @@ function sameText(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly overlap: string | null } {
+function bodyOf(register: Register, target: ElementId | null): NodeRegister {
+  const source = target === null ? register : register.elements[target]
+  if (source === undefined) throw new Error("missing element")
+  return {
+    route: source.route,
+    floor: source.floor,
+    landed: source.landed,
+    phase: source.phase,
+    runId: source.runId,
+    readAt: source.readAt,
+    guarded: source.guarded,
+    claimed: source.claimed,
+    stoppedAt: source.stoppedAt,
+    slides: source.slides,
+    bytes: source.bytes,
+  }
+}
+
+function viewOf(register: Register, target: ElementId | null): Register {
+  if (target === null) return register
+  return {
+    ...bodyOf(register, target),
+    nodes: register.nodes,
+    readNodes: register.readNodes,
+    elements: register.elements,
+  }
+}
+
+function writtenBack(register: Register, view: Register, target: ElementId | null): Register {
+  if (target === null) return view
+  return { ...register, readNodes: view.readNodes, elements: { ...register.elements, [target]: bodyOf(view, null) } }
+}
+
+function walkStart(target: ElementId | null): Register {
+  const opened = openRegister("floor", "slide")
+  if (target === null) return freezeRegister(opened)
+  const added = decide(opened, { command: "add", node: target, floor: "floor", route: "part" })
+  if (added.decision !== "apply") throw new Error("add")
+  return freezeRegister(added.register)
+}
+
+function aimedAt(command: Command, target: ElementId | null): Command {
+  if (target === null || command.command === "add") return command
+  return { ...command, node: target }
+}
+
+function walkOnce(target: ElementId | null): {
+  readonly hits: ReadonlyMap<string, WalkHit>
+  readonly overlap: string | null
+} {
   const hits = new Map<string, WalkHit>(rules.map((rule) => [rule.name, { hits: 0, failure: null }]))
   let overlap: string | null = null
   walkRegisters({
-    start: freezeRegister(openRegister("floor", "slide")),
-    identity,
-    commands,
-    keep: keepRegister,
+    start: walkStart(target),
+    identity: (register) => identity(viewOf(register, target)),
+    commands: (register) => commands(viewOf(register, target)).map((command) => aimedAt(command, target)),
+    keep: (register) => keepRegister(viewOf(register, target)),
     cap: (dequeued, register) => {
-      if (version(register) > 4 || dequeued > 400) {
+      if (version(viewOf(register, target)) > 4 || dequeued > 400) {
         throw new Error("state cap hit")
       }
     },
     step: (register, command) => {
-      const picture = situation(register, command)
+      const view = viewOf(register, target)
+      const picture = situation(view, command)
       if (picture === null) {
         overlap = overlap ?? `${command.command} has no row`
         return null
@@ -702,12 +761,12 @@ function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly ove
           ? { decision: "refuse" as const, code: chosen.effect.code }
           : {
               decision: "apply" as const,
-              register: nextRegister(register, command, chosen.effect),
-              route: register.route,
+              register: writtenBack(register, nextRegister(view, command, chosen.effect), target),
+              route: view.route,
             }
       if (!sameText(decision, expected)) {
         hit.failure = hit.failure ?? `${chosen.name} disagreed`
-        return chosen.effect.outcome === "refuse" ? null : nextRegister(register, command, chosen.effect)
+        return expected.decision === "apply" ? expected.register : null
       }
       hit.hits += 1
       return decision.decision === "apply" ? decision.register : null
@@ -719,7 +778,7 @@ function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly ove
 let walked: ReturnType<typeof walkOnce> | undefined
 
 function walkAll(): ReturnType<typeof walkOnce> {
-  walked ??= walkOnce()
+  walked ??= walkOnce(null)
   return walked
 }
 
@@ -793,6 +852,18 @@ describe("decide", () => {
       }
     })
   }
+
+  it("holds every rule for a map element", () => {
+    for (const target of [elementId("258.7"), elementId("__proto__")]) {
+      const outcome = walkOnce(target)
+      expect(outcome.overlap, target).toBeNull()
+      for (const rule of rules) {
+        const hit = outcome.hits.get(rule.name)
+        expect(hit?.failure ?? null, `${target} ${rule.name}`).toBeNull()
+        expect(hit?.hits ?? 0, `${target} ${rule.name}`).toBeGreaterThan(0)
+      }
+    }
+  })
 
   it("An undo hides both rows of one run", () => {
     const register = freezeRegister({
