@@ -13,7 +13,9 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:specs": "node scripts/check-specs.mjs",
     "check:pptx": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs",
-    "test": "vitest run && node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/check-specs.test.mjs",
+    "test": "pnpm test:unit && pnpm test:tooling",
+    "test:unit": "vitest run",
+    "test:tooling": "node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/check-specs.test.mjs",
     "test:browser": "playwright test",
     "build": "pnpm -r --if-present run build"
   },

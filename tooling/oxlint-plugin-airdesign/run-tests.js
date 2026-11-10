@@ -1,6 +1,6 @@
+import { spawn } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
-import { pathToFileURL } from "node:url"
 
 const root = import.meta.dirname
 
@@ -14,6 +14,18 @@ const testsIn = (directory) =>
 const rulesDirectory = path.join(root, "rules")
 const files = [...testsIn(root), ...(fs.existsSync(rulesDirectory) ? testsIn(rulesDirectory) : [])]
 
-for (const file of files) {
-  await import(pathToFileURL(file).href)
+const run = (file) =>
+  new Promise((resolve) => {
+    const child = spawn(process.execPath, [file], { env: process.env })
+    let output = ""
+    child.stdout.on("data", (chunk) => (output += chunk))
+    child.stderr.on("data", (chunk) => (output += chunk))
+    child.on("close", (status) => resolve({ status: status ?? 1, output }))
+  })
+
+let failed = false
+for (const result of await Promise.all(files.map(run))) {
+  process.stdout.write(result.output)
+  if (result.status !== 0) failed = true
 }
+if (failed) process.exit(1)
