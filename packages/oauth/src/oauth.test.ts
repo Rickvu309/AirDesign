@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest"
+import { oauth, openGrant, type Grant } from "./index.js"
+
+function issued(who: "person" | "agent"): Grant {
+  const result = oauth(openGrant(), { command: who })
+  expect(result.accepted).toBe(true)
+  return result.grant
+}
+
+describe("oauth", () => {
+  it("uses a code once and keeps the stored identity", () => {
+    const open = issued("person")
+    const wrongDeck = oauth(open, { command: "exchange", deck: "other" })
+    expect(wrongDeck.accepted).toBe(false)
+    expect(wrongDeck.grant).toEqual(open)
+    const exchanged = oauth(open, { command: "exchange", deck: "home" })
+    expect(exchanged.accepted).toBe(true)
+    expect(exchanged.grant.code).toBe("used")
+    expect(exchanged.grant.who).toBe("person")
+    expect(exchanged.grant.refresh).toBe("r1")
+    const again = oauth(exchanged.grant, { command: "exchange", deck: "home" })
+    expect(again.accepted).toBe(false)
+    expect(again.grant).toEqual(exchanged.grant)
+    const renamed = oauth(open, { command: "agent" })
+    expect(renamed.accepted).toBe(false)
+    expect(renamed.grant.who).toBe("person")
+  })
+
+  it("kills the previous refresh token and revokes the family on reuse", () => {
+    const exchanged = oauth(issued("agent"), { command: "exchange", deck: "home" })
+    const before = oauth(exchanged.grant, { command: "reuse" })
+    expect(before.accepted).toBe(false)
+    expect(before.grant).toEqual(exchanged.grant)
+    const rotated = oauth(exchanged.grant, { command: "rotate" })
+    expect(rotated.accepted).toBe(true)
+    expect(rotated.grant.refresh).toBe("r2")
+    expect(rotated.grant.previous).toBe("r1")
+    expect(rotated.grant.who).toBe("agent")
+    const reused = oauth(rotated.grant, { command: "reuse" })
+    expect(reused.accepted).toBe(true)
+    expect(reused.grant.family).toBe("revoked")
+    expect(reused.grant.access).toBe("dead")
+    expect(reused.grant.refresh).toBe("dead")
+    const later = oauth(reused.grant, { command: "call", deck: "home" })
+    expect(later.accepted).toBe(false)
+    expect(later.grant).toEqual(reused.grant)
+  })
+
+  it("kills the access token and the refresh token when the family is revoked", () => {
+    const exchanged = oauth(issued("person"), { command: "exchange", deck: "home" })
+    const called = oauth(exchanged.grant, { command: "call", deck: "home" })
+    expect(called.accepted).toBe(true)
+    expect(called.grant.called).toBe("yes")
+    expect(called.grant.who).toBe("person")
+    const second = oauth(called.grant, { command: "call", deck: "home" })
+    expect(second.accepted).toBe(true)
+    expect(second.grant).toEqual(called.grant)
+    const other = oauth(called.grant, { command: "call", deck: "other" })
+    expect(other.accepted).toBe(false)
+    expect(other.grant).toEqual(called.grant)
+    const revoked = oauth(called.grant, { command: "revoke" })
+    expect(revoked.accepted).toBe(true)
+    expect(revoked.grant.access).toBe("dead")
+    expect(revoked.grant.refresh).toBe("dead")
+    const later = oauth(revoked.grant, { command: "call", deck: "home" })
+    expect(later.accepted).toBe(false)
+    expect(later.grant).toEqual(revoked.grant)
+    expect(() => oauth(revoked.grant, { command: "call", deck: "home" })).not.toThrow()
+    expect(() => oauth(openGrant(), { command: "revoke" })).not.toThrow()
+    expect(() => oauth(openGrant(), { command: "exchange", deck: "home" })).not.toThrow()
+  })
+})

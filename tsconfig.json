@@ -23,6 +23,9 @@
       "path": "./packages/mcp"
     },
     {
+      "path": "./packages/oauth"
+    },
+    {
       "path": "./packages/pptx"
     },
     {

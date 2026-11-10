@@ -18,6 +18,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { usage, type Command, type Ledger } from "@airdesign/usage"
+import { oauth, type Command as OauthCommand, type Grant } from "@airdesign/oauth"
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
 import { group as offlineGroup, state as offlineState, step as offlineStep } from "../specs/offline/view.mjs"
@@ -25,6 +26,7 @@ import { group as runGroup, state as runState, step as runStep } from "../specs/
 import { group as structureGroup, state as structureState, step as structureStep } from "../specs/structure/view.mjs"
 import { group as undoGroup, state as undoState, step as undoStep } from "../specs/undo/view.mjs"
 import { group as usageGroup, state as usageState, step as usageStep } from "../specs/usage/view.mjs"
+import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -799,6 +801,89 @@ function replayUsage(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered }
 }
 
+function oauthGrant(spec: Spec): Grant {
+  const code = text(spec, "code")
+  const access = text(spec, "access")
+  const refresh = text(spec, "refresh")
+  const previous = text(spec, "previous")
+  const family = text(spec, "family")
+  const who = text(spec, "who")
+  const deck = text(spec, "deck")
+  const called = text(spec, "called")
+  if (
+    (code !== "none" && code !== "open" && code !== "used") ||
+    (access !== "none" && access !== "live" && access !== "dead") ||
+    (refresh !== "none" && refresh !== "r1" && refresh !== "r2" && refresh !== "dead") ||
+    (previous !== "none" && previous !== "r1") ||
+    (family !== "open" && family !== "revoked") ||
+    (who !== "none" && who !== "person" && who !== "agent") ||
+    (deck !== "none" && deck !== "home") ||
+    (called !== "no" && called !== "yes")
+  ) {
+    throw new Error(`bad oauth state ${JSON.stringify(spec)}`)
+  }
+  return { code, access, refresh, previous, family, who, deck, called }
+}
+
+function oauthPicture(grant: Grant) {
+  return {
+    code: grant.code,
+    access: grant.access,
+    refresh: grant.refresh,
+    previous: grant.previous,
+    family: grant.family,
+    who: grant.who,
+    deck: grant.deck,
+    called: grant.called,
+  }
+}
+
+function oauthCommand(action: string): OauthCommand | null {
+  if (action === "IssuePerson" || action === "IssuePersonRefused") return { command: "person" }
+  if (action === "IssueAgent" || action === "IssueAgentRefused") return { command: "agent" }
+  if (action === "UseCode" || action === "UseAgain" || action === "UseEarly" || action === "UseRevoked") {
+    return { command: "exchange", deck: "home" }
+  }
+  if (action === "UseOther") return { command: "exchange", deck: "other" }
+  if (action === "Call" || action === "CallRefused") return { command: "call", deck: "home" }
+  if (action === "CallOther") return { command: "call", deck: "other" }
+  if (action === "Rotate" || action === "RotateRefused") return { command: "rotate" }
+  if (action === "Reuse" || action === "ReuseRefused") return { command: "reuse" }
+  if (action === "Revoke" || action === "RevokeRefused") return { command: "revoke" }
+  return null
+}
+
+function replayOauth(graph: Graph, view: View, failures: string[]) {
+  let replayed = 0
+  let stuttered = 0
+  for (const edge of graph.edges) {
+    const source = graph.states.get(edge.from)
+    const target = graph.states.get(edge.to)
+    if (!source || !target) throw new Error(`missing oauth state for ${edge.action}`)
+    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
+    const command = oauthCommand(edge.action)
+    if (!command) {
+      failures.push(`oauth ${where} is not connected`)
+      continue
+    }
+    const result = oauth(oauthGrant(source), command)
+    const actual = oauthPicture(result.grant)
+    const expected = oauthPicture(oauthGrant(target))
+    if (!same(actual, expected)) {
+      failures.push(`oauth ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
+      continue
+    }
+    const changed = !same(oauthPicture(oauthGrant(source)), expected)
+    if (changed !== result.accepted) {
+      failures.push(`oauth ${where} accepted ${String(result.accepted)}`)
+      continue
+    }
+    if (changed) replayed += 1
+    else stuttered += 1
+  }
+  return { replayed, stuttered }
+}
+
 function dumpTopics(
   found: readonly { name: string; topic: string; spec: string; config: string }[],
 ): Promise<readonly { name: string; graph: string; output: string }[]> {
@@ -843,6 +928,8 @@ describe("spec replay", () => {
       const found = topics(root).filter((topic) => topic.name !== "run")
       const usageAside = found.findIndex((topic) => topic.name === "usage")
       if (usageAside >= 0) found.splice(usageAside, 1)
+      const oauthAside = found.findIndex((topic) => topic.name === "oauth")
+      if (oauthAside >= 0) found.splice(oauthAside, 1)
       new Function(
         "found",
         "expect",
@@ -853,9 +940,21 @@ describe("spec replay", () => {
     }
     const usageTopic = found.find((topic) => topic.name === "usage")
     if (usageTopic !== undefined) found.splice(found.indexOf(usageTopic), 1)
+    const oauthTopic = found.find((topic) => topic.name === "oauth")
+    if (oauthTopic !== undefined) found.splice(found.indexOf(oauthTopic), 1)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
     if (usageTopic !== undefined) found.push(usageTopic)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo", "usage"])
+    if (oauthTopic !== undefined) found.push(oauthTopic)
+    expect(found.map((topic) => topic.name).sort()).toEqual([
+      "edit",
+      "oauth",
+      "offline",
+      "run",
+      "structure",
+      "undo",
+      "usage",
+    ])
     for (const topic of found) expect(topic.view).toBe(true)
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
@@ -866,6 +965,7 @@ describe("spec replay", () => {
       run: { state: runState, step: runStep, group: runGroup },
       offline: { state: offlineState, step: offlineStep, group: offlineGroup },
       usage: { state: usageState, step: usageStep, group: usageGroup },
+      oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
     }
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
@@ -909,6 +1009,13 @@ describe("spec replay", () => {
           ...replayUsage(graph, view, failures),
         }
       }
+      if (topic.name === "oauth") {
+        reports.oauth = {
+          states: graph.states.size,
+          edges: graph.edges.length,
+          ...replayOauth(graph, view, failures),
+        }
+      }
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
@@ -918,6 +1025,7 @@ describe("spec replay", () => {
       run: { unconnected: { Resume: expect.any(Number), Limit: expect.any(Number) } },
       offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
       usage: { replayed: expect.any(Number), stuttered: expect.any(Number) },
+      oauth: { replayed: expect.any(Number), stuttered: expect.any(Number) },
     })
     const runReport = reports.run as { unconnected: { Resume: number; Limit: number } }
     expect(runReport.unconnected.Resume).toBeGreaterThan(0)
