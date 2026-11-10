@@ -60,10 +60,8 @@ for (const stage of stages) {
 
 const checkSeconds = timeStick(root, "check seconds", checkStarted)
 console.log(checkSeconds.line)
-if (checkSeconds.over !== undefined) {
-  console.error(checkSeconds.over)
-  failed.push("check seconds")
-}
+if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
+if (checkSeconds.fails) failed.push("check seconds")
 
 if (failed.length > 0) {
   console.error(`failed: ${failed.join(", ")}`)
