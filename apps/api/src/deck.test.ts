@@ -36,6 +36,7 @@ describe("deck routes", () => {
       deck,
       listen,
       publicOrigin: "https://app.example",
+      siteOrigin: "https://site.example",
       send: async (mail) => {
         mails.push(mail)
       },
