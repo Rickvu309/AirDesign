@@ -1,25 +1,5 @@
 [
   {
-    "name": "nasa-1d-cnn",
-    "before": "nasa-1d-cnn.pptx",
-    "after": "nasa-1d-cnn.pptx",
-    "visible": false,
-    "targeted": [],
-    "errors": 0,
-    "dupes": 0,
-    "pages": true
-  },
-  {
-    "name": "doe-heat-pumps",
-    "before": "doe-heat-pumps.pptx",
-    "after": "doe-heat-pumps.pptx",
-    "visible": false,
-    "targeted": [],
-    "errors": 0,
-    "dupes": 0,
-    "pages": true
-  },
-  {
     "name": "visible-noop",
     "before": "clean.pptx",
     "after": "clean.pptx",
