@@ -1,1441 +1,331 @@
 import { describe, expect, it } from "vitest"
 import {
-  currentValue,
   decide,
-  history,
   openRegister,
   version,
   type Command,
   type Decision,
-  type NodeRegister,
   type Phase,
   type Register,
   type Refusal,
 } from "./decide.js"
+import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
-type ReadAt = "below" | "equal" | "above"
-type Effect = "person" | "start" | "stop" | "undo" | "agent"
+type RunState = "match" | "miss"
+type ReadState = "equal" | "stale"
+type AgentState = "none" | "visible" | "hidden"
+type EditCommand = "person" | "agent" | "start" | "stop" | "undo"
 
-type PersonRule = {
-  readonly command: "person"
+type Situation = {
+  readonly command: EditCommand
   readonly phase: Phase
+  readonly run: RunState
+  readonly read: ReadState
   readonly guarded: boolean
-  readonly agentLanded: boolean
-  readonly outcome: "apply" | "refuse"
-  readonly effect?: "person"
-  readonly guardedNext?: boolean
-  readonly code?: Refusal
+  readonly agent: AgentState
 }
 
-type RunRule = {
-  readonly command: "start" | "stop" | "undo"
-  readonly phase: Phase
-  readonly runMatch: boolean
-  readonly outcome: "apply" | "refuse"
-  readonly effect?: "start" | "stop" | "undo"
-  readonly guardedNext?: boolean
-  readonly code?: Refusal
+type Clause = {
+  readonly phase?: Phase | readonly Phase[]
+  readonly run?: RunState
+  readonly read?: ReadState
+  readonly guarded?: boolean
+  readonly agent?: AgentState
 }
 
-type AgentRule = {
-  readonly command: "agent"
-  readonly phase: Phase
-  readonly runMatch: boolean
-  readonly readAt: ReadAt
-  readonly guarded: boolean
-  readonly agentLanded: boolean
-  readonly outcome: "apply" | "refuse"
-  readonly effect?: "agent"
-  readonly code?: Refusal
+type Effect =
+  | { readonly outcome: "refuse"; readonly code: Refusal }
+  | { readonly outcome: "person"; readonly guarded: "set" | "keep" }
+  | { readonly outcome: "start" }
+  | { readonly outcome: "stop" }
+  | { readonly outcome: "undo" }
+  | { readonly outcome: "agent" }
+
+type Rule = {
+  readonly name: string
+  readonly command: EditCommand
+  readonly when?: Clause
+  readonly unless?: readonly Clause[]
+  readonly effect: Effect
 }
 
-type Found = {
-  readonly outcome: "apply" | "refuse"
-  readonly effect?: Effect
-  readonly guardedNext?: boolean
-  readonly code?: Refusal
+function phaseMatches(expected: Phase | readonly Phase[] | undefined, actual: Phase): boolean {
+  if (expected === undefined) {
+    return true
+  }
+  if (typeof expected === "string") {
+    return expected === actual
+  }
+  return expected.includes(actual)
 }
 
-const personRules: readonly PersonRule[] = [
-  {
-    command: "person",
-    phase: "idle",
-    guarded: false,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "idle",
-    guarded: false,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "idle",
-    guarded: true,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "idle",
-    guarded: true,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "running",
-    guarded: false,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "running",
-    guarded: false,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "running",
-    guarded: true,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "running",
-    guarded: true,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "stopped",
-    guarded: false,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "stopped",
-    guarded: false,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "stopped",
-    guarded: true,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "stopped",
-    guarded: true,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "undone",
-    guarded: false,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "undone",
-    guarded: false,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    phase: "undone",
-    guarded: true,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    phase: "undone",
-    guarded: true,
-    agentLanded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
+function matchesClause(clause: Clause, picture: Situation): boolean {
+  if (!phaseMatches(clause.phase, picture.phase)) {
+    return false
+  }
+  if (clause.run !== undefined && clause.run !== picture.run) {
+    return false
+  }
+  if (clause.read !== undefined && clause.read !== picture.read) {
+    return false
+  }
+  if (clause.guarded !== undefined && clause.guarded !== picture.guarded) {
+    return false
+  }
+  if (clause.agent !== undefined && clause.agent !== picture.agent) {
+    return false
+  }
+  return true
+}
+
+function matches(rule: Rule, picture: Situation): boolean {
+  if (rule.command !== picture.command) {
+    return false
+  }
+  if (rule.when !== undefined && !matchesClause(rule.when, picture)) {
+    return false
+  }
+  if (rule.unless !== undefined && rule.unless.some((clause) => matchesClause(clause, picture))) {
+    return false
+  }
+  return true
+}
+
+function rulesOf(kind: Command["command"]): readonly Rule[] {
+  switch (kind) {
+    case "person":
+      return [
+        {
+          name: "A person edit during a run with no agent row sets the guard",
+          command: "person",
+          when: { phase: "running", agent: "none" },
+          effect: { outcome: "person", guarded: "set" },
+        },
+        {
+          name: "A person edit keeps the guard after the agent has landed",
+          command: "person",
+          when: { phase: "running", agent: "visible" },
+          effect: { outcome: "person", guarded: "keep" },
+        },
+        {
+          name: "A person edit keeps the guard",
+          command: "person",
+          unless: [
+            { phase: "running", agent: "none" },
+            { phase: "running", agent: "visible" },
+          ],
+          effect: { outcome: "person", guarded: "keep" },
+        },
+      ]
+    case "start":
+      return [
+        {
+          name: "A start from idle opens the run",
+          command: "start",
+          when: { phase: "idle" },
+          effect: { outcome: "start" },
+        },
+        {
+          name: "A start outside idle stays fenced",
+          command: "start",
+          unless: [{ phase: "idle" }],
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+      ]
+    case "stop":
+      return [
+        {
+          name: "A stop with the matching run id records stoppedAt",
+          command: "stop",
+          when: { phase: "running", run: "match" },
+          effect: { outcome: "stop" },
+        },
+        {
+          name: "A stop refuses a different run id",
+          command: "stop",
+          unless: [{ phase: "running", run: "match" }],
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+      ]
+    case "undo":
+      return [
+        {
+          name: "An undo with the matching run id hides the agent row",
+          command: "undo",
+          when: { phase: ["running", "stopped"], run: "match" },
+          effect: { outcome: "undo" },
+        },
+        {
+          name: "An undo outside a live run stays fenced",
+          command: "undo",
+          unless: [{ phase: ["running", "stopped"], run: "match" }],
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+      ]
+    case "agent":
+      return [
+        {
+          name: "An agent edit outside the running run stays fenced",
+          command: "agent",
+          unless: [{ phase: "running", run: "match" }],
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+        {
+          name: "An agent edit with a stale read refuses stale",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "stale" },
+          effect: { outcome: "refuse", code: "stale" },
+        },
+        {
+          name: "An agent edit of a guarded run refuses person-protected",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "equal", guarded: true },
+          effect: { outcome: "refuse", code: "person-protected" },
+        },
+        {
+          name: "A second agent edit in one run stays fenced",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "visible" },
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+        {
+          name: "An agent edit lands one row and records claimed",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "none" },
+          effect: { outcome: "agent" },
+        },
+      ]
+    case "add":
+    case "remove":
+    case "read":
+      return []
+    default: {
+      const unreachable: never = kind
+      throw new Error(unreachable)
+    }
+  }
+}
+
+const rules: readonly Rule[] = [
+  ...rulesOf("person"),
+  ...rulesOf("agent"),
+  ...rulesOf("start"),
+  ...rulesOf("stop"),
+  ...rulesOf("undo"),
 ]
 
-const startRules: readonly RunRule[] = [
-  {
-    command: "start",
-    phase: "idle",
-    runMatch: false,
-    outcome: "apply",
-    effect: "start",
-    guardedNext: false,
-  },
-  {
-    command: "start",
-    phase: "idle",
-    runMatch: true,
-    outcome: "apply",
-    effect: "start",
-    guardedNext: false,
-  },
-  {
-    command: "start",
-    phase: "running",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "start",
-    phase: "running",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "start",
-    phase: "stopped",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "start",
-    phase: "stopped",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "start",
-    phase: "undone",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "start",
-    phase: "undone",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-]
-
-const stopRules: readonly RunRule[] = [
-  {
-    command: "stop",
-    phase: "idle",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "idle",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "running",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "running",
-    runMatch: true,
-    outcome: "apply",
-    effect: "stop",
-  },
-  {
-    command: "stop",
-    phase: "stopped",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "stopped",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "undone",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "stop",
-    phase: "undone",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-]
-
-const undoRules: readonly RunRule[] = [
-  {
-    command: "undo",
-    phase: "idle",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "undo",
-    phase: "idle",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "undo",
-    phase: "running",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "undo",
-    phase: "running",
-    runMatch: true,
-    outcome: "apply",
-    effect: "undo",
-  },
-  {
-    command: "undo",
-    phase: "stopped",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "undo",
-    phase: "stopped",
-    runMatch: true,
-    outcome: "apply",
-    effect: "undo",
-  },
-  {
-    command: "undo",
-    phase: "undone",
-    runMatch: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "undo",
-    phase: "undone",
-    runMatch: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-]
-
-const agentRules: readonly AgentRule[] = [
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "idle",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "apply",
-    effect: "agent",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "person-protected",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "person-protected",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "running",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "stale",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "stopped",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: false,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "below",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "below",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "equal",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "equal",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "above",
-    guarded: false,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: false,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-  {
-    command: "agent",
-    phase: "undone",
-    runMatch: true,
-    readAt: "above",
-    guarded: true,
-    agentLanded: true,
-    outcome: "refuse",
-    code: "run-fenced",
-  },
-]
-
-const rules = new Map<string, Found>()
-
-function add(key: string, rule: Found): void {
-  if (rules.has(key)) {
-    throw new Error(`duplicate row ${key}`)
+function agentState(register: Register): AgentState {
+  if (register.landed.some((row) => row.actor === "agent" && row.visible)) {
+    return "visible"
   }
-  rules.set(key, rule)
+  if (register.landed.some((row) => row.actor === "agent")) {
+    return "hidden"
+  }
+  return "none"
 }
 
-function personKey(command: "person", phase: Phase, guarded: boolean, agentLanded: boolean): string {
-  return JSON.stringify({ command, phase, guarded, agentLanded })
+function runState(register: Register, runId: string): RunState {
+  return register.runId === runId ? "match" : "miss"
 }
 
-function runKey(command: "start" | "stop" | "undo", phase: Phase, runMatch: boolean): string {
-  return JSON.stringify({ command, phase, runMatch })
+function readState(readAt: number, register: Register): ReadState {
+  return readAt === version(register) ? "equal" : "stale"
 }
 
-function agentKey(
-  command: "agent",
-  phase: Phase,
-  runMatch: boolean,
-  readAt: ReadAt,
-  guarded: boolean,
-  agentLanded: boolean,
-): string {
-  return JSON.stringify({ command, phase, runMatch, readAt, guarded, agentLanded })
-}
-
-for (const row of personRules) {
-  add(personKey(row.command, row.phase, row.guarded, row.agentLanded), row)
-}
-for (const row of startRules) {
-  add(runKey(row.command, row.phase, row.runMatch), row)
-}
-for (const row of stopRules) {
-  add(runKey(row.command, row.phase, row.runMatch), row)
-}
-for (const row of undoRules) {
-  add(runKey(row.command, row.phase, row.runMatch), row)
-}
-for (const row of agentRules) {
-  add(agentKey(row.command, row.phase, row.runMatch, row.readAt, row.guarded, row.agentLanded), row)
-}
-
-function copyNode(node: NodeRegister): NodeRegister {
-  return {
-    route: node.route,
-    floor: node.floor,
-    landed: node.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
-    phase: node.phase,
-    runId: node.runId,
-    readAt: node.readAt,
-    guarded: node.guarded,
-    claimed: node.claimed,
-    stoppedAt: node.stoppedAt,
-    slides: node.slides,
-    bytes: node.bytes,
+function situation(register: Register, command: Command): Situation | null {
+  switch (command.command) {
+    case "person":
+      return {
+        command: "person",
+        phase: register.phase,
+        run: "miss",
+        read: "equal",
+        guarded: register.guarded,
+        agent: agentState(register),
+      }
+    case "agent":
+      return {
+        command: "agent",
+        phase: register.phase,
+        run: runState(register, command.runId),
+        read: readState(command.readAt, register),
+        guarded: register.guarded,
+        agent: agentState(register),
+      }
+    case "start":
+    case "stop":
+    case "undo":
+      return {
+        command: command.command,
+        phase: register.phase,
+        run: runState(register, command.runId),
+        read: "equal",
+        guarded: register.guarded,
+        agent: agentState(register),
+      }
+    case "add":
+    case "remove":
+    case "read":
+      return null
+    default: {
+      const unreachable: never = command
+      throw new Error(unreachable)
+    }
   }
 }
 
-function copyRegister(register: Register): Register {
-  return {
-    ...copyNode(register),
-    nodes: [...register.nodes],
-    readNodes: register.readNodes === null ? null : [...register.readNodes],
-    b: register.b === null ? null : copyNode(register.b),
+function commands(register: Register): readonly Command[] {
+  const current = version(register)
+  const below = current === 0 ? -1 : current - 1
+  const list: Command[] = []
+  const push = (command: Command): void => {
+    switch (command.command) {
+      case "person":
+      case "agent":
+      case "start":
+      case "stop":
+      case "undo":
+        list.push(command)
+        return
+      case "add":
+      case "remove":
+      case "read":
+        return
+      default: {
+        const unreachable: never = command
+        throw new Error(unreachable)
+      }
+    }
   }
+  for (const runId of ["r", "s"] as const) {
+    push({ command: "start", runId })
+  }
+  for (const runId of ["r", "s"] as const) {
+    push({ command: "stop", runId })
+  }
+  for (const runId of ["r", "s"] as const) {
+    push({ command: "undo", runId })
+  }
+  push({ command: "person", value: "p" })
+  for (const runId of ["r", "s"] as const) {
+    push({ command: "agent", runId, readAt: below, value: "a" })
+    push({ command: "agent", runId, readAt: current, value: "a" })
+    push({ command: "agent", runId, readAt: current + 1, value: "a" })
+  }
+  return list
 }
 
-function freezeNode(node: NodeRegister): void {
-  for (const row of node.landed) {
-    Object.freeze(row)
+function visiblePeople(register: Register): number {
+  let count = 0
+  for (const row of register.landed) {
+    if (row.actor === "person" && row.visible) {
+      count += 1
+    }
   }
-  Object.freeze(node.landed)
+  return count
 }
 
-function freezeRegister(register: Register): Register {
-  const copy = copyRegister(register)
-  freezeNode(copy)
-  Object.freeze(copy.nodes)
-  if (copy.readNodes !== null) {
-    Object.freeze(copy.readNodes)
-  }
-  if (copy.b !== null) {
-    freezeNode(copy.b)
-    Object.freeze(copy.b)
-  }
-  return Object.freeze(copy)
-}
-
-function registerIdentity(register: Register): string {
+function identity(register: Register): string {
   return JSON.stringify({
     phase: register.phase,
     runId: register.runId,
@@ -1447,325 +337,139 @@ function registerIdentity(register: Register): string {
   })
 }
 
-function agentHasLanded(register: Register): boolean {
-  return register.landed.some((row) => row.actor === "agent")
-}
-
-function visiblePersonRows(register: Register): number {
-  let count = 0
-  for (const row of register.landed) {
-    if (row.actor === "person" && row.visible) {
-      count += 1
-    }
-  }
-  return count
-}
-
-function readAtBand(readAt: number, current: number): ReadAt {
-  if (readAt < current) {
-    return "below"
-  }
-  if (readAt > current) {
-    return "above"
-  }
-  return "equal"
-}
-
-function commandKey(register: Register, command: Command): string {
-  if (command.command === "person") {
-    return personKey(command.command, register.phase, register.guarded, agentHasLanded(register))
-  }
-  if (command.command === "agent") {
-    return agentKey(
-      command.command,
-      register.phase,
-      register.runId === command.runId,
-      readAtBand(command.readAt, version(register)),
-      register.guarded,
-      agentHasLanded(register),
-    )
-  }
-  if (command.command === "start" || command.command === "stop" || command.command === "undo") {
-    return runKey(command.command, register.phase, register.runId === command.runId)
-  }
-  throw new Error("missing command")
-}
-
-function commands(register: Register): readonly Command[] {
-  const current = version(register)
-  const below = current === 0 ? -1 : current - 1
-  const list: Command[] = []
-  for (const runId of ["r", "s"] as const) {
-    list.push({ command: "start", runId })
-  }
-  for (const runId of ["r", "s"] as const) {
-    list.push({ command: "stop", runId })
-  }
-  for (const runId of ["r", "s"] as const) {
-    list.push({ command: "undo", runId })
-  }
-  list.push({ command: "person", value: "p" })
-  for (const runId of ["r", "s"] as const) {
-    list.push({ command: "agent", runId, readAt: below, value: "a" })
-    list.push({ command: "agent", runId, readAt: current, value: "a" })
-    list.push({ command: "agent", runId, readAt: current + 1, value: "a" })
-  }
-  return list
-}
-
-function personRegister(register: Register, guardedNext: boolean): Register {
-  return {
-    ...register,
-    landed: [...register.landed, { actor: "person", value: "p", visible: true }],
-    guarded: guardedNext,
-  }
-}
-
-function startRegister(register: Register, runId: string): Register {
-  return {
-    ...register,
-    phase: "running",
-    runId,
-    guarded: false,
-  }
-}
-
-function stopRegister(register: Register): Register {
-  return {
-    ...register,
-    phase: "stopped",
-  }
-}
-
-function undoRegister(register: Register): Register {
-  return {
-    ...register,
-    phase: "undone",
-    landed: register.landed.map((row) =>
-      row.actor === "agent" ? { actor: "agent", value: row.value, visible: false } : row,
-    ),
-  }
-}
-
-function agentRegister(register: Register): Register {
-  return {
-    ...register,
-    landed: [...register.landed, { actor: "agent", value: "a", visible: true }],
-  }
-}
-
-function predicted(register: Register, command: Command, effect: Effect, guardedNext: boolean | undefined): Register {
-  if (effect === "person") {
-    if (guardedNext === undefined) {
-      throw new Error("missing guardedNext")
-    }
-    return personRegister(register, guardedNext)
-  }
-  if (effect === "start") {
-    if (command.command !== "start") {
-      throw new Error("start effect")
-    }
-    return startRegister(register, command.runId)
-  }
-  if (effect === "stop") {
-    return stopRegister(register)
-  }
-  if (effect === "undo") {
-    return undoRegister(register)
-  }
-  return agentRegister(register)
-}
-
-function sameRegister(actual: Register, expected: Register, key: string): void {
-  expect(version(actual), key).toBe(version(expected))
-  expect(currentValue(actual), key).toBe(currentValue(expected))
-  expect(history(actual), key).toEqual(history(expected))
-  expect(actual.guarded, key).toBe(expected.guarded)
-  expect(actual.phase, key).toBe(expected.phase)
-  expect(actual.route, key).toBe(expected.route)
-  expect(actual.runId, key).toBe(expected.runId)
-}
-
-function enqueue(register: Register, queue: Register[], visited: Set<string>): void {
-  if (visiblePersonRows(register) > 2) {
-    return
-  }
-  const successor = freezeRegister(register)
-  const id = registerIdentity(successor)
-  if (visited.has(id)) {
-    return
-  }
-  visited.add(id)
-  queue.push(successor)
-}
-
-function finish(
-  register: Register,
-  command: Command,
-  decision: Decision,
-  rule: Found,
-  key: string,
-  queue: Register[],
-  visited: Set<string>,
-): void {
-  if (rule.outcome === "refuse") {
-    if (rule.code === undefined) {
-      throw new Error(`missing code ${key}`)
-    }
-    expect(decision, key).toEqual({ decision: "refuse", code: rule.code })
-    return
-  }
-  if (rule.effect === undefined) {
-    throw new Error(`missing effect ${key}`)
-  }
-  const expected = predicted(register, command, rule.effect, rule.guardedNext)
-  expect(decision.decision, key).toBe("apply")
-  if (decision.decision !== "apply") {
-    throw new Error(`expected apply ${key}`)
-  }
-  sameRegister(decision.register, expected, key)
-  expect(decision.route, key).toBe(expected.route)
-  enqueue(decision.register, queue, visited)
-}
-
-function checkCommand(
-  register: Register,
-  command: Command,
-  queue: Register[],
-  visited: Set<string>,
-  seenKeys: Set<string>,
-): void {
-  const key = commandKey(register, command)
-  seenKeys.add(key)
-  const before = copyRegister(register)
-  const decision = decide(register, command)
-  expect(register, key).toEqual(before)
-  const rule = rules.get(key)
-  if (rule === undefined) {
-    throw new Error(`missing row ${key}`)
-  }
-  finish(register, command, decision, rule, key, queue, visited)
-}
-
-const situations: readonly (readonly [string, Readonly<Record<string, string | boolean>>])[] = [
-  [
-    "Agent, running, run match, readAt equal, guarded false, agent row landed",
-    {
-      command: "agent",
-      phase: "running",
-      runMatch: true,
-      readAt: "equal",
-      guarded: false,
-      agentLanded: true,
-    },
-  ],
-  ["Agent, stopped, run match, readAt below", { command: "agent", phase: "stopped", runMatch: true, readAt: "below" }],
-  [
-    "Person, running, guarded false, agent row landed",
-    { command: "person", phase: "running", guarded: false, agentLanded: true },
-  ],
-  ["Undo, stopped, run match", { command: "undo", phase: "stopped", runMatch: true }],
-  ["Undo, undone, run match", { command: "undo", phase: "undone", runMatch: true }],
-  [
-    "Agent, running, run match, readAt below, guarded false, no agent row",
-    {
-      command: "agent",
-      phase: "running",
-      runMatch: true,
-      readAt: "below",
-      guarded: false,
-      agentLanded: false,
-    },
-  ],
-  [
-    "Agent, running, run match, readAt equal, guarded true, no agent row",
-    {
-      command: "agent",
-      phase: "running",
-      runMatch: true,
-      readAt: "equal",
-      guarded: true,
-      agentLanded: false,
-    },
-  ],
-  [
-    "Agent, running, run match, readAt below, guarded true, no agent row",
-    {
-      command: "agent",
-      phase: "running",
-      runMatch: true,
-      readAt: "below",
-      guarded: true,
-      agentLanded: false,
-    },
-  ],
-]
-
-function visitedSituation(seenKeys: ReadonlySet<string>, part: Readonly<Record<string, string | boolean>>): boolean {
-  for (const raw of seenKeys) {
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== "object" || parsed === null) {
-      continue
-    }
-    const key = parsed as Record<string, unknown>
-    let matched = true
-    for (const [field, expected] of Object.entries(part)) {
-      if (key[field] !== expected) {
-        matched = false
+function nextRegister(register: Register, command: Command, effect: Effect): Register {
+  switch (effect.outcome) {
+    case "refuse":
+      throw new Error(effect.outcome)
+    case "person": {
+      if (command.command !== "person") {
+        throw new Error(effect.outcome)
+      }
+      return {
+        ...register,
+        landed: [...register.landed, { actor: "person", value: command.value, visible: true }],
+        guarded: effect.guarded === "set" ? true : register.guarded,
       }
     }
-    if (matched) {
-      return true
+    case "start": {
+      if (command.command !== "start") {
+        throw new Error(effect.outcome)
+      }
+      return {
+        ...register,
+        phase: "running",
+        runId: command.runId,
+        readAt: version(register),
+        guarded: false,
+      }
+    }
+    case "stop":
+      return { ...register, phase: "stopped", stoppedAt: version(register) }
+    case "undo":
+      return {
+        ...register,
+        phase: "undone",
+        landed: register.landed.map((row) =>
+          row.actor === "agent"
+            ? { actor: "agent", value: row.value, visible: false }
+            : { actor: row.actor, value: row.value, visible: row.visible },
+        ),
+      }
+    case "agent": {
+      if (command.command !== "agent") {
+        throw new Error(effect.outcome)
+      }
+      return {
+        ...register,
+        landed: [...register.landed, { actor: "agent", value: command.value, visible: true }],
+        claimed: command.readAt,
+      }
     }
   }
-  return false
 }
 
-function requireVisits(seenKeys: ReadonlySet<string>): void {
-  for (const [name, part] of situations) {
-    if (!visitedSituation(seenKeys, part)) {
-      throw new Error(`not visited: ${name}`)
-    }
-  }
+function sameDecision(register: Register, command: Command, decision: Decision, effect: Effect): boolean {
+  const expected =
+    effect.outcome === "refuse"
+      ? { decision: "refuse" as const, code: effect.code }
+      : { decision: "apply" as const, register: nextRegister(register, command, effect), route: register.route }
+  return JSON.stringify(decision) === JSON.stringify(expected)
 }
 
-function walk(): void {
-  const opened = freezeRegister(openRegister("floor", "slide"))
-  const queue: Register[] = [opened]
-  const visited = new Set<string>([registerIdentity(opened)])
-  const seenKeys = new Set<string>()
-  let dequeued = 0
-  while (queue.length > 0) {
-    const current = queue.shift()
-    if (current === undefined) {
-      throw new Error("empty queue")
-    }
-    dequeued += 1
-    if (version(current) > 4 || dequeued > 400) {
-      throw new Error("state cap hit")
-    }
-    for (const command of commands(current)) {
-      checkCommand(current, command, queue, visited, seenKeys)
-    }
+function step(rule: Rule, hits: { count: number }, register: Register, command: Command): Register | null {
+  const picture = situation(register, command)
+  if (picture === null) {
+    throw new Error(`${rule.name} has no row for ${command.command}`)
   }
-  requireVisits(seenKeys)
+  const found = rulesOf(picture.command).filter((candidate) => matches(candidate, picture))
+  const chosen = found[0]
+  if (found.length !== 1 || chosen === undefined) {
+    throw new Error(`${rule.name} expected one row`)
+  }
+  const before = copyRegister(register)
+  const decision = decide(register, command)
+  expect(register, rule.name).toEqual(before)
+  if (chosen.name !== rule.name) {
+    if (!sameDecision(register, command, decision, chosen.effect)) {
+      return null
+    }
+    return decision.decision === "apply" ? decision.register : null
+  }
+  hits.count += 1
+  if (chosen.effect.outcome === "refuse") {
+    expect(decision, rule.name).toEqual({ decision: "refuse", code: chosen.effect.code })
+    return null
+  }
+  expect(decision, rule.name).toEqual({
+    decision: "apply",
+    register: nextRegister(register, command, chosen.effect),
+    route: register.route,
+  })
+  if (decision.decision !== "apply") {
+    throw new Error(rule.name)
+  }
+  return decision.register
+}
+
+function walk(rule: Rule): void {
+  const hits = { count: 0 }
+  walkRegisters({
+    start: freezeRegister(openRegister("floor", "slide")),
+    identity,
+    commands,
+    keep: (register) => visiblePeople(register) <= 2,
+    cap: (dequeued, register) => {
+      if (version(register) > 4 || dequeued > 400) {
+        throw new Error(`${rule.name} state cap hit`)
+      }
+    },
+    step: (register, command) => step(rule, hits, register, command),
+  })
+  if (hits.count === 0) {
+    throw new Error(`${rule.name} was not reached`)
+  }
 }
 
 describe("decide", () => {
-  it("checks every reachable register", () => {
-    walk()
-  })
+  for (const rule of rules) {
+    it(rule.name, () => {
+      walk(rule)
+    })
+  }
 
-  it("keeps a person string unchanged", () => {
+  it("A person value is not trimmed", () => {
     const value = '  {"a":1}  \n\u0000café'
     const register = freezeRegister(openRegister("floor", "slide"))
     const before = copyRegister(register)
     const decision = decide(register, { command: "person", value })
-    expect(register).toEqual(before)
-    expect(decision.decision).toBe("apply")
-    if (decision.decision !== "apply") {
-      throw new Error("refused")
-    }
-    expect(currentValue(decision.register)).toBe(value)
+    expect(register, "A person value is not trimmed").toEqual(before)
+    expect(decision, "A person value is not trimmed").toEqual({
+      decision: "apply",
+      route: register.route,
+      register: {
+        ...register,
+        landed: [...register.landed, { actor: "person", value, visible: true }],
+      },
+    })
   })
 })

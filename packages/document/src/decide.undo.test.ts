@@ -12,6 +12,7 @@ import {
   type Phase,
   type Register,
 } from "./decide.js"
+import { copyNode, freezeNode } from "./decide.walk.js"
 
 type LandedRow = {
   readonly actor: Actor
@@ -105,31 +106,6 @@ const required = [
   "A second undo refuses run-fenced",
   "Undo with the wrong run id refuses run-fenced",
 ]
-
-function copyNode(register: NodeRegister): NodeRegister {
-  return {
-    route: register.route,
-    floor: register.floor,
-    landed: register.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
-    phase: register.phase,
-    runId: register.runId,
-    readAt: register.readAt,
-    guarded: register.guarded,
-    claimed: register.claimed,
-    stoppedAt: register.stoppedAt,
-    slides: register.slides,
-    bytes: register.bytes,
-  }
-}
-
-function freezeNode(register: NodeRegister): NodeRegister {
-  const copy = copyNode(register)
-  for (const row of copy.landed) {
-    Object.freeze(row)
-  }
-  Object.freeze(copy.landed)
-  return Object.freeze(copy)
-}
 
 function applied(register: Register, command: Command): Register {
   const decision = decide(register, command)
