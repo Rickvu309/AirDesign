@@ -13,7 +13,8 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## Commands
 
-- `pnpm check` runs exactly what CI runs. Run it after your last edit, before every push. Never `--no-verify`.
+- `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`.
+- `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It installs LibreOffice into `~/.cache/pptx-tools` on first use and needs the .NET 8 SDK.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
