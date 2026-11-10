@@ -1,10 +1,5 @@
 import { rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import { chromium, expect, test } from "@playwright/test"
-
-const killProfile = join(tmpdir(), "airdesign-live-cache-kill")
-const coldProfile = join(tmpdir(), "airdesign-live-cache-cold")
 
 async function launch(directory: string, baseURL: string) {
   const context = await chromium.launchPersistentContext(directory, { baseURL })
@@ -13,16 +8,17 @@ async function launch(directory: string, baseURL: string) {
   return { context, page }
 }
 
-test("pending edits survive a killed tab", async ({ baseURL }) => {
+test("pending edits survive a killed tab", async ({ baseURL }, testInfo) => {
   expect(baseURL).toBeTruthy()
-  await rm(killProfile, { recursive: true, force: true })
-  const first = await launch(killProfile, baseURL ?? "")
+  const profile = testInfo.outputPath("profile")
+  await rm(profile, { recursive: true, force: true })
+  const first = await launch(profile, baseURL ?? "")
   await first.page.evaluate(async () => {
     await globalThis.airdesignLive.enqueue("deck", "earlier")
     await globalThis.airdesignLive.enqueue("deck", "later")
   })
   await first.context.close()
-  const second = await launch(killProfile, baseURL ?? "")
+  const second = await launch(profile, baseURL ?? "")
   const pending = await second.page.evaluate(async () => {
     const rows = await globalThis.airdesignLive.pending("deck")
     return rows.map((row) => row.value)
@@ -43,13 +39,14 @@ test("pending edits survive a killed tab", async ({ baseURL }) => {
   })
   expect(batch).toEqual(["earlier", "later"])
   await second.context.close()
-  await rm(killProfile, { recursive: true, force: true })
+  await rm(profile, { recursive: true, force: true })
 })
 
-test("cold open reads 3000 rows in one getAll", async ({ baseURL }) => {
+test("cold open reads 3000 rows in one getAll", async ({ baseURL }, testInfo) => {
   expect(baseURL).toBeTruthy()
-  await rm(coldProfile, { recursive: true, force: true })
-  const first = await launch(coldProfile, baseURL ?? "")
+  const profile = testInfo.outputPath("profile")
+  await rm(profile, { recursive: true, force: true })
+  const first = await launch(profile, baseURL ?? "")
   await first.page.evaluate(async () => {
     const live = globalThis.airdesignLive
     await new Promise<void>((resolve, reject) => {
@@ -87,7 +84,7 @@ test("cold open reads 3000 rows in one getAll", async ({ baseURL }) => {
     })
   })
   await first.context.close()
-  const second = await launch(coldProfile, baseURL ?? "")
+  const second = await launch(profile, baseURL ?? "")
   const measured = await second.page.evaluate(async () => {
     const entries: { start: number; duration: number }[] = []
     const observer = new PerformanceObserver((list) => {
@@ -134,5 +131,5 @@ test("cold open reads 3000 rows in one getAll", async ({ baseURL }) => {
   expect(measured.span).toBeLessThanOrEqual(2000)
   expect(measured.covered).toBe(false)
   await second.context.close()
-  await rm(coldProfile, { recursive: true, force: true })
+  await rm(profile, { recursive: true, force: true })
 })
