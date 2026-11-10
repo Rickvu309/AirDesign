@@ -68,10 +68,25 @@ const writeCache = (key, value) => {
   fs.renameSync(temporary, path.join(root, `${key}.json`))
 }
 
+const waitForCache = (key) => {
+  const deadline = Date.now() + 50000
+  while (Date.now() < deadline) {
+    const ready = readCache(key)
+    if (ready) return ready
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
+  }
+  return null
+}
+
 const cachedDump = (directory, java, jar, spec, config) => {
   const key = specKey(directory, spec, config)
   const found = readCache(key)
   if (found) return found
+  if (process.env.AIRDESIGN_REPLAY_ONLY === "1") {
+    const waited = waitForCache(key)
+    if (waited) return waited
+    throw new Error(`missing spec dump for ${spec}`)
+  }
   const root = cacheRoot()
   fs.mkdirSync(root, { recursive: true })
   const lock = path.join(root, `${key}.lock`)
