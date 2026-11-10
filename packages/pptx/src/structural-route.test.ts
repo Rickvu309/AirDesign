@@ -3,7 +3,7 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { shapeById } from "./slide-route.js"
 import { newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
-import { applyStructuralRoute } from "./structural-route.js"
+import { applyStructuralRoute, writeStructuralRoute } from "./structural-route.js"
 
 function text(value: string): Uint8Array {
   return encodeUtf8(value)
@@ -210,23 +210,23 @@ describe("applyStructuralRoute", () => {
 
   it("adds a blank slide after the named slide and remove restores the package parts", () => {
     const parts = deck()
-    const added = applyStructuralRoute(parts, { name: "sldIdLst.add", after: "256" })
+    const added = writeStructuralRoute(parts, { name: "sldIdLst.add", after: "256" })
     expect(added.id).toBe("257")
-    const addedSlide = xml(added, "ppt/slides/slide2.xml")
+    const addedSlide = xml(added.parts, "ppt/slides/slide2.xml")
     expect(addedSlide).toContain('name=""')
     expect(addedSlide).not.toContain("One")
-    const blankRels = xml(added, "ppt/slides/_rels/slide2.xml.rels")
+    const blankRels = xml(added.parts, "ppt/slides/_rels/slide2.xml.rels")
     expect(blankRels).toContain(
       'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"',
     )
     expect(blankRels).not.toContain("notesSlide")
-    expect(xml(added, "ppt/_rels/presentation.xml.rels")).toContain(
+    expect(xml(added.parts, "ppt/_rels/presentation.xml.rels")).toContain(
       '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>',
     )
-    expect(xml(added, "[Content_Types].xml")).toContain(
+    expect(xml(added.parts, "[Content_Types].xml")).toContain(
       '<Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>',
     )
-    const back = applyStructuralRoute(added, { name: "sldIdLst.remove", slide: "257" })
+    const back = applyStructuralRoute(added.parts, { name: "sldIdLst.remove", slide: "257" })
     expect(back.get("ppt/presentation.xml")).toEqual(parts.get("ppt/presentation.xml"))
     expect(back.get("ppt/_rels/presentation.xml.rels")).toEqual(parts.get("ppt/_rels/presentation.xml.rels"))
     expect(back.get("[Content_Types].xml")).toEqual(parts.get("[Content_Types].xml"))
