@@ -1,4 +1,5 @@
-import { carryParts, writeParts } from "./package-bytes.js"
+import { carryPackage } from "./package-carry.js"
+import { carryParts, sameBytes } from "./package-bytes.js"
 import { readPackage } from "./package-limits.js"
 
 export function samePartBytes(
@@ -8,19 +9,14 @@ export function samePartBytes(
   if (expected.size !== actual.size) return false
   for (const [name, data] of expected) {
     const found = actual.get(name)
-    if (found === undefined || found.length !== data.length) return false
-    for (let index = 0; index < data.length; index += 1) {
-      const left = data[index]
-      const right = found[index]
-      if (left === undefined || right === undefined || left !== right) return false
-    }
+    if (found === undefined || !sameBytes(found, data)) return false
   }
   return true
 }
 
-export async function exportPackage(parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
+export async function exportPackage(original: Uint8Array, parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
   const carried = carryParts(parts)
-  const written = await writeParts(carried)
+  const written = await carryPackage(original, carried)
   const read = await readPackage(written)
   if (!read.ok) throw new Error(read.reason === "limit" ? read.limit : read.reason)
   if (!samePartBytes(carried, read.parts)) throw new Error("part")
