@@ -157,6 +157,29 @@ function outside(before: Uint8Array, after: Uint8Array, start: number, end: numb
 }
 
 describe("applyRoute markup", () => {
+  it("removes a picture whose open tag crosses a 64 KiB write", () => {
+    const pictureAt = 65533
+    const head = encodeUtf8(`<p:spTree><p:sp><p:cNvPr id="2"/><a:t>Keep</a:t></p:sp>`)
+    const picture = encodeUtf8(`<p:pic><p:cNvPr id="3"/><a:off x="9" y="9"/></p:pic>`)
+    const tail = encodeUtf8(`</p:spTree>`)
+    const bytes = new Uint8Array(pictureAt + picture.length + tail.length)
+    bytes.fill(32)
+    bytes.set(head, 0)
+    bytes.set(picture, pictureAt)
+    bytes.set(tail, pictureAt + picture.length)
+    const name = "ppt/slides/slide7.xml"
+    const edited = applyRoute(new Map([[name, bytes]]), { name: "remove", part: name, shape: "3" })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    const joined = new Uint8Array(pictureAt + tail.length)
+    joined.set(bytes.subarray(0, pictureAt), 0)
+    joined.set(tail, pictureAt)
+    expect(after).toEqual(joined)
+    expect(markupDocument(after).wellFormed).toBe(true)
+    expect(decodeUtf8(after)).toContain(">Keep<")
+    expect(decodeUtf8(after)).not.toContain(`id="3"`)
+  })
+
   it("removes picture 3 and keeps shape 2", () => {
     const { bytes, found } = pictureSpan()
     const name = "ppt/slides/slide3.xml"
