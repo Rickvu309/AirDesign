@@ -1,6 +1,11 @@
 const activeSectionBand = "-45% 0px -50% 0px"
 const pillMoveMs = 280
 
+function bezierEasing(token: string): string {
+  const match = /cubic-bezier\([^)]*\)/.exec(token)
+  return match === null ? token : match[0]
+}
+
 function sectionIdOf(link: HTMLAnchorElement): string {
   return link.hash.slice(1)
 }
@@ -53,7 +58,7 @@ export async function highlightActiveSection(tabs: HTMLElement): Promise<void> {
   }
 
   const showsMotion = !matchMedia("(prefers-reduced-motion: reduce)").matches
-  const moveEasing = getComputedStyle(document.documentElement).getPropertyValue("--ease-panel").trim()
+  const moveEasing = bezierEasing(getComputedStyle(document.documentElement).getPropertyValue("--ease-panel").trim())
 
   await document.fonts.ready
 
