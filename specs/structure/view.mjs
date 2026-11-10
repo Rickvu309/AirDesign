@@ -5,15 +5,18 @@ const presentText = (v) => {
   return names.length === 0 ? "none" : names.join(" and ")
 }
 
+const readAccepts = (v) => v.runId === "s" && (v.phase === "stopped" || v.phase === "undone")
+
 export const state = (v) => {
-  const memory = v.didRead === true ? ", the second run remembers the nodes" : ""
-  return `present ${presentText(v)}${memory}`
+  const memory = v.didRead === true ? ", the read holds the nodes" : ""
+  return `present ${presentText(v)}, run ${v.runId} ${v.phase}${memory}`
 }
 
-export const step = (action) => {
+export const step = (action, from) => {
   if (action === "AddNode") return "the edit adds node b"
   if (action === "RemoveNode") return "the edit removes node b"
-  if (action === "SecondRunReads") return "the second run reads the present nodes"
+  if (action === "SecondRunReads" && readAccepts(from)) return "the read stores the present nodes"
+  if (action === "SecondRunReads") return "the read stays fenced"
   if (action === "NameAbsent") return "the edit names a missing node"
   return null
 }
