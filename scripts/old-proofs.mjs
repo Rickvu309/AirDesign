@@ -1,54 +1,114 @@
 import { execFileSync, spawnSync } from "node:child_process"
+import { randomBytes } from "node:crypto"
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { jarPath, javaBin } from "./check-specs.mjs"
-import { approvedCommit } from "./owner-gate.mjs"
+import { approvedCommit, guarded, packageFile } from "./owner-gate.mjs"
 
 const checkFolders = ["tooling/", "scripts/"]
+const proofName = /\.test\.(js|mjs|ts)$/
+const supportName = /^(harness|run-tests|old-proofs-run)\.m?js$/
+const proofRun = "scripts/old-proofs-run.mjs"
 const proofSeconds = 300
-const proofNeeds = { "scripts/check-specs.test.mjs": ["Java 21", "tla2tools.jar"] }
-const needFinders = { "Java 21": javaBin, "tla2tools.jar": jarPath }
+const unprivileged = 65534
+const largeOutput = 64 * 1024 * 1024
+const proofNeeds = {
+  "scripts/bug-rule.test.mjs": ["git"],
+  "scripts/check-specs.test.mjs": ["Java 21", "tla2tools.jar"],
+  "scripts/sticks.test.mjs": ["git"],
+}
+const needFinders = {
+  git: () => execFileSync("git", ["--version"], { stdio: "ignore" }),
+  "Java 21": javaBin,
+  "tla2tools.jar": jarPath,
+}
 const advice =
   "Restore the behaviour each broken case expects. If the check is meant to change, ask the repo owner to approve the pull request."
+const behindAdvice = "This pull request is behind main. Update it and run again."
+const sandboxProbe = [
+  'const fs = require("node:fs")',
+  'const os = require("node:os")',
+  'fs.readFileSync("package.json")',
+  'fs.writeFileSync(require("node:path").join(os.tmpdir(), "probe"), "")',
+  "let locked = false",
+  'try { fs.writeFileSync("probe", "") } catch { locked = true }',
+  "const offline = Object.values(os.networkInterfaces()).flat().every((face) => face.internal)",
+  "console.log(JSON.stringify({ user: process.getuid(), locked, offline }))",
+].join("\n")
 
 const inCheckFolder = (file) => checkFolders.some((folder) => file.startsWith(folder))
 
 export const proofRunner = (file) => {
-  if (file.startsWith("tooling/") && file.endsWith(".test.js")) return "node"
-  if (/^scripts\/[^/]+\.test\.mjs$/.test(file)) return "node"
+  if (inCheckFolder(file) && /\.test\.m?js$/.test(file)) return "node"
+  if (inCheckFolder(file) && file.endsWith(".test.ts")) return "vitest"
   if (/^tests\/[^/]+\.test\.ts$/.test(file)) return "vitest"
   return undefined
 }
 
 export const proofFiles = (baseFiles) => baseFiles.filter((file) => proofRunner(file) !== undefined).sort()
 
-export const proofSupport = (baseFiles) =>
-  baseFiles.filter((file) => inCheckFolder(file) && /(^|\/)harness\.m?js$/.test(file)).sort()
+export const proofSupport = (file) => inCheckFolder(file) && supportName.test(path.posix.basename(file))
 
-export const changedFiles = (baseTree, headTree) =>
-  [...new Set([...baseTree.keys(), ...headTree.keys()])]
-    .filter((file) => baseTree.get(file) !== headTree.get(file))
-    .sort()
+export const checkFile = (file) =>
+  inCheckFolder(file) &&
+  !proofName.test(file) &&
+  !proofSupport(file) &&
+  file
+    .split("/")
+    .every(
+      (part) =>
+        part !== "" && part !== ".." && part !== "node_modules" && !part.startsWith(".") && !part.includes("\\"),
+    )
 
-export const checkChanged = (changed, restorable) =>
-  changed.some((file) => inCheckFolder(file) || restorable.includes(file))
+export const changedFiles = (fromTree, toTree) =>
+  [...new Set([...fromTree.keys(), ...toTree.keys()])].filter((file) => fromTree.get(file) !== toTree.get(file)).sort()
 
-export const restoreProofs = (baseRoot, headRoot, files) => {
-  const head = fs.realpathSync(headRoot)
-  const deleted = []
-  for (const file of files) {
-    const target = path.join(head, file)
+export const checkChanges = (mergeTree, headTree) =>
+  changedFiles(mergeTree, headTree)
+    .filter(checkFile)
+    .map((file) => ({ file, entry: headTree.get(file) }))
+
+export const deletedProofs = (mergeTree, headTree, proofs) =>
+  proofs.filter((file) => mergeTree.has(file) && !headTree.has(file))
+
+export const unprovedLines = (mergeTree, headTree) =>
+  changedFiles(mergeTree, headTree)
+    .filter((file) => !inCheckFolder(file))
+    .flatMap((file) => {
+      if (guarded(file)) return [`${file} changes how checks run and has no proof. It is listed for the owner.`]
+      if (packageFile(file) || file === "pnpm-lock.yaml") return [`${file} changes how checks run and has no proof.`]
+      return []
+    })
+
+const plainFolder = (base, folder) => {
+  let existing = folder
+  while (!fs.existsSync(existing)) existing = path.dirname(existing)
+  return fs.realpathSync(existing) === existing && (existing === base || existing.startsWith(`${base}${path.sep}`))
+}
+
+export const layIn = (baseRoot, changes, headContent) => {
+  const base = fs.realpathSync(baseRoot)
+  for (const { file, entry } of changes) {
+    if (!checkFile(file)) throw new Error(`${file} is not a check file, so it is not taken from the pull request.`)
+    const target = path.join(base, file)
     const folder = path.dirname(target)
-    fs.mkdirSync(folder, { recursive: true })
-    if (fs.realpathSync(folder) !== folder) {
-      throw new Error(`${path.dirname(file)} is a link in the pull request, so ${file} cannot be put back.`)
+    if (!plainFolder(base, folder)) {
+      throw new Error(`${path.dirname(file)} is a link on main, so ${file} cannot be laid in.`)
     }
-    if (fs.lstatSync(target, { throwIfNoEntry: false }) === undefined) deleted.push(file)
-    fs.rmSync(target, { recursive: true, force: true })
-    fs.copyFileSync(path.join(baseRoot, file), target)
+    if (entry === undefined) {
+      fs.rmSync(target, { force: true })
+      continue
+    }
+    const [mode, print] = entry.split(" ")
+    if (mode !== "100644" && mode !== "100755") {
+      throw new Error(`${file} is a link in the pull request. A check file must be a plain file.`)
+    }
+    fs.mkdirSync(folder, { recursive: true })
+    fs.rmSync(target, { force: true, recursive: true })
+    fs.writeFileSync(target, headContent(file, print), { mode: mode === "100755" ? 0o755 : 0o644 })
   }
-  return deleted
 }
 
 export const missingNeeds = (file, has) => (proofNeeds[file] ?? []).filter((need) => !has(need))
@@ -65,7 +125,31 @@ export const firstFailure = ({ status, output, timedOut }) => {
   return (message || lines[0] || `exit ${status}`).slice(0, 300)
 }
 
-export const verdict = ({ results, approved }) => {
+const failedCase = (report) => {
+  const cases = (report?.testResults ?? []).flatMap((result) => result.assertionResults ?? [])
+  const failed = cases.find((one) => one.status === "failed")
+  if (failed === undefined) return undefined
+  const reason = String(failed.failureMessages?.[0] ?? "").split("\n")[0]
+  return `${failed.fullName}: ${reason}`.slice(0, 300)
+}
+
+export const proofState = ({ runner, status, stdout = "", stderr = "", token, report, timedOut = false }) => {
+  const failure = () => firstFailure({ status, output: `${stderr}\n${stdout}`, timedOut })
+  if (timedOut || status !== 0) return { state: "broken", message: failedCase(report) ?? failure() }
+  if (runner === "vitest") {
+    const failed = failedCase(report)
+    if (failed !== undefined) return { state: "broken", message: failed }
+    const passed = report?.numPassedTests
+    if (!Number.isInteger(passed) || passed < 1 || report.numFailedTests !== 0 || report.success !== true) {
+      return { state: "broken", message: "ran no test" }
+    }
+    return { state: "kept" }
+  }
+  const finished = token !== "" && stdout.split("\n").some((line) => line.trim() === token)
+  return finished ? { state: "kept" } : { state: "broken", message: "stopped before it finished" }
+}
+
+export const verdict = ({ results, approved, behind = false }) => {
   const lines = results.map((result) => {
     if (result.state === "kept") return `kept ${result.file}`
     if (result.state === "broken") return `broken ${result.file}: ${result.message}`
@@ -73,91 +157,199 @@ export const verdict = ({ results, approved }) => {
   })
   if (!results.some((result) => result.state === "broken")) return { pass: true, lines }
   if (approved) return { pass: true, lines: [...lines, "The repo owner approved this commit, so it passes as it is."] }
-  return { pass: false, lines: [...lines, advice] }
+  return { pass: false, lines: [...lines, behind ? behindAdvice : advice] }
 }
 
-export const headEnv = (env) =>
-  Object.fromEntries(
-    Object.entries({ ...env, NO_COLOR: "1" }).filter(([name]) => !/^(GITHUB_|ACTIONS_|GH_)|TOKEN|SECRET/.test(name)),
-  )
+export const proofEnv = ({ home, nodeFolder, tools = {} }) => ({
+  PATH: `${nodeFolder}:/usr/local/bin:/usr/bin:/bin`,
+  HOME: home,
+  TMPDIR: home,
+  NO_COLOR: "1",
+  ...tools,
+})
 
-const tree = (root) =>
-  new Map(
-    execFileSync("git", ["ls-files", "-s", "-z"], { cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 })
-      .split("\0")
-      .filter((row) => row !== "")
-      .map((row) => {
-        const [print, file] = row.split("\t")
-        return [file, print]
-      }),
-  )
+export const sandboxed = ({ env, command, runsInCi }) => [
+  ...(runsInCi
+    ? [
+        "sudo",
+        "-n",
+        "unshare",
+        "--net",
+        "--",
+        "setpriv",
+        `--reuid=${unprivileged}`,
+        `--regid=${unprivileged}`,
+        "--clear-groups",
+        "--no-new-privs",
+        "--",
+      ]
+    : []),
+  "env",
+  "-i",
+  ...Object.entries(env).map(([name, value]) => `${name}=${value}`),
+  ...command,
+]
 
-const has = (need) => {
+const found = (need) => {
   try {
-    needFinders[need]()
-    return true
+    return needFinders[need]() ?? true
   } catch {
-    return false
+    return undefined
   }
 }
 
-const runProof = (headRoot, file, env) => {
+const tools = () =>
+  Object.fromEntries(
+    [
+      ["JAVA", found("Java 21")],
+      ["TLA2TOOLS", found("tla2tools.jar")],
+    ].filter(([, value]) => typeof value === "string"),
+  )
+
+const scratchHome = (runsInCi) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-old-proofs-"))
+  fs.writeFileSync(path.join(home, ".gitconfig"), "[safe]\n\tdirectory = *\n")
+  if (runsInCi) fs.chmodSync(home, 0o777)
+  return home
+}
+
+const readReport = (file) => {
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"))
+  } catch {
+    return undefined
+  }
+}
+
+export const runProof = (baseRoot, file, { runsInCi = false, has = (need) => found(need) !== undefined } = {}) => {
   const missing = missingNeeds(file, has)
   if (missing.length > 0) return { file, state: "not proved", message: `this machine has no ${missing.join(" or ")}` }
-  const [command, args] =
-    proofRunner(file) === "vitest"
-      ? [path.join(headRoot, "node_modules", ".bin", "vitest"), ["run", file]]
-      : [process.execPath, [file]]
-  const result = spawnSync(command, args, {
-    cwd: headRoot,
-    env,
+  const home = scratchHome(runsInCi)
+  const runner = proofRunner(file)
+  const token = randomBytes(24).toString("hex")
+  const reportFile = path.join(home, "report.json")
+  const command =
+    runner === "vitest"
+      ? [
+          path.join(baseRoot, "node_modules", ".bin", "vitest"),
+          "run",
+          file,
+          "--configLoader=runner",
+          "--reporter=json",
+          `--outputFile=${reportFile}`,
+        ]
+      : [process.execPath, path.join(baseRoot, proofRun), file]
+  const env = proofEnv({ home, nodeFolder: path.dirname(process.execPath), tools: tools() })
+  const [program, ...args] = sandboxed({ env, command, runsInCi })
+  const result = spawnSync(program, args, {
+    cwd: baseRoot,
+    input: runner === "node" ? `${token}\n` : "",
     encoding: "utf8",
     timeout: proofSeconds * 1000,
-    killSignal: "SIGKILL",
-    maxBuffer: 64 * 1024 * 1024,
+    killSignal: "SIGTERM",
+    maxBuffer: largeOutput,
   })
-  if (result.status === 0) return { file, state: "kept" }
-  const output = `${result.stderr ?? ""}\n${result.stdout ?? ""}\n${result.error?.code === "ETIMEDOUT" ? "" : (result.error?.message ?? "")}`
-  return {
-    file,
-    state: "broken",
-    message: firstFailure({ status: result.status, output, timedOut: result.error?.code === "ETIMEDOUT" }),
+  const timedOut = result.error?.code === "ETIMEDOUT"
+  const state = proofState({
+    runner,
+    status: result.status,
+    stdout: result.stdout ?? "",
+    stderr: `${result.stderr ?? ""}\n${timedOut ? "" : (result.error?.message ?? "")}`,
+    token,
+    report: runner === "vitest" ? readReport(reportFile) : undefined,
+    timedOut,
+  })
+  if (!runsInCi) fs.rmSync(home, { recursive: true, force: true })
+  return { file, ...state }
+}
+
+const git = (root, args, encoding = "utf8") =>
+  execFileSync("git", ["-C", root, ...args], { encoding, maxBuffer: largeOutput, stdio: ["ignore", "pipe", "pipe"] })
+
+const tree = (root, commit) =>
+  new Map(
+    git(root, ["ls-tree", "-r", "-z", commit])
+      .split("\0")
+      .filter((row) => row !== "")
+      .map((row) => {
+        const [entry, file] = row.split("\t")
+        const [mode, , print] = entry.split(" ")
+        return [file, `${mode} ${print}`]
+      }),
+  )
+
+const mergeCommit = (headRoot, baseCommit) => {
+  try {
+    return git(headRoot, ["merge-base", "HEAD", baseCommit]).trim()
+  } catch {
+    throw new Error("The pull request checkout has no history back to main, so the old proofs cannot be judged.")
   }
 }
 
 const read = (baseRoot, headRoot) => {
-  const baseTree = tree(baseRoot)
-  const baseFiles = [...baseTree.keys()]
-  const proofs = proofFiles(baseFiles)
-  const restorable = [...proofs, ...proofSupport(baseFiles)]
-  return { proofs, restorable, changed: checkChanged(changedFiles(baseTree, tree(headRoot)), restorable) }
+  const baseCommit = git(baseRoot, ["rev-parse", "HEAD"]).trim()
+  const merge = mergeCommit(headRoot, baseCommit)
+  const mergeTree = tree(headRoot, merge)
+  const headTree = tree(headRoot, "HEAD")
+  const proofs = proofFiles([...tree(baseRoot, "HEAD").keys()])
+  return {
+    proofs,
+    changes: checkChanges(mergeTree, headTree),
+    unproved: unprovedLines(mergeTree, headTree),
+    deleted: deletedProofs(mergeTree, headTree, proofs),
+    behind: merge !== baseCommit,
+  }
+}
+
+const openToSandbox = (baseRoot) => {
+  for (let folder = path.dirname(baseRoot); folder !== path.dirname(folder); folder = path.dirname(folder)) {
+    if ((fs.statSync(folder).mode & 0o001) === 0) execFileSync("sudo", ["-n", "chmod", "o+x", folder])
+  }
+  const home = scratchHome(true)
+  const env = proofEnv({ home, nodeFolder: path.dirname(process.execPath) })
+  const [program, ...args] = sandboxed({ env, command: [process.execPath, "-e", sandboxProbe], runsInCi: true })
+  const probe = spawnSync(program, args, { cwd: baseRoot, encoding: "utf8", timeout: 60000 })
+  const seen = readReportText(probe.stdout)
+  if (probe.status !== 0 || seen?.user !== unprivileged || seen.locked !== true || seen.offline !== true) {
+    const said = `${probe.stdout ?? ""}${probe.stderr ?? ""}${probe.error?.message ?? ""}`.trim().slice(0, 600)
+    throw new Error(`The sandbox did not start, so no old proof could run: ${said}`)
+  }
+}
+
+const readReportText = (text) => {
+  try {
+    return JSON.parse(String(text).trim().split("\n").at(-1))
+  } catch {
+    return undefined
+  }
 }
 
 const judge = (baseRoot, headRoot, approved) => {
-  const { proofs, restorable, changed } = read(baseRoot, headRoot)
-  if (!changed) {
+  const { proofs, changes, unproved, deleted, behind } = read(baseRoot, headRoot)
+  for (const line of unproved) console.log(line)
+  if (changes.length === 0) {
     console.log("No check changed.")
     return true
   }
   const started = Date.now()
-  for (const file of restoreProofs(baseRoot, headRoot, restorable)) {
-    console.log(`Put back ${file}, which the pull request deleted.`)
-  }
-  const env = headEnv(process.env)
+  const runsInCi = Boolean(process.env.CI)
   const install = spawnSync("pnpm", ["install", "--frozen-lockfile"], {
-    cwd: headRoot,
-    env,
+    cwd: baseRoot,
     encoding: "utf8",
-    maxBuffer: 64 * 1024 * 1024,
+    maxBuffer: largeOutput,
   })
   if (install.status !== 0) {
     console.log(
       `${install.stdout ?? ""}${install.stderr ?? ""}${install.error?.message ?? ""}`.split("\n").slice(-20).join("\n"),
     )
-    console.log("The install failed in the pull request, so no old proof could run.")
+    console.log("The install failed on main, so no old proof could run.")
     return false
   }
-  const result = verdict({ results: proofs.map((file) => runProof(headRoot, file, env)), approved })
+  for (const file of deleted) console.log(`The pull request deleted ${file}. It still runs from main.`)
+  layIn(baseRoot, changes, (file, print) => git(headRoot, ["cat-file", "blob", print], "buffer"))
+  for (const { file } of changes) console.log(`laid in ${file}`)
+  if (runsInCi) openToSandbox(baseRoot)
+  const result = verdict({ results: proofs.map((file) => runProof(baseRoot, file, { runsInCi })), approved, behind })
   for (const line of result.lines) console.log(line)
   console.log(`Old proofs took ${Math.round((Date.now() - started) / 1000)} seconds.`)
   return result.pass
@@ -173,7 +365,7 @@ const approved = (repository, number, sha) => {
       "--jq",
       ".[] | {user: .user.login, state: .state, commit: .commit_id} | @json",
     ],
-    { encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    { encoding: "utf8", maxBuffer: largeOutput },
   )
     .split("\n")
     .filter((line) => line !== "")
@@ -185,8 +377,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const [mode, ...rest] = process.argv.slice(2)
   try {
     if (mode === "approved") console.log(`approved=${approved(...rest)}`)
-    else if (mode === "changed") console.log(`changed=${read(path.resolve(rest[0]), path.resolve(rest[1])).changed}`)
-    else if (mode === "judge") {
+    else if (mode === "changed") {
+      console.log(`changed=${read(path.resolve(rest[0]), path.resolve(rest[1])).changes.length > 0}`)
+    } else if (mode === "judge") {
       if (!judge(path.resolve(rest[0]), path.resolve(rest[1]), rest[2] === "--approved=true")) process.exit(1)
     } else throw new Error("Use approved, changed or judge.")
   } catch (error) {
