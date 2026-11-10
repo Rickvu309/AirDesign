@@ -1,5 +1,4 @@
 import { type ExportRoute, type StructuralRoute } from "@airdesign/document"
-import { type SlideRoute } from "./slide-route.js"
 
 export const writtenRoutes = {
   text: "txBody",
@@ -7,4 +6,17 @@ export const writtenRoutes = {
   resize: "xfrm",
   add: "spTree.add",
   remove: "spTree.remove",
-} as const satisfies Record<SlideRoute["name"], ExportRoute | StructuralRoute>
+  order: "spTree.order",
+  clone: "spTree.clone",
+  addSlide: "sldIdLst.add",
+  removeSlide: "sldIdLst.remove",
+  orderSlide: "sldIdLst.order",
+  cloneSlide: "sldIdLst.clone",
+  addSection: "sectionLst.add",
+  removeSection: "sectionLst.remove",
+  orderSection: "sectionLst.order",
+  addTable: "graphicFrame.addTable",
+  addRow: "tbl.addRow",
+  removeRow: "tbl.removeRow",
+  orderRow: "tbl.orderRow",
+} as const satisfies Record<string, ExportRoute | StructuralRoute>
