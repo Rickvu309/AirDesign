@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const iconPaths = {
   chev: '<path d="m6 9 6 6 6-6"/>',

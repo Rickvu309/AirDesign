@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { DecksShell } from "@/decks/decks-shell"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 import { settingsCopy } from "@/settings/settings-sample"
 import { settingsRoutes, type SettingsTab } from "@/settings/settings-routes"
 

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
 import { CloseGlyph, ExternalArrow } from "@/credits/dialog-glyphs"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const presets = [
   { value: 10, label: productCopy.presetTen },

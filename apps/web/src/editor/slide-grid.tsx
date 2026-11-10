@@ -6,7 +6,7 @@ import { DeckTitle, ExportButton, Island, surfaceShadow, ZoomReadout } from "@/e
 import { EditorIcon } from "@/editor/editor-icons"
 import { EditorToolbar } from "@/editor/editor-toolbar"
 import { PastedThumb, SlideThumb } from "@/editor/slide-thumb"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export type GridState = "idle" | "hover" | "hold" | "pasted"
 

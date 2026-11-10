@@ -17,7 +17,7 @@ import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { EditorIcon } from "@/editor/editor-icons"
 import { ExportButton, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
 import type { SidebarRun } from "@/editor/slide-sidebar"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const ask = "Make an 8-slide investor update from my notes. Calm, data first, our Halden brand."
 const longAsk =

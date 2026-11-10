@@ -1,5 +1,5 @@
 import { revenueAxis, revenueBar, revenueBarLatest, revenueEyebrow, revenueRule } from "@/editor/revenue-slide-art"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const bars = [
   { label: "Q3 24", value: 4.1 },

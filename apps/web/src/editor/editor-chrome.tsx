@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { EditorIcon } from "@/editor/editor-icons"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export const deckTitle = "Q3 Investor Update"
 

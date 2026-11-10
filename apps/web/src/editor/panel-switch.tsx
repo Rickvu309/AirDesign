@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export function PanelSwitch({ active }: { active: "agent" | "design" }) {
   const agent = active === "agent"

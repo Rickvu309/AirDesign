@@ -14,7 +14,7 @@ import {
   templateLight,
 } from "@/editor/tool-panels-art"
 import { SlideThumb } from "@/editor/slide-thumb"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const basicShapes: Record<string, string> = {
   square: '<rect x="3" y="3" width="18" height="18" rx="2.5"/>',

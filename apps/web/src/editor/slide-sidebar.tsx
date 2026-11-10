@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { SlideThumb } from "@/editor/slide-thumb"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "offline"
 
