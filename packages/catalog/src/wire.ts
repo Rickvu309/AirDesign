@@ -59,7 +59,10 @@ function whole(raw: unknown): number | undefined {
 }
 
 function nodeOf(raw: unknown): ElementId | undefined {
-  if (typeof raw !== "string" || !Object.hasOwn(named, raw)) return undefined
+  if (typeof raw !== "string") return undefined
+  if (Object.hasOwn(named, raw)) return raw as ElementId
+  const dot = raw.indexOf(".")
+  if (dot <= 0 || raw.lastIndexOf(".") !== dot || dot === raw.length - 1 || raw.includes(" ")) return undefined
   return raw as ElementId
 }
 

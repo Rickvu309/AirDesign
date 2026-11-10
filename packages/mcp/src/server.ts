@@ -11,7 +11,7 @@ const editInput = z.looseObject({
     .array(
       z.looseObject({
         value: z.string().describe("Text to write."),
-        node: z.string().optional().describe("Named node, a or b."),
+        node: z.string().optional().describe("Element id, slide.shape."),
       }),
     )
     .describe("Edits to land."),

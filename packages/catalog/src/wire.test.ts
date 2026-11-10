@@ -1,3 +1,4 @@
+import { shapeOf } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import {
   catalog,
@@ -45,7 +46,21 @@ describe("readEdit", () => {
   })
 
   it("keeps a named node", () => {
+    expect(readEdit({ value: "hi", node: "a" })).toEqual({ ok: true, edit: { value: "hi", node: "a" } })
     expect(readEdit({ value: "hi", node: "b" })).toEqual({ ok: true, edit: { value: "hi", node: "b" } })
+  })
+
+  it("keeps an element id", () => {
+    const read = readEdit({ value: "hi", node: "258.7" })
+    expect(read).toEqual({ ok: true, edit: { value: "hi", node: "258.7" } })
+    if (!read.ok || read.edit.node === undefined) return
+    expect(shapeOf(read.edit.node)).toEqual({ slide: "258", shape: "7" })
+  })
+
+  it("refuses a broken element id", () => {
+    expect(readEdit({ value: "hi", node: "258." })).toEqual({ ok: false, refusal: "field" })
+    expect(readEdit({ value: "hi", node: ".7" })).toEqual({ ok: false, refusal: "field" })
+    expect(readEdit({ value: "hi", node: "nope" })).toEqual({ ok: false, refusal: "field" })
   })
 })
 

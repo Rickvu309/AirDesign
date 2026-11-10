@@ -1,6 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { openTab, type Tab } from "@airdesign/device"
-import { decide, version } from "@airdesign/document"
+import { decide, elementId, version } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { callTool, emptyLog, type AgentCaller, type Session } from "./index.js"
@@ -14,6 +14,16 @@ function opened(): Deck {
 function running(): Deck {
   const deck = opened()
   const started = decide(deck.register, { command: "start", runId: "run" })
+  if (started.decision !== "apply") throw new Error(started.code)
+  return { id: deck.id, revision: deck.revision, register: started.register }
+}
+
+function holdingElement(): Deck {
+  const node = elementId("258.7")
+  const deck = opened()
+  const added = decide(deck.register, { command: "add", node, floor: "", route: "" })
+  if (added.decision !== "apply") throw new Error(added.code)
+  const started = decide(added.register, { command: "start", runId: "run", node })
   if (started.decision !== "apply") throw new Error(started.code)
   return { id: deck.id, revision: deck.revision, register: started.register }
 }
@@ -58,6 +68,43 @@ const forbidden = [
 ] as const
 
 describe("callTool", () => {
+  it("lands an edit on an element id", () => {
+    const deck = holdingElement()
+    const node = elementId("258.7")
+    const result = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ node: "258.7", value: "21" }] },
+      sessionFor(deck),
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const body = result.deck.register.elements[node]
+    if (body === undefined) throw new Error("missing element")
+    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(result.deck.register.landed).toEqual([])
+    expect(deck.register.landed).toEqual([])
+    expect(deck.register.elements[node]?.landed).toEqual([])
+  })
+
+  it("refuses a broken element id and leaves the deck", () => {
+    const deck = holdingElement()
+    const register = deck.register
+    const node = elementId("258.7")
+    const result = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ node: "258.", value: "21" }] },
+      sessionFor(deck),
+    )
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("field")
+    expect(result.deck).toBe(deck)
+    expect(deck.register).toBe(register)
+    expect(deck.revision).toBe(0)
+    expect(deck.register.landed).toEqual([])
+    expect(deck.register.elements[node]?.landed).toEqual([])
+  })
+
   it("lands an edit and returns the new deck", () => {
     const deck = running()
     const result = callTool(

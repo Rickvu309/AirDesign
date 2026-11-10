@@ -1,6 +1,6 @@
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
-import { decide, version } from "@airdesign/document"
+import { decide, elementId, version } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { createServer, emptyLog, type Session } from "./index.js"
@@ -14,6 +14,16 @@ function opened(): Deck {
 function running(): Deck {
   const deck = opened()
   const started = decide(deck.register, { command: "start", runId: "run" })
+  if (started.decision !== "apply") throw new Error(started.code)
+  return { id: deck.id, revision: deck.revision, register: started.register }
+}
+
+function holdingElement(): Deck {
+  const node = elementId("258.7")
+  const deck = opened()
+  const added = decide(deck.register, { command: "add", node, floor: "", route: "" })
+  if (added.decision !== "apply") throw new Error(added.code)
+  const started = decide(added.register, { command: "start", runId: "run", node })
   if (started.decision !== "apply") throw new Error(started.code)
   return { id: deck.id, revision: deck.revision, register: started.register }
 }
@@ -79,6 +89,8 @@ describe("createServer", () => {
         inputSchema: tool.inputSchema,
         annotations: tool.annotations,
       }))
+      const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
+      expect(JSON.stringify(edit?.inputSchema)).toContain("Element id, slide.shape.")
       const estimate = Math.ceil(utf8Size(JSON.stringify(advertised)) / 4)
       expect(estimate).toBeLessThanOrEqual(8000)
     })
@@ -95,6 +107,25 @@ describe("createServer", () => {
       expect(result.content).toEqual([{ type: "text", text: "field" }])
       expect(deck.revision).toBe(0)
       expect(deck.register.landed).toEqual([])
+    })
+  })
+
+  it("lands an element id the schema accepted", async () => {
+    const before = holdingElement()
+    const node = elementId("258.7")
+    const session = sessionFor(before)
+    await withClient(session, async (client) => {
+      const result = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ node: "258.7", value: "21" }] },
+      })
+      expect(result.isError).not.toBe(true)
+      const body = session.deck.register.elements[node]
+      if (body === undefined) throw new Error("missing element")
+      expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(session.deck.register.landed).toEqual([])
+      expect(before.register.landed).toEqual([])
+      expect(before.register.elements[node]?.landed).toEqual([])
     })
   })
 
