@@ -21,7 +21,16 @@ import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
 import {
-  againSuffix,
+  afterRender,
+  corpusFolder,
+  corpusLines,
+  corpusMisses,
+  corpusPlan,
+  judgedDecks,
+  readCorpus,
+  rendersOf,
+} from "./pptx-corpus.mjs"
+import {
   committedBlobs,
   renderCache,
   renderCacheFolder,
@@ -44,6 +53,9 @@ const browserExportName = "exported-deck.pptx"
 const browserExportPath = path.join(root, "tests/browser", browserExportName)
 const browserShape = "2"
 const browserText = "Hello!"
+const corpusMode = process.argv.includes("--corpus")
+const listed = readCorpus(root).map((deck) => deck.name)
+const listedNames = new Set(listed)
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -94,19 +106,23 @@ cases.push({
   pages: true,
 })
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const fixturePath = (name) => (name === browserExportName ? browserExportPath : path.join(fixtures, name))
-const secondRender = (name) => `${name}${againSuffix}`
-const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
-const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))].filter(
-  (render) => renderName(render) !== browserExportName,
-)
+const fixturePath = (name) => {
+  if (name === browserExportName) return browserExportPath
+  return path.join(listedNames.has(name) ? corpusFolder(root) : fixtures, name)
+}
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
     const renders = await renderCacheReady
     const file = fixturePath(renderName(render))
     const bytes = fs.readFileSync(file)
-    rendered.set(render, await renders.pages({ file, bytes, use: renderUse({ render, bytes, committed }) }))
+    try {
+      rendered.set(render, await renders.pages({ file, bytes, use: renderUse({ render, bytes, committed }) }))
+    } catch (error) {
+      if (!listedNames.has(render)) throw error
+      console.log(`corpus render ${render}: ${error.message}`)
+      rendered.set(render, [])
+    }
   }
 }
 const proofStarted = Date.now()
@@ -117,6 +133,17 @@ const proofSeeds = seedsFor({
   draw: () => randomInt(0, 4294967296),
   commit: await run("git", ["rev-parse", "HEAD"]),
 })
+const corpusSeed = proofSeeds.at(-1)
+const plan = corpusPlan({
+  full: corpusMode,
+  every: judgedDecks(root),
+  listed,
+  seed: corpusSeed.seed,
+  fresh: corpusSeed.fresh,
+})
+const addedDecks = plan.decks.filter((name) => listedNames.has(name))
+const waiting = rendersOf({ cases, added: addedDecks }).filter((render) => renderName(render) !== browserExportName)
+console.log(`${plan.announce}: ${addedDecks.join(", ")}`)
 const gitAnswer = (args) => {
   try {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
@@ -124,7 +151,7 @@ const gitAnswer = (args) => {
     return undefined
   }
 }
-const committed = committedBlobs(gitAnswer(["ls-tree", "HEAD", "scripts/pptx-fixtures/"]) ?? "")
+const committed = committedBlobs(gitAnswer(["ls-tree", "-r", "HEAD", "scripts/pptx-fixtures/"]) ?? "")
 committed.delete(browserExportName)
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
@@ -144,7 +171,7 @@ const realDecks = fs
   .sort()
 const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
 const writtenDecks = []
-for (const name of realDecks) {
+for (const name of new Set([...realDecks, ...plan.decks])) {
   if (!parts.has(name)) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   const deckParts = parts.get(name)
   const written = await writtenRouteFiles(
@@ -266,12 +293,14 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
-const checkSeconds = timeMetric(root, "pptx-check-duration", checkStarted)
+const checkSeconds = corpusMode
+  ? { line: "the corpus check has no duration limit", over: undefined, fails: false }
+  : timeMetric(root, "pptx-check-duration", checkStarted)
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
 const routeFailures = []
 const seen = new Map()
-for (const deck of writtenDecks) {
+for (const deck of writtenDecks.filter((written) => !listedNames.has(written.name))) {
   const beforeErrors = lists.get(deck.name) ?? []
   for (const item of deck.written) {
     const operation = item.run.operation
@@ -297,6 +326,20 @@ if (recordedWrites !== passedOperations.length) {
     recorded: recordedWrites,
   })
 }
+const misses = corpusMisses({
+  pptx,
+  decks: writtenDecks.filter((written) => listedNames.has(written.name)),
+  lists,
+  rendered,
+})
+const settledCorpus = settleRun({
+  run: plan,
+  lines: corpusLines({ misses, full: corpusMode, seed: corpusSeed.seed }),
+  freshFails,
+})
+for (const line of settledCorpus.lines) console.log(line)
+failed += settledCorpus.failed
+console.log(`${addedDecks.length} corpus decks judged, ${misses.length} misses`)
 fs.rmSync(routeDir, { recursive: true, force: true })
 for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)

@@ -1,7 +1,7 @@
 {
   "known-failures": { "now": 17, "goal": 0 },
   "test-count": { "floor": 242 },
-  "corpus-size": { "now": 2, "goal": 20 },
+  "corpus-size": { "now": 6, "goal": 20 },
   "export-coverage": { "now": 17, "goal": 50 },
   "export-verified": { "now": 19, "goal": 50 },
   "fault-detection": { "now": 9, "goal": 10 },

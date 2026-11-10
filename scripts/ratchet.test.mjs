@@ -7,6 +7,7 @@ import {
   contents,
   guarded,
   lostCases,
+  lostDecks,
   listedFiles,
   localFork,
   localWarning,
@@ -171,6 +172,24 @@ same("a removed case is named", lostCases(cases, [cases[0]]), ["child-order"])
 same("a changed case needs the owner", texts({ changedCases: ["text-page"] }), [
   "The PowerPoint case text-page was changed or removed.",
 ])
+
+const corpusList = [
+  { name: "a.pptx", sha256: "1" },
+  { name: "b.pptx", sha256: "2" },
+]
+same("an added corpus deck needs nobody", lostDecks(corpusList, [...corpusList, { name: "c.pptx", sha256: "3" }]), [])
+same("a removed corpus deck is named", lostDecks(corpusList, [corpusList[0]]), ["b.pptx"])
+same("a changed corpus sha256 is named", lostDecks(corpusList, [{ name: "a.pptx", sha256: "9" }, corpusList[1]]), [
+  "a.pptx",
+])
+same("a lost corpus deck needs the owner", texts({ changedDecks: ["a.pptx"] }), [
+  "The corpus deck a.pptx was removed or its sha256 changed.",
+])
+same(
+  "the corpus list is judged by its entries, not as a deck",
+  replacedFixtures([{ name: "scripts/pptx-fixtures/corpus.json", status: "modified" }]),
+  [],
+)
 
 const proof = { "duplicate shape id": "caught", "chart data-label range": "missed" }
 same("an unchanged proof needs nobody", lostKinds(proof, proof), [])
@@ -516,6 +535,7 @@ same(
 )
 localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 40 }, "corpus-size": { now: 2, goal: 20 } }))
 localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }, { name: "doe-heat-pumps" }]))
+localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify(corpusList))
 localFile("packages/pptx/src/route.test.ts", "case\n")
 localGit(["add", "--all"])
 const stamp = "proof <proof@example.com> 0 +0000"
@@ -530,6 +550,7 @@ same("an untouched branch forks where main is", localFork(localRepo).fork, mainC
 same("an untouched branch touches nothing", verdict(readLocal(localRepo)).lines, ["Nothing here touches the bar."])
 localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 50 }, "corpus-size": { now: 1, goal: 20 } }))
 localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }]))
+localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify([{ name: "a.pptx", sha256: "9" }]))
 fs.rmSync(path.join(localRepo, "packages/pptx/src/route.test.ts"))
 localFile("scripts/new-check.mjs", "check\n")
 const localVerdict = verdict(readLocal(localRepo))
@@ -539,6 +560,8 @@ same("the local verdict says what ci says", localVerdict.lines, [
   "Lowers the bar: corpus-size went from 2 to 1, away from its goal of 20.",
   "Lowers the bar: The test file packages/pptx/src/route.test.ts was removed.",
   "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
+  "Lowers the bar: The corpus deck a.pptx was removed or its sha256 changed.",
+  "Lowers the bar: The corpus deck b.pptx was removed or its sha256 changed.",
   "Listed for Rickvu309, does not block: scripts/new-check.mjs decides what ci checks.",
   "Undo what lowers the bar. Only an approval from Rickvu309 lets it through as it is.",
 ])

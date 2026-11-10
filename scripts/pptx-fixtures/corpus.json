@@ -1,0 +1,22 @@
+[
+  {
+    "name": "nasa-class-d-mar.pptx",
+    "sha256": "00ffc50e5142c95394c36440d238c97fb3d6a040679724b9bb79312f659383ba",
+    "source": "https://ntrs.nasa.gov/api/citations/20205002782/downloads/SMD-ClassD-MAR-final.pptx"
+  },
+  {
+    "name": "nasa-cots-parts-nesc.pptx",
+    "sha256": "1f7d2ac9a75f109e8e1650b768ef4ea99f93d6741b8a181bf7bfa4c09f2324e2",
+    "source": "https://ntrs.nasa.gov/api/citations/20220000510/downloads/MRQW%202022%20-%20NESC%20Assessment%20on%20Use%20of%20COTS%20Phase%20I%20-2-9-2022.pptx"
+  },
+  {
+    "name": "nasa-jwst-optics-lessons.pptx",
+    "sha256": "0eba99f78c193391ba519e726cb6e1ea1d3567164707447e2681909b79b2615e",
+    "source": "https://ntrs.nasa.gov/api/citations/20240014215/downloads/JWST%20Optics%20Lessons%20Learned%20for%20Probe%20Missions.pptx"
+  },
+  {
+    "name": "nasa-lessons-capture-eee.pptx",
+    "sha256": "b6427d112845c478de3d3e325318c53493e36dc603851b9fb159ae3aefc1cf51",
+    "source": "https://ntrs.nasa.gov/api/citations/20210025772/downloads/lessons-learned-parts-PCB-seminar-final2.pptx"
+  }
+]

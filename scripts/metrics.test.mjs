@@ -246,4 +246,22 @@ if (under.length !== 1 || under[0] !== "test-count is 1 and its floor is 2. Put 
 }
 if (under.some((line) => line.includes("Record"))) throw new Error("nobody is told to record a test count")
 
+record(1, 2)
+const deckCount = (metrics) => metrics.rows.find((row) => row.name === "corpus-size")?.now
+const withoutList = await readMetrics(root)
+if (deckCount(withoutList) !== 1) throw new Error(`no corpus list must count the case decks: ${deckCount(withoutList)}`)
+write(
+  "scripts/pptx-fixtures/corpus.json",
+  JSON.stringify([
+    { name: "x.pptx", sha256: "0", source: "https://example.gov/x.pptx" },
+    { name: "y.pptx", sha256: "0", source: "https://example.gov/y.pptx" },
+  ]),
+)
+const withList = await readMetrics(root)
+if (deckCount(withList) !== 3) throw new Error(`the corpus list was not counted: ${deckCount(withList)}`)
+if (!withList.drift.includes("corpus-size is 3 and metrics.json says 1. Record 3 in metrics.json.")) {
+  throw new Error(`a longer corpus list must ask for a record\n${withList.drift.join("\n")}`)
+}
+fs.rmSync(path.join(root, "scripts/pptx-fixtures/corpus.json"))
+
 console.log("metrics tests passed")
