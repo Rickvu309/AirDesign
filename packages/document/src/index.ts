@@ -19,3 +19,5 @@ export {
   type Register,
   type Refusal,
 } from "./decide.js"
+export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
+export { structure, type StructuralAction, type StructuralRoute } from "./structure.js"
