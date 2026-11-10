@@ -13,24 +13,24 @@ export function DesignPanel() {
         <span className="text-sm font-semibold text-foreground">Slide 3</span>
       </div>
       <section className="flex flex-col gap-3 border-b border-line px-4 py-4">
-        <h2 className="text-[13px] font-semibold text-foreground">Template</h2>
-        <div className="flex items-center gap-3 rounded-[10px] bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]">
-          <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[6px]">
+        <h2 className="text-[length:var(--type-dense)] font-semibold text-foreground">Template</h2>
+        <div className="flex items-center gap-3 rounded-[var(--shape-card)] bg-white p-2 shadow-[0px_0px_0px_1px_var(--field-edge)]">
+          <span className="flex h-10 w-10 shrink-0 overflow-hidden rounded-[var(--shape-control)]">
             <span className="block flex-1 bg-navy" />
             <span className="block flex-1" style={{ backgroundColor: haldenTeal }} />
             <span className="block flex-1" style={{ backgroundColor: haldenMist }} />
           </span>
           <span className="flex flex-1 flex-col gap-0.5">
-            <span className="text-[13px] font-medium text-foreground">Halden</span>
+            <span className="text-[length:var(--type-dense)] font-medium text-foreground">Halden</span>
             <span className="text-xs text-faint">Geist</span>
           </span>
           <EditorIcon name="chev" size={14} className="text-faint" />
         </div>
       </section>
       <section className="flex flex-col gap-3 border-b border-line px-4 py-4">
-        <h2 className="text-[13px] font-semibold text-foreground">Background</h2>
-        <div className="flex h-8 items-center rounded-[8px] bg-line p-0.5">
-          <span className="flex h-7 flex-1 items-center justify-center rounded-[6px] bg-white text-xs font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)]">
+        <h2 className="text-[length:var(--type-dense)] font-semibold text-foreground">Background</h2>
+        <div className="flex h-8 items-center rounded-lg bg-line p-0.5">
+          <span className="flex h-7 flex-1 items-center justify-center rounded-[var(--shape-control)] bg-white text-xs font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)]">
             Color
           </span>
           <span className="flex h-7 flex-1 items-center justify-center text-xs text-quiet">Image</span>
@@ -38,7 +38,7 @@ export function DesignPanel() {
         <Swatch color={swatchWhite} name="White" edged />
       </section>
       <section className="flex flex-col gap-3 px-4 py-4">
-        <h2 className="text-[13px] font-semibold text-foreground">Colors</h2>
+        <h2 className="text-[length:var(--type-dense)] font-semibold text-foreground">Colors</h2>
         <div className="grid grid-cols-2 gap-2">
           <Swatch color={swatchNavy} name="Navy" />
           <Swatch color={swatchTeal} name="Teal" />
@@ -52,12 +52,12 @@ export function DesignPanel() {
 
 function Swatch({ color, name, edged = false }: { color: string; name: string; edged?: boolean }) {
   return (
-    <span className="flex h-9 items-center gap-2.5 rounded-[8px] bg-white px-3 shadow-[0px_0px_0px_1px_var(--field-edge)]">
+    <span className="flex h-9 items-center gap-2.5 rounded-lg bg-white px-3 shadow-[0px_0px_0px_1px_var(--field-edge)]">
       <span
-        className={edged ? "size-4 rounded-[4px] shadow-[0px_0px_0px_1px_var(--field-edge)]" : "size-4 rounded-[4px]"}
+        className={edged ? "size-4 rounded-sm shadow-[0px_0px_0px_1px_var(--field-edge)]" : "size-4 rounded-sm"}
         style={{ backgroundColor: color }}
       />
-      <span className="text-[13px] text-foreground">{name}</span>
+      <span className="text-[length:var(--type-dense)] text-foreground">{name}</span>
     </span>
   )
 }

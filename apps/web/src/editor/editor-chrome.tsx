@@ -20,7 +20,7 @@ export const hairlineShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 export function DeckTitle({ className }: { className?: string }) {
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
-      <span className="truncate text-[13px] font-medium text-foreground">{deckTitle}</span>
+      <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{deckTitle}</span>
       <EditorIcon name="chev" size={14} className="text-faint" />
     </span>
   )
@@ -32,7 +32,7 @@ export function ExportButton({ faded = false }: { faded?: boolean }) {
       type="button"
       variant="brand"
       className={cn(
-        "h-8 rounded-[8px] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3 text-[13px] font-medium text-white active:translate-y-0",
+        "h-8 rounded-lg bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3 text-[length:var(--type-dense)] font-medium text-white active:translate-y-0",
         brandShadow,
         faded && "opacity-40",
       )}
@@ -45,7 +45,9 @@ export function ExportButton({ faded = false }: { faded?: boolean }) {
 export function ZoomReadout({ value, tone = "quiet" }: { value: string; tone?: "quiet" | "ink" }) {
   return (
     <span className={cn("flex h-8 items-center gap-0.5", tone === "ink" ? "gap-1 px-2" : "pr-1")}>
-      <span className={cn("text-[13px]", tone === "ink" ? "text-foreground" : "text-quiet")}>{value}</span>
+      <span className={cn("text-[length:var(--type-dense)]", tone === "ink" ? "text-foreground" : "text-quiet")}>
+        {value}
+      </span>
       <EditorIcon name="chev" size={tone === "ink" ? 13 : 12} className="text-faint" />
     </span>
   )
@@ -53,7 +55,7 @@ export function ZoomReadout({ value, tone = "quiet" }: { value: string; tone?: "
 
 export function Island({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex h-11 items-center gap-1 rounded-[12px] bg-white px-1.5", cardShadow, className)}>
+    <div className={cn("flex h-11 items-center gap-1 rounded-xl bg-white px-1.5", cardShadow, className)}>
       {children}
     </div>
   )
@@ -71,7 +73,7 @@ export function SidebarHead({ trailing }: { trailing?: ReactNode }) {
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 rounded-[7px] text-quiet active:translate-y-0"
+          className="size-8 rounded-md text-quiet active:translate-y-0"
           aria-label="Grid"
         >
           <EditorIcon name="grid" size={16} />
@@ -87,7 +89,7 @@ export function SurfaceButton({ children, className }: { children: ReactNode; cl
       type="button"
       variant="ghost"
       className={cn(
-        "h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+        "h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0",
         surfaceShadow,
         className,
       )}

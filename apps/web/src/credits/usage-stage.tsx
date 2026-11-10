@@ -24,11 +24,13 @@ export function UsageStage({
         description={settingsCopy.resets}
         actions={<SettingsButton width={64.24}>{settingsCopy.reset}</SettingsButton>}
       >
-        <div className="flex h-[17px] items-center gap-3">
-          <div className="h-2 min-w-0 flex-1 rounded-[4px] bg-line">
-            <div className="h-2 rounded-[4px] bg-primary" style={{ width: "51.212%" }} />
+        <div className="flex h-[var(--space-16)] items-center gap-3">
+          <div className="h-2 min-w-0 flex-1 rounded-sm bg-line">
+            <div className="h-2 rounded-sm bg-primary" style={{ width: "51.212%" }} />
           </div>
-          <span className="text-[13px] leading-[17px] text-muted-foreground">{settingsCopy.used}</span>
+          <span className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
+            {settingsCopy.used}
+          </span>
         </div>
       </ModuleCard>
       <ModuleCard
@@ -45,8 +47,12 @@ export function UsageStage({
         {banner ? <div className="mb-3.5">{banner}</div> : null}
         <div className="flex items-center justify-between gap-4 pt-3.5 shadow-[inset_0_1px_0_0_var(--line)]">
           <div className="min-w-0">
-            <div className="text-[14px] leading-[18px] font-medium text-foreground">{settingsCopy.autoReset}</div>
-            <p className="mt-0.5 text-[13px] leading-[17px] text-muted-foreground">{settingsCopy.autoResetBody}</p>
+            <div className="text-[length:var(--type-body)] leading-[18px] font-medium text-foreground">
+              {settingsCopy.autoReset}
+            </div>
+            <p className="mt-0.5 text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
+              {settingsCopy.autoResetBody}
+            </p>
           </div>
           <SettingsToggle label={settingsCopy.autoReset} />
         </div>
@@ -56,7 +62,7 @@ export function UsageStage({
           {history.map((row) => (
             <div
               key={row.date + row.amount}
-              className="flex items-center gap-4 py-2.5 text-[13px] leading-[17px] shadow-[inset_0_-1px_0_0_var(--line)]"
+              className="flex items-center gap-4 py-2.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_-1px_0_0_var(--line)]"
             >
               <span className="w-16 shrink-0 text-muted-foreground">{row.date}</span>
               <span className="min-w-0 flex-1 text-foreground">{row.what}</span>
@@ -91,20 +97,20 @@ export function WaitingBanner() {
             clipPath="url(#credits-wait-dash)"
           />
         </svg>
-        <span className="truncate text-[13px] leading-[17px] font-medium text-[var(--primary-strong)]">
+        <span className="truncate text-[length:var(--type-dense)] leading-[17px] font-medium text-[var(--primary-strong)]">
           {creditsCopy.waiting}
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-3.5">
         <button
           type="button"
-          className="text-[13px] leading-[17px] font-medium text-[var(--primary-strong)] hover:underline"
+          className="text-[length:var(--type-dense)] leading-[17px] font-medium text-[var(--primary-strong)] hover:underline"
         >
           {productCopy.payOpen}
         </button>
         <button
           type="button"
-          className="text-[13px] leading-[17px] font-medium text-muted-foreground hover:text-foreground"
+          className="text-[length:var(--type-dense)] leading-[17px] font-medium text-muted-foreground hover:text-foreground"
         >
           {productCopy.cancel}
         </button>

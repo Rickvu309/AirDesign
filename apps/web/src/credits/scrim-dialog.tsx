@@ -11,7 +11,7 @@ export function ScrimDialog({ children, className }: { children: ReactNode; clas
         <BaseDialog.Popup
           initialFocus={false}
           className={cn(
-            "fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-[16px] bg-white shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none data-open:animate-none",
+            "fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none data-open:animate-none",
             className,
           )}
         >

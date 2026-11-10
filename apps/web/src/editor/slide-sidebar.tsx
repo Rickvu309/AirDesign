@@ -14,8 +14,8 @@ export function SlideSidebar({ run }: { run: SidebarRun }) {
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
       <SidebarHead />
       <div className="flex px-3 pb-2">
-        <div className={cn("flex h-8 flex-1 items-center rounded-[8px] bg-white", surfaceShadow)}>
-          <span className="flex flex-1 items-center justify-center gap-1 text-[13px] font-medium text-foreground">
+        <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
+          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground">
             New slide
             <EditorIcon name="chev" size={13} className="text-faint" />
           </span>
@@ -39,11 +39,11 @@ export function SlideSidebar({ run }: { run: SidebarRun }) {
         <StripItem index={4} run={run} queuedFrom={queuedFrom} />
         <StripItem index={5} run={run} queuedFrom={queuedFrom} />
         <SectionHead name="Outlook" range="6 to 8" />
-        <div className="flex pt-1 pl-[34px]">
+        <div className="flex pt-1 pl-[var(--space-32)]">
           <div className="flex w-[180px] flex-col items-center">
             <SlideThumb index={6} width={thumbWidth} queued={queuedFrom > 0 && 6 >= queuedFrom} />
-            <span className="block h-1.5 w-[166px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
-            <span className="block h-1.5 w-[150px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[166px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[150px] rounded-b-sm bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
           </div>
         </div>
       </div>
@@ -55,9 +55,9 @@ function SectionHead({ name, open = false, range }: { name: string; open?: boole
   return (
     <div className="flex h-8 items-center gap-2 px-2">
       <EditorIcon name={open ? "chev" : "chevr"} size={14} className="text-faint" />
-      <span className="text-[13px] font-semibold text-foreground">{name}</span>
+      <span className="text-[length:var(--type-dense)] font-semibold text-foreground">{name}</span>
       {range ? (
-        <span className="flex h-5 items-center rounded-[5px] px-1.5 text-[11px] text-faint shadow-[0px_0px_0px_1px_var(--field-edge)]">
+        <span className="flex h-5 items-center rounded-sm px-1.5 text-[length:var(--type-caption)] text-faint shadow-[0px_0px_0px_1px_var(--field-edge)]">
           {range}
         </span>
       ) : null}
@@ -69,7 +69,7 @@ function StripItem({ index, run, queuedFrom }: { index: number; run: SidebarRun;
   const active = index === 3
   const working = (run === "working" || run === "own") && index === 3
   return (
-    <div className={cn("flex items-start gap-2 rounded-[10px] p-2", active && "bg-[var(--row)]")}>
+    <div className={cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")}>
       <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
         <span className={cn("text-xs", active ? "font-medium text-[var(--primary-strong)]" : "text-faint")}>
           {index}

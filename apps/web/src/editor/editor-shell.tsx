@@ -70,13 +70,13 @@ export function EditorShell({
       ) : null}
       <div className="relative flex min-w-0 flex-1 flex-col items-center pt-14 pb-4">
         <div className="flex flex-col gap-3" style={{ width }}>
-          <span className="text-[13px] text-faint">3</span>
+          <span className="text-[length:var(--type-dense)] text-faint">3</span>
           <RevenueSlide width={width} working={working} selected={run === "compose"} />
         </div>
         <span className="block flex-1" />
         <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
         <span className="block h-2" />
-        <div className="flex h-12 items-center rounded-[10px] bg-line px-4" style={{ width }}>
+        <div className="flex h-12 items-center rounded-[var(--shape-card)] bg-line px-4" style={{ width }}>
           <span className={cnTone(run === "working")}>{run === "working" ? "Add speaker notes" : notes}</span>
         </div>
         <span className="block h-3" />
@@ -96,5 +96,7 @@ export function EditorShell({
 }
 
 function cnTone(empty: boolean) {
-  return empty ? "truncate text-[13px] text-faint" : "truncate text-[13px] text-quiet"
+  return empty
+    ? "truncate text-[length:var(--type-dense)] text-faint"
+    : "truncate text-[length:var(--type-dense)] text-quiet"
 }

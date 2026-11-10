@@ -3,7 +3,7 @@ const trimmed = { textBox: "trim-both cap alphabetic" } as const
 function PptxMark() {
   return (
     <span
-      className="flex size-10 items-center justify-center rounded-[9px] bg-line text-[10px] leading-[13px] font-semibold text-muted-foreground"
+      className="flex size-10 items-center justify-center rounded-[var(--shape-card)] bg-line text-[length:var(--type-caption)] leading-[13px] font-semibold text-muted-foreground"
       style={trimmed}
     >
       PPTX
@@ -47,14 +47,14 @@ export function ImportFailedPreview() {
       <div className="flex translate-y-[-0.5px] items-center gap-4">
         <button
           type="button"
-          className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[13px] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
+          className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
           style={trimmed}
         >
           Choose another file
         </button>
         <button
           type="button"
-          className="border-0 bg-transparent text-[13px] leading-[17px] font-medium text-muted-foreground"
+          className="border-0 bg-transparent text-[length:var(--type-dense)] leading-[17px] font-medium text-muted-foreground"
           style={trimmed}
         >
           Remove

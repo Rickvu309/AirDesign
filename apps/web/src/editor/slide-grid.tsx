@@ -30,7 +30,7 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
               type="button"
               variant="ghost"
               className={cn(
-                "h-7 gap-1 rounded-[7px] bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
+                "h-7 gap-1 rounded-md bg-white pr-2 pl-1.5 text-xs font-medium text-foreground hover:bg-white active:translate-y-0",
                 surfaceShadow,
               )}
             >
@@ -42,7 +42,7 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
               type="button"
               variant="ghost"
               size="icon"
-              className="size-8 rounded-[7px] text-faint hover:bg-transparent active:translate-y-0"
+              className="size-8 rounded-md text-faint hover:bg-transparent active:translate-y-0"
               aria-label="Slides"
             >
               <EditorIcon name="slide" size={16} />
@@ -51,7 +51,7 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
               type="button"
               variant="ghost"
               size="icon"
-              className="size-8 rounded-[7px] bg-line text-foreground hover:bg-line active:translate-y-0"
+              className="size-8 rounded-md bg-line text-foreground hover:bg-line active:translate-y-0"
               aria-label="Grid"
               aria-pressed
             >
@@ -135,12 +135,12 @@ function GridCard({ item, label, state }: { item: number | string; label: string
       <SlideThumb index={item as number} width={300} />
     )
   return (
-    <div className={cn("relative rounded-[3px]", selected && "shadow-[0px_0px_0px_2px_var(--primary)]")}>
+    <div className={cn("relative rounded-sm", selected && "shadow-[0px_0px_0px_2px_var(--primary)]")}>
       {body}
       {label ? (
         <span
           className={cn(
-            "absolute top-[6px] left-[8px] text-[11px]",
+            "absolute top-[6px] left-[8px] text-[length:var(--type-caption)]",
             selected ? "font-semibold text-[var(--primary-strong)]" : dark ? "text-white/70" : "text-faint",
           )}
         >

@@ -23,7 +23,7 @@ export function EditorToolbar({
 }) {
   const moveOn = activeTool === "move"
   return (
-    <div className="relative flex items-center gap-1 rounded-[12px] bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]">
+    <div className="relative flex items-center gap-1 rounded-xl bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]">
       <span className="flex items-center gap-0.5">
         <Button
           type="button"
@@ -32,7 +32,7 @@ export function EditorToolbar({
           aria-label="Move"
           aria-pressed={moveOn}
           className={cn(
-            "size-9 rounded-[8px] active:translate-y-0",
+            "size-9 rounded-lg active:translate-y-0",
             moveOn ? "bg-primary text-white hover:bg-primary" : "text-quiet hover:bg-transparent",
           )}
         >
@@ -44,7 +44,7 @@ export function EditorToolbar({
           aria-label="Tools"
           aria-expanded={menuOpen}
           className={cn(
-            "h-9 w-4 rounded-[6px] px-0 text-quiet active:translate-y-0",
+            "h-9 w-4 rounded-[var(--shape-control)] px-0 text-quiet active:translate-y-0",
             menuOpen ? "bg-line hover:bg-line" : "hover:bg-transparent",
           )}
         >
@@ -62,7 +62,7 @@ export function EditorToolbar({
             aria-label={tool}
             aria-pressed={on}
             className={cn(
-              "size-9 rounded-[8px] active:translate-y-0",
+              "size-9 rounded-lg active:translate-y-0",
               on ? "bg-primary text-white hover:bg-primary" : "text-quiet hover:bg-transparent",
             )}
           >
@@ -79,7 +79,7 @@ export function EditorToolbar({
 
 function ToolMenu() {
   return (
-    <div className="absolute bottom-[52px] left-[42px] flex w-[188px] flex-col rounded-[12px] bg-foreground p-1.5 shadow-[0px_8px_24px_var(--black-20)]">
+    <div className="absolute bottom-[52px] left-[42px] flex w-[188px] flex-col rounded-xl bg-foreground p-1.5 shadow-[0px_8px_24px_var(--black-20)]">
       <MenuRow icon="cursor" label="Move" shortcut="V" checked />
       <MenuRow icon="hand" label="Hand tool" shortcut="H" />
     </div>
@@ -98,12 +98,12 @@ function MenuRow({
   checked?: boolean
 }) {
   return (
-    <div className="flex h-8 items-center gap-2.5 rounded-[7px] pr-2.5 pl-2 text-white">
+    <div className="flex h-8 items-center gap-2.5 rounded-md pr-2.5 pl-2 text-white">
       <span className="flex size-4 items-center justify-center">
         {checked ? <EditorIcon name="check" size={14} /> : null}
       </span>
       <EditorIcon name={icon} size={16} />
-      <span className="flex-1 text-[13px]">{label}</span>
+      <span className="flex-1 text-[length:var(--type-dense)]">{label}</span>
       <span className="text-xs text-[var(--shortcut)]">{shortcut}</span>
     </div>
   )

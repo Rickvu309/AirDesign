@@ -51,7 +51,7 @@ export function DownloadedToast() {
   useEffect(() => {
     showToast(
       "export-downloaded",
-      <div className="flex h-10 w-[276.89px] items-center gap-2.5 rounded-[10px] bg-foreground pr-4 pl-3.5 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
+      <div className="flex h-10 w-[276.89px] items-center gap-2.5 rounded-[var(--shape-card)] bg-foreground pr-4 pl-3.5 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
         <CheckMark />
         <span className="whitespace-nowrap">{exportCopy.downloaded}</span>
       </div>,
@@ -73,12 +73,12 @@ export function FailedToast() {
   useEffect(() => {
     showToast(
       "export-failed",
-      <div className="flex h-10 w-[381.78px] items-center rounded-[10px] bg-foreground pr-1.5 pl-3.5 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
+      <div className="flex h-10 w-[381.78px] items-center rounded-[var(--shape-card)] bg-foreground pr-1.5 pl-3.5 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
         <ErrorMark />
         <span className="ml-2.5 whitespace-nowrap">{exportCopy.failed}</span>
         <button
           type="button"
-          className="ml-auto flex h-7 shrink-0 items-center rounded-[7px] px-2.5 font-medium whitespace-nowrap"
+          className="ml-auto flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap"
         >
           {exportCopy.tryAgain}
         </button>

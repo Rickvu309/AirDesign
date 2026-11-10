@@ -71,20 +71,20 @@ function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
 
 export function ShapeTray() {
   return (
-    <div className={cn("flex items-center gap-0.5 rounded-[12px] bg-white p-1.5", floatShadow)}>
+    <div className={cn("flex items-center gap-0.5 rounded-xl bg-white p-1.5", floatShadow)}>
       {[false, true].map((arrow) => (
-        <span key={String(arrow)} className="flex size-9 items-center justify-center rounded-[7px]">
+        <span key={String(arrow)} className="flex size-9 items-center justify-center rounded-md">
           <LineArt arrow={arrow} size={22} />
         </span>
       ))}
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       {trayShapes.map((name) => (
-        <span key={name} className="flex size-9 items-center justify-center rounded-[7px]">
+        <span key={name} className="flex size-9 items-center justify-center rounded-md">
           <ShapeSvg markup={basicShapes[name]} size={26} />
         </span>
       ))}
       <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-      <span className="flex h-8 shrink-0 items-center rounded-[8px] px-2.5 text-xs font-medium text-foreground">
+      <span className="flex h-8 shrink-0 items-center rounded-lg px-2.5 text-xs font-medium text-foreground">
         More shapes
       </span>
     </div>
@@ -93,8 +93,8 @@ export function ShapeTray() {
 
 export function ActionsMenu() {
   return (
-    <div className={cn("flex w-[320px] flex-col gap-1 rounded-[12px] bg-white p-2", floatShadow)}>
-      <span className="flex h-9 items-center gap-2 rounded-[8px] bg-line px-2.5 text-[13px] text-faint">
+    <div className={cn("flex w-[320px] flex-col gap-1 rounded-xl bg-white p-2", floatShadow)}>
+      <span className="flex h-9 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
         <EditorIcon name="search" size={15} />
         Search actions
       </span>
@@ -111,7 +111,7 @@ export function ActionsMenu() {
 
 function ActionRow({ icon, label }: { icon: "chart" | "table" | "icon" | "rmbg" | "hd"; label: string }) {
   return (
-    <span className="flex h-9 items-center gap-2.5 rounded-[8px] px-2 text-[13px] text-foreground">
+    <span className="flex h-9 items-center gap-2.5 rounded-lg px-2 text-[length:var(--type-dense)] text-foreground">
       <ActionGlyph name={icon} />
       {label}
     </span>
@@ -151,7 +151,7 @@ function MediaChrome({ title, search }: { title: string; search: string }) {
         <span className="text-sm font-semibold text-foreground">{title}</span>
       </div>
       <div className="flex border-b border-line px-3 pb-3">
-        <span className="flex h-8 flex-1 items-center gap-2 rounded-[8px] bg-line px-2.5 text-[13px] text-faint">
+        <span className="flex h-8 flex-1 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
           <EditorIcon name="search" size={14} />
           {search}
         </span>
@@ -178,7 +178,7 @@ export function ImagesPanel() {
           type="button"
           variant="ghost"
           className={cn(
-            "h-9 w-full gap-2 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+            "h-9 w-full gap-2 rounded-lg bg-white text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0",
             surfaceShadow,
           )}
         >
@@ -196,7 +196,7 @@ function PhotoColumn({ tiles }: { tiles: [number, string][] }) {
       {tiles.map(([height, color]) => (
         <span
           key={`${color}-${height}`}
-          className="block w-full rounded-[6px]"
+          className="block w-full rounded-[var(--shape-control)]"
           style={{ height, backgroundColor: color }}
         />
       ))}
@@ -257,7 +257,7 @@ function ShapeMark({ art }: { art: ShapeArt }) {
 
 function ShapeTile({ arts }: { arts: ShapeArt[] }) {
   return (
-    <span className="relative block size-[68px] shrink-0 rounded-[8px] bg-canvas">
+    <span className="relative block size-[68px] shrink-0 rounded-lg bg-canvas">
       {arts.map((art, index) => (
         <ShapeMark key={index} art={art} />
       ))}
@@ -287,12 +287,12 @@ function ShapeRows({ arts }: { arts: ShapeArt[][] }) {
 
 const textStyles = [
   ["Title", "text-[30px] font-semibold tracking-[-0.6px] leading-[1.1]"],
-  ["Header 1", "text-[22px] font-semibold tracking-[-0.3px]"],
+  ["Header 1", "text-[length:var(--type-title)] font-semibold tracking-[-0.3px]"],
   ["Header 2", "text-lg font-semibold"],
-  ["Header 3", "text-[15px] font-semibold"],
-  ["Body 1", "text-[15px]"],
+  ["Header 3", "text-[length:var(--type-section)] font-semibold"],
+  ["Body 1", "text-[length:var(--type-section)]"],
   ["Body 2", "text-sm"],
-  ["Body 3", "text-[13px]"],
+  ["Body 3", "text-[length:var(--type-dense)]"],
   ["Note", "text-xs text-quiet"],
 ] as const
 
@@ -309,7 +309,7 @@ export function TextPanel() {
           type="button"
           variant="ghost"
           className={cn(
-            "h-8 w-full gap-1.5 rounded-[8px] bg-white text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+            "h-8 w-full gap-1.5 rounded-lg bg-white text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0",
             surfaceShadow,
           )}
         >
@@ -320,7 +320,7 @@ export function TextPanel() {
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pt-3">
         <span className="text-xs font-medium text-quiet">Halden styles</span>
         {textStyles.map(([label, sample]) => (
-          <div key={label} className="flex items-center rounded-[8px] bg-canvas px-3 py-2.5">
+          <div key={label} className="flex items-center rounded-lg bg-canvas px-3 py-2.5">
             <span className={cn("text-foreground", sample)}>{label}</span>
           </div>
         ))}
@@ -341,7 +341,7 @@ export function SlideColumn() {
         type="button"
         variant="ghost"
         className={cn(
-          "h-8 w-[64px] shrink-0 rounded-[8px] bg-white px-0 text-foreground hover:bg-white active:translate-y-0",
+          "h-8 w-[64px] shrink-0 rounded-lg bg-white px-0 text-foreground hover:bg-white active:translate-y-0",
           surfaceShadow,
         )}
         aria-label="Add slide"
@@ -356,7 +356,7 @@ export function SlideColumn() {
             <span
               key={index}
               className={cn(
-                "rounded-[4px] p-[2px]",
+                "rounded-sm p-[var(--space-4)]",
                 itemIndex > 0 && "mt-2",
                 index === 3 && "shadow-[0px_0px_0px_2px_var(--primary)]",
               )}
@@ -374,23 +374,23 @@ export function TemplatePicker() {
   return (
     <div
       className={cn(
-        "absolute top-3 left-[256px] z-20 flex w-[496px] flex-col overflow-hidden rounded-[14px] bg-white pb-5",
+        "absolute top-3 left-[256px] z-20 flex w-[496px] flex-col overflow-hidden rounded-[var(--shape-dialog)] bg-white pb-5",
         floatShadow,
       )}
     >
       <div className="border-b border-line p-3">
-        <span className="flex h-10 items-center gap-2 rounded-[10px] bg-line px-3 text-[13px] text-faint">
+        <span className="flex h-10 items-center gap-2 rounded-[var(--shape-card)] bg-line px-3 text-[length:var(--type-dense)] text-faint">
           <EditorIcon name="search" size={15} />
           Search templates
         </span>
       </div>
       <div className="flex flex-col gap-6 px-4 pt-4">
         <div className="flex flex-col gap-3">
-          <span className="text-[13px] font-semibold text-foreground">Your templates</span>
+          <span className="text-[length:var(--type-dense)] font-semibold text-foreground">Your templates</span>
           <TemplateCard name="Halden" className="bg-navy" title="Halden" {...templateHalden} />
         </div>
         <div className="flex flex-col gap-3">
-          <span className="text-[13px] font-semibold text-foreground">Basic</span>
+          <span className="text-[length:var(--type-dense)] font-semibold text-foreground">Basic</span>
           <div className="flex gap-4">
             <TemplateCard
               name="Light slides"
@@ -433,12 +433,12 @@ function TemplateCard({
         className={cn("flex h-[126px] w-[224px] flex-col justify-center gap-1.5 rounded-[2px] px-5", className)}
         style={fill === undefined ? undefined : { backgroundColor: fill }}
       >
-        <span className="text-[13px] font-semibold" style={{ color: titleColor }}>
+        <span className="text-[length:var(--type-dense)] font-semibold" style={{ color: titleColor }}>
           {title}
         </span>
-        <span className="block h-[3px] w-[90px] rounded-full" style={{ backgroundColor: line }} />
+        <span className="block h-[var(--space-4)] w-[90px] rounded-full" style={{ backgroundColor: line }} />
       </div>
-      <span className="text-[13px] text-foreground">{name}</span>
+      <span className="text-[length:var(--type-dense)] text-foreground">{name}</span>
     </div>
   )
 }

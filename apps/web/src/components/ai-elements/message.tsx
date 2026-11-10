@@ -23,8 +23,8 @@ export function MessageContent({ className, ...props }: HTMLAttributes<HTMLDivEl
   return (
     <div
       className={cn(
-        "text-[13px] leading-[1.5] text-foreground",
-        "group-data-[role=user]:rounded-[14px] in-data-[role=user]:rounded-[14px]",
+        "text-[length:var(--type-dense)] leading-[1.5] text-foreground",
+        "group-data-[role=user]:rounded-[var(--shape-dialog)] in-data-[role=user]:rounded-[var(--shape-dialog)]",
         className,
       )}
       {...props}
@@ -33,5 +33,5 @@ export function MessageContent({ className, ...props }: HTMLAttributes<HTMLDivEl
 }
 
 export function MessageResponse({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-[13px] leading-[1.6] text-foreground", className)} {...props} />
+  return <p className={cn("text-[length:var(--type-dense)] leading-[1.6] text-foreground", className)} {...props} />
 }

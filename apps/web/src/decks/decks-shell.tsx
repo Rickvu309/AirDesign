@@ -37,10 +37,12 @@ export function DecksShell({
           type="button"
           className="flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[10px] leading-none font-semibold text-white">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
             {account.initials}
           </span>
-          <span className="text-[14px] leading-[21px] font-medium text-foreground">{account.name}</span>
+          <span className="text-[length:var(--type-body)] leading-[21px] font-medium text-foreground">
+            {account.name}
+          </span>
           <span className="text-faint">
             <DeckGlyph name="chevron" size={14} />
           </span>
@@ -53,14 +55,14 @@ export function DecksShell({
             type="search"
             placeholder="Search"
             aria-label="Search"
-            className="h-9 rounded-lg border-0 bg-background pl-[33px] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-faint focus-visible:border-0 focus-visible:ring-2 focus-visible:ring-primary md:text-sm"
+            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-faint focus-visible:border-0 focus-visible:ring-2 focus-visible:ring-primary md:text-sm"
           />
         </label>
         <nav className="mt-4" aria-label="Decks">
           <a
             href={primary.href}
             className={cn(
-              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[14px] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               active === primary.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
             )}
             aria-current={active === primary.id ? "page" : undefined}
@@ -75,7 +77,7 @@ export function DecksShell({
                 key={section.id}
                 href={section.href}
                 className={cn(
-                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[14px] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   active === section.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
                 )}
                 aria-current={active === section.id ? "page" : undefined}
@@ -87,20 +89,22 @@ export function DecksShell({
           </div>
         </nav>
         <div className="mt-6 flex flex-col gap-0.5">
-          <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[12px] leading-[18px] font-medium text-muted-foreground">
+          <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[18px] font-medium text-muted-foreground">
             <span className="text-faint">
               <DeckGlyph name="chevron" size={12} />
             </span>
             Starred
           </div>
           {firstVisit ? (
-            <p className="px-2.5 pt-1 text-[13px] leading-[1.45] text-muted-foreground">Star a deck to keep it here.</p>
+            <p className="px-2.5 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
+              Star a deck to keep it here.
+            </p>
           ) : (
             starredFolders.map((folder) => (
               <button
                 key={folder}
                 type="button"
-                className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[13px] leading-[19.5px] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[19.5px] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <span className="text-muted-foreground">
                   <DeckGlyph name="folder" size={15} />
@@ -114,7 +118,7 @@ export function DecksShell({
           {firstVisit ? (
             <a
               href={deckRoutes.connectAgent}
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[13px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[length:var(--type-dense)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"
             >
               <DeckGlyph name="plug" size={14} />
               Connect an agent

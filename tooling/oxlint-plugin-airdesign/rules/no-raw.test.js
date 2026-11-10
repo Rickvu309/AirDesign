@@ -22,7 +22,18 @@ if (artHtml.length !== 0 || plainHtml.length !== 1) throw new Error("html art al
 
 expectRejects("transition fails", "screen.tsx", `export const motion = "${transition}"\n`, rule, motion)
 expectRejects("transition fails in art", "shape-art.ts", `export const motion = "${transition}"\n`, rule, motion)
-expectAccepts("a sized class stays off", "screen.tsx", 'export const size = "h-[13px]"\n', rule)
+const sized = "Use a theme token instead of a sized arbitrary class."
+const height = "h-[" + "17px]"
+const far = "h-[" + "720px]"
+const type = "text-[" + "13px]"
+const radius = "rounded-[" + "2px]"
+const tokenSize = "h-[var(--space-16)]"
+expectRejects("a near height fails", "screen.tsx", `export const size = "${height}"\n`, rule, sized)
+expectRejects("a type size fails", "screen.tsx", `export const size = "${type}"\n`, rule, sized)
+expectAccepts("a far height stays", "screen.tsx", `export const size = "${far}"\n`, rule)
+expectAccepts("a far radius stays", "screen.tsx", `export const size = "${radius}"\n`, rule)
+expectAccepts("a token size stays", "screen.tsx", `export const size = "${tokenSize}"\n`, rule)
+expectAccepts("art keeps a near height", "shape-art.ts", `export const size = "${height}"\n`, rule)
 
 const css = rawFindings("page.css", `x { color: ${color}; }\n`)
 const html = rawFindings("page.html", `<p style="color:${color}"></p>\n`)

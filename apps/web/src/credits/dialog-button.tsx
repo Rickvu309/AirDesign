@@ -14,7 +14,7 @@ export function DialogButton({
     <button
       type="button"
       className={cn(
-        "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-4 text-[14px] leading-[18px] font-medium",
+        "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-4 text-[length:var(--type-body)] leading-[18px] font-medium",
         tone === "brand"
           ? "bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] text-white shadow-[inset_0_0_0_1px_var(--primary-strong)] hover:brightness-105"
           : "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-canvas",

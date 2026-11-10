@@ -32,12 +32,14 @@ export function AgentsTab() {
       <ModuleCard title={settingsCopy.mcp} description={settingsCopy.mcpBody}>
         <div className="flex flex-col items-start">
           <div className="flex h-10 w-full items-center rounded-lg bg-muted pl-3">
-            <span className="min-w-0 flex-1 text-[13px] leading-[17px] text-foreground">{settingsCopy.mcpAddress}</span>
+            <span className="min-w-0 flex-1 text-[length:var(--type-dense)] leading-[17px] text-foreground">
+              {settingsCopy.mcpAddress}
+            </span>
             <SettingsButton width={60.13}>{settingsCopy.copy}</SettingsButton>
           </div>
           <button
             type="button"
-            className="mt-3.5 h-[17px] border-0 bg-transparent p-0 text-left text-[13px] leading-[17px] font-medium text-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="mt-3.5 h-[var(--space-16)] border-0 bg-transparent p-0 text-left text-[length:var(--type-dense)] leading-[17px] font-medium text-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             {settingsCopy.setupGuides}
           </button>

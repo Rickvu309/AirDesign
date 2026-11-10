@@ -28,7 +28,9 @@ export function AddCreditsDialog({
   return (
     <ScrimDialog className="flex w-[440px] flex-col gap-5 p-6">
       <div className="flex h-7 items-center justify-between">
-        <h2 className="text-[17px] leading-[22px] font-semibold text-foreground">{productCopy.creditsAdd}</h2>
+        <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
+          {productCopy.creditsAdd}
+        </h2>
         <button
           type="button"
           aria-label={productCopy.close}
@@ -37,13 +39,19 @@ export function AddCreditsDialog({
           <CloseGlyph />
         </button>
       </div>
-      <p className="text-[13px] leading-[19.5px] text-muted-foreground">{productCopy.creditsFacts}</p>
+      <p className="text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">
+        {productCopy.creditsFacts}
+      </p>
       <div>
-        <div className="text-[12px] leading-4 font-medium text-muted-foreground">{productCopy.amount}</div>
+        <div className="text-[length:var(--type-caption)] leading-4 font-medium text-muted-foreground">
+          {productCopy.amount}
+        </div>
         <div className="mt-2.5 flex h-11 items-center gap-2">
           <div className="flex h-11 min-w-0 flex-1 items-center gap-1 rounded-lg bg-white pr-3 pl-3 shadow-[inset_0_0_0_2px_var(--primary)]">
-            <span className="text-[16px] leading-[21px] text-[var(--muted-foreground)]">$</span>
-            <span className="text-[16px] leading-[21px] font-semibold text-foreground">{amount}</span>
+            <span className="text-[length:var(--type-section)] leading-[21px] text-[var(--muted-foreground)]">$</span>
+            <span className="text-[length:var(--type-section)] leading-[21px] font-semibold text-foreground">
+              {amount}
+            </span>
             <span className="h-5 w-[1.5px] bg-[var(--primary)]" />
           </div>
           <div className="flex h-11 items-center gap-2" role="group" aria-label={productCopy.amount}>
@@ -55,7 +63,7 @@ export function AddCreditsDialog({
                   type="button"
                   aria-pressed={on}
                   className={cn(
-                    "flex h-11 items-center rounded-lg px-3 text-[13px] leading-[17px] font-medium",
+                    "flex h-11 items-center rounded-lg px-3 text-[length:var(--type-dense)] leading-[17px] font-medium",
                     on
                       ? "bg-[var(--blue-tint)] text-[var(--primary-strong)] shadow-[inset_0_0_0_1px_var(--primary)]"
                       : "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-canvas",
@@ -67,9 +75,11 @@ export function AddCreditsDialog({
             })}
           </div>
         </div>
-        <p className="mt-2.5 text-[12px] leading-4 text-muted-foreground">{productCopy.creditsMinimum}</p>
+        <p className="mt-2.5 text-[length:var(--type-caption)] leading-4 text-muted-foreground">
+          {productCopy.creditsMinimum}
+        </p>
       </div>
-      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2.5 rounded-[10px] bg-canvas px-3.5 py-3.5 text-[13px] leading-[17px]">
+      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2.5 rounded-[var(--shape-card)] bg-canvas px-3.5 py-3.5 text-[length:var(--type-dense)] leading-[17px]">
         <dt className="text-muted-foreground">{productCopy.currentBalance}</dt>
         <dd className="text-right text-foreground">{balance}</dd>
         <dt className="text-muted-foreground">{productCopy.adding}</dt>
@@ -84,7 +94,7 @@ export function AddCreditsDialog({
           <ExternalArrow />
         </DialogButton>
       </div>
-      <p className="text-right text-[12px] leading-4 text-faint">{productCopy.payNewTab}</p>
+      <p className="text-right text-[length:var(--type-caption)] leading-4 text-faint">{productCopy.payNewTab}</p>
     </ScrimDialog>
   )
 }
