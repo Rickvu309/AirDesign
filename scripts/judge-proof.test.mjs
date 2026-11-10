@@ -1,7 +1,10 @@
 import fs from "node:fs"
+import { judge } from "./judge.mjs"
 import {
+  changesJudge,
   breakKinds,
   caughtCount,
+  freshMissFails,
   kindVerdicts,
   proofFailures,
   proofTable,
@@ -11,6 +14,7 @@ import {
   seedFrom,
   seededRandom,
   seedsFor,
+  settleRun,
 } from "./judge-proof.mjs"
 
 const same = (name, actual, expected) => {
@@ -37,63 +41,204 @@ for (let draw = 0, random = seededRandom(11); draw < 1000; draw += 1) {
   if (value < 5 || value > 7) throw new Error(`between drew ${value}`)
 }
 
-same("no seed is taken from the commit", seedFrom(undefined), { mode: "list" })
-same("an empty choice is the seed list", seedFrom(""), { mode: "list" })
-same("JUDGE_SEED chooses that seed", seedFrom("42"), { mode: "one", seed: 42 })
-same("JUDGE_SEED=random asks for a random seed", seedFrom("random"), { mode: "random" })
+same("a chosen seed wins over the commit", seedFrom({ chosen: "42", commit: "786ff3b1aa\n" }), 42)
+same(
+  "the commit gives the seed when none is chosen",
+  seedFrom({ chosen: undefined, commit: "786ff3b1aa\n" }),
+  2020602801,
+)
+same("an empty choice falls back to the commit", seedFrom({ chosen: "", commit: "0000000f" }), 15)
 let refused = ""
 try {
-  seedFrom("soon")
+  seedFrom({ chosen: "soon", commit: "0000000f" })
 } catch (error) {
   refused = error.message
 }
 same(
   "a seed that is not a number is refused",
   refused,
-  "JUDGE_SEED must be a whole number from 0 to 4294967295, or random, and it is soon.",
+  "JUDGE_SEED must be a whole number from 0 to 4294967295, and it is soon.",
 )
 let hashRefused = ""
 try {
-  seedFrom("786ff3b1")
+  seedFrom({ chosen: "786ff3b1", commit: "0000000f" })
 } catch (error) {
   hashRefused = error.message
 }
 same(
   "a commit hash is not a seed",
   hashRefused,
-  "JUDGE_SEED must be a whole number from 0 to 4294967295, or random, and it is 786ff3b1.",
+  "JUDGE_SEED must be a whole number from 0 to 4294967295, and it is 786ff3b1.",
 )
 const list = readSeedList(fs.readFileSync(new URL("./pptx-fixtures/judge-seeds.json", import.meta.url), "utf8"))
 same("the seed list is read and holds both seeds", list.seeds, [424603714, 2835851095])
-same("the seed list carries both known misses", list.known, [
-  {
-    seed: 424603714,
-    kind: "wrong child order",
-    deck: "doe-heat-pumps.pptx",
-    what: "ppt/slides/slide17.xml shape 2 of 3",
-  },
-  {
-    seed: 2835851095,
-    kind: "wrong child order",
-    deck: "census-updating-spm.pptx",
-    what: "ppt/slides/slide25.xml shape 2 of 4",
-  },
+same("the seed list now names no known miss", list.known, [])
+const listed = {
+  seeds: list.seeds,
+  known: [
+    { seed: 424603714, kind: "wrong child order", deck: "doe-heat-pumps.pptx", what: "a" },
+    { seed: 2835851095, kind: "wrong child order", deck: "census-updating-spm.pptx", what: "b" },
+  ],
+}
+const commit = "786ff3b1aa\n"
+const plan = (chosen, draw = () => 1) => seedsFor({ chosen, list: listed, draw, commit })
+same(
+  "an unset JUDGE_SEED runs every listed seed and then one fresh seed",
+  plan(undefined).map((run) => [run.seed, run.fresh]),
+  [
+    [424603714, false],
+    [2835851095, false],
+    [seedFrom({ chosen: undefined, commit }), true],
+  ],
+)
+same(
+  "an empty JUDGE_SEED runs the fresh seed from seedFrom on the commit",
+  plan("").at(-1).seed,
+  seedFrom({ chosen: "", commit }),
+)
+same("the fresh seed is announced with its replay line", plan(undefined).at(-1).announce, `fresh ${replay(2020602801)}`)
+same("the fresh seed excuses no known miss", plan(undefined).at(-1).known, [])
+same("the fresh seed says to fix the cause and add the seed", plan(undefined).at(-1).chosen, true)
+same("every listed seed keeps the list's known misses", plan(undefined)[0].known, listed.known)
+same("JUDGE_SEED runs one seed and only its own known misses", plan("424603714"), [
+  { seed: 424603714, known: [listed.known[0]], chosen: true, fresh: false, announce: replay(424603714) },
 ])
 same(
-  "an unset JUDGE_SEED runs every listed seed",
-  seedsFor({ chosen: undefined, list, draw: () => 1 }).seeds,
-  list.seeds,
+  "JUDGE_SEED ignores known misses of other seeds",
+  plan("3").map((run) => run.known),
+  [[]],
 )
-same("JUDGE_SEED runs one seed and only its own known misses", seedsFor({ chosen: "424603714", list, draw: () => 1 }), {
-  seeds: [424603714],
-  known: [list.known[0]],
-  chosen: true,
-  announce: [replay(424603714)],
+const randomRun = plan("random", () => 99)
+same(
+  "JUDGE_SEED=random draws one seed and uses no known misses",
+  randomRun.map((run) => [run.seed, run.known, run.fresh]),
+  [[99, [], false]],
+)
+same("JUDGE_SEED=random prints the seed and the replay line", randomRun[0].announce, `random ${replay(99)}`)
+
+const headSha = "a".repeat(40)
+const baseSha = "b".repeat(40)
+const judgeChange = ["scripts/judge.mjs"]
+const otherChange = ["apps/web/src/a.ts"]
+const decide = (extra) =>
+  freshMissFails({
+    eventText: undefined,
+    mergeBase: () => {
+      throw new Error("unused")
+    },
+    changedSince: () => {
+      throw new Error("unused")
+    },
+    ...extra,
+  })
+const seenBases = []
+const changedFor = (files) => (base) => {
+  seenBases.push(base)
+  return files
+}
+const pullRequest = JSON.stringify({ pull_request: { base: { sha: baseSha } }, before: headSha })
+const mergeGroup = JSON.stringify({ merge_group: { base_sha: baseSha } })
+const push = JSON.stringify({ before: baseSha })
+for (const [name, eventText] of [
+  ["pull_request", pullRequest],
+  ["merge_group", mergeGroup],
+  ["push", push],
+]) {
+  same(
+    `${name}: a judge file change fails a fresh miss`,
+    decide({ eventText, changedSince: changedFor(judgeChange) }),
+    true,
+  )
+  same(
+    `${name}: another change does not fail a fresh miss`,
+    decide({ eventText, changedSince: changedFor(otherChange) }),
+    false,
+  )
+  same(`${name}: the event base is the one compared`, seenBases.splice(0), [baseSha, baseSha])
+}
+same(
+  "outside CI the merge base is compared and a judge change fails",
+  decide({ mergeBase: () => baseSha, changedSince: changedFor(judgeChange) }),
+  true,
+)
+same(
+  "outside CI another change passes",
+  decide({ mergeBase: () => baseSha, changedSince: changedFor(otherChange) }),
+  false,
+)
+same("outside CI the merge base went to the comparison", seenBases.splice(0), [baseSha, baseSha])
+for (const [name, eventText] of [
+  ["an event with no base", JSON.stringify({ action: "dispatched" })],
+  ["a push from a new branch", JSON.stringify({ before: "0".repeat(40) })],
+  ["a short commit id", JSON.stringify({ pull_request: { base: { sha: "abc" } } })],
+  ["an empty event file", ""],
+  ["a broken event file", "{"],
+]) {
+  same(`${name} fails a fresh miss`, decide({ eventText }), true)
+}
+same("an unknown merge base fails a fresh miss", decide({ mergeBase: () => undefined }), true)
+same("a failed comparison fails a fresh miss", decide({ eventText: push, changedSince: () => undefined }), true)
+for (const file of [
+  "scripts/judge.mjs",
+  "scripts/judge-proof.mjs",
+  "scripts/pptx-check.mjs",
+  "scripts/pptx-fixtures/judge-proof.json",
+  "scripts/pptx-fixtures/judge-seeds.json",
+]) {
+  same(`${file} is a judge file`, changesJudge([file]), true)
+}
+for (const file of [
+  "scripts/judge.mjs.bak",
+  "scripts/pptx-fixtures/cases.json",
+  "scripts/pptx-fixtures/deep/judge-proof.json",
+  "scripts/pptx-fixtures/judge-proof.txt",
+  "packages/pptx/src/child-order.ts",
+]) {
+  same(`${file} is not a judge file`, changesJudge([file]), false)
+}
+same("no changed file is not a judge change", changesJudge([]), false)
+
+const freshRun = { seed: 5, fresh: true }
+const fixedRun = { seed: 5, fresh: false }
+const missLine =
+  "The judge missed second, recorded caught: a.pptx, slide 2. seed 5, replay with JUDGE_SEED=5 pnpm check:pptx"
+same("a fresh miss on a judge change fails", settleRun({ run: freshRun, lines: [missLine], freshFails: true }), {
+  failed: 1,
+  lines: [missLine],
 })
-same("JUDGE_SEED ignores known misses of other seeds", seedsFor({ chosen: "3", list, draw: () => 1 }).known, [])
-const randomRun = seedsFor({ chosen: "random", list, draw: () => 99 })
-same("JUDGE_SEED=random draws one seed and uses no known misses", [randomRun.seeds, randomRun.known], [[99], []])
-same("JUDGE_SEED=random prints the seed and the replay line", randomRun.announce, [`random ${replay(99)}`])
+const printed = settleRun({ run: freshRun, lines: [missLine], freshFails: false })
+same("a fresh miss on another pull request does not fail", printed.failed, 0)
+same(
+  "a fresh miss on another pull request prints its replay line",
+  printed.lines.length === 1 && printed.lines[0].includes("replay with JUDGE_SEED=5 pnpm check:pptx"),
+  true,
+)
+same("a fixed seed miss always fails", settleRun({ run: fixedRun, lines: [missLine], freshFails: false }), {
+  failed: 1,
+  lines: [missLine],
+})
+same(
+  "a fresh run with no miss has nothing to fail",
+  settleRun({ run: freshRun, lines: [], freshFails: true }).failed,
+  0,
+)
+
+const countingPptx = {
+  newValidatorErrors: (before, after) => after.filter((line) => !before.includes(line)),
+  newDuplicateShapeIds: () => [],
+}
+const orderFault = "Order: p:spPr after p:txBody in p:sp of a markup branch /ppt/slides/slide1.xml"
+same(
+  "the judge rejects a new order error",
+  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [orderFault] }).accepted,
+  false,
+)
+same(
+  "the judge does not blame an order error the deck already had",
+  judge(countingPptx, { list: [], ids: [], orders: [orderFault] }, { list: [], ids: [], orders: [orderFault] })
+    .accepted,
+  true,
+)
 
 same("a sample seed is the same for the same sample", sampleSeed(1, "kind", 0), sampleSeed(1, "kind", 0))
 const sampleSeeds = [
@@ -218,6 +363,19 @@ same(
     known: knownMiss,
   }),
   [`The judge missed second, recorded caught: a.pptx, slide 3. ${again}`],
+)
+same(
+  "a listed miss does not excuse another kind at the same place",
+  proofFailures({
+    recorded: recordedCaught,
+    judged: [sample("first", true), sample("second", false)],
+    seed: 5,
+    known: knownMiss,
+  }),
+  [
+    `The judge missed first, recorded caught: a.pptx, slide 2. ${again}`,
+    `The judge caught second, and the seed list still names this miss: a.pptx, slide 2. Delete that entry. ${again}`,
+  ],
 )
 same(
   "a chosen or random seed says to fix the cause and add the seed",

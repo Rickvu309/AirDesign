@@ -1,7 +1,9 @@
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { shapePart } from "./shape-id.js"
 
 export const childOrder = {
+  "p:sp": ["p:nvSpPr", "p:spPr", "p:style", "p:txBody", "p:extLst"],
   "p:spPr": [
     "a:xfrm",
     "a:custGeom",
@@ -55,6 +57,47 @@ function rank(parent: OrderedParent, tag: string): number {
   const index = order.indexOf(tag)
   if (index < 0) throw new Error(`${parent} ${tag}`)
   return index
+}
+
+const branchKinds = new Set(["mc:Choice", "mc:Fallback"])
+const runKinds = new Set(["a:r", "a:br", "a:fld"])
+const branchRanks = new Map<string, ReadonlyMap<string, number>>(
+  Object.entries(childOrder).map(([parent, order]) => [parent, new Map(order.map((tag, position) => [tag, position]))]),
+)
+
+const checkedParts = new WeakMap<Uint8Array, readonly string[]>()
+
+function partBranchOrderErrors(part: string, bytes: Uint8Array): readonly string[] {
+  const checked = checkedParts.get(bytes)
+  if (checked !== undefined) return checked
+  const elements = markupDocument(bytes).elements
+  const inside = new Set<number>()
+  const reached = new Map<number, { readonly kind: string; readonly rank: number }>()
+  const errors: string[] = []
+  for (const element of elements) {
+    const parent = elements[element.parent]
+    const parentInside = parent !== undefined && inside.has(parent.index)
+    if (parentInside || branchKinds.has(element.kind)) inside.add(element.index)
+    if (!parentInside || parent === undefined) continue
+    const rank = branchRanks.get(parent.kind)?.get(runKinds.has(element.kind) ? "a:r" : element.kind)
+    if (rank === undefined) continue
+    const before = reached.get(parent.index)
+    if (before !== undefined && rank < before.rank) {
+      errors.push(`Order: ${element.kind} after ${before.kind} in ${parent.kind} of a markup branch /${part}`)
+      continue
+    }
+    reached.set(parent.index, { kind: element.kind, rank })
+  }
+  checkedParts.set(bytes, errors)
+  return errors
+}
+
+export function branchOrderErrors(parts: ReadonlyMap<string, Uint8Array>): readonly string[] {
+  const errors: string[] = []
+  for (const [part, bytes] of parts) {
+    if (shapePart.test(part)) errors.push(...partBranchOrderErrors(part, bytes))
+  }
+  return errors
 }
 
 export function insertChild<P extends OrderedParent>(

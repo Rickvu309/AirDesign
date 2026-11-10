@@ -27,14 +27,13 @@ export const seededRandom = (seed) => {
 
 const wholeSeed = (seed) => Number.isInteger(seed) && seed >= 0 && seed <= 4294967295
 
-export const seedFrom = (chosen) => {
-  if (chosen === undefined || chosen === "") return { mode: "list" }
-  if (chosen === "random") return { mode: "random" }
+export const seedFrom = ({ chosen, commit }) => {
+  if (chosen === undefined || chosen === "") return Number.parseInt(commit.slice(0, 8), 16)
   const seed = Number(chosen)
   if (!wholeSeed(seed)) {
-    throw new Error(`JUDGE_SEED must be a whole number from 0 to 4294967295, or random, and it is ${chosen}.`)
+    throw new Error(`JUDGE_SEED must be a whole number from 0 to 4294967295, and it is ${chosen}.`)
   }
-  return { mode: "one", seed }
+  return seed
 }
 
 export const sampleSeed = (seed, kind, sample) => {
@@ -61,22 +60,59 @@ export const readSeedList = (text) => {
   return { seeds: parsed.seeds, known: parsed.known }
 }
 
-export const seedsFor = ({ chosen, list, draw }) => {
-  const choice = seedFrom(chosen)
-  if (choice.mode === "list") {
-    return { seeds: list.seeds, known: list.known, chosen: false, announce: list.seeds.map((seed) => replay(seed)) }
-  }
-  if (choice.mode === "random") {
+export const seedsFor = ({ chosen, list, draw, commit }) => {
+  if (chosen === "random") {
     const seed = draw() >>> 0
-    return { seeds: [seed], known: [], chosen: true, announce: [`random ${replay(seed)}`] }
+    return [{ seed, known: [], chosen: true, fresh: false, announce: `random ${replay(seed)}` }]
   }
-  return {
-    seeds: [choice.seed],
-    known: list.known.filter((row) => row.seed === choice.seed),
-    chosen: true,
-    announce: [replay(choice.seed)],
+  if (chosen !== undefined && chosen !== "") {
+    const seed = seedFrom({ chosen, commit })
+    return [
+      {
+        seed,
+        known: list.known.filter((row) => row.seed === seed),
+        chosen: true,
+        fresh: false,
+        announce: replay(seed),
+      },
+    ]
+  }
+  const fresh = seedFrom({ chosen, commit })
+  return [
+    ...list.seeds.map((seed) => ({ seed, known: list.known, chosen: false, fresh: false, announce: replay(seed) })),
+    { seed: fresh, known: [], chosen: true, fresh: true, announce: `fresh ${replay(fresh)}` },
+  ]
+}
+
+const judgeFile = /^scripts\/(judge\.mjs|judge-proof\.mjs|pptx-check\.mjs|pptx-fixtures\/judge-[^/]*\.json)$/
+
+export const changesJudge = (files) => files.some((file) => judgeFile.test(file))
+
+const knownCommit = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value) && !/^0+$/.test(value)
+
+export const eventBase = (text) => {
+  try {
+    const event = JSON.parse(text)
+    return [event?.pull_request?.base?.sha, event?.merge_group?.base_sha, event?.before].find(knownCommit)
+  } catch {
+    return undefined
   }
 }
+
+export const freshMissFails = ({ eventText, mergeBase, changedSince }) => {
+  const base = eventText === undefined ? mergeBase() : eventBase(eventText)
+  if (base === undefined) return true
+  const changed = changedSince(base)
+  return changed === undefined || changesJudge(changed)
+}
+
+export const settleRun = ({ run, lines, freshFails }) =>
+  !run.fresh || freshFails
+    ? { failed: lines.length, lines }
+    : {
+        failed: 0,
+        lines: lines.map((line) => `This pull request changes no judge file, so this does not fail it: ${line}`),
+      }
 
 class NoPlace extends Error {}
 

@@ -45,6 +45,8 @@ write(
   ]),
 )
 write("scripts/pptx-fixtures/judge-proof.json", JSON.stringify({ "one kind": "caught", "other kind": "missed" }))
+const seedList = (known) => write("scripts/pptx-fixtures/judge-seeds.json", JSON.stringify({ seeds: [1], known }))
+seedList([])
 write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
 write("scripts/pptx-fixtures/b.pptx", "x")
 write(
@@ -124,6 +126,16 @@ write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(fa
 execFileSync("git", ["add", "-A"], { cwd: root })
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("a passing test was counted as a known fault")
+seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
+if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 1)
+  throw new Error("a listed miss must show in the known-failures metric")
+seedList([])
+if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
+  throw new Error("an empty seed list must add no known failure")
+fs.rmSync(path.join(root, "scripts/pptx-fixtures/judge-seeds.json"))
+if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
+  throw new Error("a repo with no seed list has no listed miss")
+seedList([])
 cache(1, 0)
 const fewer = (await readMetrics(root)).drift
 if (!fewer.includes("test-count is 1 and its floor is 2. Put back the tests that are gone.")) {
