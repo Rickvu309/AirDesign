@@ -1,6 +1,7 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
 import type { Deck } from "@airdesign/engine"
+import { emptyLog } from "./admit.js"
 import { callTool, type AgentCaller, type ToolResult } from "./call-tool.js"
 
 export type ScoreStep = {
@@ -43,7 +44,10 @@ export function score(task: ScoreTask, deck: Deck, caller: AgentCaller): ScoreRe
   let current = deck
   for (const step of task.steps) {
     const before = current
-    const session = step.tab === undefined ? { caller, deck: current } : { caller, deck: current, tab: step.tab }
+    const log = emptyLog()
+    const now = 0
+    const session =
+      step.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: step.tab, log, now }
     const result = callTool(step.name, step.raw, session)
     if (captureName !== undefined && step.name === captureName) {
       if (result.deck !== before || reportsCapturedFile(result)) return { pass: false, deck: result.deck }
