@@ -1,6 +1,6 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
-import { keepRelationships, readParts, roundTripPackage } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8, readParts, roundTripPackage } from "./package-bytes.js"
 
 function encode(text: string): Uint8Array {
   const bytes = new Uint8Array(text.length)
@@ -23,15 +23,13 @@ async function zipOf(parts: Readonly<Record<string, string>>): Promise<Uint8Arra
 const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="missing.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com/a" TargetMode="External"/></Relationships>`
 
-describe("keepRelationships", () => {
-  it("keeps a relationship whose target is missing", () => {
-    const xml = `<Relationships><Relationship Id="rId1" Target="missing.xml"/></Relationships>`
-    expect(keepRelationships(xml, () => false)).toBe(xml)
-  })
-
-  it("keeps an external relationship", () => {
-    const xml = `<Relationships><Relationship Id="rId2" Target="https://example.com/a" TargetMode="External"/></Relationships>`
-    expect(keepRelationships(xml, () => false)).toBe(xml)
+describe("utf8", () => {
+  it("round-trips a 3-byte character and an emoji", () => {
+    expect(Array.from(encodeUtf8("€"))).toEqual([0xe2, 0x82, 0xac])
+    expect(decodeUtf8(encodeUtf8("€"))).toBe("€")
+    expect(Array.from(encodeUtf8("😀"))).toEqual([0xf0, 0x9f, 0x98, 0x80])
+    expect(decodeUtf8(Uint8Array.from([0xf0, 0x9f, 0x98, 0x80]))).toBe("😀")
+    expect(decodeUtf8(encodeUtf8("a😀b"))).toBe("a😀b")
   })
 })
 

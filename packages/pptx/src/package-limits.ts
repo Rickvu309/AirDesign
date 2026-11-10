@@ -26,6 +26,12 @@ function overLimit(limit: PackageLimitName): ReadPackage {
   return { ok: false, reason: "limit", limit }
 }
 
+function sizeLimit(name: string, size: number): ReadPackage | null {
+  const cap = xmlPart(name) ? packageLimits.xmlBytes : packageLimits.binaryBytes
+  if (size > cap) return overLimit(xmlPart(name) ? "xmlBytes" : "binaryBytes")
+  return null
+}
+
 function xmlPart(name: string): boolean {
   return name.endsWith(".xml") || name.endsWith(".rels")
 }
@@ -49,8 +55,12 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
     let unpacked = 0
     for (const entry of files) {
       if (slidePart(entry.filename)) slides += 1
-      const cap = xmlPart(entry.filename) ? packageLimits.xmlBytes : packageLimits.binaryBytes
-      if (entry.uncompressedSize > cap) return overLimit(xmlPart(entry.filename) ? "xmlBytes" : "binaryBytes")
+      const declared = sizeLimit(entry.filename, entry.uncompressedSize)
+      if (declared !== null) return declared
+      if (entry.compressionMethod === 0) {
+        const stored = sizeLimit(entry.filename, entry.compressedSize)
+        if (stored !== null) return stored
+      }
       unpacked += entry.uncompressedSize
     }
     if (files.length > packageLimits.parts) return overLimit("parts")
@@ -73,8 +83,8 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
       } catch {
         return { ok: false, reason: "zip" }
       }
-      const cap = xmlPart(entry.filename) ? packageLimits.xmlBytes : packageLimits.binaryBytes
-      if (data.length > cap) return overLimit(xmlPart(entry.filename) ? "xmlBytes" : "binaryBytes")
+      const actual = sizeLimit(entry.filename, data.length)
+      if (actual !== null) return actual
       parts.set(entry.filename, data)
       if (!xmlPart(entry.filename)) continue
       const shape = markupLimits(data)

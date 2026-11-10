@@ -388,6 +388,35 @@ function rowBytes(bytes: Uint8Array): Uint8Array[] {
     .map((element) => bytes.slice(element.start, element.end))
 }
 
+function ancestor(elements: readonly MarkupElement[], child: MarkupElement, kind: string): MarkupElement | null {
+  let parent = child.parent
+  while (parent >= 0) {
+    const next = elements[parent]
+    if (next === undefined) return null
+    if (next.kind === kind) return next
+    parent = next.parent
+  }
+  return null
+}
+
+function rowInMultiRowTable(parts: ReadonlyMap<string, Uint8Array>): { part: string; row: number } | null {
+  for (const name of slideNames(parts)) {
+    const bytes = parts.get(name)
+    if (bytes === undefined) continue
+    const elements = markup(bytes)
+    const rows = elements.filter((element) => element.kind === "a:tr")
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index]
+      if (row === undefined) continue
+      const table = ancestor(elements, row, "a:tbl")
+      if (table === null) continue
+      const count = rows.filter((item) => ancestor(elements, item, "a:tbl") === table).length
+      if (count >= 2) return { part: name, row: index + 1 }
+    }
+  }
+  return null
+}
+
 function tableHost(
   parts: ReadonlyMap<string, Uint8Array>,
 ): { part: string; rows: number; swap: { row: number; before: number } | null } | null {
@@ -622,13 +651,16 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
     runs.push(
       attempt("tbl.addRow", () => ({ touch: partTouch(parts, added), parts: applyStructuralRoute(parts, added) })),
     )
-    const removed = { name: "tbl.removeRow", part: table.part, row: table.rows } as const
-    runs.push(
-      attempt("tbl.removeRow", () => ({
-        touch: partTouch(parts, removed),
-        parts: applyStructuralRoute(parts, removed),
-      })),
-    )
+    const removable = rowInMultiRowTable(parts)
+    if (removable !== null) {
+      const removed = { name: "tbl.removeRow", part: removable.part, row: removable.row } as const
+      runs.push(
+        attempt("tbl.removeRow", () => ({
+          touch: partTouch(parts, removed),
+          parts: applyStructuralRoute(parts, removed),
+        })),
+      )
+    }
     if (table.swap !== null) {
       const ordered = {
         name: "tbl.orderRow",

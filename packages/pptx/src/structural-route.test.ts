@@ -21,7 +21,7 @@ const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/
 const orderedSlides = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId3"/></p:sldIdLst><p:sldSz cx="1" cy="1"/></p:presentation>`
 const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
 const types = `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
-const slideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`
+const slideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide1.xml"/></Relationships>`
 const table = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:txBody><a:p><a:r><a:t>A</a:t></a:r></a:p></a:txBody></a:tc></a:tr><a:tr h="1"><a:tc><a:txBody><a:p><a:r><a:t>B</a:t></a:r></a:p></a:txBody></a:tc></a:tr></a:tbl></p:sld>`
 const twoTables = `<p:sld><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="2" name="A"/></p:nvGraphicFramePr><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr></a:tbl></p:graphicFrame><p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="3" name="B"/></p:nvGraphicFramePr><a:tbl><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr></a:tbl></p:graphicFrame></p:sld>`
 
@@ -214,7 +214,17 @@ describe("applyStructuralRoute", () => {
     const addedSlide = xml(added, "ppt/slides/slide2.xml")
     expect(addedSlide).toContain('name=""')
     expect(addedSlide).not.toContain("One")
-    expect(added.get("ppt/slides/_rels/slide2.xml.rels")).toEqual(parts.get("ppt/slides/_rels/slide1.xml.rels"))
+    const blankRels = xml(added, "ppt/slides/_rels/slide2.xml.rels")
+    expect(blankRels).toContain(
+      'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"',
+    )
+    expect(blankRels).not.toContain("notesSlide")
+    expect(xml(added, "ppt/_rels/presentation.xml.rels")).toContain(
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>',
+    )
+    expect(xml(added, "[Content_Types].xml")).toContain(
+      '<Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>',
+    )
     const back = applyStructuralRoute(added, { name: "sldIdLst.remove", slide: "257" })
     expect(back.get("ppt/presentation.xml")).toEqual(parts.get("ppt/presentation.xml"))
     expect(back.get("ppt/_rels/presentation.xml.rels")).toEqual(parts.get("ppt/_rels/presentation.xml.rels"))
@@ -288,6 +298,8 @@ describe("applyStructuralRoute", () => {
     const addedXml = xml(added, "ppt/slides/slide1.xml")
     expect(addedXml).toContain('<p:cNvPr id="4" name="Table 4"/>')
     expect(addedXml).toContain(">One<")
+    expect(addedXml.indexOf("<a:tblPr")).toBeLessThan(addedXml.indexOf("<a:tblGrid"))
+    expect(addedXml.indexOf("<a:txBody")).toBeLessThan(addedXml.indexOf("<a:tcPr"))
     const back = applyStructuralRoute(added, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "4" })
     expect(back.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
   })
@@ -296,6 +308,7 @@ describe("applyStructuralRoute", () => {
     const parts = deck(table)
     const added = applyStructuralRoute(parts, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 })
     expect(xml(added, "ppt/slides/slide1.xml").match(/<a:tr /g)?.length).toBe(3)
+    expect(added.get("ppt/media/keep.bin")).toBe(parts.get("ppt/media/keep.bin"))
     const removed = applyStructuralRoute(added, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 })
     expect(removed.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
     const moved = applyStructuralRoute(parts, {
@@ -336,5 +349,98 @@ describe("applyStructuralRoute", () => {
     expect(elementBytes(after, "p:graphicFrame", "3").byteLength).toBeGreaterThan(0)
     expect(first.byteLength).toBeGreaterThan(0)
     expect(second.byteLength).toBeGreaterThan(0)
+  })
+
+  it("keeps the presentation, its relationships, content types, and media for a shape or table edit", () => {
+    const shapeDeck = deck()
+    const tableDeck = deck(table)
+    const checks: [Map<string, Uint8Array>, Parameters<typeof applyStructuralRoute>[1]][] = [
+      [shapeDeck, { name: "spTree.order", part: "ppt/slides/slide1.xml", shape: "3", before: "2" }],
+      [shapeDeck, { name: "spTree.clone", part: "ppt/slides/slide1.xml", shape: "2" }],
+      [shapeDeck, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "2" }],
+      [shapeDeck, { name: "spTree.add", part: "ppt/slides/slide1.xml", text: "New", x: 0, y: 0, cx: 1, cy: 1 }],
+      [shapeDeck, { name: "graphicFrame.addTable", part: "ppt/slides/slide1.xml" }],
+      [tableDeck, { name: "tbl.addRow", part: "ppt/slides/slide1.xml", row: 1 }],
+      [tableDeck, { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 2 }],
+      [tableDeck, { name: "tbl.orderRow", part: "ppt/slides/slide1.xml", row: 2, before: 1 }],
+    ]
+    for (const [source, route] of checks) {
+      const edited = applyStructuralRoute(source, route)
+      expect(edited.get("ppt/presentation.xml")).toBe(source.get("ppt/presentation.xml"))
+      expect(edited.get("ppt/_rels/presentation.xml.rels")).toBe(source.get("ppt/_rels/presentation.xml.rels"))
+      expect(edited.get("[Content_Types].xml")).toBe(source.get("[Content_Types].xml"))
+      expect(edited.get("ppt/media/keep.bin")).toBe(source.get("ppt/media/keep.bin"))
+    }
+  })
+
+  it("adds the next slide after the highest file number when a number is missing", () => {
+    const parts = deck()
+    const slide3 = text("<p:sld/>")
+    parts.set("ppt/slides/slide3.xml", slide3)
+    const added = applyStructuralRoute(parts, { name: "sldIdLst.add", after: "256" })
+    expect(added.has("ppt/slides/slide2.xml")).toBe(false)
+    expect(added.has("ppt/slides/slide4.xml")).toBe(true)
+    expect(added.get("ppt/slides/slide3.xml")).toBe(slide3)
+    expect(added.get("ppt/slides/slide1.xml")).toBe(parts.get("ppt/slides/slide1.xml"))
+  })
+
+  it("moves an earlier shape forward without breaking the markup", () => {
+    const three = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="B"/></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:cNvPr id="4" name="C"/></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`
+    const parts = deck(three)
+    const moved = applyStructuralRoute(parts, {
+      name: "spTree.order",
+      part: "ppt/slides/slide1.xml",
+      shape: "2",
+      before: "4",
+    })
+    const movedBytes = moved.get("ppt/slides/slide1.xml")
+    if (movedBytes === undefined) throw new Error("part")
+    expect(markupDocument(movedBytes).wellFormed).toBe(true)
+    const movedXml = decodeUtf8(movedBytes)
+    const id2 = movedXml.indexOf('id="2"')
+    const id3 = movedXml.indexOf('id="3"')
+    const id4 = movedXml.indexOf('id="4"')
+    expect(id3).toBeLessThan(id2)
+    expect(id2).toBeLessThan(id4)
+  })
+
+  it("moves an earlier table row forward without breaking the markup", () => {
+    const three = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>C</a:t></a:tc></a:tr></a:tbl></p:sld>`
+    const parts = deck(three)
+    const moved = applyStructuralRoute(parts, {
+      name: "tbl.orderRow",
+      part: "ppt/slides/slide1.xml",
+      row: 1,
+      before: 3,
+    })
+    const movedBytes = moved.get("ppt/slides/slide1.xml")
+    if (movedBytes === undefined) throw new Error("part")
+    expect(markupDocument(movedBytes).wellFormed).toBe(true)
+    const movedXml = decodeUtf8(movedBytes)
+    expect(movedXml.indexOf(">B<")).toBeLessThan(movedXml.indexOf(">A<"))
+    expect(movedXml.indexOf(">A<")).toBeLessThan(movedXml.indexOf(">C<"))
+  })
+
+  it("refuses to remove the only row of a table", () => {
+    const one = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr></a:tbl></p:sld>`
+    expect(() =>
+      applyStructuralRoute(deck(one), { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 1 }),
+    ).toThrow(/a:tr/)
+    const mixed = `<p:sld><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr><a:tr h="1"><a:tc><a:t>B</a:t></a:tc></a:tr></a:tbl><a:tbl><a:tr h="1"><a:tc><a:t>C</a:t></a:tc></a:tr></a:tbl></p:sld>`
+    expect(() =>
+      applyStructuralRoute(deck(mixed), { name: "tbl.removeRow", part: "ppt/slides/slide1.xml", row: 3 }),
+    ).toThrow(/a:tr/)
+    const removed = applyStructuralRoute(deck(mixed), {
+      name: "tbl.removeRow",
+      part: "ppt/slides/slide1.xml",
+      row: 1,
+    })
+    const removedBytes = removed.get("ppt/slides/slide1.xml")
+    if (removedBytes === undefined) throw new Error("part")
+    expect(markupDocument(removedBytes).wellFormed).toBe(true)
+    const removedXml = decodeUtf8(removedBytes)
+    expect(removedXml).toContain(">B<")
+    expect(removedXml).toContain(">C<")
+    expect(removedXml).not.toContain(">A<")
   })
 })

@@ -1,56 +1,4 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter } from "@zip.js/zip.js"
-import { markupDocument } from "./element-span.js"
-
-type Relationship = { readonly target: string; readonly external: boolean }
-
-function readRelationships(xml: string): readonly Relationship[] {
-  const document = markupDocument(encodeUtf8(xml))
-  if (!document.wellFormed) throw new Error("unclosed tag")
-  const found: Relationship[] = []
-  for (const element of document.elements) {
-    if (element.kind !== "Relationship") continue
-    let target: string | null = null
-    let external = false
-    for (const attribute of element.attributes) {
-      if (attribute.name === "Target") target = attribute.value
-      if (attribute.name === "TargetMode") external = attribute.value === "External"
-    }
-    if (target === null) throw new Error("relationship target")
-    found.push({ target, external })
-  }
-  return found
-}
-
-export function keepRelationships(xml: string, targetExists: (target: string) => boolean): string {
-  for (const relationship of readRelationships(xml)) {
-    if (relationship.external) continue
-    if (targetExists(relationship.target)) continue
-    return xml
-  }
-  return xml
-}
-
-function sourcePart(relsName: string): string {
-  if (relsName === "_rels/.rels") return ""
-  const marker = "/_rels/"
-  const at = relsName.lastIndexOf(marker)
-  if (at < 0 || !relsName.endsWith(".rels")) throw new Error(`rels ${relsName}`)
-  const file = relsName.slice(at + marker.length, -".rels".length)
-  return `${relsName.slice(0, at)}/${file}`
-}
-
-function resolveTarget(source: string, target: string): string {
-  const parts = source === "" ? [] : source.split("/").slice(0, -1)
-  for (const piece of target.split("/")) {
-    if (piece === "" || piece === ".") continue
-    if (piece === "..") {
-      parts.pop()
-      continue
-    }
-    parts.push(piece)
-  }
-  return parts.join("/")
-}
 
 export function encodeUtf8(text: string): Uint8Array {
   const units: number[] = []
@@ -129,19 +77,7 @@ export async function writeParts(parts: ReadonlyMap<string, Uint8Array>): Promis
 }
 
 export function carryParts(parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string, Uint8Array> {
-  const names = new Set(parts.keys())
-  const next = new Map<string, Uint8Array>()
-  for (const [name, data] of parts) {
-    if (!name.endsWith(".rels")) {
-      next.set(name, data)
-      continue
-    }
-    const xml = decodeUtf8(data)
-    const source = sourcePart(name)
-    const kept = keepRelationships(xml, (target) => names.has(resolveTarget(source, target)))
-    next.set(name, kept === xml ? data : encodeUtf8(kept))
-  }
-  return next
+  return new Map(parts)
 }
 
 export async function roundTripPackage(bytes: Uint8Array): Promise<Uint8Array> {
