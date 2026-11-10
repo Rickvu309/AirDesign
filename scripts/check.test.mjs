@@ -1,5 +1,6 @@
 import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
+import { localSteps, onCi } from "./check.mjs"
 
 const requiredSteps = [
   "format",
@@ -54,3 +55,15 @@ try {
   refused = error.message
 }
 if (refused !== "--part must be main or side, and it is everything.") throw new Error("an unknown part is not refused")
+const stepsWhen = (ci) => stagesFor("all", ci).flatMap((stage) => stage.map(([name]) => name))
+for (const name of ["ratchet", "check-regression"]) {
+  if (!localSteps.has(name)) throw new Error(`check does not run ${name} on this machine`)
+  if (!stepsWhen(false).includes(name)) throw new Error(`a local check skips ${name}`)
+  if (stepsWhen(true).includes(name)) throw new Error(`check runs ${name} on CI, where the real guard runs`)
+}
+if (stepsWhen(true).length + localSteps.size !== stepsWhen(false).length) {
+  throw new Error("CI skips a step that is not a local guard")
+}
+if (!onCi({ CI: "true" }) || !onCi({ CI: "1" }) || onCi({}) || onCi({ CI: "false" })) {
+  throw new Error("CI is not told apart from this machine")
+}

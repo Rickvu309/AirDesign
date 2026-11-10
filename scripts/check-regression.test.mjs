@@ -9,6 +9,7 @@ import {
   checkFile,
   firstFailure,
   layIn,
+  localProofs,
   missingNeeds,
   proofEnv,
   proofFiles,
@@ -631,3 +632,58 @@ same(
     ...cleared,
   ],
 )
+same(
+  "locally only a proof that differs from main runs again",
+  localProofs(["scripts/a.test.mjs", "scripts/b.test.mjs"], ["scripts/b.test.mjs", "scripts/b.mjs"]),
+  ["scripts/b.test.mjs"],
+)
+same(
+  "locally a changed proof harness runs every proof again",
+  localProofs(["scripts/a.test.mjs", "tooling/rules/x.test.js"], ["tooling/rules/harness.js"]),
+  ["scripts/a.test.mjs", "tooling/rules/x.test.js"],
+)
+same(
+  "locally a check with no changed proof runs none again",
+  localProofs(["scripts/a.test.mjs"], ["scripts/a.mjs"]),
+  [],
+)
+const localRun = () => {
+  try {
+    return {
+      status: 0,
+      output: execFileSync(process.execPath, ["scripts/check-regression.mjs", "local", lossRepo], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }),
+    }
+  } catch (error) {
+    return { status: error.status, output: `${error.stdout}${error.stderr}` }
+  }
+}
+same("locally a clone with no origin/main passes and says why", localRun(), {
+  status: 0,
+  output: "There is no origin/main here, so this branch cannot be judged locally. CI judges it.\n",
+})
+const stamp = "proof <proof@example.com> 0 +0000"
+const lossCommit = execFileSync("git", ["-C", lossRepo, "hash-object", "-t", "commit", "-w", "--stdin"], {
+  encoding: "utf8",
+  input: `tree ${lossMerge}\nauthor ${stamp}\ncommitter ${stamp}\n\nmain\n`,
+}).trim()
+lossGit("update-ref", "refs/remotes/origin/main", lossCommit)
+lossGit("update-ref", "HEAD", lossCommit)
+lossFile("scripts/metrics.mjs", cases)
+same("locally the working tree's lost proof lines print what ci says, warn and pass", localRun(), {
+  status: 0,
+  output: [
+    `broken: scripts/changed-line.test.mjs ${lost(1)}`,
+    `broken: scripts/deleted.test.mjs ${lost(3)}`,
+    `broken: scripts/removed-line.test.mjs ${lost(1)}`,
+    `broken: scripts/renamed.test.mjs ${lost(3)}`,
+    `broken: tests/typed.test.ts ${lost(3)}`,
+    `broken: tooling/rules/harness.js ${lost(1)}`,
+    "Restore the behaviour each broken case expects and the lines each proof lost. If the check is meant to change, ask the repo owner to approve the pull request, then run this check again.",
+    "No check changed.",
+    "Warning: the check-regression check on GitHub blocks this unless the repo owner approves it. This step passes, and GitHub judges.",
+    "",
+  ].join("\n"),
+})

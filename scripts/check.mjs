@@ -24,6 +24,8 @@ export const stages = [
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
+    ["ratchet", "node", ["scripts/ratchet.mjs", "local"]],
+    ["check-regression", "node", ["scripts/check-regression.mjs", "local"]],
   ],
   [["typecheck", "pnpm", ["typecheck"]]],
   [
@@ -43,12 +45,17 @@ export const partOf = (argv) => {
   return part
 }
 
-export const stagesFor = (part) =>
+export const localSteps = new Set(["ratchet", "check-regression"])
+
+export const onCi = (env) => env.CI === "true" || env.CI === "1"
+
+export const stagesFor = (part, ci = onCi(process.env)) =>
   stages
+    .map((stage) => stage.filter(([name]) => !(ci && localSteps.has(name))))
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
-const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees"])
+const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees", ...localSteps])
 const all = process.argv.includes("--all")
 const failed = []
 
@@ -83,8 +90,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const release = await takeMachineLock()
   const checkStarted = Date.now()
   const part = partOf(process.argv)
-  const onCi = process.env.CI === "true" || process.env.CI === "1"
-  const checkedTree = part === "all" && !onCi ? workingTree(root) : undefined
+  const checkedTree = part === "all" && !onCi(process.env) ? workingTree(root) : undefined
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
   process.env.TMPDIR = ownTemp
 

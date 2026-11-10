@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { workingTree } from "./checked.mjs"
 
 const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
 const openFolders = ["scripts/pptx-fixtures/"]
@@ -218,7 +219,7 @@ const missing = (error) => String(error.stderr ?? error.message).includes("HTTP 
 export const contents = (repository, sha, file) =>
   `repos/${repository}/contents/${file.split("/").map(encodeURIComponent).join("/")}?ref=${sha}`
 
-const jsonAt = (repository, sha, file) => {
+const githubJson = (repository) => (sha, file) => {
   try {
     return JSON.parse(github([contents(repository, sha, file), "-H", "Accept: application/vnd.github.raw"]))
   } catch (error) {
@@ -236,35 +237,73 @@ const blobAt = (repository, sha, file) => {
   }
 }
 
-const scriptsAt = (repository, sha, file) => JSON.stringify(jsonAt(repository, sha, file)?.scripts ?? {})
+const scriptsAt = (json, sha, file) => JSON.stringify(json(sha, file)?.scripts ?? {})
 
-const casesAt = (repository, sha) => {
-  const cases = jsonAt(repository, sha, casesFile)
+const casesAt = (json, sha) => {
+  const cases = json(sha, casesFile)
   return Array.isArray(cases) ? cases : []
 }
 
-const proofAt = (repository, sha) => {
-  const proof = jsonAt(repository, sha, proofFile)
+const proofAt = (json, sha) => {
+  const proof = json(sha, proofFile)
   return proof !== null && typeof proof === "object" && !Array.isArray(proof) ? proof : {}
 }
 
-const metricsAt = (repository, sha) => metricsFrom((file) => jsonAt(repository, sha, file))
+const metricsAt = (json, sha) => metricsFrom((file) => json(sha, file))
 
 const printsAt = (repository, sha, reasons) => {
-  const metrics = metricsAt(repository, sha) ?? {}
-  const cases = casesAt(repository, sha)
-  const proof = proofAt(repository, sha)
+  const json = githubJson(repository)
+  const metrics = metricsAt(json, sha) ?? {}
+  const cases = casesAt(json, sha)
+  const proof = proofAt(json, sha)
   const prints = {}
   for (const { about } of reasons) {
     const [kind, ...rest] = about.split(" ")
     const subject = rest.join(" ")
     if (kind === "metric") prints[about] = JSON.stringify(metrics[subject])
     if (kind === "file") prints[about] = blobAt(repository, sha, subject)
-    if (kind === "scripts") prints[about] = scriptsAt(repository, sha, subject)
+    if (kind === "scripts") prints[about] = scriptsAt(json, sha, subject)
     if (kind === "break") prints[about] = JSON.stringify(proof[subject])
     if (kind === "case") prints[about] = JSON.stringify(cases.filter((row) => String(row.name) === subject))
   }
   return prints
+}
+
+export const readReasons = ({ json, fork, head, listed }) => {
+  const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
+  const baseMetrics = metricsAt(json, fork)
+  if (baseMetrics === undefined) throw new Error("metrics.json could not be read where this branch left main.")
+  const modelPackage = "packages/document"
+  const generated = new Set()
+  for (const file of listed) {
+    const model = `${modelPackage}/${file.name.slice(file.name.lastIndexOf("/") + 1)}`
+    if (newPackageFile(file, "tsconfig.json") && sameButReferences(json(head, file.name), json(fork, model))) {
+      generated.add(file.name)
+    }
+    if (newPackageFile(file, "package.json") && scriptsAt(json, head, file.name) === scriptsAt(json, fork, model)) {
+      generated.add(file.name)
+    }
+    if (
+      file.name === "tsconfig.json" &&
+      file.status === "modified" &&
+      onlyAddsReferences(json(fork, file.name), json(head, file.name))
+    ) {
+      generated.add(file.name)
+    }
+  }
+  return ownerReasons({
+    baseMetrics,
+    headMetrics: metricsAt(json, head) ?? {},
+    changedFiles: changedFiles.filter((file) => !generated.has(file)),
+    changedFixtures: replacedFixtures(listed),
+    removedTests: removedTestFiles(listed),
+    changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
+    changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],
+    changedScripts: changedFiles
+      .filter(packageFile)
+      .filter((file) => !generated.has(file))
+      .filter((file) => scriptsAt(json, fork, file) !== scriptsAt(json, head, file)),
+  })
 }
 
 const readPull = (repository, number) => {
@@ -277,51 +316,8 @@ const readPull = (repository, number) => {
   if (listed.length !== pull.files) {
     throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
   }
-  const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
-  const baseMetrics = metricsAt(repository, fork)
-  if (baseMetrics === undefined) throw new Error("metrics.json could not be read where this branch left main.")
   const owner = repository.split("/")[0]
-  const modelPackage = "packages/document"
-  const generated = new Set()
-  for (const file of listed) {
-    const model = `${modelPackage}/${file.name.slice(file.name.lastIndexOf("/") + 1)}`
-    if (
-      newPackageFile(file, "tsconfig.json") &&
-      sameButReferences(jsonAt(repository, pull.head, file.name), jsonAt(repository, fork, model))
-    ) {
-      generated.add(file.name)
-    }
-    if (
-      newPackageFile(file, "package.json") &&
-      scriptsAt(repository, pull.head, file.name) === scriptsAt(repository, fork, model)
-    ) {
-      generated.add(file.name)
-    }
-    if (
-      file.name === "tsconfig.json" &&
-      file.status === "modified" &&
-      onlyAddsReferences(jsonAt(repository, fork, file.name), jsonAt(repository, pull.head, file.name))
-    ) {
-      generated.add(file.name)
-    }
-  }
-  const reasons = ownerReasons({
-    baseMetrics,
-    headMetrics: metricsAt(repository, pull.head) ?? {},
-    changedFiles: changedFiles.filter((file) => !generated.has(file)),
-    changedFixtures: replacedFixtures(listed),
-    removedTests: removedTestFiles(listed),
-    changedCases: changedFiles.includes(casesFile)
-      ? lostCases(casesAt(repository, fork), casesAt(repository, pull.head))
-      : [],
-    changedKinds: changedFiles.includes(proofFile)
-      ? lostKinds(proofAt(repository, fork), proofAt(repository, pull.head))
-      : [],
-    changedScripts: changedFiles
-      .filter(packageFile)
-      .filter((file) => !generated.has(file))
-      .filter((file) => scriptsAt(repository, fork, file) !== scriptsAt(repository, pull.head, file)),
-  })
+  const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
   const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
   const commit = reasons.some((reason) => reason.blocks) ? approvedCommit(owner, reviews) : undefined
   return {
@@ -334,8 +330,91 @@ const readPull = (repository, number) => {
   }
 }
 
+const localGit = (root, args, env = process.env) =>
+  execFileSync("git", ["-C", root, ...args], {
+    encoding: "utf8",
+    env,
+    maxBuffer: 64 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "pipe"],
+  })
+
+export const localFork = (root) => {
+  try {
+    localGit(root, ["rev-parse", "--verify", "--quiet", "origin/main^{commit}"])
+  } catch {
+    return { why: "There is no origin/main here, so this branch cannot be judged locally. CI judges it." }
+  }
+  try {
+    return { fork: localGit(root, ["merge-base", "HEAD", "origin/main"]).trim() }
+  } catch {
+    return { why: "This branch has no history back to origin/main, so it cannot be judged locally. CI judges it." }
+  }
+}
+
+const statusNames = { A: "added", D: "removed", M: "modified", T: "changed", R: "renamed", C: "copied" }
+
+export const listedFiles = (nameStatus) => {
+  const words = nameStatus.split("\0")
+  const listed = []
+  for (let at = 0; at + 1 < words.length;) {
+    const letter = words[at][0]
+    if (letter === "R" || letter === "C") {
+      listed.push({ name: words[at + 2], before: words[at + 1], status: statusNames[letter] })
+      at += 3
+    } else {
+      listed.push({ name: words[at + 1], status: statusNames[letter] ?? "modified" })
+      at += 2
+    }
+  }
+  return listed
+}
+
+export const localWarning = (check, owner) =>
+  `Warning: the ${check} check on GitHub blocks this unless ${owner} approves it. This step passes, and GitHub judges.`
+
+export const ownerOf = (remote) => /github\.com[:/]([^/]+)\//.exec(remote ?? "")?.[1] ?? "the repo owner"
+
+const localJson = (root) => (tree, file) => {
+  try {
+    return JSON.parse(localGit(root, ["show", `${tree}:${file}`]))
+  } catch {
+    return undefined
+  }
+}
+
+export const localOwner = (root) => {
+  try {
+    return ownerOf(localGit(root, ["config", "--get", "remote.origin.url"]).trim())
+  } catch {
+    return ownerOf(undefined)
+  }
+}
+
+export const readLocal = (root) => {
+  const { fork, why } = localFork(root)
+  if (why !== undefined) return { why }
+  const head = workingTree(root)
+  const listed = listedFiles(localGit(root, ["diff", "--name-status", "-z", "-M", fork, head]))
+  return {
+    owner: localOwner(root),
+    reasons: readReasons({ json: localJson(root), fork, head, listed }),
+    headPrints: {},
+  }
+}
+
 const self = fileURLToPath(import.meta.url)
-if (process.argv[1] && path.resolve(process.argv[1]) === self) {
+if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2] === "local") {
+  try {
+    const read = readLocal(path.resolve(process.argv[3] ?? "."))
+    if (read.why !== undefined) console.log(read.why)
+    const result = read.why === undefined ? verdict(read) : { pass: true, lines: [] }
+    for (const line of result.lines) console.log(line)
+    if (!result.pass) console.log(localWarning("ratchet", read.owner))
+  } catch (error) {
+    console.error(error.message)
+    process.exit(1)
+  }
+} else if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const [repository, number] = process.argv.slice(2)
   try {
     const result = verdict(readPull(repository, number))
