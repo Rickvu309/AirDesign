@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { readTextValue } from "./text-value.js"
+import { readTextValue, writeTextValue } from "./text-value.js"
 
 describe("readTextValue", () => {
   it("refuses a string that is not JSON", () => {
@@ -36,5 +36,20 @@ describe("readTextValue", () => {
 
   it("refuses a missing runs", () => {
     expect(readTextValue('[{"from":0}]')).toBeNull()
+  })
+
+  it("reads a from of -0 as 0", () => {
+    const read = readTextValue('[{"from":-0,"runs":[{"from":-0,"text":"a"}]}]')
+    expect(read).toEqual([{ from: 0, runs: [{ from: 0, text: "a" }] }])
+    expect(Object.is(read?.[0]?.from, 0)).toBe(true)
+    expect(Object.is(read?.[0]?.runs[0]?.from, 0)).toBe(true)
+  })
+})
+
+describe("writeTextValue", () => {
+  it("writes from before runs and from before text", () => {
+    expect(writeTextValue([{ from: 0, runs: [{ from: -1, text: "a" }] }])).toBe(
+      '[{"from":0,"runs":[{"from":-1,"text":"a"}]}]',
+    )
   })
 })
