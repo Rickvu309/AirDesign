@@ -1,74 +1,578 @@
-import { catalog, projectTools } from "@airdesign/catalog"
-import type { ScoreTask } from "./score.js"
+import { timeoutMs, type Tab } from "@airdesign/device"
+import { elementId, limits, type Register } from "@airdesign/document"
+import { fixture } from "./fixture.js"
+import { capture, edit, type Attempt, type ElementName, type Task } from "./score.js"
 
-export type SuiteExpect = "pass" | "fail"
-
-export type SuiteTask = ScoreTask & {
-  readonly id: string
-  readonly expect: SuiteExpect
-}
-
-const projected = projectTools(catalog)
-
-function toolName(op: string): string {
-  const name = projected.find((tool) => tool.op === op)?.name
-  if (name === undefined) throw new Error(op)
-  return name
-}
-
-const editName = toolName("edit_deck")
-const captureName = toolName("capture_slide")
-const deckId = "deck"
-
-function editTask(id: string, expect: SuiteExpect, base: number, value: string, landed: readonly string[]): SuiteTask {
-  return {
-    id,
-    expect,
-    landed,
-    steps: [{ name: editName, raw: { deck: deckId, base, changes: [{ value }] } }],
+export type SuiteRow = {
+  readonly task: Task
+  readonly reference: Attempt
+  readonly wrong: {
+    readonly attempt: Attempt
+    readonly reason: string
   }
 }
 
-function captureTask(id: string): SuiteTask {
-  return {
-    id,
-    expect: "pass",
-    landed: [],
-    steps: [{ name: captureName, raw: { deck: deckId }, tab: { presence: "absent" } }],
-  }
+const hidden: Tab = { presence: "hidden", elapsedMs: 0, version: 1, authority: 1 }
+const timedOut: Tab = { presence: "visible", elapsedMs: timeoutMs, version: 1, authority: 1 }
+const outdated: Tab = { presence: "visible", elapsedMs: 0, version: 1, authority: 2 }
+const open: Tab = { presence: "visible", elapsedMs: 0, version: 1, authority: 1 }
+const absent: Tab = { presence: "absent" }
+
+function one(deck: string, element: ElementName, value: string, readAt: number): Attempt {
+  return [edit(deck, [{ element, value, readAt }])]
 }
 
-const landing = [
-  "task-01",
-  "task-02",
-  "task-03",
-  "task-04",
-  "task-05",
-  "task-06",
-  "task-07",
-  "task-08",
-  "task-09",
-  "task-10",
-  "task-11",
-  "task-12",
-  "task-13",
-  "task-14",
-  "task-15",
-  "task-16",
-] as const
+function overLimit(register: Register): Register {
+  return { ...register, slides: limits.slides + 1 }
+}
 
-const stale = ["task-17", "task-18", "task-19", "task-20", "task-21", "task-22", "task-23", "task-24"] as const
+function atLimit(register: Register): Register {
+  return { ...register, slides: limits.slides }
+}
 
-const absent = ["task-25", "task-26", "task-27", "task-28", "task-29", "task-30", "task-31", "task-32"] as const
+function fullBytes(register: Register): Register {
+  return { ...register, bytes: limits.bytes }
+}
 
-const miss = ["task-33", "task-34", "task-35", "task-36", "task-37", "task-38", "task-39", "task-40"] as const
+function tenBytesLeft(register: Register): Register {
+  return { ...register, bytes: limits.bytes - 10 }
+}
 
-export const suite: readonly SuiteTask[] = [
-  ...landing.map((id, index) => {
-    const value = String(index + 1)
-    return editTask(id, "pass", 0, value, [value])
-  }),
-  ...stale.map((id) => editTask(id, "pass", 1, "99", [])),
-  ...absent.map((id) => captureTask(id)),
-  ...miss.map((id) => editTask(id, "fail", 0, "22", ["21"])),
+function fullElements(register: Register): Register {
+  const missing = limits.elements - register.nodes.length
+  const filler = Array.from({ length: missing }, (_, index) => elementId(`${String(index)}.99`))
+  return { ...register, nodes: [...register.nodes, ...filler] }
+}
+
+const longNote = "n".repeat(4000)
+const fits = "é".repeat(4000)
+const tooLong = "é".repeat(4001)
+
+export const landSourceTask: Task = {
+  id: "land-source",
+  prompt: "Set the title of deck deck to 21.",
+  deck: () => fixture("deck", [{ element: "title" }]),
+  want: { calls: 1, tool: "edit_deck", elements: { title: ["21"] } },
+}
+
+export const landSourceAttempt: Attempt = one("deck", "title", "21", 0)
+
+export const staleEditTask: Task = {
+  id: "stale-edit",
+  prompt: "Set the title of deck deck to 22. Your copy of the deck is at revision 1.",
+  deck: () => fixture("deck", [{ element: "title" }]),
+  want: { calls: 1, tool: "edit_deck", elements: { title: ["22"] } },
+}
+
+export const staleEditAttempt: Attempt = [edit("deck", [{ element: "title", value: "22", readAt: 0 }], 1)]
+
+export const captureAbsentTask: Task = {
+  id: "capture-absent-proof",
+  prompt: "Capture the title of deck deck. The tab is not open.",
+  deck: () => fixture("deck", [{ element: "title" }]),
+  want: { calls: 1, tool: "capture_slide", elements: {} },
+}
+
+export const captureAbsentAttempt: Attempt = [capture("deck", absent)]
+
+export const suite: readonly SuiteRow[] = [
+  {
+    task: {
+      id: "plain-words",
+      prompt: "Set the title of deck brief to North star.",
+      deck: () => fixture("brief", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["North star"] } },
+    },
+    reference: one("brief", "title", "North star", 0),
+    wrong: { attempt: one("brief", "title", "South star", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "emoji-text",
+      prompt: "Set the title of deck hello to 東京 🌸.",
+      deck: () => fixture("hello", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["東京 🌸"] } },
+    },
+    reference: one("hello", "title", "東京 🌸", 0),
+    wrong: { attempt: one("hello", "title", "大阪", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "spaced-text",
+      prompt: "Set the title of deck margin to keep, with two spaces before it and two spaces after it.",
+      deck: () => fixture("margin", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["  keep  "] } },
+    },
+    reference: one("margin", "title", "  keep  ", 0),
+    wrong: { attempt: one("margin", "title", "keep", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "lined-text",
+      prompt: "Set the title of deck lines to one, two, and three, each on its own line.",
+      deck: () => fixture("lines", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["one\ntwo\nthree"] } },
+    },
+    reference: one("lines", "title", "one\ntwo\nthree", 0),
+    wrong: { attempt: one("lines", "title", "one two three", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "quoted-text",
+      prompt: 'Set the title of deck marks to "quoted", and include the quote marks.',
+      deck: () => fixture("marks", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ['"quoted"'] } },
+    },
+    reference: one("marks", "title", '"quoted"', 0),
+    wrong: { attempt: one("marks", "title", "quoted", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "long-text",
+      prompt: "Set the title of deck essay to a run of four thousand n characters.",
+      deck: () => fixture("essay", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [longNote] } },
+    },
+    reference: one("essay", "title", longNote, 0),
+    wrong: { attempt: one("essay", "title", "short", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "empty-text",
+      prompt: "Set the title of deck blank to an empty string.",
+      deck: () => fixture("blank", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [""] } },
+    },
+    reference: one("blank", "title", "", 0),
+    wrong: { attempt: one("blank", "title", "empty", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "keep-body-note",
+      prompt: "The body of deck keeper already says Kept by you. Set the title to Update.",
+      deck: () => fixture("keeper", [{ element: "title" }, { element: "body", before: ["Kept by you."] }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Update"] } },
+    },
+    reference: one("keeper", "title", "Update", 0),
+    wrong: {
+      attempt: [
+        edit("keeper", [
+          { element: "title", value: "Update", readAt: 0 },
+          { element: "body", value: "Update", readAt: 1 },
+        ]),
+      ],
+      reason: "touched",
+    },
+  },
+  {
+    task: {
+      id: "both-plain",
+      prompt: "In one edit, set the title of deck pair to Heading and the body to Detail.",
+      deck: () => fixture("pair", [{ element: "title" }, { element: "body" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Heading"], body: ["Detail"] } },
+    },
+    reference: [
+      edit("pair", [
+        { element: "title", value: "Heading", readAt: 0 },
+        { element: "body", value: "Detail", readAt: 0 },
+      ]),
+    ],
+    wrong: {
+      attempt: [
+        edit("pair", [
+          { element: "title", value: "Detail", readAt: 0 },
+          { element: "body", value: "Heading", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "order-words",
+      prompt: "On the title of deck steps, write First and then Second.",
+      deck: () => fixture("steps", [{ element: "title" }]),
+      want: { calls: 2, tool: "edit_deck", elements: { title: ["First", "Second"] } },
+    },
+    reference: [...one("steps", "title", "First", 0), ...one("steps", "title", "Second", 1)],
+    wrong: {
+      attempt: [...one("steps", "title", "Second", 0), ...one("steps", "title", "First", 1)],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "protect-title-words",
+      prompt: "A teammate just typed Do not touch into the title of deck guarded. Set the title to Overwrite.",
+      deck: () => fixture("guarded", [{ element: "title", during: ["Do not touch"] }, { element: "body" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Do not touch"] } },
+    },
+    reference: one("guarded", "title", "Overwrite", 1),
+    wrong: { attempt: one("guarded", "body", "Overwrite", 0), reason: "touched" },
+  },
+  {
+    task: {
+      id: "capture-absent",
+      prompt: "Capture the title of deck absent. The tab is not open.",
+      deck: () => fixture("absent", [{ element: "title" }]),
+      want: { calls: 1, tool: "capture_slide", elements: {} },
+    },
+    reference: [capture("absent", absent)],
+    wrong: { attempt: one("absent", "title", "Captured", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "capture-hidden",
+      prompt: "Capture the title of deck hidden. The tab is hidden.",
+      deck: () => fixture("hidden", [{ element: "title" }, { element: "body" }]),
+      want: { calls: 1, tool: "capture_slide", elements: {} },
+    },
+    reference: [capture("hidden", hidden)],
+    wrong: { attempt: one("hidden", "title", "Captured", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "capture-timeout",
+      prompt: "Capture the title of deck timeout. The tab did not answer in time.",
+      deck: () => fixture("timeout", [{ element: "title" }, { element: "note" }]),
+      want: { calls: 1, tool: "capture_slide", elements: {} },
+    },
+    reference: [capture("timeout", timedOut)],
+    wrong: { attempt: one("timeout", "title", "Captured", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "capture-outdated",
+      prompt: "Capture the title of deck outdated. The tab is out of date.",
+      deck: () => fixture("outdated", [{ element: "title" }, { element: "body" }, { element: "note" }]),
+      want: { calls: 1, tool: "capture_slide", elements: {} },
+    },
+    reference: [capture("outdated", outdated)],
+    wrong: { attempt: one("outdated", "title", "Captured", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "ask-delete",
+      prompt: "Delete slide 2 of deck slides.",
+      deck: () => fixture("slides", [{ element: "title" }, { element: "note" }]),
+      want: { calls: 0, tool: null, elements: {} },
+    },
+    reference: [],
+    wrong: { attempt: one("slides", "title", "", 0), reason: "calls" },
+  },
+  {
+    task: {
+      id: "ask-export",
+      prompt: "Export deck report as a PowerPoint file.",
+      deck: () => fixture("report", [{ element: "title" }]),
+      want: { calls: 0, tool: null, elements: {} },
+    },
+    reference: [],
+    wrong: { attempt: one("report", "title", "report.pptx", 0), reason: "calls" },
+  },
+  {
+    task: {
+      id: "ask-read",
+      prompt: "What does the title of deck review say?",
+      deck: () => fixture("review", [{ element: "title", before: ["Quarterly review"] }]),
+      want: { calls: 0, tool: null, elements: {} },
+    },
+    reference: [],
+    wrong: { attempt: one("review", "title", "Quarterly review", 1), reason: "calls" },
+  },
+  {
+    task: {
+      id: "ask-colour",
+      prompt: "Make the title of deck palette blue.",
+      deck: () => fixture("palette", [{ element: "title" }, { element: "body" }]),
+      want: { calls: 0, tool: null, elements: {} },
+    },
+    reference: [],
+    wrong: { attempt: one("palette", "title", "blue", 0), reason: "calls" },
+  },
+  {
+    task: {
+      id: "limit-slides",
+      prompt: "Set the title of deck full to More. The deck has 51 slides, one over the 50 slide limit.",
+      deck: () => fixture("full", [{ element: "title" }], overLimit),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [] } },
+    },
+    reference: one("full", "title", "More", 0),
+    wrong: { attempt: [...one("full", "title", "More", 0), ...one("full", "title", "More", 0)], reason: "calls" },
+  },
+  {
+    task: {
+      id: "limit-bytes",
+      prompt: "Set the title of deck heavy to More. This deck is already at the byte limit.",
+      deck: () => fixture("heavy", [{ element: "title" }], fullBytes),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [] } },
+    },
+    reference: one("heavy", "title", "More", 0),
+    wrong: { attempt: [...one("heavy", "title", "More", 0), ...one("heavy", "title", "More", 0)], reason: "calls" },
+  },
+  {
+    task: {
+      id: "foreign-notes",
+      prompt: "Set the title of deck notes to Hello. This session is on deck archive.",
+      deck: () => fixture("archive", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [] } },
+    },
+    reference: one("notes", "title", "Hello", 0),
+    wrong: { attempt: one("archive", "title", "Hello", 0), reason: "landed" },
+  },
+  {
+    task: staleEditTask,
+    reference: staleEditAttempt,
+    wrong: { attempt: [edit("deck", [{ element: "title", value: "21", readAt: 0 }], 1)], reason: "landed" },
+  },
+  {
+    task: {
+      id: "protect-batch-drop",
+      prompt: "A teammate is typing in the title of deck split. Set the title to Agenda and the body to Notes.",
+      deck: () => fixture("split", [{ element: "title", during: ["Mine"] }, { element: "body" }]),
+      want: { calls: 2, tool: "edit_deck", elements: { title: ["Mine"], body: ["Notes"] } },
+    },
+    reference: [
+      edit("split", [
+        { element: "title", value: "Agenda", readAt: 1 },
+        { element: "body", value: "Notes", readAt: 0 },
+      ]),
+      ...one("split", "body", "Notes", 0),
+    ],
+    wrong: {
+      attempt: [
+        edit("split", [
+          { element: "title", value: "Agenda", readAt: 1 },
+          { element: "body", value: "Notes", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "three-over-two-slides",
+      prompt:
+        "In one edit, set the title and body on slide 258 of deck spread to Heading and Detail, and the note on slide 259 to Remember.",
+      deck: () => fixture("spread", [{ element: "title" }, { element: "body" }, { element: "note" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Heading"], body: ["Detail"], note: ["Remember"] } },
+    },
+    reference: [
+      edit("spread", [
+        { element: "title", value: "Heading", readAt: 0 },
+        { element: "body", value: "Detail", readAt: 0 },
+        { element: "note", value: "Remember", readAt: 0 },
+      ]),
+    ],
+    wrong: {
+      attempt: [
+        edit("spread", [
+          { element: "title", value: "Heading", readAt: 0 },
+          { element: "body", value: "Detail", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "person-after-agent-row",
+      prompt:
+        "Earlier you set the title of deck typed-over to First, and a teammate has typed over it since. Set the title to Second.",
+      deck: () => fixture("typed-over", [{ element: "title", agent: ["First"], during: ["Teammate"] }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["First", "Teammate"] } },
+    },
+    reference: one("typed-over", "title", "Second", 2),
+    wrong: {
+      attempt: [...one("typed-over", "title", "Second", 2), ...one("typed-over", "title", "Second", 2)],
+      reason: "calls",
+    },
+  },
+  {
+    task: {
+      id: "person-on-other-element",
+      prompt: "A teammate is typing in the body of deck beside. Set the title to Agenda.",
+      deck: () => fixture("beside", [{ element: "title" }, { element: "body", during: ["Teammate"] }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Agenda"], body: ["Teammate"] } },
+    },
+    reference: one("beside", "title", "Agenda", 0),
+    wrong: {
+      attempt: [
+        edit("beside", [
+          { element: "title", value: "Agenda", readAt: 0 },
+          { element: "body", value: "Agenda", readAt: 1 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "stale-read-resend",
+      prompt: "The title of deck ledger has been edited twice by hand before this run. Set the title to Final.",
+      deck: () => fixture("ledger", [{ element: "title", before: ["Draft", "Review"] }]),
+      want: { calls: 2, tool: "edit_deck", elements: { title: ["Draft", "Review", "Final"] } },
+    },
+    reference: [...one("ledger", "title", "Final", 0), ...one("ledger", "title", "Final", 2)],
+    wrong: { attempt: one("ledger", "title", "Final", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "versions-per-element",
+      prompt:
+        "The title of deck levels already says Old title. Set the title to New title and the body to New body in one edit.",
+      deck: () => fixture("levels", [{ element: "title", before: ["Old title"] }, { element: "body" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Old title", "New title"], body: ["New body"] } },
+    },
+    reference: [
+      edit("levels", [
+        { element: "title", value: "New title", readAt: 1 },
+        { element: "body", value: "New body", readAt: 0 },
+      ]),
+    ],
+    wrong: {
+      attempt: [
+        edit("levels", [
+          { element: "title", value: "New title", readAt: 0 },
+          { element: "body", value: "New body", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "value-over-8000-bytes",
+      prompt:
+        "Set the title of deck bulk to the letter é 4001 times. If the deck says that is too long, use 4000 é instead.",
+      deck: () => fixture("bulk", [{ element: "title" }]),
+      want: { calls: 2, tool: "edit_deck", elements: { title: [fits] } },
+    },
+    reference: [...one("bulk", "title", tooLong, 0), ...one("bulk", "title", fits, 0)],
+    wrong: { attempt: one("bulk", "title", tooLong, 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "name-the-element",
+      prompt: "Set the title of deck legacy to Hello. The title is element 258.7, not a.",
+      deck: () => fixture("legacy", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Hello"] } },
+    },
+    reference: one("legacy", "title", "Hello", 0),
+    wrong: { attempt: one("legacy", "opened", "Hello", 0), reason: "landed" },
+  },
+  {
+    task: {
+      id: "floor-on-change",
+      prompt:
+        "The title of deck floored already says Draft. Set it to Hello, and keep Draft as the text it started from.",
+      deck: () => fixture("floored", [{ element: "title", before: ["Draft"] }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["Draft", "Hello"] } },
+    },
+    reference: [edit("floored", [{ element: "title", value: "Hello", readAt: 1, floor: "Draft" }])],
+    wrong: { attempt: one("floored", "title", "Draft", 1), reason: "landed" },
+  },
+  {
+    task: {
+      id: "element-without-run",
+      prompt: "Set the footer of deck bare to Thanks. No run has started on the footer.",
+      deck: () => fixture("bare", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { footer: [] } },
+    },
+    reference: one("bare", "footer", "Thanks", 0),
+    wrong: { attempt: one("bare", "title", "Thanks", 0), reason: "touched" },
+  },
+  {
+    task: {
+      id: "same-element-twice",
+      prompt: "In one edit, write First and then Second on the title of deck twice.",
+      deck: () => fixture("twice", [{ element: "title" }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["First", "Second"] } },
+    },
+    reference: [
+      edit("twice", [
+        { element: "title", value: "First", readAt: 0 },
+        { element: "title", value: "Second", readAt: 0 },
+      ]),
+    ],
+    wrong: {
+      attempt: [
+        edit("twice", [
+          { element: "title", value: "Second", readAt: 0 },
+          { element: "title", value: "First", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "limit-slides-at",
+      prompt: "Set the title of deck edge to More. The deck has 50 slides, exactly the limit.",
+      deck: () => fixture("edge", [{ element: "title" }], atLimit),
+      want: { calls: 1, tool: "edit_deck", elements: { title: ["More"] } },
+    },
+    reference: one("edge", "title", "More", 0),
+    wrong: { attempt: [], reason: "tool" },
+  },
+  {
+    task: {
+      id: "bytes-run-out",
+      prompt:
+        "Set the title of deck tight to Short, then the body to Longer note. The deck has room for ten more bytes.",
+      deck: () => fixture("tight", [{ element: "title" }, { element: "body" }], tenBytesLeft),
+      want: { calls: 2, tool: "edit_deck", elements: { title: ["Short"], body: [] } },
+    },
+    reference: [...one("tight", "title", "Short", 0), ...one("tight", "body", "Longer note", 0)],
+    wrong: {
+      attempt: [
+        edit("tight", [
+          { element: "title", value: "Short", readAt: 0 },
+          { element: "body", value: "Longer note", readAt: 0 },
+        ]),
+      ],
+      reason: "landed",
+    },
+  },
+  {
+    task: {
+      id: "elements-run-out",
+      prompt: "Set the footer of deck crowded to Thanks. The deck already holds 5000 elements.",
+      deck: () => fixture("crowded", [{ element: "title" }], fullElements),
+      want: { calls: 1, tool: "edit_deck", elements: { footer: [] } },
+    },
+    reference: one("crowded", "footer", "Thanks", 0),
+    wrong: { attempt: one("crowded", "title", "Thanks", 0), reason: "touched" },
+  },
+  {
+    task: {
+      id: "capture-open",
+      prompt: "Set the title of deck shots to Cover, then capture it. The tab is open and up to date.",
+      deck: () => fixture("shots", [{ element: "title" }]),
+      want: { calls: 2, tool: "capture_slide", elements: { title: ["Cover"] } },
+    },
+    reference: [...one("shots", "title", "Cover", 0), capture("shots", open)],
+    wrong: { attempt: one("shots", "title", "Cover", 0), reason: "tool" },
+  },
+  {
+    task: {
+      id: "two-calls-one-read",
+      prompt:
+        "The body of deck reread already says Start. Add First and then Second to the body, reading it only once.",
+      deck: () => fixture("reread", [{ element: "body", before: ["Start"] }]),
+      want: { calls: 2, tool: "edit_deck", elements: { body: ["Start", "First", "Second"] } },
+    },
+    reference: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 1)],
+    wrong: { attempt: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 5)], reason: "landed" },
+  },
+  {
+    task: {
+      id: "undone-run",
+      prompt: "Your last run on the title of deck undone was undone. Set the title to Again.",
+      deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
+      want: { calls: 1, tool: "edit_deck", elements: { title: [] } },
+    },
+    reference: one("undone", "title", "Again", 0),
+    wrong: { attempt: [], reason: "tool" },
+  },
 ]
