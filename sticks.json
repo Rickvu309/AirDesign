@@ -3,6 +3,7 @@
   "tests": { "floor": 199 },
   "real decks in the PowerPoint check": { "now": 2, "goal": 20 },
   "routes pptx writes": { "now": 17, "goal": 50 },
+  "route writes that pass": { "now": 18, "goal": 50 },
   "planted breaks the judge catches": { "now": 9, "goal": 10 },
   "check seconds": { "limit": 40 },
   "PowerPoint check seconds": { "limit": 90 }
