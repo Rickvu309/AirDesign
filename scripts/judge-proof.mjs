@@ -30,7 +30,7 @@ const wholeSeed = (seed) => Number.isInteger(seed) && seed >= 0 && seed <= 42949
 export const seedFrom = ({ chosen, commit }) => {
   if (chosen === undefined || chosen === "") return Number.parseInt(commit.slice(0, 8), 16)
   const seed = Number(chosen)
-  if (!wholeSeed(seed)) {
+  if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) {
     throw new Error(`JUDGE_SEED must be a whole number from 0 to 4294967295, and it is ${chosen}.`)
   }
   return seed
@@ -85,6 +85,8 @@ export const seedsFor = ({ chosen, list, draw, commit }) => {
 }
 
 const judgeFile = /^scripts\/(judge\.mjs|judge-proof\.mjs|pptx-check\.mjs|pptx-fixtures\/judge-[^/]*\.json)$/
+
+export const changedSinceArgs = (base) => ["diff", "--no-renames", "--name-only", base, "HEAD"]
 
 export const changesJudge = (files) => files.some((file) => judgeFile.test(file))
 

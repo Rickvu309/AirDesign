@@ -1,6 +1,7 @@
 import fs from "node:fs"
 import { judge } from "./judge.mjs"
 import {
+  changedSinceArgs,
   changesJudge,
   breakKinds,
   caughtCount,
@@ -197,6 +198,7 @@ for (const file of [
   same(`${file} is not a judge file`, changesJudge([file]), false)
 }
 same("no changed file is not a judge change", changesJudge([]), false)
+same("a rename lists both paths", changedSinceArgs("base"), ["diff", "--no-renames", "--name-only", "base", "HEAD"])
 
 const freshRun = { seed: 5, fresh: true }
 const fixedRun = { seed: 5, fresh: false }

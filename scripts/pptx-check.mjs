@@ -7,6 +7,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
 import {
+  changedSinceArgs,
   freshMissFails,
   plantSamples,
   proofFailures,
@@ -128,7 +129,7 @@ const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
   eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
   mergeBase: () => gitAnswer(["merge-base", "HEAD", "origin/main"]),
-  changedSince: (base) => gitAnswer(["diff", "--name-only", base, "HEAD"])?.split("\n"),
+  changedSince: (base) => gitAnswer(changedSinceArgs(base))?.split("\n"),
 })
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const parts = new Map()
