@@ -1,116 +1,159 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
-import { elementId, type NodeRegister } from "@airdesign/document"
+import { history, type NodeRegister, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { emptyLog } from "./admit.js"
-import { callTool, type AgentCaller, type ToolResult } from "./call-tool.js"
+import { callTool, type ToolResult } from "./call-tool.js"
 
-export type ScoreStep = {
+export const elements = {
+  opened: "a",
+  title: "258.7",
+  body: "258.8",
+  note: "259.1",
+  footer: "259.2",
+} as const
+
+export type ElementName = keyof typeof elements
+
+export type EditableName = Exclude<ElementName, "opened">
+
+export type Tool = "edit_deck" | "capture_slide"
+
+export type AttemptCall = {
   readonly name: string
   readonly raw: unknown
   readonly tab?: Tab
 }
 
-export type ScoreTask = {
-  readonly landed: readonly string[]
-  readonly steps: readonly ScoreStep[]
+export type Attempt = readonly AttemptCall[]
+
+export type Write = {
+  readonly element: ElementName
+  readonly value: string
+  readonly readAt: number
+  readonly floor?: string
+}
+
+export type Task = {
+  readonly id: string
+  readonly prompt: string
+  readonly deck: () => Deck
+  readonly want: {
+    readonly calls: number
+    readonly tool: Tool | null
+    readonly elements: Readonly<Partial<Record<EditableName, readonly string[]>>>
+  }
 }
 
 export type ScoreResult = {
   readonly pass: boolean
+  readonly reason: string
   readonly deck: Deck
+  readonly start: Deck
 }
 
 const projected = projectTools(catalog)
-const captureName = projected.find((tool) => tool.op === "capture_slide")?.name
 
-function toolName(op: string): string {
+function toolName(op: Tool): string {
   const name = projected.find((tool) => tool.op === op)?.name
   if (name === undefined) throw new Error(op)
   return name
 }
 
-function pairedBody(register: Deck["register"]): NodeRegister | null {
-  const stored = register.elements[elementId("b")]
-  if (stored !== undefined) return stored
-  if (!Object.hasOwn(register, "b")) return null
-  const body = (register as { readonly b?: NodeRegister | null }).b
-  if (body === undefined || body === null) return null
-  return body
-}
+const toolNames = { edit_deck: toolName("edit_deck"), capture_slide: toolName("capture_slide") } as const
 
-function landedValues(deck: Deck): readonly string[] {
-  const values = deck.register.landed.map((row) => row.value)
-  const opened = elementId("a")
-  const paired = elementId("b")
-  const extra: string[] = []
-  for (const id of deck.register.nodes) {
-    if (id === opened || id === paired) continue
-    const body = deck.register.elements[id]
-    if (body === undefined) continue
-    for (const row of body.landed) extra.push(row.value)
+export function edit(deck: string, writes: readonly Write[], base = 0): AttemptCall {
+  return {
+    name: toolNames.edit_deck,
+    raw: {
+      deck,
+      base,
+      changes: writes.map((write) => ({
+        value: write.value,
+        node: elements[write.element],
+        readAt: write.readAt,
+        ...(write.floor === undefined ? {} : { floor: write.floor }),
+      })),
+    },
   }
-  const side = pairedBody(deck.register)
-  if (side === null) return [...values, ...extra]
-  return [...values, ...extra, ...side.landed.map((row) => row.value)]
 }
 
-function reportsCapturedFile(result: ToolResult): boolean {
-  return result.content.some((block) => /captured file|file was captured|image\/png|\.png\b|\.pptx\b/i.test(block.text))
+export function capture(deck: string, tab: Tab): AttemptCall {
+  return { name: toolNames.capture_slide, raw: { deck }, tab }
 }
 
 function sameOrder(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value, index) => value === right[index])
 }
 
-export function score(task: ScoreTask, deck: Deck, caller: AgentCaller): ScoreResult {
-  let current = deck
-  for (const step of task.steps) {
+function reportsCapturedFile(result: ToolResult): boolean {
+  return result.content.some((block) => /captured file|file was captured|image\/png|\.png\b|\.pptx\b/i.test(block.text))
+}
+
+function bodyOf(register: Register, id: string): NodeRegister | null {
+  if (id === elements.opened) return register
+  return register.elements[id] ?? null
+}
+
+function picture(register: Register, id: string): string {
+  const body = bodyOf(register, id)
+  if (body === null) return "missing"
+  return JSON.stringify({
+    floor: body.floor,
+    phase: body.phase,
+    runId: body.runId,
+    guarded: body.guarded,
+    slides: body.slides,
+    bytes: id === elements.opened ? null : body.bytes,
+    landed: body.landed.map((row) => [row.actor, row.value, row.visible]),
+  })
+}
+
+function touched(start: Deck, end: Deck, named: Task["want"]["elements"]): boolean {
+  const unnamed = new Set<string>([...start.register.nodes, ...end.register.nodes])
+  for (const [name, id] of Object.entries(elements)) {
+    if (Object.hasOwn(named, name)) unnamed.delete(id)
+    else unnamed.add(id)
+  }
+  for (const id of unnamed) {
+    if (picture(start.register, id) !== picture(end.register, id)) return true
+  }
+  return false
+}
+
+function landedMatches(deck: Deck, named: Task["want"]["elements"]): boolean {
+  for (const [name, id] of Object.entries(elements)) {
+    if (!Object.hasOwn(named, name)) continue
+    const expected = (named as Readonly<Record<string, readonly string[]>>)[name] ?? []
+    const body = bodyOf(deck.register, id)
+    if (!sameOrder(body === null ? [] : history(body), expected)) return false
+  }
+  return true
+}
+
+export function score(task: Task, attempt: Attempt): ScoreResult {
+  const start = task.deck()
+  const failed = (reason: string, deck: Deck): ScoreResult => ({ pass: false, reason, deck, start })
+  if (attempt.length > task.want.calls) return failed("calls", start)
+  if (task.want.tool !== null && !attempt.some((step) => step.name === toolNames[task.want.tool ?? "edit_deck"])) {
+    return failed("tool", start)
+  }
+  let current = start
+  const caller = { actor: "agent" as const, runId: "run" }
+  for (const step of attempt) {
     const before = current
     const log = emptyLog()
     const now = 0
     const session =
       step.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: step.tab, log, now }
     const result = callTool(step.name, step.raw, session)
-    if (captureName !== undefined && step.name === captureName) {
-      if (result.deck !== before || reportsCapturedFile(result)) return { pass: false, deck: result.deck }
+    if (step.name === toolNames.capture_slide) {
+      if (result.deck !== before || reportsCapturedFile(result)) return failed("captured", result.deck)
       continue
     }
     if (result.ok) current = result.deck
   }
-  const values = landedValues(current)
-  return { pass: sameOrder(values, task.landed), deck: current }
-}
-
-const deckId = "deck"
-
-export const landSourceTask: ScoreTask = {
-  landed: ["21"],
-  steps: [
-    {
-      name: toolName("edit_deck"),
-      raw: { deck: deckId, base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-    },
-  ],
-}
-
-export const staleEditTask: ScoreTask = {
-  landed: [],
-  steps: [
-    {
-      name: toolName("edit_deck"),
-      raw: { deck: deckId, base: 1, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-    },
-  ],
-}
-
-export const captureAbsentTask: ScoreTask = {
-  landed: [],
-  steps: [
-    {
-      name: toolName("capture_slide"),
-      raw: { deck: deckId },
-      tab: { presence: "absent" },
-    },
-  ],
+  if (touched(start, current, task.want.elements)) return failed("touched", current)
+  if (!landedMatches(current, task.want.elements)) return failed("landed", current)
+  return { pass: true, reason: "ok", deck: current, start }
 }

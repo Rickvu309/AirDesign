@@ -1,13 +1,27 @@
 export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolContent, type ToolResult } from "./call-tool.js"
 export {
-  captureAbsentTask,
-  landSourceTask,
+  capture,
+  edit,
+  elements,
   score,
-  staleEditTask,
+  type Attempt,
+  type AttemptCall,
+  type EditableName,
+  type ElementName,
   type ScoreResult,
-  type ScoreStep,
-  type ScoreTask,
+  type Task,
+  type Tool,
+  type Write,
 } from "./score.js"
-export { suite, type SuiteTask } from "./suite.js"
+export {
+  captureAbsentAttempt,
+  captureAbsentTask,
+  landSourceAttempt,
+  landSourceTask,
+  staleEditAttempt,
+  staleEditTask,
+  suite,
+  type SuiteRow,
+} from "./suite.js"
 export { createServer } from "./server.js"
