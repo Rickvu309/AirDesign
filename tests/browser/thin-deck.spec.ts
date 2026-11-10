@@ -274,15 +274,7 @@ test("a cleared box is stored empty", async ({ page }) => {
   await expect(editor).toHaveText("")
 })
 
-test("an export with no edit keeps every part byte for byte", async ({ page }, testInfo) => {
-  const saved = testInfo.outputPath("no-edit.pptx")
-  await open(page, fixture)
-  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
-  await saveExport(page, saved)
-  expect(await changedParts(fixture, saved)).toEqual([])
-})
-
-test("an export with no edit is the same file byte for byte", async ({ page }, testInfo) => {
+test("an export with no edit keeps every part and the whole file byte for byte", async ({ page }, testInfo) => {
   const saved = testInfo.outputPath("no-edit.pptx")
   await open(page, fixture)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
