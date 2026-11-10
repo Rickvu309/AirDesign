@@ -232,6 +232,76 @@ describe("readParts refuses the planted shapes", () => {
   })
 })
 
+type HandEntry = {
+  readonly name?: Uint8Array
+  readonly localFlags?: number
+  readonly centralFlags?: number
+  readonly centralExtra?: Uint8Array
+}
+
+function handZip(entry: HandEntry = {}): Uint8Array {
+  const name = entry.name ?? encodeUtf8("a.xml")
+  const extra = entry.centralExtra ?? new Uint8Array()
+  const centralAt = 30 + name.length
+  const endAt = centralAt + 46 + name.length + extra.length
+  const file = new Uint8Array(endAt + 22)
+  const data = view(file)
+  data.setUint32(0, 0x04034b50, true)
+  data.setUint16(4, 20, true)
+  data.setUint16(6, entry.localFlags ?? 0, true)
+  data.setUint16(26, name.length, true)
+  file.set(name, 30)
+  data.setUint32(centralAt, 0x02014b50, true)
+  data.setUint16(centralAt + 4, 20, true)
+  data.setUint16(centralAt + 6, 20, true)
+  data.setUint16(centralAt + 8, entry.centralFlags ?? 0, true)
+  data.setUint16(centralAt + 28, name.length, true)
+  data.setUint16(centralAt + 30, extra.length, true)
+  file.set(name, centralAt + 46)
+  file.set(extra, centralAt + 46 + name.length)
+  data.setUint32(endAt, 0x06054b50, true)
+  data.setUint16(endAt + 8, 1, true)
+  data.setUint16(endAt + 10, 1, true)
+  data.setUint32(endAt + 12, endAt - centralAt, true)
+  data.setUint32(endAt + 16, centralAt, true)
+  return file
+}
+
+function extraField(id: number, length: number): Uint8Array {
+  const field = new Uint8Array(4 + length)
+  view(field).setUint16(0, id, true)
+  view(field).setUint16(2, length, true)
+  return field
+}
+
+describe("readParts on a hand-made zip", () => {
+  it("reads one empty stored part", async () => {
+    const parts = await readParts(handZip())
+    expect([...parts.keys()]).toEqual(["a.xml"])
+    expect(parts.get("a.xml")?.length).toBe(0)
+  })
+
+  it("refuses an entry flagged as encrypted in both records", async () => {
+    expect(await refused(handZip({ localFlags: 1, centralFlags: 1 }))).toBe("method")
+  })
+
+  it("refuses a local record flagged as encrypted under a plain central record", async () => {
+    expect(await refused(handZip({ localFlags: 1 }))).toBe("unreadable")
+  })
+
+  it("refuses a zip64 extra field", async () => {
+    expect(await refused(handZip({ centralExtra: extraField(0x0001, 8) }))).toBe("zip64")
+  })
+
+  it("refuses a Unicode path extra field", async () => {
+    expect(await refused(handZip({ centralExtra: extraField(0x7075, 6) }))).toBe("unreadable")
+  })
+
+  it("refuses a non-ASCII name without the UTF-8 flag", async () => {
+    expect(await refused(handZip({ name: Uint8Array.from([0x61, 0xe9, 0x2e, 0x78]) }))).toBe("unreadable")
+  })
+})
+
 describe("readParts reads every fixture deck as zip.js does", () => {
   it.each(fixtureDecks)("%s", async (name) => {
     const file = readFileSync(`${fixtureDir}/${name}`)
