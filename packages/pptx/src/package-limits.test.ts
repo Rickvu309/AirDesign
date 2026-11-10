@@ -1,3 +1,4 @@
+import { limits } from "@airdesign/document"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
 import { packageLimits, readPackage } from "./package-limits.js"
@@ -130,18 +131,20 @@ function named(count: number): { name: string; size: number }[] {
 
 describe("readPackage", () => {
   it("reads a deck under the product bounds", async () => {
-    expect(packageLimits.packedBytes).toBe(70_000_000)
-    expect(packageLimits.slides).toBe(50)
+    expect(packageLimits.packedBytes).toBe(limits.bytes)
+    expect(packageLimits.slides).toBe(limits.slides)
     const read = await readPackage(await deck("<p:sld/>"))
     if (!read.ok) throw new Error(read.reason)
     const slide = read.parts.get("ppt/slides/slide1.xml")
     if (slide === undefined) throw new Error("slide")
     expect(decode(slide)).toBe("<p:sld/>")
-    expect(await readPackage(await slides(packageLimits.slides))).toMatchObject({ ok: true })
+    expect(await readPackage(await slides(50))).toMatchObject({ ok: true })
   })
 
   it("rejects a packed file at 70 MB and a zip that is not a deck", async () => {
-    expect(await readPackage(new Uint8Array(packageLimits.packedBytes))).toEqual({
+    const under = await readPackage(new Uint8Array(69_999_999))
+    expect(under).toEqual({ ok: false, reason: "zip" })
+    expect(await readPackage(new Uint8Array(70_000_000))).toEqual({
       ok: false,
       reason: "limit",
       limit: "packedBytes",
@@ -155,7 +158,7 @@ describe("readPackage", () => {
   })
 
   it("rejects one slide past the cap and keeps a notes name out of the count", async () => {
-    expect(await readPackage(await slides(packageLimits.slides + 1))).toEqual({
+    expect(await readPackage(await slides(51))).toEqual({
       ok: false,
       reason: "limit",
       limit: "slides",

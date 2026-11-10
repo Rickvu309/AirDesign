@@ -1,9 +1,10 @@
+import { limits } from "@airdesign/document"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 import { decodeLatin1 } from "./package-bytes.js"
 
 export const packageLimits = {
-  packedBytes: 70_000_000,
-  slides: 50,
+  packedBytes: limits.bytes,
+  slides: limits.slides,
   unpackedBytes: 500 * 1024 * 1024,
   parts: 10_000,
   xmlBytes: 8 * 1024 * 1024,
