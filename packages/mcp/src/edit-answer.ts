@@ -7,6 +7,7 @@ export type EditElement = {
   readonly node: ElementId
   readonly value: string
   readonly version: number
+  readonly closed?: true
 }
 
 export type EditAnswer =
@@ -43,9 +44,11 @@ export function namedNodes(changes: readonly WireChange[]): ElementId[] {
 
 export function heldElements(register: Register, nodes: readonly ElementId[]): EditElement[] {
   return nodes.map((node) => {
-    const body = register.elements[node]
+    const body = register.nodes.includes(node) ? register.elements[node] : undefined
     if (body === undefined) return { node, value: "", version: 0 }
-    return { node, value: currentValue(body), version: version(body) }
+    const held = { node, value: currentValue(body), version: version(body) }
+    if (body.phase === "running" && body.guarded) return { ...held, closed: true }
+    return held
   })
 }
 
@@ -63,13 +66,11 @@ export function editLanded(deck: Deck, nodes: readonly ElementId[]): EditResult 
   }
 }
 
-export function editRefusal(deck: Deck, refusal: EditCode, nodes: readonly ElementId[], detail?: string): EditResult {
-  const answer: EditAnswer = {
-    ok: false,
-    revision: deck.revision,
-    refusal,
-    elements: heldElements(deck.register, nodes),
-  }
+export function editRefusal(deck: Deck, code: EditCode, nodes: readonly ElementId[], detail?: string): EditResult {
+  const elements = heldElements(deck.register, nodes)
+  const closed = elements.some((element) => element.closed === true)
+  const refusal = code === "stale" && closed ? "person-protected" : code
+  const answer: EditAnswer = { ok: false, revision: deck.revision, refusal, elements }
   const lead = { type: "text" as const, text: editSentence(refusal) }
   const content = detail === undefined ? [lead] : [lead, { type: "text" as const, text: detail }]
   return { ok: false, refusal, deck, answer, content: [...content, answerBlock(answer)] }

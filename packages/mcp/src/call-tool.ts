@@ -3,7 +3,7 @@ import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, type EditAnswer } from "./edit-answer.js"
-import { openRun } from "./run.js"
+import { elementFloors, openRun } from "./run.js"
 import { textProblem } from "./text-from.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
@@ -61,7 +61,9 @@ function editDeck(raw: unknown, session: Session): ToolResult {
   if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
   if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
   const nodes = namedNodes(parsed.changes)
-  const problem = textProblem(before.register, parsed.changes)
+  const floors = elementFloors(before.register, parsed.changes)
+  if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
+  const problem = textProblem(floors.floors, parsed.changes)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
   const opened = openRun(before.register, raw, () => session.caller.runId)
   if (!opened.ok) return editRefusal(before, opened.refusal, nodes)

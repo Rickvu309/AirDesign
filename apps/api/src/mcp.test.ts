@@ -714,12 +714,21 @@ describe("mcp route", () => {
       expect(committed.json).toMatchObject({ ok: true, revision: 2 })
       const guarded = await row(id)
       expect(elementOf(guarded).guarded).toBe(true)
-      const text = await editText(client, {
-        deck: id,
-        base: 2,
-        changes: [{ value: "agent", node: element, readAt: 2 }],
+      const seen = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 1, changes: [{ value: "agent", node: element, readAt: 1 }] },
       })
-      expect(text).toBe(editNext["person-protected"])
+      const closed = {
+        ok: false,
+        revision: 2,
+        refusal: "person-protected",
+        elements: [{ node: element, value: "person", version: 2, closed: true }],
+      }
+      expect(seen.content).toEqual([
+        { type: "text", text: editNext["person-protected"] },
+        { type: "text", text: JSON.stringify(closed) },
+      ])
+      expect(seen.structuredContent).toEqual(closed)
       const kept = await row(id)
       expect(kept).toEqual(guarded)
       const again = await client.callTool({
@@ -730,7 +739,7 @@ describe("mcp route", () => {
         ok: false,
         revision: 2,
         refusal: "person-protected",
-        elements: [{ node: element, value: "person", version: 2 }],
+        elements: [{ node: element, value: "person", version: 2, closed: true }],
       }
       expect(again.content).toEqual([
         { type: "text", text: editNext["person-protected"] },
@@ -740,6 +749,102 @@ describe("mcp route", () => {
       expect(await row(id)).toEqual(guarded)
       expect(values(kept).at(-1)).toBe("person")
     })
+  })
+
+  it.fails("an agent can edit a box again in a new turn after a person typed in it", async () => {
+    const { id, cookie } = await openedDeck("again")
+    await withMcp(cookie, async (client) => {
+      expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
+    })
+    const committed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: id, batch: [{ value: "person", node: element }] },
+      cookie,
+    )
+    expect(committed.json).toMatchObject({ ok: true, revision: 2 })
+    await withMcp(cookie, async (client) => {
+      const result = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 2, changes: [{ value: "later", node: element, readAt: 2 }] },
+      })
+      expect(result.structuredContent).toEqual(landedAnswer(3, [{ node: element, value: "later", version: 3 }]))
+    })
+    expect(values(await row(id))).toEqual(["21", "person", "later"])
+  })
+
+  it("checks every change on a new element against the first change's floor", async () => {
+    const { id, cookie } = await openedDeck("twofloor")
+    const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "One" }] }])
+    const good = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Two" }] }])
+    const bad = JSON.stringify([{ from: 9, runs: [{ from: 4, text: "bad" }] }])
+    const before = await row(id)
+    await withMcp(cookie, async (client) => {
+      const unfloored = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: id,
+          base: 0,
+          changes: [
+            { value: good, node: created, readAt: 0, floor },
+            { value: bad, node: created, readAt: 1 },
+          ],
+        },
+      })
+      expect(unfloored.isError).toBe(true)
+      expect(unfloored.content).toEqual([
+        { type: "text", text: editNext["text-from"] },
+        { type: "text", text: "The file has paragraphs 0." },
+        {
+          type: "text",
+          text: JSON.stringify({
+            ok: false,
+            revision: 0,
+            refusal: "text-from",
+            elements: [{ node: created, value: "", version: 0 }],
+          }),
+        },
+      ])
+      expect(await row(id)).toEqual(before)
+      const refloored = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: id,
+          base: 0,
+          changes: [
+            { value: good, node: created, readAt: 0, floor },
+            { value: bad, node: created, readAt: 1, floor: "plain" },
+          ],
+        },
+      })
+      expect(refloored.isError).toBe(true)
+      expect(refloored.structuredContent).toEqual({
+        ok: false,
+        revision: 0,
+        refusal: "field",
+        elements: [{ node: created, value: "", version: 0 }],
+      })
+      expect(await row(id)).toEqual(before)
+      const landed = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: id,
+          base: 0,
+          changes: [
+            { value: good, node: created, readAt: 0, floor },
+            { value: good.replace("Two", "Three"), node: created, readAt: 1 },
+          ],
+        },
+      })
+      expect(landed.structuredContent).toEqual(
+        landedAnswer(1, [{ node: created, value: good.replace("Two", "Three"), version: 2 }]),
+      )
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(1)
+    expect(elementOf(kept, created).floor).toBe(floor)
+    expect(values(kept, created)).toEqual([good, good.replace("Two", "Three")])
   })
 
   it("starts a fresh run on a stopped element and keeps the earlier run's rows", async () => {
