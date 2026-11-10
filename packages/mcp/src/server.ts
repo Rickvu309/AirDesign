@@ -1,6 +1,7 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod/v4"
+import { admit } from "./admit.js"
 import { callTool, type Session, type ToolResult } from "./call-tool.js"
 
 const editInput = z.looseObject({
@@ -48,6 +49,17 @@ export function createServer(session: Session): McpServer {
         },
       },
       async (args) => {
+        const admitted = admit(session.log, "tool", session.now)
+        if (!admitted.ok) {
+          const refusal: ToolResult = {
+            ok: false,
+            refusal: admitted.text,
+            deck: session.deck,
+            content: [{ type: "text", text: admitted.text }],
+          }
+          return mcpResult(refusal)
+        }
+        session.log = admitted.log
         const result = callTool(tool.name, args, session)
         if (result.ok) session.deck = result.deck
         return mcpResult(result)

@@ -3,7 +3,7 @@ import { openTab, type Tab } from "@airdesign/device"
 import { decide, version } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { callTool, type AgentCaller, type Session } from "./index.js"
+import { callTool, emptyLog, type AgentCaller, type Session } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -24,8 +24,10 @@ function callerFor(deck: Deck): AgentCaller {
 
 function sessionFor(deck: Deck, tab?: Tab): Session {
   const caller = callerFor(deck)
-  if (tab === undefined) return { caller, deck }
-  return { caller, deck, tab }
+  const log = emptyLog()
+  const now = 0
+  if (tab === undefined) return { caller, deck, log, now }
+  return { caller, deck, tab, log, now }
 }
 
 function openedTab(fields: {
@@ -140,7 +142,7 @@ describe("callTool", () => {
     const result = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 0, changes: [{ value: "21" }] },
-      { caller: { actor: "agent", runId: "run", readAt: 0 }, deck },
+      { caller: { actor: "agent", runId: "run", readAt: 0 }, deck, log: emptyLog(), now: 0 },
     )
     expect(result.ok).toBe(false)
     if (result.ok) return

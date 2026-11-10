@@ -1,12 +1,15 @@
 import { catalog, projectTools, readCapture } from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
+import type { CallerLog } from "./admit.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
 export type Session = {
   readonly caller: AgentCaller
   deck: Deck
+  log: CallerLog
+  now: number
   readonly tab?: Tab
 }
 
