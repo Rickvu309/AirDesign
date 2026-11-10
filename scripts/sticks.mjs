@@ -51,6 +51,12 @@ export const timedSticks = {
   "PowerPoint check seconds": "scripts/pptx-check.mjs",
 }
 
+export const judgedWrites = "route writes that pass"
+
+const judgedBy = {
+  [judgedWrites]: "scripts/pptx-check.mjs",
+}
+
 const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))
 
 export const overLimit = ({ name, now, limit }) =>
@@ -100,7 +106,7 @@ export const readSticks = async (root) => {
     else drift.push(`${name} is timed by ${runner} and has no limit in sticks.json.`)
   }
   for (const [name, stick] of Object.entries(recorded)) {
-    if (name in measures || name in timedSticks) continue
+    if (name in measures || name in timedSticks || name in judgedBy) continue
     if ("limit" in stick) drift.push(`${name} has a limit in sticks.json and no runner times it.`)
     else drift.push(`${name} is in sticks.json and nothing measures it.`)
   }
