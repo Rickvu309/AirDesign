@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomInt } from "node:crypto"
+import { Pool } from "pg"
 
 import { mailText, type Sender } from "./mail.js"
 import type { Sql } from "./pool.js"
@@ -126,11 +127,31 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex")
 }
 
+async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Promise<T>): Promise<T> {
+  const owned = db instanceof Pool ? await db.connect() : undefined
+  const client = owned ?? db
+  try {
+    await client.query("begin")
+    await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [email])
+    const value = await run(client)
+    await client.query("commit")
+    return value
+  } catch (error) {
+    await client.query("rollback").catch(() => undefined)
+    throw error
+  } finally {
+    owned?.release()
+  }
+}
+
 export async function issueMail(db: Sql, email: string, publicOrigin: string, send: Sender): Promise<void> {
   const code = newCode()
   const token = newToken()
-  const stored = await db.query<{ email: string }>(issueSql, [email, digest(code), digest(token)])
-  if (stored.rows.length === 0) return
+  const issued = await withAddress(db, email, async (client) => {
+    const stored = await client.query<{ email: string }>(issueSql, [email, digest(code), digest(token)])
+    return stored.rows.length > 0
+  })
+  if (!issued) return
   await send({ to: email, text: mailText(publicOrigin, token, code) })
 }
 
