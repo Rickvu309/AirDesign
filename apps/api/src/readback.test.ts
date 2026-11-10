@@ -42,7 +42,7 @@ describe("committed text", () => {
         writing.base,
         "POST",
         "/decks/commit",
-        { deck: named.deck, batch: [{ value: text }] },
+        { deck: named.deck, batch: [{ value: text, node: "258.7" }] },
         cookie,
       )
       const key = notifyKey(named.deck, 1)
@@ -57,10 +57,11 @@ describe("committed text", () => {
         "commit_edits",
         openDeck(named.deck),
         { actor: "person" },
-        { deck: named.deck, batch: [{ value: text }] },
+        { deck: named.deck, batch: [{ value: text, node: "258.7" }] },
       )
       if (!landed.ok) throw new Error(landed.refusal)
-      expect(landed.deck.register.landed).toEqual([{ actor: "person", value: text, visible: true }])
+      const stored = landed.deck.register.elements["258.7"]
+      expect(stored?.landed).toEqual([{ actor: "person", value: text, visible: true }])
       expect(again.json).toEqual({
         ok: true,
         deck: named.deck,

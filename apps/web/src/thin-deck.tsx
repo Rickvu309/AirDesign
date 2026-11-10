@@ -8,7 +8,16 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { galleryDeck } from "@/editor/gallery-deck"
 const deckId = "clean"
-const nodeA = { part: "ppt/slides/slide1.xml", shape: "2" }
+export const nodeA = { part: "ppt/slides/slide1.xml", shape: "2" }
+
+export function elementNode(
+  shapes: readonly { readonly slide: string; readonly part: string; readonly shape: string }[],
+  node: { readonly part: string; readonly shape: string },
+): string | undefined {
+  const found = shapes.find((shape) => shape.part === node.part && shape.shape === node.shape)
+  if (found === undefined) return undefined
+  return `${found.slide}.${found.shape}`
+}
 
 let markup: Promise<void> | null = null
 
@@ -38,10 +47,11 @@ function paint(
   parts: ReadonlyMap<string, Uint8Array>,
   node: { readonly part: string; readonly shape: string },
   text: string | null,
-): readonly ElementId[] {
+): { readonly ids: readonly ElementId[]; readonly node: string | undefined } {
+  const shapes = readShapes(parts)
   const anchor = linkedId(node)
   const next: ElementId[] = []
-  for (const shape of readShapes(parts)) {
+  for (const shape of shapes) {
     const id = elementId(`${shape.part}#${shape.shape}`)
     const kind = paintKind(shape.kind)
     store.publish({
@@ -53,16 +63,21 @@ function paint(
     next.push(id)
   }
   store.setSlides([{ id: slideId("1"), elements: next }])
-  return next
+  return { ids: next, node: elementNode(shapes, node) }
 }
 
 type EditLink = {
-  enqueue(deck: string, value: string, node?: "a"): Promise<{ readonly ok: boolean }>
+  enqueue(deck: string, value: string, node?: string): Promise<{ readonly ok: boolean }>
   flush(deck: string): Promise<unknown>
 }
 
-export async function commitEdit(open: (remote: Remote) => EditLink, value: string, paint?: () => void): Promise<void> {
-  const result = await open(memoryRemote()).enqueue(deckId, value, "a")
+export async function commitEdit(
+  open: (remote: Remote) => EditLink,
+  value: string,
+  node: string,
+  paint?: () => void,
+): Promise<void> {
+  const result = await open(memoryRemote()).enqueue(deckId, value, node)
   if (!result.ok) return
   paint?.()
   await open(httpRemote())
@@ -73,6 +88,7 @@ export async function commitEdit(open: (remote: Remote) => EditLink, value: stri
 export function ThinDeck() {
   const store = useRef(paintStore())
   const nodes = useRef(nodeA)
+  const edited = useRef<string | undefined>(undefined)
   const [ids, setIds] = useState<readonly ElementId[]>([])
 
   useEffect(() => {
@@ -85,7 +101,9 @@ export function ThinDeck() {
       const text = opened.ok && opened.register.landed.length > 0 ? currentValue(opened.register) : null
       if (!live) return
       nodes.current = stored.nodes.a
-      setIds(paint(store.current, stored.parts, stored.nodes.a, text))
+      const painted = paint(store.current, stored.parts, stored.nodes.a, text)
+      edited.current = painted.node
+      setIds(painted.ids)
     })()
     return () => {
       live = false
@@ -99,11 +117,15 @@ export function ThinDeck() {
     const saved = await putParts(deckId, { parts: read.parts, nodes: { a: nodeA } })
     if (!saved.ok) return
     nodes.current = nodeA
-    setIds(paint(store.current, read.parts, nodeA, null))
+    const painted = paint(store.current, read.parts, nodeA, null)
+    edited.current = painted.node
+    setIds(painted.ids)
   }
 
   async function onEdit(value: string) {
-    await commitEdit(connect, value, () => {
+    const node = edited.current
+    if (node === undefined) return
+    await commitEdit(connect, value, node, () => {
       const id = linkedId(nodes.current)
       const record = store.current.getElement(id)
       if (record !== null) {

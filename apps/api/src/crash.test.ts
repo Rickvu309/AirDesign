@@ -34,7 +34,7 @@ describe("crash before commit", () => {
       { actor: "person" },
       {
         deck: named.deck,
-        batch: [{ value: "one" }],
+        batch: [{ value: "one", node: "258.7" }],
       },
     )
     if (!first.ok) throw new Error(first.refusal)
@@ -67,7 +67,7 @@ describe("crash before commit", () => {
       { actor: "person" },
       {
         deck: named.deck,
-        batch: [{ value: "two" }],
+        batch: [{ value: "two", node: "258.7" }],
       },
     )
     if (!second.ok) throw new Error(second.refusal)

@@ -1,3 +1,4 @@
+import { currentValue, elementId } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   connect,
@@ -12,6 +13,8 @@ import {
   type CommitResult,
   type Remote,
 } from "./index.js"
+
+const node = elementId("258.7")
 
 function installIndexedDb(): void {
   const databases = new Map<string, { names: string[]; rows: Map<string, Map<string, unknown>> }>()
@@ -227,15 +230,15 @@ describe("live cache", () => {
   it("flushes the earlier edit before the later one", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    await cache.enqueue("deck", "earlier")
-    await cache.enqueue("deck", "later")
+    await cache.enqueue("deck", "earlier", "258.7")
+    await cache.enqueue("deck", "later", "258.7")
     await cache.flush("deck")
     expect(commits).toEqual([["earlier", "later"]])
   })
 
   it("refuses an actor and stores nothing", async () => {
     const remote = memoryRemote()
-    const body = { deck: "deck", actor: "agent", batch: [{ value: "hi" }] }
+    const body = { deck: "deck", actor: "agent", batch: [{ value: "hi", node }] }
     expect(await remote.commit(body)).toEqual({
       ok: false,
       refusal: "field",
@@ -250,13 +253,25 @@ describe("live cache", () => {
   it("raises revision by one commit", async () => {
     const remote = memoryRemote()
     expect(await remote.open({ deck: "deck" })).toMatchObject({ ok: true, revision: 0 })
-    expect(await remote.commit({ deck: "deck", batch: [{ value: "a" }, { value: "b" }] })).toEqual({
+    expect(
+      await remote.commit({
+        deck: "deck",
+        batch: [
+          { value: "a", node, floor: "sent" },
+          { value: "b", node },
+        ],
+      }),
+    ).toEqual({
       ok: true,
       deck: "deck",
       revision: 1,
       key: "deck:1",
     })
-    expect(await remote.commit({ deck: "deck", batch: [{ value: "c" }] })).toEqual({
+    const opened = await remote.open({ deck: "deck" })
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.register.elements[node]?.floor).toBe("sent")
+    expect(await remote.commit({ deck: "deck", batch: [{ value: "c", node }] })).toEqual({
       ok: true,
       deck: "deck",
       revision: 2,
@@ -266,19 +281,117 @@ describe("live cache", () => {
 
   it("returns the stored revision when the cursor is behind", async () => {
     const remote = memoryRemote()
-    await remote.commit({ deck: "deck", batch: [{ value: "one" }] })
-    await remote.commit({ deck: "deck", batch: [{ value: "two" }] })
+    await remote.commit({ deck: "deck", batch: [{ value: "one", node }] })
+    await remote.commit({ deck: "deck", batch: [{ value: "two", node }] })
     expect(await remote.watch({ deck: "deck", cursor: 0 })).toEqual({ ok: true, deck: "deck", revision: 2 })
   })
 
   it("stays on device until flush", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.phase("deck")).toBe("confirmed")
-    await cache.enqueue("deck", "text")
+    await cache.enqueue("deck", "text", "258.7")
     expect(await cache.phase("deck")).toBe("on-device")
     await cache.flush("deck")
     expect(await cache.phase("deck")).toBe("confirmed")
     expect(await cache.pending("deck")).toEqual([])
+  })
+
+  it("refuses to flush a row that has no node and keeps it pending", async () => {
+    const { remote, commits } = countingRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "text")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "field" })
+    expect(commits).toEqual([])
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["text"])
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "field" })
+    expect(await cache.phase("deck")).toBe("on-device")
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["text"])
+  })
+
+  it("refuses a flush that mixes a row with no node and sends nothing", async () => {
+    const { remote, commits } = countingRemote()
+    const cache = connect(remote)
+    await cache.enqueue("ahead", "named", "258.7")
+    await cache.enqueue("ahead", "orphan")
+    const ahead = await cache.pending("ahead")
+    expect(await cache.flush("ahead")).toEqual({ ok: false, refusal: "field" })
+    expect(commits).toEqual([])
+    expect(await cache.pending("ahead")).toEqual(ahead)
+    await cache.enqueue("behind", "orphan")
+    await cache.enqueue("behind", "named", "258.7")
+    const behind = await cache.pending("behind")
+    expect(await cache.flush("behind")).toEqual({ ok: false, refusal: "field" })
+    expect(commits).toEqual([])
+    expect(await cache.pending("behind")).toEqual(behind)
+  })
+
+  it("refuses to enqueue a malformed element id and writes no row", async () => {
+    const cache = connect(memoryRemote())
+    const before = await cache.rows("deck")
+    expect(await cache.enqueue("deck", "nope", "258.")).toEqual({ ok: false, refusal: "dead" })
+    expect(await cache.rows("deck")).toEqual(before)
+  })
+
+  it("refuses to enqueue a value over 8000 bytes and writes no row", async () => {
+    const cache = connect(memoryRemote())
+    const over = "é".repeat(4001)
+    expect(new TextEncoder().encode(over).length).toBe(8002)
+    const before = await cache.rows("deck")
+    expect(await cache.enqueue("deck", over, "258.7")).toEqual({ ok: false, refusal: "limit" })
+    expect(await cache.rows("deck")).toEqual(before)
+    for (const value of ["x".repeat(8001), "€".repeat(2667)]) {
+      expect(new TextEncoder().encode(value).length).toBe(8001)
+      expect(await cache.enqueue("deck", value, "258.7")).toEqual({ ok: false, refusal: "limit" })
+    }
+    expect(await cache.rows("deck")).toEqual(before)
+  })
+
+  it("enqueues a value of exactly 8000 bytes", async () => {
+    const cache = connect(memoryRemote())
+    const exact = "é".repeat(4000)
+    expect(new TextEncoder().encode(exact).length).toBe(8000)
+    expect(await cache.enqueue("deck", exact, "258.7")).toMatchObject({ ok: true })
+    expect((await cache.rows("deck")).some((row) => row.value === exact)).toBe(true)
+    for (const value of ["x".repeat(8000), `${"€".repeat(2666)}xx`]) {
+      expect(new TextEncoder().encode(value).length).toBe(8000)
+      expect(await cache.enqueue("deck", value, "258.7")).toMatchObject({ ok: true })
+      expect((await cache.rows("deck")).some((row) => row.value === value)).toBe(true)
+    }
+  })
+
+  it("flushes two elements to their own places", async () => {
+    const remote = memoryRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "left", "258.7")
+    await cache.enqueue("deck", "right", "258.8")
+    expect((await cache.flush("deck")).ok).toBe(true)
+    const opened = await remote.open({ deck: "deck" })
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    const left = opened.register.elements[elementId("258.7")]
+    const right = opened.register.elements[elementId("258.8")]
+    expect(left === undefined ? undefined : currentValue(left)).toBe("left")
+    expect(right === undefined ? undefined : currentValue(right)).toBe("right")
+    expect(currentValue(opened.register)).toBe("")
+  })
+
+  it.fails("shows an edit on its own element after the cache is opened again", async () => {
+    const remote = memoryRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "solo", "258.7")
+    expect((await cache.flush("deck")).ok).toBe(true)
+    await deleteDatabase()
+    const opened = await connect(remote).openDeck("deck")
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    const body = opened.register.elements[elementId("258.7")]
+    expect(body === undefined ? undefined : currentValue(body)).toBe("solo")
+    expect(currentValue(opened.register)).not.toBe("solo")
+  })
+
+  it.fails("paints the value just typed on a new element", async () => {
+    const cache = connect(memoryRemote())
+    expect(await cache.enqueue("deck", "solo", "258.7")).toEqual({ ok: true, painted: "solo" })
   })
 
   it("refuses a row of 65536 bytes", async () => {
@@ -310,8 +423,8 @@ describe("live cache", () => {
     const cache = connect(remote)
     expect(await remote.open({ deck: "deck" })).toEqual({ ok: false, refusal: "session" })
     expect(await remote.watch({ deck: "deck", cursor: null })).toEqual({ ok: false, refusal: "session" })
-    await cache.enqueue("deck", "earlier")
-    await cache.enqueue("deck", "later")
+    await cache.enqueue("deck", "earlier", "258.7")
+    await cache.enqueue("deck", "later", "258.7")
     const before = await cache.rows("deck")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(await cache.rows("deck")).toEqual(before)
@@ -336,7 +449,13 @@ describe("live cache", () => {
         method: "POST",
         credentials: "same-origin",
         type: "application/json",
-        body: { deck: "deck", batch: [{ value: "earlier" }, { value: "later" }] },
+        body: {
+          deck: "deck",
+          batch: [
+            { value: "earlier", node },
+            { value: "later", node },
+          ],
+        },
       },
     ])
   })
@@ -353,7 +472,7 @@ describe("live cache", () => {
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
     })
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("clean", "Hello!", "a")).toEqual({ ok: true, painted: "Hello!" })
+    expect(await cache.enqueue("clean", "Hello!", "258.7")).toMatchObject({ ok: true })
     expect(await connect(httpRemote()).flush("clean")).toEqual({
       ok: true,
       deck: "clean",
@@ -365,7 +484,7 @@ describe("live cache", () => {
         url: "/decks/commit",
         method: "POST",
         credentials: "same-origin",
-        body: { deck: "clean", batch: [{ value: "Hello!", node: "a" }] },
+        body: { deck: "clean", batch: [{ value: "Hello!", node: "258.7" }] },
       },
     ])
     expect(Object.keys(seen[0]?.body ?? {}).sort()).toEqual(["batch", "deck"])
@@ -377,14 +496,14 @@ describe("live cache", () => {
       expect(String(url)).toBe("/decks/commit")
       expect(String(init.method)).toBe("POST")
       expect(String(init.credentials)).toBe("same-origin")
-      expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "a" }] })
+      expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "258.7" }] })
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:9" }))
     })
     const cache = connect(memoryRemote())
-    await cache.enqueue("clean", "Hello!", "a")
+    await cache.enqueue("clean", "Hello!", "258.7")
     expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.pending("clean")).map((row) => ({ value: row.value, node: row.node }))).toEqual([
-      { value: "Hello!", node: "a" },
+      { value: "Hello!", node: "258.7" },
     ])
   })
 
@@ -412,7 +531,7 @@ describe("live cache", () => {
       commit: async () => ({ ok: true, deck: "deck", revision: 1, key: "deck:9" }) as CommitResult,
     }
     const cache = connect(remote)
-    await cache.enqueue("deck", "hi")
+    await cache.enqueue("deck", "hi", "258.7")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "payload" })
     expect(await cache.phase("deck")).toBe("on-device")
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["hi"])
@@ -422,7 +541,7 @@ describe("live cache", () => {
     const remote = memoryRemote()
     const cache = connect(remote)
     await remote.open({ deck: "deck" })
-    await remote.commit({ deck: "deck", batch: [{ value: "kept" }] })
+    await remote.commit({ deck: "deck", batch: [{ value: "kept", node }] })
     await cache.enqueue("deck", "lost")
     await deleteDatabase()
     const opened = await cache.openDeck("deck")
@@ -436,7 +555,7 @@ describe("live cache", () => {
   it("splits a large register into rows under 65536 bytes", async () => {
     const remote = memoryRemote()
     const value = "y".repeat(70_000)
-    await remote.commit({ deck: "deck", batch: [{ value }] })
+    await remote.commit({ deck: "deck", batch: [{ value, node }] })
     await deleteDatabase()
     const opened = await connect(remote).openDeck("deck")
     expect(opened.ok).toBe(true)

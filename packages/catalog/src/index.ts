@@ -7,8 +7,10 @@ export {
   readCommit,
   readDeckId,
   readEdit,
+  readNode,
   readWatch,
   type DeckId,
   type LiveKey,
+  type WireChange,
   type WireEdit,
 } from "./wire.js"

@@ -6,7 +6,23 @@ export type DeckId = string & { readonly [deckIdBrand]: true }
 
 export type WireEdit = {
   readonly value: string
-  readonly node?: ElementId
+  readonly node: ElementId
+  readonly floor?: string
+  readonly readAt?: never
+  readonly actor?: never
+  readonly command?: never
+  readonly principal?: never
+  readonly person?: never
+  readonly agent?: never
+  readonly surface?: never
+  readonly onBehalfOf?: never
+}
+
+export type WireChange = {
+  readonly value: string
+  readonly node: ElementId
+  readonly readAt: number
+  readonly floor?: string
   readonly actor?: never
   readonly command?: never
   readonly principal?: never
@@ -21,7 +37,7 @@ export type LiveKey = {
   readonly revision: number
 }
 
-const named = { a: true, b: true } satisfies Record<"a" | "b", true>
+const nodePattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
 const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const batchCap = 100
@@ -58,9 +74,15 @@ function whole(raw: unknown): number | undefined {
   return raw
 }
 
-function nodeOf(raw: unknown): ElementId | undefined {
-  if (typeof raw !== "string" || !Object.hasOwn(named, raw)) return undefined
+export function readNode(raw: unknown): ElementId | undefined {
+  if (typeof raw !== "string" || !nodePattern.test(raw)) return undefined
   return raw as ElementId
+}
+
+function readFloor(body: Record<string, unknown>): string | undefined | null {
+  if (!Object.hasOwn(body, "floor")) return undefined
+  if (typeof body.floor !== "string") return null
+  return body.floor
 }
 
 function utf8Size(text: string): number {
@@ -82,14 +104,33 @@ export function readDeckId(raw: unknown): { ok: true; deck: DeckId } | DeckRefus
 
 export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefusal {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["value", "node"]) || typeof body.value !== "string") return fieldRefusal
-  if (!Object.hasOwn(body, "node")) return { ok: true, edit: { value: body.value } }
-  const node = nodeOf(body.node)
+  if (body === undefined || !knownKeys(body, ["value", "node", "floor"]) || typeof body.value !== "string") {
+    return fieldRefusal
+  }
+  const node = readNode(body.node)
   if (node === undefined) return fieldRefusal
-  return { ok: true, edit: { value: body.value, node } }
+  const floor = readFloor(body)
+  if (floor === null) return fieldRefusal
+  if (floor === undefined) return { ok: true, edit: { value: body.value, node } }
+  return { ok: true, edit: { value: body.value, node, floor } }
 }
 
-function readBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | FieldRefusal | BatchRefusal {
+function readChange(raw: unknown): { ok: true; change: WireChange } | FieldRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["value", "node", "readAt", "floor"]) || typeof body.value !== "string") {
+    return fieldRefusal
+  }
+  const node = readNode(body.node)
+  if (node === undefined) return fieldRefusal
+  const readAt = whole(body.readAt)
+  if (readAt === undefined) return fieldRefusal
+  const floor = readFloor(body)
+  if (floor === null) return fieldRefusal
+  if (floor === undefined) return { ok: true, change: { value: body.value, node, readAt } }
+  return { ok: true, change: { value: body.value, node, readAt, floor } }
+}
+
+function readEditBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | FieldRefusal | BatchRefusal {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > batchCap) return batchRefusal
   const edits: WireEdit[] = []
   for (const item of raw) {
@@ -98,6 +139,17 @@ function readBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | Fie
     edits.push(edit.edit)
   }
   return { ok: true, edits }
+}
+
+function readChangeBatch(raw: unknown): { ok: true; changes: readonly WireChange[] } | FieldRefusal | BatchRefusal {
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > batchCap) return batchRefusal
+  const changes: WireChange[] = []
+  for (const item of raw) {
+    const change = readChange(item)
+    if (!change.ok) return fieldRefusal
+    changes.push(change.change)
+  }
+  return { ok: true, changes }
 }
 
 export function readCommit(
@@ -110,7 +162,7 @@ export function readCommit(
   const deck = readDeckId(body.deck)
   if (!deck.ok) return deckRefusal
   if (!Object.hasOwn(body, "batch")) return batchRefusal
-  const batch = readBatch(body.batch)
+  const batch = readEditBatch(body.batch)
   if (!batch.ok) return batch
   if (!Object.hasOwn(body, "once")) return { ok: true, deck: deck.deck, batch: batch.edits }
   if (typeof body.once !== "string" || !deckPattern.test(body.once)) return fieldRefusal
@@ -134,7 +186,7 @@ export function readWatch(
 export function readAgentEdit(
   raw: unknown,
 ):
-  | { ok: true; deck: DeckId; base: number; changes: readonly WireEdit[] }
+  | { ok: true; deck: DeckId; base: number; changes: readonly WireChange[] }
   | FieldRefusal
   | DeckRefusal
   | BaseRefusal
@@ -149,9 +201,9 @@ export function readAgentEdit(
   const base = whole(body.base)
   if (base === undefined) return baseRefusal
   if (!Object.hasOwn(body, "changes")) return batchRefusal
-  const changes = readBatch(body.changes)
+  const changes = readChangeBatch(body.changes)
   if (!changes.ok) return changes
-  return { ok: true, deck: deck.deck, base, changes: changes.edits }
+  return { ok: true, deck: deck.deck, base, changes: changes.changes }
 }
 
 export function readCapture(raw: unknown): { ok: true; deck: DeckId } | FieldRefusal | DeckRefusal {

@@ -1,6 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { openTab, type Tab } from "@airdesign/device"
-import { decide, version } from "@airdesign/document"
+import { decide, elementId, version, type ElementId, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { callTool, emptyLog, type AgentCaller, type Session } from "./index.js"
@@ -11,19 +11,34 @@ function opened(): Deck {
   return openDeck(id.deck)
 }
 
+const node = elementId("258.7")
+
+function nodeBody(register: Register, id: ElementId = node) {
+  const body = register.elements[id]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}
+
 function running(): Deck {
   const deck = opened()
-  const started = decide(deck.register, { command: "start", runId: "run" })
+  const added = decide(deck.register, {
+    command: "add",
+    node,
+    floor: deck.register.floor,
+    route: deck.register.route,
+  })
+  if (added.decision !== "apply") throw new Error(added.code)
+  const started = decide(added.register, { command: "start", runId: "run", node })
   if (started.decision !== "apply") throw new Error(started.code)
   return { id: deck.id, revision: deck.revision, register: started.register }
 }
 
-function callerFor(deck: Deck): AgentCaller {
-  return { actor: "agent", runId: "run", readAt: version(deck.register) }
+function callerFor(): AgentCaller {
+  return { actor: "agent", runId: "run" }
 }
 
 function sessionFor(deck: Deck, tab?: Tab): Session {
-  const caller = callerFor(deck)
+  const caller = callerFor()
   const log = emptyLog()
   const now = 0
   if (tab === undefined) return { caller, deck, log, now }
@@ -62,16 +77,16 @@ describe("callTool", () => {
     const deck = running()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       sessionFor(deck),
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.deck).not.toBe(deck)
     expect(result.deck.revision).toBe(1)
-    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
     expect(deck.revision).toBe(0)
-    expect(deck.register.landed).toEqual([])
+    expect(nodeBody(deck.register).landed).toEqual([])
     expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
   })
 
@@ -81,7 +96,7 @@ describe("callTool", () => {
     for (const key of forbidden) {
       const result = callTool(
         "airdesign_edit_deck",
-        { deck: "deck", base: 0, changes: [{ value: "21" }], [key]: "no" },
+        { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }], [key]: "no" },
         sessionFor(deck),
       )
       expect(result.ok, key).toBe(false)
@@ -97,7 +112,7 @@ describe("callTool", () => {
     const deck = running()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21", actor: "person" }] },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0, actor: "person" }] },
       sessionFor(deck),
     )
     expect(result.ok).toBe(false)
@@ -107,19 +122,18 @@ describe("callTool", () => {
     expect(deck.register.landed).toEqual([])
   })
 
-  it("refuses a stale base and leaves the deck", () => {
+  it("lands an edit whose base is behind the revision", () => {
     const deck = running()
-    const register = deck.register
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 1, changes: [{ value: "22" }] },
+      { deck: "deck", base: 1, changes: [{ value: "22", node: "258.7", readAt: version(nodeBody(deck.register)) }] },
       sessionFor(deck),
     )
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("stale")
-    expect(result.deck).toBe(deck)
-    expect(deck.register).toBe(register)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.deck).not.toBe(deck)
+    expect(result.deck.revision).toBe(1)
+    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "22", visible: true }])
     expect(deck.revision).toBe(0)
   })
 
@@ -127,7 +141,7 @@ describe("callTool", () => {
     const deck = running()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "other", base: 0, changes: [{ value: "21" }] },
+      { deck: "other", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       sessionFor(deck),
     )
     expect(result.ok).toBe(false)
@@ -141,8 +155,8 @@ describe("callTool", () => {
     const deck = opened()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21" }] },
-      { caller: { actor: "agent", runId: "run", readAt: 0 }, deck, log: emptyLog(), now: 0 },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
+      { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 },
     )
     expect(result.ok).toBe(false)
     if (result.ok) return

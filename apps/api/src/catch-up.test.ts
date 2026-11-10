@@ -52,7 +52,13 @@ describe("lost acknowledgment", () => {
     await listen.ready()
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     await listen.close()
-    const committed = await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "hi" }] }, cookie)
+    const committed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "hi", node: "258.7" }] },
+      cookie,
+    )
     expect(committed.status).toBe(200)
     void committed.text
     await listen.open()
