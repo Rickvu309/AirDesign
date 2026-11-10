@@ -30,7 +30,7 @@ describe("two sessions on one row", () => {
       { actor: "person" },
       {
         deck: named.deck,
-        batch: [{ value: "one" }],
+        batch: [{ value: "one", node: "258.7" }],
       },
     )
     if (!first.ok) throw new Error(first.refusal)
@@ -65,7 +65,11 @@ describe("two sessions on one row", () => {
     const waiter = openPool(info.deck, "order-waiter")
     pools.push(waiter)
     let finished = false
-    const second = commitEdits(waiter, { deck: named.deck, batch: [{ value: "two" }] }, "a@example.com").finally(() => {
+    const second = commitEdits(
+      waiter,
+      { deck: named.deck, batch: [{ value: "two", node: "258.7" }] },
+      "a@example.com",
+    ).finally(() => {
       finished = true
     })
     const started = Date.now()
@@ -90,11 +94,11 @@ describe("two sessions on one row", () => {
       await new Promise((resolve) => setTimeout(resolve, 20))
     }
     expect(notes).toEqual([`${named.deck}:1`, `${named.deck}:2`])
-    const saved = await deck.query<{ revision: number; register: { landed: { value: string }[] } }>(
-      "select revision, register from deck.saved where id = $1",
-      [named.deck],
-    )
+    const saved = await deck.query<{
+      revision: number
+      register: { elements: Record<string, { landed: { value: string }[] }> }
+    }>("select revision, register from deck.saved where id = $1", [named.deck])
     expect(saved.rows[0]?.revision).toBe(2)
-    expect(saved.rows[0]?.register.landed.map((row) => row.value)).toEqual(["one", "two"])
+    expect(saved.rows[0]?.register.elements["258.7"]?.landed.map((row) => row.value)).toEqual(["one", "two"])
   })
 })

@@ -1,6 +1,6 @@
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
-import { decide, version } from "@airdesign/document"
+import { decide, elementId, version, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { createServer, emptyLog, type Session } from "./index.js"
@@ -11,15 +11,30 @@ function opened(): Deck {
   return openDeck(id.deck)
 }
 
+const node = elementId("258.7")
+
+function nodeBody(register: Register) {
+  const body = register.elements[node]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}
+
 function running(): Deck {
   const deck = opened()
-  const started = decide(deck.register, { command: "start", runId: "run" })
+  const added = decide(deck.register, {
+    command: "add",
+    node,
+    floor: deck.register.floor,
+    route: deck.register.route,
+  })
+  if (added.decision !== "apply") throw new Error(added.code)
+  const started = decide(added.register, { command: "start", runId: "run", node })
   if (started.decision !== "apply") throw new Error(started.code)
   return { id: deck.id, revision: deck.revision, register: started.register }
 }
 
 function sessionFor(deck: Deck): Session {
-  return { caller: { actor: "agent", runId: "run", readAt: version(deck.register) }, deck, log: emptyLog(), now: 0 }
+  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 }
 }
 
 function utf8Size(text: string): number {
@@ -73,6 +88,12 @@ describe("createServer", () => {
           openWorldHint: expected.openWorldHint,
         })
       }
+      const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
+      if (edit === undefined) throw new Error("missing edit")
+      const schema = edit.inputSchema as {
+        properties?: { changes?: { items?: { required?: readonly string[] } } }
+      }
+      expect(schema.properties?.changes?.items?.required).toEqual(expect.arrayContaining(["node", "readAt"]))
       const advertised = tools.map((tool) => ({
         name: tool.name,
         description: tool.description,
@@ -89,7 +110,7 @@ describe("createServer", () => {
     await withClient(sessionFor(deck), async (client) => {
       const result = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }], actor: "person" },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }], actor: "person" },
       })
       expect(result.isError).toBe(true)
       expect(result.content).toEqual([{ type: "text", text: "field" }])
@@ -100,28 +121,31 @@ describe("createServer", () => {
 
   it("lands an edit on the wire", async () => {
     const before = running()
-    const caller = { actor: "agent" as const, runId: "run", readAt: version(before.register) }
+    const caller = { actor: "agent" as const, runId: "run" }
     const session: Session = { caller, deck: before, log: emptyLog(), now: 0 }
     await withClient(session, async (client) => {
       const first = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(first.isError).not.toBe(true)
       expect(session.deck).not.toBe(before)
       expect(session.deck.revision).toBe(1)
-      expect(session.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(nodeBody(session.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
       expect(before.revision).toBe(0)
-      expect(before.register.landed).toEqual([])
+      expect(nodeBody(before.register).landed).toEqual([])
 
-      caller.readAt = version(session.deck.register)
       const second = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 1, changes: [{ value: "22" }] },
+        arguments: {
+          deck: "deck",
+          base: 1,
+          changes: [{ value: "22", node: "258.7", readAt: version(nodeBody(session.deck.register)) }],
+        },
       })
       expect(second.isError).not.toBe(true)
       expect(session.deck.revision).toBe(2)
-      expect(session.deck.register.landed.map((row) => row.value)).toEqual(["21", "22"])
+      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
       expect(before.revision).toBe(0)
     })
   })
@@ -140,7 +164,7 @@ describe("createServer", () => {
       }
       const refused = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(refused.isError).toBe(true)
       expect(refused.content).toEqual([
@@ -154,12 +178,12 @@ describe("createServer", () => {
       session.now = 300_000
       const landed = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(landed.isError).not.toBe(true)
       expect(session.deck).not.toBe(deck)
       expect(session.deck.revision).toBe(1)
-      expect(session.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(nodeBody(session.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
       expect(deck.revision).toBe(0)
       expect(session.log.events).toHaveLength(31)
     })

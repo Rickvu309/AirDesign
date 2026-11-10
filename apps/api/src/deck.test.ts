@@ -5,7 +5,7 @@ import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
-import { DeckListen, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
+import { DeckListen, commitEdits, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -71,7 +71,11 @@ describe("deck routes", () => {
 
   it("refuses a deck route without a session", async () => {
     for (const path of ["/decks/open", "/decks/commit", "/decks/watch"]) {
-      const response = await ask(base, "POST", path, { deck: "abc", cursor: null, batch: [{ value: "hi" }] })
+      const response = await ask(base, "POST", path, {
+        deck: "abc",
+        cursor: null,
+        batch: [{ value: "hi", node: "258.7" }],
+      })
       expect(response.status).toBe(401)
       expect(response.json).toEqual({ ok: false, refusal: "session" })
     }
@@ -97,7 +101,13 @@ describe("deck routes", () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const response = await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "hi" }] }, cookie)
+    const response = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "hi", node: "258.7" }] },
+      cookie,
+    )
     const key = notifyKey(named.deck, 1)
     expect(response.status).toBe(200)
     expect(key.ok).toBe(true)
@@ -105,29 +115,102 @@ describe("deck routes", () => {
     expect(response.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: key.key })
   })
 
+  it("commits two elements at one revision and refuses a stale one", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const response = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      {
+        deck: named.deck,
+        batch: [
+          { value: "one", node: "258.7", floor: "one" },
+          { value: "two", node: "258.8", floor: "two" },
+        ],
+      },
+      cookie,
+    )
+    expect(response.status).toBe(200)
+    expect(response.json).toMatchObject({ ok: true, deck: named.deck, revision: 1 })
+    const again = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const opened = again.json as {
+      revision: number
+      register: { elements: Record<string, { floor?: string; landed: { value: string }[] }> }
+    }
+    expect(opened.revision).toBe(1)
+    expect(opened.register.elements["258.7"]?.landed.map((row) => row.value)).toEqual(["one"])
+    expect(opened.register.elements["258.8"]?.landed.map((row) => row.value)).toEqual(["two"])
+    expect(opened.register.elements["258.7"]?.floor).toBe("one")
+    expect(opened.register.elements["258.8"]?.floor).toBe("two")
+    const stored = openDeck(named.deck)
+    const db = {
+      async query(sql: string) {
+        if (sql.includes("update deck.saved")) return { rows: [] }
+        return {
+          rows: [
+            {
+              id: named.deck,
+              revision: stored.revision,
+              register: stored.register,
+              owner: "owner@example.com",
+            },
+          ],
+        }
+      },
+    } as unknown as Sql
+    expect(
+      await commitEdits(
+        db,
+        {
+          deck: named.deck,
+          batch: [
+            { value: "one", node: "258.7", floor: "one" },
+            { value: "two", node: "258.8", floor: "two" },
+          ],
+        },
+        "owner@example.com",
+      ),
+    ).toEqual({ ok: false, refusal: "stale" })
+  })
+
   it("keeps the stored row when the commit is refused", async () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
-    const opened = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    await deck.query("update deck.saved set register = jsonb_set(register, '{bytes}', '69999998') where id = $1", [
+      named.deck,
+    ])
+    const stored = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     const refused = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "hi" }, { value: "no", node: "b" }] },
+      {
+        deck: named.deck,
+        batch: [
+          { value: "x", node: "258.7" },
+          { value: "yy", node: "258.8" },
+        ],
+      },
       cookie,
     )
     const actor = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, actor: "person", batch: [{ value: "hi" }] },
+      { deck: named.deck, actor: "person", batch: [{ value: "hi", node: "258.7" }] },
       cookie,
     )
     const again = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const kept = again.json as { revision: number; register: { elements: Record<string, unknown> } }
     expect(refused.status).toBe(200)
-    expect(refused.json).toEqual({ ok: false, refusal: "dead" })
+    expect(refused.json).toEqual({ ok: false, refusal: "limit" })
     expect(actor.json).toEqual({ ok: false, refusal: "field" })
-    expect(again.json).toEqual(opened.json)
+    expect(again.json).toEqual(stored.json)
+    expect(kept.revision).toBe(0)
+    expect(kept.register.elements["258.7"]).toBeUndefined()
   })
 
   it("does not create a row when open or watch cannot be parsed", async () => {
@@ -159,9 +242,9 @@ describe("deck routes", () => {
     const head = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: null }, cookie)
     expect(head.json).toEqual({ ok: true, deck: named.deck, revision: 0 })
     expect(Object.keys(head.json as object).sort()).toEqual(["deck", "ok", "revision"])
-    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "one" }] }, cookie)
-    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "two" }] }, cookie)
-    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "three" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "one", node: "258.7" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "two", node: "258.7" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "three", node: "258.7" }] }, cookie)
     const first = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, cookie)
     const second = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 1 }, cookie)
     const current = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: null }, cookie)
@@ -182,24 +265,32 @@ describe("deck routes", () => {
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "of A" }] },
+      { deck: named.deck, batch: [{ value: "of A", node: "258.7" }] },
       account,
     )
     expect(committed.status).toBe(200)
-    const kept = await deck.query<{ revision: number; owner: string; register: { landed: { value: string }[] } }>(
-      "select revision, owner, register from deck.saved where id = $1",
-      [named.deck],
-    )
+    const kept = await deck.query<{
+      revision: number
+      owner: string
+      register: { landed: { value: string }[]; elements: Record<string, { landed: { value: string }[] }> }
+    }>("select revision, owner, register from deck.saved where id = $1", [named.deck])
     expect(kept.rows[0]?.owner).toBe(first)
     expect(kept.rows[0]?.revision).toBe(1)
-    expect(kept.rows[0]?.register.landed.map((row) => row.value)).toEqual(["of A"])
+    expect(kept.rows[0]?.register.elements["258.7"]?.landed.map((row) => row.value)).toEqual(["of A"])
     const seen = await ask(base, "POST", "/decks/open", { deck: named.deck }, other)
-    const refused = await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "of B" }] }, other)
-    const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: null }, other)
-    const after = await deck.query<{ revision: number; owner: string; register: { landed: { value: string }[] } }>(
-      "select revision, owner, register from deck.saved where id = $1",
-      [named.deck],
+    const refused = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "of B", node: "258.7" }] },
+      other,
     )
+    const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: null }, other)
+    const after = await deck.query<{
+      revision: number
+      owner: string
+      register: { landed: { value: string }[]; elements: Record<string, { landed: { value: string }[] }> }
+    }>("select revision, owner, register from deck.saved where id = $1", [named.deck])
     expect(seen.status).toBe(200)
     expect(seen.json).toEqual({ ok: false, refusal: "owner" })
     expect(seen.text.includes("of A")).toBe(false)
@@ -215,7 +306,13 @@ describe("deck routes", () => {
     if (!named.ok) throw new Error(named.refusal)
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     const pending = ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, cookie)
-    const committed = await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "hi" }] }, cookie)
+    const committed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "hi", node: "258.7" }] },
+      cookie,
+    )
     const watched = await pending
     expect(committed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
     expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
@@ -225,7 +322,7 @@ describe("deck routes", () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const body = { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "same" }
+    const body = { deck: named.deck, batch: [{ value: "once", node: "258.7" }], once: "same" }
     const first = await ask(base, "POST", "/decks/commit", body, cookie)
     const second = await ask(base, "POST", "/decks/commit", body, cookie)
     const again = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
@@ -236,7 +333,9 @@ describe("deck routes", () => {
         ok: true,
         revision: 1,
         register: expect.objectContaining({
-          landed: [expect.objectContaining({ value: "once" })],
+          elements: expect.objectContaining({
+            "258.7": expect.objectContaining({ landed: [expect.objectContaining({ value: "once" })] }),
+          }),
         }),
       }),
     )
@@ -256,21 +355,21 @@ describe("deck routes", () => {
       base,
       "POST",
       "/decks/commit",
-      { deck: first.deck, batch: [{ value: "one", node: "a" }], once },
+      { deck: first.deck, batch: [{ value: "one", node: "258.7" }], once },
       cookie,
     )
     const sameAccount = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: second.deck, batch: [{ value: "two", node: "a" }], once },
+      { deck: second.deck, batch: [{ value: "two", node: "258.7" }], once },
       cookie,
     )
     const otherAccount = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: third.deck, batch: [{ value: "three", node: "a" }], once },
+      { deck: third.deck, batch: [{ value: "three", node: "258.7" }], once },
       other,
     )
     expect(own.json).toEqual({ ok: true, deck: first.deck, revision: 1, key: `${first.deck}:1` })
@@ -304,7 +403,7 @@ describe("deck routes", () => {
         base,
         "POST",
         "/decks/commit",
-        { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "wake" },
+        { deck: named.deck, batch: [{ value: "once", node: "258.7" }], once: "wake" },
         cookie,
       )
       const watched = await Promise.race([
@@ -332,7 +431,7 @@ describe("deck routes", () => {
       { actor: "person" },
       {
         deck: named.deck,
-        batch: [{ value: "one" }],
+        batch: [{ value: "one", node: "258.7" }],
       },
     )
     if (!first.ok) throw new Error(first.refusal)
@@ -354,7 +453,7 @@ describe("deck routes", () => {
         base,
         "POST",
         "/decks/commit",
-        { deck: named.deck, batch: [{ value: "two", node: "a" }], once: "stale" },
+        { deck: named.deck, batch: [{ value: "two", node: "258.7" }], once: "stale" },
         cookie,
       )
       const started = Date.now()
@@ -370,13 +469,13 @@ describe("deck routes", () => {
       }
       await holder.query("commit")
       const landed = await pending
-      const saved = await deck.query<{ revision: number; register: { landed: { value: string }[] } }>(
-        "select revision, register from deck.saved where id = $1",
-        [named.deck],
-      )
+      const saved = await deck.query<{
+        revision: number
+        register: { elements: Record<string, { landed: { value: string }[] }> }
+      }>("select revision, register from deck.saved where id = $1", [named.deck])
       expect(landed.json).toEqual({ ok: true, deck: named.deck, revision: 2, key: `${named.deck}:2` })
       expect(saved.rows[0]?.revision).toBe(2)
-      expect(saved.rows[0]?.register.landed.map((row) => row.value)).toEqual(["one", "two"])
+      expect(saved.rows[0]?.register.elements["258.7"]?.landed.map((row) => row.value)).toEqual(["one", "two"])
     } finally {
       await holder.query("rollback").catch(() => undefined)
       await holder.end()
@@ -395,14 +494,14 @@ describe("deck routes", () => {
         base,
         "POST",
         "/decks/commit",
-        { deck: named.deck, batch: [{ value: "no", node: "b" }], once: "refused" },
+        { deck: named.deck, batch: [{ value: "x".repeat(8001), node: "258.7" }], once: "refused" },
         cookie,
       )
       const left = await reader.query<{ count: string }>(
         "select count(*)::text as count from deck.once where deck = $1",
         [named.deck],
       )
-      expect(refused.json).toEqual({ ok: false, refusal: "dead" })
+      expect(refused.json).toEqual({ ok: false, refusal: "limit" })
       expect(left.rows[0]?.count).toBe("0")
       let stop = false
       let split = false
@@ -421,7 +520,7 @@ describe("deck routes", () => {
         base,
         "POST",
         "/decks/commit",
-        { deck: named.deck, batch: [{ value: "yes", node: "a" }], once: "kept" },
+        { deck: named.deck, batch: [{ value: "yes", node: "258.7" }], once: "kept" },
         cookie,
       )
       stop = true
@@ -470,10 +569,10 @@ describe("deck routes", () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const body = { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "first" }
+    const body = { deck: named.deck, batch: [{ value: "once", node: "258.7" }], once: "first" }
     const first = await ask(base, "POST", "/decks/commit", body, cookie)
-    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "two" }] }, cookie)
-    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "three" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "two", node: "258.7" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "three", node: "258.7" }] }, cookie)
     const again = await ask(base, "POST", "/decks/commit", body, cookie)
     const opened = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     expect(first.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
@@ -483,11 +582,15 @@ describe("deck routes", () => {
         ok: true,
         revision: 3,
         register: expect.objectContaining({
-          landed: [
-            expect.objectContaining({ value: "once" }),
-            expect.objectContaining({ value: "two" }),
-            expect.objectContaining({ value: "three" }),
-          ],
+          elements: expect.objectContaining({
+            "258.7": expect.objectContaining({
+              landed: [
+                expect.objectContaining({ value: "once" }),
+                expect.objectContaining({ value: "two" }),
+                expect.objectContaining({ value: "three" }),
+              ],
+            }),
+          }),
         }),
       }),
     )
@@ -501,17 +604,17 @@ describe("deck routes", () => {
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "no", node: "b" }], once: "r" },
+      { deck: named.deck, batch: [{ value: "x".repeat(8001), node: "258.7" }], once: "r" },
       cookie,
     )
     const landed = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "yes", node: "a" }], once: "r" },
+      { deck: named.deck, batch: [{ value: "yes", node: "258.7" }], once: "r" },
       cookie,
     )
-    expect(refused.json).toEqual({ ok: false, refusal: "dead" })
+    expect(refused.json).toEqual({ ok: false, refusal: "limit" })
     expect(landed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
   })
 
@@ -524,14 +627,14 @@ describe("deck routes", () => {
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "owned" },
+      { deck: named.deck, batch: [{ value: "once", node: "258.7" }], once: "owned" },
       cookie,
     )
     const refused = await ask(
       base,
       "POST",
       "/decks/commit",
-      { deck: named.deck, batch: [{ value: "other", node: "a" }], once: "owned" },
+      { deck: named.deck, batch: [{ value: "other", node: "258.7" }], once: "owned" },
       other,
     )
     expect(refused.json).toEqual({ ok: false, refusal: "owner" })

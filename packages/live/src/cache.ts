@@ -1,8 +1,9 @@
-import { readDeckId, type DeckId, type WireEdit } from "@airdesign/catalog"
+import { readDeckId, readNode, type DeckId, type WireEdit } from "@airdesign/catalog"
 import {
   currentValue,
   decide,
   elementId,
+  limits,
   openRegister,
   replay,
   unsent,
@@ -21,6 +22,7 @@ import {
   rowBytes,
   rowCap,
   rowKey,
+  textBytes,
   writeRows,
   type ConfirmedRow,
   type PendingRow,
@@ -57,6 +59,15 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
     if (!landed.visible) continue
     revision = fitConfirmed(deck, revision, landed.value, undefined, into)
   }
+  for (const id of register.nodes) {
+    if (id === elementId("a") || id === elementId("b")) continue
+    const body = register.elements[id]
+    if (body === undefined) continue
+    for (const landed of body.landed) {
+      if (!landed.visible) continue
+      revision = fitConfirmed(deck, revision, landed.value, id, into)
+    }
+  }
   const paired = pairedBody(register)
   if (paired !== null) {
     for (const landed of paired.landed) {
@@ -79,8 +90,13 @@ function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending
   return { confirmed, pending }
 }
 
-function wireOf(row: PendingRow): WireEdit {
-  if (row.node === undefined) return { value: row.value }
+type WiredRow = PendingRow & { readonly node: NonNullable<PendingRow["node"]> }
+
+function wired(row: PendingRow): row is WiredRow {
+  return row.node !== undefined
+}
+
+function wireOf(row: WiredRow): WireEdit {
   return { value: row.value, node: row.node }
 }
 
@@ -111,11 +127,24 @@ export function connect(remote: Remote) {
       const { confirmed, pending } = split(rows)
       const register = played(parsed.deck, confirmed, pending)
       const id = node === undefined ? undefined : elementId(node)
+      const named = readNode(node)
+      let editing = register
+      if (named !== undefined && !editing.nodes.includes(named)) {
+        const opened = decide(editing, {
+          command: "add",
+          node: named,
+          floor: editing.floor,
+          route: editing.route,
+        })
+        if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
+        editing = opened.register
+      }
       const decision = decide(
-        register,
+        editing,
         id === undefined ? { command: "person", value } : { command: "person", value, node: id },
       )
       if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
+      if (textBytes(value) > limits.valueBytes) return { ok: false, refusal: "limit" }
       const order = pending.reduce((max, row) => Math.max(max, row.order + 1), 0)
       const row = pendingRow(parsed.deck, order, version(register), value, id)
       if (rowBytes(row) >= rowCap) return { ok: false, refusal: "limit" }
@@ -128,7 +157,13 @@ export function connect(remote: Remote) {
       const rows = await readRows(parsed.deck)
       const { confirmed, pending } = split(rows)
       if (pending.length === 0) return { ok: false, refusal: "batch" }
-      const result = await remote.commit({ deck: parsed.deck, batch: unsent(pending, 0).map(wireOf) })
+      const sending = unsent(pending, 0)
+      const batch: WireEdit[] = []
+      for (const row of sending) {
+        if (!wired(row)) return { ok: false, refusal: "field" }
+        batch.push(wireOf(row))
+      }
+      const result = await remote.commit({ deck: parsed.deck, batch })
       if (!result.ok) return result
       if (result.deck !== parsed.deck || result.key !== `${parsed.deck}:${result.revision}`) {
         return { ok: false, refusal: "payload" }

@@ -30,7 +30,9 @@ describe("saved", () => {
         }
       },
     } as unknown as Sql
-    expect(await commitEdits(db, { deck: "other", batch: [{ value: "hi" }] }, "owner@example.com")).toEqual({
+    expect(
+      await commitEdits(db, { deck: "other", batch: [{ value: "hi", node: "258.7" }] }, "owner@example.com"),
+    ).toEqual({
       ok: false,
       refusal: "deck",
     })

@@ -29,8 +29,12 @@ export function rowKey(deck: string, kind: "confirmed" | "pending", number: numb
   return `${deck}\u0000${tag}\u0000${String(number).padStart(12, "0")}`
 }
 
+export function textBytes(text: string): number {
+  return new TextEncoder().encode(text).length
+}
+
 export function rowBytes(row: StoredRow): number {
-  return new TextEncoder().encode(JSON.stringify(row)).length
+  return textBytes(JSON.stringify(row))
 }
 
 export function confirmedRow(deck: DeckId, revision: number, value: string, node?: ElementId): ConfirmedRow {

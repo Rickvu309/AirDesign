@@ -14,8 +14,8 @@ test("pending edits survive a killed tab", async ({ baseURL }, testInfo) => {
   await rm(profile, { recursive: true, force: true })
   const first = await launch(profile, baseURL ?? "")
   await first.page.evaluate(async () => {
-    await globalThis.airdesignLive.enqueue("deck", "earlier")
-    await globalThis.airdesignLive.enqueue("deck", "later")
+    await globalThis.airdesignLive.enqueue("deck", "earlier", "258.7")
+    await globalThis.airdesignLive.enqueue("deck", "later", "258.7")
   })
   await first.context.close()
   const second = await launch(profile, baseURL ?? "")

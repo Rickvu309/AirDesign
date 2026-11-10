@@ -1,45 +1,222 @@
 import { elementId } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
+import { readPackage, readShapes } from "@airdesign/pptx"
+import { act } from "react"
+import { createRoot } from "react-dom/client"
 import { expect, it, vi } from "vitest"
-import { commitEdit } from "./thin-deck"
+import { commitEdit, elementNode, nodeA, ThinDeck } from "./thin-deck"
 
-async function postsCommit(remote: Remote): Promise<boolean> {
+const live = vi.hoisted(() => {
+  const sent: { value: string; node?: string }[] = []
+  const state: {
+    parts:
+      | {
+          ok: true
+          parts: ReadonlyMap<string, Uint8Array>
+          nodes: { a: { part: string; shape: string } }
+        }
+      | { ok: false; refusal: "absent" }
+  } = { parts: { ok: false, refusal: "absent" } }
+  return {
+    sent,
+    state,
+    getParts: async () => state.parts,
+    connect: () => ({
+      async enqueue(_deck: string, value: string, node?: string) {
+        sent.push({ value, node })
+        return { ok: true, painted: "" }
+      },
+      async flush() {
+        return { ok: true }
+      },
+      async openDeck() {
+        return { ok: false, refusal: "deck" }
+      },
+    }),
+  }
+})
+
+vi.mock("@airdesign/live", async () => {
+  const actual = await vi.importActual<Record<string, unknown>>("@airdesign/live")
+  return {
+    ...actual,
+    connect: () => live.connect(),
+    getParts: () => live.getParts(),
+  }
+})
+
+const editedId = (async () => {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const read = await readPackage(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url)),
+  )
+  if (!read.ok) throw new Error(read.reason)
+  const id = elementNode(readShapes(read.parts), nodeA)
+  if (id === undefined) throw new Error("missing")
+  return id
+})()
+
+async function postsCommit(remote: Remote, node: string): Promise<boolean> {
   const seen: string[] = []
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
     seen.push(String(url))
     expect(String(init.method)).toBe("POST")
     expect(String(init.credentials)).toBe("same-origin")
-    expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "a" }] })
+    expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node }] })
     return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
   })
-  await remote.commit({ deck: "clean", batch: [{ value: "Hello!", node: elementId("a") }] })
+  await remote.commit({ deck: "clean", batch: [{ value: "Hello!", node: elementId(node) }] })
   return seen[0] === "/decks/commit"
 }
 
 it("flushes the http remote for deck clean after Hello! on node a", async () => {
+  const node = await editedId
   const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string }[] = []
   try {
-    await commitEdit((remote) => {
-      return {
-        async enqueue(deck, value, node) {
-          calls.push({ op: "enqueue", remote, deck, value, node })
-          return { ok: true }
-        },
-        async flush(deck) {
-          calls.push({ op: "flush", remote, deck })
-          return { ok: true }
-        },
-      }
-    }, "Hello!")
+    await commitEdit(
+      (remote) => {
+        return {
+          async enqueue(deck, value, named) {
+            calls.push({ op: "enqueue", remote, deck, value, node: named })
+            return { ok: true }
+          },
+          async flush(deck) {
+            calls.push({ op: "flush", remote, deck })
+            return { ok: true }
+          },
+        }
+      },
+      "Hello!",
+      node,
+    )
     const enqueued = calls[0]
     const flushed = calls[1]
     expect(calls.map((call) => call.op)).toEqual(["enqueue", "flush"])
-    expect(enqueued).toMatchObject({ deck: "clean", value: "Hello!", node: "a" })
+    expect(enqueued).toMatchObject({ deck: "clean", value: "Hello!", node })
     expect(flushed).toMatchObject({ deck: "clean" })
     if (enqueued === undefined || flushed === undefined) return
-    expect(await postsCommit(enqueued.remote)).toBe(false)
-    expect(await postsCommit(flushed.remote)).toBe(true)
+    expect(await postsCommit(enqueued.remote, node)).toBe(false)
+    expect(await postsCommit(flushed.remote, node)).toBe(true)
   } finally {
     vi.unstubAllGlobals()
   }
+})
+
+function xml(text: string): Uint8Array {
+  return new TextEncoder().encode(text)
+}
+
+function shapedParts(): Map<string, Uint8Array> {
+  const slide2 = `<p:sld><p:sp><p:cNvPr id="2"/><a:t>Other</a:t></p:sp></p:sld>`
+  const slide1 = `<p:sld><p:sp><p:cNvPr id="5"/><a:t>First</a:t></p:sp><p:sp><p:cNvPr id="2"/><a:t>Keep</a:t></p:sp><p:sp><p:cNvPr id="9"/><a:t>Last</a:t></p:sp></p:sld>`
+  const presentation = `<p:presentation><p:sldIdLst><p:sldId id="452" r:id="rId3"/><p:sldId id="382" r:id="rId2"/></p:sldIdLst></p:presentation>`
+  const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
+  return new Map([
+    ["ppt/slides/slide2.xml", xml(slide2)],
+    ["ppt/slides/slide1.xml", xml(slide1)],
+    ["ppt/presentation.xml", xml(presentation)],
+    ["ppt/_rels/presentation.xml.rels", xml(rels)],
+  ])
+}
+
+async function wasmBytes(): Promise<Uint8Array> {
+  const fsName = "node:fs/promises"
+  const moduleName = "node:module"
+  const fs = (await import(fsName)) as { readFile: (path: string) => Promise<Uint8Array> }
+  const nodeModule = (await import(moduleName)) as {
+    createRequire: (url: string) => { resolve: (id: string) => string }
+  }
+  return fs.readFile(nodeModule.createRequire(import.meta.url).resolve("sax-wasm/lib/sax-wasm.wasm"))
+}
+
+async function committedNodes(
+  parts: ReadonlyMap<string, Uint8Array>,
+  from: string,
+  values: readonly string[],
+): Promise<readonly (string | undefined)[]> {
+  live.sent.length = 0
+  live.state.parts = { ok: true, parts, nodes: { a: nodeA } }
+  const jsdomName = "jsdom"
+  const jsdom = (await import(jsdomName)) as {
+    JSDOM: new (html: string, options?: { url?: string }) => { readonly window: Window & typeof globalThis }
+  }
+  const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
+    url: "http://localhost/",
+  })
+  const { window } = dom
+  const globals = globalThis as typeof globalThis & Record<string, unknown>
+  const defined: [string, unknown][] = [
+    ["window", window],
+    ["document", window.document],
+    ["HTMLElement", window.HTMLElement],
+    ["Element", window.Element],
+    ["Node", window.Node],
+    ["InputEvent", window.InputEvent],
+    ["Event", window.Event],
+    ["requestAnimationFrame", (callback: (time: number) => void) => setTimeout(() => callback(Date.now()), 0)],
+    ["cancelAnimationFrame", (id: number) => clearTimeout(id)],
+    ["IS_REACT_ACT_ENVIRONMENT", true],
+  ]
+  const previous = defined.map(([name]) => [name, globals[name]] as const)
+  for (const [name, value] of defined) {
+    Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+  }
+  const container = window.document.getElementById("root")
+  if (container === null) throw new Error("root")
+  const wasm = await wasmBytes()
+  const copy = new Uint8Array(wasm.byteLength)
+  copy.set(wasm)
+  vi.stubGlobal("fetch", async () => new Response(copy.buffer))
+  const root = createRoot(container)
+  try {
+    await act(async () => {
+      root.render(<ThinDeck />)
+    })
+    let passage: Element | undefined
+    for (let attempt = 0; attempt < 20 && passage === undefined; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+      passage = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === from)
+    }
+    if (passage === undefined) throw new Error("passage")
+    for (const value of values) {
+      passage.textContent = value
+      await act(async () => {
+        passage.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
+      })
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10))
+      })
+    }
+    return live.sent.map((edit) => edit.node)
+  } finally {
+    await act(async () => {
+      root.unmount()
+    })
+    for (const [name, value] of previous) {
+      Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+    }
+    window.close()
+    vi.unstubAllGlobals()
+  }
+}
+
+it("saves the thin edit under its element id", async () => {
+  const fsName = "node:fs/promises"
+  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
+  const read = await readPackage(
+    await fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url)),
+  )
+  if (!read.ok) throw new Error(read.reason)
+  expect(await committedNodes(read.parts, "Hello", ["Hello!"])).toEqual(["256.2"])
+})
+
+it("saves under the id of the shape that was edited, not the first one", async () => {
+  expect(await committedNodes(shapedParts(), "Keep", ["Next"])).toEqual(["382.2"])
+})
+
+it("saves every edit under the id of the shape that was edited", async () => {
+  expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"])).toEqual(["382.2", "382.2"])
 })

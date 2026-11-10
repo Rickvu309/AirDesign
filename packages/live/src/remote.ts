@@ -95,12 +95,17 @@ export function memoryRemote(): Remote {
       const stored = decks.get(parsed.deck)
       let register = stored?.register ?? openRegister("", parsed.deck)
       for (const edit of parsed.batch) {
-        const decision = decide(
-          register,
-          edit.node === undefined
-            ? { command: "person", value: edit.value }
-            : { command: "person", value: edit.value, node: edit.node },
-        )
+        if (!register.nodes.includes(edit.node)) {
+          const opened = decide(register, {
+            command: "add",
+            node: edit.node,
+            floor: edit.floor ?? register.floor,
+            route: register.route,
+          })
+          if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
+          register = opened.register
+        }
+        const decision = decide(register, { command: "person", value: edit.value, node: edit.node })
         if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
         register = decision.register
       }

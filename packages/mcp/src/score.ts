@@ -41,9 +41,18 @@ function pairedBody(register: Deck["register"]): NodeRegister | null {
 
 function landedValues(deck: Deck): readonly string[] {
   const values = deck.register.landed.map((row) => row.value)
+  const opened = elementId("a")
+  const paired = elementId("b")
+  const extra: string[] = []
+  for (const id of deck.register.nodes) {
+    if (id === opened || id === paired) continue
+    const body = deck.register.elements[id]
+    if (body === undefined) continue
+    for (const row of body.landed) extra.push(row.value)
+  }
   const side = pairedBody(deck.register)
-  if (side === null) return values
-  return [...values, ...side.landed.map((row) => row.value)]
+  if (side === null) return [...values, ...extra]
+  return [...values, ...extra, ...side.landed.map((row) => row.value)]
 }
 
 function reportsCapturedFile(result: ToolResult): boolean {
@@ -76,7 +85,7 @@ export const landSourceTask: ScoreTask = {
   steps: [
     {
       name: toolName("edit_deck"),
-      raw: { deck: deckId, base: 0, changes: [{ value: "21" }] },
+      raw: { deck: deckId, base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
     },
   ],
 }
@@ -86,7 +95,7 @@ export const staleEditTask: ScoreTask = {
   steps: [
     {
       name: toolName("edit_deck"),
-      raw: { deck: deckId, base: 1, changes: [{ value: "22" }] },
+      raw: { deck: deckId, base: 1, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
     },
   ],
 }
