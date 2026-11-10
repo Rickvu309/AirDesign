@@ -56,5 +56,11 @@ const third = await takeMachineLock({ file, env: {}, say: (line) => said.push(li
 third()
 if (said.length !== 0) fail("the lock was still held after both checks ended")
 
+const fourth = await takeMachineLock({ file, env: {}, say: () => {} })
+await fourth()
+const fifth = await takeMachineLock({ file, env: {}, say: (line) => said.push(line) })
+fifth()
+if (said.length !== 0) fail("the lock was held after its release finished")
+
 fs.rmSync(folder, { recursive: true, force: true })
 console.log("machine lock tests passed")

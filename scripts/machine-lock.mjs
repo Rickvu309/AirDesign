@@ -26,9 +26,14 @@ export const takeMachineLock = ({ file = machineLockFile, env = process.env, say
       holder.unref()
       holder.stdin.unref()
       holder.stdout.unref()
-      resolve(() => {
-        delete env[held]
-        holder.stdin.end()
-      })
+      resolve(
+        () =>
+          new Promise((freed) => {
+            delete env[held]
+            holder.ref()
+            holder.once("exit", freed)
+            holder.stdin.end()
+          }),
+      )
     })
   })
