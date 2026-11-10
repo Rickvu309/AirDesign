@@ -7,6 +7,7 @@ import os from "node:os"
 import path from "node:path"
 import { Client } from "pg"
 
+import { createRole } from "./provision.js"
 import { applySchema } from "./schema.js"
 
 const cacheFile = () => path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
@@ -122,26 +123,12 @@ function roleUrl(port: number, role: string, password: string): string {
   return `postgres://${encodeURIComponent(role)}:${encodeURIComponent(password)}@127.0.0.1:${String(port)}/api`
 }
 
-async function createRole(admin: Client, role: string, password: string): Promise<void> {
-  const built = await admin.query<{ statement: string }>(
-    "select format('create role %I login password %L nosuperuser nocreatedb nocreaterole', $1::text, $2::text) as statement",
-    [role, password],
-  )
-  const statement = built.rows[0]?.statement
-  if (statement === undefined) throw new Error("role")
-  await admin.query(statement)
-}
-
 async function prepare(
   info: Info,
   sessionPassword: string,
   deckPassword: string,
   listenPassword: string,
 ): Promise<void> {
-  const bootstrap = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(info.port)}/postgres` })
-  await bootstrap.connect()
-  await bootstrap.query("create database api")
-  await bootstrap.end()
   const admin = new Client({ connectionString: info.admin })
   await admin.connect()
   await createRole(admin, "session", sessionPassword)
@@ -151,15 +138,14 @@ async function prepare(
   await admin.end()
 }
 
-async function start(): Promise<Info> {
+async function launch(
+  verifyPasswords: boolean,
+): Promise<{ found: { bin: string; library: string | null }; dir: string; port: number }> {
   const found = await findPostgres()
   const root = path.join(os.homedir(), "tmp")
   await mkdir(root, { recursive: true })
   const dir = await mkdtemp(path.join(root, "airdesign-api-"))
   const port = await freePort()
-  const sessionPassword = randomBytes(18).toString("base64url")
-  const deckPassword = randomBytes(18).toString("base64url")
-  const listenPassword = randomBytes(18).toString("base64url")
   await capture(
     path.join(found.bin, "initdb"),
     [
@@ -175,6 +161,12 @@ async function start(): Promise<Info> {
     ],
     found.library,
   )
+  if (verifyPasswords) {
+    await writeFile(
+      path.join(dir, "data/pg_hba.conf"),
+      "local all all trust\nhost all postgres 127.0.0.1/32 trust\nhost all all 127.0.0.1/32 scram-sha-256\n",
+    )
+  }
   await capture(
     path.join(found.bin, "pg_ctl"),
     [
@@ -189,6 +181,39 @@ async function start(): Promise<Info> {
     ],
     found.library,
   )
+  const bootstrap = new Client({ connectionString: `postgres://postgres@127.0.0.1:${String(port)}/postgres` })
+  await bootstrap.connect()
+  await bootstrap.query("create database api")
+  await bootstrap.end()
+  return { found, dir, port }
+}
+
+export type EmptyCluster = {
+  readonly port: number
+  readonly admin: string
+  readonly stop: () => Promise<void>
+}
+
+export async function startEmptyCluster(): Promise<EmptyCluster> {
+  const { found, dir, port } = await launch(true)
+  const info: Info = {
+    dir,
+    bin: found.bin,
+    library: found.library,
+    port,
+    admin: `postgres://postgres@127.0.0.1:${String(port)}/api`,
+    session: "",
+    deck: "",
+    listen: "",
+  }
+  return { port, admin: info.admin, stop: () => stop(info) }
+}
+
+async function start(): Promise<Info> {
+  const { found, dir, port } = await launch(false)
+  const sessionPassword = randomBytes(18).toString("base64url")
+  const deckPassword = randomBytes(18).toString("base64url")
+  const listenPassword = randomBytes(18).toString("base64url")
   const info: Info = {
     dir,
     bin: found.bin,
