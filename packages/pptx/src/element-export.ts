@@ -1,8 +1,9 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { writeRoute } from "./slide-route.js"
+import { writeRoute, type SlideRoute } from "./slide-route.js"
 import { writeStructuralRoute } from "./structural-route.js"
 
 const elementId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
+const slideId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const createdId = /^n[0-9a-z]{12}$/
 const presentationPart = "ppt/presentation.xml"
 const presentationRels = "ppt/_rels/presentation.xml.rels"
@@ -21,26 +22,86 @@ export type ElementEdit =
       readonly cx: number
       readonly cy: number
     }
-  | { readonly name: "sldIdLst.add"; readonly after: string }
+  | { readonly name: "sldIdLst.add"; readonly slide: string; readonly after: string }
 
 export type WrittenIds = {
   readonly slides: ReadonlyMap<string, string>
   readonly shapes: ReadonlyMap<string, string>
 }
 
-type Split = { readonly slide: string; readonly shape: string }
+export type IdRole = "createdSlide" | "createdElement" | "slide" | "element"
 
-type Held = {
-  readonly edit: Exclude<ElementEdit, { readonly name: "sldIdLst.add" }>
-  readonly slide: string
-  readonly shape: string
+type IdField<Edit> = {
+  [Field in keyof Edit]-?: Field extends "name" | "text" ? never : Edit[Field] extends number ? never : Field
+}[keyof Edit]
+
+type IdFields = {
+  readonly [Edit in ElementEdit as Edit["name"]]: { readonly [Field in IdField<Edit>]: IdRole }
 }
 
-type AddEdit = Extract<ElementEdit, { readonly name: "add" }>
+export const idFields = {
+  text: { id: "element" },
+  move: { id: "element" },
+  resize: { id: "element" },
+  remove: { id: "element" },
+  add: { id: "createdElement" },
+  "sldIdLst.add": { slide: "createdSlide", after: "slide" },
+} as const satisfies IdFields
 
-type Row = { readonly id: string; readonly shape: string; readonly edit: AddEdit }
+type IdEntry = { readonly field: string; readonly role: IdRole; readonly value: string }
 
-function splitId(id: string): Split {
+type Slide =
+  | { readonly kind: "original"; readonly number: string; readonly part: string }
+  | { readonly kind: "created"; readonly token: string }
+
+type Shape = { readonly kind: "original"; readonly number: string } | { readonly kind: "created"; readonly key: string }
+
+type Element = { readonly kind: "element"; readonly id: string; readonly slide: Slide; readonly shape: Shape }
+
+type Answer = Slide | Element
+
+type Known = {
+  readonly original: ReadonlyMap<string, Uint8Array>
+  readonly slideParts: Map<string, string | null>
+  readonly partShapes: Map<string, ReadonlySet<string>>
+  readonly createdSlides: Set<string>
+  readonly createdShapes: Set<string>
+}
+
+type Row = {
+  readonly edit: ElementEdit
+  readonly entries: readonly IdEntry[]
+  readonly answers: Map<string, Answer>
+}
+
+type CreatedSlide = { readonly token: string; readonly after: Slide }
+
+type CreatedShape = {
+  readonly element: Element
+  readonly text: string
+  readonly x: number
+  readonly y: number
+  readonly cx: number
+  readonly cy: number
+}
+
+type Change =
+  | { readonly name: "text"; readonly text: string }
+  | { readonly name: "move"; readonly x: number; readonly y: number }
+  | { readonly name: "resize"; readonly cx: number; readonly cy: number }
+  | { readonly name: "remove" }
+
+type Plan = {
+  readonly slides: readonly CreatedSlide[]
+  readonly shapes: readonly CreatedShape[]
+  readonly changes: readonly { readonly element: Element; readonly change: Change }[]
+}
+
+function isCreated(value: string): boolean {
+  return createdId.test(value)
+}
+
+function splitId(id: string): { readonly slide: string; readonly shape: string } {
   if (!elementId.test(id)) throw new Error("element id")
   let slide = ""
   let shape = ""
@@ -54,10 +115,6 @@ function splitId(id: string): Split {
     else slide += char
   }
   return { slide, shape }
-}
-
-function isCreated(value: string): boolean {
-  return createdId.test(value)
 }
 
 function attribute(element: MarkupElement, name: string): string | null {
@@ -91,212 +148,184 @@ function partForSlide(parts: ReadonlyMap<string, Uint8Array>, slide: string): st
   return null
 }
 
-function lastSlide(parts: ReadonlyMap<string, Uint8Array>): string {
-  const presentation = parts.get(presentationPart)
-  if (presentation === undefined) throw new Error("slide")
-  let last: string | null = null
-  for (const element of markupDocument(presentation).elements) {
-    if (element.kind === "p:sldId" && element.id !== null) last = element.id
+function originalPart(known: Known, slide: string): string {
+  let part = known.slideParts.get(slide)
+  if (part === undefined) {
+    part = partForSlide(known.original, slide)
+    known.slideParts.set(slide, part)
   }
-  if (last === null) throw new Error("slide")
-  return last
-}
-
-function fresh(parts: ReadonlyMap<string, Uint8Array>): Map<string, Uint8Array> {
-  return new Map(parts)
-}
-
-function hold(edits: readonly ElementEdit[]): Held[] {
-  const held: Held[] = []
-  for (const edit of edits) {
-    if (edit.name === "sldIdLst.add") continue
-    const split = splitId(edit.id)
-    if (edit.name === "add" && !isCreated(split.shape)) throw new Error("shape")
-    held.push({ edit, slide: split.slide, shape: split.shape })
-  }
-  return held
-}
-
-function slideTokens(held: readonly Held[]): string[] {
-  return [...new Set(held.map((row) => row.slide).filter(isCreated))].sort()
-}
-
-function slideIds(parts: ReadonlyMap<string, Uint8Array>): Set<string> {
-  const presentation = parts.get(presentationPart)
-  const ids = new Set<string>()
-  if (presentation === undefined) return ids
-  for (const element of markupDocument(presentation).elements) {
-    if (element.kind === "p:sldId" && element.id !== null) ids.add(element.id)
-  }
-  return ids
-}
-
-function shapeIds(parts: ReadonlyMap<string, Uint8Array>, slide: string): Set<string> | null {
-  const part = partForSlide(parts, slide)
-  if (part === null) return null
-  const bytes = parts.get(part)
-  if (bytes === undefined) return null
-  const ids = new Set<string>()
-  for (const element of markupDocument(bytes).elements) {
-    if (element.kind === "p:cNvPr" && element.id !== null) ids.add(element.id)
-  }
-  return ids
-}
-
-function requireKnown(parts: ReadonlyMap<string, Uint8Array>, held: readonly Held[]): void {
-  const slides = slideIds(parts)
-  const shapes = new Map<string, Set<string>>()
-  const seen = new Set<string>()
-  for (const row of held) {
-    if (row.edit.name === "add") {
-      if (seen.has(row.edit.id)) throw new Error("shape")
-      seen.add(row.edit.id)
-    }
-    if (isCreated(row.slide)) {
-      if (!isCreated(row.shape)) throw new Error("shape")
-      continue
-    }
-    if (!slides.has(row.slide)) throw new Error("slide")
-    if (isCreated(row.shape)) continue
-    let ids = shapes.get(row.slide)
-    if (ids === undefined) {
-      const found = shapeIds(parts, row.slide)
-      if (found === null) throw new Error("slide")
-      ids = found
-      shapes.set(row.slide, ids)
-    }
-    if (!ids.has(row.shape)) throw new Error("shape")
-  }
-}
-
-function writtenSlide(parts: ReadonlyMap<string, Uint8Array>, after: string) {
-  const written = writeStructuralRoute(parts, { name: "sldIdLst.add", after })
-  if (written.id === null) throw new Error("slide")
-  return written
-}
-
-function partForHalf(
-  original: ReadonlyMap<string, Uint8Array>,
-  current: ReadonlyMap<string, Uint8Array>,
-  slide: string,
-  slides: ReadonlyMap<string, string>,
-): string {
-  if (!isCreated(slide)) {
-    const part = partForSlide(original, slide)
-    if (part === null || !original.has(part) || !current.has(part)) throw new Error("slide")
-    return part
-  }
-  const number = slides.get(slide)
-  if (number === undefined) throw new Error("slide")
-  const part = partForSlide(current, number)
-  if (part === null || !current.has(part)) throw new Error("slide")
+  if (part === null || !known.original.has(part)) throw new Error("slide")
   return part
 }
 
-function place(
-  original: ReadonlyMap<string, Uint8Array>,
-  current: ReadonlyMap<string, Uint8Array>,
-  slide: string,
-  shape: string,
-  slides: ReadonlyMap<string, string>,
-  shapes: ReadonlyMap<string, ReadonlyMap<string, string>>,
-): { readonly part: string; readonly shape: string } {
-  const part = partForHalf(original, current, slide, slides)
-  if (!isCreated(shape)) {
-    const ids = shapeIds(original, slide)
-    if (ids === null || !ids.has(shape)) throw new Error("shape")
-    return { part, shape }
+function originalShapes(known: Known, part: string): ReadonlySet<string> {
+  const held = known.partShapes.get(part)
+  if (held !== undefined) return held
+  const ids = new Set<string>()
+  const bytes = known.original.get(part)
+  if (bytes === undefined) throw new Error("slide")
+  for (const element of markupDocument(bytes).elements) {
+    if (element.kind === "p:cNvPr" && element.id !== null) ids.add(element.id)
   }
-  const written = shapes.get(part)?.get(shape)
-  if (written === undefined) throw new Error("shape")
-  return { part, shape: written }
+  known.partShapes.set(part, ids)
+  return ids
 }
 
-export function exportElements(
-  parts: ReadonlyMap<string, Uint8Array>,
-  edits: readonly ElementEdit[],
-): { readonly parts: ReadonlyMap<string, Uint8Array>; readonly ids: WrittenIds } {
-  const held = hold(edits)
-  requireKnown(parts, held)
-  let current: ReadonlyMap<string, Uint8Array> = parts
-  for (const edit of edits) {
-    if (edit.name !== "sldIdLst.add") continue
-    current = fresh(writtenSlide(current, edit.after).parts)
+function createdKey(slide: Slide, token: string): string {
+  return `${slide.kind === "created" ? slide.token : slide.part}\0${token}`
+}
+
+function resolveSlide(known: Known, value: string): Slide {
+  if (!slideId.test(value)) throw new Error("element id")
+  if (isCreated(value)) {
+    if (!known.createdSlides.has(value)) throw new Error("slide")
+    return { kind: "created", token: value }
   }
-  const slides = new Map<string, string>()
-  for (const token of slideTokens(held)) {
-    const written = writtenSlide(current, lastSlide(current))
-    if (written.id === null) throw new Error("slide")
-    slides.set(token, written.id)
-    current = fresh(written.parts)
+  return { kind: "original", number: value, part: originalPart(known, value) }
+}
+
+function resolveElement(known: Known, value: string): Element {
+  const split = splitId(value)
+  const slide = resolveSlide(known, split.slide)
+  if (isCreated(split.shape)) {
+    const key = createdKey(slide, split.shape)
+    if (!known.createdShapes.has(key)) throw new Error("shape")
+    return { kind: "element", id: value, slide, shape: { kind: "created", key } }
   }
-  const grouped = new Map<string, { part: string; token: string; rows: Row[] }>()
-  for (const row of held) {
-    if (row.edit.name !== "add") continue
-    const part = partForHalf(parts, current, row.slide, slides)
-    const key = `${part}\0${row.shape}`
-    const group = grouped.get(key) ?? { part, token: row.shape, rows: [] }
-    group.rows.push({ id: row.edit.id, shape: row.shape, edit: row.edit })
-    grouped.set(key, group)
+  if (slide.kind === "created" || !originalShapes(known, slide.part).has(split.shape)) throw new Error("shape")
+  return { kind: "element", id: value, slide, shape: { kind: "original", number: split.shape } }
+}
+
+function createSlide(known: Known, value: string): Slide {
+  if (!isCreated(value) || known.createdSlides.has(value)) throw new Error("slide")
+  known.createdSlides.add(value)
+  return { kind: "created", token: value }
+}
+
+function createElement(known: Known, value: string): Element {
+  const split = splitId(value)
+  const slide = resolveSlide(known, split.slide)
+  if (!isCreated(split.shape)) throw new Error("shape")
+  const key = createdKey(slide, split.shape)
+  if (known.createdShapes.has(key)) throw new Error("shape")
+  known.createdShapes.add(key)
+  return { kind: "element", id: value, slide, shape: { kind: "created", key } }
+}
+
+const resolvers: Readonly<Record<IdRole, (known: Known, value: string) => Answer>> = {
+  createdSlide: createSlide,
+  createdElement: createElement,
+  slide: resolveSlide,
+  element: resolveElement,
+}
+
+function idEntries(edit: ElementEdit): readonly IdEntry[] {
+  const roles: Readonly<Record<string, IdRole | undefined>> | undefined = idFields[edit.name]
+  if (roles === undefined) throw new Error("edit")
+  const entries: IdEntry[] = []
+  for (const [field, value] of Object.entries(edit)) {
+    if (field === "name" || field === "text" || typeof value === "number") continue
+    const role = roles[field]
+    if (role === undefined || typeof value !== "string") throw new Error("edit")
+    entries.push({ field, role, value })
   }
-  const shapes = new Map<string, string>()
-  const byPart = new Map<string, Map<string, string>>()
-  const groups = [...grouped.values()].sort((left, right) => {
-    const leftId = left.rows.reduce((best, row) => (row.id < best ? row.id : best), left.rows[0]?.id ?? "")
-    const rightId = right.rows.reduce((best, row) => (row.id < best ? row.id : best), right.rows[0]?.id ?? "")
-    if (leftId < rightId) return -1
-    if (leftId > rightId) return 1
-    return 0
-  })
-  for (const group of groups) {
-    let chosen = group.rows[0]
-    if (chosen === undefined) throw new Error("shape")
-    for (const row of group.rows) if (row.id < chosen.id) chosen = row
-    const written = writeRoute(current, {
-      name: "add",
-      part: group.part,
-      text: chosen.edit.text,
-      x: chosen.edit.x,
-      y: chosen.edit.y,
-      cx: chosen.edit.cx,
-      cy: chosen.edit.cy,
-    })
-    if (written.id === null) throw new Error("shape")
-    for (const row of group.rows) shapes.set(row.id, written.id)
-    const partShapes = byPart.get(group.part) ?? new Map<string, string>()
-    partShapes.set(group.token, written.id)
-    byPart.set(group.part, partShapes)
-    current = fresh(written.parts)
+  if (entries.length !== Object.keys(roles).length) throw new Error("edit")
+  return entries
+}
+
+function resolveRows(parts: ReadonlyMap<string, Uint8Array>, edits: readonly ElementEdit[]): readonly Row[] {
+  const known: Known = {
+    original: parts,
+    slideParts: new Map(),
+    partShapes: new Map(),
+    createdSlides: new Set(),
+    createdShapes: new Set(),
   }
-  const pending = held.filter((row) => row.edit.name !== "add")
-  pending.sort((left, right) => {
-    if (left.edit.id < right.edit.id) return -1
-    if (left.edit.id > right.edit.id) return 1
-    return 0
-  })
-  for (const row of pending) {
-    const located = place(parts, current, row.slide, row.shape, slides, byPart)
+  const rows = edits.map((edit) => ({ edit, entries: idEntries(edit), answers: new Map<string, Answer>() }))
+  for (const [role, resolve] of Object.entries(resolvers)) {
+    for (const row of rows) {
+      for (const entry of row.entries) {
+        if (entry.role === role) row.answers.set(entry.field, resolve(known, entry.value))
+      }
+    }
+  }
+  return rows
+}
+
+function answeredSlide(row: Row, field: string): Slide {
+  const answer = row.answers.get(field)
+  if (answer === undefined || answer.kind === "element") throw new Error("slide")
+  return answer
+}
+
+function answeredElement(row: Row, field: string): Element {
+  const answer = row.answers.get(field)
+  if (answer === undefined || answer.kind !== "element") throw new Error("shape")
+  return answer
+}
+
+function byText(left: string, right: string): number {
+  if (left < right) return -1
+  if (left > right) return 1
+  return 0
+}
+
+function slideWriteOrder(slides: readonly CreatedSlide[]): readonly CreatedSlide[] {
+  const byToken = new Map(slides.map((slide) => [slide.token, slide]))
+  const written = new Set<string>()
+  const ordered: CreatedSlide[] = []
+  for (const start of [...slides].sort((left, right) => byText(left.token, right.token))) {
+    const chain: CreatedSlide[] = []
+    const onChain = new Set<string>()
+    let step: CreatedSlide | undefined = start
+    while (step !== undefined && !written.has(step.token)) {
+      if (onChain.has(step.token)) throw new Error("slide")
+      onChain.add(step.token)
+      chain.push(step)
+      step = step.after.kind === "created" ? byToken.get(step.after.token) : undefined
+    }
+    for (const row of chain.reverse()) {
+      written.add(row.token)
+      ordered.push(row)
+    }
+  }
+  return ordered
+}
+
+function planEdits(parts: ReadonlyMap<string, Uint8Array>, edits: readonly ElementEdit[]): Plan {
+  const slides: CreatedSlide[] = []
+  const shapes: CreatedShape[] = []
+  const changes: { readonly element: Element; readonly change: Change }[] = []
+  for (const row of resolveRows(parts, edits)) {
     const edit = row.edit
-    if (edit.name === "add") continue
     switch (edit.name) {
+      case "sldIdLst.add": {
+        const slide = answeredSlide(row, "slide")
+        if (slide.kind !== "created") throw new Error("slide")
+        slides.push({ token: slide.token, after: answeredSlide(row, "after") })
+        break
+      }
+      case "add":
+        shapes.push({
+          element: answeredElement(row, "id"),
+          text: edit.text,
+          x: edit.x,
+          y: edit.y,
+          cx: edit.cx,
+          cy: edit.cy,
+        })
+        break
       case "text":
-        current = fresh(
-          writeRoute(current, { name: "text", part: located.part, shape: located.shape, text: edit.text }).parts,
-        )
+        changes.push({ element: answeredElement(row, "id"), change: { name: "text", text: edit.text } })
         break
       case "move":
-        current = fresh(
-          writeRoute(current, { name: "move", part: located.part, shape: located.shape, x: edit.x, y: edit.y }).parts,
-        )
+        changes.push({ element: answeredElement(row, "id"), change: { name: "move", x: edit.x, y: edit.y } })
         break
       case "resize":
-        current = fresh(
-          writeRoute(current, { name: "resize", part: located.part, shape: located.shape, cx: edit.cx, cy: edit.cy })
-            .parts,
-        )
+        changes.push({ element: answeredElement(row, "id"), change: { name: "resize", cx: edit.cx, cy: edit.cy } })
         break
       case "remove":
-        current = fresh(writeRoute(current, { name: "remove", part: located.part, shape: located.shape }).parts)
+        changes.push({ element: answeredElement(row, "id"), change: { name: "remove" } })
         break
       default: {
         const unexpected: never = edit
@@ -304,5 +333,72 @@ export function exportElements(
       }
     }
   }
-  return { parts: fresh(current), ids: { slides, shapes } }
+  return {
+    slides: slideWriteOrder(slides),
+    shapes: shapes.sort((left, right) => byText(left.element.id, right.element.id)),
+    changes,
+  }
+}
+
+function slideNumber(slide: Slide, written: ReadonlyMap<string, string>): string {
+  if (slide.kind === "original") return slide.number
+  const number = written.get(slide.token)
+  if (number === undefined) throw new Error("slide")
+  return number
+}
+
+function partOf(slide: Slide, current: ReadonlyMap<string, Uint8Array>, written: ReadonlyMap<string, string>): string {
+  if (slide.kind === "original") return slide.part
+  const part = partForSlide(current, slideNumber(slide, written))
+  if (part === null) throw new Error("slide")
+  return part
+}
+
+function shapeNumber(shape: Shape, written: ReadonlyMap<string, string>): string {
+  if (shape.kind === "original") return shape.number
+  const number = written.get(shape.key)
+  if (number === undefined) throw new Error("shape")
+  return number
+}
+
+function changeRoute(change: Change, part: string, shape: string): Exclude<SlideRoute, { readonly name: "add" }> {
+  return { ...change, part, shape }
+}
+
+export function exportElements(
+  parts: ReadonlyMap<string, Uint8Array>,
+  edits: readonly ElementEdit[],
+): { readonly parts: ReadonlyMap<string, Uint8Array>; readonly ids: WrittenIds } {
+  const plan = planEdits(parts, edits)
+  let current = parts
+  const slides = new Map<string, string>()
+  const shapes = new Map<string, string>()
+  const shapeNumbers = new Map<string, string>()
+  for (const row of plan.slides) {
+    const written = writeStructuralRoute(current, { name: "sldIdLst.add", after: slideNumber(row.after, slides) })
+    if (written.id === null) throw new Error("slide")
+    slides.set(row.token, written.id)
+    current = written.parts
+  }
+  for (const row of plan.shapes) {
+    const written = writeRoute(current, {
+      name: "add",
+      part: partOf(row.element.slide, current, slides),
+      text: row.text,
+      x: row.x,
+      y: row.y,
+      cx: row.cx,
+      cy: row.cy,
+    })
+    if (written.id === null || row.element.shape.kind !== "created") throw new Error("shape")
+    shapes.set(row.element.id, written.id)
+    shapeNumbers.set(row.element.shape.key, written.id)
+    current = written.parts
+  }
+  for (const row of plan.changes) {
+    const part = partOf(row.element.slide, current, slides)
+    const shape = shapeNumber(row.element.shape, shapeNumbers)
+    current = writeRoute(current, changeRoute(row.change, part, shape)).parts
+  }
+  return { parts: new Map(current), ids: { slides, shapes } }
 }
