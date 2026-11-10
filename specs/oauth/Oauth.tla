@@ -1,46 +1,71 @@
 ---- MODULE Oauth ----
 EXTENDS Integers
 
-VARIABLES principal, deck, code, generation, revoked, reused
+VARIABLES principal, openedAs, deck, code, generation, revoked, reused, exchanges, exchangeDeck,
+          callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter
 
-vars == <<principal, deck, code, generation, revoked, reused>>
+vars == <<principal, openedAs, deck, code, generation, revoked, reused, exchanges, exchangeDeck,
+          callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter>>
 
 Max == 3
 
 TypeOK ==
   /\ principal \in {"person", "agent"}
+  /\ openedAs \in {"person", "agent"}
   /\ deck \in {"home", "other"}
   /\ code \in {"open", "used"}
   /\ generation \in 0..Max
   /\ revoked \in BOOLEAN
   /\ reused \in BOOLEAN
+  /\ exchanges \in 0..2
+  /\ exchangeDeck \in {"none", "home", "other"}
+  /\ callNamed \in -1..Max
+  /\ callAt \in -1..Max
+  /\ callDeck \in {"none", "home", "other"}
+  /\ rotateNamed \in -1..Max
+  /\ rotateAt \in -1..Max
+  /\ acceptedAfter \in BOOLEAN
 
 \* A code works once.
-CodeWorksOnce == (code = "open") <=> (generation = 0)
+CodeWorksOnce == exchanges <= 1
 
 \* A rotated refresh token never works again.
-RotatedRefreshIsDead == [][generation' >= generation]_vars
+RotatedRefreshIsDead ==
+  /\ callNamed = -1 \/ callNamed = callAt
+  /\ rotateNamed = -1 \/ rotateNamed = rotateAt
 
 \* Reuse of a rotated token revokes the family.
 ReuseRevokesFamily == reused => revoked
 
 \* After revocation no call and no rotation is accepted.
-AfterRevocation ==
-  [][revoked => (revoked' = TRUE /\ UNCHANGED <<principal, deck, code, generation>>)]_vars
+AfterRevocation == acceptedAfter = FALSE
 
 \* The identity is the stored one.
-IdentityIsStored == [][UNCHANGED principal]_vars
+IdentityIsStored == principal = openedAs
 
 \* A token for one deck does not authorize another.
-DeckIsBound == [][UNCHANGED deck]_vars
+DeckIsBound ==
+  /\ callDeck = "none" \/ callDeck = deck
+  /\ exchangeDeck = "none" \/ exchangeDeck = deck
 
 Init ==
   /\ principal \in {"person", "agent"}
+  /\ openedAs = principal
   /\ deck \in {"home", "other"}
   /\ code = "open"
   /\ generation = 0
   /\ revoked = FALSE
   /\ reused = FALSE
+  /\ exchanges = 0
+  /\ exchangeDeck = "none"
+  /\ callNamed = -1
+  /\ callAt = -1
+  /\ callDeck = "none"
+  /\ rotateNamed = -1
+  /\ rotateAt = -1
+  /\ acceptedAfter = FALSE
+
+kept == <<principal, openedAs, deck, revoked, reused, callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter>>
 
 ExchangeHome ==
   /\ deck = "home"
@@ -48,7 +73,9 @@ ExchangeHome ==
   /\ revoked = FALSE
   /\ code' = "used"
   /\ generation' = 1
-  /\ UNCHANGED <<principal, deck, revoked, reused>>
+  /\ exchanges' = exchanges + 1
+  /\ exchangeDeck' = "home"
+  /\ UNCHANGED kept
 
 ExchangeHomeRefused ==
   /\ ~(deck = "home" /\ code = "open" /\ revoked = FALSE)
@@ -60,7 +87,9 @@ ExchangeOther ==
   /\ revoked = FALSE
   /\ code' = "used"
   /\ generation' = 1
-  /\ UNCHANGED <<principal, deck, revoked, reused>>
+  /\ exchanges' = exchanges + 1
+  /\ exchangeDeck' = "other"
+  /\ UNCHANGED kept
 
 ExchangeOtherRefused ==
   /\ ~(deck = "other" /\ code = "open" /\ revoked = FALSE)
@@ -72,11 +101,17 @@ CallHome0Refused ==
 CallOther0Refused ==
   UNCHANGED vars
 
+callKept == <<principal, openedAs, deck, code, generation, revoked, reused, exchanges, exchangeDeck, rotateNamed, rotateAt>>
+
 CallHome1 ==
   /\ revoked = FALSE
   /\ generation = 1
   /\ deck = "home"
-  /\ UNCHANGED vars
+  /\ callNamed' = 1
+  /\ callAt' = generation
+  /\ callDeck' = "home"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallHome1Refused ==
   /\ ~(revoked = FALSE /\ generation = 1 /\ deck = "home")
@@ -86,7 +121,11 @@ CallHome2 ==
   /\ revoked = FALSE
   /\ generation = 2
   /\ deck = "home"
-  /\ UNCHANGED vars
+  /\ callNamed' = 2
+  /\ callAt' = generation
+  /\ callDeck' = "home"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallHome2Refused ==
   /\ ~(revoked = FALSE /\ generation = 2 /\ deck = "home")
@@ -96,7 +135,11 @@ CallHome3 ==
   /\ revoked = FALSE
   /\ generation = 3
   /\ deck = "home"
-  /\ UNCHANGED vars
+  /\ callNamed' = 3
+  /\ callAt' = generation
+  /\ callDeck' = "home"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallHome3Refused ==
   /\ ~(revoked = FALSE /\ generation = 3 /\ deck = "home")
@@ -106,7 +149,11 @@ CallOther1 ==
   /\ revoked = FALSE
   /\ generation = 1
   /\ deck = "other"
-  /\ UNCHANGED vars
+  /\ callNamed' = 1
+  /\ callAt' = generation
+  /\ callDeck' = "other"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallOther1Refused ==
   /\ ~(revoked = FALSE /\ generation = 1 /\ deck = "other")
@@ -116,7 +163,11 @@ CallOther2 ==
   /\ revoked = FALSE
   /\ generation = 2
   /\ deck = "other"
-  /\ UNCHANGED vars
+  /\ callNamed' = 2
+  /\ callAt' = generation
+  /\ callDeck' = "other"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallOther2Refused ==
   /\ ~(revoked = FALSE /\ generation = 2 /\ deck = "other")
@@ -126,7 +177,11 @@ CallOther3 ==
   /\ revoked = FALSE
   /\ generation = 3
   /\ deck = "other"
-  /\ UNCHANGED vars
+  /\ callNamed' = 3
+  /\ callAt' = generation
+  /\ callDeck' = "other"
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED callKept
 
 CallOther3Refused ==
   /\ ~(revoked = FALSE /\ generation = 3 /\ deck = "other")
@@ -135,18 +190,23 @@ CallOther3Refused ==
 Rotate0 ==
   UNCHANGED vars
 
+rotateKept == <<principal, openedAs, deck, code, revoked, reused, exchanges, exchangeDeck, callNamed, callAt, callDeck>>
+
 Rotate1 ==
   /\ revoked = FALSE
   /\ generation = 1
   /\ generation' = 2
-  /\ UNCHANGED <<principal, deck, code, revoked, reused>>
+  /\ rotateNamed' = 1
+  /\ rotateAt' = generation
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED rotateKept
 
 Rotate1Reuse ==
   /\ revoked = FALSE
   /\ generation > 1
   /\ revoked' = TRUE
   /\ reused' = TRUE
-  /\ UNCHANGED <<principal, deck, code, generation>>
+  /\ UNCHANGED <<principal, openedAs, deck, code, generation, exchanges, exchangeDeck, callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter>>
 
 Rotate1Refused ==
   /\ ~(revoked = FALSE /\ generation = 1)
@@ -157,14 +217,17 @@ Rotate2 ==
   /\ revoked = FALSE
   /\ generation = 2
   /\ generation' = 3
-  /\ UNCHANGED <<principal, deck, code, revoked, reused>>
+  /\ rotateNamed' = 2
+  /\ rotateAt' = generation
+  /\ acceptedAfter' = (acceptedAfter \/ revoked)
+  /\ UNCHANGED rotateKept
 
 Rotate2Reuse ==
   /\ revoked = FALSE
   /\ generation > 2
   /\ revoked' = TRUE
   /\ reused' = TRUE
-  /\ UNCHANGED <<principal, deck, code, generation>>
+  /\ UNCHANGED <<principal, openedAs, deck, code, generation, exchanges, exchangeDeck, callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter>>
 
 Rotate2Refused ==
   /\ ~(revoked = FALSE /\ generation = 2)
@@ -181,7 +244,7 @@ Rotate4 ==
 Revoke ==
   /\ revoked = FALSE
   /\ revoked' = TRUE
-  /\ UNCHANGED <<principal, deck, code, generation, reused>>
+  /\ UNCHANGED <<principal, openedAs, deck, code, generation, reused, exchanges, exchangeDeck, callNamed, callAt, callDeck, rotateNamed, rotateAt, acceptedAfter>>
 
 RevokeAgain ==
   /\ revoked = TRUE

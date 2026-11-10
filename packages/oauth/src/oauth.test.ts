@@ -154,6 +154,73 @@ describe("oauth", () => {
     }
   })
 
+  it("a fresh grant accepts no call and no rotation", () => {
+    const grant = openGrant(principal, deck)
+    expect(grant.principal).toBe(principal)
+    expect(grant.deck).toBe(deck)
+    expect(grant.code).toBe("open")
+    expect(grant.generation).toBe(0)
+    expect(grant.revoked).toBe(false)
+    for (const generation of [0, 1]) {
+      const call = oauth(grant, { command: "call", deck, generation })
+      expect(call.accepted).toBe(false)
+      expect(call.grant).toBe(grant)
+      const rotate = oauth(grant, { command: "rotate", generation })
+      expect(rotate.accepted).toBe(false)
+      expect(rotate.grant).toBe(grant)
+      expect(rotate.grant.revoked).toBe(false)
+    }
+  })
+
+  it("a rotate with 1.5 at generation 2 is refused and does not revoke", () => {
+    const rotated = oauth(exchanged(), { command: "rotate", generation: 1 })
+    expect(rotated.accepted).toBe(true)
+    expect(rotated.grant.generation).toBe(2)
+    const fraction = oauth(rotated.grant, { command: "rotate", generation: 1.5 })
+    expect(fraction.accepted).toBe(false)
+    expect(fraction.grant).toBe(rotated.grant)
+    expect(fraction.grant.revoked).toBe(false)
+    expect(fraction.grant.generation).toBe(2)
+  })
+
+  it("a call with a non-integer generation is refused", () => {
+    const rotated = oauth(exchanged(), { command: "rotate", generation: 1 })
+    expect(rotated.grant.generation).toBe(2)
+    for (const generation of [1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      const call = oauth(rotated.grant, { command: "call", deck, generation })
+      expect(call.accepted).toBe(false)
+      expect(call.grant).toBe(rotated.grant)
+      expect(call.grant.revoked).toBe(false)
+      expect(() => oauth(rotated.grant, { command: "call", deck, generation })).not.toThrow()
+    }
+  })
+
+  it("an unknown command is refused and does not revoke", () => {
+    const grant = exchanged()
+    const unknown = oauth(grant, { command: "refresh" } as unknown as Command)
+    expect(unknown.accepted).toBe(false)
+    expect(unknown.grant).toBe(grant)
+    expect(unknown.grant.revoked).toBe(false)
+    const missing = oauth(grant, {} as unknown as Command)
+    expect(missing.accepted).toBe(false)
+    expect(missing.grant).toBe(grant)
+    expect(missing.grant.revoked).toBe(false)
+    const word = oauth(grant, "revoke" as unknown as Command)
+    expect(word.accepted).toBe(false)
+    expect(word.grant).toBe(grant)
+    expect(word.grant.revoked).toBe(false)
+    expect(word.grant.code).toBe("used")
+  })
+
+  it("a null command is refused and does not throw", () => {
+    const grant = exchanged()
+    expect(() => oauth(grant, null as unknown as Command)).not.toThrow()
+    const result = oauth(grant, null as unknown as Command)
+    expect(result.accepted).toBe(false)
+    expect(result.grant).toBe(grant)
+    expect(result.grant.revoked).toBe(false)
+  })
+
   it("an extra principal key is ignored", () => {
     const grant = exchanged()
     const plain = { command: "call" as const, deck, generation: 1 }
@@ -198,6 +265,11 @@ describe("oauth", () => {
               expect(before.revoked).toBe(false)
               expect(result.grant.revoked).toBe(true)
               expect(command.command).toBe("rotate")
+              if (command.command === "rotate") {
+                expect(Number.isInteger(command.generation)).toBe(true)
+                expect(command.generation).toBeGreaterThanOrEqual(1)
+                expect(command.generation).toBeLessThan(before.generation)
+              }
             }
             grant = result.grant
             let accepted = 0

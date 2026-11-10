@@ -30,6 +30,7 @@ function accepted(grant: Grant): OauthResult {
 }
 
 export function oauth(grant: Grant, command: Command): OauthResult {
+  if (typeof command !== "object" || command === null) return refused(grant)
   if (command.command === "exchange") {
     if (grant.code === "used" || command.deck !== grant.deck || grant.revoked) return refused(grant)
     return accepted({ ...grant, code: "used", generation: 1 })
@@ -38,6 +39,7 @@ export function oauth(grant: Grant, command: Command): OauthResult {
     if (
       grant.revoked ||
       grant.generation < 1 ||
+      !Number.isInteger(command.generation) ||
       command.generation !== grant.generation ||
       command.deck !== grant.deck
     ) {
@@ -55,6 +57,9 @@ export function oauth(grant: Grant, command: Command): OauthResult {
     }
     return refused(grant)
   }
-  if (grant.revoked) return refused(grant)
-  return accepted({ ...grant, revoked: true })
+  if (command.command === "revoke") {
+    if (grant.revoked) return refused(grant)
+    return accepted({ ...grant, revoked: true })
+  }
+  return refused(grant)
 }
