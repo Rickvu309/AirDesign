@@ -1022,6 +1022,16 @@ describe("run operations", () => {
       expect(shown(deck, right)).toBe("agent right")
     })
 
+    it("undoes a restarted run when a person wrote on an element of its earlier undo", () => {
+      let deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      deck = answered(undo(deck, "run")).deck
+      deck = commit(deck, left, "person left")
+      deck = land(start(deck, "run", [right]).deck, "run", right, "agent right")
+      const undone = answered(undo(deck, "run"))
+      expect(shown(undone.deck, right)).toBe("right before")
+      expect(shown(undone.deck, left)).toBe("person left")
+    })
+
     it("lets an agent undo its own run", () => {
       const deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
       const undone = answered(call("undo_run", deck, agentOf("run"), { deck: "deck", runId: "run" }))
