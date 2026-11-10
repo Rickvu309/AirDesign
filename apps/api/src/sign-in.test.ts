@@ -1,12 +1,14 @@
 import { createHash, randomBytes } from "node:crypto"
 import { request as httpRequest, type IncomingHttpHeaders } from "node:http"
-import { Client } from "pg"
+import { Client, Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
 
 const publicOrigin = "https://app.example"
+const siteOrigin = "https://site.example"
+const expired = `${siteOrigin}/sign-in/expired`
 
 function address(): string {
   return `person${randomBytes(4).toString("hex")}@example.com`
@@ -86,6 +88,8 @@ async function ageIssued(statement: string, email: string): Promise<void> {
 describe("sign-in", () => {
   const mails: Mail[] = []
   let calls: string[] = []
+  let failSends = 0
+  let park: { mark: () => void; gate: Promise<Error | undefined> } | undefined
   let base = ""
   let close = async () => {}
   let session = openPool("postgres://session@127.0.0.1/api")
@@ -103,7 +107,19 @@ describe("sign-in", () => {
       deck,
       listen,
       publicOrigin,
+      siteOrigin,
       send: async (mail) => {
+        const held = park
+        if (held !== undefined) {
+          park = undefined
+          held.mark()
+          const error = await held.gate
+          if (error !== undefined) throw error
+        }
+        if (failSends > 0) {
+          failSends -= 1
+          throw new Error("provider")
+        }
         mails.push(mail)
       },
     })
@@ -124,6 +140,8 @@ describe("sign-in", () => {
   beforeEach(() => {
     mails.length = 0
     calls = []
+    failSends = 0
+    park = undefined
     globalThis.fetch = (async (input: string | URL) => {
       calls.push(String(input))
       throw new Error("fetch")
@@ -217,11 +235,11 @@ describe("sign-in", () => {
     expect(cookieFrom(response.headers)).toContain("airdesign.session=")
     const again = await ask(base, "GET", `${url.pathname}${url.search}`)
     expect(again.status).toBe(302)
-    expect(again.headers.location).toBe("/sign-in")
+    expect(again.headers.location).toBe(expired)
     expect(again.headers["set-cookie"]).toBeUndefined()
     const missing = await ask(base, "GET", "/sign-in/link?token=missing")
     expect(missing.status).toBe(302)
-    expect(missing.headers.location).toBe("/sign-in")
+    expect(missing.headers.location).toBe(expired)
     expect(missing.headers["set-cookie"]).toBeUndefined()
   })
 
@@ -340,7 +358,7 @@ describe("sign-in", () => {
     const url = new URL(mailed.link)
     const response = await ask(base, "GET", `${url.pathname}${url.search}`)
     expect(response.status).toBe(302)
-    expect(response.headers.location).toBe("/sign-in")
+    expect(response.headers.location).toBe(expired)
     expect(response.headers["set-cookie"]).toBeUndefined()
     expect(mails).toHaveLength(1)
   })
@@ -534,6 +552,7 @@ describe("sign-in", () => {
       deck,
       listen,
       publicOrigin,
+      siteOrigin,
       cookieDomain: "app.example",
       send: async (mail) => {
         mails.push(mail)
@@ -593,10 +612,192 @@ describe("sign-in", () => {
 
   it("rejects a public origin with a path", () => {
     const send = async () => {}
-    const shared = { session, deck, listen, send }
+    const shared = { session, deck, listen, send, siteOrigin }
     expect(() => createApi({ ...shared, publicOrigin: "https://app.example/path" })).toThrow(/publicOrigin/)
     expect(() => createApi({ ...shared, publicOrigin: "https://app.example/" })).toThrow(/publicOrigin/)
     expect(() => createApi({ ...shared, publicOrigin: "http://app.example" })).toThrow(/publicOrigin/)
+  })
+
+  it("rejects a site origin with a path", () => {
+    const send = async () => {}
+    const shared = { session, deck, listen, send, publicOrigin }
+    expect(() => createApi({ ...shared, siteOrigin: "https://site.example/path" })).toThrow(/siteOrigin/)
+    expect(() => createApi({ ...shared, siteOrigin: "https://site.example/" })).toThrow(/siteOrigin/)
+    expect(() => createApi({ ...shared, siteOrigin: "http://site.example" })).toThrow(/siteOrigin/)
+  })
+
+  it("sends a failed link to the site's expired page", async () => {
+    const bare = await ask(base, "GET", "/sign-in/link")
+    expect(bare.status).toBe(302)
+    expect(bare.headers.location).toBe(expired)
+    expect(bare.headers["set-cookie"]).toBeUndefined()
+
+    const unknown = "missing-token"
+    const missed = await ask(base, "GET", `/sign-in/link?token=${unknown}`)
+    expect(missed.status).toBe(302)
+    expect(missed.headers.location).toBe(expired)
+    expect(missed.headers["set-cookie"]).toBeUndefined()
+    expect(missed.headers.location?.includes(unknown)).toBe(false)
+
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const mailed = mailParts(mails[0]?.text)
+    const url = new URL(mailed.link)
+    const opened = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(opened.status).toBe(302)
+    expect(opened.headers.location).toBe("/")
+    const used = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(used.status).toBe(302)
+    expect(used.headers.location).toBe(expired)
+    expect(used.headers["set-cookie"]).toBeUndefined()
+    expect(used.headers.location?.includes(mailed.token)).toBe(false)
+
+    const older = address()
+    await ask(base, "POST", "/sign-in/email", { email: older })
+    const oldMail = mailParts(mails[1]?.text)
+    await ageIssued("update session.code set issued = now() - interval '16 minutes' where email = $1", older)
+    const oldUrl = new URL(oldMail.link)
+    const aged = await ask(base, "GET", `${oldUrl.pathname}${oldUrl.search}`)
+    expect(aged.status).toBe(302)
+    expect(aged.headers.location).toBe(expired)
+    expect(aged.headers["set-cookie"]).toBeUndefined()
+    expect(aged.headers.location?.includes(oldMail.token)).toBe(false)
+  })
+
+  it("keeps a delivered sign-in usable after its replacement mail fails", async () => {
+    const linked = address()
+    const opened = await ask(base, "POST", "/sign-in/email", { email: linked })
+    expect(opened.status).toBe(202)
+    const mailed = mailParts(mails[0]?.text)
+    await ageIssued("update session.code set misses = 4 where email = $1", linked)
+    failSends = 1
+    const failed = await ask(base, "POST", "/sign-in/email", { email: linked })
+    expect(failed.status).toBe(500)
+    expect(failed.json).toBeUndefined()
+    const kept = await session.query<{ misses: number }>("select misses from session.code where email = $1", [linked])
+    expect(kept.rows[0]?.misses).toBe(4)
+    const counted = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.sent where email = $1 and issued > now() - interval '15 minutes'",
+      [linked],
+    )
+    expect(counted.rows[0]?.total).toBe(1)
+    const url = new URL(mailed.link)
+    const signed = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(signed.status).toBe(302)
+    expect(signed.headers.location).toBe("/")
+
+    mails.length = 0
+    const coded = address()
+    const again = await ask(base, "POST", "/sign-in/email", { email: coded })
+    expect(again.status).toBe(202)
+    const codeMail = mailParts(mails[0]?.text)
+    failSends = 1
+    const rejected = await ask(base, "POST", "/sign-in/email", { email: coded })
+    expect(rejected.status).toBe(500)
+    const withCode = await ask(base, "POST", "/sign-in/code", { email: coded, code: codeMail.code })
+    expect(withCode.status).toBe(200)
+    expect(withCode.json).toEqual({ ok: true })
+  })
+
+  it("allows recovery after provider failures instead of counting unsent mail", async () => {
+    const email = address()
+    failSends = 5
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const failed = await ask(base, "POST", "/sign-in/email", { email })
+      expect(failed.status).toBe(500)
+      expect(failed.json).toBeUndefined()
+    }
+    expect(mails).toHaveLength(0)
+    const pending = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.code where email = $1",
+      [email],
+    )
+    expect(pending.rows[0]?.total).toBe(0)
+    const counted = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.sent where email = $1 and issued > now() - interval '15 minutes'",
+      [email],
+    )
+    expect(counted.rows[0]?.total).toBe(0)
+    const recovered = await ask(base, "POST", "/sign-in/email", { email })
+    expect(recovered.status).toBe(202)
+    expect(mails).toHaveLength(1)
+    const mailed = mailParts(mails[0]?.text)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+  })
+
+  it("leaves a newer mail alone when an older send fails late", async () => {
+    const email = address()
+    let fail!: (error: Error) => void
+    let mark!: () => void
+    const entered = new Promise<void>((resolve) => {
+      mark = resolve
+    })
+    park = {
+      mark,
+      gate: new Promise<Error | undefined>((resolve) => {
+        fail = resolve
+      }),
+    }
+    const first = ask(base, "POST", "/sign-in/email", { email })
+    await entered
+    const second = await ask(base, "POST", "/sign-in/email", { email })
+    expect(second.status).toBe(202)
+    expect(mails).toHaveLength(1)
+    const newer = mailParts(mails[0]?.text)
+    fail(new Error("provider"))
+    const failed = await first
+    expect(failed.status).toBe(500)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: newer.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+    const counted = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.sent where email = $1 and issued > now() - interval '15 minutes'",
+      [email],
+    )
+    expect(counted.rows[0]?.total).toBe(1)
+  })
+
+  it("sends at most 5 messages to each address under six sends at once", async () => {
+    const info = await postgresInfo()
+    const wide = new Pool({ connectionString: info.session, max: 6, application_name: "sign-in-wide" })
+    const sent: Mail[] = []
+    const served = await serve({
+      session: wide,
+      deck,
+      listen,
+      publicOrigin,
+      siteOrigin,
+      send: async (mail) => {
+        sent.push(mail)
+      },
+    })
+    try {
+      for (let nth = 0; nth < 5; nth += 1) {
+        const email = address()
+        for (let seeded = 0; seeded < 4; seeded += 1) {
+          const response = await ask(served.base, "POST", "/sign-in/email", { email })
+          expect(response.status).toBe(202)
+        }
+        const burst = await Promise.all(
+          Array.from({ length: 6 }, () => ask(served.base, "POST", "/sign-in/email", { email })),
+        )
+        for (const response of burst) {
+          expect(response.status).toBe(202)
+          expect(response.json).toEqual({ ok: true })
+        }
+        expect(sent.filter((mail) => mail.to === email)).toHaveLength(5)
+        const counted = await wide.query<{ total: number }>(
+          "select count(*)::int as total from session.sent where email = $1 and issued > now() - interval '15 minutes'",
+          [email],
+        )
+        expect(counted.rows[0]?.total).toBe(5)
+      }
+    } finally {
+      await served.close()
+      await wide.end()
+    }
   })
 
   it("rejects cookie domains containing cookie attributes", () => {
@@ -606,6 +807,7 @@ describe("sign-in", () => {
         deck,
         listen,
         publicOrigin,
+        siteOrigin,
         send: async () => {},
         cookieDomain: "app.example; SameSite=None; Max-Age=0",
       }),

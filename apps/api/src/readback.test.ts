@@ -24,7 +24,14 @@ describe("committed text", () => {
     const send = async (mail: Mail) => {
       mails.push(mail)
     }
-    const writing = await serve({ session, deck: committed, listen, send, publicOrigin: "https://app.example" })
+    const writing = await serve({
+      session,
+      deck: committed,
+      listen,
+      send,
+      publicOrigin: "https://app.example",
+      siteOrigin: "https://site.example",
+    })
     let reading: { readonly base: string; readonly close: () => Promise<void> } | undefined
     let fresh: Sql | undefined
     const text = "note"
@@ -51,7 +58,14 @@ describe("committed text", () => {
       await writing.close()
       await committed.end()
       fresh = openPool(info.deck, "readback-fresh")
-      reading = await serve({ session, deck: fresh, listen, send, publicOrigin: "https://app.example" })
+      reading = await serve({
+        session,
+        deck: fresh,
+        listen,
+        send,
+        publicOrigin: "https://app.example",
+        siteOrigin: "https://site.example",
+      })
       const again = await ask(reading.base, "POST", "/decks/open", { deck: named.deck }, cookie)
       const landed = call(
         "commit_edits",

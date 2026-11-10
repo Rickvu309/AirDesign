@@ -14,6 +14,7 @@ export type ApiOptions = {
   readonly listen: DeckListen
   readonly send: Sender
   readonly publicOrigin: string
+  readonly siteOrigin: string
   readonly cookieDomain?: string
 }
 
@@ -22,15 +23,15 @@ const bodyCap = 1_000_000
 
 const plainHost = /^[A-Za-z0-9.-]+$/
 
-function requireOrigin(publicOrigin: string): void {
+function requireOrigin(name: string, value: string): void {
   let parsed: URL
   try {
-    parsed = new URL(publicOrigin)
+    parsed = new URL(value)
   } catch {
-    throw new Error("publicOrigin is not an https origin")
+    throw new Error(`${name} is not an https origin`)
   }
-  if (parsed.protocol !== "https:" || parsed.origin !== publicOrigin) {
-    throw new Error("publicOrigin is not an https origin")
+  if (parsed.protocol !== "https:" || parsed.origin !== value) {
+    throw new Error(`${name} is not an https origin`)
   }
 }
 
@@ -164,13 +165,14 @@ async function codeRoute(options: ApiOptions, req: IncomingMessage, res: ServerR
 
 async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Promise<void> {
   const token = url.searchParams.get("token")
+  const expired = `${options.siteOrigin}/sign-in/expired`
   if (token === null || token.length === 0) {
-    redirect(res, "/sign-in")
+    redirect(res, expired)
     return
   }
   const session = await acceptLink(options.session, token)
   if (session === undefined) {
-    redirect(res, "/sign-in")
+    redirect(res, expired)
     return
   }
   redirect(res, "/", sessionCookie(session, options.cookieDomain))
@@ -244,7 +246,8 @@ async function handle(options: ApiOptions, req: IncomingMessage, res: ServerResp
 }
 
 export function createApi(options: ApiOptions): Server {
-  requireOrigin(options.publicOrigin)
+  requireOrigin("publicOrigin", options.publicOrigin)
+  requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
