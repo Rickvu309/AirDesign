@@ -2,27 +2,36 @@ import { randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
+import { migrations } from "./migrations.js"
 import { startEmptyCluster, type EmptyCluster } from "./postgres-setup.js"
-import { runSetup } from "./provision.js"
+import { runBootstrap, runSetup, type Environment, type Write } from "./provision.js"
 
-type Role = "session" | "deck" | "listen"
+type Role = "session" | "deck" | "listen" | "migrator"
 
 type Urls = {
   readonly admin: string
   readonly session: string
   readonly deck: string
   readonly listen: string
+  readonly migrator: string
 }
 
 type Outcome = { readonly code: number; readonly stdout: string[]; readonly stderr: string[] }
 
-const roles: readonly Role[] = ["session", "deck", "listen"]
+const roles: readonly Role[] = ["session", "deck", "listen", "migrator"]
+
+const latest = migrations.length
+
+const builtLine = `setup: roles 3, migrations ${String(latest)} applied, now at ${String(latest)}`
+
+const keptLine = `setup: roles 3, migrations 0 applied, now at ${String(latest)}`
 
 const variableOf = {
   admin: "ADMIN_DATABASE_URL",
   session: "SESSION_DATABASE_URL",
   deck: "DECK_DATABASE_URL",
   listen: "LISTEN_DATABASE_URL",
+  migrator: "MIGRATOR_DATABASE_URL",
 } as const
 
 function password(): string {
@@ -51,16 +60,23 @@ function environmentOf(urls: Urls): Record<string, string> {
     [variableOf.session]: urls.session,
     [variableOf.deck]: urls.deck,
     [variableOf.listen]: urls.listen,
+    [variableOf.migrator]: urls.migrator,
   }
 }
 
-async function run(env: Record<string, string | undefined>): Promise<Outcome> {
+async function capture(step: (env: Environment, write: Write) => Promise<number>, env: Environment): Promise<Outcome> {
   const stdout: string[] = []
   const stderr: string[] = []
-  const code = await runSetup(env, (stream, line) => {
+  const code = await step(env, (stream, line) => {
     ;(stream === "stdout" ? stdout : stderr).push(line)
   })
   return { code, stdout, stderr }
+}
+
+async function run(env: Record<string, string | undefined>): Promise<Outcome> {
+  const bootstrapped = await capture(runBootstrap, env)
+  if (bootstrapped.code !== 0) return bootstrapped
+  return capture(runSetup, env)
 }
 
 describe("database setup", () => {
@@ -90,6 +106,7 @@ describe("database setup", () => {
       session: distinctive("session"),
       deck: distinctive("deck"),
       listen: distinctive("listen"),
+      migrator: distinctive("migrator"),
     }
     return {
       database,
@@ -99,6 +116,7 @@ describe("database setup", () => {
         session: roleUrl("session", secrets.session, database),
         deck: roleUrl("deck", secrets.deck, database),
         listen: roleUrl("listen", secrets.listen, database),
+        migrator: roleUrl("migrator", secrets.migrator, database),
       },
     }
   }
@@ -107,7 +125,7 @@ describe("database setup", () => {
     const found = await asSuperuser("postgres", (client) =>
       client.query(
         `select rolname, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole
-         from pg_roles where rolname in ('session', 'deck', 'listen') order by rolname`,
+         from pg_roles where rolname in ('session', 'deck', 'listen', 'migrator') order by rolname`,
       ),
     )
     return found.rows
@@ -130,7 +148,7 @@ describe("database setup", () => {
         "select datname from pg_database where datname like 'setup\\_%'",
       )
       for (const row of found.rows) await client.query(`drop database ${row.datname} with (force)`)
-      await client.query("drop role if exists session, deck, listen, boss")
+      await client.query("drop role if exists session, deck, listen, migrator, boss")
     })
   })
 
@@ -141,7 +159,7 @@ describe("database setup", () => {
   it("creates the three roles and the schema on an empty database", async () => {
     const { urls } = await freshDatabase()
     const outcome = await run(environmentOf(urls))
-    expect(outcome).toEqual({ code: 0, stdout: ["setup: roles 3, schema created"], stderr: [] })
+    expect(outcome).toEqual({ code: 0, stdout: [builtLine], stderr: [] })
     const session = await openClient(urls.session)
     const deck = await openClient(urls.deck)
     const listen = await openClient(urls.listen)
@@ -164,7 +182,7 @@ describe("database setup", () => {
     try {
       await session.query("insert into session.account (email) values ('kept@example.com')")
       const outcome = await run(environmentOf(urls))
-      expect(outcome).toEqual({ code: 0, stdout: ["setup: roles 3, schema kept"], stderr: [] })
+      expect(outcome).toEqual({ code: 0, stdout: [keptLine], stderr: [] })
       const rows = await session.query<{ email: string }>("select email from session.account")
       expect(rows.rows).toEqual([{ email: "kept@example.com" }])
     } finally {
@@ -176,8 +194,8 @@ describe("database setup", () => {
     const { urls } = await freshDatabase()
     const first = await run(environmentOf(urls))
     const second = await run(environmentOf(urls))
-    expect(first).toEqual({ code: 0, stdout: ["setup: roles 3, schema created"], stderr: [] })
-    expect(second).toEqual({ code: 0, stdout: ["setup: roles 3, schema kept"], stderr: [] })
+    expect(first).toEqual({ code: 0, stdout: [builtLine], stderr: [] })
+    expect(second).toEqual({ code: 0, stdout: [keptLine], stderr: [] })
   })
 
   it("sets the password from the url when the role already exists", async () => {
