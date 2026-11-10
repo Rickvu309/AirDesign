@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
@@ -16,7 +17,7 @@ import {
   type Queued,
   type Register,
 } from "@airdesign/document"
-import { assertJar, dumpSpec, jarPath, javaBin, topics } from "../scripts/check-specs.mjs"
+import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
 import { group as offlineGroup, state as offlineState, step as offlineStep } from "../specs/offline/view.mjs"
 import { group as structureGroup, state as structureState, step as structureStep } from "../specs/structure/view.mjs"
@@ -551,11 +552,45 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered, unconnected }
 }
 
+function dumpTopics(
+  found: readonly { name: string; topic: string; spec: string; config: string }[],
+): Promise<readonly { name: string; graph: string; output: string }[]> {
+  const specifier = new URL("../scripts/check-specs.mjs", import.meta.url).href
+  return Promise.all(
+    found.map(
+      (topic) =>
+        new Promise<{ name: string; graph: string; output: string }>((resolve, reject) => {
+          const child = spawn(process.execPath, ["--input-type=module"], { stdio: ["pipe", "pipe", "pipe"] })
+          let out = ""
+          let err = ""
+          child.stdout.setEncoding("utf8")
+          child.stderr.setEncoding("utf8")
+          child.stdout.on("data", (chunk: string) => {
+            out += chunk
+          })
+          child.stderr.on("data", (chunk: string) => {
+            err += chunk
+          })
+          child.on("error", reject)
+          child.on("close", (code) => {
+            if (code !== 0) {
+              reject(new Error(`${topic.name} ${err || out}`))
+              return
+            }
+            const parsed = JSON.parse(out) as { graph: string; output: string }
+            resolve({ name: topic.name, graph: parsed.graph, output: parsed.output })
+          })
+          child.stdin.end(
+            `import { dumpSpec, javaBin, jarPath } from ${JSON.stringify(specifier)}\nconst dumped = dumpSpec(${JSON.stringify(topic.topic)}, javaBin(), jarPath(), ${JSON.stringify(topic.spec)}, ${JSON.stringify(topic.config)})\nprocess.stdout.write(JSON.stringify({ graph: dumped.graph, output: dumped.output }))\n`,
+          )
+        }),
+    ),
+  )
+}
+
 describe("spec replay", () => {
-  it("replays every reachable spec edge through decide", () => {
-    const java = javaBin()
-    const jar = jarPath()
-    assertJar(jar)
+  it("replays every reachable spec edge through decide", async () => {
+    assertJar(jarPath())
     const found = topics(root)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "structure", "undo"])
     for (const topic of found) expect(topic.view).toBe(true)
@@ -567,8 +602,9 @@ describe("spec replay", () => {
       structure: { state: structureState, step: structureStep, group: structureGroup },
       offline: { state: offlineState, step: offlineStep, group: offlineGroup },
     }
-    for (const topic of found) {
-      const dumped = dumpSpec(topic.topic, java, jar, topic.spec, topic.config)
+    for (const dumped of await dumpTopics(found)) {
+      const topic = found.find((item) => item.name === dumped.name)
+      if (!topic) throw new Error(dumped.name)
       if (!dumped.graph.includes("label=")) {
         failures.push(`${topic.name} dumped no graph\n${dumped.output.slice(-500)}`)
         continue
