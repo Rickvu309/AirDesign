@@ -277,7 +277,9 @@ test("an export with no edit is the same file byte for byte", async ({ page }, t
 test("a box that cannot keep an edit is not editable", async ({ page }) => {
   await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
   await expect(page.getByText(/1D-Convolutional/).first()).toBeVisible()
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  await expect(page.locator('[contenteditable="false"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(1)
+  await expect(page.locator('[contenteditable="true"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(0)
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(18)
   await page.locator("input[type=file]").setInputFiles(fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveCount(1)
@@ -287,4 +289,100 @@ test("a box that cannot keep an edit is not editable", async ({ page }) => {
   await editor.pressSequentially("!?", { delay: 50 })
   await expect(editor).toHaveText("Hello!?")
   await stored(page, "Hello!?")
+})
+
+async function rowsOf(page: Page): Promise<{ kind: string; value: string; node?: string }[]> {
+  return page.evaluate(
+    () =>
+      new Promise<{ kind: string; value: string; node?: string }[]>((resolve, reject) => {
+        const request = indexedDB.open("airdesign")
+        request.onerror = () => reject(request.error)
+        request.onsuccess = () => {
+          const database = request.result
+          const all = database.transaction("rows", "readonly").objectStore("rows").getAll()
+          all.onerror = () => reject(all.error)
+          all.onsuccess = () => {
+            database.close()
+            resolve((all.result as unknown[]).filter((row) => typeof row === "object" && row !== null && "kind" in row) as never)
+          }
+        }
+      }),
+  )
+}
+
+async function answerCommits(page: Page): Promise<void> {
+  await page.unroute("**/decks/commit")
+  let revision = 0
+  await page.route("**/decks/commit", async (route) => {
+    const body = route.request().postDataJSON() as { deck: string }
+    revision += 1
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, deck: body.deck, revision, key: `${body.deck}:${revision}` }),
+    })
+  })
+}
+
+async function confirmed(page: Page, value: string): Promise<void> {
+  await expect
+    .poll(async () => (await rowsOf(page)).map((row) => `${row.kind}:${row.value}`))
+    .toEqual([`confirmed:${value}`])
+}
+
+test("two text boxes keep their own edits after reload and both export", async ({ page }, testInfo) => {
+  const deck = join(fixtures, "doe-heat-pumps.pptx")
+  const download = testInfo.outputPath("two-boxes.pptx")
+  const address = await open(page, deck)
+  const title = page.locator('[contenteditable="true"]').filter({ hasText: /^What is a heat pump\?$/ })
+  const body = page.locator('[contenteditable="true"]').filter({ hasText: /^Same technology as:$/ })
+  await title.click()
+  await page.keyboard.press("End")
+  await title.pressSequentially(" Alpha", { delay: 50 })
+  await stored(page, "What is a heat pump? Alpha")
+  await body.click()
+  await page.keyboard.press("End")
+  await body.pressSequentially(" Beta", { delay: 50 })
+  await stored(page, "Same technology as: Beta")
+  await page.reload()
+  expect(page.url()).toBe(address)
+  const editors = page.locator('[contenteditable="true"]')
+  await expect(editors.filter({ hasText: /^What is a heat pump\? Alpha$/ })).toHaveCount(1)
+  await expect(editors.filter({ hasText: /^Same technology as: Beta$/ })).toHaveCount(1)
+  const nodes = new Set((await rowsOf(page)).map((row) => row.node))
+  expect([...nodes].sort()).toEqual(["2727.2", "2727.44"])
+  await saveExport(page, download)
+  expect(await changedParts(deck, download)).toEqual(["ppt/slides/slide4.xml"])
+  const saved = (await partsOf(download)).get("ppt/slides/slide4.xml")?.toString("utf8") ?? ""
+  expect(saved).toContain("<a:t>What is a heat pump? Alpha</a:t>")
+  expect(saved).toContain("<a:t>Same technology as: Beta</a:t>")
+})
+
+test("an edit left pending by a failed commit is sent after a reload", async ({ page }) => {
+  await page.route("**/decks/commit", (route) => route.fulfill({ status: 503, body: "" }))
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially("!", { delay: 50 })
+  await stored(page, "Hello!")
+  expect((await rowsOf(page)).map((row) => `${row.kind}:${row.value}`)).toEqual(["pending:Hello!"])
+  await answerCommits(page)
+  await page.reload()
+  await confirmed(page, "Hello!")
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
+})
+
+test("an edit made offline is sent when the page comes back online", async ({ page, context }) => {
+  await open(page, fixture)
+  await page.route("**/decks/commit", (route) => route.abort("internetdisconnected"))
+  await context.setOffline(true)
+  const editor = page.locator('[contenteditable="true"]')
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially("?", { delay: 50 })
+  await stored(page, "Hello?")
+  expect((await rowsOf(page)).map((row) => `${row.kind}:${row.value}`)).toEqual(["pending:Hello?"])
+  await answerCommits(page)
+  await context.setOffline(false)
+  await confirmed(page, "Hello?")
 })
