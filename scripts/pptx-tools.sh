@@ -11,6 +11,13 @@ if ! "$dotnet" --list-sdks 2>/dev/null | grep -q '^8\.'; then
   exit 1
 fi
 
+if [ ! -f "$root/installed" ] && command -v soffice > /dev/null && command -v pdftoppm > /dev/null; then
+  PPTX_SOFFICE="$(command -v soffice)"
+  export PPTX_SOFFICE
+  export PPTX_DOTNET="$dotnet"
+  exec "$@"
+fi
+
 if [ ! -f "$root/installed" ]; then
   debs="$root.debs"
   rm -rf "$root" "$debs"
@@ -20,10 +27,7 @@ if [ ! -f "$root/installed" ]; then
   fi
   apt-get install -s --no-install-recommends libreoffice-impress poppler-utils > "$debs/packages.txt"
   mapfile -t packages < <(awk '/^Inst / { print $2 }' "$debs/packages.txt")
-  if [ "${#packages[@]}" -eq 0 ]; then
-    echo "LibreOffice and poppler produced no packages to cache." >&2
-    exit 1
-  fi
+  packages+=(libreoffice-impress poppler-utils)
   if ! (cd "$debs" && apt-get download "${packages[@]}"); then
     echo "LibreOffice and poppler did not download. Run sudo apt-get update, then run this again." >&2
     exit 1
