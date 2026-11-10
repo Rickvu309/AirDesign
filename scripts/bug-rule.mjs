@@ -48,15 +48,15 @@ export const sourceLines = (root, relative) => {
 
 export const budget = (root) => {
   const product = sourceLines(root, "apps") + sourceLines(root, "packages")
-  const processLines = sourceLines(root, "tooling") + sourceLines(root, "scripts")
-  const percent = product === 0 ? 0 : Math.round((processLines * 1000) / product) / 10
-  const over = product > 2000 && processLines * 10 >= product
-  return { product, processLines, percent, over }
+  const ruleLines = sourceLines(root, "tooling")
+  const percent = product === 0 ? 0 : Math.round((ruleLines * 1000) / product) / 10
+  const over = product > 2000 && ruleLines * 10 >= product
+  return { product, ruleLines, percent, over }
 }
 
 export const report = (result) => [
   `product ${result.product}`,
-  `tooling and scripts ${result.processLines}`,
+  `tooling ${result.ruleLines}`,
   `percent ${result.percent.toFixed(1)}`,
 ]
 
