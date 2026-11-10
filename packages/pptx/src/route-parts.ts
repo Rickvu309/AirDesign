@@ -16,6 +16,7 @@ export type PartTouch = {
 export type RouteRun = {
   readonly operation: (typeof routeOperations)[number]
   readonly route: string
+  readonly edit: SlideRoute | StructuralEdit | null
   readonly touch: PartTouch | null
   readonly parts: ReadonlyMap<string, Uint8Array> | null
   readonly error: string | null
@@ -541,14 +542,15 @@ function groupHost(parts: ReadonlyMap<string, Uint8Array>): { part: string; id: 
 
 function attempt(
   operation: (typeof routeOperations)[number],
+  edit: SlideRoute | StructuralEdit | null,
   build: () => { readonly touch: PartTouch; readonly parts: ReadonlyMap<string, Uint8Array> },
 ): RouteRun {
   try {
     const built = build()
-    return { operation, route: routeName[operation], touch: built.touch, parts: built.parts, error: null }
+    return { operation, route: routeName[operation], edit, touch: built.touch, parts: built.parts, error: null }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    return { operation, route: routeName[operation], touch: null, parts: null, error: message }
+    return { operation, route: routeName[operation], edit, touch: null, parts: null, error: message }
   }
 }
 
@@ -562,17 +564,17 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       shape: text.id,
       value: text.value,
     } as const
-    runs.push(attempt("text", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+    runs.push(attempt("text", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
   }
   const inheritedMove = inheritedHost(parts, "a:off")
   if (inheritedMove !== null) {
     const route = { name: "move", part: inheritedMove.part, shape: inheritedMove.id, x: box.x, y: box.y } as const
-    runs.push(attempt("move", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+    runs.push(attempt("move", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
   } else {
     const move = xfrmHost(parts, "a:off")
     if (move !== null) {
       const route = { name: "move", part: move.part, shape: move.id, x: move.x + 9525, y: move.y + 9525 } as const
-      runs.push(attempt("move", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+      runs.push(attempt("move", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
     }
   }
   const inheritedResize = inheritedHost(parts, "a:ext")
@@ -584,7 +586,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       cx: box.cx,
       cy: box.cy,
     } as const
-    runs.push(attempt("resize", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+    runs.push(attempt("resize", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
   } else {
     const resize = xfrmHost(parts, "a:ext")
     if (resize !== null) {
@@ -595,18 +597,21 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
         cx: resize.cx + 9525,
         cy: resize.cy + 9525,
       } as const
-      runs.push(attempt("resize", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+      runs.push(attempt("resize", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
     }
   }
   const slide = slideNames(parts)[0]
   if (slide !== undefined) {
     const route = { name: "spTree.add", part: slide, text: "Added", ...box } as const
     runs.push(
-      attempt("spTree.add", () => ({ touch: partTouch(parts, route), parts: applyStructuralRoute(parts, route) })),
+      attempt("spTree.add", route, () => ({
+        touch: partTouch(parts, route),
+        parts: applyStructuralRoute(parts, route),
+      })),
     )
     const table = { name: "graphicFrame.addTable", part: slide } as const
     runs.push(
-      attempt("graphicFrame.addTable", () => ({
+      attempt("graphicFrame.addTable", table, () => ({
         touch: partTouch(parts, table),
         parts: applyStructuralRoute(parts, table),
       })),
@@ -616,14 +621,17 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   if (pair !== null) {
     const route = { name: "spTree.order", part: pair.part, shape: pair.second, before: pair.first } as const
     runs.push(
-      attempt("spTree.order", () => ({ touch: partTouch(parts, route), parts: applyStructuralRoute(parts, route) })),
+      attempt("spTree.order", route, () => ({
+        touch: partTouch(parts, route),
+        parts: applyStructuralRoute(parts, route),
+      })),
     )
   }
   const shape = oneShape(parts)
   if (shape !== null) {
     const removed = { name: "spTree.remove", part: shape.part, shape: shape.id } as const
     runs.push(
-      attempt("spTree.remove", () => ({
+      attempt("spTree.remove", removed, () => ({
         touch: partTouch(parts, removed),
         parts: applyStructuralRoute(parts, removed),
       })),
@@ -633,7 +641,10 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   if (clonedShape !== null) {
     const cloned = { name: "spTree.clone", part: clonedShape.part, shape: clonedShape.id } as const
     runs.push(
-      attempt("spTree.clone", () => ({ touch: partTouch(parts, cloned), parts: applyStructuralRoute(parts, cloned) })),
+      attempt("spTree.clone", cloned, () => ({
+        touch: partTouch(parts, cloned),
+        parts: applyStructuralRoute(parts, cloned),
+      })),
     )
   }
   const slides = sldIds(parts)
@@ -642,11 +653,14 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   if (firstSlide?.id !== null && firstSlide?.id !== undefined) {
     const added = { name: "sldIdLst.add", after: firstSlide.id } as const
     runs.push(
-      attempt("sldIdLst.add", () => ({ touch: partTouch(parts, added), parts: applyStructuralRoute(parts, added) })),
+      attempt("sldIdLst.add", added, () => ({
+        touch: partTouch(parts, added),
+        parts: applyStructuralRoute(parts, added),
+      })),
     )
     const origin = highestSlide(parts)
     runs.push(
-      attempt("element.export", () => {
+      attempt("element.export", null, () => {
         const touch = elementExportTouch(parts)
         const written = exportElements(parts, [
           { name: "sldIdLst.add", slide: createdSlideFirst, after: added.after },
@@ -679,7 +693,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
     )
     const cloned = { name: "sldIdLst.clone", slide: firstSlide.id } as const
     runs.push(
-      attempt("sldIdLst.clone", () => ({
+      attempt("sldIdLst.clone", cloned, () => ({
         touch: partTouch(parts, cloned),
         parts: applyStructuralRoute(parts, cloned),
       })),
@@ -693,14 +707,14 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   ) {
     const removed = { name: "sldIdLst.remove", slide: secondSlide.id } as const
     runs.push(
-      attempt("sldIdLst.remove", () => ({
+      attempt("sldIdLst.remove", removed, () => ({
         touch: partTouch(parts, removed),
         parts: applyStructuralRoute(parts, removed),
       })),
     )
     const ordered = { name: "sldIdLst.order", slide: secondSlide.id, before: firstSlide.id } as const
     runs.push(
-      attempt("sldIdLst.order", () => ({
+      attempt("sldIdLst.order", ordered, () => ({
         touch: partTouch(parts, ordered),
         parts: applyStructuralRoute(parts, ordered),
       })),
@@ -709,7 +723,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   const sections = sectionIds(parts)
   const addedSection = { name: "sectionLst.add", title: "AirDesign" } as const
   runs.push(
-    attempt("sectionLst.add", () => ({
+    attempt("sectionLst.add", addedSection, () => ({
       touch: partTouch(parts, addedSection),
       parts: applyStructuralRoute(parts, addedSection),
     })),
@@ -719,7 +733,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   if (firstSection?.id !== null && firstSection?.id !== undefined) {
     const removed = { name: "sectionLst.remove", section: firstSection.id } as const
     runs.push(
-      attempt("sectionLst.remove", () => ({
+      attempt("sectionLst.remove", removed, () => ({
         touch: partTouch(parts, removed),
         parts: applyStructuralRoute(parts, removed),
       })),
@@ -733,7 +747,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   ) {
     const ordered = { name: "sectionLst.order", section: secondSection.id, before: firstSection.id } as const
     runs.push(
-      attempt("sectionLst.order", () => ({
+      attempt("sectionLst.order", ordered, () => ({
         touch: partTouch(parts, ordered),
         parts: applyStructuralRoute(parts, ordered),
       })),
@@ -743,12 +757,15 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
   if (table !== null) {
     const added = { name: "tbl.addRow", part: table.part, row: 1 } as const
     runs.push(
-      attempt("tbl.addRow", () => ({ touch: partTouch(parts, added), parts: applyStructuralRoute(parts, added) })),
+      attempt("tbl.addRow", added, () => ({
+        touch: partTouch(parts, added),
+        parts: applyStructuralRoute(parts, added),
+      })),
     )
     if (table.removable !== null) {
       const removed = { name: "tbl.removeRow", part: table.part, row: table.removable } as const
       runs.push(
-        attempt("tbl.removeRow", () => ({
+        attempt("tbl.removeRow", removed, () => ({
           touch: partTouch(parts, removed),
           parts: applyStructuralRoute(parts, removed),
         })),
@@ -762,7 +779,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
         before: table.swap.before,
       } as const
       runs.push(
-        attempt("tbl.orderRow", () => ({
+        attempt("tbl.orderRow", ordered, () => ({
           touch: partTouch(parts, ordered),
           parts: applyStructuralRoute(parts, ordered),
         })),
