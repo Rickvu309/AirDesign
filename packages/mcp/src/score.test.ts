@@ -219,8 +219,10 @@ describe("score", () => {
   it("returns a score for a null or undefined entry in an attempt", () => {
     const hostile = [null, undefined] as unknown as Attempt
     const row = rowOf("order-words")
-    expect(() => score(row.task, hostile)).not.toThrow()
-    expect(score(row.task, hostile).reason).toBe("tool")
+    const scored = score(row.task, hostile)
+    expect(scored.pass).toBe(false)
+    expect(scored.reason).toBe("tool")
+    expect(scored.answers.map((answer) => answer.outcome)).toEqual(["thrown", "thrown"])
     const mixed = score(row.task, [...row.reference.slice(0, 1), ...hostile.slice(0, 1)])
     expect(mixed.answers.map((answer) => answer.outcome)).toEqual(["ok", "thrown"])
   })
@@ -243,8 +245,10 @@ describe("score", () => {
       name: toolNames.edit_deck,
       raw: { deck: "crowded", base: 0, changes: [{ value: "x", node: "7.99", readAt: 0 }] },
     }
-    expect(() => score(row.task, [aimed])).not.toThrow()
-    expect(score(row.task, [aimed]).reason).toBe("tool")
+    const scored = score(row.task, [aimed])
+    expect(scored.pass).toBe(false)
+    expect(scored.reason).toBe("tool")
+    expect(scored.answers).toEqual([{ name: toolNames.edit_deck, outcome: "thrown" }])
   })
 
   it("does not let an empty call stand in for a step", () => {
