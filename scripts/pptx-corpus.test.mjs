@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -5,17 +6,20 @@ import { fileURLToPath } from "node:url"
 import { seedFrom, settleRun } from "./judge-proof.mjs"
 import {
   afterRender,
+  checkFails,
+  committedArgs,
+  corpusDecision,
   corpusHashFailures,
-  corpusLines,
+  corpusInputs,
   corpusMisses,
-  corpusPlan,
+  corpusResult,
   judgedDecks,
   readCorpus,
   rendersOf,
   rotatingDecks,
   rotatingSubset,
 } from "./pptx-corpus.mjs"
-import { gitBlobId, renderUse } from "./pptx-render.mjs"
+import { committedBlobs, gitBlobId, renderUse } from "./pptx-render.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -44,15 +48,91 @@ same(
 )
 same("a subset larger than the list stops at the list", rotatingSubset({ names, size: 9, seed: 3 }).length, 5)
 
-const fullPlan = corpusPlan({ full: true, every: ["real.pptx", ...names], listed: names, seed: 1, fresh: true })
-same("the corpus path takes every deck", fullPlan.decks, ["real.pptx", ...names])
-same("a corpus miss is never excused", fullPlan.fresh, false)
-same(
-  "the rotating path takes the subset",
-  corpusPlan({ full: false, every: names, listed: names, seed: 1, fresh: true, size: 2 }).decks,
-  ["b.pptx", "c.pptx"],
-)
+const decisionCases = [
+  { before: "real.pptx", after: "real.pptx" },
+  { before: "clean.pptx", after: "text.pptx" },
+  { before: "clean.pptx", after: "browser.pptx" },
+]
+const decide = (argv, seeds) =>
+  corpusDecision({
+    argv: ["node", "pptx-check.mjs", ...argv],
+    seeds,
+    listed: names,
+    every: ["real.pptx", ...names],
+    fixed: ["census.pptx", "real.pptx"],
+    cases: decisionCases,
+    browser: "browser.pptx",
+    size: 2,
+  })
+const caseRenders = ["real.pptx", "real.pptx again", "clean.pptx", "text.pptx"]
+const seedRows = [
+  { seed: 9, fresh: false },
+  { seed: 1, fresh: true },
+]
+same("a pull request decides from the last seed, and judges the subset without renders", decide([], seedRows), {
+  full: false,
+  seed: 1,
+  routeDecks: ["census.pptx", "real.pptx", "b.pptx", "c.pptx"],
+  added: ["b.pptx", "c.pptx"],
+  hardDecks: ["census.pptx", "real.pptx"],
+  renders: caseRenders,
+  rendersAdded: false,
+  timed: true,
+  excusable: true,
+  announce: "corpus rotating 2 of 5 decks, seed 1, replay with JUDGE_SEED=1 pnpm check:pptx",
+})
+same("the corpus path judges and renders every deck once, and excuses nothing", decide(["--corpus"], seedRows), {
+  full: true,
+  seed: 1,
+  routeDecks: ["census.pptx", "real.pptx", ...names],
+  added: names,
+  hardDecks: ["census.pptx", "real.pptx"],
+  renders: [...caseRenders, ...names],
+  rendersAdded: true,
+  timed: false,
+  excusable: false,
+  announce: "corpus every deck, 6 decks",
+})
+same("a replayed seed is not excused", decide([], [{ seed: 1, fresh: false }]).excusable, false)
 if (rotatingDecks < 1) throw new Error("the rotating subset is empty")
+
+const packageScripts = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")).scripts
+same("the corpus command asks for the corpus path", packageScripts["check:pptx:corpus"].endsWith(" --corpus"), true)
+same("the pull request command does not", packageScripts["check:pptx"].includes("--corpus"), false)
+
+const checkSource = fs.readFileSync(path.join(repoRoot, "scripts/pptx-check.mjs"), "utf8")
+for (const follows of [
+  `const decision = corpusDecision({
+  argv: process.argv,
+  seeds: proofSeeds,
+  ...inputs,
+  cases,
+  browser: browserExportName,
+})`,
+  "const waiting = [...decision.renders]",
+  'committedArgs("HEAD")',
+  "for (const name of decision.routeDecks)",
+  "decision.hardDecks.includes(written.name)",
+  "decision.timed",
+  "corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })",
+  "checkFails({ failed, routeFailures, duration: checkSeconds, corpus })",
+]) {
+  if (!checkSource.includes(follows)) throw new Error(`pptx-check.mjs does not follow the decision: ${follows}`)
+}
+
+const noFailure = { failed: 0, routeFailures: [], duration: { fails: false }, corpus: { failed: 0 } }
+same("a clean check passes", checkFails(noFailure), false)
+same("a corpus miss fails the check", checkFails({ ...noFailure, corpus: { failed: 1 } }), true)
+same("a failed case fails the check", checkFails({ ...noFailure, failed: 1 }), true)
+same("a failed route write fails the check", checkFails({ ...noFailure, routeFailures: [{}] }), true)
+same("a check twice over its limit fails", checkFails({ ...noFailure, duration: { fails: true } }), true)
+let noResult = false
+try {
+  checkFails({ failed: 0, routeFailures: [], duration: { fails: false } })
+} catch {
+  noResult = true
+}
+same("a check with no corpus result cannot pass", noResult, true)
 
 const renderCases = [
   { before: "real.pptx", after: "real.pptx" },
@@ -90,16 +170,25 @@ const written = (name) => ({
   ],
 })
 const judgedRun = ({ broken, full, seed, fresh, freshFails }) => {
-  const plan = corpusPlan({ full, every: names, listed: names, seed, fresh, size: 2 })
+  const decision = corpusDecision({
+    argv: full ? ["--corpus"] : [],
+    seeds: [{ seed, fresh }],
+    listed: names,
+    every: names,
+    fixed: [],
+    cases: [],
+    browser: "browser.pptx",
+    size: 2,
+  })
   const lists = new Map(
-    plan.decks.flatMap((name) => [
+    decision.added.flatMap((name) => [
       [name, []],
       [`${name}-text`, name === broken ? ["planted"] : []],
     ]),
   )
-  const rendered = new Map(plan.decks.map((name) => [name, ["page"]]))
-  const misses = corpusMisses({ pptx, decks: plan.decks.map(written), lists, rendered })
-  return { plan, settled: settleRun({ run: plan, lines: corpusLines({ misses, full, seed }), freshFails }) }
+  const rendered = new Map(decision.added.map((name) => [name, ["page"]]))
+  const settled = corpusResult({ decision, pptx, decks: decision.added.map(written), lists, rendered, freshFails })
+  return { settled: { failed: settled.failed, lines: settled.lines } }
 }
 
 const broken = "c.pptx"
@@ -138,15 +227,30 @@ const caught = judgedRun({ broken, full: true, seed: outside, fresh: true, fresh
 same("the corpus path catches a break outside the subset", caught.settled.failed, 1)
 if (!caught.settled.lines[0].includes("pnpm check:pptx:corpus")) throw new Error("a corpus miss printed no replay line")
 
+const renderedNothing = {
+  pptx,
+  decks: [written("a.pptx")],
+  lists: new Map([["a.pptx-text", []]]),
+  rendered: new Map([["a.pptx", []]]),
+}
 same(
-  "a deck that renders no pages is a miss",
-  corpusMisses({
-    pptx,
-    decks: [written("a.pptx")],
-    lists: new Map([["a.pptx-text", []]]),
-    rendered: new Map([["a.pptx", []]]),
-  }),
+  "a deck that renders no pages is a miss on the corpus path",
+  corpusMisses({ ...renderedNothing, rendersAdded: true }),
   [{ deck: "a.pptx", render: "no pages" }],
+)
+same(
+  "a deck with no render is no miss on a pull request",
+  corpusMisses({ ...renderedNothing, rendersAdded: false }),
+  [],
+)
+same(
+  "a render that fails on the corpus path fails the check",
+  corpusResult({
+    decision: { added: ["a.pptx"], full: true, seed: 1, rendersAdded: true, excusable: false },
+    ...renderedNothing,
+    freshFails: false,
+  }).failed,
+  1,
 )
 same(
   "a refused write on an added deck is a miss",
@@ -163,6 +267,7 @@ same(
     ],
     lists: new Map(),
     rendered: new Map([["a.pptx", ["page"]]]),
+    rendersAdded: true,
   }),
   [{ deck: "a.pptx", operation: "text", error: "slides" }],
 )
@@ -190,6 +295,9 @@ const fake = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-corpus-"))
 process.on("exit", () => fs.rmSync(fake, { recursive: true, force: true }))
 const fixtures = path.join(fake, "scripts/pptx-fixtures")
 fs.mkdirSync(path.join(fixtures, "corpus"), { recursive: true })
+fs.writeFileSync(path.join(fixtures, "cases.json"), JSON.stringify([{ before: "case.pptx", after: "case.pptx" }]))
+fs.writeFileSync(path.join(fixtures, "case.pptx"), "x".repeat(100_000))
+fs.writeFileSync(path.join(fixtures, "other.pptx"), "x".repeat(100_000))
 fs.writeFileSync(path.join(fixtures, "corpus/x.pptx"), "changed")
 fs.writeFileSync(
   path.join(fixtures, "corpus.json"),
@@ -201,5 +309,57 @@ fs.writeFileSync(
 const hashFailures = corpusHashFailures(fake)
 same("a changed deck and a missing deck are both named", hashFailures.length, 2)
 if (!hashFailures[1].includes("has no file")) throw new Error("a missing deck was not named")
+
+same("the inputs read the list, the judged decks and the fixed decks", corpusInputs(fake), {
+  listed: ["x.pptx", "y.pptx"],
+  every: ["case.pptx", "x.pptx", "y.pptx"],
+  fixed: ["case.pptx", "other.pptx"],
+})
+same("the real inputs judge the case decks and the list", corpusInputs(repoRoot).every, judgedDecks(repoRoot))
+
+const refusedList = (entries) => {
+  fs.writeFileSync(path.join(fixtures, "corpus.json"), JSON.stringify(entries))
+  try {
+    readCorpus(fake)
+    return undefined
+  } catch (error) {
+    return error.message
+  }
+}
+const entry = (name) => ({ name, sha256: "0".repeat(64), source: "https://example.gov/deck.pptx" })
+same(
+  "a listed name already in cases.json is refused",
+  refusedList([entry("case.pptx")]),
+  "corpus.json cannot list case.pptx. A listed name must be new and appear once.",
+)
+same(
+  "a listed name repeated in the list is refused",
+  refusedList([entry("x.pptx"), entry("x.pptx")]),
+  "corpus.json cannot list x.pptx. A listed name must be new and appear once.",
+)
+same(
+  "a listed name of a top-level deck is refused",
+  refusedList([entry("other.pptx")]),
+  "corpus.json cannot list other.pptx. A listed name must be new and appear once.",
+)
+const casesFile = path.join(fixtures, "cases.json")
+const casesText = fs.readFileSync(casesFile, "utf8")
+fs.writeFileSync(casesFile, JSON.stringify([{ before: "only-in-cases.pptx", after: "only-in-cases.pptx" }]))
+same(
+  "a listed name that only cases.json holds is refused",
+  refusedList([entry("only-in-cases.pptx")]),
+  "corpus.json cannot list only-in-cases.pptx. A listed name must be new and appear once.",
+)
+fs.writeFileSync(casesFile, casesText)
+same("new names are accepted", refusedList([entry("x.pptx"), entry("y.pptx")]), undefined)
+
+execFileSync("git", ["init", "-q"], { cwd: fake })
+execFileSync("git", ["add", "-A"], { cwd: fake })
+const tree = execFileSync("git", ["write-tree"], { cwd: fake, encoding: "utf8" }).trim()
+same(
+  "a committed deck in the corpus folder is found, so its render is cached",
+  committedBlobs(execFileSync("git", committedArgs(tree), { cwd: fake, encoding: "utf8" })).get("x.pptx"),
+  gitBlobId(Buffer.from("changed")),
+)
 
 console.log("corpus tests passed")
