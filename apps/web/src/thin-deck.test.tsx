@@ -3,7 +3,7 @@ import type { Remote } from "@airdesign/live"
 import { readPackage, readShapes } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
-import { expect, it, vi } from "vitest"
+import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { commitEdit, elementNode, exportedParts, nodeA, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
@@ -17,9 +17,28 @@ const live = vi.hoisted(() => {
         }
       | { ok: false; refusal: "absent" }
   } = { parts: { ok: false, refusal: "absent" } }
+  const counts = { openDeck: 0, flush: 0 }
+  let waiters: { kind: "openDeck" | "flush"; count: number; resolve: () => void }[] = []
+  function happened(kind: "openDeck" | "flush") {
+    counts[kind] += 1
+    for (const waiter of waiters) if (waiter.kind === kind && counts[kind] >= waiter.count) waiter.resolve()
+    waiters = waiters.filter((waiter) => waiter.kind !== kind || counts[kind] < waiter.count)
+  }
   return {
     sent,
     state,
+    reset() {
+      sent.length = 0
+      counts.openDeck = 0
+      counts.flush = 0
+      waiters = []
+    },
+    reached(kind: "openDeck" | "flush", count: number): Promise<void> {
+      if (counts[kind] >= count) return Promise.resolve()
+      return new Promise((resolve) => {
+        waiters.push({ kind, count, resolve })
+      })
+    },
     getParts: async () => state.parts,
     connect: () => ({
       async enqueue(_deck: string, value: string, node?: string) {
@@ -27,9 +46,11 @@ const live = vi.hoisted(() => {
         return { ok: true, painted: "" }
       },
       async flush() {
+        happened("flush")
         return { ok: true }
       },
       async openDeck() {
+        happened("openDeck")
         return { ok: false, refusal: "deck" }
       },
     }),
@@ -57,6 +78,25 @@ const editedId = (async () => {
   return id
 })()
 
+type JsdomModule = {
+  JSDOM: new (html: string, options?: { url?: string }) => { readonly window: Window & typeof globalThis }
+}
+
+let jsdom: JsdomModule | undefined
+
+beforeAll(async () => {
+  const jsdomName = "jsdom"
+  jsdom = (await import(jsdomName)) as JsdomModule
+  await editedId
+})
+
+const teardowns: (() => Promise<void> | void)[] = []
+
+afterEach(async () => {
+  for (const teardown of teardowns.splice(0).reverse()) await teardown()
+  vi.unstubAllGlobals()
+})
+
 async function postsCommit(remote: Remote, node: string): Promise<boolean> {
   const seen: string[] = []
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
@@ -73,34 +113,30 @@ async function postsCommit(remote: Remote, node: string): Promise<boolean> {
 it("flushes the http remote for deck clean after Hello! on node a", async () => {
   const node = await editedId
   const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string }[] = []
-  try {
-    await commitEdit(
-      (remote) => {
-        return {
-          async enqueue(deck, value, named) {
-            calls.push({ op: "enqueue", remote, deck, value, node: named })
-            return { ok: true }
-          },
-          async flush(deck) {
-            calls.push({ op: "flush", remote, deck })
-            return { ok: true }
-          },
-        }
-      },
-      "Hello!",
-      node,
-    )
-    const enqueued = calls[0]
-    const flushed = calls[1]
-    expect(calls.map((call) => call.op)).toEqual(["enqueue", "flush"])
-    expect(enqueued).toMatchObject({ deck: "clean", value: "Hello!", node })
-    expect(flushed).toMatchObject({ deck: "clean" })
-    if (enqueued === undefined || flushed === undefined) return
-    expect(await postsCommit(enqueued.remote, node)).toBe(false)
-    expect(await postsCommit(flushed.remote, node)).toBe(true)
-  } finally {
-    vi.unstubAllGlobals()
-  }
+  await commitEdit(
+    (remote) => {
+      return {
+        async enqueue(deck, value, named) {
+          calls.push({ op: "enqueue", remote, deck, value, node: named })
+          return { ok: true }
+        },
+        async flush(deck) {
+          calls.push({ op: "flush", remote, deck })
+          return { ok: true }
+        },
+      }
+    },
+    "Hello!",
+    node,
+  )
+  const enqueued = calls[0]
+  const flushed = calls[1]
+  expect(calls.map((call) => call.op)).toEqual(["enqueue", "flush"])
+  expect(enqueued).toMatchObject({ deck: "clean", value: "Hello!", node })
+  expect(flushed).toMatchObject({ deck: "clean" })
+  if (enqueued === undefined || flushed === undefined) return
+  expect(await postsCommit(enqueued.remote, node)).toBe(false)
+  expect(await postsCommit(flushed.remote, node)).toBe(true)
 })
 
 function xml(text: string): Uint8Array {
@@ -135,12 +171,9 @@ async function committedNodes(
   from: string,
   values: readonly string[],
 ): Promise<readonly (string | undefined)[]> {
-  live.sent.length = 0
+  live.reset()
   live.state.parts = { ok: true, parts, nodes: { a: nodeA } }
-  const jsdomName = "jsdom"
-  const jsdom = (await import(jsdomName)) as {
-    JSDOM: new (html: string, options?: { url?: string }) => { readonly window: Window & typeof globalThis }
-  }
+  if (jsdom === undefined) throw new Error("jsdom")
   const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
     url: "http://localhost/",
   })
@@ -154,14 +187,18 @@ async function committedNodes(
     ["Node", window.Node],
     ["InputEvent", window.InputEvent],
     ["Event", window.Event],
-    ["requestAnimationFrame", (callback: (time: number) => void) => setTimeout(() => callback(Date.now()), 0)],
-    ["cancelAnimationFrame", (id: number) => clearTimeout(id)],
     ["IS_REACT_ACT_ENVIRONMENT", true],
   ]
   const previous = defined.map(([name]) => [name, globals[name]] as const)
   for (const [name, value] of defined) {
     Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
   }
+  teardowns.push(() => {
+    for (const [name, value] of previous) {
+      Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
+    }
+    window.close()
+  })
   const container = window.document.getElementById("root")
   if (container === null) throw new Error("root")
   const wasm = await wasmBytes()
@@ -169,38 +206,29 @@ async function committedNodes(
   copy.set(wasm)
   vi.stubGlobal("fetch", async () => new Response(copy.buffer))
   const root = createRoot(container)
-  try {
-    await act(async () => {
-      root.render(<ThinDeck />)
-    })
-    let passage: Element | undefined
-    for (let attempt = 0; attempt < 20 && passage === undefined; attempt += 1) {
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-      passage = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === from)
-    }
-    if (passage === undefined) throw new Error("passage")
-    for (const value of values) {
-      passage.textContent = value
-      await act(async () => {
-        passage.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
-      })
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 10))
-      })
-    }
-    return live.sent.map((edit) => edit.node)
-  } finally {
+  teardowns.push(async () => {
     await act(async () => {
       root.unmount()
     })
-    for (const [name, value] of previous) {
-      Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
-    }
-    window.close()
-    vi.unstubAllGlobals()
+  })
+  const opened = live.reached("openDeck", 1)
+  await act(async () => {
+    root.render(<ThinDeck />)
+  })
+  await act(async () => {
+    await opened
+  })
+  const passage = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === from)
+  if (passage === undefined) throw new Error("passage")
+  for (const [index, value] of values.entries()) {
+    passage.textContent = value
+    const flushed = live.reached("flush", index + 1)
+    await act(async () => {
+      passage.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
+      await flushed
+    })
   }
+  return live.sent.map((edit) => edit.node)
 }
 
 it("saves the thin edit under its element id", async () => {
@@ -223,6 +251,10 @@ it("saves every edit under the id of the shape that was edited", async () => {
 
 it("paints before the commit is sent", async () => {
   const order: string[] = []
+  let sentFlush: () => void = () => undefined
+  const flushSent = new Promise<void>((resolve) => {
+    sentFlush = resolve
+  })
   void commitEdit(
     () => {
       return {
@@ -232,6 +264,7 @@ it("paints before the commit is sent", async () => {
         },
         flush() {
           order.push("flush")
+          sentFlush()
           return new Promise(() => undefined)
         },
       }
@@ -242,7 +275,7 @@ it("paints before the commit is sent", async () => {
       order.push("paint")
     },
   )
-  await new Promise((resolve) => setTimeout(resolve, 0))
+  await flushSent
   expect(order).toEqual(["enqueue", "paint", "flush"])
 })
 
