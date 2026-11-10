@@ -8,10 +8,12 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
 import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
+import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+await takeMachineLock()
 const checkStarted = Date.now()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"

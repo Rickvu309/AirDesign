@@ -1,10 +1,12 @@
 import { spawn } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { takeMachineLock } from "./machine-lock.mjs"
 import { timeMetric } from "./metrics.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
-const checkStarted = Date.now()
 
 export const stages = [
   [
@@ -59,6 +61,11 @@ const run = ([name, command, args, extra]) =>
   })
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const release = await takeMachineLock()
+  const checkStarted = Date.now()
+  const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
+  process.env.TMPDIR = ownTemp
+
   for (const stage of stages) {
     await Promise.all(stage.map(run))
     if (failed.length > 0 && !all) break
@@ -68,6 +75,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   console.log(checkSeconds.line)
   if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
   if (checkSeconds.fails) failed.push("ci-duration")
+  fs.rmSync(ownTemp, { recursive: true, force: true })
+  release()
 
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)
