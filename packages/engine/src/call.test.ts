@@ -5,6 +5,7 @@ import {
   decideUndo,
   elementId,
   history,
+  limits,
   version,
   type ElementId,
   type Register,
@@ -901,6 +902,14 @@ describe("run operations", () => {
     return { ...deck, register }
   }
 
+  function fullDeck(): Deck {
+    const deck = floorsReady()
+    const body = nodeBody(deck.register, left)
+    const ids = Array.from({ length: limits.elements - 2 }, (_, index) => elementId(`${String(index)}.1`))
+    const elements = Object.fromEntries([left, ...ids].map((id) => [id, body]))
+    return { ...deck, register: { ...deck.register, nodes: [deck.register.nodes[0]!, left, ...ids], elements } }
+  }
+
   describe("undo_run", () => {
     it("undoes every element of a run in one call", () => {
       const before = commit(floorsReady(), middle, "a person wrote this")
@@ -1030,6 +1039,19 @@ describe("run operations", () => {
       const undone = answered(undo(deck, "run"))
       expect(shown(undone.deck, right)).toBe("right before")
       expect(shown(undone.deck, left)).toBe("left before")
+    })
+
+    it("refuses the whole undo when a later run is live on a removed element", () => {
+      let deck = start(floorsReady(), "run", [left, right]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = land(deck, "run", right, "agent right")
+      deck = stop(deck, "run")
+      deck = removed(start(deck, "later", [right]).deck, right)
+      expect(undo(deck, "run")).toEqual({ ok: false, refusal: "run-fenced" })
+      expect(deck.register.nodes).not.toContain(right)
+      expect(shown(deck, left)).toBe("agent left")
+      expect(phase(deck, left)).toBe("stopped")
+      expect(shown(deck, right)).toBe("agent right")
     })
 
     it("lets an agent undo its own run", () => {
@@ -1165,6 +1187,19 @@ describe("run operations", () => {
       expect(deck.register).toBe(register)
     })
 
+    it("refuses start_run on a new element at the element cap and changes nothing", () => {
+      const deck = fullDeck()
+      const before = nodeBody(deck.register, left)
+      const fresh = elementId("9999.1")
+      expect(
+        call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: left }, { node: fresh }] }),
+      ).toEqual({ ok: false, refusal: "limit" })
+      expect(deck.register.nodes).not.toContain(fresh)
+      expect(deck.register.nodes).toHaveLength(limits.elements)
+      expect(nodeBody(deck.register, left)).toBe(before)
+      expect(before.phase).toBe("idle")
+    })
+
     it("refuses a floor over the value limit", () => {
       expect(
         call("start_run", opened(), agent, {
@@ -1237,9 +1272,25 @@ describe("run operations", () => {
       expect(parseNotifyKey(again.key)).toEqual({ ok: true, deck: deck.id, revision: deck.revision })
     })
 
+    it("changes nothing when a stopped run's element has moved on to a later run", () => {
+      let deck = stop(land(start(opened(), "one", [left]).deck, "one", left, "one"), "one")
+      deck = start(deck, "two", [left]).deck
+      const again = answered(call("stop_run", deck, agentOf("one"), { deck: "deck", runId: "one" }))
+      expect(again.deck).toBe(deck)
+      expect(phase(again.deck, left)).toBe("running")
+    })
+
     it("stops a run on an element that was removed, so it does not come back running", () => {
       const deck = removed(start(opened(), "run", [left, right]).deck, right)
       expect(phase(restored(stop(deck, "run"), right), right)).toBe("stopped")
+    })
+
+    it("refuses to stop a run it cannot reach on a removed element at the element cap", () => {
+      const deck = fullDeck()
+      const gone = elementId("9999.1")
+      const body = { ...nodeBody(deck.register, left), phase: "running" as const, runId: "run" }
+      const held = { ...deck, register: { ...deck.register, elements: { ...deck.register.elements, [gone]: body } } }
+      expect(call("stop_run", held, agent, { deck: "deck", runId: "run" })).toEqual({ ok: false, refusal: "limit" })
     })
 
     it("refuses an unknown run and changes nothing", () => {

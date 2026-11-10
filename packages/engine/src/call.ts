@@ -126,16 +126,11 @@ function bodyOf(register: Register, node: ElementId): NodeRegister {
   return register.elements[node] ?? register
 }
 
-function isLive(body: NodeRegister | undefined, runId: string): boolean {
-  return body?.phase === "running" && body.runId === runId
-}
-
 function holdsRun(body: NodeRegister, runId: string): boolean {
   return body.runId === runId || body.landed.some((row) => row.runId === runId)
 }
 
-function showsRun(body: NodeRegister, runId: string): boolean {
-  if (body.runId === runId && body.phase !== "undone") return true
+function showsRows(body: NodeRegister, runId: string): boolean {
   return body.landed.some((row) => row.runId === runId && row.visible)
 }
 
@@ -148,24 +143,34 @@ function decideOnElement(register: Register, node: ElementId, command: Command):
   return decide(decided.register, { command: "remove", node })
 }
 
-function applyToElements(
+function isLive(register: Register, node: ElementId, runId: string): boolean {
+  return decideOnElement(register, node, { command: "stop", runId, node }).decision === "apply"
+}
+
+function endOnTouched(
   deck: Deck,
-  nodes: readonly ElementId[],
-  commandFor: (node: ElementId) => Command,
+  command: "stop" | "undo",
+  runId: string,
+  fencedStillRefuses: (body: NodeRegister) => boolean,
 ): CallResult {
+  const touched = everyElement(deck.register).filter((node) => holdsRun(bodyOf(deck.register, node), runId))
+  if (touched.length === 0) return refused("run-fenced")
   let register = deck.register
-  for (const node of nodes) {
-    const decision = decideOnElement(register, node, commandFor(node))
-    if (decision.decision === "refuse") return refused(decision.code)
-    register = decision.register
+  for (const node of touched) {
+    const decision = decideOnElement(register, node, { command, runId, node })
+    if (decision.decision === "apply") {
+      register = decision.register
+      continue
+    }
+    if (decision.code !== "run-fenced" || fencedStillRefuses(bodyOf(register, node))) return refused(decision.code)
   }
   return landed(deck, register)
 }
 
 function liveRun(register: Register, elements: readonly WireRunElement[]): string | null {
   for (const { node } of elements) {
-    const body = register.elements[node]
-    if (body?.phase === "running") return body.runId
+    const runId = register.elements[node]?.runId ?? null
+    if (runId !== null && isLive(register, node, runId)) return runId
   }
   return null
 }
@@ -178,7 +183,7 @@ function startRun(deck: Deck, requested: string, elements: readonly WireRunEleme
     const opened = openedRegister(register, element)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
-    if (isLive(register.elements[element.node], runId)) continue
+    if (isLive(register, element.node, runId)) continue
     const started = decide(register, { command: "start", runId, node: element.node })
     if (started.decision === "refuse") return refused(started.code)
     register = started.register
@@ -188,18 +193,13 @@ function startRun(deck: Deck, requested: string, elements: readonly WireRunEleme
 }
 
 function stopRun(deck: Deck, runId: string): CallResult {
-  const { register } = deck
-  const nodes = everyElement(register)
-  if (!nodes.some((node) => holdsRun(bodyOf(register, node), runId))) return refused("run-fenced")
-  const live = nodes.filter((node) => isLive(bodyOf(register, node), runId))
-  return applyToElements(deck, live, (node) => ({ command: "stop", runId, node }))
+  return endOnTouched(deck, "stop", runId, () => false)
 }
 
 function undoRun(deck: Deck, runId: string): CallResult {
-  const { register } = deck
-  const shown = everyElement(register).filter((node) => showsRun(bodyOf(register, node), runId))
-  if (shown.length === 0) return refused("run-fenced")
-  return applyToElements(deck, shown, (node) => ({ command: "undo", runId, node }))
+  const result = endOnTouched(deck, "undo", runId, (body) => showsRows(body, runId))
+  if (result.ok && result.deck === deck) return refused("run-fenced")
+  return result
 }
 
 function namesOtherRun(caller: Caller, runId: string): boolean {
