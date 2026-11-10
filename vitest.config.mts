@@ -1,19 +1,42 @@
 import path from "node:path"
 import { defineConfig } from "vitest/config"
 
+const alias = [
+  {
+    find: /^@airdesign\/([a-z0-9-]+)$/,
+    replacement: path.join(import.meta.dirname, "packages/$1/src/index.ts"),
+  },
+]
+
 export default defineConfig({
   resolve: {
-    alias: [
-      {
-        find: /^@airdesign\/([a-z0-9-]+)$/,
-        replacement: path.join(import.meta.dirname, "packages/$1/src/index.ts"),
-      },
-    ],
+    alias,
   },
   test: {
     retry: 0,
     setupFiles: ["packages/pptx/markup-setup.ts"],
     include: ["packages/**/*.test.ts", "tests/**/*.test.ts"],
     exclude: ["tests/browser/**", "**/node_modules/**", "**/dist/**"],
+    projects: [
+      {
+        test: {
+          name: "unit",
+          exclude: ["packages/render/**/*.test.ts"],
+        },
+      },
+      {
+        extends: false,
+        resolve: {
+          alias,
+        },
+        test: {
+          name: "render",
+          retry: 0,
+          environment: "jsdom",
+          include: ["packages/render/**/*.test.ts"],
+          exclude: ["**/node_modules/**", "**/dist/**"],
+        },
+      },
+    ],
   },
 })

@@ -12,6 +12,9 @@
     },
     {
       "path": "./packages/catalog"
+    },
+    {
+      "path": "./packages/render"
     }
   ]
 }
