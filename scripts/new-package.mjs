@@ -1,8 +1,7 @@
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { sortedReferences } from "./reference-order.mjs"
 
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const name = process.argv[2]
@@ -29,13 +28,8 @@ function workspaceRoot(start) {
 
 const root = workspaceRoot(process.cwd())
 const packageDir = path.join(root, "packages", name)
-const rootTsconfigPath = path.join(root, "tsconfig.json")
-const reference = `./packages/${name}`
-const rootTsconfig = JSON.parse(readFileSync(rootTsconfigPath, "utf8"))
-const references = Array.isArray(rootTsconfig.references) ? rootTsconfig.references : []
-const alreadyReferenced = references.some((item) => item?.path === reference)
 
-if (existsSync(packageDir) || alreadyReferenced) {
+if (existsSync(packageDir)) {
   console.error(`package ${name} already exists`)
   process.exit(1)
 }
@@ -102,11 +96,8 @@ writeFileSync(
 
 writeFileSync(sourcePath, `export function packageId(): string {\n  return "${packageName}"\n}\n`)
 
-rootTsconfig.references = sortedReferences([...references, { path: reference }])
-writeFileSync(rootTsconfigPath, `${JSON.stringify(rootTsconfig, null, 2)}\n`)
-
 const oxfmt = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../node_modules/.bin/oxfmt")
-const formatted = spawnSync(oxfmt, ["--write", packageJsonPath, packageTsconfigPath, sourcePath, rootTsconfigPath], {
+const formatted = spawnSync(oxfmt, ["--write", packageJsonPath, packageTsconfigPath, sourcePath], {
   cwd: root,
   encoding: "utf8",
 })

@@ -69,6 +69,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | No raw hex, sized arbitrary class or blanket transition | lint: `no-raw` |
 | No file or folder named `utils`, `helpers` or `common` | lint: the name scan |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
+| No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
 | A state machine keeps its invariants | `pnpm check:specs` |
 | An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |

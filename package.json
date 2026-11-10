@@ -10,7 +10,7 @@
     "check": "node scripts/check.mjs",
     "new:package": "node scripts/new-package.mjs",
     "lint": "pnpm -r --if-present run lint && node tooling/oxlint-plugin-airdesign/lint-tree.js",
-    "typecheck": "tsc -b",
+    "typecheck": "node scripts/typecheck.mjs",
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:specs": "node scripts/check-specs.mjs",
     "check:pptx": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs",
@@ -18,7 +18,7 @@
     "check:mutation": "node scripts/check-mutation.mjs",
     "test": "pnpm test:unit && pnpm test:tooling",
     "test:unit": "vitest run",
-    "test:tooling": "node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/metrics.test.mjs && node scripts/ratchet.test.mjs && node scripts/judge-proof.test.mjs && node scripts/ci-failure-report.test.mjs && node scripts/check-regression.test.mjs && node scripts/check.test.mjs && node scripts/machine-lock.test.mjs && node scripts/worktrees.test.mjs && node scripts/checked.test.mjs && node scripts/check-specs.test.mjs && node scripts/browser-export.test.mjs && node scripts/pptx-render.test.mjs && node scripts/smoke.test.mjs && node scripts/deploy-site.test.mjs && node scripts/pptx-corpus.test.mjs",
+    "test:tooling": "node scripts/tooling-tests.mjs",
     "test:browser": "playwright test",
     "build": "pnpm -r --if-present run build"
   },
