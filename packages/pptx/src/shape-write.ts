@@ -1,4 +1,6 @@
 import { insertChild } from "./child-order.js"
+import { markupDocument } from "./element-span.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId } from "./shape-id.js"
 
 export type ShapeBox = {
@@ -13,14 +15,34 @@ function requireEmu(value: number): number {
   return value
 }
 
-function escapeText(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+function allowedChar(code: number): boolean {
+  return (
+    code === 0x9 ||
+    code === 0xa ||
+    code === 0xd ||
+    (code >= 0x20 && code <= 0xd7ff) ||
+    (code >= 0xe000 && code <= 0xfffd) ||
+    (code >= 0x10000 && code <= 0x10ffff)
+  )
+}
+
+export function xmlText(value: string): string {
+  let text = ""
+  for (const char of value) {
+    const code = char.codePointAt(0)
+    if (code === undefined || !allowedChar(code)) continue
+    if (char === "&") text += "&amp;"
+    else if (char === "<") text += "&lt;"
+    else if (char === ">") text += "&gt;"
+    else text += char
+  }
+  return text
 }
 
 function paragraph(text: string): string {
   let xml = "<a:p></a:p>"
   xml = insertChild("a:p", "a:pPr", `<a:pPr algn="ctr"/>`, xml)
-  xml = insertChild("a:p", "a:r", `<a:r><a:t>${escapeText(text)}</a:t></a:r>`, xml)
+  xml = insertChild("a:p", "a:r", `<a:r><a:t>${xmlText(text)}</a:t></a:r>`, xml)
   xml = insertChild("a:p", "a:endParaRPr", `<a:endParaRPr lang="en-US"/>`, xml)
   return xml
 }
@@ -51,9 +73,15 @@ function shapeProperties(box: ShapeBox): string {
 
 export function addTextShape(slideXml: string, text: string, box: ShapeBox): string {
   const id = nextShapeId(slideXml)
-  const close = "</p:spTree>"
-  const at = slideXml.lastIndexOf(close)
-  if (at < 0) throw new Error("p:spTree")
   const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
-  return slideXml.slice(0, at) + shape + slideXml.slice(at)
+  const bytes = encodeUtf8(slideXml)
+  const document = markupDocument(bytes)
+  const tree = document.elements.find((element) => element.kind === "p:spTree")
+  if (!document.wellFormed || tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
+  const shapeBytes = encodeUtf8(shape)
+  const merged = new Uint8Array(tree.closeStart + shapeBytes.length + bytes.length - tree.closeStart)
+  merged.set(bytes.subarray(0, tree.closeStart), 0)
+  merged.set(shapeBytes, tree.closeStart)
+  merged.set(bytes.subarray(tree.closeStart), tree.closeStart + shapeBytes.length)
+  return decodeUtf8(merged)
 }

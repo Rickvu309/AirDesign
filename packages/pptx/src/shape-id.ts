@@ -1,6 +1,6 @@
-import { decodeLatin1 } from "./package-bytes.js"
+import { markupDocument } from "./element-span.js"
+import { encodeUtf8 } from "./package-bytes.js"
 
-const shapeTag = /<p:cNvPr(?=[\s>/])(?:[^>"']|"[^"]*"|'[^']*')*\bid="([^"]+)"/g
 const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
 
@@ -10,18 +10,21 @@ export type ShapeIdCount = {
   readonly count: number
 }
 
-function shapeIdsIn(xml: string): readonly string[] {
-  shapeTag.lastIndex = 0
+function shapeIdsIn(bytes: Uint8Array): readonly string[] {
   const ids: string[] = []
-  for (const match of xml.matchAll(shapeTag)) {
-    const id = match[1]
-    if (id !== undefined) ids.push(id)
+  for (const element of markupDocument(bytes).elements) {
+    if (element.kind !== "p:cNvPr" || element.id === null) continue
+    ids.push(element.id)
   }
   return ids
 }
 
 function numericId(id: string): number | null {
-  if (!/^[0-9]+$/.test(id)) return null
+  if (id.length === 0) return null
+  for (const char of id) {
+    const code = char.codePointAt(0)
+    if (code === undefined || code < 48 || code > 57) return null
+  }
   const value = Number(id)
   if (!Number.isSafeInteger(value) || value > maxShapeId) return null
   return value
@@ -32,7 +35,7 @@ export function shapeIdCounts(parts: ReadonlyMap<string, Uint8Array>): readonly 
   for (const [name, bytes] of parts) {
     if (!shapePart.test(name)) continue
     const counts = new Map<string, number>()
-    for (const id of shapeIdsIn(decodeLatin1(bytes))) counts.set(id, (counts.get(id) ?? 0) + 1)
+    for (const id of shapeIdsIn(bytes)) counts.set(id, (counts.get(id) ?? 0) + 1)
     for (const [id, count] of counts) rows.push({ part: name, id, count })
   }
   return rows
@@ -40,7 +43,7 @@ export function shapeIdCounts(parts: ReadonlyMap<string, Uint8Array>): readonly 
 
 export function nextShapeId(partXml: string): number {
   let max = 0
-  for (const id of shapeIdsIn(partXml)) {
+  for (const id of shapeIdsIn(encodeUtf8(partXml))) {
     const value = numericId(id)
     if (value !== null && value > max) max = value
   }

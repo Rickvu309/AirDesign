@@ -318,6 +318,9 @@ importers:
       '@zip.js/zip.js':
         specifier: 2.24.0
         version: 2.24.0
+      sax-wasm:
+        specifier: 3.3.0
+        version: 3.3.0
     devDependencies:
       oxlint:
         specifier: ^1.90.0
@@ -3332,6 +3335,10 @@ packages:
 
   satteri@0.11.7:
     resolution: {integrity: sha512-xDOSxkc1ew3z3IovIjmsqJaVHRXTGYJkPvx0LL/U6o90km8kSU+pmrZVvnWd5creJeE0UnvMEienlkPuYQdJaA==}
+
+  sax-wasm@3.3.0:
+    resolution: {integrity: sha512-vCjSx9+bzvQuzXfpiLwqcv7/0V41UT9R+ayMCtKAUS3fjlFW3yPZIaxGWUAbVEvnCZMRQRyulzPppdOUmQym7A==}
+    engines: {node: '>=16.4.0'}
 
   sax@1.6.1:
     resolution: {integrity: sha512-42tBVwLWnaQvW5zc4HbZrTuWccECCZfBi92FDuwtqxasH+JbPB3/FOKb1m222K42R4WxuxzzMsTswfzgtSu64Q==}
@@ -6403,6 +6410,8 @@ snapshots:
       '@bruits/satteri-wasm32-wasi': 0.11.7
       '@bruits/satteri-win32-arm64-msvc': 0.11.7
       '@bruits/satteri-win32-x64-msvc': 0.11.7
+
+  sax-wasm@3.3.0: {}
 
   sax@1.6.1: {}
 

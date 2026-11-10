@@ -1,5 +1,6 @@
+import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { addTextShape } from "./shape-write.js"
+import { addTextShape, xmlText } from "./shape-write.js"
 
 export type SlideRoute =
   | { readonly name: "text"; readonly part: string; readonly shape: string; readonly text: string }
@@ -16,111 +17,185 @@ export type SlideRoute =
     }
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
 
+const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
+const runKinds = new Set(["a:r", "a:br", "a:fld"])
+const emptyBytes = new Uint8Array(0)
+const textOpen = encodeUtf8("<a:t>")
+const textClose = encodeUtf8("</a:t>")
+
 function emu(value: number): number {
   if (!Number.isInteger(value)) throw new Error("emu")
   return value
 }
 
-function escapeText(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return false
+  }
+  return true
 }
 
-function shapeSlice(xml: string, shape: string): { readonly start: number; readonly end: number } {
-  const marker = `<p:cNvPr id="${shape}"`
-  const idAt = xml.indexOf(marker)
-  if (idAt < 0) throw new Error("shape")
-  const plain = xml.lastIndexOf("<p:sp>", idAt)
-  const attributed = xml.lastIndexOf("<p:sp ", idAt)
-  const start = Math.max(plain, attributed)
-  if (start < 0) throw new Error("shape")
-  let depth = 0
-  for (let index = start; index < xml.length;) {
-    if (xml.startsWith("</p:sp>", index)) {
-      depth -= 1
-      if (depth === 0) return { start, end: index + "</p:sp>".length }
-      index += "</p:sp>".length
-      continue
+function requireMarkup(bytes: Uint8Array): MarkupDocument {
+  const document = markupDocument(bytes)
+  if (!document.wellFormed) throw new Error("xml")
+  return document
+}
+
+function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
+  for (const mark of elements) {
+    if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
+    let parent = mark.parent
+    while (parent >= 0) {
+      const ancestor = elements[parent]
+      if (ancestor === undefined) break
+      if (shapeKinds.has(ancestor.kind)) return ancestor
+      parent = ancestor.parent
     }
-    if (xml.startsWith("<p:sp>", index) || xml.startsWith("<p:sp ", index)) {
-      depth += 1
-      index += "<p:sp".length
-      continue
-    }
-    index += 1
   }
   throw new Error("shape")
 }
 
-function replaceShape(xml: string, shape: string, edit: (shapeXml: string) => string): string {
-  const span = shapeSlice(xml, shape)
-  const current = xml.slice(span.start, span.end)
-  const next = edit(current)
-  return xml.slice(0, span.start) + next + xml.slice(span.end)
+function owns(elements: readonly MarkupElement[], index: number, shape: MarkupElement): boolean {
+  let parent = elements[index]?.parent ?? -1
+  while (parent >= 0) {
+    const ancestor = elements[parent]
+    if (ancestor === undefined) return false
+    if (shapeKinds.has(ancestor.kind)) return ancestor.index === shape.index
+    parent = ancestor.parent
+  }
+  return false
 }
 
-function replaceText(shapeXml: string, text: string): string {
-  const open = shapeXml.indexOf("<a:t")
-  if (open < 0) throw new Error("text")
-  const start = shapeXml.indexOf(">", open)
-  const end = shapeXml.indexOf("</a:t>", start)
-  if (start < 0 || end < 0) throw new Error("text")
-  return shapeXml.slice(0, start + 1) + escapeText(text) + shapeXml.slice(end)
+function inside(elements: readonly MarkupElement[], index: number, ancestor: MarkupElement): boolean {
+  let parent = elements[index]?.parent ?? -1
+  while (parent >= 0) {
+    if (parent === ancestor.index) return true
+    const next = elements[parent]
+    if (next === undefined) return false
+    parent = next.parent
+  }
+  return false
 }
 
-function replaceAttributes(shapeXml: string, tagName: string, values: readonly (readonly [string, string])[]): string {
-  const open = shapeXml.indexOf(`<${tagName} `)
-  if (open < 0) throw new Error(tagName)
-  const close = shapeXml.indexOf("/>", open)
-  if (close < 0) throw new Error(tagName)
-  let tag = shapeXml.slice(open, close + 2)
-  for (const [name, value] of values) {
-    const pattern = new RegExp(`\\b${name}="-?\\d+"`)
-    if (pattern.exec(tag) === null) throw new Error(tagName)
-    tag = tag.replace(pattern, `${name}="${value}"`)
-  }
-  return shapeXml.slice(0, open) + tag + shapeXml.slice(close + 2)
+function textElement(escaped: Uint8Array): Uint8Array {
+  const next = new Uint8Array(textOpen.length + escaped.length + textClose.length)
+  next.set(textOpen, 0)
+  next.set(escaped, textOpen.length)
+  next.set(textClose, textOpen.length + escaped.length)
+  return next
 }
 
-function editPart(xml: string, route: SlideRoute): string {
-  if (route.name === "text") return replaceShape(xml, route.shape, (shapeXml) => replaceText(shapeXml, route.text))
-  if (route.name === "move") {
-    const x = String(emu(route.x))
-    const y = String(emu(route.y))
-    return replaceShape(xml, route.shape, (shapeXml) =>
-      replaceAttributes(shapeXml, "a:off", [
-        ["x", x],
-        ["y", y],
-      ]),
-    )
+function textEdit(element: MarkupElement, escaped: Uint8Array): ByteEdit {
+  if (element.selfClosing) return { start: element.start, end: element.end, next: textElement(escaped) }
+  if (element.closeStart < element.openEnd) throw new Error("text")
+  return { start: element.openEnd, end: element.closeStart, next: escaped }
+}
+
+function textEdits(elements: readonly MarkupElement[], shape: MarkupElement, text: string): readonly ByteEdit[] {
+  const runs: MarkupElement[] = []
+  const texts: MarkupElement[] = []
+  for (const element of elements) {
+    if (!owns(elements, element.index, shape)) continue
+    if (runKinds.has(element.kind)) runs.push(element)
+    if (element.kind === "a:t") texts.push(element)
   }
-  if (route.name === "resize") {
-    const cx = String(emu(route.cx))
-    const cy = String(emu(route.cy))
-    return replaceShape(xml, route.shape, (shapeXml) =>
-      replaceAttributes(shapeXml, "a:ext", [
-        ["cx", cx],
-        ["cy", cy],
-      ]),
-    )
+  const firstRun = runs.find((element) => element.kind === "a:r")
+  const escaped = encodeUtf8(xmlText(text))
+  const edits: ByteEdit[] = []
+  const remove = (element: MarkupElement) => {
+    edits.push({ start: element.start, end: element.end, next: emptyBytes })
   }
-  if (route.name === "add") {
-    return addTextShape(xml, route.text, {
-      x: emu(route.x),
-      y: emu(route.y),
-      cx: emu(route.cx),
-      cy: emu(route.cy),
-    })
+  if (firstRun !== undefined) {
+    const inner = texts.filter((element) => inside(elements, element.index, firstRun))
+    const firstText = inner[0]
+    if (firstText === undefined) {
+      if (firstRun.closeStart < 0) throw new Error("text")
+      edits.push({ start: firstRun.closeStart, end: firstRun.closeStart, next: textElement(escaped) })
+    } else {
+      edits.push(textEdit(firstText, escaped))
+      for (const extra of inner.slice(1)) remove(extra)
+    }
+    for (const run of runs) {
+      if (run.index !== firstRun.index) remove(run)
+    }
+    for (const extra of texts) {
+      if (inside(elements, extra.index, firstRun)) continue
+      const covered = runs.some((run) => run.index !== firstRun.index && inside(elements, extra.index, run))
+      if (!covered) remove(extra)
+    }
+    return edits
   }
-  const span = shapeSlice(xml, route.shape)
-  return xml.slice(0, span.start) + xml.slice(span.end)
+  const firstText = texts[0]
+  if (firstText === undefined) throw new Error("text")
+  edits.push(textEdit(firstText, escaped))
+  for (const extra of texts.slice(1)) remove(extra)
+  for (const run of runs) remove(run)
+  return edits
+}
+
+function attributeEdit(element: MarkupElement, name: string, value: string): ByteEdit {
+  const attribute = element.attributes.find((item) => item.name === name)
+  if (attribute === undefined) throw new Error(element.kind)
+  return { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }
+}
+
+function firstOwned(elements: readonly MarkupElement[], shape: MarkupElement, kind: string): MarkupElement {
+  for (const element of elements) {
+    if (element.kind === kind && owns(elements, element.index, shape)) return element
+  }
+  throw new Error(kind)
+}
+
+function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
+  switch (route.name) {
+    case "text": {
+      const document = requireMarkup(bytes)
+      const shape = shapeById(document.elements, route.shape)
+      return spliceBytes(bytes, textEdits(document.elements, shape, route.text))
+    }
+    case "move": {
+      const x = emu(route.x)
+      const y = emu(route.y)
+      const document = requireMarkup(bytes)
+      const shape = shapeById(document.elements, route.shape)
+      const off = firstOwned(document.elements, shape, "a:off")
+      return spliceBytes(bytes, [attributeEdit(off, "x", String(x)), attributeEdit(off, "y", String(y))])
+    }
+    case "resize": {
+      const cx = emu(route.cx)
+      const cy = emu(route.cy)
+      const document = requireMarkup(bytes)
+      const shape = shapeById(document.elements, route.shape)
+      const ext = firstOwned(document.elements, shape, "a:ext")
+      return spliceBytes(bytes, [attributeEdit(ext, "cx", String(cx)), attributeEdit(ext, "cy", String(cy))])
+    }
+    case "add":
+      return encodeUtf8(
+        addTextShape(decodeUtf8(bytes), route.text, {
+          x: emu(route.x),
+          y: emu(route.y),
+          cx: emu(route.cx),
+          cy: emu(route.cy),
+        }),
+      )
+    case "remove": {
+      const document = requireMarkup(bytes)
+      const shape = shapeById(document.elements, route.shape)
+      return spliceBytes(bytes, [{ start: shape.start, end: shape.end, next: emptyBytes }])
+    }
+    default: {
+      const unexpected: never = route
+      throw new Error(String(unexpected))
+    }
+  }
 }
 
 export function applyRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute): ReadonlyMap<string, Uint8Array> {
   const current = parts.get(route.part)
   if (current === undefined) throw new Error("part")
-  const xml = decodeUtf8(current)
-  const nextXml = editPart(xml, route)
+  const nextBytes = editPart(current, route)
   const next = new Map(parts)
-  next.set(route.part, nextXml === xml ? current : encodeUtf8(nextXml))
+  next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)
   return next
 }

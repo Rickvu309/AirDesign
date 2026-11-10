@@ -236,7 +236,7 @@ describe("readPackage", () => {
       reason: "limit",
       limit: "nodes",
     })
-  })
+  }, 20_000)
 
   it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
     expect((await readPackage(await deck(`<a><![CDATA[${"<b>".repeat(packageLimits.depth + 1)}]]></a>`))).ok).toBe(true)

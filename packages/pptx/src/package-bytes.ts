@@ -1,47 +1,22 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter } from "@zip.js/zip.js"
+import { markupDocument } from "./element-span.js"
 
 type Relationship = { readonly target: string; readonly external: boolean }
 
-function tagEnd(xml: string, from: number): number {
-  let quote: string | null = null
-  for (let index = from; index < xml.length; index += 1) {
-    const char = xml[index]
-    if (quote !== null) {
-      if (char === quote) quote = null
-      continue
-    }
-    if (char === '"' || char === "'") {
-      quote = char
-      continue
-    }
-    if (char === ">") return index
-  }
-  throw new Error("unclosed tag")
-}
-
-function attribute(tag: string, name: string): string | null {
-  const match = new RegExp(`\\b${name}="([^"]*)"`).exec(tag)
-  return match?.[1] ?? null
-}
-
 function readRelationships(xml: string): readonly Relationship[] {
+  const document = markupDocument(encodeUtf8(xml))
+  if (!document.wellFormed) throw new Error("unclosed tag")
   const found: Relationship[] = []
-  const name = "<Relationship"
-  let index = 0
-  while (index < xml.length) {
-    const at = xml.indexOf(name, index)
-    if (at < 0) break
-    const next = xml[at + name.length]
-    if (next !== " " && next !== "\n" && next !== "\t" && next !== "/" && next !== ">") {
-      index = at + name.length
-      continue
+  for (const element of document.elements) {
+    if (element.kind !== "Relationship") continue
+    let target: string | null = null
+    let external = false
+    for (const attribute of element.attributes) {
+      if (attribute.name === "Target") target = attribute.value
+      if (attribute.name === "TargetMode") external = attribute.value === "External"
     }
-    const end = tagEnd(xml, at)
-    const tag = xml.slice(at, end + 1)
-    const target = attribute(tag, "Target")
     if (target === null) throw new Error("relationship target")
-    found.push({ target, external: attribute(tag, "TargetMode") === "External" })
-    index = end + 1
+    found.push({ target, external })
   }
   return found
 }
