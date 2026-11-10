@@ -117,3 +117,72 @@ it("adds any id except the one openRegister created", () => {
   expect(history(other)).toEqual([])
   expect(currentValue(other)).toBe("two")
 })
+
+const methodNames = ["toString", "constructor", "__proto__", "hasOwnProperty", "valueOf"] as const
+
+function rootPicture(register: Register): string {
+  return JSON.stringify({
+    route: register.route,
+    floor: register.floor,
+    landed: register.landed,
+    phase: register.phase,
+    runId: register.runId,
+    readAt: register.readAt,
+    guarded: register.guarded,
+    claimed: register.claimed,
+    stoppedAt: register.stoppedAt,
+    slides: register.slides,
+    bytes: register.bytes,
+  })
+}
+
+function elementPicture(register: Register, id: ElementId): string {
+  if (!Object.hasOwn(register.elements, id)) return "null"
+  return JSON.stringify(register.elements[id] ?? null)
+}
+
+function readBody(register: Register, id: ElementId) {
+  if (!Object.hasOwn(register.elements, id)) throw new Error("missing element")
+  const body = register.elements[id]
+  if (body === undefined) throw new Error("missing element")
+  return body
+}
+
+it("opens a plain body for an id that names an object method", () => {
+  for (const name of methodNames) {
+    const id = elementId(name)
+    const sibling = elementId("258.7")
+    const opened = openRegister("floor", "slide")
+    const siblingAdded = decide(opened, { command: "add", node: sibling, floor: "sib", route: "part" })
+    if (siblingAdded.decision !== "apply") throw new Error("sibling")
+    const root = rootPicture(siblingAdded.register)
+    const other = elementPicture(siblingAdded.register, sibling)
+    const added = decide(siblingAdded.register, { command: "add", node: id, floor: "base", route: "part" })
+    expect(added.decision).toBe("apply")
+    if (added.decision !== "apply") throw new Error("add")
+    expect(rootPicture(added.register)).toBe(root)
+    expect(elementPicture(added.register, sibling)).toBe(other)
+    const nodes = [...added.register.nodes]
+    const edited = decide(added.register, { command: "person", node: id, value: "typed" })
+    expect(edited.decision).toBe("apply")
+    if (edited.decision !== "apply") throw new Error("edit")
+    expect(currentValue(readBody(edited.register, id))).toBe("typed")
+    expect(rootPicture(edited.register)).toBe(root)
+    expect(elementPicture(edited.register, sibling)).toBe(other)
+    expect(edited.register.nodes).toEqual(nodes)
+    const carried = JSON.parse(JSON.stringify(edited.register)) as Register
+    expect(Object.hasOwn(carried.elements, id)).toBe(true)
+    expect(currentValue(readBody(carried, id))).toBe("typed")
+    const again = decide(carried, { command: "person", node: id, value: "again" })
+    expect(again.decision).toBe("apply")
+    if (again.decision !== "apply") throw new Error("round trip")
+    expect(currentValue(readBody(again.register, id))).toBe("again")
+    expect(rootPicture(again.register)).toBe(rootPicture(carried))
+    expect(elementPicture(again.register, sibling)).toBe(elementPicture(carried, sibling))
+    const fresh = openRegister("floor", "slide")
+    expect(decide(fresh, { command: "person", node: id, value: "nope" })).toEqual({
+      decision: "refuse",
+      code: "dead",
+    })
+  }
+})

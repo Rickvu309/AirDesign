@@ -1,5 +1,5 @@
 import { elementId, type ElementId } from "./element-id.js"
-import { overLimit } from "./limits.js"
+import { limits, overLimit } from "./limits.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
 
@@ -134,8 +134,13 @@ function pairedBody(register: Register): NodeRegister | null {
   return body
 }
 
+function ownBody(elements: ElementMap, id: ElementId): NodeRegister | null {
+  if (!Object.hasOwn(elements, id)) return null
+  return elements[id] ?? null
+}
+
 function elementsOf(register: Register, id: ElementId): ElementMap {
-  if (register.elements[id] !== undefined) return register.elements
+  if (ownBody(register.elements, id) !== null) return register.elements
   if (id !== elementId("b")) return register.elements
   const paired = pairedBody(register)
   if (paired === null) return register.elements
@@ -144,7 +149,7 @@ function elementsOf(register: Register, id: ElementId): ElementMap {
 
 function storedBody(register: Register, id: ElementId): NodeRegister | null {
   if (id === openedElement) return nodeOf(register)
-  return elementsOf(register, id)[id] ?? null
+  return ownBody(elementsOf(register, id), id)
 }
 
 function place(register: Register, id: ElementId, body: NodeRegister): Decision {
@@ -233,8 +238,11 @@ function addNode(register: Register, id: ElementId, floor: string, route: string
   if (id === openedElement || register.nodes.includes(id)) {
     return refuse("present")
   }
+  if (register.nodes.length >= limits.elements) {
+    return refuse("limit")
+  }
   const elements = elementsOf(register, id)
-  const kept = elements[id]
+  const kept = ownBody(elements, id)
   const body = kept ?? openNode(floor, route)
   return apply({
     ...register,
