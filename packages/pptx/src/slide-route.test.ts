@@ -57,6 +57,25 @@ describe("applyRoute", () => {
     expect(restored.get(part)).toEqual(before.get(part))
   })
 
+  it("resizes the transform extent when a markup extension comes first", () => {
+    const uri = "{FF2B5EF4-FFF2-40B4-BE49-F238E27FC236}"
+    const marked = slide.replace(
+      "<p:cNvSpPr/><p:nvPr/>",
+      `<p:cNvSpPr/><p:nvPr><a:extLst><a:ext uri="${uri}"/></a:extLst></p:nvPr>`,
+    )
+    const before = new Map<string, Uint8Array>([
+      [part, encodeUtf8(marked)],
+      [kept, Uint8Array.from([1, 2, 3])],
+    ])
+    const resized = applyRoute(before, { name: "resize", part, shape: "2", cx: 100, cy: 200 })
+    expect(resized.get(kept)).toBe(before.get(kept))
+    expect(xml(resized)).toContain(`<a:ext uri="${uri}"/>`)
+    expect(xml(resized)).toContain('<a:ext cx="0" cy="0"/>')
+    expect(xml(resized).replace('<a:ext cx="100" cy="200"/>', '<a:ext cx="5486400" cy="1828800"/>')).toBe(marked)
+    const restored = applyRoute(resized, { name: "resize", part, shape: "2", cx: 5486400, cy: 1828800 })
+    expect(restored.get(part)).toEqual(before.get(part))
+  })
+
   it("does not treat a longer shape id as the requested one", () => {
     const tree = `<p:spTree><p:sp><p:cNvPr id="20" name="Other"/><a:t>No</a:t><a:off x="1" y="1"/><a:ext cx="1" cy="1"/></p:sp><p:sp><p:cNvPr id="2" name="This"/><a:t>Yes</a:t><a:off x="2" y="2"/><a:ext cx="3" cy="4"/></p:sp></p:spTree>`
     const name = "ppt/slides/slide2.xml"
