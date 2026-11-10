@@ -200,6 +200,26 @@ same(
   [`The judge missed second, recorded caught: a.pptx, slide 2. ${again}`],
 )
 same(
+  "a listed miss does not excuse the same kind on another deck",
+  proofFailures({
+    recorded: recordedCaught,
+    judged: [sample("first", false), sample("second", true), sample("second", true, { deck: "b.pptx" })],
+    seed: 5,
+    known: knownMiss,
+  }),
+  [`The judge missed second, recorded caught: b.pptx, slide 2. ${again}`],
+)
+same(
+  "a listed miss does not excuse the same kind at another place in the deck",
+  proofFailures({
+    recorded: recordedCaught,
+    judged: [sample("first", false), sample("second", true), sample("second", true, { what: "slide 3" })],
+    seed: 5,
+    known: knownMiss,
+  }),
+  [`The judge missed second, recorded caught: a.pptx, slide 3. ${again}`],
+)
+same(
   "a chosen or random seed says to fix the cause and add the seed",
   proofFailures({
     recorded: { ...recordedCaught, third: "caught" },
