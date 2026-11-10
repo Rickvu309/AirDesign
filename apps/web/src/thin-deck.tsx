@@ -1,6 +1,14 @@
-import { currentValue, type Kind, type Register } from "@airdesign/document"
+import { currentValue, type Kind, type Register, type TextValue } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
-import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ShapeKind } from "@airdesign/pptx"
+import {
+  applyRoute,
+  exportPackage,
+  oneRunValue,
+  prepareMarkup,
+  readPackage,
+  readShapes,
+  type ShapeKind,
+} from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
@@ -37,6 +45,10 @@ function paintKind(kind: ShapeKind): Kind {
   return "shape"
 }
 
+function shownText(value: TextValue): string {
+  return value.flatMap((line) => line.runs.map((run) => (run.text === "\n" ? "" : run.text))).join("")
+}
+
 function linkedId(node: { readonly part: string; readonly shape: string }): ElementId {
   return elementId(`${node.part}#${node.shape}`)
 }
@@ -56,7 +68,7 @@ function paint(
     store.publish({
       id,
       kind,
-      text: id === anchor && text !== null ? text : shape.text,
+      text: id === anchor && text !== null ? text : shownText(shape.text),
       picture: kind === "picture" ? "" : null,
     })
     next.push(id)
@@ -91,7 +103,10 @@ export function exportedParts(
   register: Register,
 ): ReadonlyMap<string, Uint8Array> {
   if (register.landed.length === 0) return parts
-  return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, text: currentValue(register) })
+  const read = readShapes(parts).find((shape) => shape.part === node.part && shape.shape === node.shape)
+  if (read === undefined) throw new Error("shape")
+  const value = oneRunValue(read.text, currentValue(register))
+  return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, value })
 }
 
 export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uint8Array): Promise<string | null> {

@@ -343,8 +343,8 @@ const words = (random) => `${random.word()} ${random.word()} ${random.between(1,
 
 export const benignKinds = {
   "text replaced": routed(
-    (random) => ({ name: "text", text: words(random) }),
-    (asked) => asked.text,
+    (random) => ({ name: "text", value: [{ from: 0, runs: [{ from: 0, text: words(random) }] }] }),
+    (asked) => asked.value[0].runs[0].text,
   ),
   "shape moved": routed(
     (random) => ({ name: "move", x: emu(random), y: emu(random) }),

@@ -39,19 +39,20 @@ describe("readShapes", () => {
         shape: "2",
         kind: "p:sp",
         box: { x: 457200, y: 457200, cx: 5486400, cy: 1828800 },
-        text: "Hello",
+        text: [{ from: 0, runs: [{ from: 0, text: "Hello" }] }],
         locked: false,
       },
     ])
-    const edited = applyRoute(parts, { name: "text", part: "ppt/slides/slide1.xml", shape: "2", text: "Next" })
-    expect(readShapes(edited)).toEqual([{ ...before[0], text: "Next" }])
+    const next = [{ from: 0, runs: [{ from: 0, text: "Next" }] }]
+    const edited = applyRoute(parts, { name: "text", part: "ppt/slides/slide1.xml", shape: "2", value: next })
+    expect(readShapes(edited)).toEqual([{ ...before[0], text: next }])
   })
 
   it("keeps each grouped and placeholder shape once", async () => {
     const parts = await readParts(readFileSync(fixture("census-updating-spm.pptx")))
     const shapes = readShapes(parts)
     expect(shapes.some((shape) => shape.kind === "p:grpSp")).toBe(true)
-    expect(shapes.some((shape) => shape.text === "")).toBe(true)
+    expect(shapes.some((shape) => shape.text.length === 0)).toBe(true)
     expect(shapes.filter((shape) => shape.locked)).toHaveLength(1)
     let hosts = 0
     for (const [name, bytes] of parts) {

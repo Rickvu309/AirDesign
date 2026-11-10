@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute, writeRoute } from "./slide-route.js"
+import type { TextValue } from "@airdesign/document"
 
 const slide = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="Rectangle 2"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="457200" y="457200"/><a:ext cx="5486400" cy="1828800"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:schemeClr val="accent1"/></a:solidFill></p:spPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:pPr/><a:r><a:rPr lang="en-US" sz="3200"><a:solidFill><a:schemeClr val="dk1"/></a:solidFill></a:rPr><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`
 const part = "ppt/slides/slide1.xml"
 const kept = "ppt/media/keep.bin"
+const oneRun = (text: string): TextValue => [{ from: 0, runs: [{ from: 0, text }] }]
 
 function parts(): Map<string, Uint8Array> {
   return new Map([
@@ -26,17 +28,17 @@ function xml(map: ReadonlyMap<string, Uint8Array>): string {
 describe("applyRoute", () => {
   it("replaces one shape's text and leaves every other byte", () => {
     const before = parts()
-    const edited = applyRoute(before, { name: "text", part, shape: "2", text: "A & B" })
+    const edited = applyRoute(before, { name: "text", part, shape: "2", value: oneRun("A & B") })
     expect(edited.get(kept)).toBe(before.get(kept))
     expect(xml(edited).replace("<a:t>A &amp; B</a:t>", "<a:t>Hello</a:t>")).toBe(slide)
     expect(xml(edited).indexOf("<a:pPr")).toBeLessThan(xml(edited).indexOf("<a:t>"))
-    const back = applyRoute(edited, { name: "text", part, shape: "2", text: "Hello" })
+    const back = applyRoute(edited, { name: "text", part, shape: "2", value: oneRun("Hello") })
     expect(back.get(part)).toEqual(before.get(part))
   })
 
   it("keeps the part object when the route changes nothing", () => {
     const before = parts()
-    const sameText = applyRoute(before, { name: "text", part, shape: "2", text: "Hello" })
+    const sameText = applyRoute(before, { name: "text", part, shape: "2", value: oneRun("Hello") })
     const sameMove = applyRoute(before, { name: "move", part, shape: "2", x: 457200, y: 457200 })
     const sameSize = applyRoute(before, { name: "resize", part, shape: "2", cx: 5486400, cy: 1828800 })
     expect(sameText.get(part)).toBe(before.get(part))
@@ -48,7 +50,7 @@ describe("applyRoute", () => {
   it("leaves the other slide, relationships, and content types as the same object", () => {
     const before = parts()
     const routes = [
-      { name: "text" as const, part, shape: "2", text: "A" },
+      { name: "text" as const, part, shape: "2", value: oneRun("A") },
       { name: "move" as const, part, shape: "2", x: 10, y: 20 },
       { name: "resize" as const, part, shape: "2", cx: 30, cy: 40 },
       { name: "add" as const, part, text: "New", x: 0, y: 0, cx: 1, cy: 1 },
@@ -121,7 +123,7 @@ describe("applyRoute", () => {
     const tree = `<p:spTree><p:sp><p:cNvPr id="20" name="Other"/><p:txBody><a:p><a:r><a:t>No</a:t></a:r></a:p></p:txBody><a:off x="1" y="1"/><a:ext cx="1" cy="1"/></p:sp><p:sp><p:cNvPr id="2" name="This"/><p:txBody><a:p><a:r><a:t>Yes</a:t></a:r></a:p></p:txBody><a:off x="2" y="2"/><a:ext cx="3" cy="4"/></p:sp></p:spTree>`
     const name = "ppt/slides/slide2.xml"
     const before = new Map([[name, encodeUtf8(tree)]])
-    const edited = applyRoute(before, { name: "text", part: name, shape: "2", text: "Hi" })
+    const edited = applyRoute(before, { name: "text", part: name, shape: "2", value: oneRun("Hi") })
     const next = decodeUtf8(edited.get(name) ?? encodeUtf8(""))
     expect(next).toContain('<p:cNvPr id="20" name="Other"/><p:txBody><a:p><a:r><a:t>No</a:t></a:r></a:p></p:txBody>')
     expect(next).toContain("<a:t>Hi</a:t>")
@@ -151,8 +153,8 @@ describe("applyRoute", () => {
 
   it("refuses a missing part, a group id, and a fractional length", () => {
     const before = parts()
-    expect(() => applyRoute(before, { name: "text", part: "missing", shape: "2", text: "A" })).toThrow(/part/)
-    expect(() => applyRoute(before, { name: "text", part, shape: "1", text: "A" })).toThrow(/shape/)
+    expect(() => applyRoute(before, { name: "text", part: "missing", shape: "2", value: oneRun("A") })).toThrow(/part/)
+    expect(() => applyRoute(before, { name: "text", part, shape: "1", value: oneRun("A") })).toThrow(/shape/)
     expect(() => applyRoute(before, { name: "move", part, shape: "2", x: 1.5, y: 0 })).toThrow(/emu/)
     expect(() => applyRoute(before, { name: "resize", part, shape: "2", cx: 1, cy: 1.2 })).toThrow(/emu/)
   })
@@ -168,10 +170,10 @@ function edited(tree: string, route: Parameters<typeof applyRoute>[1]): string {
   return xml(applyRoute(new Map([[part, encodeUtf8(`<p:spTree>${tree}</p:spTree>`)]]), route))
 }
 
-function refused(tree: string, route: Parameters<typeof applyRoute>[1]): void {
+function refused(tree: string, value: TextValue, message: RegExp): void {
   const bytes = encodeUtf8(`<p:spTree>${tree}</p:spTree>`)
   const saved = Uint8Array.from(bytes)
-  expect(() => applyRoute(new Map([[part, bytes]]), route)).toThrow(/text-shape/)
+  expect(() => applyRoute(new Map([[part, bytes]]), { name: "text", part, shape: "2", value })).toThrow(message)
   expect(bytes).toEqual(saved)
 }
 
@@ -192,16 +194,37 @@ describe("applyRoute known failures", () => {
     expect(next).toContain('<a:off x="777" y="777"/>')
   })
 
-  it("refuses a shape that has two runs", () => {
-    refused(shape("2", run("Hello ") + run("world")), { name: "text", part, shape: "2", text: "New" })
+  it("retypes the first of two runs and keeps the second", () => {
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "New" },
+          { from: 1, text: "world" },
+        ],
+      },
+    ]
+    const next = edited(shape("2", run("Hello ") + run("world")), { name: "text", part, shape: "2", value })
+    expect(next).toContain("<a:r><a:t>New</a:t></a:r><a:r><a:t>world</a:t></a:r>")
+    expect(next).not.toContain("Hello")
   })
 
-  it("refuses a shape whose first run is empty", () => {
-    refused(shape("2", `<a:r><a:t/></a:r>${run("Keep")}`), { name: "text", part, shape: "2", text: "New" })
+  it("fills an empty first run and keeps the run after it", () => {
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "New" },
+          { from: 1, text: "Keep" },
+        ],
+      },
+    ]
+    const next = edited(shape("2", `<a:r><a:t/></a:r>${run("Keep")}`), { name: "text", part, shape: "2", value })
+    expect(next).toContain("<a:r><a:t>New</a:t></a:r><a:r><a:t>Keep</a:t></a:r>")
   })
 
   it("keeps a character XML forbids out of the slide", () => {
-    const next = edited(shape("2", run("Old")), { name: "text", part, shape: "2", text: "a\u0001b" })
+    const next = edited(shape("2", run("Old")), { name: "text", part, shape: "2", value: oneRun("a\u0001b") })
     expect(next).not.toContain("\u0001")
     expect(shownText(next)).toBe("ab")
   })
@@ -277,26 +300,38 @@ describe("applyRoute markup", () => {
     expect(text).not.toContain(`x="9"`)
   })
 
-  it("refuses a shape whose first run is self-closing", () => {
+  it("fills a self-closing first run and keeps the second run and its format", () => {
     const tree = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:p><a:r><a:rPr lang="en-US"/><a:t/></a:r><a:r><a:rPr b="1"/><a:t>Second</a:t></a:r></a:p></p:txBody></p:sp>`
     const name = "ppt/slides/slide4.xml"
-    const bytes = encodeUtf8(tree)
-    const saved = Uint8Array.from(bytes)
-    expect(() => applyRoute(new Map([[name, bytes]]), { name: "text", part: name, shape: "2", text: "New" })).toThrow(
-      /text-shape/,
-    )
-    expect(bytes).toEqual(saved)
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "New" },
+          { from: 1, text: "Second" },
+        ],
+      },
+    ]
+    const edited = applyRoute(new Map([[name, encodeUtf8(tree)]]), { name: "text", part: name, shape: "2", value })
+    const after = decodeUtf8(edited.get(name) ?? encodeUtf8(""))
+    expect(after).toContain(`<a:rPr lang="en-US"/><a:t>New</a:t></a:r><a:r><a:rPr b="1"/><a:t>Second</a:t></a:r>`)
   })
 
-  it("refuses a second run the edit did not retype", () => {
+  it("keeps a second run the edit did not retype", () => {
     const tree = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:p><a:r><a:rPr lang="en-US"/><a:t>Hello </a:t></a:r><a:r><a:rPr b="1"/><a:t>world</a:t></a:r></a:p></p:txBody></p:sp>`
     const name = "ppt/slides/slide5.xml"
-    const bytes = encodeUtf8(tree)
-    const saved = Uint8Array.from(bytes)
-    expect(() => applyRoute(new Map([[name, bytes]]), { name: "text", part: name, shape: "2", text: "New" })).toThrow(
-      /text-shape/,
-    )
-    expect(bytes).toEqual(saved)
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "New" },
+          { from: 1, text: "world" },
+        ],
+      },
+    ]
+    const edited = applyRoute(new Map([[name, encodeUtf8(tree)]]), { name: "text", part: name, shape: "2", value })
+    const after = decodeUtf8(edited.get(name) ?? encodeUtf8(""))
+    expect(after).toContain(`<a:rPr lang="en-US"/><a:t>New</a:t></a:r><a:r><a:rPr b="1"/><a:t>world</a:t></a:r>`)
   })
 
   it("drops characters XML 1.0 does not allow and escapes the rest", () => {
@@ -306,7 +341,7 @@ describe("applyRoute markup", () => {
       name: "text",
       part: name,
       shape: "2",
-      text: "A\u0001B&<>\u0008\t\uFFFE\uFFFF\uD800",
+      value: oneRun("A\u0001B&<>\u0008\t\uFFFE\uFFFF\uD800"),
     })
     const after = edited.get(name)
     if (after === undefined) throw new Error("part")
@@ -314,5 +349,128 @@ describe("applyRoute markup", () => {
     expect(decodeUtf8(after)).toContain("<a:t>AB&amp;&lt;&gt;\t</a:t>")
     expect(after.includes(1)).toBe(false)
     expect(after.includes(8)).toBe(false)
+  })
+})
+
+const paragraphs = (body: string): string =>
+  `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:bodyPr wrap="none"/><a:lstStyle/>${body}</p:txBody></p:sp>`
+const twoRuns = `<a:p><a:pPr algn="ctr"/><a:r><a:rPr b="1"/><a:t>Bold</a:t></a:r><a:r><a:rPr lang="en-US"/><a:t> plain</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`
+const fieldBox = `<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`
+const brokenBox = `<a:p><a:r><a:t>One</a:t></a:r><a:br/><a:r><a:t>Two</a:t></a:r></a:p>`
+
+describe("applyRoute text values", () => {
+  it("keeps the other runs of a box when one run's text changes", () => {
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "Bolder" },
+          { from: 1, text: " plain" },
+        ],
+      },
+    ]
+    const next = edited(paragraphs(twoRuns), { name: "text", part, shape: "2", value })
+    expect(next).toContain("<a:t> plain</a:t>")
+    expect(next).toContain(`<a:rPr b="1"/><a:t>Bolder</a:t>`)
+    expect(next.match(/<a:r>/g)).toHaveLength(2)
+    expect(next.replace("Bolder", "Bold")).toBe(`<p:spTree>${paragraphs(twoRuns)}</p:spTree>`)
+  })
+
+  it("writes text into a box that has no run", () => {
+    const empty = `<a:p><a:endParaRPr lang="en-US"/></a:p>`
+    const value = [{ from: 0, runs: [{ from: -1, text: "First" }] }]
+    const next = edited(paragraphs(empty), { name: "text", part, shape: "2", value })
+    expect(next).toBe(
+      `<p:spTree>${paragraphs(
+        `<a:p><a:r><a:rPr lang="en-US"/><a:t>First</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`,
+      )}</p:spTree>`,
+    )
+  })
+
+  it("splits a paragraph and merges it back to the original bytes", () => {
+    const original = `<a:p><a:pPr algn="r"/><a:r><a:rPr b="1"/><a:t>Hello world</a:t></a:r><a:endParaRPr sz="10"/></a:p>`
+    const name = "ppt/slides/slide8.xml"
+    const before = encodeUtf8(paragraphs(original))
+    const split = [
+      { from: 0, runs: [{ from: 0, text: "Hello" }] },
+      { from: 0, runs: [{ from: 0, text: " world" }] },
+    ]
+    const afterSplit = applyRoute(new Map([[name, before]]), { name: "text", part: name, shape: "2", value: split })
+    expect(decodeUtf8(afterSplit.get(name) ?? encodeUtf8(""))).toContain(
+      `<a:p><a:pPr algn="r"/><a:r><a:rPr b="1"/><a:t>Hello</a:t></a:r><a:endParaRPr sz="10"/></a:p><a:p><a:pPr algn="r"/><a:r><a:rPr b="1"/><a:t> world</a:t></a:r><a:endParaRPr sz="10"/></a:p>`,
+    )
+    const merged = [{ from: 0, runs: [{ from: 0, text: "Hello world" }] }]
+    const fromOriginal = applyRoute(new Map([[name, before]]), { name: "text", part: name, shape: "2", value: merged })
+    expect(fromOriginal.get(name)).toBe(before)
+    const fromSplit = applyRoute(afterSplit, { name: "text", part: name, shape: "2", value: merged })
+    expect(fromSplit.get(name)).toEqual(before)
+  })
+
+  it("refuses an edit to a field's text", () => {
+    refused(paragraphs(fieldBox), [{ from: 0, runs: [{ from: 0, text: "8" }] }], /text-carried/)
+  })
+
+  it("refuses an edit to a break", () => {
+    refused(
+      paragraphs(brokenBox),
+      [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "One" },
+            { from: 1, text: "x" },
+            { from: 2, text: "Two" },
+          ],
+        },
+      ],
+      /text-carried/,
+    )
+  })
+
+  it("refuses a newline typed inside a run", () => {
+    refused(
+      paragraphs(twoRuns),
+      [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "a\nb" },
+            { from: 1, text: " plain" },
+          ],
+        },
+      ],
+      /text-break/,
+    )
+    refused(paragraphs(twoRuns), [{ from: 0, runs: [{ from: -1, text: "a\nb" }] }], /text-break/)
+  })
+
+  it("refuses a paragraph or a run the file does not have and writes nothing", () => {
+    refused(paragraphs(twoRuns), [{ from: 1, runs: [] }], /text-paragraph/)
+    refused(paragraphs(twoRuns), [{ from: 0, runs: [{ from: 2, text: "x" }] }], /text-run/)
+    refused(paragraphs(twoRuns), [{ from: 0, runs: [{ from: -2, text: "x" }] }], /text-run/)
+    refused(paragraphs(twoRuns), [], /text-empty/)
+    refused(picture("2"), oneRun("x"), /text-body/)
+  })
+
+  it("refuses to rebuild a paragraph holding an element the value cannot carry", () => {
+    const math = `<a:p><mc:AlternateContent><mc:Choice Requires="a14"><a14:m/></mc:Choice></mc:AlternateContent><a:r><a:t>x</a:t></a:r></a:p>`
+    refused(
+      paragraphs(math),
+      [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "x" },
+            { from: 0, text: "y" },
+          ],
+        },
+      ],
+      /text-carried/,
+    )
+  })
+
+  it("reads a numeric reference and leaves it alone when the text is unchanged", () => {
+    const body = paragraphs(`<a:p><a:r><a:t>&#65;&#x42;&amp;</a:t></a:r></a:p>`)
+    expect(edited(body, { name: "text", part, shape: "2", value: oneRun("AB&") })).toBe(`<p:spTree>${body}</p:spTree>`)
   })
 })

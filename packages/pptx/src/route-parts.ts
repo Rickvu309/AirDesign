@@ -1,9 +1,11 @@
+import type { TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8 } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
+import { markupChildren, shapeTextValue } from "./text-value-route.js"
 import { writtenRoutes } from "./written-routes.js"
 
 export type PartTouch = {
@@ -324,40 +326,50 @@ function slideNames(parts: ReadonlyMap<string, Uint8Array>): string[] {
   return [...parts.keys()].filter((name) => slideFileNumber(name) !== null).sort()
 }
 
-function plainText(bytes: Uint8Array, element: MarkupElement): string | null {
-  if (element.selfClosing || element.closeStart < element.openEnd) return null
-  let text: string
-  try {
-    text = decodeUtf8(bytes.subarray(element.openEnd, element.closeStart))
-  } catch {
-    return null
-  }
-  if (text.length === 0) return null
+function plainText(text: string): boolean {
+  if (text.length === 0) return false
   for (const char of text) {
     const code = char.charCodeAt(0)
-    if (code !== 9 && code !== 10 && code !== 13 && (code < 32 || code > 126)) return null
+    if (code !== 9 && code !== 10 && code !== 13 && (code < 32 || code > 126)) return false
   }
-  return text
+  return true
 }
 
-function textHost(parts: ReadonlyMap<string, Uint8Array>): { part: string; id: string; text: string } | null {
+const probeText = (text: string): string => (text === "AirDesignProbe" ? "AirDesignProbe2" : "AirDesignProbe")
+
+function probedValue(value: TextValue, runs: number): TextValue | null {
+  for (const [at, paragraph] of value.entries()) {
+    if (paragraph.runs.length < runs) continue
+    const target = paragraph.runs.findIndex((run) => plainText(run.text))
+    if (target < 0) continue
+    const runsAfter = paragraph.runs.map((run, index) =>
+      index === target ? { from: run.from, text: probeText(run.text) } : run,
+    )
+    return value.map((item, index) => (index === at ? { from: item.from, runs: runsAfter } : item))
+  }
+  return null
+}
+
+function textHost(parts: ReadonlyMap<string, Uint8Array>): { part: string; id: string; value: TextValue } | null {
+  let oneRun: { part: string; id: string; value: TextValue } | null = null
   for (const name of slideNames(parts)) {
     const bytes = parts.get(name)
     if (bytes === undefined) continue
-    for (const item of topShapes(bytes)) {
+    const shapes = topShapes(bytes)
+    const children = markupChildren(shapes[0]?.elements ?? [])
+    for (const item of shapes) {
       if (item.shape.kind !== "p:sp") continue
-      const runs = owned(item.elements, item.shape, "a:r")
-      const texts = owned(item.elements, item.shape, "a:t")
-      if (texts.length !== 1 || runs.length > 1) continue
       if (owned(item.elements, item.shape, "a:br").length > 0 || owned(item.elements, item.shape, "a:fld").length > 0) {
         continue
       }
-      const text = texts[0] === undefined ? null : plainText(bytes, texts[0])
-      if (text === null) continue
-      return { part: name, id: item.id, text }
+      const value = shapeTextValue(children, bytes, item.shape)
+      const several = probedValue(value, 2)
+      if (several !== null) return { part: name, id: item.id, value: several }
+      const single: TextValue | null = oneRun === null ? probedValue(value, 1) : null
+      if (single !== null) oneRun = { part: name, id: item.id, value: single }
     }
   }
-  return null
+  return oneRun
 }
 
 function integerAttr(element: MarkupElement, name: string): number | null {
@@ -524,7 +536,7 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       name: "text",
       part: text.part,
       shape: text.id,
-      text: text.text === "AirDesignProbe" ? "AirDesignProbe2" : "AirDesignProbe",
+      value: text.value,
     } as const
     runs.push(attempt("text", () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
   }

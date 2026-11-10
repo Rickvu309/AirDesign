@@ -163,8 +163,8 @@ function xml(text: string): Uint8Array {
 }
 
 function shapedParts(): Map<string, Uint8Array> {
-  const slide2 = `<p:sld><p:sp><p:cNvPr id="2"/><a:t>Other</a:t></p:sp></p:sld>`
-  const slide1 = `<p:sld><p:sp><p:cNvPr id="5"/><a:t>First</a:t></p:sp><p:sp><p:cNvPr id="2"/><a:t>Keep</a:t></p:sp><p:sp><p:cNvPr id="9"/><a:t>Last</a:t></p:sp></p:sld>`
+  const slide2 = `<p:sld><p:sp><p:cNvPr id="2"/><p:txBody><a:p><a:r><a:t>Other</a:t></a:r></a:p></p:txBody></p:sp></p:sld>`
+  const slide1 = `<p:sld><p:sp><p:cNvPr id="5"/><p:txBody><a:p><a:r><a:t>First</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id="2"/><p:txBody><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id="9"/><p:txBody><a:p><a:r><a:t>Last</a:t></a:r></a:p></p:txBody></p:sp></p:sld>`
   const presentation = `<p:presentation><p:sldIdLst><p:sldId id="452" r:id="rId3"/><p:sldId id="382" r:id="rId2"/></p:sldIdLst></p:presentation>`
   const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
   return new Map([
