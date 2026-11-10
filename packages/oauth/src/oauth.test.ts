@@ -264,6 +264,9 @@ describe("oauth", () => {
       },
       { requiredKeys: [] },
     )
+    const unknown = fc.dictionary(fc.string({ minLength: 1, maxLength: 6 }), fc.jsonValue({ maxDepth: 1 }), {
+      maxKeys: 3,
+    })
     const generation = fc.integer({ min: 0, max: 3 })
     const command: fc.Arbitrary<Command> = fc.oneof(
       { weight: 1, arbitrary: fc.constant<Command>({ command: "exchange" }) },
@@ -272,11 +275,11 @@ describe("oauth", () => {
       { weight: 1, arbitrary: fc.constant<Command>({ command: "revoke" }) },
     )
     fc.assert(
-      fc.property(fc.boolean(), fc.array(fc.tuple(command, extra), { maxLength: 10 }), (fresh, steps) => {
+      fc.property(fc.boolean(), fc.array(fc.tuple(command, extra, unknown), { maxLength: 10 }), (fresh, steps) => {
         let grant = fresh ? openGrant(principal) : exchanged()
-        for (const [plain, keys] of steps) {
+        for (const [plain, keys, words] of steps) {
           const clean = oauth(grant, plain)
-          const dirty = oauth(grant, { ...keys, ...plain } as Command)
+          const dirty = oauth(grant, { ...words, ...keys, ...plain } as Command)
           expect(dirty).toEqual(clean)
           expect(dirty.grant.principal).toBe(principal)
           expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked"])
@@ -300,6 +303,44 @@ describe("oauth", () => {
         expect(result.accepted).toBe(false)
         expect(result.grant).toBe(grant)
         expect(result.grant.revoked).toBe(false)
+      }
+    }
+  })
+
+  it("the stored principal stays exact", () => {
+    for (const who of ["Alice", " ALICE ", "Ada@Studio", "", "Ñandú 258.7"]) {
+      const opened = openGrant(who)
+      expect(opened.principal).toBe(who)
+      const first = oauth(opened, { command: "exchange" })
+      expect(first.grant.principal).toBe(who)
+      const called = oauth(first.grant, { command: "call", generation: 1 })
+      expect(called.accepted).toBe(true)
+      expect(called.grant.principal).toBe(who)
+      const second = oauth(first.grant, { command: "rotate", generation: 1 })
+      expect(second.grant.principal).toBe(who)
+      const reused = oauth(second.grant, { command: "rotate", generation: 1 })
+      expect(reused.grant.revoked).toBe(true)
+      expect(reused.grant.principal).toBe(who)
+      const revoked = oauth(first.grant, { command: "revoke" })
+      expect(revoked.grant.principal).toBe(who)
+    }
+  })
+
+  it("a command name must match exactly", () => {
+    const opened = openGrant(principal)
+    const live = exchanged()
+    const named: readonly (readonly [Grant, string, object])[] = [
+      [opened, "exchange", {}],
+      [live, "call", { generation: 1 }],
+      [live, "rotate", { generation: 1 }],
+      [live, "revoke", {}],
+    ]
+    for (const [grant, name, fields] of named) {
+      const capital = `${name.charAt(0).toUpperCase()}${name.slice(1)}`
+      for (const word of [[name], name.toUpperCase(), capital, ` ${name}`, `${name} `]) {
+        const result = oauth(grant, { command: word, ...fields } as unknown as Command)
+        expect(result.accepted).toBe(false)
+        expect(result.grant).toBe(grant)
       }
     }
   })
