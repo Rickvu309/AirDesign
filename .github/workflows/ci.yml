@@ -16,10 +16,14 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ci:
-    name: ci
+  check:
+    name: check (${{ matrix.part }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [main, side]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -49,35 +53,46 @@ jobs:
           mkdir -p "$HOME/.local/tla"
           curl -fsSL -o "$HOME/.local/tla/tla2tools.jar" https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
           echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $HOME/.local/tla/tla2tools.jar" | sha256sum -c
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - if: matrix.part == 'main'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
-      - name: Install PostgreSQL 18
+      - if: matrix.part == 'main'
+        name: Install PostgreSQL 18
         run: |
           sudo install -d /usr/share/postgresql-common/pgdg
           sudo install -m 644 .github/postgresql-archive.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
           echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get -o Acquire::Retries=5 update
           sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y postgresql-18
-      - run: pnpm check
-      - if: ${{ !cancelled() }}
+      - run: pnpm check --part=${{ matrix.part }}
+      - if: matrix.part == 'main' && !cancelled()
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
-      - id: pptx
+      - if: matrix.part == 'main'
+        id: pptx
         run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
-      - if: steps.pptx.outputs.changed != '0'
+      - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: pptx-tools
         with:
           path: ~/.cache/pptx-tools
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
-      - if: steps.pptx.outputs.changed != '0'
+      - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
         run: pnpm check:pptx
       - if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh
+  ci:
+    name: ci
+    needs: check
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - run: test "${{ needs.check.result }}" = success
