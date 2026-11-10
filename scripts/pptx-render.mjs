@@ -59,7 +59,7 @@ const commandOutput = (command, args) =>
     )
   })
 
-const imageValue = (value) => (typeof value === "string" && value !== "" ? value : null)
+const imageValue = (value) => (typeof value === "string" && value.trim() !== "" ? value : null)
 
 export const readMachine = async ({ soffice, pdftoppm, env }) => {
   const [office, poppler] = await Promise.all([commandOutput(soffice, ["--version"]), commandOutput(pdftoppm, ["-v"])])

@@ -66,6 +66,18 @@ same(
   null,
   "an unset ImageOS is an image",
 )
+for (const blank of [" ", "\t", "\n"]) {
+  const machine = await readMachine({
+    soffice: "no-such-soffice",
+    pdftoppm: "no-such-pdftoppm",
+    env: { ImageOS: blank, ImageVersion: blank },
+  })
+  same(
+    [machine.imageOs, machine.imageVersion],
+    [null, null],
+    `a blank image identity ${JSON.stringify(blank)} is not an image`,
+  )
+}
 changed("the render code", { code: "render code changed" })
 for (const tool of ["soffice", "pdftoppm"]) {
   renderSettings[tool].forEach((_, index) => {
