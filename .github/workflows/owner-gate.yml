@@ -39,6 +39,7 @@ jobs:
 
   old-proofs:
     name: old proofs
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
