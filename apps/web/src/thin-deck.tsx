@@ -21,7 +21,8 @@ import {
   type ShapeKind,
 } from "@airdesign/pptx"
 import { Passage, paintStore, textValue, type PaintStore } from "@airdesign/render"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
@@ -32,9 +33,14 @@ let markup: Promise<void> | null = null
 
 function ensureMarkup(): Promise<void> {
   if (markup === null) {
-    markup = fetch(wasmUrl).then(async (response) => {
-      await prepareMarkup(new Uint8Array(await response.arrayBuffer()))
-    })
+    markup = fetch(wasmUrl)
+      .then(async (response) => {
+        await prepareMarkup(new Uint8Array(await response.arrayBuffer()))
+      })
+      .catch((error: unknown) => {
+        markup = null
+        throw error
+      })
   }
   return markup
 }
@@ -152,6 +158,22 @@ type EditLink = {
   flush(deck: string): Promise<unknown>
 }
 
+export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept"
+
+export type CommitOutcome = FlushOutcome | "refused"
+
+export async function flushPending(open: (remote: Remote) => EditLink, deckId: string): Promise<FlushOutcome> {
+  try {
+    const flushed = await open(httpRemote()).flush(deckId)
+    if (typeof flushed !== "object" || flushed === null) return "kept"
+    if ("ok" in flushed && flushed.ok === true) return "sent"
+    if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
+    return "kept"
+  } catch (error) {
+    return error instanceof TypeError ? "offline" : "kept"
+  }
+}
+
 export async function commitEdit(
   open: (remote: Remote) => EditLink,
   deckId: string,
@@ -159,20 +181,14 @@ export async function commitEdit(
   box: TextBox,
   paint?: () => void,
   refused?: () => Promise<void> | void,
-): Promise<void> {
+): Promise<CommitOutcome> {
   const result = await open(memoryRemote()).enqueue(deckId, value, box.id, box.file)
   if (!result.ok) {
     await refused?.()
-    return
+    return "refused"
   }
   paint?.()
-  await sendPending(open, deckId)
-}
-
-export async function sendPending(open: (remote: Remote) => EditLink, deckId: string): Promise<void> {
-  await open(httpRemote())
-    .flush(deckId)
-    .catch(() => undefined)
+  return flushPending(open, deckId)
 }
 
 export function exportedParts(
@@ -218,6 +234,17 @@ export function ThinDeck({ id }: { id?: string }) {
   const [title, setTitle] = useState("")
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const shownDeck = useRef(id)
+  const [pending, setPending] = useState(false)
+  const [offline, setOffline] = useState(() => navigator.onLine === false)
+  const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
+  const picker = useRef<HTMLInputElement>(null)
+
+  const settle = useCallback((outcome: CommitOutcome) => {
+    if (outcome === "sent") setPending(false)
+    if (outcome === "offline") setPending(true)
+    if (outcome !== "refused") setOffline(outcome === "offline")
+    if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
+  }, [])
 
   useEffect(() => {
     if (id === undefined) return
@@ -237,23 +264,28 @@ export function ThinDeck({ id }: { id?: string }) {
       setCurrent(0)
       setTitle(stored.name ?? "")
       setPaintedDeck(id)
-      await sendPending(connect, id)
+      settle(await flushPending(connect, id))
     })()
     return () => {
       live = false
     }
-  }, [id])
+  }, [id, settle])
 
   useEffect(() => {
-    function online() {
+    function leftNetwork() {
+      setOffline(true)
+    }
+    async function returnedToNetwork() {
       const deck = shownDeck.current
-      if (deck !== undefined) void sendPending(connect, deck)
+      if (deck !== undefined) settle(await flushPending(connect, deck))
     }
-    window.addEventListener("online", online)
+    window.addEventListener("offline", leftNetwork)
+    window.addEventListener("online", returnedToNetwork)
     return () => {
-      window.removeEventListener("online", online)
+      window.removeEventListener("offline", leftNetwork)
+      window.removeEventListener("online", returnedToNetwork)
     }
-  }, [])
+  }, [settle])
 
   function show(target: ElementId, text: string) {
     const record = store.current.getElement(target)
@@ -268,24 +300,36 @@ export function ThinDeck({ id }: { id?: string }) {
 
   async function openFile(file: File) {
     setPaintedDeck(undefined)
-    await ensureMarkup()
-    const bytes = new Uint8Array(await file.arrayBuffer())
-    const read = await readPackage(bytes)
-    if (!read.ok) return
-    const name = deckName(file.name)
-    const nextId = await saveDeck(read.parts, bytes, name)
-    if (nextId === null) return
-    window.history.replaceState(null, "", `/thin/${nextId}`)
-    shownDeck.current = nextId
-    setDeckId(nextId)
-    const painted = paint(store.current, read.parts, null)
-    boxes.current = painted.boxes
-    shapes.current = painted.shapes
-    shownParts.current = read.parts
-    setSlides(painted.slides)
-    setCurrent(0)
-    setTitle(name)
-    setPaintedDeck(nextId)
+    try {
+      await ensureMarkup()
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const read = await readPackage(bytes)
+      if (!read.ok) {
+        setFailure("import-failed")
+        return
+      }
+      const name = deckName(file.name)
+      const nextId = await saveDeck(read.parts, bytes, name)
+      if (nextId === null) {
+        setFailure("import-failed")
+        return
+      }
+      window.history.replaceState(null, "", `/thin/${nextId}`)
+      shownDeck.current = nextId
+      setDeckId(nextId)
+      setPending(false)
+      setFailure(null)
+      const painted = paint(store.current, read.parts, null)
+      boxes.current = painted.boxes
+      shapes.current = painted.shapes
+      shownParts.current = read.parts
+      setSlides(painted.slides)
+      setCurrent(0)
+      setTitle(name)
+      setPaintedDeck(nextId)
+    } catch {
+      setFailure("import-failed")
+    }
   }
 
   async function onEdit(target: ElementId, value: string) {
@@ -302,16 +346,26 @@ export function ThinDeck({ id }: { id?: string }) {
       await refused()
       return
     }
-    await commitEdit(connect, deck, value, box, () => show(target, value), refused)
+    const outcome = await commitEdit(
+      connect,
+      deck,
+      value,
+      box,
+      () => {
+        setPending(true)
+        show(target, value)
+      },
+      refused,
+    )
+    settle(outcome)
   }
 
-  async function onExport() {
-    if (deckId === undefined) return
+  async function exportDeck(id: string) {
     await ensureMarkup()
-    const stored = await getParts(deckId)
-    if (!stored.ok) return
-    const opened = await connect(memoryRemote()).openDeck(deckId)
-    if (!opened.ok) return
+    const stored = await getParts(id)
+    if (!stored.ok) throw new Error("parts")
+    const opened = await connect(memoryRemote()).openDeck(id)
+    if (!opened.ok) throw new Error("register")
     const bytes = await exportPackage(stored.file, exportedParts(stored.parts, opened.register))
     const copy = new Uint8Array(bytes.byteLength)
     copy.set(bytes)
@@ -325,12 +379,31 @@ export function ThinDeck({ id }: { id?: string }) {
     URL.revokeObjectURL(url)
   }
 
+  async function onExport() {
+    if (deckId === undefined) return
+    try {
+      await exportDeck(deckId)
+      setFailure(null)
+    } catch {
+      setFailure("export-failed")
+    }
+  }
+
+  function tryAgain(notice: ThinNotice) {
+    if (notice === "import-failed") picker.current?.click()
+    if (notice === "export-failed") void onExport()
+  }
+
+  const notice: ThinNotice | null = failure ?? (offline && pending ? "offline" : null)
+
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
+      <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
       <EditorFrame
         top={
           <div className="flex items-center gap-4 px-4 py-2">
             <input
+              ref={picker}
               accept=".pptx"
               type="file"
               onChange={(event) => {

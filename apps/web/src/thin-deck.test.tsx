@@ -4,6 +4,7 @@ import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
+import { signInAddress } from "./thin-notice"
 import { commitEdit, deckName, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
@@ -706,7 +707,7 @@ it("reports an offline device when the flush cannot reach the network", async ()
     linkAnswering(() => Promise.reject(new TypeError("Failed to fetch"))),
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("offline")
 })
@@ -716,7 +717,7 @@ it("reports a signed-out person when the flush is refused for the session", asyn
     linkAnswering(() => Promise.resolve({ ok: false, refusal: "session" })),
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("signed-out")
 })
@@ -726,7 +727,7 @@ it("reports sent when the flush lands", async () => {
     linkAnswering(() => Promise.resolve({ ok: true })),
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("sent")
 })
@@ -736,7 +737,13 @@ it("keeps the edit without a word when the server answers another refusal", asyn
     linkAnswering(() => Promise.resolve({ ok: false, refusal: "stale" })),
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("kept")
+})
+
+it("sends a signed-out person to sign in with the current path and query as next", () => {
+  expect(signInAddress({ pathname: "/thin/abc-123", search: "?slide=2" })).toBe(
+    "/sign-in?next=%2Fthin%2Fabc-123%3Fslide%3D2",
+  )
 })

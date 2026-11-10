@@ -1,4 +1,4 @@
-import { copyFile, readFile, rm } from "node:fs/promises"
+import { copyFile, readFile, rm, writeFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
@@ -686,4 +686,106 @@ test("one slide shows at a time", async ({ page }, testInfo) => {
   await saveExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   expect((await partsOf(download)).get(part)?.toString("utf8") ?? "").toContain("How do heat pumps work? Seven")
+})
+
+const offlineWords = "You're offline. Edits are saved on this device."
+const importFailedWords = "Unable to import this file"
+const exportFailedWords = "Unable to export. Your deck is unchanged."
+
+test("an edit made offline shows the offline words and they go when a commit answers", async ({ page, context }) => {
+  let answering = false
+  await page.route("**/decks/commit", async (route) => {
+    if (!answering) {
+      await route.abort("connectionfailed")
+      return
+    }
+    const body = route.request().postDataJSON() as { deck: string }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, deck: body.deck, revision: 1, key: `${body.deck}:1` }),
+    })
+  })
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+  await context.setOffline(true)
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially("!!", { delay: 50 })
+  await stored(page, "Hello!!")
+  await expect(page.getByText(offlineWords)).toBeVisible()
+  answering = true
+  await context.setOffline(false)
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+  await expect(editor).toHaveText("Hello!!")
+})
+
+test("a file that is not a PowerPoint shows the import words and Try again opens the picker", async ({
+  page,
+}, testInfo) => {
+  const notes = testInfo.outputPath("notes.pptx")
+  await writeFile(notes, "this is not a PowerPoint file")
+  await page.goto("/thin")
+  await page.locator("input[type=file]").setInputFiles(notes)
+  await expect(page.getByText(importFailedWords)).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe("/thin")
+  const chooser = page.waitForEvent("filechooser")
+  await page.getByRole("button", { name: "Try again" }).click()
+  await chooser
+  expect(new URL(page.url()).pathname).toBe("/thin")
+  await choose(page, fixture)
+  await expect(page).toHaveURL(deckAddress)
+  await expect(page.getByText(importFailedWords)).toHaveCount(0)
+})
+
+test("a device with no file store shows the import words and keeps the address", async ({ page }) => {
+  await page.addInitScript(() => {
+    navigator.storage.getDirectory = () => Promise.reject(new Error("no file store"))
+  })
+  await page.goto("/thin")
+  await page.locator("input[type=file]").setInputFiles(fixture)
+  await expect(page.getByText(importFailedWords)).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe("/thin")
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+})
+
+test("an export whose stored parts are gone shows the export words and downloads nothing", async ({ page }) => {
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory()
+    for await (const name of root.keys()) await root.removeEntry(name, { recursive: true })
+  })
+  let downloads = 0
+  page.on("download", () => {
+    downloads += 1
+  })
+  await page.getByRole("button", { name: "Export" }).click()
+  await expect(page.getByText(exportFailedWords)).toBeVisible()
+  expect(downloads).toBe(0)
+})
+
+test("a refused session keeps the edit and sends the person to sign in", async ({ page }) => {
+  await page.route("**/decks/commit", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: false, refusal: "session" }),
+    }),
+  )
+  await page.route("**/sign-in**", (route) => route.fulfill({ contentType: "text/html", body: "<p>sign in</p>" }))
+  const address = new URL(await open(page, fixture))
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially("!", { delay: 50 })
+  await page.waitForURL("**/sign-in**")
+  const arrived = new URL(page.url())
+  expect(arrived.pathname).toBe("/sign-in")
+  expect(arrived.searchParams.get("next")).toBe(`${address.pathname}${address.search}`)
+  await page.route("**/decks/commit", (route) => route.abort())
+  await page.goto(address.pathname)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
 })
