@@ -48,6 +48,8 @@ describe("new:package", () => {
       const packageJson = JSON.parse(readFileSync(path.join(dir, "packages/probe/package.json"), "utf8"))
       expect(packageJson.name).toBe("@airdesign/probe")
       expect(Object.keys(packageJson.exports)).toEqual(["."])
+      const rootTsconfig = JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))
+      expect(rootTsconfig.references.map((item: { path: string }) => item.path)).toContain("./packages/probe")
 
       const typecheck = run([tsc, "-b", "packages/probe", "--pretty", "false"], dir)
       expect(typecheck.status, `${typecheck.stdout}\n${typecheck.stderr}`).toBe(0)
