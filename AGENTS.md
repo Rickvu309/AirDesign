@@ -13,7 +13,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## Commands
 
-- `ci` runs `pnpm check` on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
+- `ci` runs `pnpm check` on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step. On your machine one check runs at a time: a second `pnpm check` or `pnpm check:pptx` waits for the first, in any worktree, so a busy machine does not time tests out. A test that fails only under load is not a reason to change the test.
 - `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It uses LibreOffice and poppler when the machine has both, or installs them into `~/.cache/pptx-tools` on first use. It needs the .NET 8 SDK.
 - `pnpm check` prints the metrics, the numbers we want moved. Each has a goal, a floor or a limit in `metrics.json`. Pick one and move it. A PR does not write the test count or the known failure count: `test-count` only has to stay at or above its floor, and `known-failures` is measured on each run.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
