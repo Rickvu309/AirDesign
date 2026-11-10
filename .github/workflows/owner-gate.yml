@@ -30,42 +30,29 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/owner-gate.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
 
-  old-proofs-approval:
-    name: old proofs approval
+  old-proofs:
+    name: old proofs
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: read
-    outputs:
-      approved: ${{ steps.approval.outputs.approved }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          path: base
           persist-credentials: false
       - id: approval
         env:
           GH_TOKEN: ${{ github.token }}
           PULL_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node scripts/old-proofs.mjs approved "$GITHUB_REPOSITORY" "$PULL_NUMBER" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
-
-  old-proofs:
-    name: old proofs
-    needs: old-proofs-approval
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          path: base
-          persist-credentials: false
+        run: node base/scripts/old-proofs.mjs approved "$GITHUB_REPOSITORY" "$PULL_NUMBER" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: head
+          fetch-depth: 0
           persist-credentials: false
       - id: check
         run: node base/scripts/old-proofs.mjs changed base head >> "$GITHUB_OUTPUT"
@@ -80,9 +67,9 @@ jobs:
           package-manager-cache: false
       - if: steps.check.outputs.changed == 'true'
         run: |
-          mkdir -p "$HOME/.local/tla"
-          curl -fsSL -o "$HOME/.local/tla/tla2tools.jar" https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
-          echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $HOME/.local/tla/tla2tools.jar" | sha256sum -c
+          curl -fsSL -o "$GITHUB_WORKSPACE/tla2tools.jar" https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
+          echo "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88  $GITHUB_WORKSPACE/tla2tools.jar" | sha256sum -c
       - env:
-          APPROVED: ${{ needs.old-proofs-approval.outputs.approved }}
+          APPROVED: ${{ steps.approval.outputs.approved }}
+          TLA2TOOLS: ${{ github.workspace }}/tla2tools.jar
         run: node base/scripts/old-proofs.mjs judge base head "--approved=$APPROVED"

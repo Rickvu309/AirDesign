@@ -3,14 +3,20 @@ import os from "node:os"
 import path from "node:path"
 import {
   changedFiles,
-  checkChanged,
+  checkChanges,
+  checkFile,
+  deletedProofs,
   firstFailure,
-  headEnv,
+  layIn,
   missingNeeds,
+  proofEnv,
   proofFiles,
   proofRunner,
+  proofState,
   proofSupport,
-  restoreProofs,
+  runProof,
+  sandboxed,
+  unprovedLines,
   verdict,
 } from "./old-proofs.mjs"
 
@@ -20,11 +26,21 @@ const same = (name, actual, expected) => {
   }
 }
 
+const refusal = (run) => {
+  try {
+    run()
+  } catch (error) {
+    return error.message
+  }
+  return ""
+}
+
 const baseFiles = [
   "packages/document/src/order.test.ts",
   "scripts/sticks.mjs",
   "scripts/sticks.test.mjs",
   "scripts/pptx-judge/judge.test.mjs",
+  "scripts/typed.test.ts",
   "tests/browser/every-screen.spec.ts",
   "tests/theme-tokens.test.ts",
   "tooling/oxlint-plugin-airdesign/harness.js",
@@ -34,115 +50,344 @@ const baseFiles = [
 ]
 
 same("a proof is a check test on the base", proofFiles(baseFiles), [
+  "scripts/pptx-judge/judge.test.mjs",
   "scripts/sticks.test.mjs",
+  "scripts/typed.test.ts",
   "tests/theme-tokens.test.ts",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.test.js",
   "tooling/oxlint-plugin-airdesign/scan-names.test.js",
 ])
-same("the harness a proof leans on is put back too", proofSupport(baseFiles), [
-  "tooling/oxlint-plugin-airdesign/harness.js",
-])
-same("a harness outside the check folders is product code", proofSupport(["packages/pptx/src/harness.js"]), [])
 same("a tooling proof runs on plain Node", proofRunner("tooling/a/b/c.test.js"), "node")
 same("a root test runs on Vitest", proofRunner("tests/new-package.test.ts"), "vitest")
+same("a typed check test runs on Vitest", proofRunner("scripts/typed.test.ts"), "vitest")
 same("the check code is not a proof", proofRunner("scripts/sticks.mjs"), undefined)
+same("a product test is not a proof", proofRunner("packages/document/src/order.test.ts"), undefined)
 
-const baseTree = new Map([
-  ["apps/web/src/main.tsx", "100644 a 0"],
-  ["scripts/sticks.mjs", "100644 b 0"],
-  ["tests/theme-tokens.test.ts", "100644 c 0"],
+same("the harness is proof support", proofSupport("tooling/oxlint-plugin-airdesign/harness.js"), true)
+same("the test runner is proof support", proofSupport("tooling/oxlint-plugin-airdesign/run-tests.js"), true)
+same("the proof run is proof support", proofSupport("scripts/old-proofs-run.mjs"), true)
+same("a harness outside the check folders is product code", proofSupport("packages/pptx/src/harness.js"), false)
+
+same("a rule is a check file", checkFile("tooling/oxlint-plugin-airdesign/rules/no-raw.js"), true)
+same("a check script is a check file", checkFile("scripts/sticks.mjs"), true)
+same(
+  "nothing else is a check file",
+  [
+    "scripts/sticks.test.mjs",
+    "scripts/typed.test.ts",
+    "tooling/oxlint-plugin-airdesign/rules/no-raw.test.js",
+    "tooling/oxlint-plugin-airdesign/harness.js",
+    "tooling/oxlint-plugin-airdesign/run-tests.js",
+    "scripts/old-proofs-run.mjs",
+    "package.json",
+    "pnpm-lock.yaml",
+    "vitest.config.mts",
+    ".oxlintrc.json",
+    "tsconfig.json",
+    "tests/theme-tokens.test.ts",
+    "apps/web/src/main.tsx",
+    "scripts/.npmrc",
+    "tooling/.hidden/rule.js",
+    "scripts/node_modules/vitest/index.js",
+    "scripts/../package.json",
+    "scripts//sticks.mjs",
+  ].filter(checkFile),
+  [],
+)
+
+const mergeTree = new Map([
+  ["apps/web/src/main.tsx", "100644 a"],
+  ["package.json", "100644 p"],
+  ["scripts/sticks.mjs", "100644 b"],
+  ["scripts/sticks.test.mjs", "100644 c"],
+  ["scripts/gone.mjs", "100644 d"],
+  ["tests/theme-tokens.test.ts", "100644 e"],
+  ["vitest.config.mts", "100644 f"],
 ])
-const headWith = (change) => new Map([...new Map([...baseTree, ...change])].filter(([, print]) => print !== undefined))
-const restorable = ["tests/theme-tokens.test.ts"]
-const changedBy = (change) => changedFiles(baseTree, headWith(change))
+const headWith = (change) => new Map([...new Map([...mergeTree, ...change])].filter(([, entry]) => entry !== undefined))
+const changesBy = (change) => checkChanges(mergeTree, headWith(change))
 
 same(
   "an edit, a new file and a deleted file all count as changed",
-  changedBy([
-    ["apps/web/src/main.tsx", "100644 z 0"],
-    ["apps/web/src/new.tsx", "100644 n 0"],
-    ["scripts/sticks.mjs", undefined],
-  ]),
+  changedFiles(
+    mergeTree,
+    headWith([
+      ["apps/web/src/main.tsx", "100644 z"],
+      ["apps/web/src/new.tsx", "100644 n"],
+      ["scripts/sticks.mjs", undefined],
+    ]),
+  ),
   ["apps/web/src/main.tsx", "apps/web/src/new.tsx", "scripts/sticks.mjs"],
 )
+same("product code alone changes no check", changesBy([["apps/web/src/main.tsx", "100644 z"]]), [])
+same("nothing changed changes no check", changesBy([]), [])
+same("an edited check script is laid in", changesBy([["scripts/sticks.mjs", "100644 z"]]), [
+  { file: "scripts/sticks.mjs", entry: "100644 z" },
+])
+same("a new rule is laid in", changesBy([["tooling/rules/new.js", "100755 n"]]), [
+  { file: "tooling/rules/new.js", entry: "100755 n" },
+])
+same("a deleted check file is taken out", changesBy([["scripts/gone.mjs", undefined]]), [
+  { file: "scripts/gone.mjs", entry: undefined },
+])
 same(
-  "product code alone changes no check",
-  checkChanged(changedBy([["apps/web/src/main.tsx", "100644 z 0"]]), restorable),
-  false,
+  "a renamed check file is taken out and laid in",
+  changesBy([
+    ["scripts/gone.mjs", undefined],
+    ["scripts/renamed.mjs", "100644 d"],
+  ]),
+  [
+    { file: "scripts/gone.mjs", entry: undefined },
+    { file: "scripts/renamed.mjs", entry: "100644 d" },
+  ],
 )
-same("nothing changed changes no check", checkChanged(changedBy([]), restorable), false)
 same(
-  "an edited check script changes a check",
-  checkChanged(changedBy([["scripts/sticks.mjs", "100644 z 0"]]), restorable),
-  true,
+  "the head's proofs, package file, lockfile and configs are never laid in",
+  changesBy([
+    ["scripts/sticks.test.mjs", "100644 soft"],
+    ["scripts/added.test.mjs", "100644 new"],
+    ["tests/theme-tokens.test.ts", undefined],
+    ["tooling/oxlint-plugin-airdesign/harness.js", "100644 soft"],
+    ["scripts/old-proofs-run.mjs", "100644 soft"],
+    ["package.json", "100644 soft"],
+    ["pnpm-lock.yaml", "100644 soft"],
+    ["vitest.config.mts", "100644 soft"],
+    [".oxlintrc.json", "100644 soft"],
+    ["tsconfig.json", "100644 soft"],
+    ["scripts/.npmrc", "100644 soft"],
+    ["scripts/node_modules/vitest/index.js", "100644 soft"],
+  ]),
+  [],
 )
-same("a new rule changes a check", checkChanged(changedBy([["tooling/rules/new.js", "100644 n 0"]]), restorable), true)
+
 same(
-  "a deleted proof outside the check folders changes a check",
-  checkChanged(changedBy([["tests/theme-tokens.test.ts", undefined]]), restorable),
-  true,
+  "a config, a package file and the lockfile are named as having no proof",
+  unprovedLines(
+    mergeTree,
+    headWith([
+      ["vitest.config.mts", "100644 soft"],
+      ["package.json", "100644 soft"],
+      ["pnpm-lock.yaml", "100644 soft"],
+      ["apps/web/src/main.tsx", "100644 z"],
+      ["scripts/sticks.mjs", "100644 z"],
+    ]),
+  ),
+  [
+    "package.json changes how checks run and has no proof.",
+    "pnpm-lock.yaml changes how checks run and has no proof.",
+    "vitest.config.mts changes how checks run and has no proof. It is listed for the owner.",
+  ],
 )
+
+const mainProofs = ["scripts/added-on-main.test.mjs", "scripts/sticks.test.mjs", "tests/theme-tokens.test.ts"]
+same(
+  "a pull request that deleted a proof is told",
+  deletedProofs(mergeTree, headWith([["scripts/sticks.test.mjs", undefined]]), mainProofs),
+  ["scripts/sticks.test.mjs"],
+)
+same(
+  "a pull request behind main did not delete the proof main added later",
+  deletedProofs(mergeTree, headWith([]), mainProofs),
+  [],
+)
+same("a pull request behind main changed no check that main added later", changesBy([]), [])
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-old-proofs-"))
 process.on("exit", () => fs.rmSync(root, { recursive: true, force: true }))
-const write = (side, file, text) => {
-  fs.mkdirSync(path.dirname(path.join(root, side, file)), { recursive: true })
-  fs.writeFileSync(path.join(root, side, file), text)
+const base = path.join(root, "base")
+const write = (file, text) => {
+  fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
+  fs.writeFileSync(path.join(root, file), text)
 }
-const headText = (file) => fs.readFileSync(path.join(root, "head", file), "utf8")
-write("base", "scripts/edited.test.mjs", "old cases")
-write("base", "scripts/deleted.test.mjs", "old cases")
-write("base", "tooling/rules/gone/deep.test.js", "old cases")
-write("head", "scripts/edited.test.mjs", "softer cases")
-write("head", "scripts/added.test.mjs", "new cases")
+const baseText = (file) => fs.readFileSync(path.join(base, file), "utf8")
+const inBase = (file) => fs.lstatSync(path.join(base, file), { throwIfNoEntry: false }) !== undefined
+const headContent = (file, print) => Buffer.from(`head ${print}`)
 
-same(
-  "a deleted proof is put back and named",
-  restoreProofs(path.join(root, "base"), path.join(root, "head"), [
-    "scripts/deleted.test.mjs",
-    "scripts/edited.test.mjs",
-    "tooling/rules/gone/deep.test.js",
-  ]),
-  ["scripts/deleted.test.mjs", "tooling/rules/gone/deep.test.js"],
+write("base/package.json", "main package")
+write("base/vitest.config.mts", "main config")
+write("base/scripts/sticks.mjs", "main check")
+write("base/scripts/sticks.test.mjs", "old cases")
+write("base/scripts/gone.mjs", "main check")
+write("base/tooling/rules/gone/deep.js", "main check")
+
+layIn(
+  base,
+  [
+    { file: "scripts/sticks.mjs", entry: "100644 softer" },
+    { file: "scripts/gone.mjs", entry: undefined },
+    { file: "scripts/never-there.mjs", entry: undefined },
+    { file: "tooling/rules/gone/deep.js", entry: undefined },
+    { file: "tooling/rules/new/rule.js", entry: "100755 added" },
+  ],
+  headContent,
 )
-same("the deleted proof has its old cases", headText("scripts/deleted.test.mjs"), "old cases")
-same("a proof in a deleted folder has its old cases", headText("tooling/rules/gone/deep.test.js"), "old cases")
-same("the head's edit of a proof is ignored", headText("scripts/edited.test.mjs"), "old cases")
-same("a proof only the head has is left alone", headText("scripts/added.test.mjs"), "new cases")
-
-write("base", "scripts/linked.test.mjs", "old cases")
-write("head", "elsewhere/linked.test.mjs", "softer cases")
-fs.symlinkSync("../elsewhere/linked.test.mjs", path.join(root, "head/scripts/linked.test.mjs"))
-restoreProofs(path.join(root, "base"), path.join(root, "head"), ["scripts/linked.test.mjs"])
+same("a changed check file has the head's content", baseText("scripts/sticks.mjs"), "head softer")
+same("a new check file is laid in under a new folder", baseText("tooling/rules/new/rule.js"), "head added")
 same(
-  "a proof the head made a link becomes a plain file",
-  fs.lstatSync(path.join(root, "head/scripts/linked.test.mjs")).isFile(),
+  "a check file keeps its executable bit",
+  (fs.statSync(path.join(base, "tooling/rules/new/rule.js")).mode & 0o111) !== 0,
   true,
 )
-same("the link's target is not written", headText("elsewhere/linked.test.mjs"), "softer cases")
+same("a deleted check file is removed from the base", inBase("scripts/gone.mjs"), false)
+same("a deleted check file in a folder is removed from the base", inBase("tooling/rules/gone/deep.js"), false)
+same("the base proof keeps its old cases", baseText("scripts/sticks.test.mjs"), "old cases")
 
-write("base", "linked-folder/held.test.mjs", "old cases")
-fs.symlinkSync("elsewhere", path.join(root, "head/linked-folder"))
-let refused = ""
-try {
-  restoreProofs(path.join(root, "base"), path.join(root, "head"), ["linked-folder/held.test.mjs"])
-} catch (error) {
-  refused = error.message
+for (const file of [
+  "scripts/sticks.test.mjs",
+  "package.json",
+  "vitest.config.mts",
+  "tooling/harness.js",
+  "scripts/../package.json",
+]) {
+  same(
+    `${file} from the head is refused`,
+    refusal(() => layIn(base, [{ file, entry: "100644 softer" }], headContent)),
+    `${file} is not a check file, so it is not taken from the pull request.`,
+  )
 }
+same("the base proof still has its old cases", baseText("scripts/sticks.test.mjs"), "old cases")
+same("the base package file is main's", baseText("package.json"), "main package")
+same("the base config is main's", baseText("vitest.config.mts"), "main config")
+
 same(
-  "a proof under a linked folder is refused",
-  refused,
-  "linked-folder is a link in the pull request, so linked-folder/held.test.mjs cannot be put back.",
+  "a link in the pull request is refused",
+  refusal(() => layIn(base, [{ file: "scripts/linked.mjs", entry: "120000 link" }], headContent)),
+  "scripts/linked.mjs is a link in the pull request. A check file must be a plain file.",
+)
+same("the refused link wrote nothing", inBase("scripts/linked.mjs"), false)
+same(
+  "a nested repository in the pull request is refused",
+  refusal(() => layIn(base, [{ file: "scripts/nested", entry: "160000 commit" }], headContent)),
+  "scripts/nested is a link in the pull request. A check file must be a plain file.",
 )
 
+write("outside/kept.mjs", "outside")
+fs.symlinkSync(path.join(root, "outside"), path.join(base, "tooling/linked-folder"))
+same(
+  "a check file under a linked folder is refused",
+  refusal(() => layIn(base, [{ file: "tooling/linked-folder/kept.mjs", entry: "100644 softer" }], headContent)),
+  "tooling/linked-folder is a link on main, so tooling/linked-folder/kept.mjs cannot be laid in.",
+)
+same(
+  "a delete under a linked folder is refused",
+  refusal(() => layIn(base, [{ file: "tooling/linked-folder/kept.mjs", entry: undefined }], headContent)),
+  "tooling/linked-folder is a link on main, so tooling/linked-folder/kept.mjs cannot be laid in.",
+)
+same("the link's target is not written", fs.readFileSync(path.join(root, "outside/kept.mjs"), "utf8"), "outside")
+
+fs.symlinkSync(path.join(root, "outside/kept.mjs"), path.join(base, "scripts/linked-file.mjs"))
+layIn(base, [{ file: "scripts/linked-file.mjs", entry: "100644 plain" }], headContent)
+same("a link on main becomes a plain file", fs.lstatSync(path.join(base, "scripts/linked-file.mjs")).isFile(), true)
+same("the file link's target is not written", fs.readFileSync(path.join(root, "outside/kept.mjs"), "utf8"), "outside")
+
+const token = "f".repeat(48)
+same(
+  "a proof that exits 0 and prints the token is kept",
+  proofState({ runner: "node", status: 0, stdout: `case one\n${token}\n`, token }),
+  { state: "kept" },
+)
+same(
+  "a proof that exits 0 without the token is broken",
+  proofState({ runner: "node", status: 0, stdout: "case one\n", token }),
+  { state: "broken", message: "stopped before it finished" },
+)
+same("a silent exit 0 is broken", proofState({ runner: "node", status: 0, stdout: "", token: "" }), {
+  state: "broken",
+  message: "stopped before it finished",
+})
+same(
+  "a proof that prints the token and fails is broken",
+  proofState({ runner: "node", status: 1, stdout: `${token}\n`, stderr: "Error: no-raw rejects a hex color", token }),
+  { state: "broken", message: "no-raw rejects a hex color" },
+)
+
+const passedReport = { success: true, numTotalTests: 2, numPassedTests: 2, numFailedTests: 0, testResults: [] }
+same("a Vitest proof with a passed test is kept", proofState({ runner: "vitest", status: 0, report: passedReport }), {
+  state: "kept",
+})
+same(
+  "a Vitest proof that ran no test is broken",
+  proofState({
+    runner: "vitest",
+    status: 0,
+    report: { success: true, numTotalTests: 0, numPassedTests: 0, numFailedTests: 0, testResults: [] },
+  }),
+  { state: "broken", message: "ran no test" },
+)
+same("a Vitest proof with no report is broken", proofState({ runner: "vitest", status: 0 }), {
+  state: "broken",
+  message: "ran no test",
+})
+same(
+  "a failed Vitest case is named with its error",
+  proofState({
+    runner: "vitest",
+    status: 1,
+    report: {
+      success: false,
+      numTotalTests: 1,
+      numPassedTests: 0,
+      numFailedTests: 1,
+      testResults: [
+        {
+          assertionResults: [
+            {
+              status: "failed",
+              fullName: "theme tokens shares one file",
+              failureMessages: ["AssertionError: expected 'a' to contain 'b'\n    at file.ts:1:1"],
+            },
+          ],
+        },
+      ],
+    },
+  }),
+  { state: "broken", message: "theme tokens shares one file: AssertionError: expected 'a' to contain 'b'" },
+)
+
+fs.mkdirSync(path.join(base, "scripts"), { recursive: true })
+fs.copyFileSync(path.join(import.meta.dirname, "old-proofs-run.mjs"), path.join(base, "scripts/old-proofs-run.mjs"))
+write("base/scripts/exits.mjs", 'if (process.argv[1].endsWith("old-proofs-run.mjs")) process.exit(0)\n')
+write("base/scripts/exits.test.mjs", 'import "./exits.mjs"\nthrow new Error("the softened check was caught")\n')
+write("base/scripts/exits-later.test.mjs", "setTimeout(() => process.exit(0), 10)\n")
+write("base/scripts/echo.test.mjs", "console.log(process.argv.join(), JSON.stringify(process.env))\nprocess.exit(0)\n")
+write("base/scripts/holds.test.mjs", 'console.log("case one")\n')
+write("base/scripts/throws.test.mjs", 'throw new Error("sticks rejects a raised limit")\n')
+write("base/scripts/swallows.test.mjs", 'process.on("uncaughtException", () => {})\nthrow new Error("swallowed")\n')
+const ran = (file) => runProof(base, file, { has: () => true })
+same("a proof that finishes is kept", ran("scripts/holds.test.mjs"), {
+  file: "scripts/holds.test.mjs",
+  state: "kept",
+})
+same("a check that exits 0 under a proof is broken", ran("scripts/exits.test.mjs"), {
+  file: "scripts/exits.test.mjs",
+  state: "broken",
+  message: "stopped before it finished",
+})
+same("an exit 0 after the import settled is broken", ran("scripts/exits-later.test.mjs"), {
+  file: "scripts/exits-later.test.mjs",
+  state: "broken",
+  message: "stopped before it finished",
+})
+same("the token is not in the arguments or the environment", ran("scripts/echo.test.mjs"), {
+  file: "scripts/echo.test.mjs",
+  state: "broken",
+  message: "stopped before it finished",
+})
+same("a thrown case is broken and named", ran("scripts/throws.test.mjs"), {
+  file: "scripts/throws.test.mjs",
+  state: "broken",
+  message: "sticks rejects a raised limit",
+})
+same("a swallowed failure is broken", ran("scripts/swallows.test.mjs").state, "broken")
+
 const thrownByNode = [
-  "file:///work/head/tooling/oxlint-plugin-airdesign/harness.js:53",
+  "file:///work/base/tooling/oxlint-plugin-airdesign/harness.js:53",
   "    throw new Error(`${name}`)",
   "          ^",
   "",
   "Error: no-comments rejects a block comment",
   'expected a failure containing "Remove this comment."',
-  "    at expectRejects (file:///work/head/tooling/oxlint-plugin-airdesign/harness.js:53:11)",
+  "    at expectRejects (file:///work/base/tooling/oxlint-plugin-airdesign/harness.js:53:11)",
 ].join("\n")
 same(
   "the thrown case names the failure",
@@ -153,18 +398,9 @@ same(
   "a missing check names the failure",
   firstFailure({
     status: 1,
-    output: "node:internal\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/work/head/scripts/sticks.mjs'",
+    output: "node:internal\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/work/base/scripts/sticks.mjs'",
   }),
-  "Cannot find module '/work/head/scripts/sticks.mjs'",
-)
-same(
-  "a failed Vitest case is named with its error",
-  firstFailure({
-    status: 1,
-    output:
-      " FAIL  tests/theme-tokens.test.ts > theme tokens > shares one file\nAssertionError: expected 'a' to contain 'b'",
-  }),
-  "FAIL  tests/theme-tokens.test.ts > theme tokens > shares one file: expected 'a' to contain 'b'",
+  "Cannot find module '/work/base/scripts/sticks.mjs'",
 )
 same("a silent failure names its exit", firstFailure({ status: 3, output: "\n" }), "exit 3")
 same(
@@ -189,14 +425,22 @@ same("one broken proof fails and says what to do", verdict({ results, approved: 
   pass: false,
   lines: [...brokenLines, advice],
 })
+same("a broken proof behind main says to update", verdict({ results, approved: false, behind: true }), {
+  pass: false,
+  lines: [...brokenLines, "This pull request is behind main. Update it and run again."],
+})
 same("the owner's approval lets a broken proof through", verdict({ results, approved: true }), {
   pass: true,
   lines: [...brokenLines, "The repo owner approved this commit, so it passes as it is."],
 })
-same("kept proofs pass", verdict({ results: [results[0], results[2]], approved: false }), {
-  pass: true,
-  lines: [brokenLines[0], brokenLines[2]],
-})
+same(
+  "kept proofs pass, also behind main",
+  verdict({ results: [results[0], results[2]], approved: false, behind: true }),
+  {
+    pass: true,
+    lines: [brokenLines[0], brokenLines[2]],
+  },
+)
 
 same(
   "a proof with every need runs",
@@ -208,21 +452,52 @@ same(
   missingNeeds("scripts/check-specs.test.mjs", (need) => need !== "Java 21"),
   ["Java 21"],
 )
+same("a proof without git is not proved here", runProof(base, "scripts/sticks.test.mjs", { has: () => false }), {
+  file: "scripts/sticks.test.mjs",
+  state: "not proved",
+  message: "this machine has no git",
+})
 same(
   "a plain proof needs nothing",
-  missingNeeds("scripts/sticks.test.mjs", () => false),
+  missingNeeds("scripts/failure-audit.test.mjs", () => false),
   [],
 )
 
+const env = proofEnv({ home: "/scratch", nodeFolder: "/node/bin", tools: { JAVA: "/jdk/bin/java" } })
+same("a proof sees only a path, a scratch home and its tools", env, {
+  PATH: "/node/bin:/usr/local/bin:/usr/bin:/bin",
+  HOME: "/scratch",
+  TMPDIR: "/scratch",
+  NO_COLOR: "1",
+  JAVA: "/jdk/bin/java",
+})
+const command = ["/node/bin/node", "scripts/old-proofs-run.mjs", "scripts/sticks.test.mjs"]
+const cleared = [
+  "env",
+  "-i",
+  "PATH=/node/bin:/usr/local/bin:/usr/bin:/bin",
+  "HOME=/scratch",
+  "TMPDIR=/scratch",
+  "NO_COLOR=1",
+  "JAVA=/jdk/bin/java",
+  ...command,
+]
+same("a local proof runs with a cleared environment", sandboxed({ env, command, runsInCi: false }), cleared)
 same(
-  "head code sees no token and no runner file",
-  headEnv({
-    PATH: "/bin",
-    GH_TOKEN: "t",
-    GITHUB_OUTPUT: "/o",
-    ACTIONS_RUNTIME_TOKEN: "t",
-    NPM_SECRET: "s",
-    JAVA_HOME_21_X64: "/j",
-  }),
-  { PATH: "/bin", JAVA_HOME_21_X64: "/j", NO_COLOR: "1" },
+  "a proof in CI runs with no network, as nobody, with no way back up",
+  sandboxed({ env, command, runsInCi: true }),
+  [
+    "sudo",
+    "-n",
+    "unshare",
+    "--net",
+    "--",
+    "setpriv",
+    "--reuid=65534",
+    "--regid=65534",
+    "--clear-groups",
+    "--no-new-privs",
+    "--",
+    ...cleared,
+  ],
 )
