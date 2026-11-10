@@ -13,7 +13,18 @@ const runOf = (v) => {
   return "run undone"
 }
 
-export const state = (v) => `${textOf(v)}, ${runOf(v)}`
+const presentText = (v) => {
+  if (v.nodeA !== true && v.nodeA !== false) return ""
+  const names = []
+  if (v.nodeA === true) names.push("a")
+  if (v.nodeB === true) names.push("b")
+  const label = names.length === 0 ? "none" : names.join(" and ")
+  return `, present ${label}`
+}
+
+const memoryText = (v) => (v.didRead === true ? ", the second run remembers the nodes" : "")
+
+export const state = (v) => `${textOf(v)}, ${runOf(v)}${presentText(v)}${memoryText(v)}`
 
 export const step = (action, from) => {
   if (action === "Done" || action === "AgentRereads") return null
@@ -31,6 +42,10 @@ export const step = (action, from) => {
   if (action === "AgentWrites") return "the agent writes"
   if (action === "RunStops") return "the person stops the run"
   if (action === "RunUndoes") return "the person undoes the run"
+  if (action === "AddNode") return "the edit adds node b"
+  if (action === "RemoveNode") return "the edit removes node b"
+  if (action === "SecondRunReads") return "the second run reads the present nodes"
+  if (action === "NameAbsent") return "the edit names a missing node"
   return null
 }
 

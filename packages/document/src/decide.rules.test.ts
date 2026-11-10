@@ -7,6 +7,7 @@ import {
   version,
   type Command,
   type Decision,
+  type NodeRegister,
   type Phase,
   type Register,
   type Refusal,
@@ -1388,26 +1389,47 @@ for (const row of agentRules) {
   add(agentKey(row.command, row.phase, row.runMatch, row.readAt, row.guarded, row.agentLanded), row)
 }
 
+function copyNode(node: NodeRegister): NodeRegister {
+  return {
+    route: node.route,
+    floor: node.floor,
+    landed: node.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
+    phase: node.phase,
+    runId: node.runId,
+    readAt: node.readAt,
+    guarded: node.guarded,
+    claimed: node.claimed,
+    stoppedAt: node.stoppedAt,
+  }
+}
+
 function copyRegister(register: Register): Register {
   return {
-    route: register.route,
-    floor: register.floor,
-    landed: register.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
-    phase: register.phase,
-    runId: register.runId,
-    readAt: register.readAt,
-    guarded: register.guarded,
-    claimed: register.claimed,
-    stoppedAt: register.stoppedAt,
+    ...copyNode(register),
+    nodes: [...register.nodes],
+    readNodes: register.readNodes === null ? null : [...register.readNodes],
+    b: register.b === null ? null : copyNode(register.b),
   }
+}
+
+function freezeNode(node: NodeRegister): void {
+  for (const row of node.landed) {
+    Object.freeze(row)
+  }
+  Object.freeze(node.landed)
 }
 
 function freezeRegister(register: Register): Register {
   const copy = copyRegister(register)
-  for (const row of copy.landed) {
-    Object.freeze(row)
+  freezeNode(copy)
+  Object.freeze(copy.nodes)
+  if (copy.readNodes !== null) {
+    Object.freeze(copy.readNodes)
   }
-  Object.freeze(copy.landed)
+  if (copy.b !== null) {
+    freezeNode(copy.b)
+    Object.freeze(copy.b)
+  }
   return Object.freeze(copy)
 }
 
@@ -1461,7 +1483,10 @@ function commandKey(register: Register, command: Command): string {
       agentHasLanded(register),
     )
   }
-  return runKey(command.command, register.phase, register.runId === command.runId)
+  if (command.command === "start" || command.command === "stop" || command.command === "undo") {
+    return runKey(command.command, register.phase, register.runId === command.runId)
+  }
+  throw new Error("missing command")
 }
 
 function commands(register: Register): readonly Command[] {

@@ -9,6 +9,8 @@ export {
   type Command,
   type Decision,
   type Landed,
+  type NodeName,
+  type NodeRegister,
   type Phase,
   type Register,
   type Refusal,
