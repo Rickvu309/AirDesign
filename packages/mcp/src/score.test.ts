@@ -69,7 +69,7 @@ describe("score", () => {
     const deck = running()
     const result = score(
       {
-        source: ["21"],
+        landed: ["21"],
         steps: [
           {
             name: "airdesign_edit_deck",
