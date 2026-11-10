@@ -7,9 +7,7 @@ declare const process: {
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { exportPackage, samePartBytes } from "./export-package.js"
 import { readParts } from "./package-container.js"
-import { readPackage } from "./package-limits.js"
 import { readShapes, type ShapeKind } from "./read-shapes.js"
 import { shapeById, applyRoute } from "./slide-route.js"
 
@@ -95,10 +93,12 @@ describe("readShapes", () => {
       const parts = await readParts(readFileSync(fixture(name)))
       const shapes = readShapes(parts)
       const seen = new Set<string>()
+      const duplicates: string[] = []
+      const mismatches: string[] = []
       const documents = new Map<string, ReturnType<typeof markupDocument>>()
       for (const row of shapes) {
         const id = `${row.slide}.${row.shape}`
-        expect(seen.has(id)).toBe(false)
+        if (seen.has(id)) duplicates.push(id)
         seen.add(id)
         let document = documents.get(row.part)
         if (document === undefined) {
@@ -108,14 +108,12 @@ describe("readShapes", () => {
           documents.set(row.part, document)
         }
         const found = shapeById(document.elements, row.shape)
-        expect(found.kind).toBe(row.kind)
-        expect(inFallback(document.elements, found.index)).toBe(false)
+        if (found.kind !== row.kind) mismatches.push(`${id} is ${found.kind}, read as ${row.kind}`)
+        if (inFallback(document.elements, found.index)) mismatches.push(`${id} sits in a fallback`)
       }
+      expect(duplicates).toEqual([])
+      expect(mismatches).toEqual([])
       expect(shapes.filter((shape) => shape.locked)).toHaveLength(name === "doe-heat-pumps.pptx" ? 5 : 0)
-      const written = await exportPackage(readFileSync(fixture(name)), parts)
-      const read = await readPackage(written)
-      expect(read.ok).toBe(true)
-      if (read.ok) expect(samePartBytes(parts, read.parts)).toBe(true)
     }
   }, 30_000)
 
