@@ -190,7 +190,6 @@ test("an export with no edit is the same file byte for byte", async ({ page }, t
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
   await saveExport(page, saved)
   expect(await changedParts(fixture, saved)).toEqual([])
-  test.fail()
   expect((await readFile(saved)).equals(await readFile(fixture))).toBe(true)
 })
 
