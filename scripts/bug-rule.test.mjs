@@ -10,8 +10,14 @@ const write = (root, relative, source) => {
   fs.writeFileSync(file, source)
 }
 
+const roots = []
+process.on("exit", () => {
+  for (const root of roots) fs.rmSync(root, { recursive: true, force: true })
+})
+
 const sample = () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-budget-"))
+  roots.push(root)
   write(root, "apps/kept.ts", "export const saved = 1\n\nexport const next = 2\n")
   write(root, "apps/blank.ts", "\n\n")
   write(root, "apps/kept.test.ts", "export const saved = 1\n")
@@ -39,7 +45,7 @@ if (counted !== 2) throw new Error(`apps count skipped a real line or kept a bla
 const underRoot = sample()
 track(underRoot)
 const under = budget(underRoot)
-if (under.product !== 3 || under.processLines !== 2 || under.over) {
+if (under.product !== 3 || under.ruleLines !== 1 || under.over) {
   throw new Error(`small trees stay under the cap\n${JSON.stringify(under)}`)
 }
 
@@ -48,12 +54,21 @@ write(wide, "apps/more.ts", `${"export const saved = 1\n".repeat(1999)}`)
 write(wide, "tooling/more.js", `${"export const rule = 1\n".repeat(201)}`)
 track(wide)
 const open = budget(wide)
-if (open.product !== 2002 || open.processLines !== 203 || !open.over) {
+if (open.product !== 2002 || open.ruleLines !== 202 || !open.over) {
   throw new Error(`a wide tree must retire a rule\n${JSON.stringify(open)}`)
 }
 const lines = report(open)
-if (!lines.includes("product 2002") || !lines.includes("tooling and scripts 203") || !lines.includes("percent 10.1")) {
+if (!lines.includes("product 2002") || !lines.includes("tooling 202") || !lines.includes("percent 10.1")) {
   throw new Error(`report missed the counts\n${lines.join("\n")}`)
+}
+
+const runner = sample()
+write(runner, "apps/more.ts", `${"export const saved = 1\n".repeat(1999)}`)
+write(runner, "scripts/more.mjs", `${"export const check = 1\n".repeat(5000)}`)
+track(runner)
+const proving = budget(runner)
+if (proving.product !== 2002 || proving.ruleLines !== 1 || proving.over) {
+  throw new Error(`a runner in scripts must not spend the rule budget\n${JSON.stringify(proving)}`)
 }
 
 const capped = sample()
