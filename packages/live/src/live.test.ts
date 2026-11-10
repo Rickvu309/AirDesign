@@ -615,7 +615,7 @@ describe("live cache", () => {
   it("reads the same part names and hashes back after a new connect", async () => {
     const files = installParts()
     const shared = new Uint8Array([9, 8, 7])
-    const other = new Uint8Array([1, 2])
+    const other = new Uint8Array([255, 0, 128])
     const slide = "ppt/slides/slide1.xml"
     const copy = "ppt/slides/slide2.xml"
     const notes = "ppt/notesSlides/notesSlide1.xml"
@@ -656,7 +656,7 @@ describe("live cache", () => {
     expect([...read.parts.keys()]).toEqual([slide, copy, notes])
     expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
     expect(Array.from(read.parts.get(copy) ?? [])).toEqual([9, 8, 7])
-    expect(Array.from(read.parts.get(notes) ?? [])).toEqual([1, 2])
+    expect(Array.from(read.parts.get(notes) ?? [])).toEqual([255, 0, 128])
     expect(read.nodes).toEqual(nodes)
     expect(files.size).toBe(2)
     expect([...files.keys()].sort()).toEqual(stored)
@@ -670,6 +670,7 @@ describe("live cache", () => {
     const layout = "ppt/slideLayouts/slideLayout1.xml"
     const cleanNodes = { a: { part: slide, shape: "2" } }
     const otherNodes = { a: { part: notes, shape: "5" } }
+    const blank = "ppt/media/blank.bin"
     const clean = await putParts("clean", {
       parts: new Map<string, Uint8Array>([
         [slide, new Uint8Array([9, 8, 7])],
@@ -677,14 +678,20 @@ describe("live cache", () => {
       ]),
       nodes: cleanNodes,
     })
+    const stale = await putParts("other", {
+      parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
+      nodes: cleanNodes,
+    })
     const other = await putParts("other", {
       parts: new Map<string, Uint8Array>([
         [slide, new Uint8Array([4, 5])],
         [notes, new Uint8Array([6])],
+        [blank, new Uint8Array()],
       ]),
       nodes: otherNodes,
     })
     expect(clean.ok).toBe(true)
+    expect(stale.ok).toBe(true)
     expect(other.ok).toBe(true)
     const cache = connect(memoryRemote())
     expect((await cache.openDeck("clean")).ok).toBe(true)
@@ -698,9 +705,10 @@ describe("live cache", () => {
     expect(Array.from(readClean.parts.get(slide) ?? [])).toEqual([9, 8, 7])
     expect(Array.from(readClean.parts.get(layout) ?? [])).toEqual([3])
     expect(readClean.nodes).toEqual(cleanNodes)
-    expect([...readOther.parts.keys()]).toEqual([slide, notes])
+    expect([...readOther.parts.keys()]).toEqual([slide, notes, blank])
     expect(Array.from(readOther.parts.get(slide) ?? [])).toEqual([4, 5])
     expect(Array.from(readOther.parts.get(notes) ?? [])).toEqual([6])
+    expect(readOther.parts.get(blank)?.byteLength).toBe(0)
     expect(readOther.nodes).toEqual(otherNodes)
   })
 
