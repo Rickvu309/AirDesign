@@ -32,7 +32,11 @@ create table deck.saved (
   id text primary key,
   revision integer not null,
   register jsonb not null,
-  owner text not null
+  owner text not null,
+  name text not null default '',
+  created timestamptz not null default now(),
+  edited timestamptz not null default now(),
+  trashed timestamptz
 );
 create table deck.once (
   email text not null,
