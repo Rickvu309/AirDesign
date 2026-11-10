@@ -12,6 +12,7 @@ import {
   type Register,
   type Refusal,
 } from "./decide.js"
+import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type Effect = "add" | "remove" | "person" | "start" | "stop" | "read"
 
@@ -116,52 +117,6 @@ for (const rule of rules) {
     throw new Error(`duplicate row ${key}`)
   }
   table.set(key, rule)
-}
-
-function copyNode(node: NodeRegister): NodeRegister {
-  return {
-    route: node.route,
-    floor: node.floor,
-    landed: node.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
-    phase: node.phase,
-    runId: node.runId,
-    readAt: node.readAt,
-    guarded: node.guarded,
-    claimed: node.claimed,
-    stoppedAt: node.stoppedAt,
-    slides: node.slides,
-    bytes: node.bytes,
-  }
-}
-
-function copyRegister(register: Register): Register {
-  return {
-    ...copyNode(register),
-    nodes: [...register.nodes],
-    readNodes: register.readNodes === null ? null : [...register.readNodes],
-    b: register.b === null ? null : copyNode(register.b),
-  }
-}
-
-function freezeNode(node: NodeRegister): void {
-  for (const row of node.landed) {
-    Object.freeze(row)
-  }
-  Object.freeze(node.landed)
-}
-
-function freezeRegister(register: Register): Register {
-  const copy = copyRegister(register)
-  freezeNode(copy)
-  Object.freeze(copy.nodes)
-  if (copy.readNodes !== null) {
-    Object.freeze(copy.readNodes)
-  }
-  if (copy.b !== null) {
-    freezeNode(copy.b)
-    Object.freeze(copy.b)
-  }
-  return Object.freeze(copy)
 }
 
 function names(hasA: boolean, hasB: boolean): NodeName[] {
@@ -434,36 +389,22 @@ function identity(register: Register): string {
   })
 }
 
-function enqueue(register: Register, queue: Register[], visited: Set<string>): void {
-  if (tooManyPeople(register)) {
-    return
+function checkCommand(register: Register, command: Command, seen: Set<string>): Register | null {
+  const key = situationKey(register, command)
+  const before = copyRegister(register)
+  const decision = decide(register, command)
+  expect(register, key).toEqual(before)
+  const rule = table.get(key)
+  if (rule === undefined) {
+    throw new Error(`missing row ${key}`)
   }
-  const successor = freezeRegister(register)
-  const id = identity(successor)
-  if (visited.has(id)) {
-    return
-  }
-  visited.add(id)
-  queue.push(successor)
-}
-
-function finish(
-  register: Register,
-  command: Command,
-  decision: Decision,
-  rule: StructureRule,
-  key: string,
-  queue: Register[],
-  visited: Set<string>,
-  seen: Set<string>,
-): void {
   if (rule.outcome === "refuse") {
     if (rule.code === undefined) {
       throw new Error(`missing code ${key}`)
     }
     expect(decision, key).toEqual({ decision: "refuse", code: rule.code })
     noteVisit(register, command, decision, seen)
-    return
+    return null
   }
   expect(decision.decision, key).toBe("apply")
   if (decision.decision !== "apply") {
@@ -477,25 +418,7 @@ function finish(
   expectRead(register, decision.register, rule.effect, key)
   expectTarget(register, decision.register, command, rule, key)
   noteVisit(register, command, decision, seen)
-  enqueue(decision.register, queue, visited)
-}
-
-function checkCommand(
-  register: Register,
-  command: Command,
-  queue: Register[],
-  visited: Set<string>,
-  seen: Set<string>,
-): void {
-  const key = situationKey(register, command)
-  const before = copyRegister(register)
-  const decision = decide(register, command)
-  expect(register, key).toEqual(before)
-  const rule = table.get(key)
-  if (rule === undefined) {
-    throw new Error(`missing row ${key}`)
-  }
-  finish(register, command, decision, rule, key, queue, visited, seen)
+  return decision.register
 }
 
 const required = [
@@ -509,24 +432,19 @@ const required = [
 ]
 
 function walk(): void {
-  const opened = freezeRegister(openRegister("floor", "slide"))
-  const queue: Register[] = [opened]
-  const visited = new Set<string>([identity(opened)])
   const seen = new Set<string>()
-  let dequeued = 0
-  while (queue.length > 0) {
-    const current = queue.shift()
-    if (current === undefined) {
-      throw new Error("empty queue")
-    }
-    dequeued += 1
-    if (dequeued > 80) {
-      throw new Error("state cap hit")
-    }
-    for (const command of commands()) {
-      checkCommand(current, command, queue, visited, seen)
-    }
-  }
+  walkRegisters({
+    start: freezeRegister(openRegister("floor", "slide")),
+    identity,
+    commands: () => commands(),
+    keep: (register) => !tooManyPeople(register),
+    cap: (dequeued) => {
+      if (dequeued > 80) {
+        throw new Error("state cap hit")
+      }
+    },
+    step: (register, command) => checkCommand(register, command, seen),
+  })
   for (const name of required) {
     if (!seen.has(name)) {
       throw new Error(`not visited: ${name}`)
