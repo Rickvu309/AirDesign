@@ -12,7 +12,7 @@ export type ScoreStep = {
 }
 
 export type ScoreTask = {
-  readonly source: readonly string[]
+  readonly landed: readonly string[]
   readonly steps: readonly ScoreStep[]
 }
 
@@ -59,6 +59,10 @@ function reportsCapturedFile(result: ToolResult): boolean {
   return result.content.some((block) => /captured file|file was captured|image\/png|\.png\b|\.pptx\b/i.test(block.text))
 }
 
+function sameOrder(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
 export function score(task: ScoreTask, deck: Deck, caller: AgentCaller): ScoreResult {
   let current = deck
   for (const step of task.steps) {
@@ -75,13 +79,13 @@ export function score(task: ScoreTask, deck: Deck, caller: AgentCaller): ScoreRe
     if (result.ok) current = result.deck
   }
   const values = landedValues(current)
-  return { pass: values.every((value) => task.source.includes(value)), deck: current }
+  return { pass: sameOrder(values, task.landed), deck: current }
 }
 
 const deckId = "deck"
 
 export const landSourceTask: ScoreTask = {
-  source: ["21"],
+  landed: ["21"],
   steps: [
     {
       name: toolName("edit_deck"),
@@ -91,7 +95,7 @@ export const landSourceTask: ScoreTask = {
 }
 
 export const staleEditTask: ScoreTask = {
-  source: ["21"],
+  landed: [],
   steps: [
     {
       name: toolName("edit_deck"),
@@ -101,7 +105,7 @@ export const staleEditTask: ScoreTask = {
 }
 
 export const captureAbsentTask: ScoreTask = {
-  source: ["21"],
+  landed: [],
   steps: [
     {
       name: toolName("capture_slide"),

@@ -9,4 +9,5 @@ export {
   type ScoreStep,
   type ScoreTask,
 } from "./score.js"
+export { suite, type SuiteTask } from "./suite.js"
 export { createServer } from "./server.js"
