@@ -33,7 +33,8 @@ const steps = {
 export const state = (v) => {
   const revoked = v.revoked === true ? "revoked" : "live"
   const reused = v.reused === true ? "reused" : "fresh"
-  return `${v.principal} ${v.deck} code ${v.code} generation ${v.generation} ${revoked} ${reused}`
+  const after = v.acceptedAfter === true ? "accepted-after" : "quiet"
+  return `${v.principal} ${v.deck} code ${v.code} generation ${v.generation} ${revoked} ${reused} exchanges ${v.exchanges} call ${v.callNamed} at ${v.callAt} on ${v.callDeck} rotate ${v.rotateNamed} at ${v.rotateAt} exchange ${v.exchangeDeck} ${after}`
 }
 
 export const step = (action) => steps[action] ?? null
