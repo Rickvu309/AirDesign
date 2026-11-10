@@ -153,8 +153,7 @@ export async function writeParts(parts: ReadonlyMap<string, Uint8Array>): Promis
   return writer.close()
 }
 
-export async function roundTripPackage(bytes: Uint8Array): Promise<Uint8Array> {
-  const parts = await readParts(bytes)
+export function carryParts(parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string, Uint8Array> {
   const names = new Set(parts.keys())
   const next = new Map<string, Uint8Array>()
   for (const [name, data] of parts) {
@@ -167,5 +166,9 @@ export async function roundTripPackage(bytes: Uint8Array): Promise<Uint8Array> {
     const kept = keepRelationships(xml, (target) => names.has(resolveTarget(source, target)))
     next.set(name, kept === xml ? data : encodeUtf8(kept))
   }
-  return writeParts(next)
+  return next
+}
+
+export async function roundTripPackage(bytes: Uint8Array): Promise<Uint8Array> {
+  return writeParts(carryParts(await readParts(bytes)))
 }
