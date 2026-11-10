@@ -13,13 +13,13 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## Commands
 
-- `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`.
+- `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
 - `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It installs LibreOffice into `~/.cache/pptx-tools` on first use and needs the .NET 8 SDK.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
 
-`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. After it merges, remove its local worktree and branch if nothing else uses them.
+`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. `main` only merges a PR that contains the latest `main`, so when yours falls behind, run `gh pr update-branch --rebase`. After it merges, remove its local worktree and branch if nothing else uses them.
 
 ## Ways to hurt yourself
 
@@ -32,6 +32,11 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - `apps/site` is the marketing and sign-in site. Color, type, space and motion live in `packages/theme`. Site classes stay in `src/site/site-theme.css`.
 - `apps/web` is the product UI. Product screens go here, never in `apps/site`. Each designed state is a page at `/screens/<id>-<name>`, registered in `src/<area>/<area>-screens.tsx`. Use shadcn parts, Sonner for toasts, and AI Elements for agent chat.
 - `packages/*` are shared packages. The build refuses a deep import, an undeclared dependency, or a browser or Node API in a pure package.
+  - `packages/document` decides what an edit does: order, undo, offline replay and the deck limits. It imports no other package.
+  - `packages/pptx` reads and writes PowerPoint files. It may import `document`.
+  - `packages/theme` holds the tokens for color, type, space and motion.
+- `specs/<topic>` holds a TLA+ spec for each state machine. A rule a person cares about is an invariant there.
+- `tooling/` holds rules that constrain code. `scripts/` holds runners and generators.
 
 ## Rules
 
@@ -44,3 +49,22 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - With reduced motion on, a page shows its finished state with no movement.
 - Test behavior that can break, at the lowest layer that fails. Tests never retry.
 - Do not commit plans, research notes or scratch files. A merged PR is the record.
+
+## What enforces each rule
+
+A rule with a check fails `pnpm check`. A rule marked review is a judgment call, and nothing fails when you skip it. When a mistake repeats, give its rule a check and move the row.
+
+| Rule | Enforced by |
+| --- | --- |
+| No comments, no lint suppressions | lint: `no-comments` and the comment scan |
+| No raw hex, sized arbitrary class or blanket transition | lint: `no-raw` |
+| No file or folder named `utils`, `helpers` or `common` | lint: the name scan |
+| A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
+| Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
+| A state machine keeps its invariants | `pnpm check:specs` |
+| An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |
+| Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
+| Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
+| Tests never retry | `retry: 0` in the Vitest and Playwright configs |
+| `main` takes only a gated commit that contains the latest `main` | branch protection |
+| One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
