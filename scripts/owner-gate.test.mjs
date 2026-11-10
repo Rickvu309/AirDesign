@@ -365,4 +365,44 @@ same("a removed test file lowers the bar", removedTest, [
   },
 ])
 
+const routes = "routes pptx writes"
+const withRoutes = (base, head) =>
+  ownerReasons({
+    baseSticks: { [routes]: base },
+    headSticks: { [routes]: head },
+    changedFiles: [],
+    changedScripts: [],
+  }).map((reason) => reason.text)
+same(
+  "a goal that moves further ahead is a higher bar and needs nobody",
+  withRoutes({ now: 17, goal: 50 }, { now: 17, goal: 53 }),
+  [],
+)
+same(
+  "a higher bar with progress in the same change needs nobody",
+  withRoutes({ now: 17, goal: 50 }, { now: 19, goal: 53 }),
+  [],
+)
+same("a higher bar does not excuse a count that fell", withRoutes({ now: 17, goal: 50 }, { now: 15, goal: 53 }), [
+  `${routes} went from 17 to 15, away from its goal of 50.`,
+])
+same("a goal that moves closer is a lower bar", withRoutes({ now: 17, goal: 50 }, { now: 17, goal: 40 }), [
+  `The goal of ${routes} went from 50 to 40.`,
+])
+same(
+  "for a count that should fall, a goal further down is a higher bar",
+  withRoutes({ now: 6, goal: 3 }, { now: 6, goal: 0 }),
+  [],
+)
+same(
+  "for a count that should fall, a goal further up is a lower bar",
+  withRoutes({ now: 6, goal: 3 }, { now: 6, goal: 5 }),
+  [`The goal of ${routes} went from 3 to 5.`],
+)
+same(
+  "a goal that moves when the count already met it needs the owner",
+  withRoutes({ now: 4, goal: 4 }, { now: 4, goal: 9 }),
+  [`The goal of ${routes} went from 4 to 9.`],
+)
+
 console.log("owner-gate tests passed")
