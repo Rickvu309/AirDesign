@@ -15,11 +15,13 @@ describe("addTextShape", () => {
     expect(xml.indexOf("<a:xfrm")).toBeLessThan(xml.indexOf("<a:prstGeom"))
     expect(xml.indexOf("<a:bodyPr")).toBeLessThan(xml.indexOf("<a:lstStyle"))
     expect(xml.indexOf("<a:lstStyle")).toBeLessThan(xml.indexOf("<a:p>"))
+    expect(xml.indexOf("<p:spPr>")).toBeLessThan(xml.indexOf("<p:txBody>"))
     expect(xml.indexOf("<p:sp>")).toBeGreaterThan(xml.indexOf("<p:grpSpPr"))
     expect(xml.indexOf("<p:sp>")).toBeLessThan(xml.lastIndexOf("</p:spTree>"))
     const again = addTextShape(xml, "B", box)
     expect(again).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
     expect(again.indexOf(`id="2"`)).toBeLessThan(again.indexOf(`id="3"`))
+    expect(addTextShape(slide, "😀", box)).toContain("<a:t>😀</a:t>")
   })
 
   it("refuses a slide with no shape tree and a box that is not an integer", () => {
