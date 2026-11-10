@@ -2,6 +2,8 @@ import { readAgentEdit, type WireChange } from "@airdesign/catalog"
 import { decide, type Decision, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
+import { editRefusal } from "./edit-answer.js"
+import type { EditCode } from "./edit-next.js"
 
 export function agentCaller(runId: string): AgentCaller {
   return { actor: "agent", runId }
@@ -31,7 +33,7 @@ function startedElement(
   candidate: () => string,
 ):
   | { readonly ok: true; readonly register: Register; readonly runId: string }
-  | { readonly ok: false; readonly refusal: string } {
+  | { readonly ok: false; readonly refusal: EditCode } {
   const opened = openedElement(register, change)
   if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
   const body = opened.register.elements[change.node]
@@ -51,7 +53,7 @@ export function openRun(
   mint: () => string,
 ):
   | { readonly ok: true; readonly register: Register; readonly caller: AgentCaller }
-  | { readonly ok: false; readonly refusal: string } {
+  | { readonly ok: false; readonly refusal: EditCode } {
   const parsed = readAgentEdit(raw)
   if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
   let next = register
@@ -71,7 +73,8 @@ export function openRun(
   return { ok: true, register: next, caller }
 }
 
-export function afterWrite(wrote: boolean, result: ToolResult, loaded: Deck): ToolResult {
+export function afterWrite(wrote: boolean, result: ToolResult, stored: Deck): ToolResult {
   if (!result.ok || wrote) return result
-  return { ok: false, refusal: "stale", deck: loaded, content: [{ type: "text", text: "stale" }] }
+  const nodes = (result.answer?.elements ?? []).map((element) => element.node)
+  return editRefusal(stored, "stale", nodes)
 }

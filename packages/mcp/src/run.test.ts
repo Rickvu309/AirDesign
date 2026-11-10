@@ -3,6 +3,8 @@ import { decide, elementId, openRegister, version, type Register } from "@airdes
 import { openDeck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import type { ToolResult } from "./call-tool.js"
+import { editLanded } from "./edit-answer.js"
+import { editNext } from "./edit-next.js"
 import { afterWrite, openRun } from "./run.js"
 
 const node = elementId("258.7")
@@ -180,21 +182,31 @@ describe("openRun", () => {
 })
 
 describe("afterWrite", () => {
-  it("answers stale and keeps the loaded deck when the write loses", () => {
+  it("answers stale with the stored deck when the write loses", () => {
     const named = readDeckId("deck")
     if (!named.ok) throw new Error(named.refusal)
     const loaded = openDeck(named.deck)
-    const landed: ToolResult = {
-      ok: true,
-      deck: { ...loaded, revision: 1 },
-      content: [{ type: "text", text: "Landed revision 1." }],
-    }
-    const lost = afterWrite(false, landed, loaded)
+    const node = elementId("258.7")
+    const stored = decide(loaded.register, { command: "add", node, floor: "", route: "slide" })
+    if (stored.decision !== "apply") throw new Error(stored.code)
+    const won = decide(stored.register, { command: "person", value: "won", node })
+    if (won.decision !== "apply") throw new Error(won.code)
+    const storedDeck = { id: loaded.id, revision: 1, register: won.register }
+    const computed = decide(stored.register, { command: "person", value: "lost", node })
+    if (computed.decision !== "apply") throw new Error(computed.code)
+    const landed: ToolResult = editLanded({ id: loaded.id, revision: 1, register: computed.register }, [node])
+    const lost = afterWrite(false, landed, storedDeck)
     expect(lost.ok).toBe(false)
     if (lost.ok) return
     expect(lost.refusal).toBe("stale")
-    expect(lost.deck).toBe(loaded)
-    expect(lost.content).toEqual([{ type: "text", text: "stale" }])
+    expect(lost.deck).toBe(storedDeck)
+    const answer = { ok: false, revision: 1, refusal: "stale", elements: [{ node, value: "won", version: 1 }] }
+    expect(lost.content).toEqual([
+      { type: "text", text: editNext.stale },
+      { type: "text", text: JSON.stringify(answer) },
+    ])
+    expect(lost.answer).toEqual(answer)
+    expect(JSON.stringify(lost)).not.toContain("lost")
     expect(afterWrite(true, landed, loaded)).toBe(landed)
   })
 })

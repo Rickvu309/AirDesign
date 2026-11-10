@@ -3,7 +3,7 @@ import { openTab, type Tab } from "@airdesign/device"
 import { decide, elementId, version, type ElementId, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { callTool, emptyLog, type AgentCaller, type Session } from "./index.js"
+import { callTool, editNext, emptyLog, type AgentCaller, type Session } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -90,7 +90,12 @@ describe("callTool", () => {
     ])
     expect(deck.revision).toBe(0)
     expect(nodeBody(deck.register).landed).toEqual([])
-    expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+    const answer = { ok: true, revision: 1, elements: [{ node: "258.7", value: "21", version: 1 }] }
+    expect(result.content).toEqual([
+      { type: "text", text: "Landed revision 1." },
+      { type: "text", text: JSON.stringify(answer) },
+    ])
+    expect(result.answer).toEqual(answer)
   })
 
   it("refuses a client field and leaves the deck", () => {
@@ -227,6 +232,70 @@ describe("callTool", () => {
     ])
     expect(nodeBody(after.register).phase).toBe("stopped")
     expect(nodeBody(after.register).landed).toEqual([{ actor: "agent", value: "old", visible: true, runId: "run" }])
+  })
+
+  it("answers run-fenced for one call naming elements under two runs, and each lands in its own call", () => {
+    const deck = opened()
+    const other = elementId("258.8")
+    let register = deck.register
+    for (const command of [
+      { command: "add", node, floor: "", route: "slide" },
+      { command: "add", node: other, floor: "", route: "slide" },
+      { command: "start", runId: "held", node },
+      { command: "start", runId: "ended", node: other },
+      { command: "stop", runId: "ended", node: other },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    const before = { id: deck.id, revision: 0, register }
+    const both = callTool(
+      "airdesign_edit_deck",
+      {
+        deck: "deck",
+        base: 0,
+        changes: [
+          { value: "a", node: "258.7", readAt: 0 },
+          { value: "b", node: "258.8", readAt: 0 },
+        ],
+      },
+      sessionFor(before),
+    )
+    expect(both.ok).toBe(false)
+    if (both.ok) return
+    expect(both.refusal).toBe("run-fenced")
+    expect(both.deck).toBe(before)
+    expect(both.content[0]).toEqual({ type: "text", text: editNext["run-fenced"] })
+    expect(both.answer).toEqual({
+      ok: false,
+      revision: 0,
+      refusal: "run-fenced",
+      elements: [
+        { node: "258.7", value: "", version: 0 },
+        { node: "258.8", value: "", version: 0 },
+      ],
+    })
+    const first = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "a", node: "258.7", readAt: 0 }] },
+      sessionFor(before),
+    )
+    expect(first.ok).toBe(true)
+    if (!first.ok) return
+    const second = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 1, changes: [{ value: "b", node: "258.8", readAt: 0 }] },
+      sessionFor(first.deck),
+    )
+    expect(second.ok).toBe(true)
+    if (!second.ok) return
+    expect(nodeBody(second.deck.register).landed).toEqual([
+      { actor: "agent", value: "a", visible: true, runId: "held" },
+    ])
+    expect(nodeBody(second.deck.register, other).landed).toEqual([
+      { actor: "agent", value: "b", visible: true, runId: "run" },
+    ])
   })
 
   it("refuses an unknown tool", () => {

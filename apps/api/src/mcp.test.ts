@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
-import type { CallerLog } from "@airdesign/mcp"
+import { type CallerLog, editNext } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -36,7 +36,7 @@ type Stored = {
 
 const toolLimit = "Thirty tool calls in five minutes. The next tool call can run in 300 seconds."
 const captureNext = "Open the deck in AirDesign, then try again."
-const storeFailure = "The deck could not be reached."
+const storeFailure = editNext.store
 
 const element = "258.7"
 const sibling = "258.8"
@@ -52,6 +52,17 @@ function secondEdit(deck: string) {
 
 function otherEdit(deck: string) {
   return { deck, base: 1, changes: [{ value: "no", node: element, readAt: 1 }] }
+}
+
+function landedAnswer(revision: number, elements: readonly { node: string; value: string; version: number }[]) {
+  return { ok: true, revision, elements }
+}
+
+function landedContent(revision: number, elements: readonly { node: string; value: string; version: number }[]) {
+  return [
+    { type: "text", text: `Landed revision ${String(revision)}.` },
+    { type: "text", text: JSON.stringify(landedAnswer(revision, elements)) },
+  ]
 }
 
 function editCall(deck: string) {
@@ -384,9 +395,9 @@ describe("mcp route", () => {
       const foreign = await openedDeck("theirs")
       const opened = await openedDeck("field", nearLimit("field"))
       const cases = [
-        { text: "deck", target: counting.base, cookie: await sign(nearLimit("nodeck")), id: deckName(), extra: {} },
-        { text: "owner", target: counting.base, cookie: await sign(nearLimit("noowner")), id: foreign.id, extra: {} },
-        { text: "field", target: counting.base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
+        { text: editNext.deck, target: counting.base, cookie: await sign(nearLimit("nodeck")), id: deckName(), extra: {} },
+        { text: editNext.owner, target: counting.base, cookie: await sign(nearLimit("noowner")), id: foreign.id, extra: {} },
+        { text: editNext.field, target: counting.base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
         {
           text: storeFailure,
           target: broken.base,
@@ -447,7 +458,7 @@ describe("mcp route", () => {
     expect(opened.json).toMatchObject({ ok: true, revision: 0 })
     await withMcp(firstCookie, async (client) => {
       const listed = await client.listTools()
-      const estimate = Math.ceil(Buffer.byteLength(JSON.stringify({ tools: listed.tools })) / 4)
+      const estimate = Math.ceil(Buffer.byteLength(JSON.stringify(listed)) / 4)
       expect(listed.tools.length).toBe(projectTools(catalog).length)
       expect(listed.tools.length).toBeLessThanOrEqual(20)
       expect(estimate).toBeLessThanOrEqual(8000)
@@ -457,7 +468,8 @@ describe("mcp route", () => {
         arguments: firstEdit(named.deck),
       })
       expect(first.isError).not.toBe(true)
-      expect(first.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+      expect(first.content).toEqual(landedContent(1, [{ node: element, value: "21", version: 1 }]))
+      expect(first.structuredContent).toEqual(landedAnswer(1, [{ node: element, value: "21", version: 1 }]))
       const started = await row(named.deck)
       expect(started?.revision).toBe(1)
       expect(values(started)).toEqual(["21"])
@@ -479,7 +491,7 @@ describe("mcp route", () => {
         arguments: secondEdit(named.deck),
       })
       expect(second.isError).not.toBe(true)
-      expect(second.content).toEqual([{ type: "text", text: "Landed revision 2." }])
+      expect(second.content).toEqual(landedContent(2, [{ node: element, value: "22", version: 2 }]))
       const kept = await row(named.deck)
       expect(kept?.revision).toBe(2)
       expect(values(kept)).toEqual(["21", "22"])
@@ -497,7 +509,7 @@ describe("mcp route", () => {
         name: "airdesign_edit_deck",
         arguments: firstEdit(named.deck),
       })
-      expect(landed.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+      expect(landed.content).toEqual(landedContent(1, [{ node: element, value: "21", version: 1 }]))
     })
     const before = await row(named.deck)
     const other = await sign(address("else"))
@@ -507,7 +519,13 @@ describe("mcp route", () => {
         arguments: otherEdit(named.deck),
       })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([{ type: "text", text: "owner" }])
+      const answer = { ok: false, revision: 0, refusal: "owner", elements: [] }
+      expect(refused.content).toEqual([
+        { type: "text", text: editNext.owner },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(refused.structuredContent).toEqual(answer)
+      expect(JSON.stringify(refused)).not.toContain("21")
     })
     expect(await row(named.deck)).toEqual(before)
   })
@@ -546,7 +564,7 @@ describe("mcp route", () => {
         base: 3,
         changes: [{ value: "late", node: element, readAt: 0 }],
       })
-      expect(alone).toBe("stale")
+      expect(alone).toBe(editNext.stale)
       expect(await row(id)).toEqual(seededRow)
       const paired = await editText(client, {
         deck: id,
@@ -556,9 +574,93 @@ describe("mcp route", () => {
           { value: "late", node: element, readAt: 0 },
         ],
       })
-      expect(paired).toBe("stale")
+      expect(paired).toBe(editNext.stale)
       expect(await row(id)).toEqual(seededRow)
     })
+  })
+
+  it("tells the agent the next step when an edit is stale", async () => {
+    const { id, cookie } = await openedDeck("next")
+    await withMcp(cookie, async (client) => {
+      await seeded(client, id)
+      const stale = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 3, changes: [{ value: "late", node: element, readAt: 0 }] },
+      })
+      expect(stale.isError).toBe(true)
+      const answer = {
+        ok: false,
+        revision: 3,
+        refusal: "stale",
+        elements: [{ node: element, value: "a2", version: 2 }],
+      }
+      expect(stale.content).toEqual([
+        { type: "text", text: editNext.stale },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(stale.structuredContent).toEqual(answer)
+      expect((await row(id))?.revision).toBe(3)
+      const resent = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: answer.revision, changes: [{ value: "late", node: element, readAt: 2 }] },
+      })
+      expect(resent.structuredContent).toEqual(landedAnswer(4, [{ node: element, value: "late", version: 3 }]))
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(4)
+    expect(values(kept)).toEqual(["a1", "a2", "late"])
+  })
+
+  it("lands two edits in a row, each at the version the previous answer carried", async () => {
+    const { id, cookie } = await openedDeck("row")
+    await withMcp(cookie, async (client) => {
+      let readAt = 0
+      let revision = 0
+      for (const value of ["one", "two"]) {
+        const result = await client.callTool({
+          name: "airdesign_edit_deck",
+          arguments: { deck: id, base: revision, changes: [{ value, node: sibling, readAt }] },
+        })
+        expect(result.isError).not.toBe(true)
+        const answer = result.structuredContent as { revision: number; elements: { version: number }[] }
+        expect(result.content.at(-1)).toEqual({ type: "text", text: JSON.stringify(answer) })
+        readAt = answer.elements[0]?.version ?? -1
+        revision = answer.revision
+      }
+      expect(readAt).toBe(2)
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(2)
+    expect(values(kept, sibling)).toEqual(["one", "two"])
+  })
+
+  it("refuses a text value whose run the new element's floor does not have and creates nothing", async () => {
+    const { id, cookie } = await openedDeck("textfrom")
+    const floor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
+    const sent = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
+    const before = await row(id)
+    await withMcp(cookie, async (client) => {
+      const refused = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 0, changes: [{ value: sent, node: created, readAt: 0, floor }] },
+      })
+      expect(refused.isError).toBe(true)
+      const answer = {
+        ok: false,
+        revision: 0,
+        refusal: "text-from",
+        elements: [{ node: created, value: "", version: 0 }],
+      }
+      expect(refused.content).toEqual([
+        { type: "text", text: editNext["text-from"] },
+        { type: "text", text: "Paragraph 0 of the file has runs 0. Use one of them, or -1 for a new run." },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(refused.structuredContent).toEqual(answer)
+    })
+    const kept = await row(id)
+    expect(kept).toEqual(before)
+    expect(kept?.register.nodes).not.toContain(created)
   })
 
   it("lands a call whose base is behind the revision when each readAt is current", async () => {
@@ -617,9 +719,25 @@ describe("mcp route", () => {
         base: 2,
         changes: [{ value: "agent", node: element, readAt: 2 }],
       })
-      expect(text).toBe("person-protected")
+      expect(text).toBe(editNext["person-protected"])
       const kept = await row(id)
       expect(kept).toEqual(guarded)
+      const again = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 2, changes: [{ value: "agent", node: element, readAt: 2 }] },
+      })
+      const answer = {
+        ok: false,
+        revision: 2,
+        refusal: "person-protected",
+        elements: [{ node: element, value: "person", version: 2 }],
+      }
+      expect(again.content).toEqual([
+        { type: "text", text: editNext["person-protected"] },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(again.structuredContent).toEqual(answer)
+      expect(await row(id)).toEqual(guarded)
       expect(values(kept).at(-1)).toBe("person")
     })
   })
@@ -665,7 +783,7 @@ describe("mcp route", () => {
         name: "airdesign_edit_deck",
         arguments: firstEdit(named.deck),
       })
-      expect(landed.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+      expect(landed.content).toEqual(landedContent(1, [{ node: element, value: "21", version: 1 }]))
       const started = await row(named.deck)
       expect(minted.slice(before)).toContain(elementOf(started).runId)
       for (const extra of [{ runId: "client-run" }, { readAt: 5 }, { actor: "person" }] as const) {
@@ -674,7 +792,10 @@ describe("mcp route", () => {
           arguments: { deck: named.deck, base: 1, changes: [{ value: "99", node: element, readAt: 1 }], ...extra },
         })
         expect(refused.isError).toBe(true)
-        expect(refused.content).toEqual([{ type: "text", text: "field" }])
+        expect(refused.content).toEqual([
+          { type: "text", text: editNext.field },
+          { type: "text", text: JSON.stringify({ ok: false, revision: 1, refusal: "field", elements: [] }) },
+        ])
         const kept = await row(named.deck)
         expect(kept).toEqual(started)
         expect(minted.slice(before)).toContain(elementOf(kept).runId)
@@ -692,7 +813,12 @@ describe("mcp route", () => {
         arguments: firstEdit(named.deck),
       })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([{ type: "text", text: "deck" }])
+      const answer = { ok: false, revision: 0, refusal: "deck", elements: [] }
+      expect(refused.content).toEqual([
+        { type: "text", text: editNext.deck },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(refused.structuredContent).toEqual(answer)
     })
     const counted = await deck.query<{ count: string }>(
       "select count(*)::text as count from deck.saved where id = $1",
@@ -868,12 +994,28 @@ describe("mcp route", () => {
         return block.text
       })
       expect(texts.filter((text) => text === "Landed revision 1.")).toHaveLength(1)
-      expect(texts.filter((text) => text === "stale")).toHaveLength(1)
+      expect(texts.filter((text) => text === editNext.stale)).toHaveLength(1)
       const kept = await row(named.deck)
       expect(kept?.revision).toBe(1)
       expect(elementOf(kept).landed).toHaveLength(1)
       const value = elementOf(kept).landed[0]?.value
       expect(value === "21" || value === "22").toBe(true)
+      const lost = [first, second].find((result) => result.isError === true)
+      if (lost === undefined) throw new Error("no lost write")
+      const stored = { ok: false, revision: 1, refusal: "stale", elements: [{ node: element, value, version: 1 }] }
+      expect(lost.structuredContent).toEqual(stored)
+      expect(lost.content).toEqual([
+        { type: "text", text: editNext.stale },
+        { type: "text", text: JSON.stringify(stored) },
+      ])
+      const resent = await left.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: named.deck, base: 1, changes: [{ value: "23", node: element, readAt: 1 }] },
+      })
+      expect(resent.structuredContent).toEqual(landedAnswer(2, [{ node: element, value: "23", version: 2 }]))
+      const after = await row(named.deck)
+      expect(after?.revision).toBe(2)
+      expect(values(after)).toEqual([value, "23"])
     } finally {
       await Promise.all([left.close(), right.close()])
       await served.close()
@@ -896,7 +1038,7 @@ describe("mcp route", () => {
         arguments: { deck: named.deck },
       })
       expect(refused.isError).toBe(true)
-      expect(refused.content).toEqual([{ type: "text", text: "owner" }])
+      expect(refused.content).toEqual([{ type: "text", text: editNext.owner }])
     })
     expect(await row(named.deck)).toEqual(before)
   })
@@ -1009,7 +1151,10 @@ describe("mcp route", () => {
             arguments: firstEdit(named.deck),
           })
           expect(refused.isError).toBe(true)
-          expect(refused.content).toEqual([{ type: "text", text: storeFailure }])
+          expect(refused.content).toEqual([
+            { type: "text", text: storeFailure },
+            { type: "text", text: JSON.stringify({ ok: false, revision: 0, refusal: "store", elements: [] }) },
+          ])
           expect(JSON.stringify(refused)).not.toContain("ECONNREFUSED")
         },
         denied.base,
@@ -1026,7 +1171,17 @@ describe("mcp route", () => {
             arguments: firstEdit(opened.deck),
           })
           expect(refused.isError).toBe(true)
-          expect(refused.content).toEqual([{ type: "text", text: storeFailure }])
+          const answer = {
+            ok: false,
+            revision: 0,
+            refusal: "store",
+            elements: [{ node: element, value: "", version: 0 }],
+          }
+          expect(refused.content).toEqual([
+            { type: "text", text: storeFailure },
+            { type: "text", text: JSON.stringify(answer) },
+          ])
+          expect(refused.structuredContent).toEqual(answer)
           expect(JSON.stringify(refused)).not.toContain("ECONNREFUSED")
         },
         writer.base,
