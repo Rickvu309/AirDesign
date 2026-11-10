@@ -402,7 +402,7 @@ describe("live cache", () => {
     expect(currentValue(opened.register)).toBe("")
   })
 
-  it.fails("shows an edit on its own element after the cache is opened again", async () => {
+  it("shows an edit on its own element after the cache is opened again", async () => {
     const remote = memoryRemote()
     const cache = connect(remote)
     await cache.enqueue("deck", "solo", "258.7")
