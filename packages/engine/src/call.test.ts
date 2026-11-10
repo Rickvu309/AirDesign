@@ -145,6 +145,21 @@ describe("call", () => {
     expect(deck.revision).toBe(0)
   })
 
+  it("refuses an edit for a different deck id", () => {
+    const deck = running()
+    const register = deck.register
+    expect(
+      call(
+        "edit_deck",
+        deck,
+        { actor: "agent", runId: "run", readAt: version(deck.register) },
+        { deck: "other", base: deck.revision, changes: [{ value: "hi" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "deck" })
+    expect(deck.revision).toBe(0)
+    expect(deck.register).toBe(register)
+  })
+
   it("drops the batch when a later edit is refused", () => {
     const deck = opened()
     const before = JSON.parse(JSON.stringify(deck)) as Deck
