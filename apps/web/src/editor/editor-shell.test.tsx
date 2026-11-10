@@ -1,7 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server"
 import { describe, expect, it } from "vitest"
 import { EditorShell } from "@/editor/editor-shell"
-import { galleryDeck } from "@/editor/gallery-deck"
 import { AgentComplete, AgentWorking } from "@/editor/screens/slide-views"
 
 describe("editor shell", () => {
@@ -25,6 +24,7 @@ describe("editor shell", () => {
 
     const saved = renderToStaticMarkup(<AgentComplete />)
     expect(saved).toContain("Q3 Investor Update")
-    expect(saved).toContain(galleryDeck.notes)
+    expect(saved).toContain("Lead with the trend, then the Q3 number. Mention the two enterprise deals.")
+    expect(saved).toContain(">3<")
   })
 })
