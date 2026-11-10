@@ -222,7 +222,7 @@ describe("createServer", () => {
       const body = nodeBody(session.deck.register)
       expect(body.phase).toBe("running")
       expect(body.runId).toBe("run")
-      expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
       expect(before.register.phase).toBe("idle")
       expect(before.register.landed).toEqual([])
     })

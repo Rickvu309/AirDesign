@@ -61,7 +61,7 @@ const cookieDomain = (process.env.COOKIE_DOMAIN ?? "") === "" ? undefined : read
 function configuredHosts(): readonly string[] | undefined {
   const names = (process.env.API_HOSTS ?? "")
     .split(",")
-    .map((name) => name.trim())
+    .map((name) => name.trim().toLowerCase())
     .filter((name) => name.length > 0)
   return names.length === 0 ? undefined : names
 }
