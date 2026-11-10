@@ -5,11 +5,13 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import {
   committedBlobs,
+  fontFingerprint,
   gitBlobId,
   readRender,
   renderCache,
   renderCode,
   renderKey,
+  renderLocale,
   renderName,
   renderSettings,
   renderUse,
@@ -29,9 +31,14 @@ const same = (left, right, message) => {
 }
 
 const deck = Buffer.from("original deck bytes")
-const tools = { soffice: "LibreOffice 24.2.7.2 420(Build:2)", pdftoppm: "pdftoppm version 24.02.0" }
+const machine = {
+  soffice: "LibreOffice 24.2.7.2 420(Build:2)",
+  pdftoppm: "pdftoppm version 24.02.0",
+  fonts: "f".repeat(64),
+  locale: { LANG: "en_US.UTF-8" },
+}
 const code = "render code"
-const base = { deck, tools, settings: renderSettings, code }
+const base = { deck, machine, settings: renderSettings, code }
 const key = renderKey(base)
 const pageA = "a".repeat(64)
 const pageB = "b".repeat(64)
@@ -40,8 +47,33 @@ const changed = (label, input) => {
   if (renderKey({ ...base, ...input }) === key) fail(`the key ignores ${label}`)
 }
 changed("the deck bytes", { deck: Buffer.from("original deck bytez") })
-changed("the LibreOffice version", { tools: { ...tools, soffice: "LibreOffice 24.2.7.3 420(Build:3)" } })
-changed("the pdftoppm version", { tools: { ...tools, pdftoppm: "pdftoppm version 24.02.1" } })
+changed("the LibreOffice version", { machine: { ...machine, soffice: "LibreOffice 24.2.7.3 420(Build:3)" } })
+changed("the pdftoppm version", { machine: { ...machine, pdftoppm: "pdftoppm version 24.02.1" } })
+changed("the font list", { machine: { ...machine, fonts: "e".repeat(64) } })
+changed("the locale", { machine: { ...machine, locale: { LANG: "ja_JP.UTF-8" } } })
+changed("an added locale variable", { machine: { ...machine, locale: { ...machine.locale, LC_ALL: "C" } } })
+
+const listing = "/fonts/a.ttf|Liberation Sans|Regular\n/fonts/b.ttc|WenQuanYi Zen Hei|Regular\n"
+const stamp = (file) => (file === "/fonts/a.ttf" ? "100|1" : "200|2")
+const fonts = fontFingerprint(listing, stamp)
+if (fonts === null || !/^[0-9a-f]{64}$/.test(fonts)) fail("the font list has no fingerprint")
+same(fontFingerprint(listing.split("\n").reverse().join("\n"), stamp), fonts, "the font order changed the fingerprint")
+if (fontFingerprint(listing.replace("Liberation Sans", "Arial"), stamp) === fonts) fail("a font family is ignored")
+if (fontFingerprint(`${listing}/fonts/c.ttf|Calibri|Regular\n`, stamp) === fonts) fail("an added font is ignored")
+if (fontFingerprint(listing, () => "100|9") === fonts) fail("a font file change is ignored")
+same(fontFingerprint("Fontconfig error: no fonts\n"), null, "an empty font list has a fingerprint")
+same(
+  renderLocale({
+    HOME: "/home/a",
+    LC_ALL: "C",
+    LANG: "en_US.UTF-8",
+    SAL_USE_VCLPLUGIN: "gen",
+    FONTCONFIG_FILE: "f",
+    PATH: "/bin",
+  }),
+  { FONTCONFIG_FILE: "f", LANG: "en_US.UTF-8", LC_ALL: "C", SAL_USE_VCLPLUGIN: "gen" },
+  "the locale variables",
+)
 changed("the render code", { code: "render code changed" })
 for (const tool of ["soffice", "pdftoppm"]) {
   renderSettings[tool].forEach((_, index) => {
@@ -85,7 +117,7 @@ const fakeRender = (hashes) => {
   }
 }
 const cacheWith = (render, input = {}) =>
-  renderCache({ folder, tools, settings: renderSettings, code, render, ...input })
+  renderCache({ folder, machine, settings: renderSettings, code, render, ...input })
 
 const first = fakeRender([pageA, pageB])
 const cold = cacheWith(first.render)
@@ -110,11 +142,18 @@ for (const render of ["clean.pptx again", "exported-deck.pptx"]) {
 same(readRender(folder, key), [pageA, pageB], "an uncached render wrote the cache")
 
 const off = fakeRender([pageB])
-const versionless = cacheWith(off.render, { tools: { ...tools, pdftoppm: null } })
+const versionless = cacheWith(off.render, { machine: { ...machine, pdftoppm: null } })
 same(await versionless.pages({ file: "clean.pptx", bytes: deck, use: "cached" }), [pageB], "no version still cached")
 same(versionless.tally.uncached, 1, "no version still read the cache")
 same(off.calls.length, 1, "no version did not render")
 if (!versionless.line().startsWith("render cache off, no pdftoppm version")) fail(versionless.line())
+
+const fontless = fakeRender([pageB])
+const unlisted = cacheWith(fontless.render, { machine: { ...machine, fonts: null } })
+same(await unlisted.pages({ file: "clean.pptx", bytes: deck, use: "cached" }), [pageB], "no font list still cached")
+same(unlisted.tally.uncached, 1, "no font list still read the cache")
+same(fontless.calls.length, 1, "no font list did not render")
+if (!unlisted.line().startsWith("render cache off, no font list")) fail(unlisted.line())
 
 const entry = path.join(folder, `${key}.json`)
 for (const [label, text] of [
@@ -138,4 +177,18 @@ same(
   [],
   "a write left a temporary file",
 )
+const writeFile = fs.writeFileSync
+const writes = []
+fs.writeFileSync = (file, ...rest) => {
+  writes.push({ entry: path.resolve(String(file)) === path.join(folder, `${key}.json`), seen: readRender(folder, key) })
+  return writeFile(file, ...rest)
+}
+try {
+  writeRender(folder, key, [pageB, pageA])
+} finally {
+  fs.writeFileSync = writeFile
+}
+same(writes, [{ entry: false, seen: [pageA] }], "a reader saw the entry while it was written")
+same(readRender(folder, key), [pageB, pageA], "the rename did not land the entry")
+
 same(warm.line(), "render cache 1 hits, 0 misses, 0 uncached, rendering 0.0 seconds", "the cache line")

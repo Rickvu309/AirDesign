@@ -52,22 +52,63 @@ export const toolVersion = (output) =>
     .map((line) => line.trim())
     .find((line) => /(LibreOffice|version)\s+\d+\.\d+/i.test(line)) ?? null
 
-const versionOutput = (command, args) =>
+const commandOutput = (command, args) =>
   new Promise((resolve) => {
-    execFile(command, args, { timeout: 60_000 }, (_, stdout, stderr) => resolve(`${stdout ?? ""}\n${stderr ?? ""}`))
+    execFile(command, args, { timeout: 60_000, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) =>
+      resolve({ ok: error === null, stdout: stdout ?? "", stderr: stderr ?? "" }),
+    )
   })
 
-export const toolVersions = async ({ soffice, pdftoppm }) => {
-  const [office, poppler] = await Promise.all([versionOutput(soffice, ["--version"]), versionOutput(pdftoppm, ["-v"])])
-  return { soffice: toolVersion(office), pdftoppm: toolVersion(poppler) }
+const fileStamp = (file) => {
+  try {
+    const stat = fs.statSync(file)
+    return `${stat.size}|${stat.mtimeMs}`
+  } catch {
+    return "unread"
+  }
 }
 
-export const renderKey = ({ deck, tools, settings, code }) =>
+export const fontFingerprint = (listing, stamp = fileStamp) => {
+  const lines = listing
+    .split("\n")
+    .filter((line) => line.includes("|"))
+    .map((line) => `${line}|${stamp(line.split("|")[0])}`)
+    .sort()
+  return lines.length === 0 ? null : sha256(lines.join("\n"))
+}
+
+const localeName = /^(LANG|LANGUAGE|LC_[A-Z_]+|SAL_\w+|FONTCONFIG_\w+)$/
+
+export const renderLocale = (env) =>
+  Object.fromEntries(
+    Object.keys(env)
+      .filter((name) => localeName.test(name))
+      .sort()
+      .map((name) => [name, env[name]]),
+  )
+
+export const readMachine = async ({ soffice, pdftoppm, env }) => {
+  const [office, poppler, fonts] = await Promise.all([
+    commandOutput(soffice, ["--version"]),
+    commandOutput(pdftoppm, ["-v"]),
+    commandOutput("fc-list", ["--format", "%{file}|%{family}|%{style}\\n"]),
+  ])
+  return {
+    soffice: toolVersion(`${office.stdout}\n${office.stderr}`),
+    pdftoppm: toolVersion(`${poppler.stdout}\n${poppler.stderr}`),
+    fonts: fonts.ok ? fontFingerprint(fonts.stdout) : null,
+    locale: renderLocale(env),
+  }
+}
+
+export const renderKey = ({ deck, machine, settings, code }) =>
   sha256(
     JSON.stringify({
       deck: sha256(deck),
-      soffice: tools.soffice,
-      pdftoppm: tools.pdftoppm,
+      soffice: machine.soffice,
+      pdftoppm: machine.pdftoppm,
+      fonts: machine.fonts,
+      locale: machine.locale,
       settings,
       code,
     }),
@@ -120,11 +161,13 @@ export const writeRender = (folder, key, hashes) => {
   fs.renameSync(temporary, path.join(folder, `${key}.json`))
 }
 
-export const renderCache = ({ folder, tools, settings, code, render }) => {
+export const renderCache = ({ folder, machine, settings, code, render }) => {
   const tally = { hits: 0, misses: 0, uncached: 0, seconds: 0 }
-  const missing = [tools.soffice === null ? "LibreOffice" : null, tools.pdftoppm === null ? "pdftoppm" : null].filter(
-    Boolean,
-  )
+  const missing = [
+    machine.soffice === null ? "LibreOffice version" : null,
+    machine.pdftoppm === null ? "pdftoppm version" : null,
+    machine.fonts === null ? "font list" : null,
+  ].filter(Boolean)
   const timed = async (file) => {
     const started = performance.now()
     try {
@@ -138,7 +181,7 @@ export const renderCache = ({ folder, tools, settings, code, render }) => {
       tally.uncached += 1
       return timed(file)
     }
-    const key = renderKey({ deck: bytes, tools, settings, code })
+    const key = renderKey({ deck: bytes, machine, settings, code })
     const stored = readRender(folder, key)
     if (stored !== null) {
       tally.hits += 1
@@ -152,7 +195,7 @@ export const renderCache = ({ folder, tools, settings, code, render }) => {
   const line = () => {
     const state =
       missing.length > 0
-        ? `render cache off, no ${missing.join(" or ")} version`
+        ? `render cache off, no ${missing.join(" or ")}`
         : `render cache ${tally.hits} hits, ${tally.misses} misses`
     return `${state}, ${tally.uncached} uncached, rendering ${tally.seconds.toFixed(1)} seconds`
   }
