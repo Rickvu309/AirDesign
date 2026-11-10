@@ -140,12 +140,13 @@ function ResetCard() {
 
 function CardButton({ children }: { children: string }) {
   return (
-    <button
+    <Button
       type="button"
-      className="inline-flex h-8 items-center rounded-lg bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3 text-[length:var(--type-dense)] leading-[17px] font-medium text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--primary-strong),0_1px_2px_rgb(0_0_0/12%)] hover:brightness-105"
+      variant="outline"
+      className="h-8 border-0 bg-background px-3 text-[length:var(--type-dense)] leading-[17px] active:translate-y-0 shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
     >
       {children}
-    </button>
+    </Button>
   )
 }
 

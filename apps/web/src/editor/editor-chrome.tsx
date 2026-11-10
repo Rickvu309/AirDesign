@@ -8,9 +8,6 @@ export const deckTitle = "Q3 Investor Update"
 
 export const surfaceShadow = "shadow-[0px_0px_0px_1px_var(--field-edge),0px_1px_2px_var(--black-4)]"
 
-export const brandShadow =
-  "shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--primary-strong),0px_1px_2px_var(--black-12)]"
-
 export const cardShadow = "shadow-[0px_0px_0px_1px_var(--black-7),0px_2px_8px_var(--black-4)]"
 
 export const floatShadow = "shadow-[0px_0px_0px_1px_var(--black-8),0px_12px_32px_var(--black-12)]"
