@@ -15,7 +15,7 @@ export default defineConfig({
   test: {
     retry: 0,
     setupFiles: ["packages/pptx/markup-setup.ts"],
-    include: ["packages/**/*.test.ts", "tests/**/*.test.ts"],
+    include: ["apps/**/*.test.ts", "apps/**/*.test.tsx", "packages/**/*.test.ts", "tests/**/*.test.ts"],
     exclude: ["tests/browser/**", "**/node_modules/**", "**/dist/**"],
     projects: [
       {
