@@ -1,0 +1,33 @@
+{
+  "name": "@airdesign/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "oxlint",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
+    "oxlint": "^1.90.0",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@airdesign/catalog": "workspace:*",
+    "@airdesign/device": "workspace:*",
+    "@airdesign/document": "workspace:*",
+    "@airdesign/engine": "workspace:*",
+    "@modelcontextprotocol/server": "^2.4.0",
+    "zod": "^4.6.7"
+  }
+}
