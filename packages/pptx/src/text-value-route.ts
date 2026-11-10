@@ -139,7 +139,11 @@ export function shapeTextValue(children: MarkupChildren, bytes: Uint8Array, shap
   }))
 }
 
-export function oneRunValue(value: TextValue, text: string): TextValue {
+export function shownText(value: TextValue): string {
+  return value.flatMap((paragraph) => paragraph.runs.map((run) => (run.text === "\n" ? "" : run.text))).join("")
+}
+
+export function retypedOneRun(value: TextValue, text: string): TextValue {
   const paragraph = value[0]
   const run = paragraph?.runs[0]
   if (value.length !== 1 || paragraph === undefined || paragraph.runs.length !== 1) throw new Error("text-shape")

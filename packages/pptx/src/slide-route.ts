@@ -3,7 +3,13 @@ import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { addTextShape } from "./shape-write.js"
-import { markupChildren, textValueEdits } from "./text-value-route.js"
+import {
+  markupChildren,
+  retypedOneRun,
+  shapeTextValue,
+  textValueEdits,
+  type MarkupChildren,
+} from "./text-value-route.js"
 
 export type SlideRoute =
   | { readonly name: "text"; readonly part: string; readonly shape: string; readonly value: TextValue }
@@ -118,6 +124,23 @@ function writeTransform(
   ])
 }
 
+function textTarget(bytes: Uint8Array, id: string): { children: MarkupChildren; shape: MarkupElement } {
+  const document = requireMarkup(bytes)
+  return { children: markupChildren(document.elements), shape: shapeById(document.elements, id) }
+}
+
+export function oneRunValue(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+  text: string,
+): TextValue {
+  const bytes = parts.get(part)
+  if (bytes === undefined) throw new Error("part")
+  const target = textTarget(bytes, shape)
+  return retypedOneRun(shapeTextValue(target.children, bytes, target.shape), text)
+}
+
 export type RouteResult = {
   readonly parts: Map<string, Uint8Array>
   readonly id: string | null
@@ -126,9 +149,8 @@ export type RouteResult = {
 function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name: "add" }>): Uint8Array {
   switch (route.name) {
     case "text": {
-      const document = requireMarkup(bytes)
-      const shape = shapeById(document.elements, route.shape)
-      return spliceBytes(bytes, textValueEdits(markupChildren(document.elements), bytes, shape, route.value))
+      const target = textTarget(bytes, route.shape)
+      return spliceBytes(bytes, textValueEdits(target.children, bytes, target.shape, route.value))
     }
     case "move": {
       const x = emu(route.x)

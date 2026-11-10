@@ -420,8 +420,8 @@ const severalParagraphs = [
 ]
 const plantPptx = (rows, asked) => ({
   shapeIdCounts: () => rows.map((row) => ({ part: plantPart, id: row.shape, count: 1 })),
-  readShapes: () => rows.map((row) => ({ part: plantPart, shape: row.shape, text: row.text })),
-  oneRunValue: (value, text) => {
+  oneRunValue: (parts, part, id, text) => {
+    const value = rows.find((row) => part === plantPart && row.shape === id)?.text ?? []
     if (value.length !== 1) throw new Error("text-shape")
     return [{ from: value[0].from, runs: [{ from: 0, text }] }]
   },

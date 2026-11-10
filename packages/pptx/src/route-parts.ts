@@ -1,11 +1,10 @@
 import type { TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { decodeUtf8 } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
-import { markupChildren, shapeTextValue } from "./text-value-route.js"
+import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
 import { writtenRoutes } from "./written-routes.js"
 
 export type PartTouch = {
@@ -208,13 +207,14 @@ export function createdShapesLanded(
 ): boolean {
   const rows = readShapes(parts)
   for (const item of landed) {
-    const found = rows.filter((row) => row.text === item.text)
+    const found = rows.filter((row) => shownText(row.text) === item.text)
     if (found.length !== 1) return false
     const row = found[0]
     if (row === undefined || row.slide !== item.slide) return false
   }
   for (const slide of untouched) {
-    if (rows.some((row) => row.slide === slide && landed.some((item) => item.text === row.text))) return false
+    if (rows.some((row) => row.slide === slide && landed.some((item) => item.text === shownText(row.text))))
+      return false
   }
   return true
 }

@@ -8,7 +8,7 @@ declare const process: {
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, spliceBytes, type ByteEdit } from "./element-span.js"
 import { readParts } from "./package-container.js"
-import { applyRoute, shapeById } from "./slide-route.js"
+import { applyRoute, oneRunValue, shapeById } from "./slide-route.js"
 import { browserExportFailures } from "./browser-export.js"
 
 const slidePart = "ppt/slides/slide1.xml"
@@ -59,13 +59,23 @@ function withoutRunProperties(parts: ReadonlyMap<string, Uint8Array>): Map<strin
 describe("browserExportFailures", () => {
   it("a correct Hello! export has no failures", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = applyRoute(clean, { name: "text", part: slidePart, shape, text })
+    const exported = applyRoute(clean, {
+      name: "text",
+      part: slidePart,
+      shape,
+      value: oneRunValue(clean, slidePart, shape, text),
+    })
     expect(browserExportFailures(clean, exported, shape, text)).toEqual([])
   })
 
   it("the same parts in another order", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = applyRoute(clean, { name: "text", part: slidePart, shape, text })
+    const exported = applyRoute(clean, {
+      name: "text",
+      part: slidePart,
+      shape,
+      value: oneRunValue(clean, slidePart, shape, text),
+    })
     const reversed = new Map([...exported].reverse())
     expect(browserExportFailures(clean, reversed, shape, text)).toEqual(["part order"])
     const names = [...exported.keys()]
@@ -81,7 +91,9 @@ describe("browserExportFailures", () => {
 
   it("a part that is gone and a part nobody asked for", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = new Map(applyRoute(clean, { name: "text", part: slidePart, shape, text }))
+    const exported = new Map(
+      applyRoute(clean, { name: "text", part: slidePart, shape, value: oneRunValue(clean, slidePart, shape, text) }),
+    )
     exported.delete("docProps/app.xml")
     exported.set("ppt/media/extra.bin", new Uint8Array([1]))
     expect(browserExportFailures(clean, exported, shape, text)).toEqual([
@@ -92,7 +104,9 @@ describe("browserExportFailures", () => {
 
   it("text bytes that only decode to Hello!", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = new Map(applyRoute(clean, { name: "text", part: slidePart, shape, text }))
+    const exported = new Map(
+      applyRoute(clean, { name: "text", part: slidePart, shape, value: oneRunValue(clean, slidePart, shape, text) }),
+    )
     const bytes = exported.get(slidePart)
     if (bytes === undefined) throw new Error(slidePart)
     const document = markupDocument(bytes)
@@ -108,27 +122,40 @@ describe("browserExportFailures", () => {
 
   it("V4 Goodbye is not Hello!", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = applyRoute(clean, { name: "text", part: slidePart, shape, text: "Goodbye" })
+    const exported = applyRoute(clean, {
+      name: "text",
+      part: slidePart,
+      shape,
+      value: oneRunValue(clean, slidePart, shape, "Goodbye"),
+    })
     expect(browserExportFailures(clean, exported, shape, text)).toEqual(["shape 2 text Goodbye"])
   })
 
   it("V8 one byte in [Content_Types].xml", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = flipByte(applyRoute(clean, { name: "text", part: slidePart, shape, text }), "[Content_Types].xml")
+    const exported = flipByte(
+      applyRoute(clean, { name: "text", part: slidePart, shape, value: oneRunValue(clean, slidePart, shape, text) }),
+      "[Content_Types].xml",
+    )
     const failures = browserExportFailures(clean, exported, shape, text)
     expect(failures.some((failure) => failure.includes("[Content_Types].xml"))).toBe(true)
   })
 
   it("V9 one byte in ppt/theme/theme1.xml", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = flipByte(applyRoute(clean, { name: "text", part: slidePart, shape, text }), "ppt/theme/theme1.xml")
+    const exported = flipByte(
+      applyRoute(clean, { name: "text", part: slidePart, shape, value: oneRunValue(clean, slidePart, shape, text) }),
+      "ppt/theme/theme1.xml",
+    )
     const failures = browserExportFailures(clean, exported, shape, text)
     expect(failures.some((failure) => failure.includes("ppt/theme/theme1.xml"))).toBe(true)
   })
 
   it("V14 edited run loses a:rPr", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const exported = withoutRunProperties(applyRoute(clean, { name: "text", part: slidePart, shape, text }))
+    const exported = withoutRunProperties(
+      applyRoute(clean, { name: "text", part: slidePart, shape, value: oneRunValue(clean, slidePart, shape, text) }),
+    )
     const failures = browserExportFailures(clean, exported, shape, text)
     expect(failures.some((failure) => failure.includes("outside shape 2 text"))).toBe(true)
     expect(failures.some((failure) => failure.includes("Goodbye"))).toBe(false)
@@ -136,7 +163,12 @@ describe("browserExportFailures", () => {
 
   it("V16 Goodbye, content types, theme, run properties, and core.xml", async () => {
     const clean = await readParts(readFileSync(fixture))
-    const goodbye = applyRoute(clean, { name: "text", part: slidePart, shape, text: "Goodbye" })
+    const goodbye = applyRoute(clean, {
+      name: "text",
+      part: slidePart,
+      shape,
+      value: oneRunValue(clean, slidePart, shape, "Goodbye"),
+    })
     const exported = flipByte(
       flipByte(flipByte(withoutRunProperties(goodbye), "[Content_Types].xml"), "ppt/theme/theme1.xml"),
       "docProps/core.xml",

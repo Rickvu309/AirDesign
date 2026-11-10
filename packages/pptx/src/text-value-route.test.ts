@@ -5,8 +5,8 @@ import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "
 import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
-import { applyRoute, shapeById } from "./slide-route.js"
-import { decodedXmlText, markupChildren, oneRunValue, shapeTextValue } from "./text-value-route.js"
+import { applyRoute, oneRunValue, shapeById } from "./slide-route.js"
+import { decodedXmlText, markupChildren, retypedOneRun, shapeTextValue } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
@@ -408,7 +408,7 @@ describe("oneRunValue", () => {
   )
 
   it("puts the text in the one run of a one-run box and keeps its from", () => {
-    expect(oneRunValue([{ from: 3, runs: [{ from: 1, text: "Old" }] }], "New")).toEqual([
+    expect(retypedOneRun([{ from: 3, runs: [{ from: 1, text: "Old" }] }], "New")).toEqual([
       { from: 3, runs: [{ from: 1, text: "New" }] },
     ])
   })
@@ -433,20 +433,44 @@ describe("oneRunValue", () => {
         { from: 1, runs: [{ from: 0, text: "Two" }] },
       ],
     ]
-    for (const value of refusedValues) expect(() => oneRunValue(value, "New")).toThrow(/text-shape/)
+    for (const value of refusedValues) expect(() => retypedOneRun(value, "New")).toThrow(/text-shape/)
   })
 
   it("keeps a box with several paragraphs from reaching the route with one string", () => {
     const box = boxOf(nineParagraphs)
     const saved = Uint8Array.from(box)
-    expect(() => edited(box, oneRunValue(readValue(box), "typed"))).toThrow(/text-shape/)
+    expect(() => edited(box, oneRunValue(new Map([[part, box]]), part, "2", "typed"))).toThrow(/text-shape/)
     expect(box).toEqual(saved)
+  })
+
+  it("reads the value from the shape the route edits when a fallback box shares the id", () => {
+    const fallback = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="F"/></p:nvSpPr><p:txBody><a:bodyPr/>${nineParagraphs}</p:txBody></p:sp>`
+    const plain = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="P"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Plain</a:t></a:r></a:p></p:txBody></p:sp>`
+    const choice = `<p:sp><p:nvSpPr><p:cNvPr id="6" name="C"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>C</a:t></a:r></a:p></p:txBody></p:sp>`
+    const box = encodeUtf8(
+      `<p:spTree><mc:AlternateContent><mc:Choice Requires="x">${choice}</mc:Choice><mc:Fallback>${fallback}</mc:Fallback></mc:AlternateContent>${plain}</p:spTree>`,
+    )
+    const saved = Uint8Array.from(box)
+    const parts = new Map([[part, box]])
+    expect(() => oneRunValue(parts, part, "2", "typed")).toThrow(/text-shape/)
+    expect(box).toEqual(saved)
+  })
+
+  it("looks the shape up the way the route does when two shapes share an id", () => {
+    const one = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>One</a:t></a:r></a:p></p:txBody></p:sp>`
+    const many = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="B"/></p:nvSpPr><p:txBody><a:bodyPr/>${nineParagraphs}</p:txBody></p:sp>`
+    const oneFirst = new Map([[part, encodeUtf8(`<p:spTree>${one}${many}</p:spTree>`)]])
+    const value = oneRunValue(oneFirst, part, "2", "typed")
+    const written = applyRoute(oneFirst, { name: "text", part, shape: "2", value }).get(part) as Uint8Array
+    expect(written).toEqual(encodeUtf8(`<p:spTree>${one.replace(">One<", ">typed<")}${many}</p:spTree>`))
+    const manyFirst = new Map([[part, encodeUtf8(`<p:spTree>${many}${one}</p:spTree>`)]])
+    expect(() => oneRunValue(manyFirst, part, "2", "typed")).toThrow(/text-shape/)
   })
 
   it("leaves a field box to be refused by the route with its bytes unchanged", () => {
     const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
     const saved = Uint8Array.from(box)
-    expect(() => edited(box, oneRunValue(readValue(box), "8"))).toThrow(/text-carried/)
+    expect(() => edited(box, oneRunValue(new Map([[part, box]]), part, "2", "8"))).toThrow(/text-carried/)
     expect(box).toEqual(saved)
   })
 })
