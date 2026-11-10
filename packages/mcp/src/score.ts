@@ -1,5 +1,6 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
+import { elementId, type NodeRegister } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { callTool, type AgentCaller, type ToolResult } from "./call-tool.js"
 
@@ -28,9 +29,18 @@ function toolName(op: string): string {
   return name
 }
 
+function pairedBody(register: Deck["register"]): NodeRegister | null {
+  const stored = register.elements[elementId("b")]
+  if (stored !== undefined) return stored
+  if (!Object.hasOwn(register, "b")) return null
+  const body = (register as { readonly b?: NodeRegister | null }).b
+  if (body === undefined || body === null) return null
+  return body
+}
+
 function landedValues(deck: Deck): readonly string[] {
   const values = deck.register.landed.map((row) => row.value)
-  const side = deck.register.b
+  const side = pairedBody(deck.register)
   if (side === null) return values
   return [...values, ...side.landed.map((row) => row.value)]
 }
