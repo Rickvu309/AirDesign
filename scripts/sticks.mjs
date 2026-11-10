@@ -23,7 +23,11 @@ const realDecks = (root) => {
   return [...names].filter((name) => fs.statSync(path.join(fixtures, name)).size >= 100_000).length
 }
 
-const built = (root, name) => import(pathToFileURL(path.join(root, "packages", name, "dist/index.js")).href)
+const built = (root, name) => {
+  const entry = path.join(root, "packages", name, "dist/index.js")
+  if (!fs.existsSync(entry)) throw new Error(`packages/${name} is not built. Run pnpm build, then run this again.`)
+  return import(pathToFileURL(entry).href)
+}
 
 const routeNames = (table) =>
   Object.values(table).flatMap((routes) => Object.values(routes).map((named) => named.route))
@@ -40,7 +44,7 @@ const capabilitiesExported = async (root) => {
 const measures = {
   "known faults": knownFaults,
   "real decks in the PowerPoint check": realDecks,
-  "capabilities exported": capabilitiesExported,
+  "routes pptx writes": capabilitiesExported,
 }
 
 export const timedSticks = {
@@ -56,12 +60,10 @@ export const overLimit = ({ name, now, limit }) =>
 export const timeStick = (root, name, started) => {
   const limit = record(root)[name]?.limit
   const now = Number(((Date.now() - started) / 1000).toFixed(1))
+  if (typeof limit !== "number") throw new Error(`${name} has no limit in sticks.json.`)
   const over = overLimit({ name, now, limit })
-  return {
-    line: `stick ${name}  now ${now}  limit ${limit}`,
-    over,
-    fails: over !== undefined && Boolean(process.env.CI),
-  }
+  const gated = process.env.CI === "true" || process.env.CI === "1"
+  return { line: `stick ${name}  now ${now}  limit ${limit}`, over, fails: over !== undefined && gated }
 }
 
 export const readSticks = async (root) => {
@@ -97,11 +99,14 @@ export const readSticks = async (root) => {
 
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
-  const { rows, drift } = await readSticks(path.resolve(path.dirname(self), ".."))
+  const { rows, drift } = await readSticks(path.resolve(path.dirname(self), "..")).catch((error) => {
+    console.error(error.message)
+    process.exit(1)
+  })
   const width = Math.max(...rows.map((row) => row.name.length))
   for (const row of rows) {
-    const value = "limit" in row ? `limit ${row.limit}` : `now ${row.now}  goal ${row.goal}`
-    console.log(`stick ${row.name.padEnd(width)}  ${value}`)
+    if ("limit" in row) continue
+    console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
   }
   for (const line of drift) console.log(line)
   if (drift.length > 0) process.exit(1)
