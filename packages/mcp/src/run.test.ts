@@ -100,15 +100,64 @@ describe("openRun", () => {
     expect(bodyOf(opened.register).floor).toBe("kept")
   })
 
-  it("lets a stopped element refuse the start", () => {
-    const started = openRun(openRegister("", ""), firstEdit, () => "one")
-    expect(started.ok).toBe(true)
-    if (!started.ok) return
-    const stopped = decide(started.register, { command: "stop", runId: "one", node })
-    expect(stopped.decision).toBe("apply")
-    if (stopped.decision !== "apply") return
-    const again = openRun(stopped.register, secondEdit, () => "two")
-    expect(again).toEqual({ ok: false, refusal: "run-fenced" })
+  it("starts an ended element on the candidate and never on the deck's running id", () => {
+    for (const end of ["stop", "undo"] as const) {
+      const first = openRun(openRegister("", ""), firstEdit, () => "one")
+      if (!first.ok) throw new Error(first.refusal)
+      const landed = decide(first.register, { command: "agent", runId: "one", readAt: 0, value: "21", node })
+      if (landed.decision !== "apply") throw new Error(landed.code)
+      const paired = openRun(
+        landed.register,
+        { deck: "deck", base: 1, changes: [{ value: "b", node: sibling, readAt: 0 }] },
+        () => "unused",
+      )
+      if (!paired.ok) throw new Error(paired.refusal)
+      const ended = decide(paired.register, { command: end, runId: "one", node })
+      if (ended.decision !== "apply") throw new Error(ended.code)
+      const again = openRun(ended.register, secondEdit, () => "fresh")
+      expect(again.ok).toBe(true)
+      if (!again.ok) return
+      expect(again.caller.runId).toBe("fresh")
+      expect(bodyOf(again.register).runId).toBe("fresh")
+      expect(bodyOf(again.register).phase).toBe("running")
+      expect(bodyOf(again.register).landed).toEqual(bodyOf(ended.register).landed)
+      expect(bodyOf(again.register, sibling).runId).toBe("one")
+    }
+  })
+
+  it("answers the refusal and keeps the register when the candidate already landed on the ended element", () => {
+    const first = openRun(openRegister("", ""), firstEdit, () => "one")
+    if (!first.ok) throw new Error(first.refusal)
+    const landed = decide(first.register, { command: "agent", runId: "one", readAt: 0, value: "21", node })
+    if (landed.decision !== "apply") throw new Error(landed.code)
+    const stopped = decide(landed.register, { command: "stop", runId: "one", node })
+    if (stopped.decision !== "apply") throw new Error(stopped.code)
+    expect(openRun(stopped.register, secondEdit, () => "one")).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(bodyOf(stopped.register).phase).toBe("stopped")
+  })
+
+  it("acts under the first change's own run when the deck has two running ids", () => {
+    const opened = openRegister("", "")
+    const addedFirst = decide(opened, { command: "add", node, floor: "", route: "" })
+    if (addedFirst.decision !== "apply") throw new Error(addedFirst.code)
+    const addedSecond = decide(addedFirst.register, { command: "add", node: sibling, floor: "", route: "" })
+    if (addedSecond.decision !== "apply") throw new Error(addedSecond.code)
+    const startedFirst = decide(addedSecond.register, { command: "start", runId: "first", node })
+    if (startedFirst.decision !== "apply") throw new Error(startedFirst.code)
+    const startedSecond = decide(startedFirst.register, { command: "start", runId: "second", node: sibling })
+    if (startedSecond.decision !== "apply") throw new Error(startedSecond.code)
+    const result = openRun(
+      startedSecond.register,
+      { deck: "deck", base: 0, changes: [{ value: "b", node: sibling, readAt: 0 }] },
+      () => "unused",
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.caller).toEqual({ actor: "agent", runId: "second" })
+    expect(
+      decide(result.register, { command: "agent", runId: result.caller.runId, readAt: 0, value: "b", node: sibling })
+        .decision,
+    ).toBe("apply")
   })
 
   it("does not take a run id from the client", () => {

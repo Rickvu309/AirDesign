@@ -169,7 +169,7 @@ describe("callTool", () => {
     const body = nodeBody(result.deck.register)
     expect(body.phase).toBe("running")
     expect(body.runId).toBe("host-run")
-    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "host-run" }])
     expect(deck.register.elements).toEqual({})
   })
 
@@ -184,7 +184,7 @@ describe("callTool", () => {
     if (!result.ok) return
     const body = nodeBody(result.deck.register)
     expect(body.runId).toBe("run")
-    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
     expect(nodeBody(deck.register).runId).toBe("run")
     expect(nodeBody(deck.register).landed).toEqual([])
   })
@@ -204,21 +204,29 @@ describe("callTool", () => {
     expect(nodeBody(deck.register).landed).toEqual([])
   })
 
-  it("does not start a run on a stopped element", () => {
+  it("starts a new run on a stopped element and keeps the earlier run's rows", () => {
     const deck = running()
-    const stopped = decide(deck.register, { command: "stop", runId: "run", node })
+    const landed = decide(deck.register, { command: "agent", runId: "run", readAt: 0, value: "old", node })
+    if (landed.decision !== "apply") throw new Error(landed.code)
+    const stopped = decide(landed.register, { command: "stop", runId: "run", node })
     if (stopped.decision !== "apply") throw new Error(stopped.code)
     const after = { id: deck.id, revision: deck.revision, register: stopped.register }
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      { caller: { actor: "agent", runId: "other" }, deck: after, log: emptyLog(), now: 0 },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 1 }] },
+      { caller: { actor: "agent", runId: "fresh" }, deck: after, log: emptyLog(), now: 0 },
     )
-    expect(result.ok).toBe(false)
-    if (result.ok) return
-    expect(result.refusal).toBe("run-fenced")
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const body = nodeBody(result.deck.register)
+    expect(body.phase).toBe("running")
+    expect(body.runId).toBe("fresh")
+    expect(body.landed).toEqual([
+      { actor: "agent", value: "old", visible: true, runId: "run" },
+      { actor: "agent", value: "21", visible: true, runId: "fresh" },
+    ])
     expect(nodeBody(after.register).phase).toBe("stopped")
-    expect(nodeBody(after.register).landed).toEqual([])
+    expect(nodeBody(after.register).landed).toEqual([{ actor: "agent", value: "old", visible: true, runId: "run" }])
   })
 
   it("refuses an unknown tool", () => {

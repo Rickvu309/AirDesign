@@ -1,5 +1,5 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process"
-import { randomBytes } from "node:crypto"
+import { createHash, randomBytes } from "node:crypto"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { request } from "node:http"
 import { connect, createServer } from "node:net"
@@ -181,7 +181,10 @@ describe("start entry", () => {
     const token = randomBytes(16).toString("hex")
     try {
       await pool.query("insert into session.account (email) values ($1)", [email])
-      await pool.query("insert into session.access (token, email) values ($1, $2)", [token, email])
+      await pool.query("insert into session.access (token, email, issued) values ($1, $2, now())", [
+        createHash("sha256").update(token).digest("hex"),
+        email,
+      ])
     } finally {
       await pool.end()
     }
@@ -226,8 +229,9 @@ describe("start entry", () => {
       await untilHealth(port, child)
       return port
     }
-    const named = await started(" mcp.airdesign.app, api.airdesign.app ")
+    const named = await started(" MCP.AirDesign.App, ,api.airdesign.app, ")
     expect(await statusFor(named, "mcp.airdesign.app")).toBe(200)
+    expect(await statusFor(named, "MCP.AIRDESIGN.APP")).toBe(200)
     expect(await statusFor(named, "api.airdesign.app")).toBe(200)
     expect(await statusFor(named, "localhost")).toBe(403)
     child?.kill()

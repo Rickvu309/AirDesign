@@ -25,6 +25,26 @@ function openedElement(register: Register, change: WireChange): Decision {
   })
 }
 
+function startedElement(
+  register: Register,
+  change: WireChange,
+  candidate: () => string,
+):
+  | { readonly ok: true; readonly register: Register; readonly runId: string }
+  | { readonly ok: false; readonly refusal: string } {
+  const opened = openedElement(register, change)
+  if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
+  const body = opened.register.elements[change.node]
+  if (body?.phase === "running" && body.runId !== null) {
+    return { ok: true, register: opened.register, runId: body.runId }
+  }
+  const ended = body?.phase === "stopped" || body?.phase === "undone"
+  const runId = ended ? candidate() : (runningId(opened.register) ?? candidate())
+  const started = decide(opened.register, { command: "start", runId, node: change.node })
+  if (started.decision === "refuse") return { ok: false, refusal: started.code }
+  return { ok: true, register: started.register, runId }
+}
+
 export function openRun(
   register: Register,
   raw: unknown,
@@ -36,22 +56,19 @@ export function openRun(
   if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
   let next = register
   let minted: string | undefined
-  const take = (): string => {
-    const existing = runningId(next)
-    if (existing !== undefined) return existing
+  const candidate = (): string => {
     minted ??= mint()
     return minted
   }
+  let caller: AgentCaller | undefined
   for (const change of parsed.changes) {
-    const opened = openedElement(next, change)
-    if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
-    next = opened.register
-    if (next.elements[change.node]?.phase === "running") continue
-    const started = decide(next, { command: "start", runId: take(), node: change.node })
-    if (started.decision === "refuse") return { ok: false, refusal: started.code }
+    const started = startedElement(next, change, candidate)
+    if (!started.ok) return started
     next = started.register
+    caller ??= agentCaller(started.runId)
   }
-  return { ok: true, register: next, caller: agentCaller(take()) }
+  if (caller === undefined) return { ok: false, refusal: "batch" }
+  return { ok: true, register: next, caller }
 }
 
 export function afterWrite(wrote: boolean, result: ToolResult, loaded: Deck): ToolResult {

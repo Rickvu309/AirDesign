@@ -22,7 +22,7 @@ type StoredElement = {
   phase: string
   runId: string | null
   guarded: boolean
-  landed: { value: string }[]
+  landed: { value: string; runId?: string }[]
 }
 
 type Stored = {
@@ -62,6 +62,7 @@ function editCall(deck: string) {
   }
 }
 
+const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const sessionRefusal = { ok: false, refusal: "session" }
 
 function elementOf(stored: Stored | undefined, node = element): StoredElement {
@@ -88,6 +89,7 @@ describe("mcp route", () => {
     deck = openPool(info.deck, "mcp-handler")
     const listen = new DeckListen(info.listen)
     const served = await serve({
+      ...origins,
       session,
       deck,
       listen,
@@ -102,6 +104,7 @@ describe("mcp route", () => {
       },
     })
     const opened = await serve({
+      ...origins,
       session,
       deck,
       listen,
@@ -263,6 +266,7 @@ describe("mcp route", () => {
     const stored = openPool(info.deck, `mcp-${mark}-deck`)
     const listen = new DeckListen(info.listen)
     const served = await serve({
+      ...origins,
       session: fields.session?.(session) ?? session,
       deck: fields.deck ?? stored,
       listen,
@@ -600,6 +604,36 @@ describe("mcp route", () => {
     })
   })
 
+  it("starts a fresh run on a stopped element and keeps the earlier run's rows", async () => {
+    const { id, cookie } = await openedDeck("restart")
+    const before = minted.length
+    await withMcp(cookie, async (client) => {
+      await seeded(client, id)
+      const earlier = await row(id)
+      const firstRun = elementOf(earlier).runId
+      expect(elementOf(earlier, sibling).runId).toBe(firstRun)
+      await deck.query("update deck.saved set register = jsonb_set(register, $2, to_jsonb($3::text)) where id = $1", [
+        id,
+        ["elements", element, "phase"],
+        "stopped",
+      ])
+      const text = await editText(client, {
+        deck: id,
+        base: 3,
+        changes: [{ value: "a3", node: element, readAt: 2 }],
+      })
+      expect(text).toBe("Landed revision 4.")
+      const kept = await row(id)
+      const fresh = elementOf(kept).runId
+      expect(minted.slice(before)).toContain(fresh)
+      expect(fresh).not.toBe(firstRun)
+      expect(elementOf(kept).phase).toBe("running")
+      expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
+      expect(elementOf(kept).landed[2]).toMatchObject({ value: "a3", runId: fresh })
+      expect(elementOf(kept, sibling)).toEqual(elementOf(earlier, sibling))
+    })
+  })
+
   it("refuses a client run id and leaves the stored run", async () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
@@ -787,6 +821,7 @@ describe("mcp route", () => {
       },
     }) as Sql
     const served = await serve({
+      ...origins,
       session,
       deck: holding,
       listen,
@@ -915,6 +950,7 @@ describe("mcp route", () => {
       query: () => Promise.reject(new Error("connect ECONNREFUSED 127.0.0.1:1")),
     } as unknown as Sql
     const denied = await serve({
+      ...origins,
       session,
       deck: broken,
       listen,
@@ -934,6 +970,7 @@ describe("mcp route", () => {
       },
     }) as Sql
     const writer = await serve({
+      ...origins,
       session,
       deck: saving,
       listen,
