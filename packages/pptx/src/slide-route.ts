@@ -93,7 +93,36 @@ function textEdit(element: MarkupElement, escaped: Uint8Array): ByteEdit {
   return { start: element.openEnd, end: element.closeStart, next: escaped }
 }
 
+function oneTextRun(elements: readonly MarkupElement[], shape: MarkupElement): boolean {
+  let paragraphs = 0
+  let runs = 0
+  let carried = 0
+  let paragraph: MarkupElement | null = null
+  let run: MarkupElement | null = null
+  let text: MarkupElement | null = null
+  for (const element of elements) {
+    if (!owns(elements, element.index, shape)) continue
+    if (element.kind === "a:p") {
+      paragraphs += 1
+      paragraph = element
+    } else if (element.kind === "a:r") {
+      runs += 1
+      run = element
+    } else if (element.kind === "a:br" || element.kind === "a:fld") {
+      carried += 1
+    } else if (element.kind === "a:t") {
+      if (text !== null) return false
+      text = element
+    }
+  }
+  if (paragraphs !== 1 || runs !== 1 || carried !== 0) return false
+  if (paragraph === null || run === null || text === null) return false
+  if (!inside(elements, run.index, paragraph) || !inside(elements, text.index, run)) return false
+  return !text.selfClosing && text.closeStart > text.openEnd
+}
+
 function textEdits(elements: readonly MarkupElement[], shape: MarkupElement, text: string): readonly ByteEdit[] {
+  if (!oneTextRun(elements, shape)) throw new Error("text-shape")
   const runs: MarkupElement[] = []
   const texts: MarkupElement[] = []
   for (const element of elements) {
