@@ -28,8 +28,23 @@ const measures = {
   "real decks in the PowerPoint check": realDecks,
 }
 
+export const timedSticks = {
+  "check seconds": "scripts/check.mjs",
+}
+
+const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))
+
+export const overLimit = ({ name, now, limit }) =>
+  now > limit ? `${name} is ${now} and its limit is ${limit}. Make it faster.` : undefined
+
+export const timeStick = (root, name, started) => {
+  const limit = record(root)[name]?.limit
+  const now = Number(((Date.now() - started) / 1000).toFixed(1))
+  return { line: `stick ${name}  now ${now}  limit ${limit}`, over: overLimit({ name, now, limit }) }
+}
+
 export const readSticks = (root) => {
-  const recorded = JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))
+  const recorded = record(root)
   const rows = []
   const drift = []
   for (const [name, measure] of Object.entries(measures)) {
@@ -43,8 +58,15 @@ export const readSticks = (root) => {
     if (now !== stick.now)
       drift.push(`${name} is ${now} and sticks.json says ${stick.now}. Record ${now} in sticks.json.`)
   }
-  for (const name of Object.keys(recorded)) {
-    if (!(name in measures)) drift.push(`${name} is in sticks.json and nothing measures it.`)
+  for (const [name, runner] of Object.entries(timedSticks)) {
+    const limit = recorded[name]?.limit
+    if (typeof limit === "number") rows.push({ name, limit })
+    else drift.push(`${name} is timed by ${runner} and has no limit in sticks.json.`)
+  }
+  for (const [name, stick] of Object.entries(recorded)) {
+    if (name in measures || name in timedSticks) continue
+    if ("limit" in stick) drift.push(`${name} has a limit in sticks.json and no runner times it.`)
+    else drift.push(`${name} is in sticks.json and nothing measures it.`)
   }
   return { rows, drift }
 }
@@ -53,7 +75,10 @@ const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const { rows, drift } = readSticks(path.resolve(path.dirname(self), ".."))
   const width = Math.max(...rows.map((row) => row.name.length))
-  for (const row of rows) console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
+  for (const row of rows) {
+    const value = "limit" in row ? `limit ${row.limit}` : `now ${row.now}  goal ${row.goal}`
+    console.log(`stick ${row.name.padEnd(width)}  ${value}`)
+  }
   for (const line of drift) console.log(line)
   if (drift.length > 0) process.exit(1)
 }

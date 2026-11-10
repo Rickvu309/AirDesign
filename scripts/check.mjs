@@ -1,8 +1,10 @@
 import { spawn } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { timeStick } from "./sticks.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const checkStarted = Date.now()
 
 const stages = [
   [
@@ -54,6 +56,13 @@ const run = ([name, command, args]) =>
 for (const stage of stages) {
   await Promise.all(stage.map(run))
   if (failed.length > 0 && !all) break
+}
+
+const checkSeconds = timeStick(root, "check seconds", checkStarted)
+console.log(checkSeconds.line)
+if (checkSeconds.over !== undefined) {
+  console.error(checkSeconds.over)
+  failed.push("check seconds")
 }
 
 if (failed.length > 0) {
