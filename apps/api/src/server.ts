@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 
 import { readWatch, type DeckId } from "@airdesign/catalog"
@@ -19,11 +20,13 @@ export type ApiOptions = {
   readonly siteOrigin: string
   readonly cookieDomain?: string
   readonly now?: () => number
+  readonly mint?: () => string
   readonly hosts?: readonly string[]
+  readonly beforeWrite?: () => Promise<void>
 }
 
 const cookieName = "airdesign.session"
-const bodyCap = 1_000_000
+export const bodyCap = 1_000_000
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
 const plainHost = /^[A-Za-z0-9.-]+$/
@@ -219,6 +222,7 @@ async function handle(
   options: ApiOptions,
   logs: Map<string, CallerLog>,
   now: () => number,
+  mint: () => string,
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
@@ -231,7 +235,20 @@ async function handle(
   if (url.pathname === "/mcp") {
     const email = await signedIn(options, req, res)
     if (email === undefined) return
-    await serveMcp({ deck: options.deck, email, logs, now, hosts: options.hosts ?? localHosts }, req, res)
+    await serveMcp(
+      {
+        deck: options.deck,
+        email,
+        logs,
+        now,
+        mint,
+        hosts: options.hosts ?? localHosts,
+        bodyCap,
+        ...(options.beforeWrite !== undefined ? { beforeWrite: options.beforeWrite } : {}),
+      },
+      req,
+      res,
+    )
     return
   }
   if (method === "POST" && url.pathname === "/sign-in/email") {
@@ -268,9 +285,10 @@ export function createApi(options: ApiOptions): Server {
   requireDomain(options.cookieDomain)
   const logs = new Map<string, CallerLog>()
   const now = options.now ?? Date.now
+  const mint = options.mint ?? randomUUID
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
-    void handle(options, logs, now, req, res).catch(() => {
+    void handle(options, logs, now, mint, req, res).catch(() => {
       if (res.headersSent || res.writableEnded) return
       res.writeHead(500)
       res.end()

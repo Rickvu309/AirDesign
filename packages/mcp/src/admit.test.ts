@@ -24,7 +24,7 @@ describe("admit", () => {
     expect(refused.log).toBe(opened)
     expect(refused.log.events).toHaveLength(5)
     expect(refused.resetsAt).toBe(60_000)
-    expect(refused.text).toBe("Five decks in one minute. The next deck can open at 60000.")
+    expect(refused.text).toBe("Five decks in one minute. The next deck can open in 60 seconds.")
     const next = admit(opened, "deck", 60_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
@@ -40,7 +40,7 @@ describe("admit", () => {
     expect(refused.log).toBe(called)
     expect(refused.log.events).toHaveLength(30)
     expect(refused.resetsAt).toBe(300_000)
-    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run at 300000.")
+    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
     const next = admit(called, "tool", 300_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
@@ -56,7 +56,7 @@ describe("admit", () => {
     expect(refused.log).toBe(turned)
     expect(refused.log.events).toHaveLength(20)
     expect(refused.resetsAt).toBe(300_000)
-    expect(refused.text).toBe("Twenty turns in five minutes. The next turn can start at 300000.")
+    expect(refused.text).toBe("Twenty turns in five minutes. The next turn can start in 300 seconds.")
     const next = admit(turned, "turn", 300_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
@@ -91,7 +91,7 @@ describe("admit", () => {
     expect(refused.ok).toBe(false)
     if (refused.ok) return
     expect(refused.log.events).toHaveLength(30)
-    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run at 5300000.")
+    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run in 300 seconds.")
   })
 
   it("counts a deck apart from a tool call and a turn", () => {

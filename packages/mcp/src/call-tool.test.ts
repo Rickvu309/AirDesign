@@ -258,6 +258,18 @@ describe("callTool", () => {
     }
   })
 
+  it("refuses a capture for a different deck id", () => {
+    const deck = running()
+    const result = callTool("airdesign_capture_slide", { deck: "other" }, sessionFor(deck))
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("deck")
+    expect(result.next).toBeUndefined()
+    expect(result.content).toEqual([{ type: "text", text: "deck" }])
+    expect(result.deck).toBe(deck)
+    expect(deck.register.landed).toEqual([])
+  })
+
   it("refuses a capture argument the catalog does not read", () => {
     const deck = running()
     const extra = callTool("airdesign_capture_slide", { deck: "deck", actor: "agent" }, sessionFor(deck))

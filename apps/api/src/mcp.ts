@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { notifyKey, readDeckId, type DeckId } from "@airdesign/catalog"
@@ -23,8 +22,13 @@ export type McpHost = {
   readonly email: string
   readonly logs: Map<string, CallerLog>
   readonly now: () => number
+  readonly mint: () => string
   readonly hosts: readonly string[]
+  readonly bodyCap: number
+  readonly beforeWrite?: () => Promise<void>
 }
+
+const storeFailure = "The deck could not be reached."
 
 function namedDeck(
   raw: unknown,
@@ -58,7 +62,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
   if (!host.logs.has(host.email)) host.logs.set(host.email, emptyLog())
-  const caller = { actor: "agent" as const, runId: randomUUID(), readAt: 0 }
+  const caller = { actor: "agent" as const, runId: host.mint(), readAt: 0 }
   const session: Session = {
     caller,
     deck: openDeck(pending.deck),
@@ -75,33 +79,49 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     prepare: async (_name, raw) => {
       const named = namedDeck(raw)
       if (!named.ok) return named
-      const saved = await readSaved(host.deck, named.deck)
+      let saved: Awaited<ReturnType<typeof readSaved>>
+      try {
+        saved = await readSaved(host.deck, named.deck)
+      } catch {
+        return { ok: false, refusal: storeFailure }
+      }
       if (saved === undefined) return { ok: false, refusal: "deck" }
       if (saved.owner !== host.email) return { ok: false, refusal: "owner" }
       loaded = { id: named.deck, revision: saved.revision, register: saved.register }
       session.deck = loaded
       return { ok: true }
     },
-    commit: (result) => commitEdit(host.deck, loaded, result),
+    commit: (result) => commitEdit(host.deck, loaded, result, host.beforeWrite),
   }
-  const handler = createMcpHandler(() => createServer(session, bridge), { responseMode: "json" })
+  const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
   try {
-    await toNodeHandler(handler)(mcpRequest(req), res)
+    await toNodeHandler(handler, { maxRequestBodySize: host.bodyCap })(mcpRequest(req), res)
   } finally {
     await handler.close()
   }
 }
 
-async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult> {
+async function commitEdit(
+  db: Sql,
+  loaded: Deck,
+  result: ToolResult,
+  beforeWrite: (() => Promise<void>) | undefined,
+): Promise<ToolResult> {
   if (!result.ok) return result
   const key = notifyKey(result.deck.id, result.deck.revision)
   if (!key.ok) return refused(loaded, "payload")
-  const wrote = await writeRevision(db, {
-    id: result.deck.id,
-    revision: result.deck.revision,
-    register: result.deck.register,
-    expected: loaded.revision,
-    key: key.key,
-  })
+  if (beforeWrite !== undefined) await beforeWrite()
+  let wrote = false
+  try {
+    wrote = await writeRevision(db, {
+      id: result.deck.id,
+      revision: result.deck.revision,
+      register: result.deck.register,
+      expected: loaded.revision,
+      key: key.key,
+    })
+  } catch {
+    return refused(loaded, storeFailure)
+  }
   return afterWrite(wrote, result, loaded)
 }
