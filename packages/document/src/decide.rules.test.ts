@@ -1,14 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  decide,
-  openRegister,
-  version,
-  type Command,
-  type Decision,
-  type Phase,
-  type Register,
-  type Refusal,
-} from "./decide.js"
+import { decide, openRegister, version, type Command, type Phase, type Register, type Refusal } from "./decide.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type RunState = "match" | "miss"
@@ -388,51 +379,18 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
   }
 }
 
-function sameDecision(register: Register, command: Command, decision: Decision, effect: Effect): boolean {
-  const expected =
-    effect.outcome === "refuse"
-      ? { decision: "refuse" as const, code: effect.code }
-      : { decision: "apply" as const, register: nextRegister(register, command, effect), route: register.route }
-  return JSON.stringify(decision) === JSON.stringify(expected)
+type WalkHit = {
+  hits: number
+  failure: string | null
 }
 
-function step(rule: Rule, hits: { count: number }, register: Register, command: Command): Register | null {
-  const picture = situation(register, command)
-  if (picture === null) {
-    throw new Error(`${rule.name} has no row for ${command.command}`)
-  }
-  const found = rulesOf(picture.command).filter((candidate) => matches(candidate, picture))
-  const chosen = found[0]
-  if (found.length !== 1 || chosen === undefined) {
-    throw new Error(`${rule.name} expected one row`)
-  }
-  const before = copyRegister(register)
-  const decision = decide(register, command)
-  expect(register, rule.name).toEqual(before)
-  if (chosen.name !== rule.name) {
-    if (!sameDecision(register, command, decision, chosen.effect)) {
-      return null
-    }
-    return decision.decision === "apply" ? decision.register : null
-  }
-  hits.count += 1
-  if (chosen.effect.outcome === "refuse") {
-    expect(decision, rule.name).toEqual({ decision: "refuse", code: chosen.effect.code })
-    return null
-  }
-  expect(decision, rule.name).toEqual({
-    decision: "apply",
-    register: nextRegister(register, command, chosen.effect),
-    route: register.route,
-  })
-  if (decision.decision !== "apply") {
-    throw new Error(rule.name)
-  }
-  return decision.register
+function sameText(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right)
 }
 
-function walk(rule: Rule): void {
-  const hits = { count: 0 }
+function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly overlap: string | null } {
+  const hits = new Map<string, WalkHit>(rules.map((rule) => [rule.name, { hits: 0, failure: null }]))
+  let overlap: string | null = null
   walkRegisters({
     start: freezeRegister(openRegister("floor", "slide")),
     identity,
@@ -440,20 +398,80 @@ function walk(rule: Rule): void {
     keep: (register) => visiblePeople(register) <= 2,
     cap: (dequeued, register) => {
       if (version(register) > 4 || dequeued > 400) {
-        throw new Error(`${rule.name} state cap hit`)
+        throw new Error("state cap hit")
       }
     },
-    step: (register, command) => step(rule, hits, register, command),
+    step: (register, command) => {
+      const picture = situation(register, command)
+      if (picture === null) {
+        overlap = overlap ?? `${command.command} has no row`
+        return null
+      }
+      const found = rulesOf(picture.command).filter((candidate) => matches(candidate, picture))
+      const chosen = found[0]
+      if (found.length !== 1 || chosen === undefined) {
+        overlap = overlap ?? `${picture.command} matched ${String(found.length)} rows`
+        return null
+      }
+      const hit = hits.get(chosen.name)
+      if (hit === undefined) {
+        throw new Error(chosen.name)
+      }
+      const before = copyRegister(register)
+      const decision = decide(register, command)
+      if (!sameText(register, before)) {
+        hit.failure = hit.failure ?? `${chosen.name} changed the input`
+        return null
+      }
+      const expected =
+        chosen.effect.outcome === "refuse"
+          ? { decision: "refuse" as const, code: chosen.effect.code }
+          : {
+              decision: "apply" as const,
+              register: nextRegister(register, command, chosen.effect),
+              route: register.route,
+            }
+      if (!sameText(decision, expected)) {
+        hit.failure = hit.failure ?? `${chosen.name} disagreed`
+        return null
+      }
+      hit.hits += 1
+      return decision.decision === "apply" ? decision.register : null
+    },
   })
-  if (hits.count === 0) {
-    throw new Error(`${rule.name} was not reached`)
-  }
+  return { hits, overlap }
+}
+
+let walked: ReturnType<typeof walkOnce> | undefined
+
+function walkAll(): ReturnType<typeof walkOnce> {
+  walked ??= walkOnce()
+  return walked
 }
 
 describe("decide", () => {
   for (const rule of rules) {
     it(rule.name, () => {
-      walk(rule)
+      let outcome: ReturnType<typeof walkOnce>
+      try {
+        outcome = walkAll()
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "walk failed"
+        throw new Error(`${rule.name} ${message}`)
+      }
+      if (outcome.overlap !== null) {
+        throw new Error(`${rule.name} ${outcome.overlap}`)
+      }
+      const hit = outcome.hits.get(rule.name)
+      if (hit === undefined) {
+        throw new Error(rule.name)
+      }
+      if (hit.failure !== null) {
+        throw new Error(hit.failure)
+      }
+      if (hit.hits === 0) {
+        throw new Error(`${rule.name} was not reached`)
+      }
     })
   }
 
