@@ -1,7 +1,24 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { markupReady } from "./element-span.js"
-import { packageLimits, readPackage, scanMarkup } from "./package-limits.js"
+import { packageLimits, readPackage, readPackageWith, scanMarkup } from "./package-limits.js"
+
+const forced = vi.hoisted(() => ({ nodesPerPart: null as number | null }))
+
+vi.mock("./element-span.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("./element-span.js")>()
+  return {
+    ...original,
+    markupLimits: (data: Uint8Array) =>
+      forced.nodesPerPart === null
+        ? original.markupLimits(data)
+        : { wellFormed: true, depth: 1, attributes: 0, nodes: forced.nodesPerPart },
+  }
+})
+
+afterEach(() => {
+  forced.nodesPerPart = null
+})
 
 function encode(text: string): Uint8Array {
   const bytes = new Uint8Array(text.length)
@@ -153,6 +170,12 @@ function named(count: number): { name: string; size: number }[] {
   return files
 }
 
+const attributed = (count: number) => {
+  let attrs = ""
+  for (let index = 0; index < count; index += 1) attrs += ` a${index}="1"`
+  return `<a${attrs}/>`
+}
+
 describe("readPackage", () => {
   it("reads a deck under the product bounds", async () => {
     expect(packageLimits).toEqual({
@@ -263,6 +286,24 @@ describe("readPackage", () => {
     })
   })
 
+  it("reports the node cap through the package path as the sum over three parts", async () => {
+    const perPart = Math.floor(packageLimits.nodes / 3)
+    const tiny = await deck("<a/>")
+    forced.nodesPerPart = perPart
+    expect((await readPackage(tiny)).ok).toBe(true)
+    forced.nodesPerPart = perPart + 1
+    expect(await readPackage(tiny)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
+  })
+
+  it("reports the attribute cap through the package path", async () => {
+    expect((await readPackage(await deck(attributed(packageLimits.attributes)))).ok).toBe(true)
+    expect(await readPackage(await deck(attributed(packageLimits.attributes + 1)))).toEqual({
+      ok: false,
+      reason: "limit",
+      limit: "attributes",
+    })
+  })
+
   it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
     expect((await readPackage(await deck(`<a><![CDATA[${"<b>".repeat(packageLimits.depth + 1)}]]></a>`))).ok).toBe(true)
     expect((await readPackage(await deck(`<a><!-- ${"<b></b>".repeat(20)} --></a>`))).ok).toBe(true)
@@ -277,19 +318,14 @@ describe("readPackage", () => {
 describe("scanMarkup", () => {
   const small = { depth: 4, attributes: 3, nodes: 10 }
   const nested = (depth: number) => encode(`${"<a>".repeat(depth)}${"</a>".repeat(depth)}`)
-  const attributed = (count: number) => {
-    let attrs = ""
-    for (let index = 0; index < count; index += 1) attrs += ` a${index}="1"`
-    return encode(`<a${attrs}/>`)
-  }
   const siblings = (count: number) => encode("<a/>".repeat(count))
 
   it("accepts markup at each cap and names the cap one past it", async () => {
     await markupReady()
     expect(scanMarkup(nested(small.depth), small, 0)).toEqual({ ok: true, nodes: small.depth })
     expect(scanMarkup(nested(small.depth + 1), small, 0)).toEqual({ ok: false, reason: "limit", limit: "depth" })
-    expect(scanMarkup(attributed(small.attributes), small, 0)).toEqual({ ok: true, nodes: 1 })
-    expect(scanMarkup(attributed(small.attributes + 1), small, 0)).toEqual({
+    expect(scanMarkup(encode(attributed(small.attributes)), small, 0)).toEqual({ ok: true, nodes: 1 })
+    expect(scanMarkup(encode(attributed(small.attributes + 1)), small, 0)).toEqual({
       ok: false,
       reason: "limit",
       limit: "attributes",
@@ -319,5 +355,41 @@ describe("scanMarkup", () => {
     await markupReady()
     expect(scanMarkup(encode("<a>"), small, 0)).toEqual({ ok: false, reason: "xml" })
     expect(scanMarkup(encode("<a></b>"), small, 0)).toEqual({ ok: false, reason: "xml" })
+  })
+})
+
+describe("readPackageWith", () => {
+  const small = { ...packageLimits, depth: 4, attributes: 3, nodes: 10 }
+  const otherNodes = 2
+  const siblings = (count: number) => "<a/>".repeat(count)
+  const twoSlides = (first: number, second: number) =>
+    zipOf({
+      "[Content_Types].xml": "<Types/>",
+      "ppt/presentation.xml": "<p:presentation/>",
+      "ppt/slides/slide1.xml": siblings(first),
+      "ppt/slides/slide2.xml": siblings(second),
+    })
+
+  it("applies the injected attribute cap", async () => {
+    expect((await readPackageWith(await deck(attributed(small.attributes)), small)).ok).toBe(true)
+    expect(await readPackageWith(await deck(attributed(small.attributes + 1)), small)).toEqual({
+      ok: false,
+      reason: "limit",
+      limit: "attributes",
+    })
+  })
+
+  it("applies the injected node cap", async () => {
+    expect((await readPackageWith(await deck(siblings(small.nodes - otherNodes)), small)).ok).toBe(true)
+    expect(await readPackageWith(await deck(siblings(small.nodes - otherNodes + 1)), small)).toEqual({
+      ok: false,
+      reason: "limit",
+      limit: "nodes",
+    })
+  })
+
+  it("counts nodes across parts, each under the cap and their sum over it", async () => {
+    expect((await readPackageWith(await twoSlides(4, 4), small)).ok).toBe(true)
+    expect(await readPackageWith(await twoSlides(5, 5), small)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
   })
 })

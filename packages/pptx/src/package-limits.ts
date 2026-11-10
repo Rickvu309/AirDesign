@@ -17,6 +17,8 @@ export const packageLimits = {
 
 export type PackageLimitName = keyof typeof packageLimits
 
+export type PackageLimits = Readonly<Record<PackageLimitName, number>>
+
 export type ReadPackage =
   | { readonly ok: true; readonly parts: ReadonlyMap<string, Uint8Array> }
   | { readonly ok: false; readonly reason: "limit"; readonly limit: PackageLimitName }
@@ -47,8 +49,8 @@ function xmlPart(name: string): boolean {
   return name.endsWith(".xml") || name.endsWith(".rels")
 }
 
-function sizeLimit(name: string, size: number): ReadPackage | null {
-  const cap = xmlPart(name) ? packageLimits.xmlBytes : packageLimits.binaryBytes
+function sizeLimit(name: string, size: number, limits: PackageLimits): ReadPackage | null {
+  const cap = xmlPart(name) ? limits.xmlBytes : limits.binaryBytes
   if (size > cap) return overLimit(xmlPart(name) ? "xmlBytes" : "binaryBytes")
   return null
 }
@@ -57,8 +59,8 @@ function slidePart(name: string): boolean {
   return /^ppt\/slides\/slide\d+\.xml$/.test(name)
 }
 
-export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
-  if (bytes.length >= packageLimits.packedBytes) return overLimit("packedBytes")
+export async function readPackageWith(bytes: Uint8Array, limits: PackageLimits): Promise<ReadPackage> {
+  if (bytes.length >= limits.packedBytes) return overLimit("packedBytes")
   const reader = new ZipReader(new Uint8ArrayReader(bytes))
   try {
     let entries
@@ -72,18 +74,18 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
     let unpacked = 0
     for (const entry of files) {
       if (slidePart(entry.filename)) slides += 1
-      const declared = sizeLimit(entry.filename, entry.uncompressedSize)
+      const declared = sizeLimit(entry.filename, entry.uncompressedSize, limits)
       if (declared !== null) return declared
       if (entry.compressionMethod === 0) {
-        const stored = sizeLimit(entry.filename, entry.compressedSize)
+        const stored = sizeLimit(entry.filename, entry.compressedSize, limits)
         if (stored !== null) return stored
       }
       unpacked += entry.uncompressedSize
     }
-    if (files.length > packageLimits.parts) return overLimit("parts")
-    if (slides > packageLimits.slides) return overLimit("slides")
-    if (!Number.isSafeInteger(unpacked) || unpacked > packageLimits.unpackedBytes) return overLimit("unpackedBytes")
-    if (unpacked > bytes.length * packageLimits.ratio) return overLimit("ratio")
+    if (files.length > limits.parts) return overLimit("parts")
+    if (slides > limits.slides) return overLimit("slides")
+    if (!Number.isSafeInteger(unpacked) || unpacked > limits.unpackedBytes) return overLimit("unpackedBytes")
+    if (unpacked > bytes.length * limits.ratio) return overLimit("ratio")
     if (files.some((entry) => entry.encrypted)) return { ok: false, reason: "encrypted" }
     const names = new Set(files.map((entry) => entry.filename))
     if (!names.has("[Content_Types].xml") || !names.has("ppt/presentation.xml")) {
@@ -100,11 +102,11 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
       } catch {
         return { ok: false, reason: "zip" }
       }
-      const actual = sizeLimit(entry.filename, data.length)
+      const actual = sizeLimit(entry.filename, data.length, limits)
       if (actual !== null) return actual
       parts.set(entry.filename, data)
       if (!xmlPart(entry.filename)) continue
-      const scan = scanMarkup(data, packageLimits, nodes)
+      const scan = scanMarkup(data, limits, nodes)
       if (!scan.ok) return scan
       nodes = scan.nodes
     }
@@ -112,4 +114,8 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
   } finally {
     await reader.close()
   }
+}
+
+export function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
+  return readPackageWith(bytes, packageLimits)
 }
