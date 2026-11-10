@@ -6,7 +6,9 @@ const box: ShapeBox = { x: 0, y: 0, cx: 914400, cy: 457200 }
 
 describe("addTextShape", () => {
   it("assigns the next free id and builds the shape through child order", () => {
-    const xml = addTextShape(slide, "Tiếng Việt & < >", box)
+    const written = addTextShape(slide, "Tiếng Việt & < >", box)
+    const xml = written.xml
+    expect(written.id).toBe(2)
     expect(xml).toContain(`<p:cNvPr id="2" name="Shape 2"/>`)
     expect(xml).toContain(`<p:cNvPr id="1" name=""/>`)
     expect(xml).toContain("<a:t>Tiếng Việt &amp; &lt; &gt;</a:t>")
@@ -19,15 +21,10 @@ describe("addTextShape", () => {
     expect(xml.indexOf("<p:sp>")).toBeGreaterThan(xml.indexOf("<p:grpSpPr"))
     expect(xml.indexOf("<p:sp>")).toBeLessThan(xml.lastIndexOf("</p:spTree>"))
     const again = addTextShape(xml, "B", box)
-    expect(again).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
-    expect(again.indexOf(`id="2"`)).toBeLessThan(again.indexOf(`id="3"`))
-    expect(addTextShape(slide, "😀", box)).toContain("<a:t>😀</a:t>")
-  })
-
-  it("writes the id it was given", () => {
-    const xml = addTextShape(slide, "A", box, 9)
-    expect(xml).toContain(`<p:cNvPr id="9" name="Shape 9"/>`)
-    expect(() => addTextShape(slide, "A", box, 0)).toThrow(/shape id/)
+    expect(again.id).toBe(3)
+    expect(again.xml).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
+    expect(again.xml.indexOf(`id="2"`)).toBeLessThan(again.xml.indexOf(`id="3"`))
+    expect(addTextShape(slide, "😀", box).xml).toContain("<a:t>😀</a:t>")
   })
 
   it("refuses a slide with no shape tree and a box that is not an integer", () => {

@@ -211,6 +211,7 @@ describe("applyStructuralRoute", () => {
   it("adds a blank slide after the named slide and remove restores the package parts", () => {
     const parts = deck()
     const added = applyStructuralRoute(parts, { name: "sldIdLst.add", after: "256" })
+    expect(added.id).toBe("257")
     const addedSlide = xml(added, "ppt/slides/slide2.xml")
     expect(addedSlide).toContain('name=""')
     expect(addedSlide).not.toContain("One")

@@ -2,7 +2,7 @@ import { markupDocument, spliceBytes, type MarkupDocument, type MarkupElement } 
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId } from "./shape-id.js"
 import { addTextShape, xmlText } from "./shape-write.js"
-import { shapeById } from "./slide-route.js"
+import { shapeById, withId, type AppliedParts } from "./slide-route.js"
 
 export type StructuralEdit =
   | {
@@ -339,6 +339,7 @@ function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) 
   )
   parts.set(part, copy ? sourceBytes : encodeUtf8(blankSlide))
   parts.set(relsPart(part), copy ? sourceRelBytes : layoutRelationships(sourceRelBytes))
+  return newId
 }
 
 function removeSlide(parts: Map<string, Uint8Array>, slide: string) {
@@ -471,59 +472,60 @@ function orderSection(bytes: Uint8Array, section: string, before: string): Uint8
   )
 }
 
-export function applyStructuralRoute(
-  parts: ReadonlyMap<string, Uint8Array>,
-  route: StructuralEdit,
-): ReadonlyMap<string, Uint8Array> {
+export function applyStructuralRoute(parts: ReadonlyMap<string, Uint8Array>, route: StructuralEdit): AppliedParts {
   const next = new Map(parts)
   switch (route.name) {
-    case "spTree.add":
-      editPart(next, route.part, (bytes) =>
-        encodeUtf8(addTextShape(decodeUtf8(bytes), route.text, { x: route.x, y: route.y, cx: route.cx, cy: route.cy })),
-      )
-      return next
+    case "spTree.add": {
+      const written = addTextShape(decodeUtf8(partBytes(next, route.part)), route.text, {
+        x: route.x,
+        y: route.y,
+        cx: route.cx,
+        cy: route.cy,
+      })
+      replacePart(next, route.part, encodeUtf8(written.xml))
+      return withId(next, String(written.id))
+    }
     case "spTree.remove":
       editPart(next, route.part, (bytes) => removeShape(bytes, route.shape))
-      return next
+      return withId(next, null)
     case "spTree.order":
       editPart(next, route.part, (bytes) => orderShape(bytes, route.shape, route.before))
-      return next
+      return withId(next, null)
     case "spTree.clone":
       editPart(next, route.part, (bytes) => cloneShape(bytes, route.shape))
-      return next
+      return withId(next, null)
     case "sldIdLst.add":
-      addSlide(next, route.after, false)
-      return next
+      return withId(next, addSlide(next, route.after, false))
     case "sldIdLst.clone":
       addSlide(next, route.slide, true)
-      return next
+      return withId(next, null)
     case "sldIdLst.remove":
       removeSlide(next, route.slide)
-      return next
+      return withId(next, null)
     case "sldIdLst.order":
       editPart(next, presentationPart, (bytes) => orderSlide(bytes, route.slide, route.before))
-      return next
+      return withId(next, null)
     case "sectionLst.add":
       editPart(next, presentationPart, (bytes) => addSection(bytes, route.title))
-      return next
+      return withId(next, null)
     case "sectionLst.remove":
       editPart(next, presentationPart, (bytes) => removeSection(bytes, route.section))
-      return next
+      return withId(next, null)
     case "sectionLst.order":
       editPart(next, presentationPart, (bytes) => orderSection(bytes, route.section, route.before))
-      return next
+      return withId(next, null)
     case "graphicFrame.addTable":
       editPart(next, route.part, addTable)
-      return next
+      return withId(next, null)
     case "tbl.addRow":
       editPart(next, route.part, (bytes) => addRow(bytes, route.row))
-      return next
+      return withId(next, null)
     case "tbl.removeRow":
       editPart(next, route.part, (bytes) => removeRow(bytes, route.row))
-      return next
+      return withId(next, null)
     case "tbl.orderRow":
       editPart(next, route.part, (bytes) => orderRow(bytes, route.row, route.before))
-      return next
+      return withId(next, null)
     default: {
       const unexpected: never = route
       throw new Error(String(unexpected))
