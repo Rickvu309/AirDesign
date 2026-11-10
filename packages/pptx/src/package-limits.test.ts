@@ -1,4 +1,3 @@
-import { limits } from "@airdesign/document"
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
 import { packageLimits, readPackage } from "./package-limits.js"
@@ -33,8 +32,23 @@ function concat(chunks: readonly Uint8Array[]): Uint8Array {
   return out
 }
 
+function crc32(data: Uint8Array): number {
+  let crc = 0xffffffff
+  for (const byte of data) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1))
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
 function storedZip(
-  files: readonly { readonly name: string; readonly size: number; readonly flag?: number }[],
+  files: readonly {
+    readonly name: string
+    readonly size: number
+    readonly flag?: number
+    readonly data?: Uint8Array
+    readonly declared?: number
+  }[],
 ): Uint8Array {
   const locals: Uint8Array[] = []
   const centrals: Uint8Array[] = []
@@ -42,6 +56,8 @@ function storedZip(
   for (const file of files) {
     const name = Uint8Array.from(file.name, (char) => char.charCodeAt(0))
     const flag = file.flag ?? 0
+    const payload = file.data ?? Uint8Array.of()
+    const uncompressed = file.declared ?? file.size
     const local = concat([
       u32(0x04034b50),
       u16(20),
@@ -49,12 +65,13 @@ function storedZip(
       u16(0),
       u16(0),
       u16(0),
-      u32(0),
-      u32(0),
-      u32(file.size),
+      u32(crc32(payload)),
+      u32(payload.length),
+      u32(uncompressed),
       u16(name.length),
       u16(0),
       name,
+      payload,
     ])
     centrals.push(
       concat([
@@ -65,9 +82,9 @@ function storedZip(
         u16(0),
         u16(0),
         u16(0),
-        u32(0),
-        u32(0),
-        u32(file.size),
+        u32(crc32(payload)),
+        u32(payload.length),
+        u32(uncompressed),
         u16(name.length),
         u16(0),
         u16(0),
@@ -131,8 +148,18 @@ function named(count: number): { name: string; size: number }[] {
 
 describe("readPackage", () => {
   it("reads a deck under the product bounds", async () => {
-    expect(packageLimits.packedBytes).toBe(limits.bytes)
-    expect(packageLimits.slides).toBe(limits.slides)
+    expect(packageLimits).toEqual({
+      packedBytes: 70_000_000,
+      slides: 50,
+      unpackedBytes: 500 * 1024 * 1024,
+      parts: 10_000,
+      xmlBytes: 8 * 1024 * 1024,
+      binaryBytes: 64 * 1024 * 1024,
+      depth: 128,
+      attributes: 256,
+      nodes: 500_000,
+      ratio: 100,
+    })
     const read = await readPackage(await deck("<p:sld/>"))
     if (!read.ok) throw new Error(read.reason)
     const slide = read.parts.get("ppt/slides/slide1.xml")
@@ -199,6 +226,16 @@ describe("readPackage", () => {
     const ratioOver = storedZip([{ name: "ppt/slides/slide1.xml", size: shell.length * packageLimits.ratio + 1 }])
     expect(await readPackage(ratioAt)).toEqual({ ok: false, reason: "not-pptx" })
     expect(await readPackage(ratioOver)).toEqual({ ok: false, reason: "limit", limit: "ratio" })
+    const payload = new Uint8Array(packageLimits.xmlBytes + 1)
+    payload.fill(0x61)
+    const types = encode("<Types/>")
+    const presentation = encode("<p:presentation/>")
+    const lying = storedZip([
+      { name: "[Content_Types].xml", size: types.length, data: types, declared: types.length },
+      { name: "ppt/presentation.xml", size: presentation.length, data: presentation, declared: presentation.length },
+      { name: "ppt/slides/slide1.xml", size: 0, data: payload, declared: 0 },
+    ])
+    expect(await readPackage(lying)).toEqual({ ok: false, reason: "limit", limit: "xmlBytes" })
   })
 
   it("rejects an encrypted package before reading its parts", async () => {

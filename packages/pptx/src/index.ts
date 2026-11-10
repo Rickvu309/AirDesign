@@ -3,7 +3,7 @@ export { childOrder, insertChild, type ChildOf, type OrderedParent } from "./chi
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
 export { readShapes, type ReadShape, type ShapeKind } from "./read-shapes.js"
-export { keepRelationships, readParts, roundTripPackage, writeParts } from "./package-bytes.js"
+export { readParts, roundTripPackage, writeParts } from "./package-bytes.js"
 export { packageLimits, readPackage, type PackageLimitName, type ReadPackage } from "./package-limits.js"
 export { exactPageCheck, pageChange, type PageChange } from "./render-pages.js"
 export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } from "./shape-id.js"
