@@ -38,7 +38,9 @@ export function ResultDialog({
           </div>
           <div className="h-[var(--space-48)]">
             <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">{title}</h2>
-            <p className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">{body}</p>
+            <p className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
+              {body}
+            </p>
           </div>
           <div className="flex h-10 items-end justify-end gap-2">
             {secondary ? (

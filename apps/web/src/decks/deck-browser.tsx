@@ -24,10 +24,12 @@ export function DeckBrowser({
 }) {
   return (
     <div className="screen-frame">
-      <DecksShell active={active} firstVisit={firstVisit}>
-        <BrowseHeader title={title} view={view} scope={scope} menu={menu} trailing={trailing} compact={firstVisit} />
-        {children}
-      </DecksShell>
+      <div className="h-full bg-canvas">
+        <DecksShell active={active} firstVisit={firstVisit}>
+          <BrowseHeader title={title} view={view} scope={scope} menu={menu} trailing={trailing} compact={firstVisit} />
+          {children}
+        </DecksShell>
+      </div>
     </div>
   )
 }

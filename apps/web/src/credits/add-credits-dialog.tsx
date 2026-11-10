@@ -47,7 +47,7 @@ export function AddCreditsDialog({
               <CloseGlyph />
             </button>
           </div>
-          <p className="text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">
+          <p className="text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
             {productCopy.creditsFacts}
           </p>
           <div>
@@ -56,10 +56,10 @@ export function AddCreditsDialog({
             </div>
             <div className="mt-2.5 flex h-11 items-center gap-2">
               <div className="flex h-11 min-w-0 flex-1 items-center gap-1 rounded-lg bg-white pr-3 pl-3 shadow-[inset_0_0_0_2px_var(--primary)]">
-                <span className="text-[length:var(--type-section)] leading-[21px] text-[var(--muted-foreground)]">
+                <span className="text-[length:var(--type-section)] leading-[var(--leading-section)] text-[var(--muted-foreground)]">
                   $
                 </span>
-                <span className="text-[length:var(--type-section)] leading-[21px] font-semibold text-foreground">
+                <span className="text-[length:var(--type-section)] leading-[var(--leading-section)] font-semibold text-foreground">
                   {amount}
                 </span>
                 <span className="h-5 w-[1.5px] bg-[var(--primary)]" />

@@ -62,7 +62,7 @@ function EmptyTrashDialog() {
             <DialogTitle className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
               Delete 3 decks for good?
             </DialogTitle>
-            <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">
+            <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
               This can't be undone.
             </DialogDescription>
             <div className="mt-5 flex items-center justify-end gap-2">

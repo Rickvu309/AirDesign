@@ -27,13 +27,13 @@ export function EditorToolbar({
       <span className="flex items-center gap-0.5">
         <Button
           type="button"
-          variant="ghost"
+          variant={moveOn ? "default" : "ghost"}
           size="icon"
           aria-label="Move"
           aria-pressed={moveOn}
           className={cn(
             "size-9 rounded-lg active:translate-y-0",
-            moveOn ? "bg-primary text-white hover:bg-primary" : "text-quiet hover:bg-transparent",
+            moveOn ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
           )}
         >
           <EditorIcon name="cursor" size={18} />
@@ -57,13 +57,13 @@ export function EditorToolbar({
           <Button
             key={tool}
             type="button"
-            variant="ghost"
+            variant={on ? "default" : "ghost"}
             size="icon"
             aria-label={tool}
             aria-pressed={on}
             className={cn(
               "size-9 rounded-lg active:translate-y-0",
-              on ? "bg-primary text-white hover:bg-primary" : "text-quiet hover:bg-transparent",
+              on ? "hover:bg-primary-strong" : "text-quiet hover:bg-transparent",
             )}
           >
             <EditorIcon name={icon} size={18} />

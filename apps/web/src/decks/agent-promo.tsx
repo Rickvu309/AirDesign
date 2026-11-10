@@ -74,7 +74,7 @@ export function AgentPromo() {
         </span>
       </div>
       <div className="px-4 pt-3">
-        <h2 className="h-[19.5px] text-[length:var(--type-dense)] leading-[19.5px] font-semibold text-foreground">
+        <h2 className="h-[19.5px] text-[length:var(--type-dense)] leading-[var(--leading-body)] font-semibold text-foreground">
           Bring your own agent
         </h2>
         <p className="mt-2 h-[34.81px] text-[length:var(--type-caption)] leading-[17.405px] text-muted-foreground">

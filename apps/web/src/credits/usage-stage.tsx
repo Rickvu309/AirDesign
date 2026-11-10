@@ -53,7 +53,7 @@ export function UsageStage({
           <Button
             type="button"
             variant="default"
-            className="h-[var(--space-32)] px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--primary-strong)]"
+            className="h-[var(--space-32)] px-3.5 text-[length:var(--type-dense)] leading-[17px]"
             style={{ width: 99.26 }}
           >
             {settingsCopy.addCredits}

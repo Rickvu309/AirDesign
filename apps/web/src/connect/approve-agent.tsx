@@ -99,7 +99,9 @@ export function ApproveAgent({
             Allow
           </Button>
         </div>
-        <p className="w-full text-center text-[length:var(--type-caption)] leading-[18px] text-faint">{footer}</p>
+        <p className="w-full text-center text-[length:var(--type-caption)] leading-[var(--leading-body)] text-faint">
+          {footer}
+        </p>
       </section>
     </main>
   )
