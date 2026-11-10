@@ -721,7 +721,80 @@ test("an edit made offline shows the offline words and they go when a commit ans
   await expect(editor).toHaveText("Hello!!")
 })
 
-test("a file that is not a PowerPoint shows the import words and Try again opens the picker", async ({
+async function typeAtEnd(page: Page, text: string): Promise<void> {
+  const editor = page.locator('[contenteditable="true"]')
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially(text, { delay: 50 })
+}
+
+
+test("a commit answered 404 with an HTML body shows no offline words", async ({ page }) => {
+  let answered = 0
+  await page.route("**/decks/commit", async (route) => {
+    await route.fulfill({ status: 404, contentType: "text/html", body: "<html><body>Not found</body></html>" })
+    answered += 1
+  })
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await typeAtEnd(page, "!")
+  await stored(page, "Hello!")
+  await expect.poll(() => answered).toBeGreaterThan(0)
+  await settled(page)
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+})
+
+test("a commit answered 500 with a text body shows no offline words", async ({ page }) => {
+  let answered = 0
+  await page.route("**/decks/commit", async (route) => {
+    await route.fulfill({ status: 500, contentType: "text/plain", body: "boom" })
+    answered += 1
+  })
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await typeAtEnd(page, "!")
+  await stored(page, "Hello!")
+  await expect.poll(() => answered).toBeGreaterThan(0)
+  await settled(page)
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+})
+
+test("a commit answered 404 with a JSON body shows no offline words", async ({ page }) => {
+  let answered = 0
+  await page.route("**/decks/commit", async (route) => {
+    await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "not found" }) })
+    answered += 1
+  })
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await typeAtEnd(page, "!")
+  await stored(page, "Hello!")
+  await expect.poll(() => answered).toBeGreaterThan(0)
+  await settled(page)
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+})
+
+test("the offline words go when the next commit is answered 404 on a device that stayed online", async ({ page }) => {
+  let status: number | null = null
+  await page.route("**/decks/commit", async (route) => {
+    if (status === null) {
+      await route.abort("connectionfailed")
+      return
+    }
+    await route.fulfill({ status, contentType: "text/html", body: "<html><body>Not found</body></html>" })
+  })
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await typeAtEnd(page, "!")
+  await stored(page, "Hello!")
+  await expect(page.getByText(offlineWords)).toBeVisible()
+  status = 404
+  await typeAtEnd(page, "!")
+  await stored(page, "Hello!!")
+  await expect(page.getByText(offlineWords)).toHaveCount(0)
+})
+
+test("a file that is not a PowerPoint shows the import words and Choose another file opens the picker", async ({
   page,
 }, testInfo) => {
   const notes = testInfo.outputPath("notes.pptx")
@@ -731,7 +804,7 @@ test("a file that is not a PowerPoint shows the import words and Try again opens
   await expect(page.getByText(importFailedWords)).toBeVisible()
   expect(new URL(page.url()).pathname).toBe("/thin")
   const chooser = page.waitForEvent("filechooser")
-  await page.getByRole("button", { name: "Try again" }).click()
+  await page.getByRole("button", { name: "Choose another file" }).click()
   await chooser
   expect(new URL(page.url()).pathname).toBe("/thin")
   await choose(page, fixture)
@@ -775,7 +848,9 @@ test("a refused session keeps the edit and sends the person to sign in", async (
     }),
   )
   await page.route("**/sign-in**", (route) => route.fulfill({ contentType: "text/html", body: "<p>sign in</p>" }))
-  const address = new URL(await open(page, fixture))
+  const opened = new URL(await open(page, fixture))
+  const address = new URL(`${opened.pathname}?slide=2`, opened)
+  await page.goto(address.href)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
   await editor.click()

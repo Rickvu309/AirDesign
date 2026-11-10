@@ -38,6 +38,7 @@ export const productCopy = {
   trashEmptyBody: "This can't be undone.",
   trashEmptyAction: "Delete for good",
   importFailedTitle: "Unable to import this file",
+  importChooseAnother: "Choose another file",
   amount: "Amount",
   currentBalance: "Current balance",
   adding: "Adding",
