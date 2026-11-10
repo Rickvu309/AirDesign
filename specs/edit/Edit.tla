@@ -1,5 +1,5 @@
 ---- MODULE Edit ----
-\* One person and one agent run edit one property of one deck.
+\* This model follows one run editing one property of one deck. A later run is specified in the run and undo models.
 \* Version is how many landed writes the property has.
 EXTENDS Integers
 
@@ -146,7 +146,7 @@ RunStops ==
   /\ stoppedAt' = Version
   /\ UNCHANGED <<personBefore, personAfter, agent, readAt, guarded, agentAt, claims, sawFirst, sawSecond, atFirst, guardedAt, beforeFrozen, laterFrozen, refused>>
 
-\* Undo drops both agent rows and leaves both person edits where they are.
+\* Undo drops both agent rows of this run and leaves both person edits where they are.
 RunUndoes ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
@@ -190,7 +190,7 @@ ProtectedFromRun == guardedAt = -1 \/ agent <= guardedAt
 \* Stop fixes the property. A later agent write would sit past stoppedAt.
 StopFences == stoppedAt = -1 \/ agent = 0 \/ agentAt <= stoppedAt
 
-\* Undo removes both agent rows and keeps the person edits from that moment on.
+\* Undo removes both agent rows of this run and keeps the person edits from that moment on.
 \* A person edit after undo still lands, so the counts may rise above the frozen ones.
 UndoRevertsOnlyTheRun ==
   phase # "undone"

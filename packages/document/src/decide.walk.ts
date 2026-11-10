@@ -4,7 +4,11 @@ export function copyNode(node: NodeRegister): NodeRegister {
   return {
     route: node.route,
     floor: node.floor,
-    landed: node.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
+    landed: node.landed.map((row) =>
+      row.runId === undefined
+        ? { actor: row.actor, value: row.value, visible: row.visible }
+        : { actor: row.actor, value: row.value, visible: row.visible, runId: row.runId },
+    ),
     phase: node.phase,
     runId: node.runId,
     readAt: node.readAt,

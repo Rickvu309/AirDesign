@@ -37,7 +37,9 @@ describe("score", () => {
     const deck = running()
     const result = score(landSourceTask, deck, callerFor())
     expect(result.pass).toBe(true)
-    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([
+      { actor: "agent", value: "21", visible: true, runId: "run" },
+    ])
     expect(nodeBody(deck.register).landed).toEqual([])
   })
 
@@ -47,7 +49,9 @@ describe("score", () => {
     expect(result.pass).toBe(true)
     expect(result.deck).not.toBe(deck)
     expect(result.deck.revision).toBe(1)
-    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([
+      { actor: "agent", value: "21", visible: true, runId: "run" },
+    ])
     expect(deck.revision).toBe(0)
   })
 
@@ -77,6 +81,8 @@ describe("score", () => {
       callerFor(),
     )
     expect(result.pass).toBe(false)
-    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "22", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([
+      { actor: "agent", value: "22", visible: true, runId: "run" },
+    ])
   })
 })

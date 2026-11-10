@@ -10,7 +10,14 @@ export const state = (v) => `${runText(v)} ${v.phase}, ${writeText(v)}${readText
 
 export const step = (action, from) => {
   if (action === "Start") return "the run starts"
-  if (action === "StartAgain") return "a later start stays fenced"
+  if (action === "StartAgain") return "a start during a live run stays fenced"
+  if (action === "StartNext") return "a new run starts after the earlier one ends"
+  if (action === "StartReuse") return "a start that reuses an id with a row stays fenced"
+  if (action === "UndoEarlier" && from.phase === "running")
+    return "undo of an earlier run stays fenced while a run is live"
+  if (action === "UndoEarlier") return "undo of an earlier run hides only that run's row"
+  if (action === "UndoEarlierLive") return "undo of an earlier run stays fenced while a run is live"
+  if (action === "UndoEarlierAgain") return "a second undo of an earlier run removes nothing"
   if (action === "Stop") return "the person stops the run"
   if (action === "StopMiss") return "a stop for the other run stays fenced"
   if (action === "Limit") return "a limit ends the run"
@@ -39,4 +46,4 @@ export const colors = {
   Undone: "teal",
 }
 
-export const title = "One run starts, stops, and resumes"
+export const title = "A run starts, stops, resumes, and a later run can follow"
