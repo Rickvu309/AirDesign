@@ -39,7 +39,6 @@ export function oauth(grant: Grant, command: Command): OauthResult {
     if (
       grant.revoked ||
       grant.generation < 1 ||
-      !Number.isInteger(command.generation) ||
       command.generation !== grant.generation ||
       command.deck !== grant.deck
     ) {
