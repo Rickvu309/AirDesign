@@ -163,9 +163,11 @@ const judgedFiles = async (routeFiles, runs) => {
     fs.rmSync(proofFolder, { recursive: true, force: true })
   }
 }
+const renderWorkers = Math.min(os.availableParallelism(), 4)
+console.log(`pptx check cores ${os.availableParallelism()}, render workers ${renderWorkers}`)
 const done = await runSteps({
   renders: {
-    run: () => Promise.all(Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext)),
+    run: () => Promise.all(Array.from({ length: renderWorkers }, renderNext)),
   },
   routes: {
     run: () =>
