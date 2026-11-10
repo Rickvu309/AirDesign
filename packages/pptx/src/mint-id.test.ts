@@ -3,6 +3,7 @@ import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
 import { exportPackage } from "./export-package.js"
 import { readShapes } from "./read-shapes.js"
 import { newDuplicateShapeIds, nextShapeId, shapeIdCounts } from "./shape-id.js"
+import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
 import { applyMinted, mintIds } from "./mint-id.js"
 
@@ -15,6 +16,7 @@ const { readFileSync } = process.getBuiltinModule("node:fs")
 
 const low = "n0123456789ab"
 const high = "nzzzzzzzzzzzz"
+const token = "n000000000001"
 const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>One</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
 const other = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="8" name="B"/></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`
 const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst><p:sldSz cx="1" cy="1"/></p:presentation>`
@@ -90,6 +92,52 @@ describe("mintIds", () => {
     expect(minted.shapes.get(`257.${low}`)).toBe("9")
   })
 
+  it("numbers two ids for one part once each", () => {
+    const parts = twoDeck()
+    const created = `${token}.${high}`
+    const first = mintIds(parts, [created])
+    expect(first.slides.get(token)).toBe("258")
+    expect(first.shapes.has(created)).toBe(false)
+    const ready = twoDeck()
+    ready.set("ppt/slides/slide3.xml", text(slide))
+    ready.set(
+      "ppt/presentation.xml",
+      text(
+        `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId3"/><p:sldId id="258" r:id="rId4"/></p:sldIdLst><p:sldSz cx="1" cy="1"/></p:presentation>`,
+      ),
+    )
+    ready.set(
+      "ppt/_rels/presentation.xml.rels",
+      text(
+        `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide3.xml"/></Relationships>`,
+      ),
+    )
+    const numeric = `258.${token}`
+    const same = `${token}.${token}`
+    const second = mintIds(ready, [created, numeric, same], first)
+    expect(second.slides.get(token)).toBe("258")
+    expect(second.shapes.get(numeric)).toBe("3")
+    expect(second.shapes.get(same)).toBe("3")
+    expect(second.shapes.get(created)).toBe("4")
+    const add = { name: "add" as const, text: "A", x: 0, y: 0, cx: 914400, cy: 457200 }
+    let edited = applyMinted(ready, { ...add, id: numeric }, second)
+    edited = applyMinted(edited, { ...add, id: created, text: "B" }, second)
+    expect(newDuplicateShapeIds(shapeIdCounts(ready), shapeIdCounts(edited))).toEqual([])
+    expect(xmlParts(edited).includes(token)).toBe(false)
+    expect(xmlParts(edited).includes(high)).toBe(false)
+  })
+
+  it("numbers a complete set the same way for either call order", () => {
+    const parts = deck()
+    const zero = `256.${token}`
+    const zed = `256.${high}`
+    const zeroFirst = mintIds(parts, [zed, zero], mintIds(parts, [zero]))
+    const zedFirst = mintIds(parts, [zero, zed], mintIds(parts, [zed]))
+    expect(zeroFirst).toEqual(zedFirst)
+    expect(zeroFirst.shapes.get(zero)).toBe("3")
+    expect(zeroFirst.shapes.get(zed)).toBe("4")
+  })
+
   it("keeps a minted slide number when the shape can be numbered later", () => {
     const parts = deck()
     const created = `${low}.${high}`
@@ -108,6 +156,27 @@ describe("mintIds", () => {
 })
 
 describe("applyMinted", () => {
+  it("refuses a minted add when that shape id is already in the part", () => {
+    const parts = deck()
+    const id = `256.${token}`
+    const minted = mintIds(parts, [id])
+    expect(minted.shapes.get(id)).toBe("3")
+    const taken = applyRoute(parts, {
+      name: "add",
+      part: "ppt/slides/slide1.xml",
+      text: "Plain",
+      x: 0,
+      y: 0,
+      cx: 914400,
+      cy: 457200,
+    })
+    const before = taken.get("ppt/slides/slide1.xml")
+    expect(() =>
+      applyMinted(taken, { id, name: "add", text: "Minted", x: 0, y: 0, cx: 914400, cy: 457200 }, minted),
+    ).toThrow(/shape id/)
+    expect(taken.get("ppt/slides/slide1.xml")).toBe(before)
+  })
+
   it("edits the shape on the slide the id names", () => {
     const parts = deck()
     const minted = mintIds(parts, ["256.2"])

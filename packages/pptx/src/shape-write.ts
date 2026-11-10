@@ -75,9 +75,14 @@ export function addTextShape(slideXml: string, text: string, box: ShapeBox, id?:
   const shapeId = id ?? nextShapeId(slideXml)
   if (!Number.isInteger(shapeId) || shapeId < 1 || shapeId > 4294967295) throw new Error("shape id")
   const idText = String(shapeId)
-  const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const bytes = encodeUtf8(slideXml)
   const document = markupDocument(bytes)
+  if (id !== undefined) {
+    for (const element of document.elements) {
+      if (element.kind === "p:cNvPr" && element.id === idText) throw new Error("shape id")
+    }
+  }
+  const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (!document.wellFormed || tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
   const shapeBytes = encodeUtf8(shape)
