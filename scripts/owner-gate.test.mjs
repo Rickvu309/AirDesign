@@ -159,10 +159,13 @@ same("a kind no longer caught is named", lostKinds(proof, { ...proof, "duplicate
   "duplicate shape id",
 ])
 same(
-  "a caught kind that is removed is named, and a missed one is not",
+  "a removed kind is named, caught or missed, so dropping a miss cannot flatter the count",
   lostKinds(proof, { "another kind": "caught" }),
-  ["duplicate shape id"],
+  ["duplicate shape id", "chart data-label range"],
 )
+same("dropping only the missed kind is named", lostKinds(proof, { "duplicate shape id": "caught" }), [
+  "chart data-label range",
+])
 same(
   "one kind gained does not hide one lost",
   lostKinds(proof, { "duplicate shape id": "missed", "chart data-label range": "caught" }),
