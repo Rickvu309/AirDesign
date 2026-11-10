@@ -1,16 +1,17 @@
-import { execFile, spawn, type ChildProcess } from "node:child_process"
+import { spawn, type ChildProcess } from "node:child_process"
 import { createHash, randomBytes } from "node:crypto"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { request } from "node:http"
 import { connect, createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
-import { afterEach, beforeAll, describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo } from "./harness.js"
 import { openPool } from "./index.js"
 
-const entry = path.join(process.cwd(), "apps/api/dist/start.js")
+const entry = path.join(process.cwd(), "apps/api/src/start.ts")
+const sourceHooks = path.join(process.cwd(), "apps/api/src/source-hooks.ts")
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -50,7 +51,7 @@ function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv
 }
 
 function spawnEntry(env: NodeJS.ProcessEnv, args: string[] = []): ChildProcess {
-  return spawn(process.execPath, [...args, entry], {
+  return spawn(process.execPath, ["--import", sourceHooks, ...args, entry], {
     cwd: process.cwd(),
     env,
     stdio: ["ignore", "pipe", "pipe"],
@@ -107,49 +108,10 @@ async function untilHealth(port: number, child: ChildProcess): Promise<void> {
 describe("start entry", () => {
   let child: ChildProcess | undefined
 
-  beforeAll(async () => {
-    await new Promise<void>((resolve, reject) => {
-      execFile("pnpm", ["--filter", "@airdesign/api...", "build"], { cwd: process.cwd() }, (error) => {
-        if (error) reject(error)
-        else resolve()
-      })
-    })
-  }, 60_000)
-
   afterEach(() => {
     child?.kill()
     child = undefined
   })
-
-  async function refusedStart(
-    values: Record<string, string | undefined>,
-  ): Promise<{ readonly code: number | null; readonly stderr: string }> {
-    const info = await postgresInfo()
-    const port = await freePort()
-    const running = spawnEntry(
-      childEnv({
-        PORT: String(port),
-        SESSION_DATABASE_URL: info.session,
-        DECK_DATABASE_URL: info.deck,
-        LISTEN_DATABASE_URL: info.listen,
-        ...values,
-      }),
-    )
-    child = running
-    let limit: NodeJS.Timeout | undefined
-    const result = await Promise.race([
-      stopped(running),
-      new Promise<{ code: number | null; stderr: string }>((resolve) => {
-        limit = setTimeout(() => resolve({ code: null, stderr: "" }), 15_000)
-      }),
-    ])
-    clearTimeout(limit)
-    running.kill()
-    child = undefined
-    return result
-  }
-
-  const notOrigins = [undefined, "", "http://app.example", "https://app.example/path", "https://app.example/", "app"]
 
   it("starts on a port and answers a sign-in request", async () => {
     const info = await postgresInfo()
@@ -289,22 +251,6 @@ describe("start entry", () => {
     }
   })
 
-  it("exits when a database url is empty", async () => {
-    const info = await postgresInfo()
-    const urls = {
-      SESSION_DATABASE_URL: info.session,
-      DECK_DATABASE_URL: info.deck,
-      LISTEN_DATABASE_URL: info.listen,
-    }
-    for (const name of Object.keys(urls)) {
-      child = spawnEntry(childEnv({ ...urls, [name]: "" }))
-      const result = await stopped(child)
-      child = undefined
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe(`${name}\n`)
-    }
-  })
-
   it("exits on SIGINT", async () => {
     const info = await postgresInfo()
     const port = await freePort()
@@ -323,30 +269,6 @@ describe("start entry", () => {
     child = undefined
     expect(result.code).toBe(0)
   }, 20_000)
-
-  it("exits when the port is not a port", async () => {
-    const info = await postgresInfo()
-    for (const port of ["0", "abc", "70000", "1e4", "0x1F90", " 8080"]) {
-      child = spawnEntry(
-        childEnv({
-          PORT: port,
-          SESSION_DATABASE_URL: info.session,
-          DECK_DATABASE_URL: info.deck,
-          LISTEN_DATABASE_URL: info.listen,
-        }),
-      )
-      const result = await Promise.race([
-        stopped(child),
-        new Promise<{ code: number | null; stderr: string }>((resolve) => {
-          setTimeout(() => resolve({ code: null, stderr: "" }), 5000)
-        }),
-      ])
-      child.kill()
-      child = undefined
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe("PORT\n")
-    }
-  }, 40_000)
 
   it("exits on SIGTERM", async () => {
     const info = await postgresInfo()
@@ -388,38 +310,6 @@ describe("start entry", () => {
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
     expect(response.status).toBe(500)
   }, 20_000)
-
-  it("exits when the public origin is missing or not an origin", async () => {
-    for (const value of notOrigins) {
-      const result = await refusedStart({ PUBLIC_ORIGIN: value })
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe("PUBLIC_ORIGIN\n")
-    }
-  }, 60_000)
-
-  it("exits when the site origin is missing or not an origin", async () => {
-    for (const value of notOrigins) {
-      const result = await refusedStart({ SITE_ORIGIN: value })
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe("SITE_ORIGIN\n")
-    }
-  }, 60_000)
-
-  it("exits when the MCP address is missing or not an https url", async () => {
-    for (const value of [undefined, "", "http://mcp.example/mcp", "not a url"]) {
-      const result = await refusedStart({ MCP_RESOURCE: value })
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe("MCP_RESOURCE\n")
-    }
-  }, 60_000)
-
-  it("exits when the cookie domain is not a host name", async () => {
-    for (const value of ["app.example; SameSite=None", "https://app.example", "app example"]) {
-      const result = await refusedStart({ COOKIE_DOMAIN: value })
-      expect(result.code).toBe(1)
-      expect(result.stderr).toBe("COOKIE_DOMAIN\n")
-    }
-  }, 60_000)
 
   it("starts with an empty cookie domain", async () => {
     const info = await postgresInfo()

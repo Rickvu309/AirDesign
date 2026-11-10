@@ -3,72 +3,17 @@ import type { Socket } from "node:net"
 import { DeckListen } from "./listen.js"
 import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
-import { checkedResource } from "./resource.js"
-import { createApi, requireDomain, requireOrigin } from "./server.js"
+import { createApi } from "./server.js"
+import { readStartSettings } from "./start-settings.js"
 
-const databaseNames = ["SESSION_DATABASE_URL", "DECK_DATABASE_URL", "LISTEN_DATABASE_URL"] as const
+const settings = readStartSettings(process.env)
 
-function databaseUrl(name: string): string | undefined {
-  const value = process.env[name]
-  if (value === undefined || value.length === 0) return undefined
-  return value
-}
-
-const urls = databaseNames.map((name) => databaseUrl(name))
-const missing = databaseNames.filter((_, index) => urls[index] === undefined)
-const sessionUrl = urls[0]
-const deckUrl = urls[1]
-const listenUrl = urls[2]
-
-if (sessionUrl === undefined || deckUrl === undefined || listenUrl === undefined) {
-  process.stderr.write(`${missing.join(" ")}\n`)
+if ("refusal" in settings) {
+  process.stderr.write(`${settings.refusal}\n`)
   process.exit(1)
 }
 
-function portNumber(): number {
-  const text = process.env.PORT
-  if (text === undefined || text.length === 0) return 3000
-  if (!/^[0-9]+$/.test(text)) return Number.NaN
-  const port = Number(text)
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return Number.NaN
-  return port
-}
-
-const port = portNumber()
-if (Number.isNaN(port)) {
-  process.stderr.write("PORT\n")
-  process.exit(1)
-}
-
-function readSetting(name: string, check: (value: string) => void): string {
-  const value = process.env[name] ?? ""
-  try {
-    check(value)
-  } catch {
-    process.stderr.write(`${name}\n`)
-    process.exit(1)
-  }
-  return value
-}
-
-const publicOrigin = readSetting("PUBLIC_ORIGIN", (value) => {
-  requireOrigin("publicOrigin", value)
-})
-const siteOrigin = readSetting("SITE_ORIGIN", (value) => {
-  requireOrigin("siteOrigin", value)
-})
-const resource = readSetting("MCP_RESOURCE", checkedResource)
-const cookieDomain = (process.env.COOKIE_DOMAIN ?? "") === "" ? undefined : readSetting("COOKIE_DOMAIN", requireDomain)
-
-function configuredHosts(): readonly string[] | undefined {
-  const names = (process.env.API_HOSTS ?? "")
-    .split(",")
-    .map((name) => name.trim().toLowerCase())
-    .filter((name) => name.length > 0)
-  return names.length === 0 ? undefined : names
-}
-
-const hosts = configuredHosts()
+const { sessionUrl, deckUrl, listenUrl, port, publicOrigin, siteOrigin, resource, cookieDomain, hosts } = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
 session.on("error", () => undefined)
