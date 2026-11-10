@@ -728,7 +728,6 @@ async function typeAtEnd(page: Page, text: string): Promise<void> {
   await editor.pressSequentially(text, { delay: 50 })
 }
 
-
 test("a commit answered 404 with an HTML body shows no offline words", async ({ page }) => {
   let answered = 0
   await page.route("**/decks/commit", async (route) => {
@@ -863,4 +862,26 @@ test("a refused session keeps the edit and sends the person to sign in", async (
   await page.route("**/decks/commit", (route) => route.abort())
   await page.goto(address.pathname)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
+})
+
+test("after a failed import a good file keeps each box's edit on its own box", async ({ page }, testInfo) => {
+  const notes = testInfo.outputPath("notes.pptx")
+  await writeFile(notes, "this is not a PowerPoint file")
+  await page.goto("/thin")
+  await page.locator("input[type=file]").setInputFiles(notes)
+  await expect(page.getByText(importFailedWords)).toBeVisible()
+  await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
+  await showSlide(page, 4)
+  const title = page.locator('[contenteditable="true"]').filter({ hasText: /^What is a heat pump\?$/ })
+  await title.click()
+  await page.keyboard.press("End")
+  await title.pressSequentially(" Alpha", { delay: 50 })
+  await stored(page, "What is a heat pump? Alpha")
+  await page.reload()
+  await showSlide(page, 4)
+  const editors = page.locator('[contenteditable="true"]')
+  await expect(editors.filter({ hasText: /^What is a heat pump\? Alpha$/ })).toHaveCount(1)
+  await expect(editors.filter({ hasText: /^Same technology as:$/ })).toHaveCount(1)
+  await expect(editors.filter({ hasText: /^Winter: Pumps heat from the outside to the inside$/ })).toHaveCount(1)
+  expect([...new Set((await rowsOf(page)).map((row) => row.node))]).toEqual(["2727.2"])
 })
