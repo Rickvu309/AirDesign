@@ -31,6 +31,21 @@ export const stages = [
   [["metrics", "node", ["scripts/metrics.mjs"]]],
 ]
 
+export const sideSteps = new Set(["browser", "site", "tooling"])
+
+export const partOf = (argv) => {
+  const given = argv.find((word) => word.startsWith("--part="))
+  if (given === undefined) return "all"
+  const part = given.slice("--part=".length)
+  if (part !== "main" && part !== "side") throw new Error(`--part must be main or side, and it is ${part}.`)
+  return part
+}
+
+export const stagesFor = (part) =>
+  stages
+    .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
+    .filter((stage) => stage.length > 0)
+
 const showOnSuccess = new Set(["bug-rule", "metrics", "specs"])
 const all = process.argv.includes("--all")
 const failed = []
@@ -68,7 +83,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
   process.env.TMPDIR = ownTemp
 
-  for (const stage of stages) {
+  for (const stage of stagesFor(partOf(process.argv))) {
     await Promise.all(stage.map(run))
     if (failed.length > 0 && !all) break
   }
