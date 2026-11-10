@@ -5,12 +5,12 @@ export type Mail = {
 
 export type Sender = (mail: Mail) => Promise<void>
 
-export function signLink(host: string, token: string): string {
-  return `https://${host}/sign-in/link?token=${encodeURIComponent(token)}`
+export function signLink(publicOrigin: string, token: string): string {
+  return `${publicOrigin}/sign-in/link?token=${encodeURIComponent(token)}`
 }
 
-export function mailText(host: string, token: string, code: string): string {
-  return `${signLink(host, token)}\n${code}`
+export function mailText(publicOrigin: string, token: string, code: string): string {
+  return `${signLink(publicOrigin, token)}\n${code}`
 }
 
 export async function sendWithResend(mail: Mail): Promise<void> {
@@ -28,7 +28,7 @@ export async function sendWithResend(mail: Mail): Promise<void> {
     body: JSON.stringify({
       from,
       to: [mail.to],
-      subject: mail.text,
+      subject: "Sign in",
       text: mail.text,
     }),
   })

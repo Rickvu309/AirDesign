@@ -13,13 +13,17 @@ export type ApiOptions = {
   readonly deck: Sql
   readonly listen: DeckListen
   readonly send: Sender
+  readonly publicOrigin: string
+  readonly cookieDomain?: string
 }
 
 const cookieName = "airdesign.session"
 const bodyCap = 1_000_000
 
-export function sessionCookie(token: string): string {
-  return `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/`
+export function sessionCookie(token: string, cookieDomain?: string): string {
+  const cookie = `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
+  if (cookieDomain === undefined) return cookie
+  return `${cookie}; Domain=${cookieDomain}`
 }
 
 export function readSessionCookie(header: string | undefined): string | undefined {
@@ -50,11 +54,6 @@ function redirect(res: ServerResponse, location: string, cookie?: string): void 
   if (cookie !== undefined) res.setHeader("set-cookie", cookie)
   res.writeHead(302, { location })
   res.end()
-}
-
-function hostOf(req: IncomingMessage): string {
-  const host = req.headers.host
-  return typeof host === "string" && host.length > 0 ? host : "localhost"
 }
 
 function cookieHeader(req: IncomingMessage): string | undefined {
@@ -126,7 +125,7 @@ async function emailRoute(options: ApiOptions, req: IncomingMessage, res: Server
     sendJson(res, 400, parsed)
     return
   }
-  await issueMail(options.session, parsed.email, hostOf(req), options.send)
+  await issueMail(options.session, parsed.email, options.publicOrigin, options.send)
   sendJson(res, 202, { ok: true })
 }
 
@@ -141,7 +140,7 @@ async function codeRoute(options: ApiOptions, req: IncomingMessage, res: ServerR
     sendJson(res, 401, { ok: false, refusal: "code" })
     return
   }
-  sendJson(res, 200, { ok: true }, sessionCookie(token))
+  sendJson(res, 200, { ok: true }, sessionCookie(token, options.cookieDomain))
 }
 
 async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Promise<void> {
@@ -155,7 +154,7 @@ async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Pr
     redirect(res, "/sign-in")
     return
   }
-  redirect(res, "/", sessionCookie(session))
+  redirect(res, "/", sessionCookie(session, options.cookieDomain))
 }
 
 async function openRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
