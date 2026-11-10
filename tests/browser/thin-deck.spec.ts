@@ -479,6 +479,74 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
   expect(written.match(/<a:p>|<a:p /g)?.length).toBe(5)
 })
 
+test("a replaced run and a new paragraph export for the PowerPoint check", async ({ page }, testInfo) => {
+  const judged = join(process.cwd(), "tests/browser/exported-paragraphs.pptx")
+  await rm(judged, { force: true })
+  const deck = join(fixtures, "doe-heat-pumps.pptx")
+  const download = testInfo.outputPath("exported-paragraphs.pptx")
+  const part = "ppt/slides/slide7.xml"
+  await open(page, deck)
+  const box = page.locator('[contenteditable="true"]').filter({ hasText: /^Vapor Compression CyclePumped refrigerant/ })
+  await expect(box).toHaveCount(1)
+  const bold = box.locator("[data-run]").nth(3)
+  await expect(bold).toHaveText("delivers")
+  await bold.click()
+  await bold.evaluate((run) => {
+    const text = run.firstChild
+    if (text === null) return
+    window.getSelection()?.setBaseAndExtent(text, 0, text, text.textContent?.length ?? 0)
+  })
+  await page.keyboard.type("supplies", { delay: 50 })
+  const last = box.locator("[data-run]").nth(7)
+  await expect(last).toHaveText(" heat ")
+  await last.click()
+  await last.evaluate((run) => {
+    const text = run.firstChild
+    if (text === null) return
+    const end = text.textContent?.length ?? 0
+    window.getSelection()?.setBaseAndExtent(text, end, text, end)
+  })
+  await page.keyboard.press("Enter")
+  await page.keyboard.type("Extra line", { delay: 50 })
+  const shown = [
+    "Vapor Compression Cycle",
+    "Pumped refrigerant",
+    "Pressurized (liquid) supplies heat ",
+    "Depressurized (gas) collects heat ",
+    "Extra line",
+  ]
+  await stored(page, shown.join("\n"))
+  await saveExport(page, download)
+  expect(await changedParts(deck, download)).toEqual([part])
+  const written = shapeIn((await partsOf(download)).get(part)?.toString("utf8") ?? "", "45")
+  expect(runsIn(written).map(([, text]) => text)).toEqual([
+    "Vapor Compression Cycle",
+    "Pumped refrigerant",
+    "Pressurized (liquid) ",
+    "supplies",
+    " heat ",
+    "Depressurized (gas) ",
+    "collects",
+    " heat ",
+    "Extra line",
+  ])
+  expect(written.match(/<a:p>|<a:p /g)?.length).toBe(5)
+  await copyFile(download, judged)
+})
+
+test("undo after Enter takes the new paragraph back", async ({ page }) => {
+  test.fail()
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await page.keyboard.press("Enter")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello", ""])
+  await page.keyboard.press("ControlOrMeta+z")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello"])
+})
+
 test("an empty box takes typed text, keeps it after reload and exports it", async ({ page }, testInfo) => {
   const deck = join(fixtures, "doe-heat-pumps.pptx")
   const download = testInfo.outputPath("empty-box.pptx")
