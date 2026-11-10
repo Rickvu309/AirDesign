@@ -186,3 +186,12 @@ it("opens a plain body for an id that names an object method", () => {
     })
   }
 })
+
+it("throws missing node for a listed id that has no body", () => {
+  for (const name of methodNames) {
+    const id = elementId(name)
+    const register = { ...openRegister("floor", "slide"), nodes: [elementId("a"), id] }
+    expect(() => decide(register, { command: "person", value: "typed", node: id })).toThrow("missing node")
+    expect(() => decide(register, { command: "read", runId: "r1", node: id })).toThrow("missing node")
+  }
+})
