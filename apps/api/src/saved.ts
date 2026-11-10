@@ -27,6 +27,25 @@ select updated.id, updated.revision, updated.register, pg_notify('deck', $5) as 
 from updated
 `
 
+const onceReadSql = "select revision, notify from deck.once where email = $1 and deck = $2 and once = $3"
+
+const revisionOnceSql = `
+with updated as (
+  update deck.saved
+  set revision = $2, register = $3::jsonb
+  where id = $1 and revision = $4
+  returning id, revision, register
+),
+noted as (
+  insert into deck.once (email, deck, once, revision, notify)
+  select $6, updated.id, $7, updated.revision, $5
+  from updated
+  returning notify
+)
+select noted.notify, pg_notify('deck', noted.notify) as notified
+from noted
+`
+
 type Saved = {
   readonly id: string
   readonly revision: number
@@ -40,6 +59,24 @@ export type RevisionWrite = {
   readonly register: Deck["register"]
   readonly expected: number
   readonly key: string
+  readonly once?: {
+    readonly email: string
+    readonly once: string
+  }
+}
+
+type StoredOnce = {
+  readonly revision: number
+  readonly notify: string
+}
+
+function uniqueOnce(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "23505"
+}
+
+async function readStoredOnce(db: Sql, email: string, deck: string, once: string): Promise<StoredOnce | undefined> {
+  const result = await db.query<StoredOnce>(onceReadSql, [email, deck, once])
+  return result.rows[0]
 }
 
 function savedFrom(row: Saved | undefined): Saved | undefined {
@@ -100,12 +137,24 @@ export async function openSaved(
 }
 
 export async function writeRevision(db: Sql, input: RevisionWrite): Promise<boolean> {
-  const result = await db.query(revisionSql, [
+  if (input.once === undefined) {
+    const result = await db.query(revisionSql, [
+      input.id,
+      input.revision,
+      JSON.stringify(input.register),
+      input.expected,
+      input.key,
+    ])
+    return result.rows.length > 0
+  }
+  const result = await db.query(revisionOnceSql, [
     input.id,
     input.revision,
     JSON.stringify(input.register),
     input.expected,
     input.key,
+    input.once.email,
+    input.once.once,
   ])
   return result.rows.length > 0
 }
@@ -124,18 +173,29 @@ export async function commitEdits(
     const saved = await readSaved(db, parsed.deck)
     if (saved === undefined) return { ok: false, refusal: "deck" }
     if (saved.owner !== owner) return { ok: false, refusal: "owner" }
+    if (parsed.once !== undefined) {
+      const prior = await readStoredOnce(db, owner, parsed.deck, parsed.once)
+      if (prior !== undefined) {
+        return { ok: true, deck: parsed.deck, revision: prior.revision, key: prior.notify }
+      }
+    }
     const current: Deck = { id: saved.id as DeckId, revision: saved.revision, register: saved.register }
     const result = call("commit_edits", current, { actor: "person" }, raw)
     if (!result.ok) return { ok: false, refusal: result.refusal }
-    const wrote = await writeRevision(db, {
-      id: result.deck.id,
-      revision: result.deck.revision,
-      register: result.deck.register,
-      expected: saved.revision,
-      key: result.key,
-    })
-    if (wrote) {
-      return { ok: true, deck: result.deck.id, revision: result.deck.revision, key: result.key }
+    try {
+      const wrote = await writeRevision(db, {
+        id: result.deck.id,
+        revision: result.deck.revision,
+        register: result.deck.register,
+        expected: saved.revision,
+        key: result.key,
+        ...(parsed.once === undefined ? {} : { once: { email: owner, once: parsed.once } }),
+      })
+      if (wrote) {
+        return { ok: true, deck: result.deck.id, revision: result.deck.revision, key: result.key }
+      }
+    } catch (error) {
+      if (parsed.once === undefined || !uniqueOnce(error)) throw error
     }
   }
   return { ok: false, refusal: "stale" }

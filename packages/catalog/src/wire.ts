@@ -102,15 +102,19 @@ function readBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | Fie
 
 export function readCommit(
   raw: unknown,
-): { ok: true; deck: DeckId; batch: readonly WireEdit[] } | FieldRefusal | DeckRefusal | BatchRefusal {
+): { ok: true; deck: DeckId; batch: readonly WireEdit[]; once?: string } | FieldRefusal | DeckRefusal | BatchRefusal {
   const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "batch"]) || !Object.hasOwn(body, "deck")) return fieldRefusal
+  if (body === undefined || !knownKeys(body, ["deck", "batch", "once"]) || !Object.hasOwn(body, "deck")) {
+    return fieldRefusal
+  }
   const deck = readDeckId(body.deck)
   if (!deck.ok) return deckRefusal
   if (!Object.hasOwn(body, "batch")) return batchRefusal
   const batch = readBatch(body.batch)
   if (!batch.ok) return batch
-  return { ok: true, deck: deck.deck, batch: batch.edits }
+  if (!Object.hasOwn(body, "once")) return { ok: true, deck: deck.deck, batch: batch.edits }
+  if (typeof body.once !== "string" || !deckPattern.test(body.once)) return fieldRefusal
+  return { ok: true, deck: deck.deck, batch: batch.edits, once: body.once }
 }
 
 export function readWatch(

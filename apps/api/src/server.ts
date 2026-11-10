@@ -193,6 +193,10 @@ async function watchRoute(options: ApiOptions, req: IncomingMessage, res: Server
 async function handle(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
   const url = new URL(req.url ?? "/", "http://127.0.0.1")
   const method = req.method ?? "GET"
+  if (method === "GET" && url.pathname === "/health") {
+    sendJson(res, 200, { ok: true })
+    return
+  }
   if (method === "POST" && url.pathname === "/sign-in/email") {
     await emailRoute(options, req, res)
     return
