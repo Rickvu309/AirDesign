@@ -133,6 +133,13 @@ function nodeRegister(spec: Spec): Register {
   if (num(spec, "agent") === 1 || num(spec, "agentAt") !== -1) {
     landed.push({ actor: "agent", value: "agent", visible: num(spec, "agent") === 1 })
   }
+  if (num(spec, "agent") === 2) {
+    const at = landed.findIndex((row) => row.actor === "agent")
+    const first = { actor: "agent" as const, value: "agent", visible: true }
+    const second = { actor: "agent" as const, value: "again", visible: true }
+    if (at >= 0) landed.splice(at, 1, first, second)
+    else landed.push(first, second)
+  }
   for (let index = 0; index < num(spec, "personAfter"); index += 1) {
     landed.push({ actor: "person", value: "later", visible: true })
   }
@@ -247,6 +254,25 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
       const decision = decide(register, { command: "undo", runId: run })
       if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
       else next = decision.register
+    } else if (edge.action === "AgentWritesAgain" || edge.action === "AgentKeepsClaim") {
+      const decision = decide(register, {
+        command: "agent",
+        runId: run,
+        readAt: num(source, "readAt"),
+        value: "again",
+      })
+      if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
+      else next = decision.register
+    } else if (edge.action === "AgentRefusesProtected") {
+      const decision = decide(register, {
+        command: "agent",
+        runId: run,
+        readAt: num(source, "readAt"),
+        value: "stale",
+      })
+      if (decision.decision !== "refuse" || decision.code !== "person-protected") {
+        failures.push(`edit ${where} accepted the read after a person`)
+      } else replayed += 1
     } else {
       failures.push(`edit ${where} is not connected`)
       continue
@@ -803,53 +829,64 @@ function replayUsage(graph: Graph, view: View, failures: string[]) {
 
 function oauthGrant(spec: Spec): Grant {
   const code = text(spec, "code")
-  const access = text(spec, "access")
-  const refresh = text(spec, "refresh")
-  const previous = text(spec, "previous")
-  const family = text(spec, "family")
-  const who = text(spec, "who")
-  const deck = text(spec, "deck")
-  const called = text(spec, "called")
-  if (
-    (code !== "none" && code !== "open" && code !== "used") ||
-    (access !== "none" && access !== "live" && access !== "dead") ||
-    (refresh !== "none" && refresh !== "r1" && refresh !== "r2" && refresh !== "dead") ||
-    (previous !== "none" && previous !== "r1") ||
-    (family !== "open" && family !== "revoked") ||
-    (who !== "none" && who !== "person" && who !== "agent") ||
-    (deck !== "none" && deck !== "home") ||
-    (called !== "no" && called !== "yes")
-  ) {
-    throw new Error(`bad oauth state ${JSON.stringify(spec)}`)
+  if (code !== "open" && code !== "used") throw new Error(`bad oauth code ${code}`)
+  return {
+    principal: text(spec, "principal"),
+    deck: text(spec, "deck"),
+    code,
+    generation: num(spec, "generation"),
+    revoked: flag(spec, "revoked"),
   }
-  return { code, access, refresh, previous, family, who, deck, called }
 }
 
 function oauthPicture(grant: Grant) {
   return {
-    code: grant.code,
-    access: grant.access,
-    refresh: grant.refresh,
-    previous: grant.previous,
-    family: grant.family,
-    who: grant.who,
+    principal: grant.principal,
     deck: grant.deck,
-    called: grant.called,
+    code: grant.code,
+    generation: grant.generation,
+    revoked: grant.revoked,
   }
 }
 
-function oauthCommand(action: string): OauthCommand | null {
-  if (action === "IssuePerson" || action === "IssuePersonRefused") return { command: "person" }
-  if (action === "IssueAgent" || action === "IssueAgentRefused") return { command: "agent" }
-  if (action === "UseCode" || action === "UseAgain" || action === "UseEarly" || action === "UseRevoked") {
-    return { command: "exchange", deck: "home" }
-  }
-  if (action === "UseOther") return { command: "exchange", deck: "other" }
-  if (action === "Call" || action === "CallRefused") return { command: "call", deck: "home" }
-  if (action === "CallOther") return { command: "call", deck: "other" }
-  if (action === "Rotate" || action === "RotateRefused") return { command: "rotate" }
-  if (action === "Reuse" || action === "ReuseRefused") return { command: "reuse" }
-  if (action === "Revoke" || action === "RevokeRefused") return { command: "revoke" }
+function oauthEdge(action: string): { command: OauthCommand; accepted: boolean } | null {
+  const call = (deck: "home" | "other", generation: number, accepted: boolean) => ({
+    command: { command: "call" as const, deck, generation },
+    accepted,
+  })
+  const rotate = (generation: number, accepted: boolean) => ({
+    command: { command: "rotate" as const, generation },
+    accepted,
+  })
+  if (action === "ExchangeHome") return { command: { command: "exchange", deck: "home" }, accepted: true }
+  if (action === "ExchangeHomeRefused") return { command: { command: "exchange", deck: "home" }, accepted: false }
+  if (action === "ExchangeOther") return { command: { command: "exchange", deck: "other" }, accepted: true }
+  if (action === "ExchangeOtherRefused") return { command: { command: "exchange", deck: "other" }, accepted: false }
+  if (action === "CallHome0Refused") return call("home", 0, false)
+  if (action === "CallOther0Refused") return call("other", 0, false)
+  if (action === "CallHome1") return call("home", 1, true)
+  if (action === "CallHome1Refused") return call("home", 1, false)
+  if (action === "CallHome2") return call("home", 2, true)
+  if (action === "CallHome2Refused") return call("home", 2, false)
+  if (action === "CallHome3") return call("home", 3, true)
+  if (action === "CallHome3Refused") return call("home", 3, false)
+  if (action === "CallOther1") return call("other", 1, true)
+  if (action === "CallOther1Refused") return call("other", 1, false)
+  if (action === "CallOther2") return call("other", 2, true)
+  if (action === "CallOther2Refused") return call("other", 2, false)
+  if (action === "CallOther3") return call("other", 3, true)
+  if (action === "CallOther3Refused") return call("other", 3, false)
+  if (action === "Rotate0") return rotate(0, false)
+  if (action === "Rotate1") return rotate(1, true)
+  if (action === "Rotate1Reuse") return rotate(1, false)
+  if (action === "Rotate1Refused") return rotate(1, false)
+  if (action === "Rotate2") return rotate(2, true)
+  if (action === "Rotate2Reuse") return rotate(2, false)
+  if (action === "Rotate2Refused") return rotate(2, false)
+  if (action === "Rotate3Refused") return rotate(3, false)
+  if (action === "Rotate4") return rotate(4, false)
+  if (action === "Revoke") return { command: { command: "revoke" }, accepted: true }
+  if (action === "RevokeAgain") return { command: { command: "revoke" }, accepted: false }
   return null
 }
 
@@ -861,24 +898,24 @@ function replayOauth(graph: Graph, view: View, failures: string[]) {
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing oauth state for ${edge.action}`)
     const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
-    const command = oauthCommand(edge.action)
-    if (!command) {
+    const step = oauthEdge(edge.action)
+    if (!step) {
       failures.push(`oauth ${where} is not connected`)
       continue
     }
-    const result = oauth(oauthGrant(source), command)
+    const result = oauth(oauthGrant(source), step.command)
     const actual = oauthPicture(result.grant)
     const expected = oauthPicture(oauthGrant(target))
     if (!same(actual, expected)) {
       failures.push(`oauth ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
       continue
     }
-    const changed = !same(oauthPicture(oauthGrant(source)), expected)
-    if (changed !== result.accepted) {
+    if (result.accepted !== step.accepted) {
       failures.push(`oauth ${where} accepted ${String(result.accepted)}`)
       continue
     }
-    if (changed) replayed += 1
+    const changed = !same(oauthPicture(oauthGrant(source)), expected)
+    if (changed || result.accepted) replayed += 1
     else stuttered += 1
   }
   return { replayed, stuttered }

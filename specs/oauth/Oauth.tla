@@ -1,167 +1,222 @@
 ---- MODULE Oauth ----
+EXTENDS Integers
 
-VARIABLES code, access, refresh, previous, family, who, deck, called
+VARIABLES principal, deck, code, generation, revoked, reused
 
-vars == <<code, access, refresh, previous, family, who, deck, called>>
+vars == <<principal, deck, code, generation, revoked, reused>>
+
+Max == 3
 
 TypeOK ==
-  /\ code \in {"none", "open", "used"}
-  /\ access \in {"none", "live", "dead"}
-  /\ refresh \in {"none", "r1", "r2", "dead"}
-  /\ previous \in {"none", "r1"}
-  /\ family \in {"open", "revoked"}
-  /\ who \in {"none", "person", "agent"}
-  /\ deck \in {"none", "home"}
-  /\ called \in {"no", "yes"}
+  /\ principal \in {"person", "agent"}
+  /\ deck \in {"home", "other"}
+  /\ code \in {"open", "used"}
+  /\ generation \in 0..Max
+  /\ revoked \in BOOLEAN
+  /\ reused \in BOOLEAN
 
-CodeIsSingleUse ==
-  /\ (code = "open" => (access = "none" /\ refresh = "none" /\ previous = "none" /\ called = "no"))
-  /\ (code = "used" => (access \in {"live", "dead"} /\ refresh \in {"r1", "r2", "dead"}))
-  /\ (code = "none" => (access = "none" /\ refresh = "none" /\ previous = "none" /\ called = "no" /\ family = "open"))
+\* A code works once.
+CodeWorksOnce == (code = "open") <=> (generation = 0)
 
-RotationKillsPrevious ==
-  /\ (previous = "r1" => refresh \in {"r2", "dead"})
-  /\ (refresh = "r1" => previous = "none")
-  /\ (refresh = "r2" => (previous = "r1" /\ access = "live" /\ family = "open"))
-  /\ ((previous = "r1" /\ family = "open") => (refresh = "r2" /\ access = "live"))
+\* A rotated refresh token never works again.
+RotatedRefreshIsDead == [][generation' >= generation]_vars
 
-RevocationKillsTokens ==
-  family = "revoked" => (access \in {"none", "dead"} /\ refresh \in {"none", "dead"})
+\* Reuse of a rotated token revokes the family.
+ReuseRevokesFamily == reused => revoked
 
-IdentityIsStored ==
-  /\ (who = "none" <=> code = "none")
-  /\ (deck = "none" <=> code = "none")
-  /\ (deck = "home" => who \in {"person", "agent"})
-  /\ (access = "live" => (deck = "home" /\ who \in {"person", "agent"} /\ family = "open"))
+\* After revocation no call and no rotation is accepted.
+AfterRevocation ==
+  [][revoked => (revoked' = TRUE /\ UNCHANGED <<principal, deck, code, generation>>)]_vars
+
+\* The identity is the stored one.
+IdentityIsStored == [][UNCHANGED principal]_vars
+
+\* A token for one deck does not authorize another.
+DeckIsBound == [][UNCHANGED deck]_vars
 
 Init ==
-  /\ code = "none"
-  /\ access = "none"
-  /\ refresh = "none"
-  /\ previous = "none"
-  /\ family = "open"
-  /\ who = "none"
-  /\ deck = "none"
-  /\ called = "no"
-
-IssuePerson ==
-  /\ code = "none"
-  /\ who = "none"
-  /\ code' = "open"
-  /\ who' = "person"
-  /\ deck' = "home"
-  /\ UNCHANGED <<access, refresh, previous, family, called>>
-
-IssueAgent ==
-  /\ code = "none"
-  /\ who = "none"
-  /\ code' = "open"
-  /\ who' = "agent"
-  /\ deck' = "home"
-  /\ UNCHANGED <<access, refresh, previous, family, called>>
-
-IssuePersonRefused ==
-  /\ (code /= "none" \/ who /= "none")
-  /\ UNCHANGED vars
-
-IssueAgentRefused ==
-  /\ (code /= "none" \/ who /= "none")
-  /\ UNCHANGED vars
-
-UseCode ==
+  /\ principal \in {"person", "agent"}
+  /\ deck \in {"home", "other"}
   /\ code = "open"
-  /\ family = "open"
+  /\ generation = 0
+  /\ revoked = FALSE
+  /\ reused = FALSE
+
+ExchangeHome ==
+  /\ deck = "home"
+  /\ code = "open"
+  /\ revoked = FALSE
   /\ code' = "used"
-  /\ access' = "live"
-  /\ refresh' = "r1"
-  /\ UNCHANGED <<previous, family, who, deck, called>>
+  /\ generation' = 1
+  /\ UNCHANGED <<principal, deck, revoked, reused>>
 
-UseAgain ==
-  /\ code = "used"
+ExchangeHomeRefused ==
+  /\ ~(deck = "home" /\ code = "open" /\ revoked = FALSE)
   /\ UNCHANGED vars
 
-UseEarly ==
-  /\ code = "none"
-  /\ UNCHANGED vars
-
-UseRevoked ==
+ExchangeOther ==
+  /\ deck = "other"
   /\ code = "open"
-  /\ family = "revoked"
+  /\ revoked = FALSE
+  /\ code' = "used"
+  /\ generation' = 1
+  /\ UNCHANGED <<principal, deck, revoked, reused>>
+
+ExchangeOtherRefused ==
+  /\ ~(deck = "other" /\ code = "open" /\ revoked = FALSE)
   /\ UNCHANGED vars
 
-UseOther ==
+CallHome0Refused ==
   UNCHANGED vars
 
-Call ==
-  /\ access = "live"
-  /\ family = "open"
-  /\ called = "no"
-  /\ called' = "yes"
-  /\ UNCHANGED <<code, access, refresh, previous, family, who, deck>>
-
-CallOther ==
+CallOther0Refused ==
   UNCHANGED vars
 
-CallRefused ==
-  /\ (access /= "live" \/ family = "revoked")
+CallHome1 ==
+  /\ revoked = FALSE
+  /\ generation = 1
+  /\ deck = "home"
   /\ UNCHANGED vars
 
-Rotate ==
-  /\ refresh = "r1"
-  /\ family = "open"
-  /\ previous = "none"
-  /\ refresh' = "r2"
-  /\ previous' = "r1"
-  /\ called' = "no"
-  /\ UNCHANGED <<code, access, family, who, deck>>
-
-RotateRefused ==
-  /\ (refresh /= "r1" \/ family = "revoked" \/ previous /= "none")
+CallHome1Refused ==
+  /\ ~(revoked = FALSE /\ generation = 1 /\ deck = "home")
   /\ UNCHANGED vars
 
-Reuse ==
-  /\ previous = "r1"
-  /\ family = "open"
-  /\ family' = "revoked"
-  /\ access' = "dead"
-  /\ refresh' = "dead"
-  /\ UNCHANGED <<code, previous, who, deck, called>>
-
-ReuseRefused ==
-  /\ (previous /= "r1" \/ family = "revoked")
+CallHome2 ==
+  /\ revoked = FALSE
+  /\ generation = 2
+  /\ deck = "home"
   /\ UNCHANGED vars
+
+CallHome2Refused ==
+  /\ ~(revoked = FALSE /\ generation = 2 /\ deck = "home")
+  /\ UNCHANGED vars
+
+CallHome3 ==
+  /\ revoked = FALSE
+  /\ generation = 3
+  /\ deck = "home"
+  /\ UNCHANGED vars
+
+CallHome3Refused ==
+  /\ ~(revoked = FALSE /\ generation = 3 /\ deck = "home")
+  /\ UNCHANGED vars
+
+CallOther1 ==
+  /\ revoked = FALSE
+  /\ generation = 1
+  /\ deck = "other"
+  /\ UNCHANGED vars
+
+CallOther1Refused ==
+  /\ ~(revoked = FALSE /\ generation = 1 /\ deck = "other")
+  /\ UNCHANGED vars
+
+CallOther2 ==
+  /\ revoked = FALSE
+  /\ generation = 2
+  /\ deck = "other"
+  /\ UNCHANGED vars
+
+CallOther2Refused ==
+  /\ ~(revoked = FALSE /\ generation = 2 /\ deck = "other")
+  /\ UNCHANGED vars
+
+CallOther3 ==
+  /\ revoked = FALSE
+  /\ generation = 3
+  /\ deck = "other"
+  /\ UNCHANGED vars
+
+CallOther3Refused ==
+  /\ ~(revoked = FALSE /\ generation = 3 /\ deck = "other")
+  /\ UNCHANGED vars
+
+Rotate0 ==
+  UNCHANGED vars
+
+Rotate1 ==
+  /\ revoked = FALSE
+  /\ generation = 1
+  /\ generation' = 2
+  /\ UNCHANGED <<principal, deck, code, revoked, reused>>
+
+Rotate1Reuse ==
+  /\ revoked = FALSE
+  /\ generation > 1
+  /\ revoked' = TRUE
+  /\ reused' = TRUE
+  /\ UNCHANGED <<principal, deck, code, generation>>
+
+Rotate1Refused ==
+  /\ ~(revoked = FALSE /\ generation = 1)
+  /\ ~(revoked = FALSE /\ generation > 1)
+  /\ UNCHANGED vars
+
+Rotate2 ==
+  /\ revoked = FALSE
+  /\ generation = 2
+  /\ generation' = 3
+  /\ UNCHANGED <<principal, deck, code, revoked, reused>>
+
+Rotate2Reuse ==
+  /\ revoked = FALSE
+  /\ generation > 2
+  /\ revoked' = TRUE
+  /\ reused' = TRUE
+  /\ UNCHANGED <<principal, deck, code, generation>>
+
+Rotate2Refused ==
+  /\ ~(revoked = FALSE /\ generation = 2)
+  /\ ~(revoked = FALSE /\ generation > 2)
+  /\ UNCHANGED vars
+
+Rotate3Refused ==
+  /\ ~(revoked = FALSE /\ generation = 3)
+  /\ UNCHANGED vars
+
+Rotate4 ==
+  UNCHANGED vars
 
 Revoke ==
-  /\ family = "open"
-  /\ code /= "none"
-  /\ family' = "revoked"
-  /\ access' = IF access = "none" THEN "none" ELSE "dead"
-  /\ refresh' = IF refresh = "none" THEN "none" ELSE "dead"
-  /\ UNCHANGED <<code, previous, who, deck, called>>
+  /\ revoked = FALSE
+  /\ revoked' = TRUE
+  /\ UNCHANGED <<principal, deck, code, generation, reused>>
 
-RevokeRefused ==
-  /\ (family = "revoked" \/ code = "none")
+RevokeAgain ==
+  /\ revoked = TRUE
   /\ UNCHANGED vars
 
 Next ==
-  \/ IssuePerson
-  \/ IssueAgent
-  \/ IssuePersonRefused
-  \/ IssueAgentRefused
-  \/ UseCode
-  \/ UseAgain
-  \/ UseEarly
-  \/ UseRevoked
-  \/ UseOther
-  \/ Call
-  \/ CallOther
-  \/ CallRefused
-  \/ Rotate
-  \/ RotateRefused
-  \/ Reuse
-  \/ ReuseRefused
+  \/ ExchangeHome
+  \/ ExchangeHomeRefused
+  \/ ExchangeOther
+  \/ ExchangeOtherRefused
+  \/ CallHome0Refused
+  \/ CallOther0Refused
+  \/ CallHome1
+  \/ CallHome1Refused
+  \/ CallHome2
+  \/ CallHome2Refused
+  \/ CallHome3
+  \/ CallHome3Refused
+  \/ CallOther1
+  \/ CallOther1Refused
+  \/ CallOther2
+  \/ CallOther2Refused
+  \/ CallOther3
+  \/ CallOther3Refused
+  \/ Rotate0
+  \/ Rotate1
+  \/ Rotate1Reuse
+  \/ Rotate1Refused
+  \/ Rotate2
+  \/ Rotate2Reuse
+  \/ Rotate2Refused
+  \/ Rotate3Refused
+  \/ Rotate4
   \/ Revoke
-  \/ RevokeRefused
+  \/ RevokeAgain
 
 Spec == Init /\ [][Next]_vars
 
