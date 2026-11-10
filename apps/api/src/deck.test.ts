@@ -423,6 +423,7 @@ describe("deck routes", () => {
       const probed = await clockOf(observer)
       await ear.query("select pg_notify('deck', 'probe:0')")
       await untilParked(observer, probed)
+      await wait(200)
       expect(answered).toBe(false)
       const committed = await ask(
         base,
