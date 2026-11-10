@@ -51,6 +51,14 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - Test behavior that can break, at the lowest layer that fails. Tests never retry.
 - Do not commit plans, research notes or scratch files. A merged PR is the record.
 
+## How agents work here
+
+- A bug or a rule lands in the repo as a test, a check or a metric. A chat message fixes nothing.
+- A check is a free mechanical rule. No check calls a paid model, needs a model key in GitHub secrets, or waits for a person.
+- Decide a call that can be undone, do it, and report it. Ask the owner only for what the owner alone can do, or what cannot be undone.
+- A thread that hands out work never waits on another thread and never polls. It ends its turn, and the reports wake it.
+- Before changing an MCP tool or schema, read the `mcp-builder` skill at `~/.agents/skills/mcp-builder`. Our own tool limits win where they differ.
+
 ## What enforces each rule
 
 A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule marked review is a judgment call, and nothing fails when you skip it. When a mistake repeats, give its rule a check and move the row.
@@ -73,3 +81,4 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A change to what `ci` checks is seen by the owner | the `ratchet` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure, and the number of tests cannot fall | `scripts/metrics.mjs` prints both counts on every run and fails when `test-count` is under its floor. A known failure is shown, never blocked. Tests deleted from a file that still exists are caught only in review until a per-file count exists |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
+| How agents work here | review |
