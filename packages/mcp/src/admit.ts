@@ -24,11 +24,17 @@ export function emptyLog(): CallerLog {
   return { events: [] }
 }
 
-function sentence(kind: LimitKind, resetsAt: number): string {
-  const at = String(resetsAt)
-  if (kind === "deck") return `Five decks in one minute. The next deck can open at ${at}.`
-  if (kind === "tool") return `Thirty tool calls in five minutes. The next tool call can run at ${at}.`
-  return `Twenty turns in five minutes. The next turn can start at ${at}.`
+function wholeSeconds(now: number, resetsAt: number): number {
+  const seconds = Math.ceil((resetsAt - now) / 1000)
+  if (seconds < 1) return 1
+  return seconds
+}
+
+function sentence(kind: LimitKind, now: number, resetsAt: number): string {
+  const seconds = String(wholeSeconds(now, resetsAt))
+  if (kind === "deck") return `Five decks in one minute. The next deck can open in ${seconds} seconds.`
+  if (kind === "tool") return `Thirty tool calls in five minutes. The next tool call can run in ${seconds} seconds.`
+  return `Twenty turns in five minutes. The next turn can start in ${seconds} seconds.`
 }
 
 function live(log: CallerLog, now: number): CallerLog {
@@ -50,7 +56,7 @@ export function admit(log: CallerLog, kind: LimitKind, now: number): Admission {
   if (counted >= limitOf[kind]) {
     if (oldest === undefined) throw new Error(kind)
     const resetsAt = oldest + window
-    return { ok: false, log: current, text: sentence(kind, resetsAt), resetsAt }
+    return { ok: false, log: current, text: sentence(kind, now, resetsAt), resetsAt }
   }
   return { ok: true, log: { events: [...current.events, { kind, at: now }] } }
 }

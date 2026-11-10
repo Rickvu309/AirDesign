@@ -67,6 +67,7 @@ function editDeck(raw: unknown, session: Session): ToolResult {
 function captureSlide(raw: unknown, session: Session): ToolResult {
   const parsed = readCapture(raw)
   if (!parsed.ok) return refused(session.deck, parsed.refusal)
+  if (parsed.deck !== session.deck.id) return refused(session.deck, "deck")
   const code = reach(session.tab ?? absentTab)
   if (code === "ready") return reached(session.deck, "device", nextStep.ready)
   return reached(session.deck, code, nextStep[code])

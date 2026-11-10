@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { decide, elementId, version, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { createServer, emptyLog, type Session } from "./index.js"
+import { createServer, emptyLog, type CallerLog, type Session } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -35,6 +35,20 @@ function running(): Deck {
 
 function sessionFor(deck: Deck): Session {
   return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 }
+}
+
+function held(deck: Deck, holder: { log: CallerLog }): Session {
+  return {
+    caller: { actor: "agent", runId: "run", readAt: version(deck.register) },
+    deck,
+    get log() {
+      return holder.log
+    },
+    set log(value) {
+      holder.log = value
+    },
+    now: 0,
+  }
 }
 
 function utf8Size(text: string): number {
@@ -170,7 +184,7 @@ describe("createServer", () => {
       })
       expect(refused.isError).toBe(true)
       expect(refused.content).toEqual([
-        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run at 300000." },
+        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
       ])
       expect(session.deck).toBe(deck)
       expect(session.deck.revision).toBe(0)
@@ -190,6 +204,92 @@ describe("createServer", () => {
       ])
       expect(deck.revision).toBe(0)
       expect(session.log.events).toEqual([{ kind: "tool", at: 300_000 }])
+    })
+  })
+
+  it("lands an edit on a deck that no test started a run on", async () => {
+    const before = opened()
+    expect(before.register.phase).toBe("idle")
+    const session = sessionFor(before)
+    await withClient(session, async (client) => {
+      const result = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      })
+      expect(result.isError).not.toBe(true)
+      expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+      expect(session.deck.revision).toBe(1)
+      expect(session.deck.register.phase).toBe("running")
+      expect(session.deck.register.runId).toBe("run")
+      expect(session.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(before.register.phase).toBe("idle")
+      expect(before.register.landed).toEqual([])
+    })
+  })
+
+  it("refuses the thirty-first tool call of one caller across two connections", async () => {
+    const holder: { log: CallerLog } = { log: emptyLog() }
+    const firstDeck = opened()
+    const secondDeck = opened()
+    const first = held(firstDeck, holder)
+    const second = held(secondDeck, holder)
+    const capture = [{ type: "text" as const, text: "Open the deck in AirDesign, then try again." }]
+    await withClient(first, async (client) => {
+      for (let call = 0; call < 20; call += 1) {
+        const captured = await client.callTool({
+          name: "airdesign_capture_slide",
+          arguments: { deck: "deck" },
+        })
+        expect(captured.isError).toBe(true)
+        expect(captured.content).toEqual(capture)
+      }
+    })
+    await withClient(second, async (client) => {
+      for (let call = 0; call < 10; call += 1) {
+        const captured = await client.callTool({
+          name: "airdesign_capture_slide",
+          arguments: { deck: "deck" },
+        })
+        expect(captured.isError).toBe(true)
+        expect(captured.content).toEqual(capture)
+      }
+      const refused = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      })
+      expect(refused.isError).toBe(true)
+      expect(refused.content).toEqual([
+        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
+      ])
+      expect(second.deck).toBe(secondDeck)
+      expect(secondDeck.register.landed).toEqual([])
+    })
+    expect(holder.log.events).toHaveLength(30)
+    expect(firstDeck.register.landed).toEqual([])
+  })
+
+  it("says when the limit resets in seconds", async () => {
+    const deck = running()
+    const session = sessionFor(deck)
+    await withClient(session, async (client) => {
+      for (let call = 0; call < 30; call += 1) {
+        const captured = await client.callTool({
+          name: "airdesign_capture_slide",
+          arguments: { deck: "deck" },
+        })
+        expect(captured.isError).toBe(true)
+      }
+      session.now = 298_501
+      const refused = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      })
+      expect(refused.isError).toBe(true)
+      expect(refused.content).toEqual([
+        { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 2 seconds." },
+      ])
+      expect(session.deck).toBe(deck)
+      expect(deck.register.landed).toEqual([])
     })
   })
 })
