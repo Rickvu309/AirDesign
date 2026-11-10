@@ -671,15 +671,15 @@ describe("live cache", () => {
     const cleanNodes = { a: { part: slide, shape: "2" } }
     const otherNodes = { a: { part: notes, shape: "5" } }
     const blank = "ppt/media/blank.bin"
+    const stale = await putParts("other", {
+      parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
+      nodes: cleanNodes,
+    })
     const clean = await putParts("clean", {
       parts: new Map<string, Uint8Array>([
         [slide, new Uint8Array([9, 8, 7])],
         [layout, new Uint8Array([3])],
       ]),
-      nodes: cleanNodes,
-    })
-    const stale = await putParts("other", {
-      parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
       nodes: cleanNodes,
     })
     const other = await putParts("other", {
