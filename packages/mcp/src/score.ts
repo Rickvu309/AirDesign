@@ -72,9 +72,15 @@ export type Task = {
   }
 }
 
+export type Answer = {
+  readonly name: string
+  readonly outcome: string
+}
+
 export type ScoreResult = {
   readonly pass: boolean
   readonly reason: Reason
+  readonly answers: readonly Answer[]
   readonly deck: Deck
   readonly start: Deck
 }
@@ -158,9 +164,10 @@ function landedMatches(deck: Deck, named: Task["want"]["elements"]): boolean {
   return true
 }
 
-type Answer = {
-  readonly name: string
-  readonly outcome: string
+function nameOf(step: unknown): string {
+  if (typeof step !== "object" || step === null) return ""
+  const name = (step as { readonly name?: unknown }).name
+  return typeof name === "string" ? name : ""
 }
 
 function answeredInOrder(steps: readonly Step[], answers: readonly Answer[]): boolean {
@@ -175,22 +182,22 @@ function answeredInOrder(steps: readonly Step[], answers: readonly Answer[]): bo
 
 export function score(task: Task, attempt: Attempt): ScoreResult {
   const start = task.deck()
-  const failed = (reason: Reason, deck: Deck): ScoreResult => ({ pass: false, reason, deck, start })
+  const answers: Answer[] = []
+  const failed = (reason: Reason, deck: Deck): ScoreResult => ({ pass: false, reason, answers, deck, start })
   if (attempt.length > task.want.calls) return failed("calls", start)
   let current = start
-  const answers: Answer[] = []
   const caller = { actor: "agent" as const, runId: "run" }
   for (const step of attempt) {
-    const before = current
     const log = emptyLog()
     const now = 0
     const session =
       task.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: task.tab, log, now }
     let result: ToolResult
+    const before = current
     try {
       result = callTool(step.name, step.raw, session)
     } catch {
-      answers.push({ name: step.name, outcome: "thrown" })
+      answers.push({ name: nameOf(step), outcome: "thrown" })
       continue
     }
     answers.push({ name: step.name, outcome: result.ok ? "ok" : result.refusal })
@@ -203,5 +210,5 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   if (!answeredInOrder(task.want.steps, answers)) return failed("tool", current)
   if (touched(start, current, task.want.elements)) return failed("touched", current)
   if (!landedMatches(current, task.want.elements)) return failed("landed", current)
-  return { pass: true, reason: "ok", deck: current, start }
+  return { pass: true, reason: "ok", answers, deck: current, start }
 }

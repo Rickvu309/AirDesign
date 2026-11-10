@@ -14,6 +14,7 @@ import {
   staleEditAttempt,
   staleEditTask,
   suite,
+  type Attempt,
   type Task,
 } from "./index.js"
 
@@ -61,7 +62,7 @@ describe("score", () => {
     const result = score(landSourceTask, landSourceAttempt)
     expect(result.pass).toBe(true)
     expect(result.reason).toBe("ok")
-    expect(titleRows(result)).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(titleRows(result)).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
     expect(titleRows({ deck: result.start })).toEqual([])
     expect(result.deck).not.toBe(result.start)
   })
@@ -73,7 +74,7 @@ describe("score", () => {
     expect(result.deck).not.toBe(result.start)
     expect(result.start.revision).toBe(2)
     expect(result.deck.revision).toBe(3)
-    expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true }])
+    expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true, runId: "run" }])
   })
 
   it("passes a capture that leaves the deck and reports no file", () => {
@@ -89,7 +90,7 @@ describe("score", () => {
     const result = score(landSourceTask, [edit("deck", [{ element: "title", value: "22", readAt: 0 }])])
     expect(result.pass).toBe(false)
     expect(result.reason).toBe("landed")
-    expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true }])
+    expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true, runId: "run" }])
   })
 
   it("fails an attempt over the call budget", () => {
@@ -149,7 +150,9 @@ describe("score", () => {
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "run-fenced" }], elements: { title: [] } },
     }
     const result = score(task, [edit("undone", [{ element: "title", value: "Again", readAt: 0 }])])
-    expect(result.start.register.elements[title]?.landed).toEqual([{ actor: "agent", value: "Gone", visible: false }])
+    expect(result.start.register.elements[title]?.landed).toEqual([
+      { actor: "agent", value: "Gone", visible: false, runId: "run" },
+    ])
     expect(result.reason).toBe("ok")
     expect(result.pass).toBe(true)
   })
@@ -162,6 +165,64 @@ describe("score", () => {
     ])
     expect(result.pass).toBe(false)
     expect(result.reason).toBe("landed")
+  })
+
+  it.each([
+    [
+      "order-words",
+      [
+        edit("steps", [
+          { element: "title", value: "First", readAt: 0 },
+          { element: "title", value: "Second", readAt: 0 },
+        ]),
+      ],
+    ],
+    [
+      "two-calls-one-read",
+      [
+        edit("reread", [
+          { element: "body", value: "First", readAt: 1 },
+          { element: "body", value: "Second", readAt: 1 },
+        ]),
+      ],
+    ],
+    ["stale-read-resend", [edit("ledger", [{ element: "title", value: "Final", readAt: 2 }])]],
+    ["protect-batch-drop", [edit("split", [{ element: "body", value: "Notes", readAt: 0 }])]],
+    ["bytes-run-out", [edit("tight", [{ element: "title", value: "Short", readAt: 0 }])]],
+    [
+      "bytes-run-out",
+      [
+        edit("tight", [
+          { element: "title", value: "Short", readAt: 0 },
+          { element: "body", value: "Longer note", readAt: 0 },
+        ]),
+        edit("tight", [{ element: "title", value: "Short", readAt: 0 }]),
+      ],
+    ],
+    ["value-over-8000-bytes", [edit("bulk", [{ element: "title", value: "é".repeat(4000), readAt: 0 }])]],
+  ])("passes a right attempt for %s that skips a call the end state does not need", (id, attempt) => {
+    const result = score(rowOf(id).task, attempt)
+    expect(result.reason).toBe("ok")
+    expect(result.pass).toBe(true)
+  })
+
+  it("lets other calls sit between the steps a task requires", () => {
+    const row = rowOf("capture-open")
+    const task: Task = { ...row.task, want: { ...row.task.want, calls: 3 } }
+    const between = edit("shots", [{ element: "footer", value: "Skipped", readAt: 0 }])
+    const result = score(task, [row.reference[0] ?? between, between, capture("shots")])
+    expect(result.answers.map((answer) => answer.outcome)).toEqual(["ok", "run-fenced", "device"])
+    expect(result.reason).toBe("ok")
+    expect(result.pass).toBe(true)
+  })
+
+  it("returns a score for a null or undefined entry in an attempt", () => {
+    const hostile = [null, undefined] as unknown as Attempt
+    const row = rowOf("order-words")
+    expect(() => score(row.task, hostile)).not.toThrow()
+    expect(score(row.task, hostile).reason).toBe("tool")
+    const mixed = score(row.task, [...row.reference.slice(0, 1), ...hostile.slice(0, 1)])
+    expect(mixed.answers.map((answer) => answer.outcome)).toEqual(["ok", "thrown"])
   })
 
   it("fails a capture ahead of the edit it was asked to follow", () => {
