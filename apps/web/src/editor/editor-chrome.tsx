@@ -30,10 +30,9 @@ export function ExportButton({ faded = false }: { faded?: boolean }) {
   return (
     <Button
       type="button"
-      variant="brand"
+      variant="default"
       className={cn(
-        "h-8 rounded-lg bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3 text-[length:var(--type-dense)] font-medium text-white active:translate-y-0",
-        brandShadow,
+        "h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0",
         faded && "opacity-40",
       )}
     >
@@ -80,21 +79,5 @@ export function SidebarHead({ trailing }: { trailing?: ReactNode }) {
         </Button>
       )}
     </div>
-  )
-}
-
-export function SurfaceButton({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      className={cn(
-        "h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0",
-        surfaceShadow,
-        className,
-      )}
-    >
-      {children}
-    </Button>
   )
 }

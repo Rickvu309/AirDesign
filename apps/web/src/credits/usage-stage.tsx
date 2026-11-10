@@ -1,10 +1,17 @@
 import type { ReactNode } from "react"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Switch } from "@/components/ui/switch"
 import { productCopy } from "@/copy/product-copy"
 import { creditsCopy } from "@/credits/credits-sample"
-import { ModuleCard } from "@/settings/module-card"
-import { SettingsButton, SettingsToggle } from "@/settings/settings-controls"
 import { SettingsFrame } from "@/settings/settings-frame"
 import { settingsCopy } from "@/settings/settings-sample"
+
+const settingsAction =
+  "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
+
+const settingsSwitch =
+  "h-5! w-9! border-transparent p-0! shadow-none after:hidden focus-visible:ring-0 data-checked:bg-primary! [&_[data-slot=switch-thumb]]:size-4! [&_[data-slot=switch-thumb]]:shadow-[0_1px_2px_rgba(0,0,0,0.2)] [&_[data-slot=switch-thumb]]:data-checked:translate-x-[18px]!"
 
 export function UsageStage({
   balance,
@@ -19,10 +26,14 @@ export function UsageStage({
 }) {
   return (
     <SettingsFrame tab="usage" overlay={children}>
-      <ModuleCard
+      <Card
         title={settingsCopy.weeklyUsage}
         description={settingsCopy.resets}
-        actions={<SettingsButton width={64.24}>{settingsCopy.reset}</SettingsButton>}
+        actions={
+          <Button type="button" variant="outline" className={settingsAction} style={{ width: 64.24 }}>
+            {settingsCopy.reset}
+          </Button>
+        }
       >
         <div className="flex h-[var(--space-16)] items-center gap-3">
           <div className="h-2 min-w-0 flex-1 rounded-sm bg-line">
@@ -32,16 +43,21 @@ export function UsageStage({
             {settingsCopy.used}
           </span>
         </div>
-      </ModuleCard>
-      <ModuleCard
+      </Card>
+      <Card
         title={settingsCopy.credits}
         detail={balance}
         description={settingsCopy.facts}
         align="end"
         actions={
-          <SettingsButton tone="brand" width={99.26}>
+          <Button
+            type="button"
+            variant="default"
+            className="h-[var(--space-32)] px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--primary-strong)]"
+            style={{ width: 99.26 }}
+          >
             {settingsCopy.addCredits}
-          </SettingsButton>
+          </Button>
         }
       >
         {banner ? <div className="mb-3.5">{banner}</div> : null}
@@ -54,10 +70,10 @@ export function UsageStage({
               {settingsCopy.autoResetBody}
             </p>
           </div>
-          <SettingsToggle label={settingsCopy.autoReset} />
+          <Switch defaultChecked aria-label={settingsCopy.autoReset} className={settingsSwitch} />
         </div>
-      </ModuleCard>
-      <ModuleCard title={settingsCopy.history}>
+      </Card>
+      <Card title={settingsCopy.history}>
         <div>
           {history.map((row) => (
             <div
@@ -70,7 +86,7 @@ export function UsageStage({
             </div>
           ))}
         </div>
-      </ModuleCard>
+      </Card>
     </SettingsFrame>
   )
 }

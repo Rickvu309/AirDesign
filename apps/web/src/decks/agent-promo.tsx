@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { promoFill, promoMark, promoSlash } from "@/decks/agent-promo-art"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
 import { DeckGlyph } from "@/decks/deck-glyph"
@@ -79,10 +80,10 @@ export function AgentPromo() {
         <p className="mt-2 h-[34.81px] text-[length:var(--type-caption)] leading-[17.405px] text-muted-foreground">
           Claude or Codex can build decks here.
         </p>
-        <Button variant="ink" className="mt-5 w-full gap-1.5" render={<a href={deckRoutes.connectAgent} />}>
+        <a href={deckRoutes.connectAgent} className={cn(buttonVariants({ variant: "outline" }), "mt-5 w-full gap-1.5")}>
           <DeckGlyph name="plug" size={14} />
           Connect an agent
-        </Button>
+        </a>
       </div>
     </section>
   )
