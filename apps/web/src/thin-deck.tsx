@@ -1,5 +1,5 @@
 import { currentValue, type Kind } from "@airdesign/document"
-import { connect, getParts, memoryRemote, putParts } from "@airdesign/live"
+import { connect, getParts, httpRemote, memoryRemote, putParts } from "@airdesign/live"
 import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ShapeKind } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
@@ -93,8 +93,12 @@ export function ThinDeck() {
     if (!result.ok) return
     const id = linkedId(nodes.current)
     const record = store.current.getElement(id)
-    if (record === null) return
-    store.current.publish({ id: record.id, kind: record.kind, text: value, picture: record.picture })
+    if (record !== null) {
+      store.current.publish({ id: record.id, kind: record.kind, text: value, picture: record.picture })
+    }
+    await connect(httpRemote())
+      .flush(deckId)
+      .catch(() => undefined)
   }
 
   async function onExport() {
