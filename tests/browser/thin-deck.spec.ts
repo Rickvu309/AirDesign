@@ -130,6 +130,30 @@ async function everyPartLacks(file: string, marker: string): Promise<void> {
   }
 }
 
+test("a bare /thin after a deck was opened reads no deck", async ({ page }) => {
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await page.addInitScript(() => {
+    const reads = { count: 0 }
+    Object.assign(globalThis, { deckReads: reads })
+    const openDatabase = indexedDB.open.bind(indexedDB)
+    indexedDB.open = (name: string, version?: number) => {
+      reads.count += 1
+      return openDatabase(name, version)
+    }
+    const directory = navigator.storage.getDirectory.bind(navigator.storage)
+    navigator.storage.getDirectory = () => {
+      reads.count += 1
+      return directory()
+    }
+  })
+  await page.goto("/thin")
+  await expect(page.locator("input[type=file]")).toHaveCount(1)
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+  expect(await page.evaluate(() => (globalThis as unknown as { deckReads: { count: number } }).deckReads.count)).toBe(0)
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+})
+
 test("a second deck does not carry the first deck's edit", async ({ page }, testInfo) => {
   const marker = "MARKER4471"
   const saved = testInfo.outputPath("second-deck.pptx")
