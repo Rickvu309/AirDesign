@@ -5,6 +5,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { missingOperations, scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { timeStick } from "./sticks.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -69,6 +70,11 @@ await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => path.join(fixtures, name)
+const routeFixture = "routes.pptx"
+const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
+const routeParts = await pptx.readParts(fs.readFileSync(fixturePath(routeFixture)))
+const written = await writtenRouteFiles(pptx, routeParts, routeDir, "route")
+const routeFiles = written.flatMap((item) => (item.file === null ? [] : [item.file]))
 const secondRender = (name) => `${name} again`
 const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
 const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))]
@@ -80,13 +86,27 @@ const renderNext = async () => {
   }
 }
 const [lists] = await Promise.all([
-  validatorLists(names.map(fixturePath)),
+  validatorLists([...names.map(fixturePath), fixturePath(routeFixture), ...routeFiles]),
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
 const parts = new Map()
 for (const name of names) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 let failed = 0
+const routeFailures = []
+for (const operation of missingOperations(
+  pptx,
+  written.map((item) => item.run),
+)) {
+  routeFailures.push({ operation, missing: true })
+}
+const routeBefore = lists.get(routeFixture)
+for (const item of written) {
+  const afterErrors = item.file === null ? undefined : lists.get(path.basename(item.file))
+  const failure = scoreWrittenRoute(pptx, routeParts, routeBefore ?? [], item, afterErrors)
+  if (failure !== null) routeFailures.push(failure)
+}
+fs.rmSync(routeDir, { recursive: true, force: true })
 for (const row of cases) {
   const errors = pptx.newValidatorErrors(lists.get(row.before), lists.get(row.after))
   const dupes = pptx.newDuplicateShapeIds(ids.get(row.before), ids.get(row.after))
@@ -101,9 +121,12 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
+for (const failure of routeFailures) console.log(JSON.stringify(failure))
 const checkSeconds = timeStick(root, "PowerPoint check seconds", checkStarted)
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
 if (failed > 0) console.log(`${failed} pptx checks failed`)
-if (failed > 0 || checkSeconds.fails) process.exit(1)
-console.log(`${cases.length} pptx checks passed`)
+else console.log(`${cases.length} pptx checks passed`)
+if (routeFailures.length > 0) console.log(`${routeFailures.length} route writes failed`)
+else console.log(`${pptx.routeOperations.length} route writes passed`)
+if (failed > 0 || routeFailures.length > 0 || checkSeconds.fails) process.exit(1)
