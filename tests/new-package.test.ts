@@ -101,4 +101,56 @@ describe("new:package", () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
+
+  it("inserts a package among the references in path order", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "airdesign-new-package-order-"))
+    try {
+      writeCopy(dir)
+      writeFileSync(
+        path.join(dir, "tsconfig.json"),
+        `${JSON.stringify({ files: [], references: [{ path: "./packages/theme" }] }, null, 2)}\n`,
+      )
+      const created = run([generator, "probe"], dir)
+      expect(created.status, `${created.stdout}\n${created.stderr}`).toBe(0)
+      const rootTsconfig = JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))
+      expect(rootTsconfig.references.map((item: { path: string }) => item.path)).toEqual([
+        "./packages/probe",
+        "./packages/theme",
+      ])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it("fails an unsorted reference list and says to sort it by path", () => {
+    const dir = mkdtempSync(path.join(tmpdir(), "airdesign-reference-order-"))
+    const checker = path.join(repoRoot, "scripts/reference-order.mjs")
+    try {
+      writeCopy(dir)
+      writeFileSync(
+        path.join(dir, "tsconfig.json"),
+        `${JSON.stringify(
+          { files: [], references: [{ path: "./packages/theme" }, { path: "./packages/document" }] },
+          null,
+          2,
+        )}\n`,
+      )
+      const unsorted = run([checker], dir)
+      expect(unsorted.status).not.toBe(0)
+      expect(unsorted.stderr).toContain("Sort the references in tsconfig.json by path.")
+
+      writeFileSync(
+        path.join(dir, "tsconfig.json"),
+        `${JSON.stringify(
+          { files: [], references: [{ path: "./packages/document" }, { path: "./packages/theme" }] },
+          null,
+          2,
+        )}\n`,
+      )
+      const sorted = run([checker], dir)
+      expect(sorted.status, `${sorted.stdout}\n${sorted.stderr}`).toBe(0)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })

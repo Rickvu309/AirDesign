@@ -14,6 +14,7 @@ export const stages = [
     ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1" }],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
+    ["references", "node", ["scripts/reference-order.mjs"]],
     ["specs", "pnpm", ["check:specs"]],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
