@@ -159,6 +159,7 @@ export function readCapture(raw: unknown): { ok: true; deck: DeckId } | FieldRef
 }
 
 export function notifyKey(deck: string, revision: number): { ok: true; key: string } | PayloadRefusal {
+  if (whole(revision) === undefined) return payloadRefusal
   const key = `${deck}:${String(revision)}`
   if (utf8Size(key) >= notifyCap) return payloadRefusal
   return { ok: true, key }

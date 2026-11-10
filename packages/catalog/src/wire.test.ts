@@ -20,6 +20,26 @@ describe("readEdit", () => {
     expect(readEdit({ value: "hi", command: "agent" })).toEqual({ ok: false, refusal: "field" })
   })
 
+  it("refuses a principal", () => {
+    expect(readEdit({ value: "hi", principal: "person" })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a person", () => {
+    expect(readEdit({ value: "hi", person: "person" })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses an agent", () => {
+    expect(readEdit({ value: "hi", agent: "person" })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a surface", () => {
+    expect(readEdit({ value: "hi", surface: "person" })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses an onBehalfOf", () => {
+    expect(readEdit({ value: "hi", onBehalfOf: "person" })).toEqual({ ok: false, refusal: "field" })
+  })
+
   it("refuses a node outside the named pair", () => {
     expect(readEdit({ value: "hi", node: "c" })).toEqual({ ok: false, refusal: "field" })
   })
@@ -47,6 +67,11 @@ describe("readCommit", () => {
 
   it("refuses an empty batch", () => {
     expect(readCommit({ deck: "deck", batch: [] })).toEqual({ ok: false, refusal: "batch" })
+  })
+
+  it("reads a batch of 100", () => {
+    const batch = Array.from({ length: 100 }, () => ({ value: "hi" }))
+    expect(readCommit({ deck: "deck", batch })).toEqual({ ok: true, deck: "deck", batch })
   })
 
   it("refuses a batch longer than 100", () => {
@@ -110,6 +135,10 @@ describe("notifyKey", () => {
   it("refuses a key of 8000 bytes or more", () => {
     expect(notifyKey("a".repeat(8000), 0)).toEqual({ ok: false, refusal: "payload" })
   })
+
+  it("refuses a fractional revision", () => {
+    expect(notifyKey("deck", 1.5)).toEqual({ ok: false, refusal: "payload" })
+  })
 })
 
 describe("parseNotifyKey", () => {
@@ -120,6 +149,10 @@ describe("parseNotifyKey", () => {
   it("refuses a leading zero", () => {
     expect(parseNotifyKey("deck:03")).toEqual({ ok: false, refusal: "payload" })
   })
+
+  it("refuses a fractional revision", () => {
+    expect(parseNotifyKey("deck:1.5")).toEqual({ ok: false, refusal: "payload" })
+  })
 })
 
 describe("projectTools", () => {
@@ -129,6 +162,28 @@ describe("projectTools", () => {
     expect(tools.map((tool) => tool.name)).toEqual(["airdesign_capture_slide", "airdesign_edit_deck"])
     expect(tools.map((tool) => tool.runsOn)).toEqual(["device", "server"])
     expect(tools.every((tool) => tool.openWorldHint === false)).toBe(true)
+    const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
+    const capture = tools.find((tool) => tool.name === "airdesign_capture_slide")
+    expect(edit).toEqual({
+      name: "airdesign_edit_deck",
+      op: "edit_deck",
+      description: "Write values on one deck. The server names the actor.",
+      runsOn: "server",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    })
+    expect(capture).toEqual({
+      name: "airdesign_capture_slide",
+      op: "capture_slide",
+      description: "Render one slide in the person's open tab.",
+      runsOn: "device",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    })
   })
 
   it("omits a web row", () => {
