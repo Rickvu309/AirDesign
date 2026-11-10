@@ -10,6 +10,10 @@ function deckName(): string {
   return `deck${randomBytes(4).toString("hex")}`
 }
 
+function address(mark: string): string {
+  return `${mark}${randomBytes(4).toString("hex")}@example.com`
+}
+
 describe("deck routes", () => {
   const mails: Mail[] = []
   let base = ""
@@ -49,6 +53,16 @@ describe("deck routes", () => {
   afterAll(async () => {
     await close()
   })
+
+  async function sign(email: string): Promise<string> {
+    const index = mails.length
+    await ask(base, "POST", "/sign-in/email", { email })
+    const code = mails[index]?.text.split("\n")[1]
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code })
+    const sessionCookie = cookieFrom(signed.headers)
+    if (sessionCookie === undefined) throw new Error("cookie")
+    return sessionCookie
+  }
 
   it("refuses a deck route without a session", async () => {
     for (const path of ["/decks/open", "/decks/commit", "/decks/watch"]) {
@@ -149,6 +163,46 @@ describe("deck routes", () => {
     expect(first.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
     expect(second.json).toEqual({ ok: true, deck: named.deck, revision: 2 })
     expect(current.json).toEqual({ ok: true, deck: named.deck, revision: 3 })
+  })
+
+  it("refuses another account on a deck it did not open", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const first = address("a")
+    const second = address("b")
+    const account = await sign(first)
+    const other = await sign(second)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, account)
+    const committed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "of A" }] },
+      account,
+    )
+    expect(committed.status).toBe(200)
+    const kept = await deck.query<{ revision: number; owner: string; register: { landed: { value: string }[] } }>(
+      "select revision, owner, register from deck.saved where id = $1",
+      [named.deck],
+    )
+    expect(kept.rows[0]?.owner).toBe(first)
+    expect(kept.rows[0]?.revision).toBe(1)
+    expect(kept.rows[0]?.register.landed.map((row) => row.value)).toEqual(["of A"])
+    const seen = await ask(base, "POST", "/decks/open", { deck: named.deck }, other)
+    const refused = await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "of B" }] }, other)
+    const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: null }, other)
+    const after = await deck.query<{ revision: number; owner: string; register: { landed: { value: string }[] } }>(
+      "select revision, owner, register from deck.saved where id = $1",
+      [named.deck],
+    )
+    expect(seen.status).toBe(200)
+    expect(seen.json).toEqual({ ok: false, refusal: "owner" })
+    expect(seen.text.includes("of A")).toBe(false)
+    expect(refused.status).toBe(200)
+    expect(refused.json).toEqual({ ok: false, refusal: "owner" })
+    expect(watched.status).toBe(200)
+    expect(watched.json).toEqual({ ok: false, refusal: "owner" })
+    expect(after.rows).toEqual(kept.rows)
   })
 
   it("holds until a stored revision is greater than the cursor", async () => {

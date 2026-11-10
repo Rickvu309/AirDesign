@@ -20,7 +20,8 @@ create table session.access (
 create table deck.saved (
   id text primary key,
   revision integer not null,
-  register jsonb not null
+  register jsonb not null,
+  owner text not null
 );
 grant usage on schema session to session;
 grant select, insert, update, delete on session.account, session.code, session.access to session;
