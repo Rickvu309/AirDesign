@@ -534,6 +534,62 @@ describe("call", () => {
     expect(landed.deck.register.bytes).toBe(69_999_999)
   })
 
+  it("lands a floor of 8000 bytes", () => {
+    const floor = "x".repeat(8_000)
+    const deck = opened()
+    const person8000 = call("commit_edits", deck, person, {
+      deck: "deck",
+      batch: [{ value: "hi", node: "258.7", floor }],
+    })
+    expect(person8000.ok).toBe(true)
+    if (!person8000.ok) return
+    expect(nodeBody(person8000.deck.register, left).floor).toBe(floor)
+    expect(person8000.deck.register.bytes).toBe(2)
+    const prepared = running()
+    const agent8000 = call("edit_deck", prepared, agent, {
+      deck: "deck",
+      base: prepared.revision,
+      changes: [{ value: "hi", node: "258.7", floor, readAt: 0 }],
+    })
+    expect(agent8000.ok).toBe(true)
+    if (!agent8000.ok) return
+    expect(currentValue(nodeBody(agent8000.deck.register, left))).toBe("hi")
+    expect(agent8000.deck.register.bytes).toBe(prepared.register.bytes + 2)
+  })
+
+  it("refuses a floor of 8001 bytes", () => {
+    const floors = [`${"x".repeat(8_000)}x`, `${"x".repeat(7_999)}é`, `${"x".repeat(7_998)}€`, `${"x".repeat(7_997)}😀`]
+    for (const floor of floors) {
+      const deck = opened()
+      const before = deck.register
+      expect(
+        call("commit_edits", deck, person, {
+          deck: "deck",
+          batch: [
+            { value: "ok", node: "258.7" },
+            { value: "hi", node: "258.8", floor },
+          ],
+        }),
+      ).toEqual({ ok: false, refusal: "limit" })
+      expect(deck.register).toBe(before)
+      expect(history(deck.register)).toEqual([])
+      const prepared = running()
+      const agentBefore = prepared.register
+      expect(
+        call("edit_deck", prepared, agent, {
+          deck: "deck",
+          base: prepared.revision,
+          changes: [
+            { value: "ok", node: "258.7", readAt: 0 },
+            { value: "hi", node: "258.8", floor, readAt: 0 },
+          ],
+        }),
+      ).toEqual({ ok: false, refusal: "limit" })
+      expect(prepared.register).toBe(agentBefore)
+      expect(currentValue(nodeBody(prepared.register, left))).toBe("")
+    }
+  })
+
   it("applies person edits to one element in the order sent", () => {
     const result = call("commit_edits", opened(), person, {
       deck: "deck",
