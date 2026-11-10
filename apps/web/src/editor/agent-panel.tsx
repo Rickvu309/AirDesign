@@ -23,7 +23,15 @@ const ask = "Make an 8-slide investor update from my notes. Calm, data first, ou
 const longAsk =
   "Make this chart tell the story faster. Lead with the Q3 number, then show the trend across all five quarters. Keep our Halden colors and label each bar with its value. Add one takeaway line under the title, revenue grew 39% year over year, and cut the source note down to a single line so the slide breathes."
 
-export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageOpen?: boolean }) {
+export function AgentPanel({
+  run,
+  usageOpen = false,
+  onExport,
+}: {
+  run: SidebarRun
+  usageOpen?: boolean
+  onExport?: () => void
+}) {
   const offline = run === "offline"
   const working = run === "working"
   const fraction = working ? 0.34 : 0.38
@@ -31,7 +39,7 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
     <aside className="relative flex h-full w-[360px] shrink-0 flex-col border-l border-line bg-white">
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-line pr-2 pl-3">
         <ZoomReadout value="64%" />
-        <ExportButton faded={offline} />
+        <ExportButton faded={offline} {...(onExport === undefined ? {} : { onClick: onExport })} />
       </div>
       <div className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
         <span className="flex h-6 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet">

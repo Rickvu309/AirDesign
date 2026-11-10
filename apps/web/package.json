@@ -10,8 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@airdesign/document": "workspace:*",
     "@airdesign/live": "workspace:*",
+    "@airdesign/pptx": "workspace:*",
+    "@airdesign/render": "workspace:*",
     "@airdesign/theme": "workspace:*",
+    "sax-wasm": "3.3.0",
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@tailwindcss/vite": "^4.3.5",

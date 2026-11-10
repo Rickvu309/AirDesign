@@ -9,3 +9,4 @@ scripts/pptx-judge/bin/
 scripts/pptx-judge/obj/
 
 .stryker-tmp/
+tests/browser/exported-deck.pptx

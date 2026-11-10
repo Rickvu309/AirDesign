@@ -169,6 +169,55 @@ export function writeRows(
   )
 }
 
+export function readSlot(key: string): Promise<unknown> {
+  return openDatabase().then(
+    (database) =>
+      new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, "readonly")
+        const request = transaction.objectStore(storeName).getAll(IDBKeyRange.bound(key, key))
+        let value: unknown = null
+        request.onsuccess = () => {
+          const rows = request.result as unknown[]
+          value = rows[0] ?? null
+        }
+        request.onerror = () => {
+          database.close()
+          reject(request.error)
+        }
+        transaction.oncomplete = () => {
+          database.close()
+          resolve(value)
+        }
+        transaction.onerror = () => {
+          database.close()
+          reject(transaction.error)
+        }
+      }),
+  )
+}
+
+export function writeSlot(key: string, value: unknown): Promise<void> {
+  return openDatabase().then(
+    (database) =>
+      new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, "readwrite")
+        transaction.objectStore(storeName).put(value, key)
+        transaction.oncomplete = () => {
+          database.close()
+          resolve()
+        }
+        transaction.onerror = () => {
+          database.close()
+          reject(transaction.error)
+        }
+        transaction.onabort = () => {
+          database.close()
+          reject(transaction.error)
+        }
+      }),
+  )
+}
+
 export function deleteDatabase(): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase(databaseName)
