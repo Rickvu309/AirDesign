@@ -11,11 +11,18 @@ create table session.account (
 create table session.code (
   email text primary key,
   code text not null,
-  token text not null unique
+  token text not null unique,
+  issued timestamptz not null,
+  misses integer not null
 );
 create table session.access (
   token text primary key,
-  email text not null
+  email text not null,
+  issued timestamptz not null
+);
+create table session.sent (
+  email text not null,
+  issued timestamptz not null
 );
 create table deck.saved (
   id text primary key,
@@ -32,7 +39,7 @@ create table deck.once (
   primary key (email, deck, once)
 );
 grant usage on schema session to session;
-grant select, insert, update, delete on session.account, session.code, session.access to session;
+grant select, insert, update, delete on session.account, session.code, session.access, session.sent to session;
 grant usage on schema deck to deck;
 grant select, insert, update, delete on deck.saved to deck;
 grant select, insert, update, delete on deck.once to deck;
