@@ -202,7 +202,7 @@ function stopRun(register: NodeRegister, runId: string): Edited {
   return { decision: "apply", body: { ...register, phase: "stopped", stoppedAt: version(register) } }
 }
 
-function undoRun(register: NodeRegister, runId: string): Edited {
+export function decideUndo(register: NodeRegister, runId: string): Edited {
   if ((register.phase !== "running" && register.phase !== "stopped") || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
@@ -210,6 +210,16 @@ function undoRun(register: NodeRegister, runId: string): Edited {
     row.actor === "agent" ? { actor: "agent" as const, value: row.value, visible: false } : row,
   )
   return { decision: "apply", body: { ...register, phase: "undone", landed } }
+}
+
+export function compactChain(register: NodeRegister, eligible: boolean): NodeRegister {
+  if (!eligible) {
+    return register
+  }
+  return {
+    ...register,
+    landed: register.landed.filter((row) => row.visible),
+  }
 }
 
 function addNode(register: Register): Decision {
@@ -257,7 +267,7 @@ function editNode(register: Register, node: NodeName, command: Command): Decisio
         : command.command === "stop"
           ? stopRun(current, command.runId)
           : command.command === "undo"
-            ? undoRun(current, command.runId)
+            ? decideUndo(current, command.runId)
             : null
   if (edited === null) {
     throw new Error("missing command")

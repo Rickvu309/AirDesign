@@ -1,7 +1,9 @@
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export {
+  compactChain,
   currentValue,
   decide,
+  decideUndo,
   history,
   openRegister,
   version,
