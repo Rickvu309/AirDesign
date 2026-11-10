@@ -185,6 +185,40 @@ describe("start entry", () => {
     }
   })
 
+  it("exits when a database url is empty", async () => {
+    const info = await postgresInfo()
+    child = spawnEntry(
+      childEnv({
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: "",
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    const result = await stopped(child)
+    child = undefined
+    expect(result.code).toBe(1)
+    expect(result.stderr).toBe("DECK_DATABASE_URL\n")
+  })
+
+  it("exits on SIGINT", async () => {
+    const info = await postgresInfo()
+    const port = await freePort()
+    child = spawnEntry(
+      childEnv({
+        PORT: String(port),
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    await untilHealth(port, child)
+    const done = stopped(child)
+    child.kill("SIGINT")
+    const result = await done
+    child = undefined
+    expect(result.code).toBe(0)
+  }, 20_000)
+
   it("exits when the port is not a port", async () => {
     const info = await postgresInfo()
     for (const port of ["0", "abc", "70000", "1e4", "0x1F90", " 8080"]) {

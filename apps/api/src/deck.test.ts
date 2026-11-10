@@ -5,7 +5,7 @@ import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
-import { DeckListen, openPool, writeRevision, type Mail, type Sql } from "./index.js"
+import { DeckListen, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -432,6 +432,39 @@ describe("deck routes", () => {
       await reader.end()
     }
   }, 15_000)
+
+  it("leaves the deck row when the once row cannot be written", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const info = await postgresInfo()
+    const writer = openPool(info.deck, "once-writer")
+    try {
+      await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+      await writer.query("insert into deck.once (email, deck, once, revision, notify) values ($1, $2, $3, $4, $5)", [
+        "taken@example.com",
+        named.deck,
+        "taken",
+        9,
+        `${named.deck}:9`,
+      ])
+      const before = await readSaved(writer, named.deck)
+      if (before === undefined) throw new Error("no row")
+      await expect(
+        writeRevision(writer, {
+          id: named.deck,
+          revision: 1,
+          register: before.register,
+          expected: 0,
+          key: `${named.deck}:1`,
+          once: { email: "taken@example.com", once: "taken" },
+        }),
+      ).rejects.toMatchObject({ code: "23505" })
+      const after = await readSaved(writer, named.deck)
+      expect(after?.revision).toBe(0)
+    } finally {
+      await writer.end()
+    }
+  })
 
   it("replays the first revision after later commits moved the deck", async () => {
     const named = readDeckId(deckName())
