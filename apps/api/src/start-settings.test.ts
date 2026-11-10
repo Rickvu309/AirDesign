@@ -38,10 +38,12 @@ describe("readStartSettings", () => {
   })
 
   it("reads the commit and the smoke token", () => {
-    expect(readStartSettings({ ...good, RAILWAY_GIT_COMMIT_SHA: "abc123", SMOKE_TOKEN: "smoke-secret" })).toMatchObject({
-      commit: "abc123",
-      smokeToken: "smoke-secret",
-    })
+    expect(readStartSettings({ ...good, RAILWAY_GIT_COMMIT_SHA: "abc123", SMOKE_TOKEN: "smoke-secret" })).toMatchObject(
+      {
+        commit: "abc123",
+        smokeToken: "smoke-secret",
+      },
+    )
   })
 
   it("leaves the commit and the smoke token absent when empty or unset", () => {

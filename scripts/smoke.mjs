@@ -128,7 +128,10 @@ export async function smoke({
   if (second.json.revision !== before + 1) {
     return failure("revision", `revision is ${String(second.json.revision)}, expected ${String(before + 1)}`)
   }
-  return { ok: true, line: `smoke passed: commit ${commit.slice(0, 12)} is live, revision ${String(before + 1)} read back` }
+  return {
+    ok: true,
+    line: `smoke passed: commit ${commit.slice(0, 12)} is live, revision ${String(before + 1)} read back`,
+  }
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

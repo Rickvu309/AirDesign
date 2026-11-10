@@ -35,7 +35,7 @@ function fakeApi(behaviour) {
       }
       if (req.headers.cookie !== cookieValue) return send(401, { ok: false, refusal: "session" })
       if (req.method === "POST" && req.url === "/decks/open") {
-        const register = { elements: { "1.1": { landed: state.landed } } }
+        const register = { elements: { 1.1: { landed: state.landed } } }
         return send(200, { ok: true, deck: body.deck, revision: state.revision, register })
       }
       if (req.method === "POST" && req.url === "/decks/commit") {
@@ -59,7 +59,15 @@ function fakeApi(behaviour) {
 async function run(behaviour, options = {}) {
   const api = await fakeApi(behaviour)
   try {
-    const result = await smoke({ origin: api.origin, commit, token, pollMs: 5, pollLimitMs: 60, contains: (a, b) => a === b, ...options })
+    const result = await smoke({
+      origin: api.origin,
+      commit,
+      token,
+      pollMs: 5,
+      pollLimitMs: 60,
+      contains: (a, b) => a === b,
+      ...options,
+    })
     return { result, state: api.state }
   } finally {
     api.close()
@@ -75,7 +83,10 @@ const later = await run({ live: (call) => (call < 3 ? "b".repeat(40) : commit) }
 same("a commit that goes live late passes", later.result.ok, true)
 same("a commit that goes live late was polled", later.state.versionCalls, 3)
 
-const newer = await run({ live: () => "c".repeat(40) }, { contains: (a, b) => a === "a".repeat(40) && b === "c".repeat(40) })
+const newer = await run(
+  { live: () => "c".repeat(40) },
+  { contains: (a, b) => a === "a".repeat(40) && b === "c".repeat(40) },
+)
 same("a newer commit that contains this one passes", newer.result.ok, true)
 
 const never = await run({ live: () => "b".repeat(40) })
@@ -97,7 +108,11 @@ same("a write that never lands fails", lostWrite.result.ok, false)
 
 const flatRevision = await run({ live: () => commit, skipRevision: true })
 same("a revision that did not rise fails", flatRevision.result.ok, false)
-same("a revision that did not rise names the step", flatRevision.result.line.startsWith("smoke failed at revision:"), true)
+same(
+  "a revision that did not rise names the step",
+  flatRevision.result.line.startsWith("smoke failed at revision:"),
+  true,
+)
 
 const refused = await run({ live: () => commit, refuseSession: true })
 same("a refused session fails", refused.result.ok, false)
@@ -117,7 +132,14 @@ for (const outcome of [wrongRead, refused, wrongToken, flatRevision, never]) {
   }
 }
 
-const quiet = await smoke({ origin: "http://127.0.0.1:1", commit, token, pollMs: 5, pollLimitMs: 20, contains: () => true })
+const quiet = await smoke({
+  origin: "http://127.0.0.1:1",
+  commit,
+  token,
+  pollMs: 5,
+  pollLimitMs: 20,
+  contains: () => true,
+})
 same("an unreachable API fails", quiet.ok, false)
 same("an unreachable API names the step", quiet.line.startsWith("smoke failed at version:"), true)
 

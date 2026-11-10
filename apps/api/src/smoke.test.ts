@@ -39,16 +39,24 @@ function bearer(token: string): { readonly authorization: string } {
 async function smokePost(base: string, headers: Record<string, string>): Promise<Awaited<ReturnType<typeof ask>>> {
   const url = new URL("/smoke/session", base)
   return new Promise((resolve, reject) => {
-    const req = request({ method: "POST", hostname: "127.0.0.1", port: url.port, path: url.pathname, headers }, (res) => {
-      const chunks: Buffer[] = []
-      res.on("data", (chunk: Buffer) => {
-        chunks.push(chunk)
-      })
-      res.on("end", () => {
-        const text = Buffer.concat(chunks).toString("utf8")
-        resolve({ status: res.statusCode ?? 0, headers: res.headers, json: text === "" ? undefined : JSON.parse(text), text })
-      })
-    })
+    const req = request(
+      { method: "POST", hostname: "127.0.0.1", port: url.port, path: url.pathname, headers },
+      (res) => {
+        const chunks: Buffer[] = []
+        res.on("data", (chunk: Buffer) => {
+          chunks.push(chunk)
+        })
+        res.on("end", () => {
+          const text = Buffer.concat(chunks).toString("utf8")
+          resolve({
+            status: res.statusCode ?? 0,
+            headers: res.headers,
+            json: text === "" ? undefined : JSON.parse(text),
+            text,
+          })
+        })
+      },
+    )
     req.on("error", reject)
     req.end()
   })
@@ -59,7 +67,10 @@ async function accountCount(email: string): Promise<number> {
   const admin = new Client({ connectionString: info.admin })
   await admin.connect()
   try {
-    const found = await admin.query<{ total: number }>("select count(*)::int as total from session.account where email = $1", [email])
+    const found = await admin.query<{ total: number }>(
+      "select count(*)::int as total from session.account where email = $1",
+      [email],
+    )
     return found.rows[0]?.total ?? 0
   } finally {
     await admin.end()
@@ -175,7 +186,13 @@ describe("POST /smoke/session", () => {
     if (cookie === undefined) throw new Error("cookie")
     const before = (await ask(api.base, "POST", "/decks/open", { deck: "smoke" }, cookie)).json as { revision: number }
     const value = `value-${randomBytes(4).toString("hex")}`
-    const wrote = await ask(api.base, "POST", "/decks/commit", { deck: "smoke", batch: [{ value, node: "1.1" }] }, cookie)
+    const wrote = await ask(
+      api.base,
+      "POST",
+      "/decks/commit",
+      { deck: "smoke", batch: [{ value, node: "1.1" }] },
+      cookie,
+    )
     expect(wrote.json).toMatchObject({ ok: true, revision: before.revision + 1 })
     const after = await ask(api.base, "POST", "/decks/open", { deck: "smoke" }, cookie)
     expect(after.json).toMatchObject({

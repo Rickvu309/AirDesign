@@ -13,7 +13,19 @@ if ("refusal" in settings) {
   process.exit(1)
 }
 
-const { sessionUrl, deckUrl, listenUrl, port, publicOrigin, siteOrigin, resource, cookieDomain, hosts, commit, smokeToken } = settings
+const {
+  sessionUrl,
+  deckUrl,
+  listenUrl,
+  port,
+  publicOrigin,
+  siteOrigin,
+  resource,
+  cookieDomain,
+  hosts,
+  commit,
+  smokeToken,
+} = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
 session.on("error", () => undefined)
