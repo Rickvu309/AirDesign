@@ -1,3 +1,5 @@
+import { productCopy } from "@/copy/product-copy"
+
 const trimmed = { textBox: "trim-both cap alphabetic" } as const
 
 function PptxMark() {
@@ -50,7 +52,7 @@ export function ImportFailedPreview() {
           className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
           style={trimmed}
         >
-          Choose another file
+          {productCopy.importChooseAnother}
         </button>
         <button
           type="button"

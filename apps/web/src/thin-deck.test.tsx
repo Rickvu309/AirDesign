@@ -722,6 +722,16 @@ it("reports a signed-out person when the flush is refused for the session", asyn
   expect(outcome).toBe("signed-out")
 })
 
+it("keeps the edit without a word when the answer body is not JSON", async () => {
+  const outcome = await commitEdit(
+    linkAnswering(() => Promise.reject(new SyntaxError("Unexpected token '<'"))),
+    "any-deck",
+    "Hello!",
+    "256.2",
+  )
+  expect(outcome).toBe("kept")
+})
+
 it("reports sent when the flush lands", async () => {
   const outcome = await commitEdit(
     linkAnswering(() => Promise.resolve({ ok: true })),

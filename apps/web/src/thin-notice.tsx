@@ -16,10 +16,10 @@ export function signInAddress(page: { readonly pathname: string; readonly search
   return `${base}?next=${encodeURIComponent(`${page.pathname}${page.search}`)}`
 }
 
-function FailureNotice({ text, onTryAgain }: { text: string; onTryAgain: () => void }) {
-  const retry = useRef(onTryAgain)
+function FailureNotice({ text, action, onAct }: { text: string; action: string; onAct: () => void }) {
+  const retry = useRef(onAct)
   useEffect(() => {
-    retry.current = onTryAgain
+    retry.current = onAct
   })
   useEffect(() => {
     toast.custom(
@@ -31,7 +31,7 @@ function FailureNotice({ text, onTryAgain }: { text: string; onTryAgain: () => v
             className="flex h-7 shrink-0 items-center rounded-md px-2.5 font-medium whitespace-nowrap"
             onClick={() => retry.current()}
           >
-            {exportCopy.tryAgain}
+            {action}
           </button>
         </StatusPill>
       ),
@@ -76,7 +76,13 @@ export function ThinNoticeView({
   if (notice === null) return null
   if (notice === "offline") return <OfflineNotice />
   if (notice === "import-failed") {
-    return <FailureNotice text={productCopy.importFailedTitle} onTryAgain={() => onTryAgain(notice)} />
+    return (
+      <FailureNotice
+        text={productCopy.importFailedTitle}
+        action={productCopy.importChooseAnother}
+        onAct={() => onTryAgain(notice)}
+      />
+    )
   }
-  return <FailureNotice text={productCopy.exportFailed} onTryAgain={() => onTryAgain(notice)} />
+  return <FailureNotice text={productCopy.exportFailed} action={exportCopy.tryAgain} onAct={() => onTryAgain(notice)} />
 }
