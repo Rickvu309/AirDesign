@@ -113,6 +113,8 @@ function sorted(value: unknown): unknown {
 
 describe("only a deck's owner acts on it", () => {
   const mails: Mail[] = []
+  const start = 1_000_000
+  let clock = start
   let base = ""
   let session: Sql = openPool("postgres://session@127.0.0.1/api")
   let deck: Sql = openPool("postgres://deck@127.0.0.1/api")
@@ -129,7 +131,7 @@ describe("only a deck's owner acts on it", () => {
       deck,
       listen,
       resource: own,
-      now: () => 1_000_000,
+      now: () => clock,
       send: async (mail) => {
         mails.push(mail)
       },
@@ -405,6 +407,43 @@ describe("only a deck's owner acts on it", () => {
       })
       expect(response.status).toBe(401)
       expect(response.headers.get("www-authenticate")).toBe(invalidToken)
+    })
+  })
+
+  describe("a dead bearer beside the owner's own cookie", () => {
+    it("answers 401 invalid_token and runs no tool for a revoked, rotated-out, expired or refresh token sent with B's cookie", async () => {
+      const email = address("deadwithcookie")
+      const cookie = await sign(email)
+      const id = await opened(cookie)
+      const clientId = await register()
+      const { verifier, challenge } = verifierPair()
+      const first = await exchange(clientId, await approve(cookie, clientId, challenge), verifier)
+      if (first === undefined) throw new Error("exchange")
+      const second = await rotate(clientId, first.refresh)
+      if (second === undefined) throw new Error("rotate")
+      const revoked = await connection(email)
+      expect((await askForm(base, "/oauth/revoke", { token: revoked.pair.refresh })).status).toBe(200)
+      const before = await row(id)
+      const beside = { headers: { cookie } }
+      const refused = async (bearer: string) => {
+        for (const answer of [await edit({ bearer }, id, beside), await capture({ bearer }, id, beside)]) {
+          expect({ status: answer.status, challenge: answer.challenge }).toEqual({
+            status: 401,
+            challenge: invalidToken,
+          })
+        }
+      }
+      await refused(revoked.pair.access)
+      await refused(first.access)
+      await refused(second.refresh)
+      clock = start + 3_600_000
+      try {
+        await refused(second.access)
+      } finally {
+        clock = start
+      }
+      expect(await row(id)).toEqual(before)
+      expect((await edit({ cookie }, id)).text).toBe("Landed revision 1.")
     })
   })
 
