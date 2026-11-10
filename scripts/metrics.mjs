@@ -60,6 +60,7 @@ export const judgedWrites = "export-verified"
 
 const judgedBy = {
   [judgedWrites]: "scripts/pptx-check.mjs",
+  "eval-coverage": "tests/eval-coverage.test.ts",
 }
 
 const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))
