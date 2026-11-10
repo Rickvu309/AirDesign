@@ -56,14 +56,42 @@ describe("utf8", () => {
 })
 
 describe("readParts", () => {
-  it("reads an entry that claims to be a directory as a part", async () => {
+  function underCount(zip: Uint8Array): Uint8Array {
+    const lying = Uint8Array.from(zip)
+    let end = lying.length - 22
+    while (decode(lying.subarray(end, end + 4)) !== "PK\x05\x06") end -= 1
+    for (const field of [end + 8, end + 10]) lying[field] = (lying[field] ?? 0) - 1
+    return lying
+  }
+
+  it("refuses 17 central records under an end record that counts 16", async () => {
+    const parts: Record<string, string> = {}
+    for (let index = 0; index < 17; index += 1) parts[`p${String(index).padStart(2, "0")}.xml`] = "<a/>"
+    await expect(readParts(await zipOf(parts))).resolves.toHaveProperty("size", 17)
+    await expect(readParts(underCount(await zipOf(parts)))).rejects.toThrow()
+  })
+
+  it("refuses a second slide1.xml hidden past the end record's count", async () => {
+    const zip = await zipOf({ "ppt/slides/slide1.xml": "<good/>", "ppt/slides/slideX.xml": "<evil/>" })
+    const hidden = Uint8Array.from(zip)
+    let renamed = 0
+    for (let index = 0; index + 21 <= hidden.length; index += 1) {
+      if (decode(hidden.subarray(index, index + 21)) !== "ppt/slides/slideX.xml") continue
+      hidden[index + 16] = "1".charCodeAt(0)
+      renamed += 1
+    }
+    expect(renamed).toBe(2)
+    await expect(readParts(underCount(hidden))).rejects.toThrow()
+  })
+
+  it("refuses an entry that claims to be a directory", async () => {
     const zip = await zipOf({ "a.xml": "<first/>", "b.xml": "<last/>" })
     const marked = Uint8Array.from(zip)
     let central = 0
     while (decode(marked.subarray(central, central + 4)) !== "PK\x01\x02") central += 1
     marked[central + 5] = 0
     marked[central + 38] = (marked[central + 38] ?? 0) | 0x10
-    expect([...(await readParts(marked)).keys()]).toEqual(["a.xml", "b.xml"])
+    await expect(readParts(marked)).rejects.toThrow("directory entry a.xml")
   })
 
   it("refuses a zip that names one part twice", async () => {
@@ -76,7 +104,7 @@ describe("readParts", () => {
       renamed += 1
     }
     expect(renamed).toBe(2)
-    await expect(readParts(repeated)).rejects.toThrow("repeated part a.xml")
+    await expect(readParts(repeated)).rejects.toThrow("Ambiguous archive")
   })
 
   it("refuses a repeated name whose first copy claims to be a directory", async () => {
@@ -89,7 +117,7 @@ describe("readParts", () => {
     while (decode(repeated.subarray(central, central + 4)) !== "PK\x01\x02") central += 1
     repeated[central + 5] = 0
     repeated[central + 38] = (repeated[central + 38] ?? 0) | 0x10
-    await expect(readParts(repeated)).rejects.toThrow("repeated part a.xml")
+    await expect(readParts(repeated)).rejects.toThrow("Ambiguous archive")
   })
 })
 

@@ -57,13 +57,11 @@ export function decodeUtf8(bytes: Uint8Array): string {
 }
 
 export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, Uint8Array>> {
-  const reader = new ZipReader(new Uint8ArrayReader(bytes))
+  const reader = new ZipReader(new Uint8ArrayReader(bytes), { checkAmbiguity: true })
   const entries = await reader.getEntries()
   const parts = new Map<string, Uint8Array>()
-  const names = new Set<string>()
   for (const entry of entries) {
-    if (names.has(entry.filename)) throw new Error(`repeated part ${entry.filename}`)
-    names.add(entry.filename)
+    if (entry.directory) throw new Error(`directory entry ${entry.filename}`)
     parts.set(entry.filename, await entry.getData(new Uint8ArrayWriter()))
   }
   await reader.close()
