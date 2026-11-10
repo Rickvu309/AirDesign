@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.tsbuildinfo
 test-results/
+tests/browser/exported-deck.pptx
 playwright-report/
 blob-report/
 
