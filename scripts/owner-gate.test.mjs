@@ -34,6 +34,31 @@ same("a fixed fault needs nobody", texts(withStick("known faults", { now: 1, goa
 same("a deck added needs nobody", texts(withStick(decks, { now: 3, goal: 20 })), [])
 same("a tighter limit needs nobody", texts(withStick("check seconds", { limit: 30 })), [])
 same("a new stick needs nobody", texts(withStick("new one", { now: 9, goal: 0 })), [])
+same("a new floor needs nobody", texts(withStick("tests", { floor: 9 })), [])
+same(
+  "a higher floor needs nobody",
+  texts({
+    baseSticks: { ...sticks, tests: { floor: 10 } },
+    headSticks: { ...sticks, tests: { floor: 11 } },
+  }),
+  [],
+)
+same(
+  "a lower floor needs the owner",
+  texts({
+    baseSticks: { ...sticks, tests: { floor: 10 } },
+    headSticks: { ...sticks, tests: { floor: 9 } },
+  }),
+  ["The floor of tests went from 10 to 9."],
+)
+same(
+  "a floor turned into a count needs the owner",
+  texts({
+    baseSticks: { ...sticks, tests: { floor: 10 } },
+    headSticks: { ...sticks, tests: { now: 10, goal: 10 } },
+  }),
+  ["The stick tests stopped being a floor."],
+)
 same("a new fault needs the owner", texts(withStick("known faults", { now: 3, goal: 0 })), [
   "known faults went from 2 to 3, away from its goal of 0.",
 ])
@@ -63,7 +88,7 @@ for (const loose of [
   null,
 ]) {
   same(`a stick shaped ${JSON.stringify(loose)} needs the owner`, texts(withStick("known faults", loose)), [
-    "The stick known faults must be only a limit, or only now and goal, as numbers.",
+    "The stick known faults must be only a limit, or only now and goal, or only a floor, as numbers.",
   ])
 }
 same("a malformed new stick needs the owner", texts(withStick("new one", { now: [] })).length, 1)
@@ -108,7 +133,7 @@ same("changed scripts need the owner", texts({ changedScripts: ["package.json"] 
 ])
 
 same("a count given a limit as well needs the owner", texts(withStick("known faults", { now: 2, goal: 0, limit: 5 })), [
-  "The stick known faults must be only a limit, or only now and goal, as numbers.",
+  "The stick known faults must be only a limit, or only now and goal, or only a floor, as numbers.",
 ])
 same("a count turned into a limit needs the owner", texts(withStick("known faults", { limit: 5 })), [
   "The stick known faults stopped being a count with a goal.",
