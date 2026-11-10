@@ -1,5 +1,15 @@
 import fs from "node:fs"
+import { createRequire } from "node:module"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
+import { Worker } from "node:worker_threads"
+
+export async function loadedPptx(root) {
+  const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
+  const require = createRequire(path.join(root, "packages/pptx/package.json"))
+  await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
+  return pptx
+}
 
 export async function writtenRouteFiles(pptx, original, parts, directory, prefix) {
   const files = []
@@ -24,6 +34,15 @@ export async function writtenRouteFiles(pptx, original, parts, directory, prefix
     }
   }
   return files
+}
+
+export function writtenRouteFilesInThread(workerData) {
+  return new Promise((resolve, reject) => {
+    const thread = new Worker(new URL("./route-write-thread.mjs", import.meta.url), { workerData })
+    thread.once("message", resolve)
+    thread.once("error", reject)
+    thread.once("exit", (code) => reject(new Error(`route writes for ${workerData.file} stopped with code ${code}`)))
+  })
 }
 
 export function missingOperations(pptx, runs) {

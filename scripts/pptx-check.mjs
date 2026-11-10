@@ -1,10 +1,9 @@
 import { execFile, execFileSync } from "node:child_process"
-import { createRequire } from "node:module"
 import { createHash, randomInt } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { freshBrowserExport } from "./browser-export.mjs"
 import { judge } from "./judge.mjs"
 import {
@@ -17,9 +16,10 @@ import {
   seedsFor,
   settleRun,
 } from "./judge-proof.mjs"
-import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
+import { loadedPptx, scoreWrittenRoute, writtenRouteFilesInThread } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
+import { runSteps } from "./run-steps.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -87,9 +87,7 @@ const browserSpec = freshBrowserExport({
   file: browserExportPath,
   run: () => run("pnpm", ["exec", "playwright", "test", "tests/browser/thin-deck.spec.ts"]),
 })
-const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
-const require = createRequire(path.join(root, "packages/pptx/package.json"))
-await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
+const pptx = await loadedPptx(root)
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 cases.push({
   name: "browser-text-export",
@@ -139,37 +137,15 @@ const freshFails = freshMissFails({
 })
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const parts = new Map()
-for (const name of new Set([...names, ...cleanDecks])) {
-  if (name === browserExportName) continue
-  parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
-}
 const realDecks = fs
   .readdirSync(fixtures)
   .filter((name) => name.endsWith(".pptx") && fs.statSync(fixturePath(name)).size >= 100_000)
   .sort()
 const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
-const writtenDecks = []
-for (const name of realDecks) {
-  if (!parts.has(name)) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
-  const deckParts = parts.get(name)
-  const written = await writtenRouteFiles(
-    pptx,
-    fs.readFileSync(fixturePath(name)),
-    deckParts,
-    routeDir,
-    name.slice(0, -".pptx".length),
-  )
-  writtenDecks.push({ name, deckParts, written })
-}
-const routeFiles = writtenDecks.flatMap((deck) =>
-  deck.written.flatMap((item) => (item.file === null ? [] : [item.file])),
-)
-const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
-const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
-const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
-const judgedFiles = async () => {
+const judgedFiles = async (routeFiles, runs) => {
+  const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
   try {
     for (const run of runs) {
       for (const [index, sample] of run.planted.entries()) {
@@ -187,19 +163,67 @@ const judgedFiles = async () => {
     fs.rmSync(proofFolder, { recursive: true, force: true })
   }
 }
-const spec = await browserSpec
-console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
-if (spec.ok) {
-  parts.set(browserExportName, await pptx.readParts(fs.readFileSync(browserExportPath)))
-  waiting.push(browserExportName)
-} else {
-  const index = cases.findIndex((row) => row.name === "browser-text-export")
-  if (index >= 0) cases.splice(index, 1)
-}
-const [{ found: lists, planting }] = await Promise.all([
-  judgedFiles(),
-  ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
-])
+const done = await runSteps({
+  renders: {
+    run: () => Promise.all(Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext)),
+  },
+  routes: {
+    run: () =>
+      Promise.all(
+        realDecks.map((name) =>
+          writtenRouteFilesInThread({
+            root,
+            file: fixturePath(name),
+            directory: routeDir,
+            prefix: name.slice(0, -".pptx".length),
+          }),
+        ),
+      ),
+  },
+  spec: {
+    run: async () => {
+      const spec = await browserSpec
+      console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
+      if (spec.ok) {
+        parts.set(browserExportName, await pptx.readParts(fs.readFileSync(browserExportPath)))
+      } else {
+        const index = cases.findIndex((row) => row.name === "browser-text-export")
+        if (index >= 0) cases.splice(index, 1)
+      }
+      return spec
+    },
+  },
+  browserRender: {
+    after: ["spec"],
+    run: async ({ spec }) => {
+      if (spec.ok) rendered.set(browserExportName, await renderPages(fixturePath(browserExportName)))
+    },
+  },
+  runs: {
+    run: async () => {
+      for (const name of new Set([...names, ...cleanDecks])) {
+        if (name === browserExportName) continue
+        parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+      }
+      for (const name of realDecks) {
+        if (!parts.has(name)) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+      }
+      const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
+      return proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
+    },
+  },
+  validator: {
+    after: ["routes", "spec", "runs"],
+    run: ({ routes, runs }) =>
+      judgedFiles(
+        routes.flatMap((written) => written.flatMap((item) => (item.file === null ? [] : [item.file]))),
+        runs,
+      ),
+  },
+})
+const { spec, runs } = done
+const { found: lists, planting } = done.validator
+const writtenDecks = realDecks.map((name, index) => ({ name, deckParts: parts.get(name), written: done.routes[index] }))
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
