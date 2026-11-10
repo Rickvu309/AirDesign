@@ -74,6 +74,7 @@ function applyEdits<Edit extends Touched>(
   let register = deck.register
   for (const edit of edits) {
     if (utf8Length(edit.value) > valueBytes) return refused("limit")
+    if (edit.floor !== undefined && utf8Length(edit.floor) > valueBytes) return refused("limit")
     const opened = openedRegister(register, edit)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
