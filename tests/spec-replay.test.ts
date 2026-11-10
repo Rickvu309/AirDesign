@@ -419,7 +419,7 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
         : edge.action === "RemoveNode"
           ? decide(register, { command: "remove", node: "b" })
           : edge.action === "SecondRunReads"
-            ? decide(register, { command: "read", runId: text(source, "runId"), node: "a" })
+            ? decide(register, { command: "read", runId: text(source, "readId"), node: "a" })
             : null
     if (decision === null) {
       failures.push(`structure ${where} is not connected`)
@@ -435,7 +435,8 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
         flag(target, "storedA") === flag(source, "storedA") &&
         flag(target, "storedB") === flag(source, "storedB") &&
         text(target, "phase") === text(source, "phase") &&
-        text(target, "runId") === text(source, "runId")
+        text(target, "runId") === text(source, "runId") &&
+        text(target, "readId") === text(source, "readId")
       if (!held) failures.push(`structure ${where} did not fence the read`)
       else replayed += 1
       continue

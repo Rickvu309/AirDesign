@@ -23,7 +23,18 @@ type StructureRule = {
   readonly outcome: "apply" | "refuse"
   readonly effect?: Effect
   readonly code?: Refusal
+  readonly runId?: string
 }
+
+function freshRun(): string {
+  const id = `run${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+  if (id.length < 2) {
+    throw new Error("run id")
+  }
+  return id
+}
+
+const storedRun = freshRun()
 
 const rules: readonly StructureRule[] = [
   { command: "add", present: false, outcome: "apply", effect: "add" },
@@ -38,7 +49,7 @@ const rules: readonly StructureRule[] = [
   { command: "read", present: false, outcome: "refuse", code: "dead" },
   { command: "read", present: true, phase: "idle", outcome: "refuse", code: "run-fenced" },
   { command: "read", present: true, phase: "running", outcome: "refuse", code: "run-fenced" },
-  { command: "read", present: true, phase: "stopped", outcome: "apply", effect: "read" },
+  { command: "read", present: true, phase: "stopped", outcome: "apply", effect: "read", runId: storedRun },
 ]
 
 const table = new Map<string, StructureRule>()
@@ -96,16 +107,25 @@ function situationKey(register: Register, command: Command): string {
   return JSON.stringify({ command: command.command, present: true, phase: body.phase })
 }
 
+function readRun(): string {
+  const found = rules.find((rule) => rule.effect === "read")
+  if (found?.runId === undefined) {
+    throw new Error("read")
+  }
+  return found.runId
+}
+
 function commands(): readonly Command[] {
+  const runId = readRun()
   return [
     { command: "add", node: "b" },
     { command: "remove", node: "b" },
     { command: "person", value: "p" },
     { command: "person", node: "b", value: "p" },
     { command: "agent", node: "b", runId: "s", readAt: 0, value: "a" },
-    { command: "start", runId: "s" },
-    { command: "stop", runId: "s" },
-    { command: "read", runId: "s", node: "a" },
+    { command: "start", runId },
+    { command: "stop", runId },
+    { command: "read", runId, node: "a" },
   ]
 }
 
@@ -249,7 +269,7 @@ function noteVisit(register: Register, command: Command, decision: Decision, see
     sameIds(decision.register.readNodes, register.readNodes) &&
     !sameIds(decision.register.nodes, register.nodes)
   ) {
-    seen.add("Stop a, then read run s. readNodes stays after a later structure step.")
+    seen.add("Stop a, then read the stored run. readNodes stays after a later structure step.")
   }
   if (command.command === "read" && decision.decision === "refuse" && decision.code === "run-fenced") {
     const body = bodyOf(register, command.node)
@@ -317,7 +337,7 @@ const required = [
   "Add b again. Refuse present.",
   "Remove b. An agent edit of b refuses dead.",
   "Remove absent b. Refuse dead.",
-  "Stop a, then read run s. readNodes stays after a later structure step.",
+  "Stop a, then read the stored run. readNodes stays after a later structure step.",
   "read from idle refuses run-fenced.",
 ]
 

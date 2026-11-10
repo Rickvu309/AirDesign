@@ -5,11 +5,11 @@ const presentText = (v) => {
   return names.length === 0 ? "none" : names.join(" and ")
 }
 
-const readAccepts = (v) => v.runId === "s" && (v.phase === "stopped" || v.phase === "undone")
+const readAccepts = (v) => v.readId === v.runId && (v.phase === "stopped" || v.phase === "undone")
 
 export const state = (v) => {
   const memory = v.didRead === true ? ", the read holds the nodes" : ""
-  return `present ${presentText(v)}, run ${v.runId} ${v.phase}${memory}`
+  return `present ${presentText(v)}, run ${v.runId} read ${v.readId} ${v.phase}${memory}`
 }
 
 export const step = (action, from) => {

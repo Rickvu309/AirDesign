@@ -258,7 +258,7 @@ function readNodes(register: Register, node: NodeName, runId: string): Decision 
   if (body === null) {
     throw new Error("missing node")
   }
-  if (runId !== "s" || (body.phase !== "stopped" && body.phase !== "undone")) {
+  if (body.runId !== runId || (body.phase !== "stopped" && body.phase !== "undone")) {
     return refuse("run-fenced")
   }
   return apply({ ...register, readNodes: [...register.nodes] })

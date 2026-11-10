@@ -5,7 +5,7 @@ import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 type RunState = "match" | "miss"
 type ReadState = "equal" | "stale"
 type AgentState = "none" | "visible" | "hidden"
-type EditCommand = "person" | "agent" | "start" | "stop" | "undo"
+type EditCommand = "person" | "agent" | "start" | "stop" | "undo" | "read"
 
 type Situation = {
   readonly command: EditCommand
@@ -31,14 +31,27 @@ type Effect =
   | { readonly outcome: "stop" }
   | { readonly outcome: "undo" }
   | { readonly outcome: "agent" }
+  | { readonly outcome: "read" }
 
 type Rule = {
   readonly name: string
   readonly command: EditCommand
+  readonly runId?: string
   readonly when?: Clause
   readonly unless?: readonly Clause[]
   readonly effect: Effect
 }
+
+function freshRun(): string {
+  const id = `run${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`
+  if (id.length < 2) {
+    throw new Error("run id")
+  }
+  return id
+}
+
+const storedRun = freshRun()
+const otherRun = `${storedRun}-other`
 
 function phaseMatches(expected: Phase | readonly Phase[] | undefined, actual: Phase): boolean {
   if (expected === undefined) {
@@ -188,8 +201,31 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
       ]
     case "add":
     case "remove":
-    case "read":
       return []
+    case "read":
+      return [
+        {
+          name: "A read with the stored run id stores the nodes",
+          command: "read",
+          runId: storedRun,
+          when: { phase: ["stopped", "undone"], run: "match" },
+          effect: { outcome: "read" },
+        },
+        {
+          name: "A read with a different run id stays fenced",
+          command: "read",
+          runId: otherRun,
+          when: { phase: ["stopped", "undone"], run: "miss" },
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+        {
+          name: "A read outside a stopped run stays fenced",
+          command: "read",
+          runId: storedRun,
+          unless: [{ phase: ["stopped", "undone"] }],
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+      ]
     default: {
       const unreachable: never = kind
       throw new Error(unreachable)
@@ -203,6 +239,7 @@ const rules: readonly Rule[] = [
   ...rulesOf("start"),
   ...rulesOf("stop"),
   ...rulesOf("undo"),
+  ...rulesOf("read"),
 ]
 
 function agentState(register: Register): AgentState {
@@ -256,8 +293,16 @@ function situation(register: Register, command: Command): Situation | null {
       }
     case "add":
     case "remove":
-    case "read":
       return null
+    case "read":
+      return {
+        command: "read",
+        phase: register.phase,
+        run: runState(register, command.runId),
+        read: "equal",
+        guarded: register.guarded,
+        agent: agentState(register),
+      }
     default: {
       const unreachable: never = command
       throw new Error(unreachable)
@@ -280,7 +325,9 @@ function commands(register: Register): readonly Command[] {
         return
       case "add":
       case "remove":
+        return
       case "read":
+        list.push(command)
         return
       default: {
         const unreachable: never = command
@@ -302,6 +349,25 @@ function commands(register: Register): readonly Command[] {
     push({ command: "agent", runId, readAt: below, value: "a" })
     push({ command: "agent", runId, readAt: current, value: "a" })
     push({ command: "agent", runId, readAt: current + 1, value: "a" })
+  }
+  const readIds: string[] = []
+  for (const rule of rulesOf("read")) {
+    if (rule.runId === undefined) {
+      throw new Error(rule.name)
+    }
+    if (!readIds.includes(rule.runId)) {
+      readIds.push(rule.runId)
+    }
+  }
+  const stored = readIds.find((id) => id === storedRun)
+  if (stored === undefined) {
+    throw new Error("read")
+  }
+  push({ command: "start", runId: stored })
+  push({ command: "stop", runId: stored })
+  push({ command: "undo", runId: stored })
+  for (const runId of readIds) {
+    push({ command: "read", runId, node: "a" })
   }
   return list
 }
@@ -376,6 +442,8 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
         claimed: command.readAt,
       }
     }
+    case "read":
+      return { ...register, readNodes: [...register.nodes] }
   }
 }
 
