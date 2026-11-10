@@ -16,7 +16,7 @@ afterEach(async () => {
   }
 })
 
-async function render(node: ReactNode): Promise<HTMLDivElement> {
+async function render(node: ReactNode): Promise<{ host: HTMLDivElement; root: Root }> {
   const host = document.createElement("div")
   document.body.append(host)
   const root = createRoot(host)
@@ -24,7 +24,7 @@ async function render(node: ReactNode): Promise<HTMLDivElement> {
   await act(async () => {
     root.render(node)
   })
-  return host
+  return { host, root }
 }
 
 describe("Passage", () => {
@@ -32,7 +32,11 @@ describe("Passage", () => {
     const store = paintStore()
     const id = elementId("body")
     expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
-    const host = await render(createElement(Passage, { store, id }))
+    function Parent(props: { readonly generation: number }) {
+      return createElement("div", { "data-generation": props.generation }, createElement(Passage, { store, id }))
+    }
+    const mounted = await render(createElement(Parent, { generation: 0 }))
+    const host = mounted.host
     const editor = host.querySelector("[contenteditable]")
     if (!(editor instanceof HTMLElement)) throw new Error("missing passage")
     editor.focus()
@@ -51,8 +55,17 @@ describe("Passage", () => {
       editor.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
       editor.dispatchEvent(new CompositionEvent("compositionupdate", { bubbles: true, data: "helloあ" }))
     })
+    textNode.nodeValue = "helloあ"
+    range.setStart(textNode, 1)
+    range.setEnd(textNode, 4)
+    selection.removeAllRanges()
+    selection.addRange(range)
+    await act(async () => {
+      mounted.root.render(createElement(Parent, { generation: 1 }))
+    })
 
     expect(editor.firstChild).toBe(textNode)
+    expect(textNode.nodeValue).toBe("helloあ")
     expect(document.activeElement).toBe(active)
     expect(selection.rangeCount).toBe(1)
     const during = selection.getRangeAt(0)
