@@ -13,4 +13,13 @@ describe("suite", () => {
       expect(failed.reason, row.task.id).toBe(row.wrong.reason)
     }
   })
+
+  it("sends a wrong attempt that reaches the scenario", () => {
+    for (const row of suite) {
+      if (row.task.want.steps.length === 0) continue
+      expect(row.wrong.attempt.length, row.task.id).toBeGreaterThan(0)
+      expect(row.wrong.attempt.length, row.task.id).toBeLessThanOrEqual(row.task.want.calls)
+      expect(row.wrong.reason, row.task.id).not.toBe("calls")
+    }
+  })
 })

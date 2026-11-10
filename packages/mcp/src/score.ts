@@ -22,7 +22,33 @@ export type Tool = "edit_deck" | "capture_slide"
 export type AttemptCall = {
   readonly name: string
   readonly raw: unknown
-  readonly tab?: Tab
+}
+
+export type Outcome =
+  | "ok"
+  | "field"
+  | "deck"
+  | "batch"
+  | "base"
+  | "payload"
+  | "stale"
+  | "person-protected"
+  | "run-fenced"
+  | "dead"
+  | "present"
+  | "limit"
+  | "no-open-tab"
+  | "tab-hidden"
+  | "tab-timeout"
+  | "tab-outdated"
+  | "device"
+  | "thrown"
+
+export type Reason = "ok" | "calls" | "tool" | "captured" | "touched" | "landed"
+
+export type Step = {
+  readonly name: Tool
+  readonly outcome: Outcome
 }
 
 export type Attempt = readonly AttemptCall[]
@@ -38,16 +64,17 @@ export type Task = {
   readonly id: string
   readonly prompt: string
   readonly deck: () => Deck
+  readonly tab?: Tab
   readonly want: {
     readonly calls: number
-    readonly tool: Tool | null
+    readonly steps: readonly Step[]
     readonly elements: Readonly<Partial<Record<EditableName, readonly string[]>>>
   }
 }
 
 export type ScoreResult = {
   readonly pass: boolean
-  readonly reason: string
+  readonly reason: Reason
   readonly deck: Deck
   readonly start: Deck
 }
@@ -78,8 +105,8 @@ export function edit(deck: string, writes: readonly Write[], base = 0): AttemptC
   }
 }
 
-export function capture(deck: string, tab: Tab): AttemptCall {
-  return { name: toolNames.capture_slide, raw: { deck }, tab }
+export function capture(deck: string): AttemptCall {
+  return { name: toolNames.capture_slide, raw: { deck } }
 }
 
 function sameOrder(left: readonly string[], right: readonly string[]): boolean {
@@ -131,28 +158,49 @@ function landedMatches(deck: Deck, named: Task["want"]["elements"]): boolean {
   return true
 }
 
+type Answer = {
+  readonly name: string
+  readonly outcome: string
+}
+
+function answeredInOrder(steps: readonly Step[], answers: readonly Answer[]): boolean {
+  let next = 0
+  for (const answer of answers) {
+    const step = steps[next]
+    if (step === undefined) break
+    if (answer.name === toolNames[step.name] && answer.outcome === step.outcome) next += 1
+  }
+  return next === steps.length
+}
+
 export function score(task: Task, attempt: Attempt): ScoreResult {
   const start = task.deck()
-  const failed = (reason: string, deck: Deck): ScoreResult => ({ pass: false, reason, deck, start })
+  const failed = (reason: Reason, deck: Deck): ScoreResult => ({ pass: false, reason, deck, start })
   if (attempt.length > task.want.calls) return failed("calls", start)
-  if (task.want.tool !== null && !attempt.some((step) => step.name === toolNames[task.want.tool ?? "edit_deck"])) {
-    return failed("tool", start)
-  }
   let current = start
+  const answers: Answer[] = []
   const caller = { actor: "agent" as const, runId: "run" }
   for (const step of attempt) {
     const before = current
     const log = emptyLog()
     const now = 0
     const session =
-      step.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: step.tab, log, now }
-    const result = callTool(step.name, step.raw, session)
+      task.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: task.tab, log, now }
+    let result: ToolResult
+    try {
+      result = callTool(step.name, step.raw, session)
+    } catch {
+      answers.push({ name: step.name, outcome: "thrown" })
+      continue
+    }
+    answers.push({ name: step.name, outcome: result.ok ? "ok" : result.refusal })
     if (step.name === toolNames.capture_slide) {
       if (result.deck !== before || reportsCapturedFile(result)) return failed("captured", result.deck)
       continue
     }
     if (result.ok) current = result.deck
   }
+  if (!answeredInOrder(task.want.steps, answers)) return failed("tool", current)
   if (touched(start, current, task.want.elements)) return failed("touched", current)
   if (!landedMatches(current, task.want.elements)) return failed("landed", current)
   return { pass: true, reason: "ok", deck: current, start }

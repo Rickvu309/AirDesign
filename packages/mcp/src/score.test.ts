@@ -7,6 +7,7 @@ import {
   captureAbsentAttempt,
   captureAbsentTask,
   edit,
+  elements,
   landSourceAttempt,
   landSourceTask,
   score,
@@ -32,10 +33,27 @@ afterEach(() => {
   replaced.run = null
 })
 
-const title = elementId("258.7")
+const title = elementId(elements.title)
+
+const toolNames = { edit_deck: edit("deck", []).name, capture_slide: capture("deck").name } as const
+
+function rowOf(id: string) {
+  const row = suite.find((item) => item.task.id === id)
+  if (row === undefined) throw new Error(id)
+  return row
+}
 
 function titleRows(result: { readonly deck: { readonly register: { readonly elements: Record<string, unknown> } } }) {
   return (result.deck.register.elements[title] as { readonly landed: readonly unknown[] }).landed
+}
+
+function reportsFile(text: string): void {
+  replaced.run = (_name, _raw, session) => ({
+    ok: false,
+    refusal: "device",
+    deck: session.deck,
+    content: [{ type: "text", text }],
+  })
 }
 
 describe("score", () => {
@@ -53,9 +71,9 @@ describe("score", () => {
     expect(result.pass).toBe(true)
     expect(result.reason).toBe("ok")
     expect(result.deck).not.toBe(result.start)
-    expect(result.deck.revision).toBe(1)
+    expect(result.start.revision).toBe(2)
+    expect(result.deck.revision).toBe(3)
     expect(titleRows(result)).toEqual([{ actor: "agent", value: "22", visible: true }])
-    expect(result.start.revision).toBe(0)
   })
 
   it("passes a capture that leaves the deck and reports no file", () => {
@@ -64,7 +82,7 @@ describe("score", () => {
     expect(result.reason).toBe("ok")
     expect(result.deck).toBe(result.start)
     expect(result.deck.register).toBe(result.start.register)
-    expect(captureAbsentAttempt[0]?.tab).toEqual({ presence: "absent" })
+    expect(captureAbsentTask.tab).toEqual({ presence: "absent" })
   })
 
   it("fails when a landed value is outside the source", () => {
@@ -80,22 +98,25 @@ describe("score", () => {
     expect(result.reason).toBe("calls")
   })
 
-  it("fails an attempt that never called the tool the task needs", () => {
-    const result = score(captureAbsentTask, [])
-    expect(result.pass).toBe(false)
-    expect(result.reason).toBe("tool")
+  it("fails an attempt that never reached the step the task needs", () => {
+    expect(score(captureAbsentTask, []).reason).toBe("tool")
     expect(score(landSourceTask, []).reason).toBe("tool")
   })
 
   it("fails an attempt that changes an element the task does not name", () => {
-    const result = score(landSourceTask, [
+    const task: Task = {
+      ...landSourceTask,
+      id: "unnamed-body",
+      deck: () => fixture("deck", [{ element: "title" }, { element: "body" }]),
+    }
+    const result = score(task, [
       edit("deck", [
         { element: "title", value: "21", readAt: 0 },
         { element: "body", value: "21", readAt: 0 },
       ]),
     ])
     expect(result.pass).toBe(false)
-    expect(result.reason).toBe("landed")
+    expect(result.reason).toBe("touched")
   })
 
   it("fails a capture step that changes the deck", () => {
@@ -104,35 +125,75 @@ describe("score", () => {
       deck: { ...session.deck, revision: session.deck.revision + 1 },
       content: [{ type: "text", text: "Landed revision 1." }],
     })
-    const result = score(captureAbsentTask, [capture("deck", { presence: "absent" })])
+    const result = score(captureAbsentTask, [capture("deck")])
     expect(result.pass).toBe(false)
     expect(result.reason).toBe("captured")
     expect(result.deck.revision).toBe(1)
   })
 
-  it("fails a capture step that reports a file", () => {
-    replaced.run = (_name, _raw, session) => ({
-      ok: false,
-      refusal: "device",
-      deck: session.deck,
-      content: [{ type: "text", text: "slide.png" }],
-    })
-    const result = score(captureAbsentTask, captureAbsentAttempt)
-    expect(result.pass).toBe(false)
-    expect(result.reason).toBe("captured")
-  })
+  it.each(["slide.png", "deck.pptx", "image/png", "captured file", "file was captured"])(
+    "fails a capture step that reports %s",
+    (text) => {
+      reportsFile(text)
+      const result = score(captureAbsentTask, captureAbsentAttempt)
+      expect(result.pass).toBe(false)
+      expect(result.reason).toBe("captured")
+    },
+  )
 
   it("counts only visible rows as landed", () => {
     const task: Task = {
       id: "undone-rows",
       prompt: "Set the title of deck undone to Again.",
       deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
-      want: { calls: 1, tool: "edit_deck", elements: { title: [] } },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "run-fenced" }], elements: { title: [] } },
     }
     const result = score(task, [edit("undone", [{ element: "title", value: "Again", readAt: 0 }])])
     expect(result.start.register.elements[title]?.landed).toEqual([{ actor: "agent", value: "Gone", visible: false }])
     expect(result.reason).toBe("ok")
     expect(result.pass).toBe(true)
+  })
+
+  it("fails a history that only ends on the last wanted value", () => {
+    const row = rowOf("order-words")
+    const result = score(row.task, [
+      edit("steps", [{ element: "title", value: "Second", readAt: 0 }]),
+      edit("steps", [{ element: "title", value: "Second", readAt: 1 }]),
+    ])
+    expect(result.pass).toBe(false)
+    expect(result.reason).toBe("landed")
+  })
+
+  it("fails a capture ahead of the edit it was asked to follow", () => {
+    const row = rowOf("capture-open")
+    expect(score(row.task, [capture("shots"), ...row.reference.slice(0, 1)]).reason).toBe("tool")
+    expect(score(row.task, row.reference).pass).toBe(true)
+  })
+
+  it("lets an agent read by trying a capture, and by answering with no call", () => {
+    const row = rowOf("ask-read")
+    expect(score(row.task, []).pass).toBe(true)
+    expect(score(row.task, [capture("review")]).pass).toBe(true)
+  })
+
+  it("returns a score for an edit aimed at an element with no body", () => {
+    const row = rowOf("elements-run-out")
+    const aimed = {
+      name: toolNames.edit_deck,
+      raw: { deck: "crowded", base: 0, changes: [{ value: "x", node: "7.99", readAt: 0 }] },
+    }
+    expect(() => score(row.task, [aimed])).not.toThrow()
+    expect(score(row.task, [aimed]).reason).toBe("tool")
+  })
+
+  it("does not let an empty call stand in for a step", () => {
+    for (const row of suite) {
+      const tools = new Set(row.task.want.steps.map((step) => step.name))
+      for (const tool of tools) {
+        const result = score(row.task, [{ name: toolNames[tool], raw: {} }])
+        expect(result.pass, `${row.task.id} ${tool}`).toBe(false)
+      }
+    }
   })
 
   it("scores forty tasks", () => {
@@ -143,7 +204,12 @@ describe("score", () => {
     expect(new Set(prompts).size).toBe(40)
     const starts = suite.map((row) => {
       const deck = row.task.deck()
-      return JSON.stringify({ revision: deck.revision, register: deck.register, want: row.task.want })
+      return JSON.stringify({
+        revision: deck.revision,
+        register: deck.register,
+        tab: row.task.tab,
+        want: row.task.want,
+      })
     })
     expect(new Set(starts).size).toBe(40)
     for (const row of suite) expect(score(row.task, row.reference).pass, row.task.id).toBe(true)
