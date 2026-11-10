@@ -274,6 +274,12 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
         readAt: num(source, "readAt"),
         value: "stale",
       })
+      for (const probe of [0, 1, 2, 3, 4]) {
+        const probed = decide(register, { command: "agent", runId: run, readAt: probe, value: "stale" })
+        if (probed.decision !== "refuse" || probed.code !== "person-protected") {
+          failures.push(`edit ${where} did not refuse readAt ${probe} as person-protected`)
+        }
+      }
       if (decision.decision !== "refuse" || decision.code !== "person-protected") {
         failures.push(`edit ${where} accepted the read after a person`)
       } else replayed += 1
@@ -1234,6 +1240,12 @@ function replayRerun(graph: Graph, view: View, failures: string[]) {
         decision.decision === "refuse" &&
         decision.code === "person-protected" &&
         same(rerunExpected(source), rerunExpected(target))
+      for (const probe of [0, 1, 2, 3, 4, 5]) {
+        const probed = decide(rerunRegister(source), { ...rerunWrite(source, "row"), readAt: probe })
+        if (probed.decision !== "refuse" || probed.code !== "person-protected") {
+          failures.push(`rerun ${where} did not refuse readAt ${probe} as person-protected`)
+        }
+      }
       if (!held) failures.push(`rerun ${where} landed after a person edit`)
       else replayed += 1
       continue

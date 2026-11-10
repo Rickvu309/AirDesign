@@ -31,6 +31,12 @@ Version == firstRows + person + secondRows + secondPerson
 
 RunRows == IF run = 1 THEN firstRows ELSE secondRows
 
+\* The refusal an agent edit of the running run meets for its read. The guard is checked before the read.
+AgentRefusal(read) ==
+  IF guarded THEN "protected"
+  ELSE IF read # Version /\ read # claims THEN "stale"
+  ELSE "none"
+
 TypeOK ==
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ run \in {1, 2}
@@ -171,14 +177,12 @@ SecondKeepsClaim ==
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
   /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, keptFirst, keptPerson>>
 
-\* A read after a person edit during the second run does not land, before or after that run has landed a row.
+\* An agent edit of a guarded second run does not land and is refused as protected, whatever its read, before or after that run has landed a row.
 SecondRefusesProtected ==
   /\ run = 2
   /\ phase = "running"
-  /\ guarded = TRUE
   /\ secondRows \in {0, 1}
-  /\ \/ readAt = claims
-     \/ readAt = Version
+  /\ AgentRefusal(readAt) = "protected"
   /\ UNCHANGED vars
 
 RunStops ==
@@ -217,6 +221,9 @@ Spec == Init /\ [][Next]_vars
 
 \* A person edit made during the second run keeps that run from landing afterwards.
 SecondRunStaysProtected == secondEditRows = -1 \/ secondRows <= secondEditRows
+
+\* A guarded run's agent edit is refused as protected, whatever its read.
+GuardedRunRefusesAsProtected == (phase = "running" /\ guarded) => AgentRefusal(readAt) = "protected"
 
 \* A new run never continues the claim of an earlier run. The claim on the register was made by the current run, or there is none.
 NewRunNeverContinuesOldClaim ==

@@ -265,10 +265,16 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "refuse", code: "run-fenced" },
         },
         {
-          name: "An agent edit with a stale read refuses stale",
+          name: "An agent edit with a stale read on an unguarded run refuses stale",
           command: "agent",
-          when: { phase: "running", run: "match", read: "stale" },
+          when: { phase: "running", run: "match", read: "stale", guarded: false },
           effect: { outcome: "refuse", code: "stale" },
+        },
+        {
+          name: "An agent edit with a stale read on a guarded run refuses person-protected",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "stale", guarded: true },
+          effect: { outcome: "refuse", code: "person-protected" },
         },
         {
           name: "A fresh read after a person row in the run refuses person-protected",
