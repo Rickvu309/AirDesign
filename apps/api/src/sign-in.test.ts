@@ -4,7 +4,7 @@ import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
-import { DeckListen, openPool, sendWithResend, type Mail } from "./index.js"
+import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
 
 const publicOrigin = "https://app.example"
 
@@ -215,6 +215,10 @@ describe("sign-in", () => {
     expect(response.status).toBe(302)
     expect(response.headers.location).toBe("/")
     expect(cookieFrom(response.headers)).toContain("airdesign.session=")
+    const again = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(again.status).toBe(302)
+    expect(again.headers.location).toBe("/sign-in")
+    expect(again.headers["set-cookie"]).toBeUndefined()
     const missing = await ask(base, "GET", "/sign-in/link?token=missing")
     expect(missing.status).toBe(302)
     expect(missing.headers.location).toBe("/sign-in")
@@ -263,6 +267,57 @@ describe("sign-in", () => {
     expect(linked.status).toBe(302)
     expect(linked.headers.location).toBe("/")
     expect(cookieFrom(linked.headers)).toContain("airdesign.session=")
+  })
+
+  it("resets wrong guesses on a new send", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const first = mailParts(mails[0]?.text)
+    const wrong = first.code === "000000" ? "111111" : "000000"
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const refused = await ask(base, "POST", "/sign-in/code", { email, code: wrong })
+      expect(refused.status).toBe(401)
+      expect(refused.json).toEqual({ ok: false, refusal: "code" })
+    }
+    const sent = await ask(base, "POST", "/sign-in/email", { email })
+    expect(sent.status).toBe(202)
+    expect(mails).toHaveLength(2)
+    const next = mailParts(mails[1]?.text)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: next.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+    expect(cookieFrom(signed.headers)).toContain("airdesign.session=")
+  })
+
+  it("accepts the right code after nine wrong ones", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const mailed = mailParts(mails[0]?.text)
+    const wrong = mailed.code === "000000" ? "111111" : "000000"
+    for (let attempt = 0; attempt < 9; attempt += 1) {
+      const refused = await ask(base, "POST", "/sign-in/code", { email, code: wrong })
+      expect(refused.status).toBe(401)
+      expect(refused.json).toEqual({ ok: false, refusal: "code" })
+    }
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+    expect(cookieFrom(signed.headers)).toContain("airdesign.session=")
+  })
+
+  it("refuses a code mailed to another address", async () => {
+    const owner = address()
+    const other = address()
+    await ask(base, "POST", "/sign-in/email", { email: owner })
+    const mailed = mailParts(mails[0]?.text)
+    const refused = await ask(base, "POST", "/sign-in/code", { email: other, code: mailed.code })
+    expect(refused.status).toBe(401)
+    expect(refused.json).toEqual({ ok: false, refusal: "code" })
+    expect(refused.headers["set-cookie"]).toBeUndefined()
+    const signed = await ask(base, "POST", "/sign-in/code", { email: owner, code: mailed.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+    expect(cookieFrom(signed.headers)).toContain("airdesign.session=")
   })
 
   it("refuses a code older than 15 minutes", async () => {
@@ -326,6 +381,19 @@ describe("sign-in", () => {
     expect(accessText.includes(mailed.code)).toBe(false)
     expect(accessText.includes(mailed.token)).toBe(false)
     expect(access.rows.some((row: { token?: string }) => row.token === digest(raw))).toBe(true)
+    const linkEmail = address()
+    await ask(base, "POST", "/sign-in/email", { email: linkEmail })
+    const linkMail = mailParts(mails[1]?.text)
+    const linkUrl = new URL(linkMail.link)
+    const linked = await ask(base, "GET", `${linkUrl.pathname}${linkUrl.search}`)
+    expect(linked.status).toBe(302)
+    expect(linked.headers.location).toBe("/")
+    const linkRaw = rawSession(setCookie(linked.headers))
+    const linkAccess = await session.query("select * from session.access where email = $1", [linkEmail])
+    const linkText = JSON.stringify(linkAccess.rows)
+    expect(linkAccess.rows.length).toBeGreaterThan(0)
+    expect(linkText.includes(linkRaw)).toBe(false)
+    expect(linkAccess.rows.some((row: { token?: string }) => row.token === digest(linkRaw))).toBe(true)
   })
 
   it("sends at most 5 messages to one address in a row", async () => {
@@ -342,6 +410,61 @@ describe("sign-in", () => {
     expect(signed.json).toEqual({ ok: true })
     expect(cookieFrom(signed.headers)).toContain("airdesign.session=")
     expect(mails).toHaveLength(5)
+  })
+
+  it("sends at most 5 messages to one address at the same moment", async () => {
+    const email = address()
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const seeded = await ask(base, "POST", "/sign-in/email", { email })
+      expect(seeded.status).toBe(202)
+    }
+    expect(mails).toHaveLength(4)
+    const info = await postgresInfo()
+    const holder = new Client({ connectionString: info.session, application_name: "sign-in-holder" })
+    const admin = new Client({ connectionString: info.admin, application_name: "sign-in-admin" })
+    await holder.connect()
+    await admin.connect()
+    let released = false
+    await holder.query("begin")
+    await holder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [email])
+    const left = ask(base, "POST", "/sign-in/email", { email })
+    const right = ask(base, "POST", "/sign-in/email", { email })
+    try {
+      const started = Date.now()
+      let waiting = 0
+      let busy = 0
+      while (waiting < 1 || busy < 2) {
+        const found = await admin.query<{ waiting: number; busy: number }>(
+          `select count(*) filter (where wait_event_type = 'Lock')::int as waiting, count(*)::int as busy
+           from pg_stat_activity
+           where application_name = $1 and query like '%pg_advisory_xact_lock%' and state <> 'idle'`,
+          ["sign-in"],
+        )
+        waiting = found.rows[0]?.waiting ?? 0
+        busy = found.rows[0]?.busy ?? 0
+        if ((waiting < 1 || busy < 2) && Date.now() - started > 3000) throw new Error("the sends did not wait")
+        if (waiting < 1 || busy < 2) await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      await holder.query("commit")
+      released = true
+    } finally {
+      if (!released) await holder.query("rollback").catch(() => undefined)
+      await holder.end().catch(() => undefined)
+      await admin.end().catch(() => undefined)
+      await Promise.all([left, right]).catch(() => undefined)
+    }
+    if (!released) throw new Error("the sends did not wait")
+    const done = await Promise.all([left, right])
+    for (const response of done) {
+      expect(response.status).toBe(202)
+      expect(response.json).toEqual({ ok: true })
+    }
+    expect(mails).toHaveLength(5)
+    const counted = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.sent where email = $1 and issued > now() - interval '15 minutes'",
+      [email],
+    )
+    expect(counted.rows[0]?.total).toBe(5)
   })
 
   it("sends again to that address after 15 minutes", async () => {
@@ -423,6 +546,7 @@ describe("sign-in", () => {
       const coded = await ask(served.base, "POST", "/sign-in/code", { email, code: codedMail.code })
       const codedHeader = setCookie(coded.headers)
       const codedToken = rawSession(codedHeader)
+      expect(codedHeader).toContain("Max-Age=2592000")
       expect(codedHeader).toBe(
         `airdesign.session=${encodeURIComponent(codedToken)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000; Domain=app.example`,
       )
@@ -433,6 +557,7 @@ describe("sign-in", () => {
       const linked = await ask(served.base, "GET", `${url.pathname}${url.search}`)
       const linkedHeader = setCookie(linked.headers)
       const linkedToken = rawSession(linkedHeader)
+      expect(linkedHeader).toContain("Max-Age=2592000")
       expect(linkedHeader).toBe(
         `airdesign.session=${encodeURIComponent(linkedToken)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000; Domain=app.example`,
       )
@@ -448,6 +573,7 @@ describe("sign-in", () => {
     const coded = await ask(base, "POST", "/sign-in/code", { email, code: codedMail.code })
     const codedHeader = setCookie(coded.headers)
     expect(codedHeader.toLowerCase().includes("domain")).toBe(false)
+    expect(codedHeader).toContain("Max-Age=2592000")
     expect(codedHeader).toContain("HttpOnly")
     expect(codedHeader).toContain("Secure")
     expect(codedHeader).toContain("SameSite=Lax")
@@ -458,9 +584,31 @@ describe("sign-in", () => {
     const linked = await ask(base, "GET", `${url.pathname}${url.search}`)
     const linkedHeader = setCookie(linked.headers)
     expect(linkedHeader.toLowerCase().includes("domain")).toBe(false)
+    expect(linkedHeader).toContain("Max-Age=2592000")
     expect(linkedHeader).toContain("HttpOnly")
     expect(linkedHeader).toContain("Secure")
     expect(linkedHeader).toContain("SameSite=Lax")
     expect(linked.headers["set-cookie"]?.length).toBe(1)
+  })
+
+  it("rejects a public origin with a path", () => {
+    const send = async () => {}
+    const shared = { session, deck, listen, send }
+    expect(() => createApi({ ...shared, publicOrigin: "https://app.example/path" })).toThrow(/publicOrigin/)
+    expect(() => createApi({ ...shared, publicOrigin: "https://app.example/" })).toThrow(/publicOrigin/)
+    expect(() => createApi({ ...shared, publicOrigin: "http://app.example" })).toThrow(/publicOrigin/)
+  })
+
+  it("rejects cookie domains containing cookie attributes", () => {
+    expect(() =>
+      createApi({
+        session,
+        deck,
+        listen,
+        publicOrigin,
+        send: async () => {},
+        cookieDomain: "app.example; SameSite=None; Max-Age=0",
+      }),
+    ).toThrow(/cookieDomain/)
   })
 })

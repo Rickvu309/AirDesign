@@ -20,6 +20,25 @@ export type ApiOptions = {
 const cookieName = "airdesign.session"
 const bodyCap = 1_000_000
 
+const plainHost = /^[A-Za-z0-9.-]+$/
+
+function requireOrigin(publicOrigin: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(publicOrigin)
+  } catch {
+    throw new Error("publicOrigin is not an https origin")
+  }
+  if (parsed.protocol !== "https:" || parsed.origin !== publicOrigin) {
+    throw new Error("publicOrigin is not an https origin")
+  }
+}
+
+function requireDomain(cookieDomain: string | undefined): void {
+  if (cookieDomain === undefined) return
+  if (!plainHost.test(cookieDomain)) throw new Error("cookieDomain is not a plain host name")
+}
+
 export function sessionCookie(token: string, cookieDomain?: string): string {
   const cookie = `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
   if (cookieDomain === undefined) return cookie
@@ -225,6 +244,8 @@ async function handle(options: ApiOptions, req: IncomingMessage, res: ServerResp
 }
 
 export function createApi(options: ApiOptions): Server {
+  requireOrigin(options.publicOrigin)
+  requireDomain(options.cookieDomain)
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
     void handle(options, req, res).catch(() => {
