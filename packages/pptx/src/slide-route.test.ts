@@ -76,6 +76,26 @@ describe("applyRoute", () => {
     expect(restored.get(part)).toEqual(before.get(part))
   })
 
+  it("writes a local transform on a placeholder that inherits its box", () => {
+    const placeholder = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="4" name="Title"/><p:cNvSpPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/></p:sp></p:spTree></p:cSld></p:sld>`
+    const before = new Map([[part, encodeUtf8(placeholder)]])
+    const moved = applyRoute(before, { name: "move", part, shape: "4", x: 10, y: 20 })
+    const movedBytes = moved.get(part)
+    if (movedBytes === undefined) throw new Error("part")
+    const movedXml = decodeUtf8(movedBytes)
+    expect(markupDocument(movedBytes).wellFormed).toBe(true)
+    expect(movedXml).toContain('<p:spPr><a:xfrm><a:off x="10" y="20"/></a:xfrm></p:spPr>')
+    expect(movedXml).toContain('<p:ph type="title"/>')
+    expect(movedXml).toContain('<a:off x="0" y="0"/>')
+    const resized = applyRoute(before, { name: "resize", part, shape: "4", cx: 30, cy: 40 })
+    const resizedBytes = resized.get(part)
+    if (resizedBytes === undefined) throw new Error("part")
+    const resizedXml = decodeUtf8(resizedBytes)
+    expect(markupDocument(resizedBytes).wellFormed).toBe(true)
+    expect(resizedXml).toContain('<p:spPr><a:xfrm><a:ext cx="30" cy="40"/></a:xfrm></p:spPr>')
+    expect(resizedXml).toContain('<a:ext cx="0" cy="0"/>')
+  })
+
   it("does not treat a longer shape id as the requested one", () => {
     const tree = `<p:spTree><p:sp><p:cNvPr id="20" name="Other"/><a:t>No</a:t><a:off x="1" y="1"/><a:ext cx="1" cy="1"/></p:sp><p:sp><p:cNvPr id="2" name="This"/><a:t>Yes</a:t><a:off x="2" y="2"/><a:ext cx="3" cy="4"/></p:sp></p:spTree>`
     const name = "ppt/slides/slide2.xml"
