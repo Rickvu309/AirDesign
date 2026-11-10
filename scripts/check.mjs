@@ -6,7 +6,7 @@ import { timeStick } from "./sticks.mjs"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const checkStarted = Date.now()
 
-const stages = [
+export const stages = [
   [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
@@ -57,17 +57,19 @@ const run = ([name, command, args, extra]) =>
     child.on("close", (status) => finish(status ?? 1))
   })
 
-for (const stage of stages) {
-  await Promise.all(stage.map(run))
-  if (failed.length > 0 && !all) break
-}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  for (const stage of stages) {
+    await Promise.all(stage.map(run))
+    if (failed.length > 0 && !all) break
+  }
 
-const checkSeconds = timeStick(root, "check seconds", checkStarted)
-console.log(checkSeconds.line)
-if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
-if (checkSeconds.fails) failed.push("check seconds")
+  const checkSeconds = timeStick(root, "check seconds", checkStarted)
+  console.log(checkSeconds.line)
+  if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
+  if (checkSeconds.fails) failed.push("check seconds")
 
-if (failed.length > 0) {
-  console.error(`failed: ${failed.join(", ")}`)
-  process.exit(1)
+  if (failed.length > 0) {
+    console.error(`failed: ${failed.join(", ")}`)
+    process.exit(1)
+  }
 }
