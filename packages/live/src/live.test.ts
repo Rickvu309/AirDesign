@@ -611,4 +611,62 @@ describe("live cache", () => {
     expect(saved).toEqual({ ok: false, refusal: "limit" })
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
+
+  it("reads the same part names and hashes back after a new connect", async () => {
+    const files = installParts()
+    const shared = new Uint8Array([9, 8, 7])
+    const other = new Uint8Array([1, 2])
+    const slide = "ppt/slides/slide1.xml"
+    const copy = "ppt/slides/slide2.xml"
+    const notes = "ppt/notesSlides/notesSlide1.xml"
+    const nodes = { a: { part: slide, shape: "2" } }
+    const saved = await putParts("clean", {
+      parts: new Map<string, Uint8Array>([
+        [slide, shared],
+        [copy, shared],
+        [notes, other],
+      ]),
+      nodes,
+    })
+    expect(saved.ok).toBe(true)
+    const sha256 = async (bytes: Uint8Array) => {
+      const payload = new Uint8Array(new ArrayBuffer(bytes.byteLength))
+      payload.set(bytes)
+      const digest = await crypto.subtle.digest("SHA-256", payload)
+      let text = ""
+      for (const byte of new Uint8Array(digest)) text += byte.toString(16).padStart(2, "0")
+      return text
+    }
+    const sharedHash = await sha256(shared)
+    const otherHash = await sha256(other)
+    expect([...files.keys()].sort()).toEqual([sharedHash, otherHash].sort())
+    for (const [hash, bytes] of files) expect(hash).toBe(await sha256(bytes))
+    const stored = [...files.keys()].sort()
+    const cache = connect(memoryRemote())
+    const opened = await cache.openDeck("clean")
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.pending).toEqual([])
+    expect(opened.confirmed).toEqual([])
+    expect(await cache.rows("clean")).toEqual([])
+    const read = await getParts("clean")
+    expect(read.ok).toBe(true)
+    if (!read.ok) return
+    expect([...read.parts.keys()]).toEqual([slide, copy, notes])
+    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
+    expect(Array.from(read.parts.get(copy) ?? [])).toEqual([9, 8, 7])
+    expect(Array.from(read.parts.get(notes) ?? [])).toEqual([1, 2])
+    expect(read.nodes).toEqual(nodes)
+    expect(files.size).toBe(2)
+    expect([...files.keys()].sort()).toEqual(stored)
+  })
+
+  it("answers absent for parts after the database is deleted", async () => {
+    installParts()
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, new Uint8Array([9, 8, 7])]]), nodes })
+    expect(saved.ok).toBe(true)
+    await deleteDatabase()
+    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
+  })
 })
