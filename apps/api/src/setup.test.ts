@@ -1,76 +1,129 @@
-import { spawn } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import path from "node:path"
 import { Client } from "pg"
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { startEmptyCluster, type EmptyCluster } from "./postgres-setup.js"
-import { provisionDatabase, type DatabaseUrls } from "./provision.js"
+import { runSetup } from "./provision.js"
 
-const entry = path.join(process.cwd(), "apps/api/dist/setup.js")
+type Role = "session" | "deck" | "listen"
+
+type Urls = {
+  readonly admin: string
+  readonly session: string
+  readonly deck: string
+  readonly listen: string
+}
+
+type Outcome = { readonly code: number; readonly stdout: string[]; readonly stderr: string[] }
+
+const roles: readonly Role[] = ["session", "deck", "listen"]
+
+const variableOf = {
+  admin: "ADMIN_DATABASE_URL",
+  session: "SESSION_DATABASE_URL",
+  deck: "DECK_DATABASE_URL",
+  listen: "LISTEN_DATABASE_URL",
+} as const
 
 function password(): string {
   return randomBytes(18).toString("base64url")
 }
 
-function urlFor(port: number, user: string, secret: string, database: string): string {
-  return `postgres://${user}:${encodeURIComponent(secret)}@127.0.0.1:${String(port)}/${database}`
-}
-
-async function openClient(url: string): Promise<Client> {
+function openClient(url: string): Promise<Client> {
   const client = new Client({ connectionString: url })
-  await client.connect()
-  return client
+  return client.connect().then(() => client)
 }
 
-function runEntry(env: NodeJS.ProcessEnv): Promise<{ code: number | null; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [entry], { env })
-    let stderr = ""
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString()
-    })
-    child.on("error", reject)
-    child.on("close", (code) => resolve({ code, stderr }))
+function environmentOf(urls: Urls): Record<string, string> {
+  return {
+    [variableOf.admin]: urls.admin,
+    [variableOf.session]: urls.session,
+    [variableOf.deck]: urls.deck,
+    [variableOf.listen]: urls.listen,
+  }
+}
+
+async function run(env: Record<string, string | undefined>): Promise<Outcome> {
+  const stdout: string[] = []
+  const stderr: string[] = []
+  const code = await runSetup(env, (stream, line) => {
+    ;(stream === "stdout" ? stdout : stderr).push(line)
   })
+  return { code, stdout, stderr }
 }
 
 describe("database setup", () => {
   let cluster: EmptyCluster
   let counter = 0
 
+  const superUrl = (database: string): string => `postgres://postgres@127.0.0.1:${String(cluster.port)}/${database}`
+
+  const roleUrl = (role: string, secret: string, database: string): string =>
+    `postgres://${role}:${encodeURIComponent(secret)}@127.0.0.1:${String(cluster.port)}/${database}`
+
+  async function asSuperuser<T>(database: string, work: (client: Client) => Promise<T>): Promise<T> {
+    const client = await openClient(superUrl(database))
+    try {
+      return await work(client)
+    } finally {
+      await client.end()
+    }
+  }
+
+  async function freshDatabase(): Promise<{ urls: Urls; database: string }> {
+    counter += 1
+    const database = `setup_${String(counter)}`
+    await asSuperuser("postgres", (client) => client.query(`create database ${database}`))
+    return {
+      database,
+      urls: {
+        admin: superUrl(database),
+        session: roleUrl("session", password(), database),
+        deck: roleUrl("deck", password(), database),
+        listen: roleUrl("listen", password(), database),
+      },
+    }
+  }
+
+  async function flagsOfRoles(): Promise<unknown[]> {
+    const found = await asSuperuser("postgres", (client) =>
+      client.query(
+        `select rolname, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole
+         from pg_roles where rolname in ('session', 'deck', 'listen') order by rolname`,
+      ),
+    )
+    return found.rows
+  }
+
+  async function schemasIn(database: string): Promise<string[]> {
+    const found = await asSuperuser(database, (client) =>
+      client.query<{ nspname: string }>("select nspname from pg_namespace where nspname in ('session', 'deck')"),
+    )
+    return found.rows.map((row) => row.nspname)
+  }
+
   beforeAll(async () => {
     cluster = await startEmptyCluster()
+  })
+
+  beforeEach(async () => {
+    await asSuperuser("postgres", async (client) => {
+      const found = await client.query<{ datname: string }>(
+        "select datname from pg_database where datname like 'setup\\_%'",
+      )
+      for (const row of found.rows) await client.query(`drop database ${row.datname} with (force)`)
+      await client.query("drop role if exists session, deck, listen, boss")
+    })
   })
 
   afterAll(async () => {
     await cluster.stop()
   })
 
-  async function freshDatabase(): Promise<{
-    urls: DatabaseUrls
-    secrets: Record<"session" | "deck" | "listen", string>
-  }> {
-    counter += 1
-    const database = `setup_${String(counter)}`
-    const bootstrap = await openClient(`postgres://postgres@127.0.0.1:${String(cluster.port)}/postgres`)
-    await bootstrap.query(`create database ${database}`)
-    await bootstrap.end()
-    const secrets = { session: password(), deck: password(), listen: password() }
-    return {
-      secrets,
-      urls: {
-        admin: `postgres://postgres@127.0.0.1:${String(cluster.port)}/${database}`,
-        session: urlFor(cluster.port, "session", secrets.session, database),
-        deck: urlFor(cluster.port, "deck", secrets.deck, database),
-        listen: urlFor(cluster.port, "listen", secrets.listen, database),
-      },
-    }
-  }
-
   it("creates the three roles and the schema on an empty database", async () => {
     const { urls } = await freshDatabase()
-    await expect(provisionDatabase(urls)).resolves.toBe("created")
+    const outcome = await run(environmentOf(urls))
+    expect(outcome).toEqual({ code: 0, stdout: ["setup: roles 3, schema created"], stderr: [] })
     const session = await openClient(urls.session)
     const deck = await openClient(urls.deck)
     const listen = await openClient(urls.listen)
@@ -88,11 +141,12 @@ describe("database setup", () => {
 
   it("changes nothing on a second run", async () => {
     const { urls } = await freshDatabase()
-    await provisionDatabase(urls)
+    await run(environmentOf(urls))
     const session = await openClient(urls.session)
     try {
       await session.query("insert into session.account (email) values ('kept@example.com')")
-      await expect(provisionDatabase(urls)).resolves.toBe("kept")
+      const outcome = await run(environmentOf(urls))
+      expect(outcome).toEqual({ code: 0, stdout: ["setup: roles 3, schema kept"], stderr: [] })
       const rows = await session.query<{ email: string }>("select email from session.account")
       expect(rows.rows).toEqual([{ email: "kept@example.com" }])
     } finally {
@@ -100,27 +154,226 @@ describe("database setup", () => {
     }
   })
 
-  it("sets the password from the url when the role already exists", async () => {
+  it("prints schema created and then schema kept", async () => {
     const { urls } = await freshDatabase()
-    await provisionDatabase(urls)
-    const database = new URL(urls.deck).pathname.slice(1)
-    const changed = urlFor(cluster.port, "deck", password(), database)
-    await expect(provisionDatabase({ ...urls, deck: changed })).resolves.toBe("kept")
+    const first = await run(environmentOf(urls))
+    const second = await run(environmentOf(urls))
+    expect(first).toEqual({ code: 0, stdout: ["setup: roles 3, schema created"], stderr: [] })
+    expect(second).toEqual({ code: 0, stdout: ["setup: roles 3, schema kept"], stderr: [] })
+  })
+
+  it("sets the password from the url when the role already exists", async () => {
+    const { urls, database } = await freshDatabase()
+    await run(environmentOf(urls))
+    const changed = roleUrl("deck", password(), database)
+    const outcome = await run(environmentOf({ ...urls, deck: changed }))
+    expect(outcome.code).toBe(0)
     const reconnected = await openClient(changed)
     await reconnected.end()
     await expect(openClient(urls.deck)).rejects.toThrow(/password authentication failed/)
   })
 
+  it("sets a password that needs percent-encoding", async () => {
+    const { urls, database } = await freshDatabase()
+    const awkward = "p@ss/w:r%d'; create role evil superuser; -- x"
+    const encoded = `postgres://deck:${encodeURIComponent(awkward)}@127.0.0.1:${String(cluster.port)}/${database}`
+    const outcome = await run(environmentOf({ ...urls, deck: encoded }))
+    expect(outcome.code).toBe(0)
+    const byUrl = await openClient(encoded)
+    await byUrl.end()
+    const byParts = new Client({
+      host: "127.0.0.1",
+      port: cluster.port,
+      database,
+      user: "deck",
+      password: awkward,
+    })
+    await byParts.connect()
+    await byParts.end()
+    const evil = await asSuperuser("postgres", (client) =>
+      client.query("select 1 from pg_roles where rolname = 'evil'"),
+    )
+    expect(evil.rowCount).toBe(0)
+  })
+
   it("exits when a database url is missing", async () => {
     const { urls } = await freshDatabase()
-    const result = await runEntry({
-      PATH: process.env.PATH,
-      SESSION_DATABASE_URL: urls.session,
-      DECK_DATABASE_URL: urls.deck,
-      LISTEN_DATABASE_URL: urls.listen,
+    const { [variableOf.admin]: _admin, ...rest } = environmentOf(urls)
+    const outcome = await run(rest)
+    expect(outcome.code).toBe(1)
+    expect(outcome.stdout).toEqual([])
+    expect(outcome.stderr.join("\n")).toContain("ADMIN_DATABASE_URL")
+    expect(outcome.stderr.join("\n")).not.toContain("postgres://")
+  })
+
+  it("names each missing variable", async () => {
+    const { urls } = await freshDatabase()
+    for (const name of Object.values(variableOf)) {
+      const env: Record<string, string | undefined> = { ...environmentOf(urls) }
+      delete env[name]
+      expect(await run(env)).toEqual({ code: 1, stdout: [], stderr: [name] })
+      expect(await run({ ...env, [name]: "" })).toEqual({ code: 1, stdout: [], stderr: [name] })
+    }
+    expect(await run({})).toEqual({ code: 1, stdout: [], stderr: [Object.values(variableOf).join(" ")] })
+  })
+
+  it("exits 1 with one line and no url when the admin password is wrong", async () => {
+    const { urls, database } = await freshDatabase()
+    const bossSecret = password()
+    await asSuperuser("postgres", (client) => client.query(`create role boss login superuser password '${bossSecret}'`))
+    const wrongSecret = password()
+    const outcome = await run(
+      environmentOf({
+        ...urls,
+        admin: `postgres://boss:${wrongSecret}@127.0.0.1:${String(cluster.port)}/${database}`,
+      }),
+    )
+    expect(outcome.code).toBe(1)
+    expect(outcome.stdout).toEqual([])
+    expect(outcome.stderr).toHaveLength(1)
+    const everything = `${outcome.stdout.join("\n")}\n${outcome.stderr.join("\n")}`
+    for (const secret of [
+      "postgres://",
+      "boss",
+      "127.0.0.1",
+      String(cluster.port),
+      wrongSecret,
+      bossSecret,
+      urls.session,
+      urls.deck,
+      urls.listen,
+    ]) {
+      expect(everything).not.toContain(secret)
+    }
+    const roleRows = await asSuperuser("postgres", (client) =>
+      client.query("select 1 from pg_roles where rolname in ('session', 'deck', 'listen')"),
+    )
+    expect(roleRows.rowCount).toBe(0)
+  })
+
+  it("exits when a role url has no password", async () => {
+    const { urls, database } = await freshDatabase()
+    await run(environmentOf(urls))
+    const base = `127.0.0.1:${String(cluster.port)}/${database}`
+    for (const role of roles) {
+      for (const bare of [
+        `postgres://${role}@${base}`,
+        `postgres://${role}:@${base}`,
+        `postgres://${role}@${base}?password=x`,
+      ]) {
+        const outcome = await run(environmentOf({ ...urls, [role]: bare }))
+        expect(outcome.code).toBe(1)
+        expect(outcome.stdout).toEqual([])
+        expect(outcome.stderr).toHaveLength(1)
+        expect(outcome.stderr[0]).toContain(variableOf[role])
+        expect(outcome.stderr[0]).not.toContain("postgres://")
+        const stillConnects = await openClient(urls[role])
+        await stillConnects.end()
+      }
+    }
+  })
+
+  it("leaves no role and no schema when the third role fails", async () => {
+    const empty = await freshDatabase()
+    const failed = await run(
+      environmentOf({
+        ...empty.urls,
+        listen: `postgres://listen:abc%00def@127.0.0.1:${String(cluster.port)}/${empty.database}`,
+      }),
+    )
+    expect(failed.code).toBe(1)
+    expect(failed.stderr).toHaveLength(1)
+    expect(await flagsOfRoles()).toEqual([])
+    expect(await schemasIn(empty.database)).toEqual([])
+
+    const settled = await freshDatabase()
+    expect((await run(environmentOf(settled.urls))).code).toBe(0)
+    const before = await asSuperuser("postgres", (client) =>
+      client.query(
+        "select rolname, rolpassword from pg_authid where rolname in ('session', 'deck', 'listen') order by rolname",
+      ),
+    )
+    const later = await freshDatabase()
+    const failedAgain = await run(
+      environmentOf({
+        ...later.urls,
+        listen: `postgres://listen:abc%00def@127.0.0.1:${String(cluster.port)}/${later.database}`,
+      }),
+    )
+    expect(failedAgain.code).toBe(1)
+    const after = await asSuperuser("postgres", (client) =>
+      client.query(
+        "select rolname, rolpassword from pg_authid where rolname in ('session', 'deck', 'listen') order by rolname",
+      ),
+    )
+    expect(after.rows).toEqual(before.rows)
+    expect(await schemasIn(later.database)).toEqual([])
+    for (const role of roles) {
+      const stillConnects = await openClient(settled.urls[role])
+      await stillConnects.end()
+    }
+  })
+
+  it("makes every role login with no superuser, createdb or createrole", async () => {
+    const expected = roles
+      .toSorted()
+      .map((rolname) => ({ rolname, rolcanlogin: true, rolsuper: false, rolcreatedb: false, rolcreaterole: false }))
+    const created = await freshDatabase()
+    expect((await run(environmentOf(created.urls))).code).toBe(0)
+    expect(await flagsOfRoles()).toEqual(expected)
+
+    const altered = await freshDatabase()
+    await asSuperuser("postgres", async (client) => {
+      for (const role of roles) await client.query(`alter role ${role} superuser nologin createdb createrole`)
     })
-    expect(result.code).toBe(1)
-    expect(result.stderr).toContain("ADMIN_DATABASE_URL")
-    expect(result.stderr).not.toContain("postgres://")
+    expect(await flagsOfRoles()).toEqual(
+      expected.map((flags) => ({
+        ...flags,
+        rolcanlogin: false,
+        rolsuper: true,
+        rolcreatedb: true,
+        rolcreaterole: true,
+      })),
+    )
+    expect((await run(environmentOf(altered.urls))).code).toBe(0)
+    expect(await flagsOfRoles()).toEqual(expected)
+  })
+
+  it("prints one line when the connection is lost", async () => {
+    const { urls, database } = await freshDatabase()
+    const uncaught: unknown[] = []
+    const record = (error: unknown): void => {
+      uncaught.push(error)
+    }
+    process.on("uncaughtException", record)
+    const holder = await openClient(superUrl(database))
+    const watcher = await openClient(superUrl("postgres"))
+    try {
+      await holder.query("begin")
+      await holder.query("create schema session")
+      const running = run(environmentOf(urls))
+      const started = Date.now()
+      let waiting = false
+      while (!waiting) {
+        const found = await watcher.query(
+          "select pid from pg_stat_activity where application_name = 'api-setup' and wait_event_type = 'Lock'",
+        )
+        waiting = found.rows.length > 0
+        if (!waiting && Date.now() - started > 5000) throw new Error("the setup did not wait")
+        if (!waiting) await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      await watcher.query("select pg_terminate_backend(pid) from pg_stat_activity where application_name = 'api-setup'")
+      const outcome = await running
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      expect(uncaught).toEqual([])
+      expect(outcome.code).toBe(1)
+      expect(outcome.stdout).toEqual([])
+      expect(outcome.stderr).toHaveLength(1)
+      expect(outcome.stderr[0]).toMatch(/^setup: failed \w+$/)
+    } finally {
+      process.off("uncaughtException", record)
+      await holder.end()
+      await watcher.end()
+    }
   })
 })
