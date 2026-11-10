@@ -18,7 +18,7 @@ const record = (faults) =>
     JSON.stringify({
       "known faults": { now: faults, goal: 0 },
       "real decks in the PowerPoint check": { now: 1, goal: 20 },
-      "capabilities exported": { now: 2, goal: 3 },
+      "routes pptx writes": { now: 2, goal: 3 },
       "check seconds": { limit: 40 },
       "PowerPoint check seconds": { limit: 90 },
     }),
@@ -55,7 +55,7 @@ write("packages/a/src/a.test.ts", `${faultCall}"one", () => {})\n${faultCall}"tw
 if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
   throw new Error("a limit stick was not listed")
 
-const capabilities = steady.rows.find((row) => row.name === "capabilities exported")
+const capabilities = steady.rows.find((row) => row.name === "routes pptx writes")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
   throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
 
@@ -67,6 +67,27 @@ const timed = timeStick(root, "check seconds", Date.now() - 41_200)
 if (!/^stick check seconds  now 41\.\d  limit 40$/.test(timed.line)) throw new Error(timed.line)
 if (!timed.over?.startsWith("check seconds is 41.")) throw new Error(`${timed.over}`)
 if (timeStick(root, "check seconds", Date.now()).over !== undefined) throw new Error("a fast run was reported")
+const gate = process.env.CI
+for (const [value, fails] of [
+  ["true", true],
+  ["1", true],
+  ["", false],
+  ["false", false],
+]) {
+  process.env.CI = value
+  if (timeStick(root, "check seconds", Date.now() - 41_200).fails !== fails) {
+    throw new Error(`an over-limit time with CI=${value} should ${fails ? "fail" : "pass"}`)
+  }
+}
+if (gate === undefined) delete process.env.CI
+else process.env.CI = gate
+let unlimited = ""
+try {
+  timeStick(root, "nobody limits", Date.now())
+} catch (error) {
+  unlimited = error.message
+}
+if (unlimited !== "nobody limits has no limit in sticks.json.") throw new Error(`a missing limit passed: ${unlimited}`)
 
 const added = (await readSticks(root)).drift
 if (added.length !== 1 || added[0] !== "known faults is 2 and sticks.json says 1. Record 2 in sticks.json.") {
@@ -106,15 +127,14 @@ write(
   "sticks.json",
   JSON.stringify({
     "known faults": { now: 0, goal: 0 },
-    "capabilities exported": { now: 1, goal: 4 },
+    "routes pptx writes": { now: 1, goal: 4 },
     "nobody measures": { now: 1, goal: 0 },
     "nobody times": { limit: 5 },
   }),
 )
 const loose = (await readSticks(root)).drift.join("\n")
-if (!loose.includes("capabilities exported is 2 and sticks.json says 1. Record 2 in sticks.json."))
-  throw new Error(loose)
-if (!loose.includes("capabilities exported has goal 3 and sticks.json says 4. Record goal 3 in sticks.json."))
+if (!loose.includes("routes pptx writes is 2 and sticks.json says 1. Record 2 in sticks.json.")) throw new Error(loose)
+if (!loose.includes("routes pptx writes has goal 3 and sticks.json says 4. Record goal 3 in sticks.json."))
   throw new Error(loose)
 if (!loose.includes("nobody times has a limit in sticks.json and no runner times it.")) throw new Error(loose)
 if (!loose.includes("check seconds is timed by scripts/check.mjs and has no limit in sticks.json."))
