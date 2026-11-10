@@ -1243,6 +1243,38 @@ describe("sign-in", () => {
     }
   })
 
+  it("delivers a middle mail while a newer send is still in flight", async () => {
+    const email = address()
+    const [oldest, middle, newest] = [holdSend(email), holdSend(email), holdSend(email)]
+    const sendOldest = ask(base, "POST", "/sign-in/email", { email })
+    await oldest.entered
+    const sendMiddle = ask(base, "POST", "/sign-in/email", { email })
+    await middle.entered
+    const sendNewest = ask(base, "POST", "/sign-in/email", { email })
+    await newest.entered
+    try {
+      oldest.finish()
+      expect((await sendOldest).status).toBe(202)
+      middle.finish()
+      expect((await sendMiddle).status).toBe(202)
+      const older = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(oldest.text()).code })
+      expect(older.status).toBe(401)
+      const delivered = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(middle.text()).code })
+      expect(delivered.status).toBe(200)
+      newest.finish()
+      expect((await sendNewest).status).toBe(202)
+      const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(newest.text()).code })
+      expect(signed.status).toBe(200)
+      const used = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(middle.text()).code })
+      expect(used.status).toBe(401)
+    } finally {
+      oldest.finish()
+      middle.finish()
+      newest.finish()
+      await Promise.all([sendOldest, sendMiddle, sendNewest])
+    }
+  })
+
   it("gives a newly delivered mail its own issued time", async () => {
     const email = address()
     await ask(base, "POST", "/sign-in/email", { email })
