@@ -27,6 +27,7 @@ import { group as structureGroup, state as structureState, step as structureStep
 import { group as undoGroup, state as undoState, step as undoStep } from "../specs/undo/view.mjs"
 import { group as usageGroup, state as usageState, step as usageStep } from "../specs/usage/view.mjs"
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
+import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -402,6 +403,13 @@ function laterExpected(spec: Spec) {
   }
 }
 
+function undoHider(action: string): string | null {
+  if (action === "UndoFirst") return "firstUndo"
+  if (action === "UndoSecond") return "laterUndo"
+  if (action === "UndoFirstAgain" || action === "UndoLaterAgain") return "secondUndo"
+  return null
+}
+
 function replayUndo(graph: Graph, view: View, failures: string[]) {
   let replayed = 0
   let stuttered = 0
@@ -440,6 +448,7 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
         const held =
           decision.decision === "refuse" &&
           decision.code === "run-fenced" &&
+          text(source, "hiddenBy") === text(target, "hiddenBy") &&
           same(laterExpected(source), laterExpected(target))
         if (!held) failures.push(`undo ${where} changed the other run`)
         else replayed += 1
@@ -451,6 +460,12 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
       }
       const actual = laterPicture(decision.register)
       const expected = laterExpected(target)
+      if (actual.laterHidden > num(source, "laterHidden") && text(target, "hiddenBy") !== undoHider(edge.action)) {
+        failures.push(`undo ${where} hid the later row with the wrong undo`)
+      }
+      if (edge.action === "UndoFirst" && flag(target, "firstLive") !== (laterPhase(source) === "running")) {
+        failures.push(`undo ${where} recorded the wrong phase for the earlier undo`)
+      }
       if (!same(actual, expected)) {
         failures.push(`undo ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
       } else replayed += 1
@@ -673,6 +688,18 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing run state for ${edge.action}`)
     const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
+    if (edge.action === "Start" || edge.action === "StartNext") {
+      if (flag(target, "startedLive") !== (text(source, "phase") === "running")) {
+        failures.push(`run ${where} recorded the wrong phase for the start`)
+      }
+      const started = decide(runRegister(source), { command: "start", runId: text(target, "runId") })
+      if (started.decision !== "apply" || started.register.runId !== text(target, "liveId")) {
+        failures.push(`run ${where} did not start the live id`)
+      }
+    }
+    if (edge.action === "UndoEarlier" && flag(target, "earlierLive") !== (text(source, "phase") === "running")) {
+      failures.push(`run ${where} recorded the wrong phase for the earlier undo`)
+    }
     if (edge.action === "Resume" || edge.action === "Limit") {
       unconnected[edge.action] += 1
       continue
@@ -1097,6 +1124,144 @@ function replayOauth(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered }
 }
 
+const secondRun = "s"
+
+function rerunRegister(spec: Spec): Register {
+  const landed: NodeRegister["landed"][number][] = []
+  if (flag(spec, "firstLanded")) {
+    landed.push({ actor: "agent", value: "first", visible: num(spec, "firstRows") === 1, runId: run })
+  }
+  for (let index = 0; index < num(spec, "person"); index += 1) {
+    landed.push({ actor: "person", value: "person", visible: true })
+  }
+  for (let index = 0; index < num(spec, "secondRows"); index += 1) {
+    landed.push({ actor: "agent", value: "second", visible: true, runId: secondRun })
+  }
+  for (let index = 0; index < num(spec, "secondPerson"); index += 1) {
+    landed.push({ actor: "person", value: "during", visible: true })
+  }
+  const phase = phaseOf(spec)
+  return {
+    ...openRegister("floor", "slide"),
+    landed,
+    phase,
+    runId: phase === "idle" ? null : num(spec, "run") === 2 ? secondRun : run,
+    readAt: num(spec, "readAt") === -1 ? null : num(spec, "readAt"),
+    guarded: flag(spec, "guarded"),
+    claimed: num(spec, "claims") === -1 ? null : num(spec, "claims"),
+    stoppedAt: num(spec, "stoppedAt") === -1 ? null : num(spec, "stoppedAt"),
+  }
+}
+
+function rerunPicture(register: Register) {
+  return {
+    phase: register.phase,
+    runId: register.runId ?? "none",
+    version: version(register),
+    readAt: register.readAt ?? -1,
+    guarded: register.guarded,
+    claims: register.claimed ?? -1,
+    stoppedAt: register.stoppedAt ?? -1,
+    firstRows: register.landed.filter((row) => row.visible && row.actor === "agent" && row.runId === run).length,
+    secondRows: register.landed.filter((row) => row.visible && row.actor === "agent" && row.runId === secondRun).length,
+    people: register.landed.filter((row) => row.visible && row.actor === "person").length,
+  }
+}
+
+function rerunExpected(spec: Spec) {
+  const phase = phaseOf(spec)
+  return {
+    phase,
+    runId: phase === "idle" ? "none" : num(spec, "run") === 2 ? secondRun : run,
+    version: num(spec, "firstRows") + num(spec, "person") + num(spec, "secondRows") + num(spec, "secondPerson"),
+    readAt: num(spec, "readAt"),
+    guarded: flag(spec, "guarded"),
+    claims: num(spec, "claims"),
+    stoppedAt: num(spec, "stoppedAt"),
+    firstRows: num(spec, "firstRows"),
+    secondRows: num(spec, "secondRows"),
+    people: num(spec, "person") + num(spec, "secondPerson"),
+  }
+}
+
+function rerunWrite(spec: Spec, value: string) {
+  return {
+    command: "agent" as const,
+    runId: num(spec, "run") === 2 ? secondRun : run,
+    readAt: num(spec, "readAt"),
+    value,
+  }
+}
+
+function rerunDecision(edge: { action: string }, source: Spec, register: Register) {
+  const current = num(source, "run") === 2 ? secondRun : run
+  if (edge.action === "PersonWrites" || edge.action === "PersonWritesSecond") {
+    return decide(register, { command: "person", value: "person" })
+  }
+  if (edge.action === "RunStarts") return decide(register, { command: "start", runId: run })
+  if (edge.action === "StartNext") return decide(register, { command: "start", runId: secondRun })
+  if (edge.action === "RunStops") return decide(register, { command: "stop", runId: current })
+  if (edge.action === "RunUndoes") return decide(register, { command: "undo", runId: run })
+  if (edge.action === "SecondUndoes") return decide(register, { command: "undo", runId: secondRun })
+  if (
+    edge.action === "FirstWrites" ||
+    edge.action === "SecondWrites" ||
+    edge.action === "SecondWritesAgain" ||
+    edge.action === "SecondKeepsClaim" ||
+    edge.action === "SecondRefusesProtected"
+  ) {
+    return decide(register, rerunWrite(source, "row"))
+  }
+  return null
+}
+
+function replayRerun(graph: Graph, view: View, failures: string[]) {
+  let replayed = 0
+  let stuttered = 0
+  for (const edge of graph.edges) {
+    const source = graph.states.get(edge.from)
+    const target = graph.states.get(edge.to)
+    if (!source || !target) throw new Error(`missing rerun state for ${edge.action}`)
+    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
+    if (text(source, "phase") === "stopped") {
+      const late = decide(rerunRegister(source), rerunWrite(source, "late"))
+      if (late.decision !== "refuse" || late.code !== "run-fenced") {
+        failures.push(`rerun ${where} landed a write of a stopped run`)
+      }
+    }
+    if (edge.action === "Done" || edge.action === "AgentRereads") {
+      const changed = changedKeys(source, target, edge.action === "AgentRereads" ? ["readAt"] : [])
+      if (changed.length > 0) failures.push(`rerun stutter ${where} changed ${changed.join(", ")}`)
+      else stuttered += 1
+      continue
+    }
+    const decision = rerunDecision(edge, source, rerunRegister(source))
+    if (decision === null) {
+      failures.push(`rerun ${where} is not connected`)
+      continue
+    }
+    if (edge.action === "SecondRefusesProtected") {
+      const held =
+        decision.decision === "refuse" &&
+        decision.code === "person-protected" &&
+        same(rerunExpected(source), rerunExpected(target))
+      if (!held) failures.push(`rerun ${where} landed after a person edit`)
+      else replayed += 1
+      continue
+    }
+    if (decision.decision !== "apply") {
+      failures.push(`rerun ${where} refused ${decision.code}`)
+      continue
+    }
+    const actual = rerunPicture(decision.register)
+    const expected = rerunExpected(target)
+    if (!same(actual, expected)) {
+      failures.push(`rerun ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
+    } else replayed += 1
+  }
+  return { replayed, stuttered }
+}
+
 function dumpTopics(
   found: readonly { name: string; topic: string; spec: string; config: string }[],
 ): Promise<readonly { name: string; graph: string; output: string }[]> {
@@ -1143,6 +1308,8 @@ describe("spec replay", () => {
       if (usageAside >= 0) found.splice(usageAside, 1)
       const oauthAside = found.findIndex((topic) => topic.name === "oauth")
       if (oauthAside >= 0) found.splice(oauthAside, 1)
+      const rerunAside = found.findIndex((topic) => topic.name === "rerun")
+      if (rerunAside >= 0) found.splice(rerunAside, 1)
       new Function(
         "found",
         "expect",
@@ -1155,6 +1322,8 @@ describe("spec replay", () => {
     if (usageTopic !== undefined) found.splice(found.indexOf(usageTopic), 1)
     const oauthTopic = found.find((topic) => topic.name === "oauth")
     if (oauthTopic !== undefined) found.splice(found.indexOf(oauthTopic), 1)
+    const rerunTopic = found.find((topic) => topic.name === "rerun")
+    if (rerunTopic !== undefined) found.splice(found.indexOf(rerunTopic), 1)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
     if (usageTopic !== undefined) found.push(usageTopic)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo", "usage"])
@@ -1163,6 +1332,17 @@ describe("spec replay", () => {
       "edit",
       "oauth",
       "offline",
+      "run",
+      "structure",
+      "undo",
+      "usage",
+    ])
+    if (rerunTopic !== undefined) found.push(rerunTopic)
+    expect(found.map((topic) => topic.name).sort()).toEqual([
+      "edit",
+      "oauth",
+      "offline",
+      "rerun",
       "run",
       "structure",
       "undo",
@@ -1179,6 +1359,7 @@ describe("spec replay", () => {
       offline: { state: offlineState, step: offlineStep, group: offlineGroup },
       usage: { state: usageState, step: usageStep, group: usageGroup },
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
+      rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
     }
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
@@ -1229,6 +1410,13 @@ describe("spec replay", () => {
           ...replayOauth(graph, view, failures),
         }
       }
+      if (topic.name === "rerun") {
+        reports.rerun = {
+          states: graph.states.size,
+          edges: graph.edges.length,
+          ...replayRerun(graph, view, failures),
+        }
+      }
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
@@ -1239,6 +1427,7 @@ describe("spec replay", () => {
       offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
       usage: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       oauth: { replayed: expect.any(Number), stuttered: expect.any(Number) },
+      rerun: { replayed: expect.any(Number), stuttered: expect.any(Number) },
     })
     const runReport = reports.run as { unconnected: { Resume: number; Limit: number } }
     expect(runReport.unconnected.Resume).toBeGreaterThan(0)

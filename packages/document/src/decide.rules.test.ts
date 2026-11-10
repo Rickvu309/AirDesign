@@ -782,6 +782,8 @@ describe("decide", () => {
         rule.name === "A start from stopped opens a new run" ||
         rule.name === "A start from undone opens a new run" ||
         rule.name === "A start that reuses an id with rows stays fenced" ||
+        rule.name === "A start from a running run stays fenced" ||
+        rule.name === "An undo of the current run hides only that run's rows" ||
         rule.name === "An undo of an earlier run hides only that run's rows" ||
         rule.name === "An undo of an earlier run stays fenced while a run is live" ||
         rule.name === "An edit from an ended run stays fenced" ||
