@@ -160,47 +160,65 @@ describe("callTool", () => {
     const deck = opened()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21" }] },
-      { caller: { actor: "agent", runId: "host-run", readAt: 9 }, deck, log: emptyLog(), now: 0 },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
+      { caller: { actor: "agent", runId: "host-run" }, deck, log: emptyLog(), now: 0 },
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.deck.revision).toBe(1)
-    expect(result.deck.register.phase).toBe("running")
-    expect(result.deck.register.runId).toBe("host-run")
-    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
-    expect(deck.register.phase).toBe("idle")
-    expect(deck.register.landed).toEqual([])
+    const body = nodeBody(result.deck.register)
+    expect(body.phase).toBe("running")
+    expect(body.runId).toBe("host-run")
+    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(deck.register.elements).toEqual({})
   })
 
   it("keeps the running element's run id when the session supplies another", () => {
     const deck = running()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21" }] },
-      { caller: { actor: "agent", runId: "other", readAt: 4 }, deck, log: emptyLog(), now: 0 },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
+      { caller: { actor: "agent", runId: "other" }, deck, log: emptyLog(), now: 0 },
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.deck.register.runId).toBe("run")
-    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
-    expect(deck.register.runId).toBe("run")
-    expect(deck.register.landed).toEqual([])
+    const body = nodeBody(result.deck.register)
+    expect(body.runId).toBe("run")
+    expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(nodeBody(deck.register).runId).toBe("run")
+    expect(nodeBody(deck.register).landed).toEqual([])
   })
 
   it("does not take a run id or a readAt from the arguments", () => {
     const deck = running()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21" }], runId: "client-run", readAt: 5 },
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }], runId: "client-run", readAt: 5 },
       sessionFor(deck),
     )
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
-    expect(deck.register.runId).toBe("run")
-    expect(deck.register.landed).toEqual([])
+    expect(nodeBody(deck.register).runId).toBe("run")
+    expect(nodeBody(deck.register).landed).toEqual([])
+  })
+
+  it("does not start a run on a stopped element", () => {
+    const deck = running()
+    const stopped = decide(deck.register, { command: "stop", runId: "run", node })
+    if (stopped.decision !== "apply") throw new Error(stopped.code)
+    const after = { id: deck.id, revision: deck.revision, register: stopped.register }
+    const result = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
+      { caller: { actor: "agent", runId: "other" }, deck: after, log: emptyLog(), now: 0 },
+    )
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("run-fenced")
+    expect(nodeBody(after.register).phase).toBe("stopped")
+    expect(nodeBody(after.register).landed).toEqual([])
   })
 
   it("refuses an unknown tool", () => {

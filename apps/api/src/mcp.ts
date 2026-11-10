@@ -4,6 +4,7 @@ import { notifyKey, readDeckId, type DeckId } from "@airdesign/catalog"
 import { openDeck, type Deck } from "@airdesign/engine"
 import {
   afterWrite,
+  agentCaller,
   createServer,
   emptyLog,
   type CallerLog,
@@ -62,9 +63,8 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
   if (!host.logs.has(host.email)) host.logs.set(host.email, emptyLog())
-  const caller = { actor: "agent" as const, runId: host.mint(), readAt: 0 }
   const session: Session = {
-    caller,
+    caller: agentCaller(host.mint()),
     deck: openDeck(pending.deck),
     get log() {
       return host.logs.get(host.email) ?? emptyLog()
