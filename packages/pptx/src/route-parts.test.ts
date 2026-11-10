@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest"
-import { markupDocument } from "./element-span.js"
+import { beforeAll, describe, expect, it } from "vitest"
+import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
-import { partTouch, routeOperations, routeRuns, touchMatches } from "./route-parts.js"
+import { partTouch, routeOperations, routeRuns, touchMatches, type RouteRun } from "./route-parts.js"
+import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
+import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
+import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
@@ -26,19 +29,522 @@ function commonPrefix(left: Uint8Array, right: Uint8Array): number {
   return at
 }
 
-function commonSuffix(left: Uint8Array, right: Uint8Array, prefix: number): number {
-  let at = 0
-  while (
-    at + prefix < left.length &&
-    at + prefix < right.length &&
-    left[left.length - 1 - at] === right[right.length - 1 - at]
-  )
-    at += 1
-  return at
-}
-
 function text(value: string): Uint8Array {
   return encodeUtf8(value)
+}
+
+type Parts = ReadonlyMap<string, Uint8Array>
+type Edit = SlideRoute | StructuralEdit
+type Deck = { readonly parts: Parts; readonly runs: readonly RouteRun[] }
+
+const presentationPart = "ppt/presentation.xml"
+const presentationRels = "ppt/_rels/presentation.xml.rels"
+const contentTypesPart = "[Content_Types].xml"
+const firstSlidePart = "ppt/slides/slide1.xml"
+const markedText = "R&D <x> &amp;"
+const emptyBytes = new Uint8Array()
+const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
+const inlineKinds = new Set(["a:r", "a:br", "a:fld"])
+
+let decks: readonly Deck[] = []
+
+beforeAll(async () => {
+  const root = `${process.cwd()}/scripts/pptx-fixtures`
+  const names = fs
+    .readdirSync(root)
+    .filter((name) => name.endsWith(".pptx") && fs.statSync(`${root}/${name}`).size >= 100_000)
+  expect(names.sort()).toEqual(["census-updating-spm.pptx", "doe-heat-pumps.pptx", "nasa-1d-cnn.pptx"])
+  const loaded: Deck[] = []
+  for (const name of names) {
+    const parts = await readParts(fs.readFileSync(`${root}/${name}`))
+    loaded.push({ parts, runs: routeRuns(parts) })
+  }
+  decks = loaded
+}, 30_000)
+
+function runOf(deck: Deck, operation: RouteRun["operation"]): RouteRun {
+  const run = deck.runs.find((item) => item.operation === operation)
+  if (run === undefined) throw new Error(operation)
+  return run
+}
+
+function isProbe(run: { readonly text: string }): boolean {
+  return run.text.startsWith("AirDesignProbe")
+}
+
+function escaped(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+}
+
+function partOf(parts: Parts, name: string): Uint8Array {
+  const bytes = parts.get(name)
+  if (bytes === undefined) throw new Error(name)
+  return bytes
+}
+
+function markup(bytes: Uint8Array): readonly MarkupElement[] {
+  const document = markupDocument(bytes)
+  expect(document.wellFormed).toBe(true)
+  return document.elements
+}
+
+function expectBytes(actual: Uint8Array, expected: Uint8Array) {
+  const at = commonPrefix(actual, expected)
+  const difference =
+    at === actual.length && at === expected.length
+      ? null
+      : {
+          at,
+          actual: decodeUtf8(actual.subarray(at, at + 80)),
+          expected: decodeUtf8(expected.subarray(at, at + 80)),
+        }
+  expect(difference).toBeNull()
+}
+
+function cutOut(bytes: Uint8Array, element: MarkupElement): Uint8Array {
+  return spliceBytes(bytes, [{ start: element.start, end: element.end, next: emptyBytes }])
+}
+
+function insertedAt(bytes: Uint8Array, at: number, xml: Uint8Array): Uint8Array {
+  return spliceBytes(bytes, [{ start: at, end: at, next: xml }])
+}
+
+function movedBefore(bytes: Uint8Array, moving: MarkupElement, target: MarkupElement): Uint8Array {
+  return spliceBytes(bytes, [
+    { start: moving.start, end: moving.end, next: emptyBytes },
+    { start: target.start, end: target.start, next: bytes.slice(moving.start, moving.end) },
+  ])
+}
+
+function required<T>(value: T | undefined, name: string): T {
+  if (value === undefined) throw new Error(name)
+  return value
+}
+
+function childrenOf(children: MarkupChildren, parent: MarkupElement): readonly MarkupElement[] {
+  return children[parent.index] ?? []
+}
+
+function childOf(children: MarkupChildren, parent: MarkupElement, kind: string): MarkupElement | undefined {
+  return childrenOf(children, parent).find((element) => element.kind === kind)
+}
+
+function named(elements: readonly MarkupElement[], kind: string, id: string): MarkupElement {
+  return required(
+    elements.find((element) => element.kind === kind && element.id === id),
+    kind,
+  )
+}
+
+function attribute(element: MarkupElement, name: string): string {
+  return required(element.attributes.find((item) => item.name === name)?.value, name)
+}
+
+function shapeIds(elements: readonly MarkupElement[]): (string | null)[] {
+  return elements.filter((element) => element.kind === "p:cNvPr").map((element) => element.id)
+}
+
+function slideIds(parts: Parts): string[] {
+  return markup(partOf(parts, presentationPart))
+    .filter((element) => element.kind === "p:sldId")
+    .map((element) => required(element.id ?? undefined, "p:sldId"))
+}
+
+function slideParts(parts: Parts): string[] {
+  return [...parts.keys()].filter((name) => /^ppt\/slides\/slide\d+\.xml$/.test(name)).sort()
+}
+
+function topShapes(elements: readonly MarkupElement[], children: MarkupChildren): readonly MarkupElement[] {
+  const tree = required(
+    elements.find((element) => element.kind === "p:spTree"),
+    "p:spTree",
+  )
+  return childrenOf(children, tree).filter((element) => shapeKinds.has(element.kind))
+}
+
+function idOf(children: MarkupChildren, shape: MarkupElement): string {
+  const properties = required(childrenOf(children, shape)[0], "properties")
+  return required(childOf(children, properties, "p:cNvPr")?.id ?? undefined, "p:cNvPr")
+}
+
+function frameOf(
+  children: MarkupChildren,
+  shape: MarkupElement,
+): { readonly holder: MarkupElement; readonly frame: MarkupElement | undefined } {
+  const holder = required(
+    childrenOf(children, shape).find((element) => ["p:spPr", "p:grpSpPr", "p:xfrm"].includes(element.kind)),
+    "p:spPr",
+  )
+  return { holder, frame: holder.kind === "p:xfrm" ? holder : childOf(children, holder, "a:xfrm") }
+}
+
+function ownBox(
+  parts: Parts,
+  kind: "a:off" | "a:ext",
+): { readonly part: string; readonly shape: string; readonly first: number; readonly second: number } {
+  const names = kind === "a:off" ? (["x", "y"] as const) : (["cx", "cy"] as const)
+  for (const part of slideParts(parts)) {
+    const elements = markup(partOf(parts, part))
+    const children = markupChildren(elements)
+    for (const shape of topShapes(elements, children)) {
+      const { frame } = frameOf(children, shape)
+      const own = frame === undefined ? undefined : childOf(children, frame, kind)
+      if (own === undefined) continue
+      return {
+        part,
+        shape: idOf(children, shape),
+        first: Number(attribute(own, names[0])),
+        second: Number(attribute(own, names[1])),
+      }
+    }
+  }
+  throw new Error(kind)
+}
+
+function boxBytes(old: Uint8Array, shapeId: string, kind: "a:off" | "a:ext", asked: Record<string, number>) {
+  const elements = markup(old)
+  const children = markupChildren(elements)
+  const { holder, frame } = frameOf(children, shapeById(elements, shapeId))
+  const own = frame === undefined ? undefined : childOf(children, frame, kind)
+  if (own !== undefined) {
+    const edits: ByteEdit[] = Object.entries(asked).map(([name, number]) => {
+      const attribute = required(
+        own.attributes.find((item) => item.name === name),
+        name,
+      )
+      return { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(String(number)) }
+    })
+    return spliceBytes(old, edits)
+  }
+  const fields = Object.entries(asked)
+    .map(([name, number]) => `${name}="${number}"`)
+    .join(" ")
+  const xml = `<${kind} ${fields}/>`
+  if (frame !== undefined) {
+    const off = childOf(children, frame, "a:off")
+    return insertedAt(old, kind === "a:ext" && off !== undefined ? off.end : frame.openEnd, encodeUtf8(xml))
+  }
+  if (holder.selfClosing) {
+    return spliceBytes(old, [
+      { start: holder.start, end: holder.end, next: encodeUtf8(`<p:spPr><a:xfrm>${xml}</a:xfrm></p:spPr>`) },
+    ])
+  }
+  return insertedAt(old, holder.openEnd, encodeUtf8(`<a:xfrm>${xml}</a:xfrm>`))
+}
+
+function expectText(before: Parts, after: Parts, edit: Extract<Edit, { readonly name: "text" }>) {
+  const old = partOf(before, edit.part)
+  const next = partOf(after, edit.part)
+  const elements = markup(old)
+  const children = markupChildren(elements)
+  const shape = shapeById(elements, edit.shape)
+  const current = shapeTextValue(children, old, shape)
+  const body = required(childOf(children, shape, "p:txBody"), "p:txBody")
+  const paragraphs = childrenOf(children, body).filter((element) => element.kind === "a:p")
+  const edits: ByteEdit[] = []
+  for (const [at, paragraph] of edit.value.entries()) {
+    for (const [index, run] of paragraph.runs.entries()) {
+      if (run.text === current[at]?.runs[index]?.text) continue
+      const inlines = childrenOf(children, required(paragraphs[at], "a:p")).filter((element) =>
+        inlineKinds.has(element.kind),
+      )
+      const holder = required(childOf(children, required(inlines[index], "a:r"), "a:t"), "a:t")
+      edits.push({ start: holder.openEnd, end: holder.closeStart, next: encodeUtf8(escaped(run.text)) })
+    }
+  }
+  expect(edits).toHaveLength(1)
+  expectBytes(next, spliceBytes(old, edits))
+  const read = markup(next)
+  expect(shapeTextValue(markupChildren(read), next, shapeById(read, edit.shape))).toEqual(edit.value)
+}
+
+function expectAppendedShape(old: Uint8Array, next: Uint8Array, kind: string) {
+  const elements = markup(next)
+  const children = markupChildren(elements)
+  const tree = required(
+    elements.find((element) => element.kind === "p:spTree"),
+    "p:spTree",
+  )
+  const added = required(childrenOf(children, tree).at(-1), "shape")
+  expect(added.kind).toBe(kind)
+  expect(added.end).toBe(tree.closeStart)
+  expectBytes(cutOut(next, added), old)
+  expect(shapeIds(markup(old))).not.toContain(idOf(children, added))
+  return { elements, children, added }
+}
+
+function expectAddedText(before: Parts, after: Parts, edit: Extract<Edit, { readonly name: "spTree.add" }>) {
+  const next = partOf(after, edit.part)
+  const { elements, children, added } = expectAppendedShape(partOf(before, edit.part), next, "p:sp")
+  expect(shownText(shapeTextValue(children, next, added))).toBe(edit.text)
+  const holder = required(
+    elements.find((element) => element.kind === "a:t" && element.start > added.start && element.end < added.end),
+    "a:t",
+  )
+  expect(decodeUtf8(next.subarray(holder.openEnd, holder.closeStart))).toBe(escaped(edit.text))
+  const { frame } = frameOf(children, added)
+  const off = required(childOf(children, required(frame, "a:xfrm"), "a:off"), "a:off")
+  const ext = required(childOf(children, required(frame, "a:xfrm"), "a:ext"), "a:ext")
+  expect([attribute(off, "x"), attribute(off, "y"), attribute(ext, "cx"), attribute(ext, "cy")]).toEqual(
+    [edit.x, edit.y, edit.cx, edit.cy].map(String),
+  )
+}
+
+function expectClone(old: Uint8Array, next: Uint8Array, shapeId: string) {
+  const elements = markup(old)
+  const found = shapeById(elements, shapeId)
+  const end = found.end + next.length - old.length
+  expectBytes(spliceBytes(next, [{ start: found.end, end, next: emptyBytes }]), old)
+  const piece = next.slice(found.end, end)
+  const source = old.slice(found.start, found.end)
+  const marks = markup(piece).filter((element) => element.kind === "p:cNvPr")
+  const sourceMarks = markup(source).filter((element) => element.kind === "p:cNvPr")
+  expect(marks).toHaveLength(sourceMarks.length)
+  const restored: ByteEdit[] = marks.map((mark, index) => {
+    const id = required(
+      mark.attributes.find((item) => item.name === "id"),
+      "id",
+    )
+    return {
+      start: id.valueStart,
+      end: id.valueEnd,
+      next: encodeUtf8(required(sourceMarks[index]?.id ?? undefined, "p:cNvPr")),
+    }
+  })
+  expectBytes(spliceBytes(piece, restored), source)
+  const used = new Set(shapeIds(elements))
+  const fresh = marks.map((mark) => mark.id)
+  expect(new Set(fresh).size).toBe(fresh.length)
+  expect(fresh.filter((id) => used.has(id))).toEqual([])
+}
+
+function expectSlideAdded(before: Parts, after: Parts, sourceId: string, copy: boolean) {
+  const oldPresentation = partOf(before, presentationPart)
+  const nextPresentation = partOf(after, presentationPart)
+  const elements = markup(oldPresentation)
+  const source = named(elements, "p:sldId", sourceId)
+  const end = source.end + nextPresentation.length - oldPresentation.length
+  expectBytes(spliceBytes(nextPresentation, [{ start: source.end, end, next: emptyBytes }]), oldPresentation)
+  const piece = markup(nextPresentation.slice(source.end, end))
+  expect(piece.map((element) => element.kind)).toEqual(["p:sldId"])
+  const slide = required(piece[0], "p:sldId")
+  expect(elements.some((element) => element.kind === "p:sldId" && element.id === slide.id)).toBe(false)
+  const oldRels = partOf(before, presentationRels)
+  const nextRels = partOf(after, presentationRels)
+  const relationship = required(
+    markup(nextRels)
+      .filter((element) => element.kind === "Relationship")
+      .at(-1),
+    "Relationship",
+  )
+  expect(attribute(relationship, "Id")).toBe(attribute(slide, "r:id"))
+  expectBytes(cutOut(nextRels, relationship), oldRels)
+  const part = `ppt/${attribute(relationship, "Target")}`
+  expect(before.has(part)).toBe(false)
+  const nextTypes = partOf(after, contentTypesPart)
+  const override = required(
+    markup(nextTypes)
+      .filter((element) => element.kind === "Override")
+      .at(-1),
+    "Override",
+  )
+  expect(attribute(override, "PartName")).toBe(`/${part}`)
+  expectBytes(cutOut(nextTypes, override), partOf(before, contentTypesPart))
+  const written = partOf(after, part)
+  if (copy) expectBytes(written, partOf(before, targetOf(before, source)))
+  else expect(topShapes(markup(written), markupChildren(markup(written)))).toEqual([])
+}
+
+function relationshipOf(parts: Parts, slide: MarkupElement): MarkupElement {
+  const id = attribute(slide, "r:id")
+  return required(
+    markup(partOf(parts, presentationRels)).find(
+      (element) => element.kind === "Relationship" && attribute(element, "Id") === id,
+    ),
+    "Relationship",
+  )
+}
+
+function targetOf(parts: Parts, slide: MarkupElement): string {
+  return `ppt/${attribute(relationshipOf(parts, slide), "Target")}`
+}
+
+function expectSlideRemoved(before: Parts, after: Parts, slideId: string) {
+  const oldPresentation = partOf(before, presentationPart)
+  const slide = named(markup(oldPresentation), "p:sldId", slideId)
+  expectBytes(partOf(after, presentationPart), cutOut(oldPresentation, slide))
+  expectBytes(partOf(after, presentationRels), cutOut(partOf(before, presentationRels), relationshipOf(before, slide)))
+  const oldTypes = partOf(before, contentTypesPart)
+  const partName = `/${targetOf(before, slide)}`
+  const override = required(
+    markup(oldTypes).find((element) => element.kind === "Override" && attribute(element, "PartName") === partName),
+    "Override",
+  )
+  expectBytes(partOf(after, contentTypesPart), cutOut(oldTypes, override))
+}
+
+function expectOnlyWrapped(larger: Uint8Array, smaller: Uint8Array, element: MarkupElement) {
+  const elements = markup(larger)
+  let current: MarkupElement | undefined = element
+  while (current !== undefined) {
+    if (sameBytes(cutOut(larger, current), smaller)) break
+    current = elements[current.parent]
+  }
+  expect(current).toBeDefined()
+}
+
+function sectionByTitle(elements: readonly MarkupElement[], old: readonly MarkupElement[], title: string) {
+  return required(
+    elements.find(
+      (element) =>
+        element.kind === "p14:section" &&
+        attribute(element, "name") === title &&
+        !old.some((item) => item.kind === "p14:section" && item.id === element.id),
+    ),
+    "p14:section",
+  )
+}
+
+function expectInside(before: Parts, after: Parts, edit: Edit) {
+  const oldSlide = "part" in edit ? partOf(before, edit.part) : emptyBytes
+  const nextSlide = "part" in edit ? partOf(after, edit.part) : emptyBytes
+  const oldPresentation = partOf(before, presentationPart)
+  const nextPresentation = partOf(after, presentationPart)
+  switch (edit.name) {
+    case "text":
+      expectText(before, after, edit)
+      return
+    case "move":
+      expectBytes(nextSlide, boxBytes(oldSlide, edit.shape, "a:off", { x: edit.x, y: edit.y }))
+      return
+    case "resize":
+      expectBytes(nextSlide, boxBytes(oldSlide, edit.shape, "a:ext", { cx: edit.cx, cy: edit.cy }))
+      return
+    case "spTree.add":
+      expectAddedText(before, after, edit)
+      return
+    case "spTree.remove":
+      expectBytes(nextSlide, cutOut(oldSlide, shapeById(markup(oldSlide), edit.shape)))
+      return
+    case "spTree.order": {
+      const elements = markup(oldSlide)
+      expectBytes(nextSlide, movedBefore(oldSlide, shapeById(elements, edit.shape), shapeById(elements, edit.before)))
+      return
+    }
+    case "spTree.clone":
+      expectClone(oldSlide, nextSlide, edit.shape)
+      return
+    case "graphicFrame.addTable":
+      expectAppendedShape(oldSlide, nextSlide, "p:graphicFrame")
+      return
+    case "tbl.addRow": {
+      const row = required(markup(oldSlide).filter((element) => element.kind === "a:tr")[edit.row - 1], "a:tr")
+      expectBytes(nextSlide, insertedAt(oldSlide, row.end, oldSlide.slice(row.start, row.end)))
+      return
+    }
+    case "tbl.removeRow": {
+      const row = required(markup(oldSlide).filter((element) => element.kind === "a:tr")[edit.row - 1], "a:tr")
+      expectBytes(nextSlide, cutOut(oldSlide, row))
+      return
+    }
+    case "tbl.orderRow": {
+      const rows = markup(oldSlide).filter((element) => element.kind === "a:tr")
+      expectBytes(
+        nextSlide,
+        movedBefore(oldSlide, required(rows[edit.row - 1], "a:tr"), required(rows[edit.before - 1], "a:tr")),
+      )
+      return
+    }
+    case "sldIdLst.add":
+      expectSlideAdded(before, after, edit.after, false)
+      return
+    case "sldIdLst.clone":
+      expectSlideAdded(before, after, edit.slide, true)
+      return
+    case "sldIdLst.remove":
+      expectSlideRemoved(before, after, edit.slide)
+      return
+    case "sldIdLst.order": {
+      const elements = markup(oldPresentation)
+      expectBytes(
+        nextPresentation,
+        movedBefore(oldPresentation, named(elements, "p:sldId", edit.slide), named(elements, "p:sldId", edit.before)),
+      )
+      return
+    }
+    case "sectionLst.add":
+      expectOnlyWrapped(
+        nextPresentation,
+        oldPresentation,
+        sectionByTitle(markup(nextPresentation), markup(oldPresentation), edit.title),
+      )
+      return
+    case "sectionLst.remove":
+      expectOnlyWrapped(oldPresentation, nextPresentation, named(markup(oldPresentation), "p14:section", edit.section))
+      return
+    case "sectionLst.order": {
+      const elements = markup(oldPresentation)
+      expectBytes(
+        nextPresentation,
+        movedBefore(
+          oldPresentation,
+          named(elements, "p14:section", edit.section),
+          named(elements, "p14:section", edit.before),
+        ),
+      )
+      return
+    }
+    default:
+      throw new Error(edit.name)
+  }
+}
+
+function forwardOrders(parts: Parts): { readonly base: Parts; readonly edit: StructuralEdit }[] {
+  const orders: { base: Parts; edit: StructuralEdit }[] = []
+  const slides = slideIds(parts)
+  orders.push({
+    base: parts,
+    edit: { name: "sldIdLst.order", slide: required(slides[0], "slide"), before: required(slides[2], "slide") },
+  })
+  let sectioned = parts
+  for (const title of ["First", "Second", "Third"]) {
+    sectioned = applyStructuralRoute(sectioned, { name: "sectionLst.add", title })
+  }
+  const sections = markup(partOf(sectioned, presentationPart)).filter((element) => element.kind === "p14:section")
+  orders.push({
+    base: sectioned,
+    edit: {
+      name: "sectionLst.order",
+      section: required(sections[0]?.id ?? undefined, "section"),
+      before: required(sections[2]?.id ?? undefined, "section"),
+    },
+  })
+  let shapes = false
+  let table = false
+  for (const part of slideParts(parts)) {
+    const elements = markup(partOf(parts, part))
+    const children = markupChildren(elements)
+    const top = topShapes(elements, children)
+    const first = top[0]
+    const third = top[2]
+    if (!shapes && first !== undefined && third !== undefined) {
+      shapes = true
+      orders.push({
+        base: parts,
+        edit: { name: "spTree.order", part, shape: idOf(children, first), before: idOf(children, third) },
+      })
+    }
+    const rows = elements.filter((element) => element.kind === "a:tr")
+    const tall = elements.find(
+      (element) =>
+        element.kind === "a:tbl" && childrenOf(children, element).filter((row) => row.kind === "a:tr").length >= 3,
+    )
+    if (table || tall === undefined) continue
+    table = true
+    const row = rows.findIndex((item) => item.parent === tall.index) + 1
+    orders.push({ base: parts, edit: { name: "tbl.orderRow", part, row, before: row + 2 } })
+  }
+  return orders
 }
 
 const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></a:xfrm></p:spPr><p:txBody><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="4" name="Title"/><p:cNvSpPr/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/></p:sp><p:grpSp><p:nvGrpSpPr><p:cNvPr id="10" name="G"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="9" cy="9"/><a:chOff x="0" y="0"/><a:chExt cx="9" cy="9"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="11" name="C"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr></p:sp></p:grpSp><a:tbl><a:tr h="1"><a:tc><a:t>A</a:t></a:tc></a:tr><a:tr h="2"><a:tc><a:t>B</a:t></a:tc></a:tr></a:tbl></p:spTree></p:cSld></p:sld>`
@@ -137,43 +643,87 @@ describe("routeRuns", () => {
     expect(run?.error).toBeNull()
   })
 
-  it("a text write on a real deck changes only the bytes of its own shape", async () => {
-    const root = `${process.cwd()}/scripts/pptx-fixtures`
-    const decks = fs
-      .readdirSync(root)
-      .filter((name) => name.endsWith(".pptx") && fs.statSync(`${root}/${name}`).size >= 100_000)
-    expect(decks.sort()).toEqual(["census-updating-spm.pptx", "doe-heat-pumps.pptx", "nasa-1d-cnn.pptx"])
-    for (const name of decks) {
-      const before = await readParts(fs.readFileSync(`${root}/${name}`))
-      const run = routeRuns(before).find((item) => item.operation === "text")
-      expect(run?.error).toBeNull()
-      const after = run?.parts
-      if (after === undefined || after === null) throw new Error("text run")
-      expect([...after.keys()]).toEqual([...before.keys()])
-      const changed = [...before.keys()].filter((key) => !sameBytes(before.get(key), after.get(key)))
-      expect(changed).toHaveLength(1)
-      const part = changed[0] ?? ""
-      const old = before.get(part) ?? new Uint8Array()
-      const next = after.get(part) ?? new Uint8Array()
-      const prefix = commonPrefix(old, next)
-      const suffix = commonSuffix(old, next, prefix)
-      const document = markupDocument(old)
-      const edited = document.elements.find(
-        (element) =>
-          element.kind === "a:t" &&
-          element.openEnd <= prefix &&
-          element.closeStart >= old.length - suffix &&
-          element.closeStart >= element.openEnd,
-      )
-      expect(edited).toBeDefined()
-      if (edited === undefined) throw new Error("a:t")
-      expect(next.subarray(0, edited.openEnd)).toEqual(old.subarray(0, edited.openEnd))
-      expect(next.subarray(next.length - (old.length - edited.closeStart))).toEqual(old.subarray(edited.closeStart))
-      const delta = next.length - old.length
-      expect(decodeUtf8(next.subarray(edited.openEnd, edited.closeStart + delta))).toMatch(/^AirDesignProbe2?$/)
-      const paragraph = document.elements[edited.parent]?.parent ?? -1
-      const runs = document.elements.filter((element) => element.parent === paragraph && element.kind === "a:r")
-      expect(runs.length).toBeGreaterThanOrEqual(2)
+  it("a text write on a real deck changes only the bytes of its own shape", () => {
+    for (const deck of decks) {
+      const run = runOf(deck, "text")
+      if (run.edit?.name !== "text" || run.parts === null) throw new Error("text run")
+      expect([...run.parts.keys()]).toEqual([...deck.parts.keys()])
+      expect(run.edit.value.some((item) => item.runs.length >= 2 && item.runs.some(isProbe))).toBe(true)
+      expectInside(deck.parts, run.parts, run.edit)
     }
-  }, 30_000)
+  })
+
+  it("every route on a real deck writes only what it asked inside its own part", () => {
+    const seen = new Set<string>()
+    for (const deck of decks) {
+      for (const run of deck.runs) {
+        expect(run.error).toBeNull()
+        if (run.edit === null || run.parts === null) continue
+        seen.add(run.operation)
+        expectInside(deck.parts, run.parts, run.edit)
+      }
+    }
+    expect([...seen].sort()).toEqual(routeOperations.filter((operation) => operation !== "element.export").sort())
+  })
+
+  it("a shape with its own box on a real deck changes only those values", () => {
+    for (const deck of decks) {
+      const move = ownBox(deck.parts, "a:off")
+      const resize = ownBox(deck.parts, "a:ext")
+      const edits: SlideRoute[] = [
+        { name: "move", part: move.part, shape: move.shape, x: move.first + 9525, y: move.second + 9525 },
+        { name: "resize", part: resize.part, shape: resize.shape, cx: resize.first + 9525, cy: resize.second + 9525 },
+      ]
+      for (const edit of edits) expectInside(deck.parts, applyRoute(deck.parts, edit), edit)
+    }
+  })
+
+  it("a forward order on a real deck puts the element just before its target", () => {
+    const seen = new Set<string>()
+    for (const deck of decks) {
+      for (const { base, edit } of forwardOrders(deck.parts)) {
+        seen.add(edit.name)
+        expectInside(base, applyStructuralRoute(base, edit), edit)
+      }
+    }
+    expect([...seen].sort()).toEqual(["sectionLst.order", "sldIdLst.order", "spTree.order", "tbl.orderRow"])
+  })
+
+  it("text with markup characters on a real deck reads back exactly", () => {
+    for (const deck of decks) {
+      const added = runOf(deck, "spTree.add").edit
+      if (added?.name !== "spTree.add") throw new Error("spTree.add run")
+      const shape = { ...added, text: markedText }
+      expectInside(deck.parts, applyStructuralRoute(deck.parts, shape), shape)
+      const written = runOf(deck, "text").edit
+      if (written?.name !== "text") throw new Error("text run")
+      const value = written.value.map((item) => ({
+        ...item,
+        runs: item.runs.map((run) => (isProbe(run) ? { ...run, text: markedText } : run)),
+      }))
+      const edit = { ...written, value }
+      expectInside(deck.parts, applyRoute(deck.parts, edit), edit)
+    }
+  })
+
+  it("a new slide on a real deck takes a free file number when the numbering has a gap", () => {
+    for (const deck of decks) {
+      const ids = slideIds(deck.parts)
+      const gone = ids.find(
+        (slide) => !applyStructuralRoute(deck.parts, { name: "sldIdLst.remove", slide }).has(firstSlidePart),
+      )
+      const source = ids.find((slide) => slide !== gone)
+      if (gone === undefined || source === undefined) throw new Error("slide")
+      const gapped = applyStructuralRoute(deck.parts, { name: "sldIdLst.remove", slide: gone })
+      const edits: StructuralEdit[] = [
+        { name: "sldIdLst.add", after: source },
+        { name: "sldIdLst.clone", slide: source },
+      ]
+      for (const edit of edits) {
+        const after = applyStructuralRoute(gapped, edit)
+        expect(touchMatches(gapped, after, partTouch(gapped, edit))).toBe(true)
+        expectInside(gapped, after, edit)
+      }
+    }
+  })
 })
