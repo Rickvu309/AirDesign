@@ -94,3 +94,51 @@ describe("applyRoute", () => {
     expect(() => applyRoute(before, { name: "resize", part, shape: "2", cx: 1, cy: 1.2 })).toThrow(/emu/)
   })
 })
+
+const shape = (id: string, runs: string): string =>
+  `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1" y="1"/><a:ext cx="5" cy="5"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p>${runs}</a:p></p:txBody></p:sp>`
+const picture = (id: string): string =>
+  `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Picture ${id}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill/><p:spPr><a:xfrm><a:off x="9" y="9"/><a:ext cx="5" cy="5"/></a:xfrm></p:spPr></p:pic>`
+const run = (text: string): string => `<a:r><a:t>${text}</a:t></a:r>`
+
+function edited(tree: string, route: Parameters<typeof applyRoute>[1]): string {
+  return xml(applyRoute(new Map([[part, encodeUtf8(`<p:spTree>${tree}</p:spTree>`)]]), route))
+}
+
+function shownText(slideXml: string): string {
+  return [...slideXml.matchAll(/<a:t(?: [^>]*)?>([^<]*)<\/a:t>/g)].map((match) => match[1]).join("")
+}
+
+describe("applyRoute known faults", () => {
+  it.fails("removes the picture it was asked to remove, not the shape before it", () => {
+    const next = edited(shape("2", run("Keep")) + picture("3"), { name: "remove", part, shape: "3" })
+    expect(next).toContain('<p:cNvPr id="2"')
+    expect(next).not.toContain('<p:cNvPr id="3"')
+  })
+
+  it.fails("moves the picture it was asked to move, not the shape before it", () => {
+    const next = edited(shape("2", run("Keep")) + picture("3"), { name: "move", part, shape: "3", x: 777, y: 777 })
+    expect(next).toContain('<a:off x="1" y="1"/>')
+    expect(next).toContain('<a:off x="777" y="777"/>')
+  })
+
+  it.fails("replaces all the text of a shape that has two runs", () => {
+    const next = edited(shape("2", run("Hello ") + run("world")), { name: "text", part, shape: "2", text: "New" })
+    expect(shownText(next)).toBe("New")
+  })
+
+  it.fails("writes well-formed text when the first run is empty", () => {
+    const next = edited(shape("2", `<a:r><a:t/></a:r>${run("Keep")}`), { name: "text", part, shape: "2", text: "New" })
+    expect(next).not.toContain("<a:t/>New</a:t>")
+  })
+
+  it.fails("keeps a character XML forbids out of the slide", () => {
+    let next = ""
+    try {
+      next = edited(shape("2", run("Old")), { name: "text", part, shape: "2", text: "a\u0001b" })
+    } catch {
+      return
+    }
+    expect(next).not.toContain("\u0001")
+  })
+})
