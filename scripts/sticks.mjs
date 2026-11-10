@@ -30,6 +30,7 @@ const measures = {
 
 export const timedSticks = {
   "check seconds": "scripts/check.mjs",
+  "PowerPoint check seconds": "scripts/pptx-check.mjs",
 }
 
 const record = (root) => JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))
