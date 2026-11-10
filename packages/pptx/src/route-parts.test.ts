@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { markupDocument } from "./element-span.js"
-import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 import { partTouch, routeOperations, routeRuns, touchMatches } from "./route-parts.js"
 
 declare const process: {

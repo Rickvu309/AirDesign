@@ -2,18 +2,19 @@ import type { TextParagraph, TextValue } from "@airdesign/document"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
-import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
-import { applyRoute, oneRunOf, oneRunValue, shapeById } from "./slide-route.js"
+import { applyRoute, oneRunValue, shapeById, textStorable } from "./slide-route.js"
 import { decodedXmlText, markupChildren, oneRunIn, shapeTextValue } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
-  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array; readdirSync(path: string): string[] }
 }
 
-const { readFileSync } = process.getBuiltinModule("node:fs")
+const { readFileSync, readdirSync } = process.getBuiltinModule("node:fs")
 const fixture = (name: string) => `${process.cwd()}/scripts/pptx-fixtures/${name}`
 const part = "ppt/slides/slide1.xml"
 
@@ -414,7 +415,7 @@ describe("oneRunValue", () => {
     ])
   })
 
-  it("offers a box exactly when oneRunValue would write it", () => {
+  it("offers a box exactly when its export would write it", () => {
     fc.assert(
       fc.property(
         fc.oneof(
@@ -424,10 +425,10 @@ describe("oneRunValue", () => {
         fc.constantFrom("2", "99"),
         (body, shape) => {
           const parts = new Map([[part, slideSource(body)]])
-          const offered = oneRunOf(parts, part, shape) !== null
+          const offered = textStorable(parts, part, shape)
           let written = true
           try {
-            oneRunValue(parts, part, shape, "x")
+            applyRoute(parts, { name: "text", part, shape, value: oneRunValue(parts, part, shape, "typed") })
           } catch {
             written = false
           }
@@ -494,6 +495,7 @@ describe("oneRunValue", () => {
 
   it("leaves a field box to be refused by the route with its bytes unchanged", () => {
     const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
+    expect(textStorable(new Map([[part, box]]), part, "2")).toBe(false)
     const saved = Uint8Array.from(box)
     expect(() => edited(box, oneRunValue(new Map([[part, box]]), part, "2", "8"))).toThrow(/text-carried/)
     expect(box).toEqual(saved)
@@ -564,3 +566,26 @@ describe("doe-heat-pumps text boxes", () => {
     expect(parts.get(field)).toEqual(saved)
   }, 30_000)
 })
+
+it("offers exactly the text boxes whose export succeeds on every fixture deck", async () => {
+  const disagreements: string[] = []
+  let offered = 0
+  for (const name of readdirSync(`${process.cwd()}/scripts/pptx-fixtures`).filter((file) => file.endsWith(".pptx"))) {
+    const parts = await readParts(readFileSync(fixture(name)))
+    for (const row of readShapes(parts)) {
+      if (row.text.length === 0) continue
+      const editable = textStorable(parts, row.part, row.shape)
+      let exported = true
+      try {
+        const value = oneRunValue(parts, row.part, row.shape, "typed")
+        applyRoute(parts, { name: "text", part: row.part, shape: row.shape, value })
+      } catch {
+        exported = false
+      }
+      if (editable) offered += 1
+      if (editable !== exported) disagreements.push(`${name} ${row.part}#${row.shape}`)
+    }
+  }
+  expect(disagreements).toEqual([])
+  expect(offered).toBeGreaterThan(0)
+}, 30_000)

@@ -406,3 +406,10 @@ it("does not offer a box with several paragraphs for editing", async () => {
   expect(shown?.getAttribute("contenteditable")).toBe("false")
   expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
 })
+
+it("does not offer a slide-number box for editing", async () => {
+  const window = await offeredWith(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>Keep</a:t></a:fld></a:p>`)
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+  expect(shown?.getAttribute("contenteditable")).toBe("false")
+  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+})

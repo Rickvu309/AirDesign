@@ -3,12 +3,12 @@ import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } fr
 import {
   applyRoute,
   exportPackage,
-  oneRunOf,
   oneRunValue,
   prepareMarkup,
   readPackage,
   readShapes,
   shownText,
+  textStorable,
   type ShapeKind,
 } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
@@ -72,7 +72,7 @@ function paint(
     next.push(id)
   }
   store.setSlides([{ id: slideId("1"), elements: next }])
-  const offered = oneRunOf(parts, node.part, node.shape) !== null
+  const offered = textStorable(parts, node.part, node.shape)
   return {
     ids: next,
     node: offered
