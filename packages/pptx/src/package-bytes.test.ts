@@ -1,5 +1,24 @@
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
-import { carryParts, decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { carryParts, decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
+
+function encode(text: string): Uint8Array {
+  const bytes = new Uint8Array(text.length)
+  for (let index = 0; index < text.length; index += 1) bytes[index] = text.charCodeAt(index)
+  return bytes
+}
+
+function decode(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => String.fromCharCode(byte)).join("")
+}
+
+async function zipOf(parts: Readonly<Record<string, string>>): Promise<Uint8Array> {
+  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter())
+  for (const [name, text] of Object.entries(parts)) {
+    await writer.add(name, new Uint8ArrayReader(encode(text)))
+  }
+  return writer.close()
+}
 
 describe("carryParts", () => {
   it("keeps a relationship whose target is missing", () => {
