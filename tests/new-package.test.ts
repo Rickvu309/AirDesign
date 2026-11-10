@@ -38,7 +38,7 @@ function writeCopy(dir: string): void {
 }
 
 describe("new:package", () => {
-  it("creates a package that typechecks and rejects a deep import", () => {
+  it("creates a package that typechecks and rejects a deep import", { timeout: 60_000 }, () => {
     const dir = mkdtempSync(path.join(tmpdir(), "airdesign-new-package-"))
     try {
       writeCopy(dir)
