@@ -23,10 +23,19 @@ create table deck.saved (
   register jsonb not null,
   owner text not null
 );
+create table deck.once (
+  email text not null,
+  deck text not null,
+  once text not null,
+  revision integer not null,
+  notify text not null,
+  primary key (email, deck, once)
+);
 grant usage on schema session to session;
 grant select, insert, update, delete on session.account, session.code, session.access to session;
 grant usage on schema deck to deck;
 grant select, insert, update, delete on deck.saved to deck;
+grant select, insert, update, delete on deck.once to deck;
 grant usage on schema deck to listen;
 grant select on deck.saved to listen;
 `

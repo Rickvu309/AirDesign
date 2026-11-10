@@ -215,4 +215,25 @@ describe("deck routes", () => {
     expect(committed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
     expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
   })
+
+  it("lands a commit once when the same request is sent twice", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const body = { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "same" }
+    const first = await ask(base, "POST", "/decks/commit", body, cookie)
+    const second = await ask(base, "POST", "/decks/commit", body, cookie)
+    const again = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    expect(first.status).toBe(200)
+    expect(second.json).toEqual(first.json)
+    expect(again.json).toEqual(
+      expect.objectContaining({
+        ok: true,
+        revision: 1,
+        register: expect.objectContaining({
+          landed: [expect.objectContaining({ value: "once" })],
+        }),
+      }),
+    )
+  })
 })
