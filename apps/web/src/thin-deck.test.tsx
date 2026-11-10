@@ -1,3 +1,4 @@
+import { elementId } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
 import { expect, it, vi } from "vitest"
 import { commitEdit } from "./thin-deck"
@@ -11,7 +12,7 @@ async function postsCommit(remote: Remote): Promise<boolean> {
     expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "a" }] })
     return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
   })
-  await remote.commit({ deck: "clean", batch: [{ value: "Hello!", node: "a" }] })
+  await remote.commit({ deck: "clean", batch: [{ value: "Hello!", node: elementId("a") }] })
   return seen[0] === "/decks/commit"
 }
 
