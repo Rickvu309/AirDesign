@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { caughtCount } from "./judge-proof.mjs"
 
 const unproven = /\.(?:fails|skip|todo)\b|\.(?:fixme|fail)\(|\b(?:fails|skip|todo): true/g
 
@@ -41,10 +42,14 @@ const capabilitiesExported = async (root) => {
   }
 }
 
+const plantedBreaks = (root) =>
+  caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))
+
 const measures = {
   "known faults": knownFaults,
   "real decks in the PowerPoint check": realDecks,
   "routes pptx writes": capabilitiesExported,
+  "planted breaks the judge catches": plantedBreaks,
 }
 
 export const timedSticks = {

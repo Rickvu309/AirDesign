@@ -3,6 +3,7 @@ import {
   contents,
   guarded,
   lostCases,
+  lostKinds,
   newPackageFile,
   onlyAddsReferences,
   ownerReasons,
@@ -150,6 +151,37 @@ same("a changed case needs the owner", texts({ changedCases: ["text-page"] }), [
   "The PowerPoint case text-page was changed or removed.",
 ])
 
+const proof = { "duplicate shape id": "caught", "chart data-label range": "missed" }
+same("an unchanged proof needs nobody", lostKinds(proof, proof), [])
+same("a new kind needs nobody", lostKinds(proof, { ...proof, "new caught": "caught", "new missed": "missed" }), [])
+same("a kind now caught needs nobody", lostKinds(proof, { ...proof, "chart data-label range": "caught" }), [])
+same("a kind no longer caught is named", lostKinds(proof, { ...proof, "duplicate shape id": "missed" }), [
+  "duplicate shape id",
+])
+same(
+  "a caught kind that is removed is named, and a missed one is not",
+  lostKinds(proof, { "another kind": "caught" }),
+  ["duplicate shape id"],
+)
+same(
+  "one kind gained does not hide one lost",
+  lostKinds(proof, { "duplicate shape id": "missed", "chart data-label range": "caught" }),
+  ["duplicate shape id"],
+)
+same("a lost kind needs the owner", texts({ changedKinds: ["duplicate shape id"] }), [
+  "The judge proof no longer records duplicate shape id as caught.",
+])
+const caughtStick = "planted breaks the judge catches"
+const proofSticks = { baseSticks: { ...sticks, [caughtStick]: { now: 9, goal: 10 } } }
+same(
+  "a new kind moves the count of caught kinds and its goal freely",
+  texts({ ...proofSticks, headSticks: { ...sticks, [caughtStick]: { now: 9, goal: 11 } } }),
+  [],
+)
+same("the count of caught kinds cannot be removed", texts({ ...proofSticks, headSticks: sticks }), [
+  `The stick ${caughtStick} was removed.`,
+])
+
 const deck = "scripts/pptx-fixtures/nasa-1d-cnn.pptx"
 same(
   "a deck already judged that is swapped, removed or moved is named, and a new one is not",
@@ -159,6 +191,7 @@ same(
     { name: "apps/web/moved.pptx", before: "scripts/pptx-fixtures/clean.pptx", status: "renamed" },
     { name: "scripts/pptx-fixtures/new-deck.pptx", status: "added" },
     { name: "scripts/pptx-fixtures/cases.json", status: "modified" },
+    { name: "scripts/pptx-fixtures/judge-proof.json", status: "modified" },
     { name: "packages/pptx/src/slide-route.ts", status: "modified" },
   ]),
   [deck, "scripts/pptx-fixtures/text.pptx", "scripts/pptx-fixtures/clean.pptx"],
@@ -246,6 +279,7 @@ same("a changed check file is listed and does not block", blocksOf({ changedFile
 same("changed scripts are listed and do not block", blocksOf({ changedScripts: ["package.json"] }), [false])
 same("a changed case blocks", blocksOf({ changedCases: ["text-page"] }), [true])
 same("a swapped deck blocks", blocksOf({ changedFixtures: [deck] }), [true])
+same("a lost kind blocks", blocksOf({ changedKinds: ["duplicate shape id"] }), [true])
 
 const listedOnly = verdict({
   owner: "owner",
