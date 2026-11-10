@@ -163,12 +163,8 @@ function place(register: Register, id: ElementId, body: NodeRegister): Decision 
   })
 }
 
-function visibleAgent(register: NodeRegister): boolean {
-  return register.landed.some((row) => row.visible && row.actor === "agent")
-}
-
 function personEdit(register: NodeRegister, value: string): NodeRegister {
-  const guarded = register.phase === "running" && !visibleAgent(register) ? true : register.guarded
+  const guarded = register.phase === "running" ? true : register.guarded
   const landed = [...register.landed, { actor: "person" as const, value, visible: true }]
   return { ...register, landed, guarded }
 }
@@ -189,15 +185,11 @@ function startRun(register: NodeRegister, runId: string): Edited {
   }
 }
 
-function continuation(register: NodeRegister, readAt: number): boolean {
-  return readAt === register.claimed && register.landed.slice(readAt).every((row) => row.actor === "agent")
-}
-
 function agentEdit(register: NodeRegister, runId: string, readAt: number, value: string): Edited {
   if (register.phase !== "running" || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
-  if (readAt !== version(register) && !continuation(register, readAt)) {
+  if (readAt !== version(register) && readAt !== register.claimed) {
     return { decision: "refuse", code: "stale" }
   }
   if (register.guarded) {

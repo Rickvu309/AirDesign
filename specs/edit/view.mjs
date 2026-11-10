@@ -33,7 +33,7 @@ export const step = (action, from) => {
   if (action === "AgentWrites") return "the agent writes"
   if (action === "AgentWritesAgain") return "the agent writes the fresh row"
   if (action === "AgentKeepsClaim") return "the agent writes the claimed row"
-  if (action === "AgentRefusesStale") return "the claimed read after a person stays stale"
+  if (action === "AgentRefusesProtected") return "the read after a person stays protected"
   if (action === "RunStops") return "the person stops the run"
   if (action === "RunUndoes") return "the person undoes the run"
   return null

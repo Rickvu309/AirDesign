@@ -261,15 +261,15 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
       })
       if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
       else next = decision.register
-    } else if (edge.action === "AgentRefusesStale") {
+    } else if (edge.action === "AgentRefusesProtected") {
       const decision = decide(register, {
         command: "agent",
         runId: run,
         readAt: num(source, "readAt"),
         value: "stale",
       })
-      if (decision.decision !== "refuse" || decision.code !== "stale") {
-        failures.push(`edit ${where} accepted the claimed read`)
+      if (decision.decision !== "refuse" || decision.code !== "person-protected") {
+        failures.push(`edit ${where} accepted the read after a person`)
       } else replayed += 1
     } else {
       failures.push(`edit ${where} is not connected`)

@@ -107,10 +107,10 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "person", guarded: "set" },
         },
         {
-          name: "A person edit keeps the guard after the agent has landed",
+          name: "A person edit after the agent has landed sets the guard",
           command: "person",
           when: { phase: "running", agent: "visible" },
-          effect: { outcome: "person", guarded: "keep" },
+          effect: { outcome: "person", guarded: "set" },
         },
         {
           name: "A person edit keeps the guard",
@@ -182,9 +182,16 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "refuse", code: "stale" },
         },
         {
+          name: "A fresh read after a person row in the run refuses person-protected",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "equal", guarded: true, agent: "visible" },
+          effect: { outcome: "refuse", code: "person-protected" },
+        },
+        {
           name: "An agent edit of a guarded run refuses person-protected",
           command: "agent",
           when: { phase: "running", run: "match", read: "equal", guarded: true },
+          unless: [{ agent: "visible" }],
           effect: { outcome: "refuse", code: "person-protected" },
         },
         {
@@ -200,10 +207,10 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "agent" },
         },
         {
-          name: "A claimed read after a person row refuses stale",
+          name: "A claimed read after a person row refuses person-protected",
           command: "agent",
           when: { phase: "running", run: "match", read: "interrupted" },
-          effect: { outcome: "refuse", code: "stale" },
+          effect: { outcome: "refuse", code: "person-protected" },
         },
         {
           name: "An agent edit lands one row and records claimed",
@@ -558,13 +565,13 @@ function walkAll(): ReturnType<typeof walkOnce> {
   return walked
 }
 
-function keptGuardAfterAgent(name: string): void {
+function setsGuardAfterAgent(name: string): void {
   const register = freezeRegister({
     ...openRegister("floor", "slide"),
     phase: "running",
     runId: "r",
     readAt: 1,
-    guarded: true,
+    guarded: false,
     landed: [{ actor: "agent", value: "wrote", visible: true }],
   })
   const before = copyRegister(register)
@@ -604,13 +611,14 @@ describe("decide", () => {
       if (hit.hits === 0) {
         throw new Error(`${rule.name} was not reached`)
       }
-      if (rule.name === "A person edit keeps the guard after the agent has landed") {
-        keptGuardAfterAgent(rule.name)
+      if (rule.name === "A person edit after the agent has landed sets the guard") {
+        setsGuardAfterAgent(rule.name)
       }
       if (
         rule.name === "A fresh read lands another agent row in the same run" ||
         rule.name === "A later change of the same run with the claimed read lands" ||
-        rule.name === "A claimed read after a person row refuses stale"
+        rule.name === "A claimed read after a person row refuses person-protected" ||
+        rule.name === "A fresh read after a person row in the run refuses person-protected"
       ) {
         expect(hit.hits, rule.name).toBeGreaterThan(0)
       }
