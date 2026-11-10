@@ -491,7 +491,7 @@ it("offers a box with several paragraphs for editing and shows each paragraph", 
 })
 
 it("offers an empty box for editing", async () => {
-  const window = await offeredWith("<a:p><a:endParaRPr lang=\"en-US\"/></a:p>")
+  const window = await offeredWith('<a:p><a:endParaRPr lang="en-US"/></a:p>')
   expect(editableTexts(window)).toEqual(["", "First", "Last", "Other"])
 })
 

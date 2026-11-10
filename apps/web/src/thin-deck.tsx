@@ -1,16 +1,16 @@
 import { readNode } from "@airdesign/catalog"
 import { currentValue, version, writeTextValue, type Kind, type Register, type TextValue } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
-import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ReadShape, type ShapeKind } from "@airdesign/pptx"
 import {
-  Passage,
-  elementId,
-  paintStore,
-  slideId,
-  textValue,
-  type ElementId,
-  type PaintStore,
-} from "@airdesign/render"
+  applyRoute,
+  exportPackage,
+  prepareMarkup,
+  readPackage,
+  readShapes,
+  type ReadShape,
+  type ShapeKind,
+} from "@airdesign/pptx"
+import { Passage, elementId, paintStore, slideId, textValue, type ElementId, type PaintStore } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -64,7 +64,11 @@ function trialValue(value: TextValue): TextValue | null {
   return [{ from: first.from, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
 }
 
-export function valueStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, value: TextValue | null): boolean {
+export function valueStorable(
+  parts: ReadonlyMap<string, Uint8Array>,
+  shape: ReadShape,
+  value: TextValue | null,
+): boolean {
   if (value === null) return false
   try {
     applyRoute(parts, { name: "text", part: shape.part, shape: shape.shape, value })
@@ -153,7 +157,12 @@ export function exportedParts(
     const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
     const shape = named[0]
     if (named.length !== 1 || shape === undefined || shape.locked) throw new Error("text-shape")
-    next = applyRoute(next, { name: "text", part: shape.part, shape: shape.shape, value: textValue(currentValue(body)) })
+    next = applyRoute(next, {
+      name: "text",
+      part: shape.part,
+      shape: shape.shape,
+      value: textValue(currentValue(body)),
+    })
   }
   return next
 }
