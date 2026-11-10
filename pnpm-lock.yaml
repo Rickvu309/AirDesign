@@ -275,6 +275,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@airdesign/live':
+        specifier: workspace:*
+        version: link:../../packages/live
       '@airdesign/theme':
         specifier: workspace:*
         version: link:../../packages/theme
@@ -375,6 +378,22 @@ importers:
         version: 7.0.2
 
   packages/engine:
+    dependencies:
+      '@airdesign/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@airdesign/document':
+        specifier: workspace:*
+        version: link:../document
+    devDependencies:
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
+  packages/live:
     dependencies:
       '@airdesign/catalog':
         specifier: workspace:*
