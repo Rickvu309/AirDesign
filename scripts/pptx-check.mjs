@@ -4,8 +4,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { timeStick } from "./sticks.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const checkStarted = Date.now()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
@@ -96,8 +98,9 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
-if (failed > 0) {
-  console.log(`${failed} pptx checks failed`)
-  process.exit(1)
-}
+const checkSeconds = timeStick(root, "PowerPoint check seconds", checkStarted)
+console.log(checkSeconds.line)
+if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
+if (failed > 0) console.log(`${failed} pptx checks failed`)
+if (failed > 0 || checkSeconds.over !== undefined) process.exit(1)
 console.log(`${cases.length} pptx checks passed`)

@@ -19,6 +19,7 @@ const record = (faults) =>
       "known faults": { now: faults, goal: 0 },
       "real decks in the PowerPoint check": { now: 1, goal: 20 },
       "check seconds": { limit: 40 },
+      "PowerPoint check seconds": { limit: 90 },
     }),
   )
 const faultCall = `it${".fails"}(`
