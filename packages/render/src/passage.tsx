@@ -64,6 +64,7 @@ export function Passage(props: {
     <div
       ref={box}
       contentEditable={props.onEdit !== undefined}
+      style={{ whiteSpace: "pre-wrap" }}
       onCompositionStart={() => {
         composing.current = true
         props.store.beginComposition(props.id)
