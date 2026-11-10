@@ -24,14 +24,28 @@ export default defineConfig({
     retry: 0,
     setupFiles: ["scripts/vitest-assertions.mjs", "packages/pptx/markup-setup.ts"],
     reporters: ["default", "scripts/vitest-sticks.mjs"],
-    include: ["apps/**/*.test.ts", "apps/**/*.test.tsx", "packages/**/*.test.ts", "tests/**/*.test.ts"],
-    exclude: ["tests/browser/**", "**/node_modules/**", "**/dist/**"],
-    globalSetup: ["apps/api/src/postgres-setup.ts"],
     projects: [
       {
+        extends: true,
         test: {
           name: "unit",
-          exclude: ["packages/render/**/*.test.ts"],
+          include: ["apps/**/*.test.ts", "apps/**/*.test.tsx", "packages/**/*.test.ts", "tests/**/*.test.ts"],
+          exclude: [
+            "tests/browser/**",
+            "**/node_modules/**",
+            "**/dist/**",
+            "packages/render/**/*.test.ts",
+            "apps/api/**/*.test.ts",
+          ],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "api",
+          include: ["apps/api/**/*.test.ts"],
+          exclude: ["**/node_modules/**", "**/dist/**"],
+          globalSetup: ["apps/api/src/postgres-setup.ts"],
         },
       },
       {
