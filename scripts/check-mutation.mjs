@@ -35,6 +35,11 @@ const mutants = await new Stryker({
   allowEmpty: true,
 }).runMutationTest()
 
+if (mutants.length === 0) {
+  console.error("Nothing to mutate there. Name a source file or a package folder, not a test.")
+  process.exit(1)
+}
+
 const withStatus = (status) => mutants.filter((mutant) => mutant.status === status)
 const missed = [...withStatus("Survived"), ...withStatus("NoCoverage")]
 
