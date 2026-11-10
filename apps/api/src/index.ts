@@ -1,4 +1,5 @@
 export { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
+export { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 export { DeckListen, type CaughtRevision } from "./listen.js"
 export { mailText, sendWithResend, signLink, type Mail, type Sender } from "./mail.js"
 export { openPool, type Sql } from "./pool.js"

@@ -5,6 +5,7 @@ import { readWatch, type DeckId } from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
 import { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
+import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 import { DeckListen } from "./listen.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
@@ -226,6 +227,25 @@ async function watchRoute(options: ApiOptions, req: IncomingMessage, res: Server
   sendJson(res, 200, { ok: true, deck: parsed.deck, revision })
 }
 
+const deckListRoutes = {
+  "/decks/list": listDecks,
+  "/decks/rename": renameDeck,
+  "/decks/trash": trashDeck,
+  "/decks/restore": restoreDeck,
+  "/decks/delete": deleteDecks,
+}
+
+async function deckListRoute(
+  options: ApiOptions,
+  route: (typeof deckListRoutes)[keyof typeof deckListRoutes],
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
+  sendJson(res, 200, await route(options.deck, await readJson(req), email))
+}
+
 async function handle(
   options: ApiOptions,
   logs: Map<string, CallerLog>,
@@ -280,6 +300,10 @@ async function handle(
   }
   if (method === "POST" && url.pathname === "/decks/watch") {
     await watchRoute(options, req, res)
+    return
+  }
+  if (method === "POST" && Object.hasOwn(deckListRoutes, url.pathname)) {
+    await deckListRoute(options, deckListRoutes[url.pathname as keyof typeof deckListRoutes], req, res)
     return
   }
   res.writeHead(404)

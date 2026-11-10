@@ -19,7 +19,7 @@ from inserted
 const revisionSql = `
 with updated as (
   update deck.saved
-  set revision = $2, register = $3::jsonb
+  set revision = $2, register = $3::jsonb, edited = now()
   where id = $1 and revision = $4
   returning id, revision, register
 )
@@ -32,7 +32,7 @@ const onceReadSql = "select revision, notify from deck.once where email = $1 and
 const revisionOnceSql = `
 with updated as (
   update deck.saved
-  set revision = $2, register = $3::jsonb
+  set revision = $2, register = $3::jsonb, edited = now()
   where id = $1 and revision = $4
   returning id, revision, register
 ),
