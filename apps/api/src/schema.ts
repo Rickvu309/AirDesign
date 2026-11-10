@@ -40,7 +40,7 @@ create table deck.saved (
 );
 create table deck.once (
   email text not null,
-  deck text not null,
+  deck text not null references deck.saved (id) on delete cascade,
   once text not null,
   revision integer not null,
   notify text not null,
