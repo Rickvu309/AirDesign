@@ -261,6 +261,13 @@ describe("live cache", () => {
     })
   })
 
+  it("returns the stored revision when the cursor is behind", async () => {
+    const remote = memoryRemote()
+    await remote.commit({ deck: "deck", batch: [{ value: "one" }] })
+    await remote.commit({ deck: "deck", batch: [{ value: "two" }] })
+    expect(await remote.watch({ deck: "deck", cursor: 0 })).toEqual({ ok: true, deck: "deck", revision: 2 })
+  })
+
   it("stays on device until flush", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.phase("deck")).toBe("confirmed")

@@ -55,7 +55,7 @@ function readOpen(raw: unknown): { ok: true; deck: DeckId } | { ok: false; refus
 function readyRevision(stored: StoredDeck | undefined, cursor: number | null): number | undefined {
   if (stored === undefined) return undefined
   if (cursor === null) return stored.revision
-  if (stored.revision > cursor) return cursor + 1
+  if (stored.revision > cursor) return stored.revision
   return undefined
 }
 
