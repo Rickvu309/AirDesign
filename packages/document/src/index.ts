@@ -1,5 +1,6 @@
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export { replay, unsent, type Queued } from "./replay.js"
+export { limits, overLimit } from "./limits.js"
 export {
   compactChain,
   currentValue,

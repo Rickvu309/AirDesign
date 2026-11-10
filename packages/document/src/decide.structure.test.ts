@@ -129,6 +129,8 @@ function copyNode(node: NodeRegister): NodeRegister {
     guarded: node.guarded,
     claimed: node.claimed,
     stoppedAt: node.stoppedAt,
+    slides: node.slides,
+    bytes: node.bytes,
   }
 }
 

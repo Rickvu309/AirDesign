@@ -1,3 +1,5 @@
+import { overLimit } from "./limits.js"
+
 export type Phase = "idle" | "running" | "stopped" | "undone"
 
 export type Actor = "person" | "agent"
@@ -20,6 +22,8 @@ export type NodeRegister = {
   readonly guarded: boolean
   readonly claimed: number | null
   readonly stoppedAt: number | null
+  readonly slides: number
+  readonly bytes: number
 }
 
 export type Register = {
@@ -32,6 +36,8 @@ export type Register = {
   readonly guarded: boolean
   readonly claimed: number | null
   readonly stoppedAt: number | null
+  readonly slides: number
+  readonly bytes: number
   readonly nodes: readonly NodeName[]
   readonly readNodes: readonly NodeName[] | null
   readonly b: NodeRegister | null
@@ -53,7 +59,7 @@ export type Command =
   | { readonly command: "remove"; readonly node: NodeName }
   | { readonly command: "read"; readonly runId: string; readonly node: NodeName }
 
-export type Refusal = "stale" | "person-protected" | "run-fenced" | "dead" | "present"
+export type Refusal = "stale" | "person-protected" | "run-fenced" | "dead" | "present" | "limit"
 
 export type Decision =
   | { readonly decision: "apply"; readonly register: Register; readonly route: string }
@@ -74,6 +80,8 @@ function openNode(floor: string, route: string): NodeRegister {
     guarded: false,
     claimed: null,
     stoppedAt: null,
+    slides: 1,
+    bytes: 0,
   }
 }
 
@@ -114,6 +122,8 @@ function nodeOf(register: Register): NodeRegister {
     guarded: register.guarded,
     claimed: register.claimed,
     stoppedAt: register.stoppedAt,
+    slides: register.slides,
+    bytes: register.bytes,
   }
 }
 
@@ -203,6 +213,9 @@ function stopRun(register: NodeRegister, runId: string): Edited {
 }
 
 export function decideUndo(register: NodeRegister, runId: string): Edited {
+  if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
+    return { decision: "refuse", code: "limit" }
+  }
   if ((register.phase !== "running" && register.phase !== "stopped") || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
@@ -279,6 +292,9 @@ function editNode(register: Register, node: NodeName, command: Command): Decisio
 }
 
 export function decide(register: Register, command: Command): Decision {
+  if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
+    return refuse("limit")
+  }
   if (command.command === "add") {
     return addNode(register)
   }
