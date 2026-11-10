@@ -1,3 +1,4 @@
+import type { DeckId } from "@airdesign/catalog"
 import { currentValue, elementId } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
@@ -13,9 +14,10 @@ import {
   type CommitResult,
   type Remote,
 } from "./index.js"
-import { writeSlot } from "./store.js"
+import { rowKey, writeRows, writeSlot } from "./store.js"
 
 const node = elementId("258.7")
+const other = elementId("258.8")
 
 function installIndexedDb(): void {
   type Running = { mode: string; started: boolean; start: () => void }
@@ -244,21 +246,21 @@ describe("live cache", () => {
   it("paints the enqueue and does not commit", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    expect(await cache.enqueue("deck", "next")).toEqual({ ok: true, painted: "next" })
+    expect(await cache.enqueue("deck", "next", node, "")).toEqual({ ok: true, painted: "next" })
     expect(commits).toEqual([])
   })
 
   it("drops a refused edit", async () => {
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("deck", "nope", "b")).toEqual({ ok: false, refusal: "dead" })
+    expect(await cache.enqueue("deck", "nope", elementId("b"), "")).toEqual({ ok: false, refusal: "dead" })
     expect(await cache.pending("deck")).toEqual([])
   })
 
   it("flushes the earlier edit before the later one", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    await cache.enqueue("deck", "earlier", "258.7")
-    await cache.enqueue("deck", "later", "258.7")
+    await cache.enqueue("deck", "earlier", node, "")
+    await cache.enqueue("deck", "later", node, "")
     await cache.flush("deck")
     expect(commits).toEqual([["earlier", "later"]])
   })
@@ -316,46 +318,47 @@ describe("live cache", () => {
   it("stays on device until flush", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.phase("deck")).toBe("confirmed")
-    await cache.enqueue("deck", "text", "258.7")
+    await cache.enqueue("deck", "text", node, "")
     expect(await cache.phase("deck")).toBe("on-device")
     await cache.flush("deck")
     expect(await cache.phase("deck")).toBe("confirmed")
     expect(await cache.pending("deck")).toEqual([])
   })
 
-  it("refuses to flush a row that has no node and keeps it pending", async () => {
+  it("drops a stored row that has no node and flushes the row after it", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    await cache.enqueue("deck", "text")
-    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "field" })
-    expect(commits).toEqual([])
-    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["text"])
-    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "field" })
-    expect(await cache.phase("deck")).toBe("on-device")
-    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["text"])
+    await writeRows([{ key: rowKey("deck", "pending", 0), row: { kind: "pending", deck: "deck" as DeckId, order: 0, base: 0, value: "orphan" } }], [])
+    expect(await cache.enqueue("deck", "named", node, "file")).toEqual({ ok: true, painted: "named" })
+    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+    expect(commits).toEqual([["named"]])
+    expect(await cache.pending("deck")).toEqual([])
+    expect((await cache.rows("deck")).map((row) => row.value)).toEqual(["named"])
   })
 
-  it("refuses a flush that mixes a row with no node and sends nothing", async () => {
+  it("drops a stored row on the old node a and flushes the row before it", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    await cache.enqueue("ahead", "named", "258.7")
-    await cache.enqueue("ahead", "orphan")
-    const ahead = await cache.pending("ahead")
-    expect(await cache.flush("ahead")).toEqual({ ok: false, refusal: "field" })
-    expect(commits).toEqual([])
-    expect(await cache.pending("ahead")).toEqual(ahead)
-    await cache.enqueue("behind", "orphan")
-    await cache.enqueue("behind", "named", "258.7")
-    const behind = await cache.pending("behind")
-    expect(await cache.flush("behind")).toEqual({ ok: false, refusal: "field" })
-    expect(commits).toEqual([])
-    expect(await cache.pending("behind")).toEqual(behind)
+    expect(await cache.enqueue("deck", "named", node, "file")).toEqual({ ok: true, painted: "named" })
+    await writeRows(
+      [
+        {
+          key: rowKey("deck", "pending", 1),
+          row: { kind: "pending", deck: "deck" as DeckId, order: 1, base: 1, value: "legacy", node: elementId("a") },
+        },
+      ],
+      [],
+    )
+    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+    expect(commits).toEqual([["named"]])
+    expect(await cache.rows("deck")).toEqual([expect.objectContaining({ kind: "confirmed", value: "named", node })])
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "batch" })
   })
 
   it("refuses to enqueue a malformed element id and writes no row", async () => {
     const cache = connect(memoryRemote())
     const before = await cache.rows("deck")
-    expect(await cache.enqueue("deck", "nope", "258.")).toEqual({ ok: false, refusal: "dead" })
+    expect(await cache.enqueue("deck", "nope", elementId("258."), "")).toEqual({ ok: false, refusal: "dead" })
     expect(await cache.rows("deck")).toEqual(before)
   })
 
@@ -364,11 +367,11 @@ describe("live cache", () => {
     const over = "é".repeat(4001)
     expect(new TextEncoder().encode(over).length).toBe(8002)
     const before = await cache.rows("deck")
-    expect(await cache.enqueue("deck", over, "258.7")).toEqual({ ok: false, refusal: "limit" })
+    expect(await cache.enqueue("deck", over, node, "")).toEqual({ ok: false, refusal: "limit" })
     expect(await cache.rows("deck")).toEqual(before)
     for (const value of ["x".repeat(8001), "€".repeat(2667)]) {
       expect(new TextEncoder().encode(value).length).toBe(8001)
-      expect(await cache.enqueue("deck", value, "258.7")).toEqual({ ok: false, refusal: "limit" })
+      expect(await cache.enqueue("deck", value, node, "")).toEqual({ ok: false, refusal: "limit" })
     }
     expect(await cache.rows("deck")).toEqual(before)
   })
@@ -377,11 +380,11 @@ describe("live cache", () => {
     const cache = connect(memoryRemote())
     const exact = "é".repeat(4000)
     expect(new TextEncoder().encode(exact).length).toBe(8000)
-    expect(await cache.enqueue("deck", exact, "258.7")).toMatchObject({ ok: true })
+    expect(await cache.enqueue("deck", exact, node, "")).toMatchObject({ ok: true })
     expect((await cache.rows("deck")).some((row) => row.value === exact)).toBe(true)
     for (const value of ["x".repeat(8000), `${"€".repeat(2666)}xx`]) {
       expect(new TextEncoder().encode(value).length).toBe(8000)
-      expect(await cache.enqueue("deck", value, "258.7")).toMatchObject({ ok: true })
+      expect(await cache.enqueue("deck", value, node, "")).toMatchObject({ ok: true })
       expect((await cache.rows("deck")).some((row) => row.value === value)).toBe(true)
     }
   })
@@ -389,8 +392,8 @@ describe("live cache", () => {
   it("flushes two elements to their own places", async () => {
     const remote = memoryRemote()
     const cache = connect(remote)
-    await cache.enqueue("deck", "left", "258.7")
-    await cache.enqueue("deck", "right", "258.8")
+    await cache.enqueue("deck", "left", node, "")
+    await cache.enqueue("deck", "right", other, "")
     expect((await cache.flush("deck")).ok).toBe(true)
     const opened = await remote.open({ deck: "deck" })
     expect(opened.ok).toBe(true)
@@ -405,7 +408,7 @@ describe("live cache", () => {
   it("shows an edit on its own element after the cache is opened again", async () => {
     const remote = memoryRemote()
     const cache = connect(remote)
-    await cache.enqueue("deck", "solo", "258.7")
+    await cache.enqueue("deck", "solo", node, "")
     expect((await cache.flush("deck")).ok).toBe(true)
     await deleteDatabase()
     const opened = await connect(remote).openDeck("deck")
@@ -416,15 +419,80 @@ describe("live cache", () => {
     expect(currentValue(opened.register)).not.toBe("solo")
   })
 
+  it("replays an offline queue that interleaves two elements", async () => {
+    const remote = memoryRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "left one", node, "left file")
+    await cache.enqueue("deck", "right one", other, "right file")
+    await cache.enqueue("deck", "left two", node, "left file")
+    expect(await cache.enqueue("deck", "right two", other, "right file")).toEqual({ ok: true, painted: "right two" })
+    const shown = async () => {
+      const opened = await connect(remote).openDeck("deck")
+      if (!opened.ok) return opened
+      const left = opened.register.elements[node]
+      const right = opened.register.elements[other]
+      return {
+        left: left === undefined ? undefined : currentValue(left),
+        right: right === undefined ? undefined : currentValue(right),
+        root: opened.register.landed.length,
+      }
+    }
+    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
+    expect((await cache.flush("deck")).ok).toBe(true)
+    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
+    await deleteDatabase()
+    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
+  })
+
+  it("sends the file text as floor on the first edit of each element only", async () => {
+    const sent: unknown[] = []
+    const remote = memoryRemote()
+    const cache = connect({
+      open: (body) => remote.open(body),
+      watch: (body) => remote.watch(body),
+      commit: async (body) => {
+        sent.push(body.batch)
+        return remote.commit(body)
+      },
+    })
+    await cache.enqueue("deck", "one", node, "left file")
+    expect((await cache.flush("deck")).ok).toBe(true)
+    await cache.enqueue("deck", "two", node, "left file")
+    await cache.enqueue("deck", "three", other, "right file")
+    expect((await cache.flush("deck")).ok).toBe(true)
+    expect(sent).toEqual([
+      [{ value: "one", node, floor: "left file" }],
+      [
+        { value: "two", node },
+        { value: "three", node: other, floor: "right file" },
+      ],
+    ])
+    const opened = await remote.open({ deck: "deck" })
+    if (!opened.ok) throw new Error("open")
+    expect(opened.register.elements[node]?.floor).toBe("left file")
+    expect(opened.register.elements[other]?.floor).toBe("right file")
+  })
+
+  it("opens a new element with the file text it was given", async () => {
+    const cache = connect(memoryRemote())
+    await cache.enqueue("deck", "typed", node, "from file")
+    const opened = await cache.openDeck("deck")
+    if (!opened.ok) throw new Error("open")
+    expect(opened.register.elements[node]?.floor).toBe("from file")
+    expect(opened.pending.map((row) => ({ node: row.node, floor: row.floor, base: row.base }))).toEqual([
+      { node, floor: "from file", base: 0 },
+    ])
+  })
+
   it("paints the value just typed on a new element", async () => {
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("deck", "solo", "258.7")).toEqual({ ok: true, painted: "solo" })
+    expect(await cache.enqueue("deck", "solo", node, "")).toEqual({ ok: true, painted: "solo" })
   })
 
   it("sends 101 pending edits in batches of at most 100", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     expect(await cache.flush("deck")).toMatchObject({ ok: true })
     expect(commits.map((batch) => batch.length)).toEqual([100, 1])
     expect(commits.flat()).toEqual(Array.from({ length: 101 }, (_, index) => `v${index}`))
@@ -435,7 +503,7 @@ describe("live cache", () => {
   it("sends exactly 100 pending edits in one batch", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    for (let index = 0; index < 100; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 100; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     expect(await cache.flush("deck")).toMatchObject({ ok: true })
     expect(commits.map((batch) => batch.length)).toEqual([100])
     expect(await cache.pending("deck")).toEqual([])
@@ -455,7 +523,7 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(sizes).toEqual([100, 1])
     const kept = await cache.rows("deck")
@@ -481,7 +549,7 @@ describe("live cache", () => {
       },
     }
     cache = connect(remote)
-    await cache.enqueue("deck", "only", "258.7")
+    await cache.enqueue("deck", "only", node, "")
     await cache.flush("deck")
     expect(seenWhileCommitting).toEqual(["pending"])
   })
@@ -489,8 +557,8 @@ describe("live cache", () => {
   it("two enqueues at once keep two rows", async () => {
     const cache = connect(memoryRemote())
     const results = await Promise.all([
-      cache.enqueue("deck", "first", "258.7"),
-      cache.enqueue("deck", "second", "258.8"),
+      cache.enqueue("deck", "first", node, ""),
+      cache.enqueue("deck", "second", other, ""),
     ])
     expect(results.map((result) => result.ok)).toEqual([true, true])
     const pending = await cache.pending("deck")
@@ -500,14 +568,14 @@ describe("live cache", () => {
 
   it("refuses a row of 65536 bytes", async () => {
     const cache = connect(memoryRemote())
-    await cache.enqueue("deck", "ok")
+    await cache.enqueue("deck", "ok", node, "")
     const bytes = (value: string) =>
       new TextEncoder().encode(JSON.stringify({ kind: "pending", deck: "deck", order: 1, base: 1, value })).length
     let value = "x".repeat(65536)
     while (bytes(value) > 65536) value = value.slice(0, -1)
     while (bytes(value) < 65536) value += "x"
     expect(bytes(value)).toBe(65536)
-    expect(await cache.enqueue("deck", value)).toEqual({ ok: false, refusal: "limit" })
+    expect(await cache.enqueue("deck", value, node, "")).toEqual({ ok: false, refusal: "limit" })
     expect(await cache.pending("deck")).toEqual([expect.objectContaining({ kind: "pending", order: 0, value: "ok" })])
   })
 
@@ -527,8 +595,8 @@ describe("live cache", () => {
     const cache = connect(remote)
     expect(await remote.open({ deck: "deck" })).toEqual({ ok: false, refusal: "session" })
     expect(await remote.watch({ deck: "deck", cursor: null })).toEqual({ ok: false, refusal: "session" })
-    await cache.enqueue("deck", "earlier", "258.7")
-    await cache.enqueue("deck", "later", "258.7")
+    await cache.enqueue("deck", "earlier", node, "file")
+    await cache.enqueue("deck", "later", node, "file")
     const before = await cache.rows("deck")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(await cache.rows("deck")).toEqual(before)
@@ -556,7 +624,7 @@ describe("live cache", () => {
         body: {
           deck: "deck",
           batch: [
-            { value: "earlier", node },
+            { value: "earlier", node, floor: "file" },
             { value: "later", node },
           ],
         },
@@ -576,7 +644,7 @@ describe("live cache", () => {
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
     })
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("clean", "Hello!", "258.7")).toEqual({ ok: true, painted: "Hello!" })
+    expect(await cache.enqueue("clean", "Hello!", node, "Hello")).toEqual({ ok: true, painted: "Hello!" })
     expect(await connect(httpRemote()).flush("clean")).toEqual({
       ok: true,
       deck: "clean",
@@ -588,7 +656,7 @@ describe("live cache", () => {
         url: "/decks/commit",
         method: "POST",
         credentials: "same-origin",
-        body: { deck: "clean", batch: [{ value: "Hello!", node: "258.7" }] },
+        body: { deck: "clean", batch: [{ value: "Hello!", node: "258.7", floor: "Hello" }] },
       },
     ])
     expect(Object.keys(seen[0]?.body ?? {}).sort()).toEqual(["batch", "deck"])
@@ -600,11 +668,14 @@ describe("live cache", () => {
       expect(String(url)).toBe("/decks/commit")
       expect(String(init.method)).toBe("POST")
       expect(String(init.credentials)).toBe("same-origin")
-      expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "258.7" }] })
+      expect(JSON.parse(String(init.body))).toEqual({
+        deck: "clean",
+        batch: [{ value: "Hello!", node: "258.7", floor: "Hello" }],
+      })
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:9" }))
     })
     const cache = connect(memoryRemote())
-    await cache.enqueue("clean", "Hello!", "258.7")
+    await cache.enqueue("clean", "Hello!", node, "Hello")
     expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.pending("clean")).map((row) => ({ value: row.value, node: row.node }))).toEqual([
       { value: "Hello!", node: "258.7" },
@@ -635,7 +706,7 @@ describe("live cache", () => {
       commit: async () => ({ ok: true, deck: "deck", revision: 1, key: "deck:9" }) as CommitResult,
     }
     const cache = connect(remote)
-    await cache.enqueue("deck", "hi", "258.7")
+    await cache.enqueue("deck", "hi", node, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "payload" })
     expect(await cache.phase("deck")).toBe("on-device")
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["hi"])
@@ -646,14 +717,15 @@ describe("live cache", () => {
     const cache = connect(remote)
     await remote.open({ deck: "deck" })
     await remote.commit({ deck: "deck", batch: [{ value: "kept", node }] })
-    await cache.enqueue("deck", "lost")
+    await cache.enqueue("deck", "lost", node, "")
     await deleteDatabase()
     const opened = await cache.openDeck("deck")
     expect(opened.ok).toBe(true)
     if (!opened.ok) return
     expect(opened.pending).toEqual([])
     expect(opened.confirmed.map((row) => row.value)).toEqual(["kept"])
-    expect(opened.register.landed.map((row) => row.value)).toEqual(["kept"])
+    expect(opened.register.landed).toEqual([])
+    expect(opened.register.elements[node]?.landed.map((row) => row.value)).toEqual(["kept"])
   })
 
   it("splits a large register into rows under 65536 bytes", async () => {
@@ -668,7 +740,7 @@ describe("live cache", () => {
     for (const row of opened.confirmed) {
       expect(new TextEncoder().encode(JSON.stringify(row)).length).toBeLessThan(65536)
     }
-    expect(opened.register.landed.map((row) => row.value)).toEqual([value])
+    expect(opened.register.elements[node]?.landed.map((row) => row.value)).toEqual([value])
   })
 
   it("stores one part for the same bytes", async () => {
@@ -683,38 +755,52 @@ describe("live cache", () => {
 
   it("keeps the register when the owner refuses", async () => {
     const cache = connect(ownerRemote())
-    expect(await cache.enqueue("deck", "kept", "a")).toEqual({ ok: true, painted: "kept" })
+    expect(await cache.enqueue("deck", "kept", node, "")).toEqual({ ok: true, painted: "kept" })
     const before = await cache.rows("deck")
     const opened = await cache.openDeck("deck")
     expect(opened.ok).toBe(true)
     if (!opened.ok) return
-    expect(opened.register.landed.map((row) => row.value)).toEqual(["kept"])
+    expect(opened.register.elements[node]?.landed.map((row) => row.value)).toEqual(["kept"])
     expect(await cache.rows("deck")).toEqual(before)
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "owner" })
     expect(await cache.rows("deck")).toEqual(before)
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["kept"])
   })
 
-  it("stores a deck's parts beside node a", async () => {
+  it("stores a deck's parts with names and hashes only", async () => {
     installParts()
     const bytes = new Uint8Array([9, 8, 7])
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
-    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, bytes]]), file: new Uint8Array([5]), nodes })
+    const slide = "ppt/slides/slide1.xml"
+    const saved = await putParts("clean", { parts: new Map([[slide, bytes]]), file: new Uint8Array([5]) })
     expect(saved.ok).toBe(true)
     const read = await getParts("clean")
     expect(read.ok).toBe(true)
     if (!read.ok) return
-    expect(read.nodes).toEqual(nodes)
-    expect(Array.from(read.parts.get(nodes.a.part) ?? [])).toEqual([9, 8, 7])
+    expect(Object.keys(read).sort()).toEqual(["file", "ok", "parts"])
+    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
+  })
+
+  it("reads an old part row that still carries a node table", async () => {
+    installParts()
+    const slide = "ppt/slides/slide1.xml"
+    await writeSlot("clean\u0001", {
+      names: { [slide]: await putPart(new Uint8Array([9, 8, 7])) },
+      file: await putPart(new Uint8Array([5])),
+      nodes: { a: { part: slide, shape: "2" } },
+    })
+    const read = await getParts("clean")
+    expect(read.ok).toBe(true)
+    if (!read.ok) return
+    expect(Object.keys(read).sort()).toEqual(["file", "ok", "parts"])
+    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
+    expect(Array.from(read.file)).toEqual([5])
   })
 
   it("refuses a part list of 65536 bytes", async () => {
     installParts()
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
     const saved = await putParts("clean", {
       parts: new Map([["n".repeat(70_000), new Uint8Array([1])]]),
       file: new Uint8Array([5]),
-      nodes,
     })
     expect(saved).toEqual({ ok: false, refusal: "limit" })
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
@@ -727,7 +813,6 @@ describe("live cache", () => {
     const slide = "ppt/slides/slide1.xml"
     const copy = "ppt/slides/slide2.xml"
     const notes = "ppt/notesSlides/notesSlide1.xml"
-    const nodes = { a: { part: slide, shape: "2" } }
     const saved = await putParts("clean", {
       parts: new Map<string, Uint8Array>([
         [slide, shared],
@@ -735,7 +820,6 @@ describe("live cache", () => {
         [notes, other],
       ]),
       file: shared,
-      nodes,
     })
     expect(saved.ok).toBe(true)
     const sha256 = async (bytes: Uint8Array) => {
@@ -766,7 +850,6 @@ describe("live cache", () => {
     expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
     expect(Array.from(read.parts.get(copy) ?? [])).toEqual([9, 8, 7])
     expect(Array.from(read.parts.get(notes) ?? [])).toEqual([255, 0, 128])
-    expect(read.nodes).toEqual(nodes)
     expect(files.size).toBe(2)
     expect([...files.keys()].sort()).toEqual(stored)
     for (const [hash, bytes] of written) expect(files.get(hash)).toBe(bytes)
@@ -777,13 +860,10 @@ describe("live cache", () => {
     const slide = "ppt/slides/slide1.xml"
     const notes = "ppt/notesSlides/notesSlide1.xml"
     const layout = "ppt/slideLayouts/slideLayout1.xml"
-    const cleanNodes = { a: { part: slide, shape: "2" } }
-    const otherNodes = { a: { part: notes, shape: "5" } }
     const blank = "ppt/media/blank.bin"
     const stale = await putParts("other", {
       parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
       file: new Uint8Array([1]),
-      nodes: cleanNodes,
     })
     const clean = await putParts("clean", {
       parts: new Map<string, Uint8Array>([
@@ -791,7 +871,6 @@ describe("live cache", () => {
         [layout, new Uint8Array([3])],
       ]),
       file: new Uint8Array([2]),
-      nodes: cleanNodes,
     })
     const other = await putParts("other", {
       parts: new Map<string, Uint8Array>([
@@ -800,7 +879,6 @@ describe("live cache", () => {
         [blank, new Uint8Array()],
       ]),
       file: new Uint8Array([3]),
-      nodes: otherNodes,
     })
     expect(clean.ok).toBe(true)
     expect(stale.ok).toBe(true)
@@ -816,21 +894,17 @@ describe("live cache", () => {
     expect([...readClean.parts.keys()]).toEqual([slide, layout])
     expect(Array.from(readClean.parts.get(slide) ?? [])).toEqual([9, 8, 7])
     expect(Array.from(readClean.parts.get(layout) ?? [])).toEqual([3])
-    expect(readClean.nodes).toEqual(cleanNodes)
     expect([...readOther.parts.keys()]).toEqual([slide, notes, blank])
     expect(Array.from(readOther.parts.get(slide) ?? [])).toEqual([4, 5])
     expect(Array.from(readOther.parts.get(notes) ?? [])).toEqual([6])
     expect(readOther.parts.get(blank)?.byteLength).toBe(0)
-    expect(readOther.nodes).toEqual(otherNodes)
   })
 
   it("answers absent for parts after the database is deleted", async () => {
     installParts()
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
     const saved = await putParts("clean", {
-      parts: new Map([[nodes.a.part, new Uint8Array([9, 8, 7])]]),
+      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9, 8, 7])]]),
       file: new Uint8Array([1]),
-      nodes,
     })
     expect(saved.ok).toBe(true)
     await deleteDatabase()
@@ -839,9 +913,8 @@ describe("live cache", () => {
 
   it("reads a deck's opened file back after a new connect", async () => {
     installParts()
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
     const file = new Uint8Array([80, 75, 3, 4, 200, 1])
-    await putParts("clean", { parts: new Map([[nodes.a.part, new Uint8Array([9])]]), file, nodes })
+    await putParts("clean", { parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]), file })
     await connect(memoryRemote()).openDeck("clean")
     const read = await getParts("clean")
     expect(read.ok).toBe(true)
@@ -851,16 +924,13 @@ describe("live cache", () => {
 
   it("keeps each deck's own opened file", async () => {
     installParts()
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
     await putParts("first", {
-      parts: new Map([[nodes.a.part, new Uint8Array([9])]]),
+      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]),
       file: new Uint8Array([1, 1]),
-      nodes,
     })
     await putParts("second", {
-      parts: new Map([[nodes.a.part, new Uint8Array([9])]]),
+      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]),
       file: new Uint8Array([2, 2]),
-      nodes,
     })
     const first = await getParts("first")
     const second = await getParts("second")
@@ -870,8 +940,7 @@ describe("live cache", () => {
 
   it("answers absent for a row without the opened file", async () => {
     installParts()
-    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
-    await writeSlot("clean\u0001", { names: { [nodes.a.part]: await putPart(new Uint8Array([9])) }, nodes })
+    await writeSlot("clean\u0001", { names: { ["ppt/slides/slide1.xml"]: await putPart(new Uint8Array([9])) } })
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
 
@@ -888,7 +957,7 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 201; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 201; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(sizes).toEqual([100, 100])
     expect(await cache.pending("deck")).toHaveLength(101)
@@ -908,7 +977,7 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.rows("deck")).filter((row) => row.kind === "confirmed")).toHaveLength(100)
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["v100"])
@@ -927,7 +996,7 @@ describe("live cache", () => {
       },
     }
     const cache = connect(remote)
-    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, node, "")
     const result = await cache.flush("deck")
     expect(answers).toHaveLength(2)
     expect(result).toEqual(answers[1])

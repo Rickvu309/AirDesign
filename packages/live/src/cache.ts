@@ -8,7 +8,9 @@ import {
   replay,
   unsent,
   version,
+  type ElementId,
   type NodeRegister,
+  type Queued,
   type Register,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
@@ -79,26 +81,59 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
   return into
 }
 
-function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly PendingRow[]): Register {
-  const seeded = logicalValues(confirmed).map((value, index) => ({ base: index, value }))
-  const queued = pending.map((row) => ({ base: row.base, value: row.value }))
-  return replay(replay(openRegister("", deck), seeded), queued)
+type WiredRow = PendingRow & { readonly node: ElementId }
+
+function wired(row: PendingRow): row is WiredRow {
+  return readNode(row.node) !== undefined
 }
 
-function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: PendingRow[] } {
+function opened(register: Register, node: ElementId | undefined, floor: string): Register {
+  if (node === undefined || register.nodes.includes(node)) return register
+  const decision = decide(register, { command: "add", node, floor, route: register.route })
+  return decision.decision === "apply" ? decision.register : register
+}
+
+function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: readonly WiredRow[]): Register {
+  let register = openRegister("", deck)
+  const versions = new Map<string, number>()
+  const seeded: Queued[] = []
+  for (const row of logicalValues(confirmed)) {
+    register = opened(register, row.node, "")
+    if (row.node !== undefined && !register.nodes.includes(row.node)) continue
+    const base = versions.get(row.node ?? "") ?? 0
+    versions.set(row.node ?? "", base + 1)
+    seeded.push(row.node === undefined ? { base, value: row.value } : { base, value: row.value, node: row.node })
+  }
+  for (const row of pending) register = opened(register, row.node, row.floor ?? "")
+  const queued = pending
+    .filter((row) => register.nodes.includes(row.node))
+    .map((row) => ({ base: row.base, value: row.value, node: row.node }))
+  return replay(replay(register, seeded), queued)
+}
+
+function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: WiredRow[] } {
   const confirmed = rows.filter(isConfirmed).sort((left, right) => left.revision - right.revision)
-  const pending = rows.filter(isPending).sort((left, right) => left.order - right.order)
+  const pending = rows
+    .filter(isPending)
+    .filter(wired)
+    .sort((left, right) => left.order - right.order)
   return { confirmed, pending }
 }
 
-type WiredRow = PendingRow & { readonly node: NonNullable<PendingRow["node"]> }
-
-function wired(row: PendingRow): row is WiredRow {
-  return row.node !== undefined
+async function readDeck(deck: DeckId): Promise<StoredRow[]> {
+  const rows = await readRows(deck)
+  const dropped = rows.filter(isPending).filter((row) => !wired(row))
+  if (dropped.length === 0) return rows
+  await writeRows(
+    [],
+    dropped.map((row) => rowKey(deck, "pending", row.order)),
+  )
+  return rows.filter((row) => !isPending(row) || wired(row))
 }
 
 function wireOf(row: WiredRow): WireEdit {
-  return { value: row.value, node: row.node }
+  if (row.floor === undefined) return { value: row.value, node: row.node }
+  return { value: row.value, node: row.node, floor: row.floor }
 }
 
 function view(
@@ -121,56 +156,45 @@ function view(
 
 export function connect(remote: Remote) {
   return {
-    async enqueue(deck: string, value: string, node?: string): Promise<EnqueueResult> {
+    async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const id = node === undefined ? undefined : elementId(node)
       const named = readNode(node)
+      if (named === undefined) return { ok: false, refusal: "dead" }
       return changeRows<EnqueueResult>(parsed.deck, (rows) => {
         const { confirmed, pending } = split(rows)
-        const register = played(parsed.deck, confirmed, pending)
-        let editing = register
-        if (named !== undefined && !editing.nodes.includes(named)) {
-          const opened = decide(editing, {
-            command: "add",
-            node: named,
-            floor: editing.floor,
-            route: editing.route,
-          })
-          if (opened.decision === "refuse") return { puts: [], result: { ok: false, refusal: opened.code } }
-          editing = opened.register
+        let editing = played(parsed.deck, confirmed, pending)
+        let first: string | undefined
+        if (!editing.nodes.includes(named)) {
+          const added = decide(editing, { command: "add", node: named, floor, route: editing.route })
+          if (added.decision === "refuse") return { puts: [], result: { ok: false, refusal: added.code } }
+          editing = added.register
+          first = floor
         }
-        const decision = decide(
-          editing,
-          id === undefined ? { command: "person", value } : { command: "person", value, node: id },
-        )
+        const decision = decide(editing, { command: "person", value, node: named })
         if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
         if (textBytes(value) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
-        const order = pending.reduce((max, row) => Math.max(max, row.order + 1), 0)
-        const row = pendingRow(parsed.deck, order, version(register), value, id)
-        const body = id === undefined ? undefined : decision.register.elements[id]
+        const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
+        const before = editing.elements[named]
+        const base = before === undefined ? 0 : version(before)
+        const row = pendingRow(parsed.deck, order, base, value, named, first)
+        const body = decision.register.elements[named]
         return {
           puts: [{ key: rowKey(parsed.deck, "pending", order), row }],
-          result: { ok: true, painted: currentValue(body ?? decision.register) },
+          result: { ok: true, painted: body === undefined ? value : currentValue(body) },
         }
       })
     },
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const rows = await readRows(parsed.deck)
-      const { confirmed, pending } = split(rows)
+      const { confirmed, pending } = split(await readDeck(parsed.deck))
       if (pending.length === 0) return { ok: false, refusal: "batch" }
       const sending = unsent(pending, 0)
-      const wiredRows: WiredRow[] = []
-      for (const row of sending) {
-        if (!wired(row)) return { ok: false, refusal: "field" }
-        wiredRows.push(row)
-      }
       let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
       let result: CommitResult = { ok: false, refusal: "batch" }
-      for (let start = 0; start < wiredRows.length; start += batchSize) {
-        const rowsInBatch = wiredRows.slice(start, start + batchSize)
+      for (let start = 0; start < sending.length; start += batchSize) {
+        const rowsInBatch = sending.slice(start, start + batchSize)
         result = await remote.commit({ deck: parsed.deck, batch: rowsInBatch.map(wireOf) })
         if (!result.ok) return result
         if (result.deck !== parsed.deck || result.key !== `${parsed.deck}:${result.revision}`) {
@@ -188,7 +212,7 @@ export function connect(remote: Remote) {
     async openDeck(deck: string): Promise<OpenDeckResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
-      const rows = await readRows(parsed.deck)
+      const rows = await readDeck(parsed.deck)
       if (rows.length > 0) return { ok: true, ...view(parsed.deck, rows) }
       const opened: OpenResult = await remote.open({ deck: parsed.deck })
       if (!opened.ok) return opened
@@ -204,18 +228,18 @@ export function connect(remote: Remote) {
     async phase(deck: string): Promise<LivePhase> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return "confirmed"
-      const rows = await readRows(parsed.deck)
+      const rows = await readDeck(parsed.deck)
       return rows.some(isPending) ? "on-device" : "confirmed"
     },
     async pending(deck: string): Promise<readonly PendingRow[]> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return []
-      return split(await readRows(parsed.deck)).pending
+      return split(await readDeck(parsed.deck)).pending
     },
     async rows(deck: string): Promise<readonly StoredRow[]> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return []
-      return readRows(parsed.deck)
+      return readDeck(parsed.deck)
     },
     async watch(deck: string, cursor: number | null): Promise<WatchResult> {
       const parsed = readDeckId(deck)

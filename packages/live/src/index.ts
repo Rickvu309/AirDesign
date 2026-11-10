@@ -1,5 +1,5 @@
 export { connect, type EnqueueResult, type LivePhase, type OpenDeckResult } from "./cache.js"
-export { getPart, getParts, putPart, putParts, type DeckParts, type PartsResult, type ShapeRef } from "./part.js"
+export { getPart, getParts, putPart, putParts, type DeckParts, type PartsResult } from "./part.js"
 export {
   httpRemote,
   memoryRemote,
