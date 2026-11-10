@@ -1,86 +1,54 @@
-import type { Sql } from "./pool.js"
+import type { Client } from "pg"
 
-export const schemaSql = `
-create schema session;
-create schema deck;
-revoke all on schema session from public;
-revoke all on schema deck from public;
-create table session.account (
-  email text primary key
-);
-create table session.code (
-  email text primary key,
-  code text not null,
-  token text not null unique,
-  issued timestamptz not null,
-  misses integer not null
-);
-create table session.access (
-  token text primary key,
-  email text not null,
-  issued timestamptz not null
-);
-create table session.sent (
-  id bigint generated always as identity primary key,
-  email text not null,
-  code text not null,
-  token text not null,
-  issued timestamptz not null,
-  delivered boolean not null default false
-);
-create table session.oauth_client (
-  id text primary key,
-  name text,
-  redirect_uris text[] not null
-);
-create table session.oauth_grant (
-  id text primary key,
-  principal text not null,
-  code text not null check (code in ('open', 'used')),
-  generation integer not null,
-  revoked boolean not null,
-  client_id text not null references session.oauth_client (id),
-  redirect_uri text not null,
-  challenge text not null,
-  code_hash text not null unique,
-  code_expires double precision not null
-);
-create table session.oauth_token (
-  hash text primary key,
-  grant_id text not null references session.oauth_grant (id),
-  generation integer not null,
-  kind text not null check (kind in ('access', 'refresh')),
-  expires double precision
-);
-create table deck.saved (
-  id text primary key,
-  revision integer not null,
-  register jsonb not null,
-  owner text not null,
-  name text not null default '',
-  created timestamptz not null default now(),
-  edited timestamptz not null default now(),
-  trashed timestamptz
-);
-create table deck.once (
-  email text not null,
-  deck text not null references deck.saved (id) on delete cascade,
-  once text not null,
-  revision integer not null,
-  notify text not null,
-  primary key (email, deck, once)
-);
-grant usage on schema session to session;
-grant select, insert, update, delete on session.account, session.code, session.access, session.sent to session;
-grant usage, select on all sequences in schema session to session;
-grant select, insert, update on session.oauth_client, session.oauth_grant, session.oauth_token to session;
-grant usage on schema deck to deck;
-grant select, insert, update, delete on deck.saved to deck;
-grant select, insert, update, delete on deck.once to deck;
-grant usage on schema deck to listen;
-grant select on deck.saved to listen;
-`
+import { migrations, type Migration } from "./migrations.js"
 
-export async function applySchema(db: Sql): Promise<void> {
-  await db.query(schemaSql)
+export const migrationLock = 720481136
+
+export type Applied = { readonly applied: number; readonly at: number }
+
+async function underLock<T>(db: Client, work: () => Promise<T>): Promise<T> {
+  await db.query("begin")
+  try {
+    await db.query("select pg_advisory_xact_lock($1)", [migrationLock])
+    const result = await work()
+    await db.query("commit")
+    return result
+  } catch (error) {
+    await db.query("rollback").catch(() => undefined)
+    throw error
+  }
+}
+
+async function prepareRecord(db: Client): Promise<void> {
+  const found = await db.query<{ recorded: boolean; built: boolean }>(
+    `select to_regclass('setup.migration') is not null as recorded,
+      exists (select 1 from pg_namespace where nspname = 'session') as built`,
+  )
+  if (found.rows[0]?.recorded === true) return
+  await db.query(`
+    create schema if not exists setup;
+    create table setup.migration (
+      id integer primary key,
+      applied timestamptz not null default now()
+    );
+  `)
+  if (found.rows[0]?.built === true) await db.query("insert into setup.migration (id) values (1)")
+}
+
+async function applyMigration(db: Client, migration: Migration): Promise<boolean> {
+  const found = await db.query("select 1 from setup.migration where id = $1", [migration.id])
+  if (found.rowCount !== 0) return false
+  await db.query(migration.sql)
+  await db.query("insert into setup.migration (id) values ($1)", [migration.id])
+  return true
+}
+
+export async function applySchema(db: Client, list: readonly Migration[] = migrations): Promise<Applied> {
+  await underLock(db, () => prepareRecord(db))
+  let applied = 0
+  for (const migration of list) {
+    if (await underLock(db, () => applyMigration(db, migration))) applied += 1
+  }
+  const counted = await db.query<{ at: number }>("select count(*)::integer as at from setup.migration")
+  return { applied, at: counted.rows[0]?.at ?? 0 }
 }
