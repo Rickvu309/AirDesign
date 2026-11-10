@@ -25,13 +25,16 @@ export const seededRandom = (seed) => {
   return { next, below, between, pick, shuffled, word }
 }
 
-export const seedFrom = ({ chosen, commit }) => {
-  if (chosen === undefined || chosen === "") return Number.parseInt(commit.slice(0, 8), 16)
+const wholeSeed = (seed) => Number.isInteger(seed) && seed >= 0 && seed <= 4294967295
+
+export const seedFrom = (chosen) => {
+  if (chosen === undefined || chosen === "") return { mode: "list" }
+  if (chosen === "random") return { mode: "random" }
   const seed = Number(chosen)
-  if (!Number.isInteger(seed) || seed < 0 || seed > 4294967295) {
-    throw new Error(`JUDGE_SEED must be a whole number from 0 to 4294967295, and it is ${chosen}.`)
+  if (!wholeSeed(seed)) {
+    throw new Error(`JUDGE_SEED must be a whole number from 0 to 4294967295, or random, and it is ${chosen}.`)
   }
-  return seed
+  return { mode: "one", seed }
 }
 
 export const sampleSeed = (seed, kind, sample) => {
@@ -43,6 +46,37 @@ export const sampleSeed = (seed, kind, sample) => {
 }
 
 export const replay = (seed) => `seed ${seed}, replay with JUDGE_SEED=${seed} pnpm check:pptx`
+
+const knownRow = (row) =>
+  wholeSeed(row?.seed) && typeof row.kind === "string" && typeof row.deck === "string" && typeof row.what === "string"
+
+export const readSeedList = (text) => {
+  const parsed = JSON.parse(text)
+  if (!Array.isArray(parsed.seeds) || parsed.seeds.length === 0 || parsed.seeds.some((seed) => !wholeSeed(seed))) {
+    throw new Error("The seed list needs at least one whole-number seed.")
+  }
+  if (!Array.isArray(parsed.known) || parsed.known.some((row) => !knownRow(row))) {
+    throw new Error("The seed list needs known failures with a seed, kind, deck and what.")
+  }
+  return { seeds: parsed.seeds, known: parsed.known }
+}
+
+export const seedsFor = ({ chosen, list, draw }) => {
+  const choice = seedFrom(chosen)
+  if (choice.mode === "list") {
+    return { seeds: list.seeds, known: list.known, chosen: false, announce: list.seeds.map((seed) => replay(seed)) }
+  }
+  if (choice.mode === "random") {
+    const seed = draw() >>> 0
+    return { seeds: [seed], known: [], chosen: true, announce: [`random ${replay(seed)}`] }
+  }
+  return {
+    seeds: [choice.seed],
+    known: list.known.filter((row) => row.seed === choice.seed),
+    chosen: true,
+    announce: [replay(choice.seed)],
+  }
+}
 
 class NoPlace extends Error {}
 
@@ -364,10 +398,14 @@ export const caughtCount = (recorded) => ({
 
 const sampleLine = (sample) => `${sample.deck}, ${sample.what}`
 
-export const proofFailures = ({ recorded, judged, seed }) => {
+const samePlace = (sample, row) => row.kind === sample.kind && row.deck === sample.deck && row.what === sample.what
+
+export const proofFailures = ({ recorded, judged, seed, known = [], chosen = false }) => {
   const lines = []
   const measured = kindVerdicts(judged)
   const again = replay(seed)
+  const listed = known.filter((row) => row.seed === seed)
+  const missedNote = chosen ? `Fix the cause, then add the seed to the list. ${again}` : again
   for (const [kind, verdict] of Object.entries(measured)) {
     const record = recorded[kind]
     if (record !== "caught" && record !== "missed") {
@@ -376,7 +414,8 @@ export const proofFailures = ({ recorded, judged, seed }) => {
     }
     if (record === "caught" && verdict === "missed") {
       for (const sample of judged.filter((each) => each.kind === kind && each.accepted)) {
-        lines.push(`The judge missed ${kind}, recorded caught: ${sampleLine(sample)}. ${again}`)
+        if (listed.some((row) => samePlace(sample, row))) continue
+        lines.push(`The judge missed ${kind}, recorded caught: ${sampleLine(sample)}. ${missedNote}`)
       }
     }
     if (record === "missed" && verdict === "caught") {
@@ -392,6 +431,12 @@ export const proofFailures = ({ recorded, judged, seed }) => {
     if (!sample.benign || sample.accepted) continue
     lines.push(
       `The judge rejected ${sample.kind}, an edit that leaves the file valid: ${sampleLine(sample)}: ${sample.reason}. ${again}`,
+    )
+  }
+  for (const row of listed) {
+    if (judged.some((sample) => sample.accepted && samePlace(sample, row))) continue
+    lines.push(
+      `The judge caught ${row.kind}, and the seed list still names this miss: ${sampleLine(row)}. Delete that entry. ${again}`,
     )
   }
   return lines

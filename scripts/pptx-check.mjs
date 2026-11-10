@@ -1,12 +1,12 @@
 import { execFile } from "node:child_process"
 import { createRequire } from "node:module"
-import { createHash } from "node:crypto"
+import { createHash, randomInt } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
-import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
+import { plantSamples, proofFailures, proofTable, readSeedList, seedsFor } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
@@ -102,8 +102,12 @@ const renderNext = async () => {
   }
 }
 const proofStarted = Date.now()
-const seed = seedFrom({ chosen: process.env.JUDGE_SEED, commit: await run("git", ["rev-parse", "HEAD"]) })
 const proofFile = path.join(fixtures, "judge-proof.json")
+const plan = seedsFor({
+  chosen: process.env.JUDGE_SEED,
+  list: readSeedList(fs.readFileSync(path.join(fixtures, "judge-seeds.json"), "utf8")),
+  draw: () => randomInt(0, 4294967296),
+})
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
@@ -124,24 +128,23 @@ for (const name of realDecks) {
 const routeFiles = writtenDecks.flatMap((deck) =>
   deck.written.flatMap((item) => (item.file === null ? [] : [item.file])),
 )
-const planted = plantSamples({
-  pptx,
-  decks: cleanDecks.map((name) => ({ name, parts: parts.get(name) })),
-  seed,
-  samples: Number(process.env.JUDGE_SAMPLES ?? 3),
-})
+const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
+const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
+const runs = plan.seeds.map((seed) => ({ seed, planted: plantSamples({ pptx, decks, seed, samples }) }))
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
-const sampleFile = (index) => `judge-sample-${index}.pptx`
+const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
 const judgedFiles = async () => {
   try {
-    for (const [index, sample] of planted.entries()) {
-      fs.writeFileSync(path.join(proofFolder, sampleFile(index)), storedZip(sample.parts))
+    for (const run of runs) {
+      for (const [index, sample] of run.planted.entries()) {
+        fs.writeFileSync(path.join(proofFolder, sampleFile(run.seed, index)), storedZip(sample.parts))
+      }
     }
     const planting = (Date.now() - proofStarted) / 1000
     const found = await validatorLists([
       ...[...parts.keys()].map(fixturePath),
       ...routeFiles,
-      ...planted.map((sample, index) => path.join(proofFolder, sampleFile(index))),
+      ...runs.flatMap((run) => run.planted.map((_, index) => path.join(proofFolder, sampleFile(run.seed, index)))),
     ])
     return { found, planting }
   } finally {
@@ -153,32 +156,39 @@ const [{ found: lists, planting }] = await Promise.all([
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
-const judgedSamples = planted.map((sample, index) => {
-  const judged = judge(
-    pptx,
-    { list: lists.get(sample.deck), ids: ids.get(sample.deck) },
-    { list: lists.get(sampleFile(index)), ids: pptx.shapeIdCounts(sample.parts) },
-  )
-  const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
-  return { ...sample, accepted: judged.accepted, reason }
-})
-console.log(`judge proof ${replay(seed)}`)
-if (process.env.JUDGE_LIST !== undefined) {
-  for (const sample of judgedSamples) {
-    console.log(
-      `judge sample  ${sample.kind}  ${sample.deck}, ${sample.what}  ${sample.accepted ? "accepted" : "rejected"}`,
+const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
+let failed = 0
+for (const [runIndex, run] of runs.entries()) {
+  const judgedSamples = run.planted.map((sample, index) => {
+    const judged = judge(
+      pptx,
+      { list: lists.get(sample.deck), ids: ids.get(sample.deck) },
+      { list: lists.get(sampleFile(run.seed, index)), ids: pptx.shapeIdCounts(sample.parts) },
     )
+    const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
+    return { ...sample, accepted: judged.accepted, reason }
+  })
+  console.log(`judge proof ${plan.announce[runIndex]}`)
+  if (process.env.JUDGE_LIST !== undefined) {
+    for (const sample of judgedSamples) {
+      console.log(
+        `judge sample  ${sample.kind}  ${sample.deck}, ${sample.what}  ${sample.accepted ? "accepted" : "rejected"}`,
+      )
+    }
   }
+  for (const line of proofTable(judgedSamples)) console.log(line)
+  const proofLines = proofFailures({
+    recorded,
+    judged: judgedSamples,
+    seed: run.seed,
+    known: plan.known,
+    chosen: plan.chosen,
+  })
+  for (const line of proofLines) console.log(line)
+  failed += proofLines.length
 }
-for (const line of proofTable(judgedSamples)) console.log(line)
-console.log(`judge proof planted ${planted.length} samples in ${planting.toFixed(1)} seconds`)
-const proofLines = proofFailures({
-  recorded: JSON.parse(fs.readFileSync(proofFile, "utf8")),
-  judged: judgedSamples,
-  seed,
-})
-for (const line of proofLines) console.log(line)
-let failed = proofLines.length
+const plantedCount = runs.reduce((sum, run) => sum + run.planted.length, 0)
+console.log(`judge proof planted ${plantedCount} samples in ${planting.toFixed(1)} seconds`)
 for (const row of cases) {
   const { errors, dupes } = judge(
     pptx,
