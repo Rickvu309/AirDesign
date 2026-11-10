@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import type { NodeName } from "@airdesign/document"
+import type { ElementId } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
@@ -10,7 +10,7 @@ export type ConfirmedRow = {
   readonly deck: DeckId
   readonly revision: number
   readonly value: string
-  readonly node?: NodeName
+  readonly node?: ElementId
 }
 
 export type PendingRow = {
@@ -19,7 +19,7 @@ export type PendingRow = {
   readonly order: number
   readonly base: number
   readonly value: string
-  readonly node?: NodeName
+  readonly node?: ElementId
 }
 
 export type StoredRow = ConfirmedRow | PendingRow
@@ -33,12 +33,12 @@ export function rowBytes(row: StoredRow): number {
   return new TextEncoder().encode(JSON.stringify(row)).length
 }
 
-export function confirmedRow(deck: DeckId, revision: number, value: string, node?: NodeName): ConfirmedRow {
+export function confirmedRow(deck: DeckId, revision: number, value: string, node?: ElementId): ConfirmedRow {
   if (node === undefined) return { kind: "confirmed", deck, revision, value }
   return { kind: "confirmed", deck, revision, value, node }
 }
 
-export function pendingRow(deck: DeckId, order: number, base: number, value: string, node?: NodeName): PendingRow {
+export function pendingRow(deck: DeckId, order: number, base: number, value: string, node?: ElementId): PendingRow {
   if (node === undefined) return { kind: "pending", deck, order, base, value }
   return { kind: "pending", deck, order, base, value, node }
 }
@@ -55,7 +55,7 @@ export function fitConfirmed(
   deck: DeckId,
   revision: number,
   value: string,
-  node: NodeName | undefined,
+  node: ElementId | undefined,
   into: ConfirmedRow[],
 ): number {
   let offset = 0
