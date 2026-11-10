@@ -7,7 +7,8 @@ import { encodeUtf8, sameBytes } from "./package-bytes.js"
 import { ContainerError, readParts, type ContainerKind } from "./package-container.js"
 import { readPackage } from "./package-limits.js"
 import { readShapes } from "./read-shapes.js"
-import { applyRoute } from "./slide-route.js"
+import { applyRoute, oneRunValue } from "./slide-route.js"
+import { shownText } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
@@ -63,11 +64,16 @@ function firstTextEdit(parts: ReadonlyMap<string, Uint8Array>): {
   edited: ReadonlyMap<string, Uint8Array>
 } {
   for (const shape of readShapes(parts)) {
-    if (shape.kind !== "p:sp" || !shape.text) continue
+    if (shape.kind !== "p:sp" || shownText(shape.text) === "") continue
     try {
       return {
         part: shape.part,
-        edited: applyRoute(parts, { name: "text", part: shape.part, shape: shape.shape, text: "Carried" }),
+        edited: applyRoute(parts, {
+          name: "text",
+          part: shape.part,
+          shape: shape.shape,
+          value: oneRunValue(parts, shape.part, shape.shape, "Carried"),
+        }),
       }
     } catch {
       continue
@@ -130,7 +136,12 @@ describe("carryPackage part changes on clean.pptx", () => {
   it("rewrites a changed part in place", async () => {
     const original = fixture("clean.pptx")
     const parts = new Map(await readParts(original))
-    const next = applyRoute(parts, { name: "text", part: name, shape: "2", text: "Changed text" })
+    const next = applyRoute(parts, {
+      name: "text",
+      part: name,
+      shape: "2",
+      value: oneRunValue(parts, name, "2", "Changed text"),
+    })
     const { first, back } = await checked(original, next)
     expect(back.get(name)).toEqual(next.get(name))
     expect(localRecords(first).map((record) => record.name)).toEqual(

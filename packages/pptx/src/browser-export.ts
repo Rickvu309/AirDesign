@@ -2,6 +2,7 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
+import { shownText } from "./text-value-route.js"
 
 const slidePart = "ppt/slides/slide1.xml"
 const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
@@ -117,13 +118,13 @@ export function browserExportFailures(
   const found = readShapes(exported).filter((row) => row.part === slidePart && row.shape === shape)
   const row = found.length === 1 ? found[0] : undefined
   if (row === undefined) failures.push(`shape ${shape}`)
-  else if (row.text !== text) failures.push(`shape ${shape} text ${row.text}`)
+  else if (shownText(row.text) !== text) failures.push(`shape ${shape} text ${shownText(row.text)}`)
   const beforeSpans = textInteriors(beforeSlide, shape)
   const afterSpans = textInteriors(afterSlide, shape)
   const written = afterSpans?.length === 1 ? afterSpans[0] : undefined
   const exact =
     written !== undefined && sameBytes(afterSlide.subarray(written.start, written.end), encodeUtf8(xmlText(text)))
-  if (row?.text === text && !exact) failures.push(`shape ${shape} text bytes`)
+  if (row !== undefined && shownText(row.text) === text && !exact) failures.push(`shape ${shape} text bytes`)
   if (beforeSpans === null || afterSpans === null || !sameOutside(beforeSlide, afterSlide, beforeSpans, afterSpans)) {
     failures.push(`${slidePart} outside shape ${shape} text`)
   }

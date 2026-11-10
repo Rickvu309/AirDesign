@@ -185,12 +185,7 @@ async function wasmBytes(): Promise<Uint8Array> {
   return fs.readFile(nodeModule.createRequire(import.meta.url).resolve("sax-wasm/lib/sax-wasm.wasm"))
 }
 
-async function committedNodes(
-  parts: ReadonlyMap<string, Uint8Array>,
-  from: string,
-  values: readonly string[],
-  deck = "opened-deck",
-): Promise<readonly (string | undefined)[]> {
+async function renderedDeck(parts: ReadonlyMap<string, Uint8Array>, deck = "opened-deck") {
   live.reset()
   live.state.parts = { ok: true, parts, nodes: { a: nodeA } }
   if (jsdom === undefined) throw new Error("jsdom")
@@ -238,6 +233,16 @@ async function committedNodes(
   await act(async () => {
     await opened
   })
+  return window
+}
+
+async function committedNodes(
+  parts: ReadonlyMap<string, Uint8Array>,
+  from: string,
+  values: readonly string[],
+  deck = "opened-deck",
+): Promise<readonly (string | undefined)[]> {
+  const window = await renderedDeck(parts, deck)
   const passage = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === from)
   if (passage === undefined) throw new Error("passage")
   for (const [index, value] of values.entries()) {
@@ -300,17 +305,13 @@ it("paints before the commit is sent", async () => {
   expect(order).toEqual(["enqueue", "paint", "flush"])
 })
 
-const oneSlidePresentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>`
-const oneSlideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
-
 it("an export with no stored edit applies no route and keeps the stored parts", () => {
   const node = { part: "ppt/slides/slide1.xml", shape: "2" }
   const slide = new TextEncoder().encode(
     '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
   )
   const parts = new Map([
-    ["ppt/presentation.xml", new TextEncoder().encode(oneSlidePresentation)],
-    ["ppt/_rels/presentation.xml.rels", new TextEncoder().encode(oneSlideRels)],
+    ["ppt/presentation.xml", new TextEncoder().encode("<p:presentation/>")],
     [node.part, slide],
   ])
   const empty = openRegister("", "clean")
@@ -354,13 +355,31 @@ it("an export of a stored edit refuses a box with several paragraphs and writes 
     `<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/></p:nvSpPr><p:txBody><a:bodyPr/>${lines}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`,
   )
   const saved = Uint8Array.from(slide)
-  const parts = new Map([
-    ["ppt/presentation.xml", new TextEncoder().encode(oneSlidePresentation)],
-    ["ppt/_rels/presentation.xml.rels", new TextEncoder().encode(oneSlideRels)],
-    [node.part, slide],
-  ])
+  const parts = new Map([[node.part, slide]])
   const edited = decide(openRegister("", "clean"), { command: "person", value: "typed" })
   if (edited.decision === "refuse") throw new Error("refused")
   expect(() => exportedParts(parts, node, edited.register)).toThrow(/text-shape/)
   expect(parts.get(node.part)).toEqual(saved)
+})
+
+const fallbackSlide = `<p:sld><p:cSld><p:spTree><mc:AlternateContent><mc:Choice Requires="x"><p:sp><p:nvSpPr><p:cNvPr id="6" name="C"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Choice</a:t></a:r></a:p></p:txBody></p:sp></mc:Choice><mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="2" name="F"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>One</a:t></a:r></a:p><a:p><a:r><a:rPr b="1"/><a:t>Two</a:t></a:r></a:p><a:p><a:r><a:t>Three</a:t></a:r></a:p></p:txBody></p:sp></mc:Fallback></mc:AlternateContent><p:sp><p:nvSpPr><p:cNvPr id="2" name="P"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+
+it("an export of a stored edit refuses the fallback box that shares the edited id and writes nothing", () => {
+  const node = { part: "ppt/slides/slide1.xml", shape: "2" }
+  const slide = new TextEncoder().encode(fallbackSlide)
+  const saved = Uint8Array.from(slide)
+  const parts = new Map([[node.part, slide]])
+  const edited = decide(openRegister("", "clean"), { command: "person", value: "typed" })
+  if (edited.decision === "refuse") throw new Error("refused")
+  expect(() => exportedParts(parts, node, edited.register)).toThrow(/text-shape/)
+  expect(parts.get(node.part)).toEqual(saved)
+})
+
+it("does not offer a locked box for editing", async () => {
+  const parts = shapedParts()
+  parts.set("ppt/slides/slide1.xml", xml(fallbackSlide))
+  const window = await renderedDeck(parts)
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+  expect(shown?.getAttribute("contenteditable")).toBe("false")
+  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
 })

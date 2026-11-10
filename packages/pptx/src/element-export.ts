@@ -1,5 +1,5 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { writeRoute, type SlideRoute } from "./slide-route.js"
+import { oneRunValue, writeRoute, type SlideRoute } from "./slide-route.js"
 import { writeStructuralRoute } from "./structural-route.js"
 
 const elementId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
@@ -361,7 +361,14 @@ function shapeNumber(shape: Shape, written: ReadonlyMap<string, string>): string
   return number
 }
 
-function changeRoute(change: Change, part: string, shape: string): Exclude<SlideRoute, { readonly name: "add" }> {
+function changeRoute(
+  current: ReadonlyMap<string, Uint8Array>,
+  change: Change,
+  part: string,
+  shape: string,
+): Exclude<SlideRoute, { readonly name: "add" }> {
+  if (change.name === "text")
+    return { name: "text", part, shape, value: oneRunValue(current, part, shape, change.text) }
   return { ...change, part, shape }
 }
 
@@ -398,7 +405,7 @@ export function exportElements(
   for (const row of plan.changes) {
     const part = partOf(row.element.slide, current, slides)
     const shape = shapeNumber(row.element.shape, shapeNumbers)
-    current = writeRoute(current, changeRoute(row.change, part, shape)).parts
+    current = writeRoute(current, changeRoute(current, row.change, part, shape)).parts
   }
   return { parts: new Map(current), ids: { slides, shapes } }
 }

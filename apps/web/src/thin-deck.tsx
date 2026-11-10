@@ -1,4 +1,4 @@
-import { currentValue, type Kind, type Register, type TextValue } from "@airdesign/document"
+import { currentValue, type Kind, type Register } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import {
   applyRoute,
@@ -7,6 +7,7 @@ import {
   prepareMarkup,
   readPackage,
   readShapes,
+  shownText,
   type ShapeKind,
 } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
@@ -45,10 +46,6 @@ function paintKind(kind: ShapeKind): Kind {
   return "shape"
 }
 
-function shownText(value: TextValue): string {
-  return value.flatMap((line) => line.runs.map((run) => (run.text === "\n" ? "" : run.text))).join("")
-}
-
 function linkedId(node: { readonly part: string; readonly shape: string }): ElementId {
   return elementId(`${node.part}#${node.shape}`)
 }
@@ -74,7 +71,13 @@ function paint(
     next.push(id)
   }
   store.setSlides([{ id: slideId("1"), elements: next }])
-  return { ids: next, node: elementNode(shapes, node) }
+  return {
+    ids: next,
+    node: elementNode(
+      shapes.filter((shape) => !shape.locked),
+      node,
+    ),
+  }
 }
 
 type EditLink = {
@@ -103,9 +106,7 @@ export function exportedParts(
   register: Register,
 ): ReadonlyMap<string, Uint8Array> {
   if (register.landed.length === 0) return parts
-  const read = readShapes(parts).find((shape) => shape.part === node.part && shape.shape === node.shape)
-  if (read === undefined) throw new Error("shape")
-  const value = oneRunValue(read.text, currentValue(register))
+  const value = oneRunValue(parts, node.part, node.shape, currentValue(register))
   return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, value })
 }
 
@@ -214,7 +215,7 @@ export function ThinDeck({ id }: { id?: string }) {
           slide={
             <div>
               {ids.map((id) =>
-                id === anchor ? (
+                id === anchor && edited.current !== undefined ? (
                   <Passage key={id} id={id} onEdit={(value) => void onEdit(value)} store={store.current} />
                 ) : (
                   <Passage key={id} id={id} store={store.current} />

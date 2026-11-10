@@ -7,6 +7,7 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { createdShapesLanded, elementExportTouch, touchMatches } from "./route-parts.js"
 import { newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
+import { shownText } from "./text-value-route.js"
 
 const slideFirst = "n000000000000"
 const slideA = "n000000000001"
@@ -80,7 +81,7 @@ function sameParts(left: ReadonlyMap<string, Uint8Array>, right: ReadonlyMap<str
 }
 
 function rowsFor(parts: ReadonlyMap<string, Uint8Array>, value: string) {
-  return readShapes(parts).filter((row) => row.text === value)
+  return readShapes(parts).filter((row) => shownText(row.text) === value)
 }
 
 function expectUntouched(parts: ReadonlyMap<string, Uint8Array>, run: (parts: Map<string, Uint8Array>) => void): void {
@@ -423,4 +424,14 @@ describe("exportElements", () => {
     expect(touchMatches(before, onFirst, touch)).toBe(true)
     expect(createdShapesLanded(onFirst, landed, untouched)).toBe(false)
   })
+})
+
+it("refuses a text edit of a box with several paragraphs and writes nothing", () => {
+  const parts = deck()
+  const original = decodeUtf8(parts.get("ppt/slides/slide1.xml") as Uint8Array)
+  const lines = "<a:p><a:r><a:t>One</a:t></a:r></a:p><a:p><a:r><a:t>Two</a:t></a:r></a:p>"
+  parts.set("ppt/slides/slide1.xml", text(original.replace("<a:p><a:r><a:t>One</a:t></a:r></a:p>", lines)))
+  const saved = new Map(parts)
+  expect(() => exportElements(parts, [{ id: "256.2", name: "text", text: "typed" }])).toThrow(/text-shape/)
+  expect(parts).toEqual(saved)
 })
