@@ -405,6 +405,12 @@ function sectionByTitle(elements: readonly MarkupElement[], old: readonly Markup
   )
 }
 
+function sectionIds(bytes: Uint8Array): (string | null)[] {
+  return markup(bytes)
+    .filter((element) => element.kind === "p14:section")
+    .map((element) => element.id)
+}
+
 function expectInside(before: Parts, after: Parts, edit: Edit) {
   const oldSlide = "part" in edit ? partOf(before, edit.part) : emptyBytes
   const nextSlide = "part" in edit ? partOf(after, edit.part) : emptyBytes
@@ -481,6 +487,7 @@ function expectInside(before: Parts, after: Parts, edit: Edit) {
       return
     case "sectionLst.remove":
       expectOnlyWrapped(oldPresentation, nextPresentation, named(markup(oldPresentation), "p14:section", edit.section))
+      expect(sectionIds(nextPresentation)).toEqual(sectionIds(oldPresentation).filter((id) => id !== edit.section))
       return
     case "sectionLst.order": {
       const elements = markup(oldPresentation)
@@ -658,7 +665,9 @@ describe("routeRuns", () => {
     for (const deck of decks) {
       for (const run of deck.runs) {
         expect(run.error).toBeNull()
-        if (run.edit === null || run.parts === null) continue
+        if (run.parts === null || run.touch === null) continue
+        expect(touchMatches(deck.parts, run.parts, run.touch)).toBe(true)
+        if (run.edit === null) continue
         seen.add(run.operation)
         expectInside(deck.parts, run.parts, run.edit)
       }
@@ -687,6 +696,15 @@ describe("routeRuns", () => {
       }
     }
     expect([...seen].sort()).toEqual(["sectionLst.order", "sldIdLst.order", "spTree.order", "tbl.orderRow"])
+  })
+
+  it("an added shape on a real deck takes each number of the box it asked", () => {
+    for (const deck of decks) {
+      const added = runOf(deck, "spTree.add").edit
+      if (added?.name !== "spTree.add") throw new Error("spTree.add run")
+      const edit = { ...added, x: 101, y: 202, cx: 303, cy: 404 }
+      expectInside(deck.parts, applyStructuralRoute(deck.parts, edit), edit)
+    }
   })
 
   it("text with markup characters on a real deck reads back exactly", () => {
