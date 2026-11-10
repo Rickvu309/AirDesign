@@ -33,6 +33,81 @@ const distinctStates = (output) => {
   return Number(matches[matches.length - 1][1])
 }
 
+const cacheRoot = () => path.join(os.tmpdir(), "airdesign-tlc-cache")
+
+const specKey = (directory, spec, config) => {
+  const hash = createHash("sha256")
+  hash.update(spec)
+  hash.update("\0")
+  hash.update(config)
+  for (const name of fs.readdirSync(directory).sort()) {
+    if (!name.endsWith(".tla") && !name.endsWith(".cfg")) continue
+    hash.update("\0")
+    hash.update(name)
+    hash.update("\0")
+    hash.update(fs.readFileSync(path.join(directory, name)))
+  }
+  return hash.digest("hex")
+}
+
+const readCache = (key) => {
+  const file = path.join(cacheRoot(), `${key}.json`)
+  if (!fs.existsSync(file)) return null
+  try {
+    return JSON.parse(fs.readFileSync(file, "utf8"))
+  } catch {
+    return null
+  }
+}
+
+const writeCache = (key, value) => {
+  const root = cacheRoot()
+  fs.mkdirSync(root, { recursive: true })
+  const temporary = path.join(root, `${key}.${process.pid}.json`)
+  fs.writeFileSync(temporary, JSON.stringify(value))
+  fs.renameSync(temporary, path.join(root, `${key}.json`))
+}
+
+const cachedDump = (directory, java, jar, spec, config) => {
+  const key = specKey(directory, spec, config)
+  const found = readCache(key)
+  if (found) return found
+  const root = cacheRoot()
+  fs.mkdirSync(root, { recursive: true })
+  const lock = path.join(root, `${key}.lock`)
+  let owned = false
+  const deadline = Date.now() + 180000
+  while (!owned && Date.now() < deadline) {
+    try {
+      fs.closeSync(fs.openSync(lock, "wx"))
+      owned = true
+    } catch (error) {
+      if (error.code !== "EEXIST") throw error
+      const ready = readCache(key)
+      if (ready) return ready
+      if (Date.now() - fs.statSync(lock).mtimeMs > 180000) fs.rmSync(lock, { force: true })
+      else Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
+    }
+  }
+  if (!owned) throw new Error(`timed out waiting for ${spec}`)
+  try {
+    const again = readCache(key)
+    if (again) return again
+    const dot = path.join(os.tmpdir(), `airdesign-tlc-${process.pid}-${Date.now()}.dot`)
+    const result = runTlc(directory, java, jar, spec, config, ["-dump", "dot,actionlabels", dot], dot)
+    const value = {
+      states: distinctStates(result.output),
+      passed: result.status === 0 && result.output.includes("No error has been found."),
+      output: result.output,
+      graph: result.graph,
+    }
+    writeCache(key, value)
+    return value
+  } finally {
+    fs.rmSync(lock, { force: true })
+  }
+}
+
 const integersSnapshot = (modules) => {
   const extracted = path.join(modules, "Integers.tla")
   const snapshot = path.join(modules, ".Integers.tla.kept")
@@ -112,24 +187,11 @@ const runTlc = (directory, java, jar, spec, config, extra, dot) => {
 }
 
 export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edit.cfg") => {
-  const result = runTlc(directory, java, jar, spec, config, [])
-  return {
-    states: distinctStates(result.output),
-    passed: result.status === 0 && result.output.includes("No error has been found."),
-    output: result.output,
-  }
+  const result = cachedDump(directory, java, jar, spec, config)
+  return { states: result.states, passed: result.passed, output: result.output }
 }
 
-export const dumpSpec = (directory, java, jar, spec, config) => {
-  const dot = path.join(os.tmpdir(), `airdesign-tlc-${process.pid}-${Date.now()}.dot`)
-  const result = runTlc(directory, java, jar, spec, config, ["-dump", "dot,actionlabels", dot], dot)
-  return {
-    states: distinctStates(result.output),
-    passed: result.status === 0 && result.output.includes("No error has been found."),
-    output: result.output,
-    graph: result.graph,
-  }
-}
+export const dumpSpec = (directory, java, jar, spec, config) => cachedDump(directory, java, jar, spec, config)
 
 export const topics = (root) => {
   const directory = path.join(root, "specs")
