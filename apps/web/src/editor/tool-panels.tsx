@@ -400,7 +400,7 @@ export function TemplatePicker() {
             />
             <TemplateCard
               name="Dark slides"
-              className={templateDark.className}
+              fill={templateDark.fill}
               title="Slide title"
               titleColor={templateDark.titleColor}
               line={templateDark.line}
@@ -415,19 +415,24 @@ export function TemplatePicker() {
 function TemplateCard({
   name,
   className,
+  fill,
   title,
   titleColor,
   line,
 }: {
   name: string
-  className: string
+  className?: string
+  fill?: string
   title: string
   titleColor: string
   line: string
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <div className={cn("flex h-[126px] w-[224px] flex-col justify-center gap-1.5 rounded-[2px] px-5", className)}>
+      <div
+        className={cn("flex h-[126px] w-[224px] flex-col justify-center gap-1.5 rounded-[2px] px-5", className)}
+        style={fill === undefined ? undefined : { backgroundColor: fill }}
+      >
         <span className="text-[13px] font-semibold" style={{ color: titleColor }}>
           {title}
         </span>
