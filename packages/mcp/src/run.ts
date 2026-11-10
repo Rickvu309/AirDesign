@@ -51,10 +51,7 @@ export function openRun(
     if (started.decision === "refuse") return { ok: false, refusal: started.code }
     next = started.register
   }
-  const first = parsed.changes[0]
-  const running = first === undefined ? undefined : next.elements[first.node]
-  const runId = running?.phase === "running" && running.runId !== null ? running.runId : take()
-  return { ok: true, register: next, caller: agentCaller(runId) }
+  return { ok: true, register: next, caller: agentCaller(take()) }
 }
 
 export function afterWrite(wrote: boolean, result: ToolResult, loaded: Deck): ToolResult {

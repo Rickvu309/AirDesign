@@ -22,7 +22,6 @@ export type ApiOptions = {
   readonly now?: () => number
   readonly mint?: () => string
   readonly hosts?: readonly string[]
-  readonly beforeWrite?: () => Promise<void>
 }
 
 const cookieName = "airdesign.session"
@@ -54,6 +53,15 @@ export function sessionCookie(token: string, cookieDomain?: string): string {
   return `${cookie}; Domain=${cookieDomain}`
 }
 
+function decodedToken(raw: string): string | undefined {
+  try {
+    const token = decodeURIComponent(raw)
+    return token.includes("\0") ? undefined : token
+  } catch {
+    return undefined
+  }
+}
+
 export function readSessionCookie(header: string | undefined): string | undefined {
   if (header === undefined) return undefined
   for (const part of header.split(";")) {
@@ -61,7 +69,7 @@ export function readSessionCookie(header: string | undefined): string | undefine
     const split = trimmed.indexOf("=")
     if (split <= 0) continue
     if (trimmed.slice(0, split) !== cookieName) continue
-    return decodeURIComponent(trimmed.slice(split + 1))
+    return decodedToken(trimmed.slice(split + 1))
   }
   return undefined
 }
@@ -244,7 +252,6 @@ async function handle(
         mint,
         hosts: options.hosts ?? localHosts,
         bodyCap,
-        ...(options.beforeWrite !== undefined ? { beforeWrite: options.beforeWrite } : {}),
       },
       req,
       res,

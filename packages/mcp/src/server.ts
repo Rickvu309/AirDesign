@@ -12,7 +12,9 @@ const editInput = z.looseObject({
       z.looseObject({
         value: z.string().describe("Text to write."),
         node: z.string().describe("Element id, <slide>.<shape>."),
-        readAt: z.number().describe("Version of that element you read, 0 for an element you have not read."),
+        readAt: z
+          .number()
+          .describe("Version of that element from your last read. 0 only for an element nobody has changed."),
       }),
     )
     .describe("Edits to land."),

@@ -58,6 +58,15 @@ const siteOrigin = readSetting("SITE_ORIGIN", (value) => {
 })
 const cookieDomain = (process.env.COOKIE_DOMAIN ?? "") === "" ? undefined : readSetting("COOKIE_DOMAIN", requireDomain)
 
+function configuredHosts(): readonly string[] | undefined {
+  const names = (process.env.API_HOSTS ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+  return names.length === 0 ? undefined : names
+}
+
+const hosts = configuredHosts()
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
 session.on("error", () => undefined)
@@ -71,6 +80,7 @@ const server = createApi({
   siteOrigin,
   ...(cookieDomain === undefined ? {} : { cookieDomain }),
   send: (mail) => sendWithResend(mail),
+  ...(hosts === undefined ? {} : { hosts }),
 })
 const sockets = new Set<Socket>()
 server.on("connection", (socket) => {
