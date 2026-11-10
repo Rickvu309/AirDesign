@@ -148,7 +148,9 @@ async function post(path: typeof openPath | typeof commitPath | typeof watchPath
     body: JSON.stringify(body),
   })
   if (response.status === 401) return { ok: false, refusal: "session" }
-  return response.json()
+  const answer: unknown = await response.json().catch(() => null)
+  if (typeof answer !== "object" || answer === null || Array.isArray(answer)) return { ok: false, refusal: "payload" }
+  return answer
 }
 
 export function httpRemote(): Remote {
