@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { encodeUtf8 } from "./package-bytes.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { partTouch, routeOperations, routeRuns, touchMatches } from "./route-parts.js"
 
 function text(value: string): Uint8Array {
@@ -70,5 +70,18 @@ describe("routeRuns", () => {
   it("attempts every written route when the deck has a host for each", () => {
     const operations = routeRuns(hosts()).map((run) => run.operation)
     expect([...operations].sort()).toEqual([...routeOperations].sort())
+  })
+
+  it("does not remove the only row of a table", () => {
+    const parts = hosts()
+    const bytes = parts.get("ppt/slides/slide1.xml")
+    if (bytes === undefined) throw new Error("part")
+    parts.set(
+      "ppt/slides/slide1.xml",
+      text(decodeUtf8(bytes).replace(`<a:tr h="2"><a:tc><a:t>B</a:t></a:tc></a:tr>`, "")),
+    )
+    const operations = routeRuns(parts).map((run) => run.operation)
+    expect(operations).toContain("tbl.addRow")
+    expect(operations).not.toContain("tbl.removeRow")
   })
 })

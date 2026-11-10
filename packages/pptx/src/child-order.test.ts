@@ -1,5 +1,51 @@
 import { describe, expect, it } from "vitest"
-import { childOrder, insertChild, type OrderedParent } from "./child-order.js"
+import { insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
+
+const schemaOrder = {
+  "p:spPr": [
+    "a:xfrm",
+    "a:custGeom",
+    "a:prstGeom",
+    "a:noFill",
+    "a:solidFill",
+    "a:gradFill",
+    "a:blipFill",
+    "a:pattFill",
+    "a:grpFill",
+    "a:ln",
+    "a:effectLst",
+    "a:effectDag",
+    "a:scene3d",
+    "a:sp3d",
+    "a:extLst",
+  ],
+  "p:txBody": ["a:bodyPr", "a:lstStyle", "a:p"],
+  "a:p": ["a:pPr", "a:r", "a:br", "a:fld", "a:endParaRPr"],
+  "a:rPr": [
+    "a:ln",
+    "a:noFill",
+    "a:solidFill",
+    "a:gradFill",
+    "a:blipFill",
+    "a:pattFill",
+    "a:grpFill",
+    "a:effectLst",
+    "a:effectDag",
+    "a:highlight",
+    "a:uLnTx",
+    "a:uLn",
+    "a:uFillTx",
+    "a:uFill",
+    "a:latin",
+    "a:ea",
+    "a:cs",
+    "a:sym",
+    "a:hlinkClick",
+    "a:hlinkMouseOver",
+    "a:rtl",
+    "a:extLst",
+  ],
+} as const satisfies Record<OrderedParent, readonly string[]>
 
 function tagsInOrder(xml: string, tags: readonly string[]): boolean {
   let cursor = 0
@@ -29,26 +75,30 @@ describe("insertChild", () => {
 
   it("puts another run after the existing run", () => {
     let paragraph = `<a:p></a:p>`
-    for (const tag of [...childOrder["a:p"]].reverse()) {
+    for (const tag of [...schemaOrder["a:p"]].reverse()) {
       paragraph = insertChild("a:p", tag, `<${tag}/>`, paragraph)
     }
     paragraph = insertChild("a:p", "a:r", `<a:r id="2"/>`, paragraph)
-    const first = paragraph.indexOf("<a:r")
-    const second = paragraph.indexOf("<a:r", first + 1)
-    const breakAt = paragraph.indexOf("<a:br")
-    expect(second).toBeGreaterThan(first)
-    expect(second).toBeLessThan(breakAt)
+    expect(paragraph.indexOf("<a:r/>")).toBeLessThan(paragraph.indexOf('<a:r id="2"/>'))
+    expect(paragraph.indexOf('<a:r id="2"/>')).toBeLessThan(paragraph.indexOf("<a:br"))
   })
 
-  it("orders every child from the table when inserts arrive backwards", () => {
-    const parents = Object.keys(childOrder) as OrderedParent[]
+  it("puts a:latin before a:ea", () => {
+    let xml = "<a:rPr></a:rPr>"
+    xml = insertChild("a:rPr", "a:ea", "<a:ea/>", xml)
+    xml = insertChild("a:rPr", "a:latin", "<a:latin/>", xml)
+    expect(xml.indexOf("<a:latin")).toBeLessThan(xml.indexOf("<a:ea"))
+  })
+
+  it("orders every child from the schema when inserts arrive backwards", () => {
+    const parents = Object.keys(schemaOrder) as OrderedParent[]
     for (const parent of parents) {
-      const tags = childOrder[parent]
+      const tags = schemaOrder[parent]
       let xml = `<${parent}></${parent}>`
       for (let index = tags.length - 1; index >= 0; index -= 1) {
         const tag = tags[index]
         if (tag === undefined) throw new Error(parent)
-        xml = insertChild(parent, tag, `<${tag}/>`, xml)
+        xml = insertChild(parent, tag as ChildOf<typeof parent>, `<${tag}/>`, xml)
       }
       expect(tagsInOrder(xml, tags), parent).toBe(true)
     }

@@ -10,6 +10,9 @@ const kept = "ppt/media/keep.bin"
 function parts(): Map<string, Uint8Array> {
   return new Map([
     [part, encodeUtf8(slide)],
+    ["ppt/slides/slide2.xml", encodeUtf8("<p:sld/>")],
+    ["ppt/slides/_rels/slide1.xml.rels", encodeUtf8("<Relationships/>")],
+    ["[Content_Types].xml", encodeUtf8("<Types/>")],
     [kept, Uint8Array.from([1, 2, 3])],
   ])
 }
@@ -40,6 +43,24 @@ describe("applyRoute", () => {
     expect(sameMove.get(part)).toBe(before.get(part))
     expect(sameSize.get(part)).toBe(before.get(part))
     expect(sameText.get(kept)).toBe(before.get(kept))
+  })
+
+  it("leaves the other slide, relationships, and content types as the same object", () => {
+    const before = parts()
+    const routes = [
+      { name: "text" as const, part, shape: "2", text: "A" },
+      { name: "move" as const, part, shape: "2", x: 10, y: 20 },
+      { name: "resize" as const, part, shape: "2", cx: 30, cy: 40 },
+      { name: "add" as const, part, text: "New", x: 0, y: 0, cx: 1, cy: 1 },
+      { name: "remove" as const, part, shape: "2" },
+    ]
+    for (const route of routes) {
+      const edited = applyRoute(before, route)
+      expect(edited.get("ppt/slides/slide2.xml")).toBe(before.get("ppt/slides/slide2.xml"))
+      expect(edited.get("ppt/slides/_rels/slide1.xml.rels")).toBe(before.get("ppt/slides/_rels/slide1.xml.rels"))
+      expect(edited.get("[Content_Types].xml")).toBe(before.get("[Content_Types].xml"))
+      expect(edited.get(kept)).toBe(before.get(kept))
+    }
   })
 
   it("moves and resizes one shape without the group transform", () => {
@@ -149,7 +170,7 @@ function shownText(slideXml: string): string {
   return [...slideXml.matchAll(/<a:t(?: [^>]*)?>([^<]*)<\/a:t>/g)].map((match) => match[1]).join("")
 }
 
-describe("applyRoute known faults", () => {
+describe("applyRoute on a picture and a run", () => {
   it("removes the picture it was asked to remove, not the shape before it", () => {
     const next = edited(shape("2", run("Keep")) + picture("3"), { name: "remove", part, shape: "3" })
     expect(next).toContain('<p:cNvPr id="2"')

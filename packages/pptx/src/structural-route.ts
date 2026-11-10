@@ -33,6 +33,7 @@ const presentationPart = "ppt/presentation.xml"
 const presentationRels = "ppt/_rels/presentation.xml.rels"
 const contentTypesPart = "[Content_Types].xml"
 const slideRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
+const layoutRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout"
 const slideContentType = "application/vnd.openxmlformats-officedocument.presentationml.slide+xml"
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
@@ -186,8 +187,24 @@ function addRow(bytes: Uint8Array, row: number): Uint8Array {
   return insertAt(bytes, found.end, bytes.slice(found.start, found.end))
 }
 
+function tableOf(elements: readonly MarkupElement[], row: MarkupElement): MarkupElement | null {
+  let parent = row.parent
+  while (parent >= 0) {
+    const next = elements[parent]
+    if (next === undefined) return null
+    if (next.kind === "a:tbl") return next
+    parent = next.parent
+  }
+  return null
+}
+
 function removeRow(bytes: Uint8Array, row: number): Uint8Array {
-  const found = rowAt(requireMarkup(bytes).elements, row)
+  const elements = requireMarkup(bytes).elements
+  const found = rowAt(elements, row)
+  const table = tableOf(elements, found)
+  if (table === null) throw new Error("a:tr")
+  const count = elements.filter((element) => element.kind === "a:tr" && within(elements, element, table)).length
+  if (count < 2) throw new Error("a:tr")
   return cut(bytes, found.start, found.end)
 }
 
@@ -263,6 +280,21 @@ function overridePart(elements: readonly MarkupElement[], part: string): MarkupE
   return found
 }
 
+function layoutRelationships(rels: Uint8Array): Uint8Array {
+  const document = requireMarkup(rels)
+  const relationships = document.elements.filter((element) => element.kind === "Relationship")
+  const layouts = relationships.filter((element) =>
+    element.attributes.some((item) => item.name === "Type" && item.value === layoutRelType),
+  )
+  if (layouts.length === 0) throw new Error("part")
+  let next = rels
+  for (const element of relationships.slice().reverse()) {
+    if (layouts.includes(element)) continue
+    next = cut(next, element.start, element.end)
+  }
+  return next
+}
+
 function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) {
   const presentation = partBytes(parts, presentationPart)
   const rels = partBytes(parts, presentationRels)
@@ -306,7 +338,7 @@ function addSlide(parts: Map<string, Uint8Array>, after: string, copy: boolean) 
     ),
   )
   parts.set(part, copy ? sourceBytes : encodeUtf8(blankSlide))
-  parts.set(relsPart(part), sourceRelBytes)
+  parts.set(relsPart(part), copy ? sourceRelBytes : layoutRelationships(sourceRelBytes))
 }
 
 function removeSlide(parts: Map<string, Uint8Array>, slide: string) {
