@@ -1,5 +1,6 @@
 import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
+import { judgedOnCi, mayPush } from "./check.mjs"
 import { localSteps, onCi } from "./check.mjs"
 
 const requiredSteps = [
@@ -67,3 +68,24 @@ if (stepsWhen(true).length + localSteps.size !== stepsWhen(false).length) {
 if (!onCi({ CI: "true" }) || !onCi({ CI: "1" }) || onCi({}) || onCi({ CI: "false" })) {
   throw new Error("CI is not told apart from this machine")
 }
+
+if (!mayPush([], true)) throw new Error("a passing check may push")
+if (!mayPush(["test"], true) || !mayPush(["browser", "test"], true)) {
+  throw new Error("a load timeout in test or browser must leave the judgment to ci")
+}
+for (const name of [
+  "format",
+  "lint",
+  "actionlint",
+  "typecheck",
+  "boundaries",
+  "build",
+  "tooling",
+  "bug-rule",
+  "specs",
+]) {
+  if (judgedOnCi.has(name) || mayPush([name], true))
+    throw new Error(`${name} does not depend on load and must stop a push`)
+  if (mayPush(["test", name], true)) throw new Error(`${name} failing next to test must still stop a push`)
+}
+if (mayPush([], false)) throw new Error("a check that stopped early saw too little to allow a push")

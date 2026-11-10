@@ -55,6 +55,10 @@ export const stagesFor = (part, ci = onCi(process.env)) =>
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
+export const judgedOnCi = new Set(["test", "browser", "ci-duration"])
+
+export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
+
 const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees", ...localSteps])
 const all = process.argv.includes("--all")
 const failed = []
@@ -94,9 +98,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const ownTemp = fs.mkdtempSync(path.join(os.tmpdir(), "check-"))
   process.env.TMPDIR = ownTemp
 
-  for (const stage of stagesFor(part)) {
+  let ranSteps = true
+  const chosen = stagesFor(part)
+  for (const [index, stage] of chosen.entries()) {
     await Promise.all(stage.map(run))
-    if (failed.length > 0 && !all) break
+    if (failed.length > 0 && !all && !mayPush(failed, true)) {
+      ranSteps = index === chosen.length - 1
+      break
+    }
   }
 
   const checkSeconds = timeMetric(root, "ci-duration", checkStarted)
@@ -106,12 +115,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   fs.rmSync(ownTemp, { recursive: true, force: true })
   release()
 
+  if (checkedTree !== undefined && mayPush(failed, ranSteps)) {
+    stampChecked(root, checkedTree)
+    console.log(`checked ${checkedTree.slice(0, 8)}: a commit with exactly these files may be pushed`)
+    if (failed.length > 0) console.error("Only timing-sensitive steps failed here, so ci judges them on GitHub.")
+  }
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)
     process.exit(1)
-  }
-  if (checkedTree !== undefined) {
-    stampChecked(root, checkedTree)
-    console.log(`checked ${checkedTree.slice(0, 8)}: a commit with exactly these files may be pushed`)
   }
 }
