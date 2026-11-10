@@ -1,11 +1,12 @@
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
   changedFiles,
+  changedProofs,
   checkChanges,
   checkFile,
-  deletedProofs,
   firstFailure,
   layIn,
   missingNeeds,
@@ -14,6 +15,7 @@ import {
   proofRunner,
   proofState,
   proofSupport,
+  readLosses,
   runProof,
   sandboxed,
   unprovedLines,
@@ -179,18 +181,31 @@ same(
   ],
 )
 
-const mainProofs = ["scripts/added-on-main.test.mjs", "scripts/sticks.test.mjs", "tests/theme-tokens.test.ts"]
+same("a pull request behind main changed no check that main added later", changesBy([]), [])
+
+same("a pull request behind main did not lose the proof main added later", changedProofs(mergeTree, headWith([])), [])
 same(
-  "a pull request that deleted a proof is told",
-  deletedProofs(mergeTree, headWith([["scripts/sticks.test.mjs", undefined]]), mainProofs),
-  ["scripts/sticks.test.mjs"],
-)
-same(
-  "a pull request behind main did not delete the proof main added later",
-  deletedProofs(mergeTree, headWith([]), mainProofs),
+  "a new proof and a changed check are not a changed proof",
+  changedProofs(
+    mergeTree,
+    headWith([
+      ["scripts/new.test.mjs", "100644 n"],
+      ["scripts/sticks.mjs", "100644 x"],
+    ]),
+  ),
   [],
 )
-same("a pull request behind main changed no check that main added later", changesBy([]), [])
+same(
+  "a deleted proof and a changed proof are changed proofs",
+  changedProofs(
+    mergeTree,
+    headWith([
+      ["scripts/sticks.test.mjs", undefined],
+      ["tests/theme-tokens.test.ts", "100644 x"],
+    ]),
+  ),
+  ["scripts/sticks.test.mjs", "tests/theme-tokens.test.ts"],
+)
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-old-proofs-"))
 process.on("exit", () => fs.rmSync(root, { recursive: true, force: true }))
@@ -202,6 +217,59 @@ const write = (file, text) => {
 const baseText = (file) => fs.readFileSync(path.join(base, file), "utf8")
 const inBase = (file) => fs.lstatSync(path.join(base, file), { throwIfNoEntry: false }) !== undefined
 const headContent = (file, print) => Buffer.from(`head ${print}`)
+
+const lossRepo = path.join(root, "losses")
+const lossGit = (...args) =>
+  execFileSync("git", ["-C", lossRepo, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
+const lossFile = (file, text) => write(path.join("losses", file), text)
+const cases = "case one\ncase two\ncase three\n"
+const lost = (lines) =>
+  `lost ${lines} ${lines === 1 ? "line" : "lines"} it had on main. A proof may gain cases. It may not lose them.`
+fs.mkdirSync(lossRepo)
+lossGit("init", "--quiet")
+for (const file of [
+  "scripts/deleted.test.mjs",
+  "scripts/renamed.test.mjs",
+  "scripts/removed-line.test.mjs",
+  "scripts/changed-line.test.mjs",
+  "scripts/added-lines.test.mjs",
+  "tests/typed.test.ts",
+  "tooling/rules/harness.js",
+  "scripts/sticks.mjs",
+  "apps/web/src/main.test.ts",
+]) {
+  lossFile(file, cases)
+}
+lossGit("add", "--all")
+const lossMerge = lossGit("write-tree")
+same("an untouched proof lost nothing", readLosses(lossRepo, lossMerge, lossMerge), [])
+fs.rmSync(path.join(lossRepo, "scripts/deleted.test.mjs"))
+fs.renameSync(path.join(lossRepo, "scripts/renamed.test.mjs"), path.join(lossRepo, "scripts/moved.test.mjs"))
+lossFile("scripts/removed-line.test.mjs", "case one\ncase three\n")
+lossFile("scripts/changed-line.test.mjs", "case one\ncase 2\ncase three\n")
+lossFile("scripts/added-lines.test.mjs", `case zero\n${cases}case four\n`)
+lossFile("scripts/new.test.mjs", cases)
+lossFile("tests/typed.test.ts", "")
+lossFile("tooling/rules/harness.js", "case one\ncase two\n")
+lossFile("scripts/sticks.mjs", "")
+lossFile("apps/web/src/main.test.ts", "")
+lossGit("add", "--all")
+const lossHead = lossGit("write-tree")
+const losses = readLosses(lossRepo, lossMerge, lossHead)
+same(
+  "a proof that was deleted, renamed, or lost or changed a line is broken, and one that only gained is free",
+  losses,
+  [
+    { file: "scripts/changed-line.test.mjs", state: "broken", said: lost(1) },
+    { file: "scripts/deleted.test.mjs", state: "broken", said: lost(3) },
+    { file: "scripts/removed-line.test.mjs", state: "broken", said: lost(1) },
+    { file: "scripts/renamed.test.mjs", state: "broken", said: lost(3) },
+    { file: "tests/typed.test.ts", state: "broken", said: lost(3) },
+    { file: "tooling/rules/harness.js", state: "broken", said: lost(1) },
+  ],
+)
+same("a proof that lost a line fails with no check changed", verdict({ results: losses, approved: false }).pass, false)
+same("the owner's approval lets a lost line through", verdict({ results: losses, approved: true }).pass, true)
 
 write("base/package.json", "main package")
 write("base/vitest.config.mts", "main config")
@@ -353,7 +421,34 @@ write("base/scripts/echo.test.mjs", "console.log(process.argv.join(), JSON.strin
 write("base/scripts/holds.test.mjs", 'console.log("case one")\n')
 write("base/scripts/throws.test.mjs", 'throw new Error("sticks rejects a raised limit")\n')
 write("base/scripts/swallows.test.mjs", 'process.on("uncaughtException", () => {})\nthrow new Error("swallowed")\n')
+write(
+  "base/scripts/hangs.test.mjs",
+  [
+    'import { spawn } from "node:child_process"',
+    'import fs from "node:fs"',
+    'import path from "node:path"',
+    'const child = spawn("sleep", ["600"], { stdio: "inherit" })',
+    'fs.writeFileSync(path.join(process.env.TMPDIR, "..", "hangs-child"), String(child.pid))',
+    "setInterval(() => {}, 1000)",
+    "",
+  ].join("\n"),
+)
 const ran = (file) => runProof(base, file, { has: () => true })
+const hangsChild = path.join(os.tmpdir(), "hangs-child")
+same("a proof that hangs is broken", runProof(base, "scripts/hangs.test.mjs", { has: () => true, seconds: 1 }), {
+  file: "scripts/hangs.test.mjs",
+  state: "broken",
+  said: "did not finish in 1 s",
+})
+const leftRunning = (pid) => {
+  try {
+    return fs.readFileSync(`/proc/${pid}/stat`, "utf8").split(") ").at(-1)[0] !== "Z"
+  } catch {
+    return false
+  }
+}
+same("a proof that hangs leaves no child running", leftRunning(fs.readFileSync(hangsChild, "utf8")), false)
+fs.rmSync(hangsChild)
 same("a proof that finishes is kept", ran("scripts/holds.test.mjs"), {
   file: "scripts/holds.test.mjs",
   state: "kept",
@@ -403,19 +498,26 @@ same(
   "Cannot find module '/work/base/scripts/sticks.mjs'",
 )
 same("a silent failure names its exit", firstFailure({ status: 3, output: "\n" }), "exit 3")
-same(
-  "a proof that hangs is named",
-  firstFailure({ status: null, output: "", timedOut: true }),
-  "ran longer than 300 seconds",
-)
+same("a proof that ran out of time is broken", proofState({ runner: "node", status: 124, stdout: "", token: "t" }), {
+  state: "broken",
+  said: "did not finish in 300 s",
+})
 
 const advice =
-  "Restore the behaviour each broken case expects. If the check is meant to change, ask the repo owner to approve the pull request."
+  "Restore the behaviour each broken case expects and the lines each proof lost. If the check is meant to change, ask the repo owner to approve the pull request, then run this check again."
 const results = [
   { file: "scripts/sticks.test.mjs", state: "kept" },
   { file: "tooling/rules/no-raw.test.js", state: "broken", message: "no-raw rejects a hex color" },
   { file: "scripts/check-specs.test.mjs", state: "not proved", message: "this machine has no Java 21" },
 ]
+same(
+  "a broken proof with its own sentence is printed as that sentence",
+  verdict({
+    results: [{ file: "scripts/sticks.test.mjs", state: "broken", said: "did not finish in 300 s" }],
+    approved: true,
+  }).lines[0],
+  "broken: scripts/sticks.test.mjs did not finish in 300 s",
+)
 const brokenLines = [
   "kept scripts/sticks.test.mjs",
   "broken tooling/rules/no-raw.test.js: no-raw rejects a hex color",
@@ -457,6 +559,16 @@ same("a proof without git is not proved here", runProof(base, "scripts/sticks.te
   state: "not proved",
   message: "this machine has no git",
 })
+const unprovedInCi = runProof(base, "scripts/sticks.test.mjs", { has: () => false, runsInCi: true })
+same("a proof without git is broken in CI", unprovedInCi, {
+  file: "scripts/sticks.test.mjs",
+  state: "broken",
+  said: "could not be proved here: this machine has no git",
+})
+same("a proof that could not be proved fails in CI", verdict({ results: [unprovedInCi], approved: false }), {
+  pass: false,
+  lines: ["broken: scripts/sticks.test.mjs could not be proved here: this machine has no git", advice],
+})
 same(
   "a plain proof needs nothing",
   missingNeeds("scripts/failure-audit.test.mjs", () => false),
@@ -469,8 +581,18 @@ same("a proof sees only a path, a scratch home and its tools", env, {
   HOME: "/scratch",
   TMPDIR: "/scratch",
   NO_COLOR: "1",
+  CI: "true",
+  GITHUB_ACTIONS: "true",
   JAVA: "/jdk/bin/java",
 })
+same(
+  "a proof sees the gate's environment, in CI and locally",
+  [
+    proofEnv({ home: "/scratch", nodeFolder: "/node/bin" }).CI,
+    proofEnv({ home: "/s", nodeFolder: "/n" }).GITHUB_ACTIONS,
+  ],
+  ["true", "true"],
+)
 const command = ["/node/bin/node", "scripts/old-proofs-run.mjs", "scripts/sticks.test.mjs"]
 const cleared = [
   "env",
@@ -479,7 +601,12 @@ const cleared = [
   "HOME=/scratch",
   "TMPDIR=/scratch",
   "NO_COLOR=1",
+  "CI=true",
+  "GITHUB_ACTIONS=true",
   "JAVA=/jdk/bin/java",
+  "timeout",
+  "--kill-after=10",
+  "300",
   ...command,
 ]
 same("a local proof runs with a cleared environment", sandboxed({ env, command, runsInCi: false }), cleared)

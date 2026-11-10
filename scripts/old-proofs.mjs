@@ -12,11 +12,14 @@ const proofName = /\.test\.(js|mjs|ts)$/
 const supportName = /^(harness|run-tests|old-proofs-run)\.m?js$/
 const proofRun = "scripts/old-proofs-run.mjs"
 const proofSeconds = 300
+const killSeconds = 10
+const timedOutStatus = 124
 const unprivileged = 65534
 const largeOutput = 64 * 1024 * 1024
 const proofNeeds = {
   "scripts/bug-rule.test.mjs": ["git"],
   "scripts/check-specs.test.mjs": ["Java 21", "tla2tools.jar"],
+  "scripts/old-proofs.test.mjs": ["git"],
   "scripts/sticks.test.mjs": ["git"],
 }
 const needFinders = {
@@ -25,7 +28,7 @@ const needFinders = {
   "tla2tools.jar": jarPath,
 }
 const advice =
-  "Restore the behaviour each broken case expects. If the check is meant to change, ask the repo owner to approve the pull request."
+  "Restore the behaviour each broken case expects and the lines each proof lost. If the check is meant to change, ask the repo owner to approve the pull request, then run this check again."
 const behindAdvice = "This pull request is behind main. Update it and run again."
 const sandboxProbe = [
   'const fs = require("node:fs")',
@@ -70,8 +73,27 @@ export const checkChanges = (mergeTree, headTree) =>
     .filter(checkFile)
     .map((file) => ({ file, entry: headTree.get(file) }))
 
-export const deletedProofs = (mergeTree, headTree, proofs) =>
-  proofs.filter((file) => mergeTree.has(file) && !headTree.has(file))
+export const changedProofs = (mergeTree, headTree) =>
+  changedFiles(mergeTree, headTree).filter(
+    (file) => mergeTree.has(file) && (proofRunner(file) !== undefined || proofSupport(file)),
+  )
+
+export const lostLines = (numstat) =>
+  numstat
+    .split("\0")
+    .filter((row) => row !== "")
+    .map((row) => {
+      const [, lost, file] = row.split("\t")
+      return { file, lost: lost === "-" ? 1 : Number(lost) }
+    })
+
+export const proofLosses = (changed, lost) =>
+  changed.flatMap((file) => {
+    const lines = lost.find((one) => one.file === file)?.lost ?? 0
+    if (lines === 0) return []
+    const said = `lost ${lines} ${lines === 1 ? "line" : "lines"} it had on main. A proof may gain cases. It may not lose them.`
+    return [{ file, state: "broken", said }]
+  })
 
 export const unprovedLines = (mergeTree, headTree) =>
   changedFiles(mergeTree, headTree)
@@ -113,8 +135,7 @@ export const layIn = (baseRoot, changes, headContent) => {
 
 export const missingNeeds = (file, has) => (proofNeeds[file] ?? []).filter((need) => !has(need))
 
-export const firstFailure = ({ status, output, timedOut }) => {
-  if (timedOut) return `ran longer than ${proofSeconds} seconds`
+export const firstFailure = ({ status, output }) => {
   const lines = output
     .split("\n")
     .map((line) => line.trim())
@@ -133,9 +154,19 @@ const failedCase = (report) => {
   return `${failed.fullName}: ${reason}`.slice(0, 300)
 }
 
-export const proofState = ({ runner, status, stdout = "", stderr = "", token, report, timedOut = false }) => {
-  const failure = () => firstFailure({ status, output: `${stderr}\n${stdout}`, timedOut })
-  if (timedOut || status !== 0) return { state: "broken", message: failedCase(report) ?? failure() }
+export const proofState = ({
+  runner,
+  status,
+  stdout = "",
+  stderr = "",
+  token,
+  report,
+  timedOut = false,
+  seconds = proofSeconds,
+}) => {
+  const failure = () => firstFailure({ status, output: `${stderr}\n${stdout}` })
+  if (timedOut || status === timedOutStatus) return { state: "broken", said: `did not finish in ${seconds} s` }
+  if (status !== 0) return { state: "broken", message: failedCase(report) ?? failure() }
   if (runner === "vitest") {
     const failed = failedCase(report)
     if (failed !== undefined) return { state: "broken", message: failed }
@@ -152,6 +183,7 @@ export const proofState = ({ runner, status, stdout = "", stderr = "", token, re
 export const verdict = ({ results, approved, behind = false }) => {
   const lines = results.map((result) => {
     if (result.state === "kept") return `kept ${result.file}`
+    if (result.state === "broken" && result.said !== undefined) return `broken: ${result.file} ${result.said}`
     if (result.state === "broken") return `broken ${result.file}: ${result.message}`
     return `not proved here ${result.file}: ${result.message}`
   })
@@ -165,10 +197,12 @@ export const proofEnv = ({ home, nodeFolder, tools = {} }) => ({
   HOME: home,
   TMPDIR: home,
   NO_COLOR: "1",
+  CI: "true",
+  GITHUB_ACTIONS: "true",
   ...tools,
 })
 
-export const sandboxed = ({ env, command, runsInCi }) => [
+export const sandboxed = ({ env, command, runsInCi, seconds = proofSeconds }) => [
   ...(runsInCi
     ? [
         "sudo",
@@ -187,6 +221,9 @@ export const sandboxed = ({ env, command, runsInCi }) => [
   "env",
   "-i",
   ...Object.entries(env).map(([name, value]) => `${name}=${value}`),
+  "timeout",
+  `--kill-after=${killSeconds}`,
+  String(seconds),
   ...command,
 ]
 
@@ -221,9 +258,17 @@ const readReport = (file) => {
   }
 }
 
-export const runProof = (baseRoot, file, { runsInCi = false, has = (need) => found(need) !== undefined } = {}) => {
+export const runProof = (
+  baseRoot,
+  file,
+  { runsInCi = false, has = (need) => found(need) !== undefined, seconds = proofSeconds } = {},
+) => {
   const missing = missingNeeds(file, has)
-  if (missing.length > 0) return { file, state: "not proved", message: `this machine has no ${missing.join(" or ")}` }
+  if (missing.length > 0) {
+    const message = `this machine has no ${missing.join(" or ")}`
+    if (runsInCi) return { file, state: "broken", said: `could not be proved here: ${message}` }
+    return { file, state: "not proved", message }
+  }
   const home = scratchHome(runsInCi)
   const runner = proofRunner(file)
   const token = randomBytes(24).toString("hex")
@@ -240,13 +285,13 @@ export const runProof = (baseRoot, file, { runsInCi = false, has = (need) => fou
         ]
       : [process.execPath, path.join(baseRoot, proofRun), file]
   const env = proofEnv({ home, nodeFolder: path.dirname(process.execPath), tools: tools() })
-  const [program, ...args] = sandboxed({ env, command, runsInCi })
+  const [program, ...args] = sandboxed({ env, command, runsInCi, seconds })
   const result = spawnSync(program, args, {
     cwd: baseRoot,
     input: runner === "node" ? `${token}\n` : "",
     encoding: "utf8",
-    timeout: proofSeconds * 1000,
-    killSignal: "SIGTERM",
+    timeout: (seconds + 3 * killSeconds) * 1000,
+    killSignal: "SIGKILL",
     maxBuffer: largeOutput,
   })
   const timedOut = result.error?.code === "ETIMEDOUT"
@@ -258,6 +303,7 @@ export const runProof = (baseRoot, file, { runsInCi = false, has = (need) => fou
     token,
     report: runner === "vitest" ? readReport(reportFile) : undefined,
     timedOut,
+    seconds,
   })
   if (!runsInCi) fs.rmSync(home, { recursive: true, force: true })
   return { file, ...state }
@@ -286,17 +332,23 @@ const mergeCommit = (headRoot, baseCommit) => {
   }
 }
 
+export const readLosses = (root, merge, head = "HEAD", mergeTree = tree(root, merge), headTree = tree(root, head)) => {
+  const changed = changedProofs(mergeTree, headTree)
+  if (changed.length === 0) return []
+  const numstat = git(root, ["diff", "--numstat", "--no-renames", "-z", merge, head, "--", ...changed])
+  return proofLosses(changed, lostLines(numstat))
+}
+
 const read = (baseRoot, headRoot) => {
   const baseCommit = git(baseRoot, ["rev-parse", "HEAD"]).trim()
   const merge = mergeCommit(headRoot, baseCommit)
   const mergeTree = tree(headRoot, merge)
   const headTree = tree(headRoot, "HEAD")
-  const proofs = proofFiles([...tree(baseRoot, "HEAD").keys()])
   return {
-    proofs,
+    proofs: proofFiles([...tree(baseRoot, "HEAD").keys()]),
     changes: checkChanges(mergeTree, headTree),
     unproved: unprovedLines(mergeTree, headTree),
-    deleted: deletedProofs(mergeTree, headTree, proofs),
+    losses: readLosses(headRoot, merge, "HEAD", mergeTree, headTree),
     behind: merge !== baseCommit,
   }
 }
@@ -325,11 +377,13 @@ const readReportText = (text) => {
 }
 
 const judge = (baseRoot, headRoot, approved) => {
-  const { proofs, changes, unproved, deleted, behind } = read(baseRoot, headRoot)
+  const { proofs, changes, unproved, losses, behind } = read(baseRoot, headRoot)
   for (const line of unproved) console.log(line)
   if (changes.length === 0) {
+    const result = verdict({ results: losses, approved })
+    for (const line of result.lines) console.log(line)
     console.log("No check changed.")
-    return true
+    return result.pass
   }
   const started = Date.now()
   const runsInCi = Boolean(process.env.CI)
@@ -345,11 +399,11 @@ const judge = (baseRoot, headRoot, approved) => {
     console.log("The install failed on main, so no old proof could run.")
     return false
   }
-  for (const file of deleted) console.log(`The pull request deleted ${file}. It still runs from main.`)
   layIn(baseRoot, changes, (file, print) => git(headRoot, ["cat-file", "blob", print], "buffer"))
   for (const { file } of changes) console.log(`laid in ${file}`)
   if (runsInCi) openToSandbox(baseRoot)
-  const result = verdict({ results: proofs.map((file) => runProof(baseRoot, file, { runsInCi })), approved, behind })
+  const results = [...losses, ...proofs.map((file) => runProof(baseRoot, file, { runsInCi }))]
+  const result = verdict({ results, approved, behind })
   for (const line of result.lines) console.log(line)
   console.log(`Old proofs took ${Math.round((Date.now() - started) / 1000)} seconds.`)
   return result.pass
