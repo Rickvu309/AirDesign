@@ -76,6 +76,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
 | A worktree whose work is on `main`, or whose branch is gone from GitHub, does not stay on the machine | `pnpm check` removes it with `scripts/worktrees.mjs` when it is clean and no process is using it. A worktree with no commits of its own is removed after 12 idle hours |
 | Run `pnpm check` after your last edit, before every push | `pnpm check` records the files it passed, and the `pre-push` hook that `pnpm install` sets up refuses any other commit |
+| A test file sees only the rows it wrote | `postgresInfo` in `apps/api/src/harness.ts` gives each `apps/api` test file its own database, cloned from the template the globalSetup prepares, and `isolation.test.ts` fails when it sees another file's rows |
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a commit that passed `ci` on top of the latest `main` | branch protection and the merge queue |
 | A metric moves only toward its goal, a test file is not removed, and a PowerPoint case or deck already judged does not change | the `ratchet` check, run from `main`, and the `ratchet` step of a local `pnpm check` |
