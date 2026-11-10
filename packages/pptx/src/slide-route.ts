@@ -10,6 +10,7 @@ export type SlideRoute =
   | {
       readonly name: "add"
       readonly part: string
+      readonly shape?: string
       readonly text: string
       readonly x: number
       readonly y: number
@@ -27,6 +28,18 @@ const textClose = encodeUtf8("</a:t>")
 function emu(value: number): number {
   if (!Number.isInteger(value)) throw new Error("emu")
   return value
+}
+
+function shapeNumber(value: string): number {
+  if (value.length === 0 || value.length > 10) throw new Error("shape id")
+  let number = 0
+  for (const char of value) {
+    const code = char.charCodeAt(0)
+    if (code < 48 || code > 57) throw new Error("shape id")
+    number = number * 10 + (code - 48)
+  }
+  if (number < 1 || number > 4294967295) throw new Error("shape id")
+  return number
 }
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -254,15 +267,19 @@ function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
       }
       return spliceBytes(bytes, [attributeEdit(ext, "cx", String(cx)), attributeEdit(ext, "cy", String(cy))])
     }
-    case "add":
-      return encodeUtf8(
-        addTextShape(decodeUtf8(bytes), route.text, {
-          x: emu(route.x),
-          y: emu(route.y),
-          cx: emu(route.cx),
-          cy: emu(route.cy),
-        }),
-      )
+    case "add": {
+      const box = {
+        x: emu(route.x),
+        y: emu(route.y),
+        cx: emu(route.cx),
+        cy: emu(route.cy),
+      }
+      const xml =
+        route.shape === undefined
+          ? addTextShape(decodeUtf8(bytes), route.text, box)
+          : addTextShape(decodeUtf8(bytes), route.text, box, shapeNumber(route.shape))
+      return encodeUtf8(xml)
+    }
     case "remove": {
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
