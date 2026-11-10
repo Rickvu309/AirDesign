@@ -303,7 +303,11 @@ async function rowsOf(page: Page): Promise<{ kind: string; value: string; node?:
           all.onerror = () => reject(all.error)
           all.onsuccess = () => {
             database.close()
-            resolve((all.result as unknown[]).filter((row) => typeof row === "object" && row !== null && "kind" in row) as never)
+            resolve(
+              (all.result as unknown[]).filter(
+                (row) => typeof row === "object" && row !== null && "kind" in row,
+              ) as never,
+            )
           }
         }
       }),

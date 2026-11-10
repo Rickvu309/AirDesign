@@ -143,8 +143,14 @@ async function postsCommit(remote: Remote, deck: string, node: string): Promise<
 
 it("flushes the http remote for the given deck after Hello! on its element", async () => {
   const node = await editedId
-  const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string; floor?: string }[] =
-    []
+  const calls: {
+    op: "enqueue" | "flush"
+    remote: Remote
+    deck: string
+    value?: string
+    node?: string
+    floor?: string
+  }[] = []
   await commitEdit(
     (remote) => {
       return {

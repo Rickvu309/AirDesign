@@ -66,10 +66,7 @@ function paint(
     const file = shownText(shape.text)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
     const storable =
-      seen.get(id) === 1 &&
-      !shape.locked &&
-      readNode(id) !== undefined &&
-      textStorable(parts, shape.part, shape.shape)
+      seen.get(id) === 1 && !shape.locked && readNode(id) !== undefined && textStorable(parts, shape.part, shape.shape)
     if (storable) boxes.set(id, { id, file })
   })
   store.setSlides([{ id: slideId("1"), elements: [...ids] }])

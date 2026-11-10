@@ -328,7 +328,15 @@ describe("live cache", () => {
   it("drops a stored row that has no node and flushes the row after it", async () => {
     const { remote, commits } = countingRemote()
     const cache = connect(remote)
-    await writeRows([{ key: rowKey("deck", "pending", 0), row: { kind: "pending", deck: "deck" as DeckId, order: 0, base: 0, value: "orphan" } }], [])
+    await writeRows(
+      [
+        {
+          key: rowKey("deck", "pending", 0),
+          row: { kind: "pending", deck: "deck" as DeckId, order: 0, base: 0, value: "orphan" },
+        },
+      ],
+      [],
+    )
     expect(await cache.enqueue("deck", "named", node, "file")).toEqual({ ok: true, painted: "named" })
     expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
     expect(commits).toEqual([["named"]])
