@@ -8,6 +8,7 @@ import {
   onlyAddsReferences,
   ownerReasons,
   packageFile,
+  removedTestFiles,
   replacedFixtures,
   sameButReferences,
   verdict,
@@ -335,5 +336,33 @@ same("an approval does not cover what main changed since", reverted.pass, false)
 if (!reverted.lines.includes("Changed on main since owner approved: stick check seconds.")) {
   throw new Error(reverted.lines.join("\n"))
 }
+
+same(
+  "a removed test file is named, and so is one renamed into a file that is not a test",
+  removedTestFiles([
+    { name: "packages/pptx/src/slide-route.test.ts", status: "removed" },
+    { name: "tests/browser/every-screen.spec.ts", status: "removed" },
+    { name: "packages/pptx/src/notes.ts", before: "packages/pptx/src/shape-id.test.ts", status: "renamed" },
+    { name: "packages/pptx/src/shape.test.ts", before: "packages/pptx/src/shape-id.test.ts", status: "renamed" },
+    { name: "packages/pptx/src/new.test.ts", status: "added" },
+    { name: "packages/pptx/src/old.test.ts", status: "modified" },
+    { name: "packages/pptx/src/slide-route.ts", status: "removed" },
+  ]),
+  ["packages/pptx/src/slide-route.test.ts", "tests/browser/every-screen.spec.ts", "packages/pptx/src/shape-id.test.ts"],
+)
+const removedTest = ownerReasons({
+  baseSticks: sticks,
+  headSticks: sticks,
+  changedFiles: [],
+  changedScripts: [],
+  removedTests: ["packages/pptx/src/slide-route.test.ts"],
+})
+same("a removed test file lowers the bar", removedTest, [
+  {
+    about: "file packages/pptx/src/slide-route.test.ts",
+    text: "The test file packages/pptx/src/slide-route.test.ts was removed.",
+    blocks: true,
+  },
+])
 
 console.log("owner-gate tests passed")
