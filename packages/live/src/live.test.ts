@@ -341,6 +341,53 @@ describe("live cache", () => {
     ])
   })
 
+  it("posts Hello! for the clean deck on node a", async () => {
+    const seen: { url: string; method: string; credentials: string; body: Record<string, unknown> }[] = []
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      seen.push({
+        url: String(url),
+        method: String(init.method),
+        credentials: String(init.credentials),
+        body: JSON.parse(String(init.body)) as Record<string, unknown>,
+      })
+      return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
+    })
+    const cache = connect(memoryRemote())
+    expect(await cache.enqueue("clean", "Hello!", "a")).toEqual({ ok: true, painted: "Hello!" })
+    expect(await connect(httpRemote()).flush("clean")).toEqual({
+      ok: true,
+      deck: "clean",
+      revision: 1,
+      key: "clean:1",
+    })
+    expect(seen).toEqual([
+      {
+        url: "/decks/commit",
+        method: "POST",
+        credentials: "same-origin",
+        body: { deck: "clean", batch: [{ value: "Hello!", node: "a" }] },
+      },
+    ])
+    expect(Object.keys(seen[0]?.body ?? {}).sort()).toEqual(["batch", "deck"])
+    expect(await cache.pending("clean")).toEqual([])
+  })
+
+  it("keeps the pending row when the clean commit key does not match", async () => {
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      expect(String(url)).toBe("/decks/commit")
+      expect(String(init.method)).toBe("POST")
+      expect(String(init.credentials)).toBe("same-origin")
+      expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node: "a" }] })
+      return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:9" }))
+    })
+    const cache = connect(memoryRemote())
+    await cache.enqueue("clean", "Hello!", "a")
+    expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
+    expect((await cache.pending("clean")).map((row) => ({ value: row.value, node: row.node }))).toEqual([
+      { value: "Hello!", node: "a" },
+    ])
+  })
+
   it("does not create a row when open or watch is refused", async () => {
     const remote = memoryRemote()
     expect(await remote.open({ deck: "bad id" })).toEqual({ ok: false, refusal: "deck" })
