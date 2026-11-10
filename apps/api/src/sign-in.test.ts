@@ -558,7 +558,10 @@ describe("sign-in", () => {
     expect(blocked.status).toBe(202)
     expect(mails).toHaveLength(5)
     const fifth = mailParts(mails[4]?.text)
-    await ageIssued("update session.sent set issued = issued - interval '14 minutes 30 seconds' where email = $1", email)
+    await ageIssued(
+      "update session.sent set issued = issued - interval '14 minutes 30 seconds' where email = $1",
+      email,
+    )
     const inside = await ask(base, "POST", "/sign-in/email", { email })
     expect(inside.status).toBe(202)
     expect(mails).toHaveLength(5)
