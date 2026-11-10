@@ -1,19 +1,51 @@
-import { rm } from "node:fs/promises"
+import { copyFile, readFile, rm } from "node:fs/promises"
+import { createRequire } from "node:module"
 import { join } from "node:path"
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
-const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
+const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
+const fixture = join(fixtures, "clean.pptx")
 const exported = join(process.cwd(), "tests/browser/exported-deck.pptx")
+const slide = "ppt/slides/slide1.xml"
 
-test.use({ viewport: { width: 1600, height: 1000 } })
+type ZipEntry = {
+  readonly filename: string
+  readonly directory: boolean
+  getData(writer: unknown): Promise<Uint8Array>
+}
 
-test("an edit to Hello! survives reload and exports", async ({ page }) => {
+type ZipLibrary = {
+  readonly ZipReader: new (reader: unknown) => { getEntries(): Promise<ZipEntry[]>; close(): Promise<void> }
+  readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
+  readonly Uint8ArrayWriter: new () => unknown
+}
+
+const zip = createRequire(join(process.cwd(), "packages/pptx/package.json"))("@zip.js/zip.js") as ZipLibrary
+
+async function partsOf(file: string): Promise<Map<string, Buffer>> {
+  const reader = new zip.ZipReader(new zip.Uint8ArrayReader(new Uint8Array(await readFile(file))))
+  const parts = new Map<string, Buffer>()
+  for (const entry of await reader.getEntries()) {
+    if (!entry.directory) parts.set(entry.filename, Buffer.from(await entry.getData(new zip.Uint8ArrayWriter())))
+  }
+  await reader.close()
+  return parts
+}
+
+async function changedParts(before: string, after: string): Promise<string[]> {
+  const original = await partsOf(before)
+  const saved = await partsOf(after)
+  expect([...saved.keys()]).toEqual([...original.keys()])
+  return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
+}
+
+async function open(page: Page, file: string): Promise<void> {
   await page.goto("/thin")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  const editor = page.locator("[contenteditable]")
-  await expect(editor).toHaveText("Hello")
-  await editor.fill("Hello!")
-  await page.waitForFunction(async () => {
+  await page.locator("input[type=file]").setInputFiles(file)
+}
+
+async function stored(page: Page, value: string): Promise<void> {
+  await page.waitForFunction(async (expected) => {
     const rows = await new Promise<unknown[]>((resolve, reject) => {
       const request = indexedDB.open("airdesign")
       request.onerror = () => reject(request.error)
@@ -30,13 +62,88 @@ test("an edit to Hello! survives reload and exports", async ({ page }) => {
     })
     return rows.some((row) => {
       if (typeof row !== "object" || row === null || !("value" in row)) return false
-      return (row as { value: unknown }).value === "Hello!"
+      return (row as { value: unknown }).value === expected
     })
-  })
-  await page.reload()
-  await expect(page.locator("[contenteditable]")).toHaveText("Hello!")
-  await rm(exported, { force: true })
+  }, value)
+}
+
+async function saveExport(page: Page, file: string): Promise<void> {
   const download = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export" }).click()
-  await (await download).saveAs(exported)
+  await (await download).saveAs(file)
+}
+
+test.use({ viewport: { width: 1600, height: 1000 } })
+
+test("an edit to Hello! survives reload and exports", async ({ page }, testInfo) => {
+  await rm(exported, { force: true })
+  const download = testInfo.outputPath("exported-deck.pptx")
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("ControlOrMeta+a")
+  await editor.pressSequentially("Hello!", { delay: 50 })
+  await expect(editor).toHaveText("Hello!")
+  await stored(page, "Hello!")
+  await page.reload()
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
+  await saveExport(page, download)
+  expect(await changedParts(fixture, download)).toEqual([slide])
+  const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
+  expect(saved.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
+  await copyFile(download, exported)
+})
+
+test("typing key by key keeps the order of the letters", async ({ page }) => {
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially(" world", { delay: 50 })
+  await expect(editor).toHaveText("Hello world")
+  await stored(page, "Hello world")
+  await page.reload()
+  await expect(editor).toHaveText("Hello world")
+  await editor.click()
+  await page.keyboard.press("Home")
+  await page.keyboard.press("ArrowRight")
+  await page.keyboard.press("ArrowRight")
+  await editor.pressSequentially("XY", { delay: 50 })
+  await expect(editor).toHaveText("HeXYllo world")
+  await stored(page, "HeXYllo world")
+})
+
+test("an export with no edit keeps every part byte for byte", async ({ page }, testInfo) => {
+  const saved = testInfo.outputPath("no-edit.pptx")
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await saveExport(page, saved)
+  expect(await changedParts(fixture, saved)).toEqual([])
+})
+
+test("an export with no edit is the same file byte for byte", async ({ page }, testInfo) => {
+  const saved = testInfo.outputPath("no-edit.pptx")
+  await open(page, fixture)
+  await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
+  await saveExport(page, saved)
+  expect(await changedParts(fixture, saved)).toEqual([])
+  test.fail()
+  expect((await readFile(saved)).equals(await readFile(fixture))).toBe(true)
+})
+
+test("a box that cannot keep an edit is not editable", async ({ page }) => {
+  await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
+  await expect(page.getByText(/1D-Convolutional/).first()).toBeVisible()
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+  await page.locator("input[type=file]").setInputFiles(fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveCount(1)
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially("!?", { delay: 50 })
+  await expect(editor).toHaveText("Hello!?")
+  await stored(page, "Hello!?")
 })
