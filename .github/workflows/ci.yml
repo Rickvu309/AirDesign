@@ -75,7 +75,7 @@ jobs:
           key: spec-results-${{ hashFiles('specs/**') }}
       - if: matrix.part == 'main'
         id: pptx
-        run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
+        run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/pptx-render.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
       - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: pptx-tools
@@ -83,7 +83,18 @@ jobs:
           path: ~/.cache/pptx-tools
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
       - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+          restore-keys: pptx-renders-
+      - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
         run: pnpm check:pptx
+      - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0' && !cancelled()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
       - if: failure() && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}

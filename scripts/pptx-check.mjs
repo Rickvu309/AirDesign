@@ -1,6 +1,6 @@
 import { execFile, execFileSync } from "node:child_process"
 import { createRequire } from "node:module"
-import { createHash, randomInt } from "node:crypto"
+import { randomInt } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -20,6 +20,18 @@ import {
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
+import {
+  againSuffix,
+  committedBlobs,
+  renderCache,
+  renderCacheFolder,
+  renderCode,
+  renderName,
+  renderPages,
+  renderSettings,
+  renderUse,
+  toolVersions,
+} from "./pptx-render.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -52,35 +64,15 @@ const validatorLists = async (files) => {
   return lists
 }
 
-const renderPages = async (file) => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-page-"))
-  const out = path.join(dir, "out")
-  fs.mkdirSync(out)
-  await run(soffice, [
-    `-env:UserInstallation=file://${path.join(dir, "profile")}`,
-    "--headless",
-    "--norestore",
-    "--convert-to",
-    "pdf",
-    "--outdir",
-    out,
-    file,
-  ])
-  const pdf = fs.readdirSync(out).find((name) => name.endsWith(".pdf"))
-  if (pdf === undefined) throw new Error(file)
-  await run("pdftoppm", ["-png", path.join(out, pdf), path.join(dir, "page")])
-  const hashes = fs
-    .readdirSync(dir)
-    .filter((name) => /^page-\d+\.png$/.test(name))
-    .sort((left, right) => Number(/\d+/.exec(left)?.[0]) - Number(/\d+/.exec(right)?.[0]))
-    .map((name) =>
-      createHash("sha256")
-        .update(fs.readFileSync(path.join(dir, name)))
-        .digest("hex"),
-    )
-  fs.rmSync(dir, { recursive: true, force: true })
-  return hashes
-}
+const renderCacheReady = toolVersions({ soffice, pdftoppm: "pdftoppm" }).then((tools) =>
+  renderCache({
+    folder: renderCacheFolder,
+    tools,
+    settings: renderSettings,
+    code: renderCode(),
+    render: (file) => renderPages(file, { soffice, pdftoppm: "pdftoppm", run }),
+  }),
+)
 
 await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
 const browserSpec = freshBrowserExport({
@@ -103,17 +95,18 @@ cases.push({
 })
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => (name === browserExportName ? browserExportPath : path.join(fixtures, name))
-const secondRender = (name) => `${name} again`
+const secondRender = (name) => `${name}${againSuffix}`
 const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
-const renderName = (render) => (render.endsWith(" again") ? render.slice(0, -" again".length) : render)
 const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))].filter(
   (render) => renderName(render) !== browserExportName,
 )
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
-    const name = render.endsWith(" again") ? render.slice(0, -" again".length) : render
-    rendered.set(render, await renderPages(fixturePath(name)))
+    const renders = await renderCacheReady
+    const file = fixturePath(renderName(render))
+    const bytes = fs.readFileSync(file)
+    rendered.set(render, await renders.pages({ file, bytes, use: renderUse({ render, bytes, committed }) }))
   }
 }
 const proofStarted = Date.now()
@@ -131,6 +124,8 @@ const gitAnswer = (args) => {
     return undefined
   }
 }
+const committed = committedBlobs(gitAnswer(["ls-tree", "HEAD", "scripts/pptx-fixtures/"]) ?? "")
+committed.delete(browserExportName)
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
   eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
@@ -200,6 +195,7 @@ const [{ found: lists, planting }] = await Promise.all([
   judgedFiles(),
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
+console.log((await renderCacheReady).line())
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
