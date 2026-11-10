@@ -19,6 +19,9 @@ export type AgentTool = {
 
 export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
+  start_run: { kind: "command", exposure: "web" },
+  stop_run: { kind: "command", exposure: "web" },
+  undo_run: { kind: "command", exposure: "web" },
   watch_deck: { kind: "stream", exposure: "web" },
   edit_deck: {
     kind: "command",

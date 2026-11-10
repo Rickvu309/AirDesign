@@ -794,3 +794,449 @@ describe("call", () => {
     expect(history(undone.body)).toEqual(["two"])
   })
 })
+
+describe("run operations", () => {
+  type Answer = { readonly ok: true; readonly deck: Deck; readonly key: string }
+
+  function answered<Result extends { readonly ok: boolean }>(result: Result): Result & Answer {
+    if (!result.ok) throw new Error(JSON.stringify(result))
+    return result as Result & Answer
+  }
+
+  function agentOf(runId: string) {
+    return { actor: "agent", runId } as const
+  }
+
+  function start(deck: Deck, runId: string, nodes: readonly ElementId[]) {
+    return answered(
+      call("start_run", deck, agentOf(runId), { deck: "deck", runId, elements: nodes.map((node) => ({ node })) }),
+    )
+  }
+
+  function land(deck: Deck, runId: string, node: ElementId, value: string): Deck {
+    const readAt = version(nodeBody(deck.register, node))
+    return answered(
+      call("edit_deck", deck, agentOf(runId), {
+        deck: "deck",
+        base: deck.revision,
+        changes: [{ value, node, readAt }],
+      }),
+    ).deck
+  }
+
+  function stop(deck: Deck, runId: string): Deck {
+    return answered(call("stop_run", deck, agentOf(runId), { deck: "deck", runId })).deck
+  }
+
+  function commit(deck: Deck, node: ElementId, value: string): Deck {
+    return answered(call("commit_edits", deck, person, { deck: "deck", batch: [{ value, node }] })).deck
+  }
+
+  function undo(deck: Deck, runId: string) {
+    return call("undo_run", deck, person, { deck: "deck", runId })
+  }
+
+  function shown(deck: Deck, node: ElementId): string {
+    return currentValue(nodeBody(deck.register, node))
+  }
+
+  function phase(deck: Deck, node: ElementId): string {
+    return nodeBody(deck.register, node).phase
+  }
+
+  function removed(deck: Deck, node: ElementId): Deck {
+    const decision = decide(deck.register, { command: "remove", node })
+    if (decision.decision !== "apply") throw new Error(decision.code)
+    return { ...deck, register: decision.register }
+  }
+
+  function restored(deck: Deck, node: ElementId): Deck {
+    return { ...deck, register: include(deck.register, node) }
+  }
+
+  function floorsReady(): Deck {
+    const deck = opened()
+    let register = deck.register
+    for (const [node, floor] of [
+      [left, "left before"],
+      [right, "right before"],
+      [middle, "middle before"],
+    ] as const) {
+      const added = decide(register, { command: "add", node, floor, route: register.route })
+      if (added.decision !== "apply") throw new Error(added.code)
+      register = added.register
+    }
+    return { ...deck, register }
+  }
+
+  describe("undo_run", () => {
+    it("undoes every element of a run in one call", () => {
+      const before = commit(floorsReady(), middle, "a person wrote this")
+      let deck = start(before, "run", [left, right, middle]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = land(deck, "run", right, "agent right")
+      deck = land(deck, "run", middle, "agent middle")
+      expect([shown(deck, left), shown(deck, right), shown(deck, middle)]).toEqual([
+        "agent left",
+        "agent right",
+        "agent middle",
+      ])
+      const undone = answered(undo(deck, "run"))
+      expect(undone.deck.revision).toBe(deck.revision + 1)
+      expect(parseNotifyKey(undone.key)).toEqual({ ok: true, deck: deck.id, revision: deck.revision + 1 })
+      expect(shown(undone.deck, left)).toBe("left before")
+      expect(shown(undone.deck, right)).toBe("right before")
+      expect(shown(undone.deck, middle)).toBe("a person wrote this")
+      expect([phase(undone.deck, left), phase(undone.deck, right), phase(undone.deck, middle)]).toEqual([
+        "undone",
+        "undone",
+        "undone",
+      ])
+      expect(nodeBody(undone.deck.register, middle).landed).toEqual([
+        { actor: "person", value: "a person wrote this", visible: true },
+        { actor: "agent", value: "agent middle", visible: false, runId: "run" },
+      ])
+    })
+
+    it("keeps a person's edit made after the agent wrote", () => {
+      let deck = start(floorsReady(), "run", [left]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = commit(deck, left, "the person's fix")
+      const undone = answered(undo(deck, "run"))
+      expect(shown(undone.deck, left)).toBe("the person's fix")
+      expect(history(nodeBody(undone.deck.register, left))).toEqual(["the person's fix"])
+    })
+
+    it("undoes a run that started on two elements and landed on one", () => {
+      let deck = start(floorsReady(), "run", [left, right]).deck
+      deck = land(deck, "run", left, "agent left")
+      const undone = answered(undo(deck, "run"))
+      expect(shown(undone.deck, left)).toBe("left before")
+      expect(shown(undone.deck, right)).toBe("right before")
+      expect([phase(undone.deck, left), phase(undone.deck, right)]).toEqual(["undone", "undone"])
+    })
+
+    it("leaves an element the run never touched as it was", () => {
+      let deck = commit(floorsReady(), middle, "untouched")
+      const body = nodeBody(deck.register, middle)
+      deck = land(start(deck, "run", [left]).deck, "run", left, "agent left")
+      const undone = answered(undo(deck, "run"))
+      expect(nodeBody(undone.deck.register, middle)).toBe(body)
+    })
+
+    it("refuses the whole undo when a later run is live on one element", () => {
+      let deck = start(floorsReady(), "run", [left, right]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = land(deck, "run", right, "agent right")
+      deck = stop(deck, "run")
+      deck = land(start(deck, "later", [right]).deck, "later", right, "later right")
+      const register = deck.register
+      expect(undo(deck, "run")).toEqual({ ok: false, refusal: "run-fenced" })
+      expect(deck.register).toBe(register)
+      expect(shown(deck, left)).toBe("agent left")
+      expect(phase(deck, left)).toBe("stopped")
+      expect(shown(deck, right)).toBe("later right")
+    })
+
+    it("undoes the earlier run once the later one stops and keeps the later text", () => {
+      let deck = start(floorsReady(), "run", [left, right]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = land(deck, "run", right, "agent right")
+      deck = stop(deck, "run")
+      deck = land(start(deck, "later", [right]).deck, "later", right, "later right")
+      deck = stop(deck, "later")
+      const undone = answered(undo(deck, "run"))
+      expect(shown(undone.deck, left)).toBe("left before")
+      expect(phase(undone.deck, left)).toBe("undone")
+      expect(shown(undone.deck, right)).toBe("later right")
+      expect(phase(undone.deck, right)).toBe("stopped")
+      expect(nodeBody(undone.deck.register, right).runId).toBe("later")
+    })
+
+    it("undoes a live run without a stop and fences its next edit", () => {
+      const deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      const undone = answered(undo(deck, "run"))
+      expect(phase(undone.deck, left)).toBe("undone")
+      expect(
+        call("edit_deck", undone.deck, agentOf("run"), {
+          deck: "deck",
+          base: undone.deck.revision,
+          changes: [{ value: "again", node: left, readAt: version(nodeBody(undone.deck.register, left)) }],
+        }),
+      ).toEqual({ ok: false, refusal: "run-fenced" })
+    })
+
+    it("refuses an unknown run and changes nothing", () => {
+      const deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      expect(undo(deck, "ghost")).toEqual({ ok: false, refusal: "run-fenced" })
+      expect(shown(deck, left)).toBe("agent left")
+    })
+
+    it("refuses a second undo of the same run", () => {
+      const deck = land(start(floorsReady(), "run", [left, right]).deck, "run", left, "agent left")
+      const undone = answered(undo(deck, "run"))
+      expect(undo(undone.deck, "run")).toEqual({ ok: false, refusal: "run-fenced" })
+    })
+
+    it("undoes a run on an element that was removed, so it comes back without the agent's text", () => {
+      let deck = start(floorsReady(), "run", [left, right]).deck
+      deck = land(deck, "run", left, "agent left")
+      deck = land(deck, "run", right, "agent right")
+      deck = removed(deck, right)
+      const nodes = deck.register.nodes
+      const undone = answered(undo(deck, "run"))
+      expect(undone.deck.register.nodes).toEqual(nodes)
+      const back = restored(undone.deck, right)
+      expect(shown(back, right)).toBe("right before")
+      expect(phase(back, right)).toBe("undone")
+    })
+
+    it("undoes what a run wrote after it was undone and restarted elsewhere", () => {
+      let deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      deck = answered(undo(deck, "run")).deck
+      deck = land(start(deck, "run", [right]).deck, "run", right, "agent right")
+      const undone = answered(undo(deck, "run"))
+      expect(shown(undone.deck, right)).toBe("right before")
+      expect(shown(undone.deck, left)).toBe("left before")
+    })
+
+    it("lets an agent undo its own run", () => {
+      const deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      const undone = answered(call("undo_run", deck, agentOf("run"), { deck: "deck", runId: "run" }))
+      expect(shown(undone.deck, left)).toBe("left before")
+    })
+
+    it("refuses an agent that names another agent's run", () => {
+      const deck = land(start(floorsReady(), "run", [left]).deck, "run", left, "agent left")
+      expect(call("undo_run", deck, agentOf("other"), { deck: "deck", runId: "run" })).toEqual({
+        ok: false,
+        refusal: "run-fenced",
+      })
+    })
+
+    it("refuses a different deck and a malformed call", () => {
+      const deck = start(floorsReady(), "run", [left]).deck
+      expect(call("undo_run", deck, person, { deck: "other", runId: "run" })).toEqual({ ok: false, refusal: "deck" })
+      expect(call("undo_run", deck, person, { deck: "deck" })).toEqual({ ok: false, refusal: "field" })
+    })
+  })
+
+  describe("start_run", () => {
+    it("opens a missing element with its floor and answers the run id", () => {
+      const result = answered(
+        call("start_run", opened(), agent, { deck: "deck", runId: "run", elements: [{ node: left, floor: "old" }] }),
+      )
+      expect(result.runId).toBe("run")
+      expect(result.deck.revision).toBe(1)
+      expect(parseNotifyKey(result.key)).toEqual({ ok: true, deck: result.deck.id, revision: 1 })
+      expect(shown(result.deck, left)).toBe("old")
+      expect(phase(result.deck, left)).toBe("running")
+      expect(nodeBody(result.deck.register, left).runId).toBe("run")
+    })
+
+    it("keeps the floor of an element that is already open", () => {
+      const deck = floorsReady()
+      const result = answered(
+        call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: left, floor: "new" }] }),
+      )
+      expect(shown(result.deck, left)).toBe("left before")
+    })
+
+    it("starts every named element in one revision", () => {
+      const deck = opened()
+      const result = start(deck, "run", [left, right, middle])
+      expect(result.deck.revision).toBe(1)
+      expect([phase(result.deck, left), phase(result.deck, right), phase(result.deck, middle)]).toEqual([
+        "running",
+        "running",
+        "running",
+      ])
+    })
+
+    it("joins the same run on a second start without raising the revision", () => {
+      const first = start(opened(), "run", [left, right])
+      const second = start(first.deck, "run", [left, right])
+      expect(second.runId).toBe("run")
+      expect(second.deck).toBe(first.deck)
+      expect(second.key).toBe(first.key)
+    })
+
+    it("does not lose an agent's text when a second start joins", () => {
+      const deck = land(start(opened(), "run", [left]).deck, "run", left, "agent left")
+      expect(shown(start(deck, "run", [left]).deck, left)).toBe("agent left")
+    })
+
+    it("adds a new element to the live run", () => {
+      const first = start(opened(), "run", [left])
+      const second = start(first.deck, "run", [left, right])
+      expect(second.runId).toBe("run")
+      expect(second.deck.revision).toBe(first.deck.revision + 1)
+      expect(nodeBody(second.deck.register, right).runId).toBe("run")
+    })
+
+    it("joins the run live on a named element and starts the rest under it", () => {
+      const first = start(opened(), "run", [left])
+      const second = answered(
+        call("start_run", first.deck, agentOf("fresh"), {
+          deck: "deck",
+          runId: "fresh",
+          elements: [{ node: right }, { node: left }],
+        }),
+      )
+      expect(second.runId).toBe("run")
+      expect(nodeBody(second.deck.register, left).runId).toBe("run")
+      expect(nodeBody(second.deck.register, right).runId).toBe("run")
+    })
+
+    it("refuses when two named elements run different runs", () => {
+      const one = start(opened(), "one", [left]).deck
+      const both = start(one, "two", [right]).deck
+      const register = both.register
+      expect(
+        call("start_run", both, agentOf("one"), {
+          deck: "deck",
+          runId: "one",
+          elements: [{ node: middle }, { node: left }, { node: right }],
+        }),
+      ).toEqual({ ok: false, refusal: "run-fenced" })
+      expect(both.register).toBe(register)
+      expect(both.register.nodes).not.toContain(middle)
+    })
+
+    it("starts a new run beside a different run on an element it does not name", () => {
+      const one = start(opened(), "one", [left]).deck
+      const two = start(one, "two", [right])
+      expect(two.runId).toBe("two")
+      expect(nodeBody(two.deck.register, left).runId).toBe("one")
+      expect(nodeBody(two.deck.register, right).runId).toBe("two")
+    })
+
+    it("starts a new run on an element whose run has stopped", () => {
+      const deck = stop(land(start(opened(), "one", [left]).deck, "one", left, "one"), "one")
+      const next = start(deck, "two", [left])
+      expect(next.runId).toBe("two")
+      expect(phase(next.deck, left)).toBe("running")
+      expect(nodeBody(next.deck.register, left).runId).toBe("two")
+    })
+
+    it("starts a new run on an element whose run was undone", () => {
+      const deck = answered(undo(land(start(opened(), "one", [left]).deck, "one", left, "one"), "one")).deck
+      expect(phase(start(deck, "two", [left]).deck, left)).toBe("running")
+    })
+
+    it("refuses a run id that already wrote on a named element and starts nothing", () => {
+      const deck = stop(land(start(opened(), "run", [left]).deck, "run", left, "one"), "run")
+      const register = deck.register
+      expect(
+        call("start_run", deck, agent, { deck: "deck", runId: "run", elements: [{ node: right }, { node: left }] }),
+      ).toEqual({ ok: false, refusal: "run-fenced" })
+      expect(deck.register).toBe(register)
+    })
+
+    it("refuses a floor over the value limit", () => {
+      expect(
+        call("start_run", opened(), agent, {
+          deck: "deck",
+          runId: "run",
+          elements: [{ node: left, floor: "x".repeat(8001) }],
+        }),
+      ).toEqual({ ok: false, refusal: "limit" })
+    })
+
+    it("does not start a run for a person", () => {
+      expect(call("start_run", opened(), person, { deck: "deck", runId: "run", elements: [{ node: left }] })).toEqual({
+        ok: false,
+        refusal: "field",
+      })
+    })
+
+    it("refuses an agent that names a run other than its own", () => {
+      expect(
+        call("start_run", opened(), agentOf("other"), { deck: "deck", runId: "run", elements: [{ node: left }] }),
+      ).toEqual({ ok: false, refusal: "run-fenced" })
+    })
+
+    it("refuses a different deck and a malformed call", () => {
+      expect(call("start_run", opened(), agent, { deck: "other", runId: "run", elements: [{ node: left }] })).toEqual({
+        ok: false,
+        refusal: "deck",
+      })
+      expect(call("start_run", opened(), agent, { deck: "deck", runId: "run", elements: [] })).toEqual({
+        ok: false,
+        refusal: "batch",
+      })
+    })
+  })
+
+  describe("stop_run", () => {
+    it("stops a run on every element it started on in one revision", () => {
+      const deck = land(start(opened(), "run", [left, right]).deck, "run", left, "agent left")
+      const result = answered(call("stop_run", deck, agent, { deck: "deck", runId: "run" }))
+      expect(result.deck.revision).toBe(deck.revision + 1)
+      expect(parseNotifyKey(result.key)).toEqual({ ok: true, deck: deck.id, revision: deck.revision + 1 })
+      expect([phase(result.deck, left), phase(result.deck, right)]).toEqual(["stopped", "stopped"])
+      expect(shown(result.deck, left)).toBe("agent left")
+    })
+
+    it("leaves a different run running", () => {
+      const one = start(opened(), "one", [left]).deck
+      const both = start(one, "two", [right]).deck
+      const body = nodeBody(both.register, right)
+      const result = stop(both, "one")
+      expect(phase(result, left)).toBe("stopped")
+      expect(nodeBody(result.register, right)).toBe(body)
+    })
+
+    it("leaves an element a later run took over", () => {
+      let deck = land(start(opened(), "one", [left]).deck, "one", left, "one")
+      deck = stop(deck, "one")
+      deck = start(deck, "two", [left]).deck
+      deck = start(deck, "one", [right]).deck
+      const result = stop(deck, "one")
+      expect(phase(result, right)).toBe("stopped")
+      expect(phase(result, left)).toBe("running")
+      expect(nodeBody(result.register, left).runId).toBe("two")
+    })
+
+    it("changes nothing when the run has already stopped", () => {
+      const deck = stop(start(opened(), "run", [left]).deck, "run")
+      const again = answered(call("stop_run", deck, agent, { deck: "deck", runId: "run" }))
+      expect(again.deck).toBe(deck)
+      expect(parseNotifyKey(again.key)).toEqual({ ok: true, deck: deck.id, revision: deck.revision })
+    })
+
+    it("stops a run on an element that was removed, so it does not come back running", () => {
+      const deck = removed(start(opened(), "run", [left, right]).deck, right)
+      expect(phase(restored(stop(deck, "run"), right), right)).toBe("stopped")
+    })
+
+    it("refuses an unknown run and changes nothing", () => {
+      const deck = start(opened(), "run", [left]).deck
+      expect(call("stop_run", deck, agentOf("ghost"), { deck: "deck", runId: "ghost" })).toEqual({
+        ok: false,
+        refusal: "run-fenced",
+      })
+      expect(phase(deck, left)).toBe("running")
+    })
+
+    it("does not stop a run for a person", () => {
+      const deck = start(opened(), "run", [left]).deck
+      expect(call("stop_run", deck, person, { deck: "deck", runId: "run" })).toEqual({ ok: false, refusal: "field" })
+    })
+
+    it("refuses an agent that names another agent's run", () => {
+      const deck = start(opened(), "run", [left]).deck
+      expect(call("stop_run", deck, agentOf("other"), { deck: "deck", runId: "run" })).toEqual({
+        ok: false,
+        refusal: "run-fenced",
+      })
+      expect(phase(deck, left)).toBe("running")
+    })
+
+    it("refuses a different deck and a malformed call", () => {
+      const deck = start(opened(), "run", [left]).deck
+      expect(call("stop_run", deck, agent, { deck: "other", runId: "run" })).toEqual({ ok: false, refusal: "deck" })
+      expect(call("stop_run", deck, agent, { deck: "deck", runId: 7 })).toEqual({ ok: false, refusal: "field" })
+    })
+  })
+})

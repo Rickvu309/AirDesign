@@ -32,6 +32,11 @@ export type WireChange = {
   readonly onBehalfOf?: never
 }
 
+export type WireRunElement = {
+  readonly node: ElementId
+  readonly floor?: string
+}
+
 export type LiveKey = {
   readonly deck: DeckId
   readonly revision: number
@@ -204,6 +209,66 @@ export function readAgentEdit(
   const changes = readChangeBatch(body.changes)
   if (!changes.ok) return changes
   return { ok: true, deck: deck.deck, base, changes: changes.changes }
+}
+
+function readRunId(raw: unknown): string | undefined {
+  if (typeof raw !== "string" || !deckPattern.test(raw)) return undefined
+  return raw
+}
+
+function readRunElement(raw: unknown): { ok: true; element: WireRunElement } | FieldRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["node", "floor"])) return fieldRefusal
+  const node = readNode(body.node)
+  if (node === undefined) return fieldRefusal
+  const floor = readFloor(body)
+  if (floor === null) return fieldRefusal
+  if (floor === undefined) return { ok: true, element: { node } }
+  return { ok: true, element: { node, floor } }
+}
+
+function readRunElementBatch(
+  raw: unknown,
+): { ok: true; elements: readonly WireRunElement[] } | FieldRefusal | BatchRefusal {
+  if (!Array.isArray(raw) || raw.length < 1 || raw.length > batchCap) return batchRefusal
+  const elements: WireRunElement[] = []
+  for (const item of raw) {
+    const element = readRunElement(item)
+    if (!element.ok) return fieldRefusal
+    elements.push(element.element)
+  }
+  return { ok: true, elements }
+}
+
+export function readRunStart(
+  raw: unknown,
+):
+  | { ok: true; deck: DeckId; runId: string; elements: readonly WireRunElement[] }
+  | FieldRefusal
+  | DeckRefusal
+  | BatchRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["deck", "runId", "elements"]) || !Object.hasOwn(body, "deck")) {
+    return fieldRefusal
+  }
+  const deck = readDeckId(body.deck)
+  if (!deck.ok) return deckRefusal
+  const runId = readRunId(body.runId)
+  if (runId === undefined) return fieldRefusal
+  if (!Object.hasOwn(body, "elements")) return batchRefusal
+  const elements = readRunElementBatch(body.elements)
+  if (!elements.ok) return elements
+  return { ok: true, deck: deck.deck, runId, elements: elements.elements }
+}
+
+export function readRun(raw: unknown): { ok: true; deck: DeckId; runId: string } | FieldRefusal | DeckRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["deck", "runId"]) || !Object.hasOwn(body, "deck")) return fieldRefusal
+  const deck = readDeckId(body.deck)
+  if (!deck.ok) return deckRefusal
+  const runId = readRunId(body.runId)
+  if (runId === undefined) return fieldRefusal
+  return { ok: true, deck: deck.deck, runId }
 }
 
 export function readCapture(raw: unknown): { ok: true; deck: DeckId } | FieldRefusal | DeckRefusal {
