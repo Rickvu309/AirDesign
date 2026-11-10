@@ -70,5 +70,5 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | `main` takes only a gated commit that contains the latest `main` | branch protection |
 | A stick moves only toward its goal, and a PowerPoint case or deck already judged does not change | the `owner gate` check, run from `main` |
 | A change to what the gate checks is seen by the owner | the `owner gate` check labels the PR `touched the bar`. It does not block |
-| A bug you find and do not fix is an `it.fails` test. A failing-expected, skipped or todo test counts as a known fault | `scripts/sticks.mjs`: the count must match `sticks.json` |
+| A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known fault, and the number of tests cannot fall | `scripts/sticks.mjs`: both counts must match `sticks.json` |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |

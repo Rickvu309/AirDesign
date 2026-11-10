@@ -1,21 +1,12 @@
-import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { caughtCount } from "./judge-proof.mjs"
+import { readRun } from "./vitest-sticks.mjs"
 
-const unproven = /\.(?:fails|skip|todo)\b|\.(?:fixme|fail)\(|\b(?:fails|skip|todo): true/g
+const knownFaults = (root) => readRun(root).faults
 
-const knownFaults = (root) => {
-  const listed = spawnSync("git", ["ls-files", "-z", "*.test.*", "*.spec.*"], { cwd: root, encoding: "utf8" })
-  if (listed.status !== 0) throw new Error(listed.stderr || "git ls-files failed")
-  let count = 0
-  for (const file of listed.stdout.split("\0")) {
-    if (file === "" || file === "scripts/sticks.test.mjs" || !fs.existsSync(path.join(root, file))) continue
-    count += fs.readFileSync(path.join(root, file), "utf8").match(unproven)?.length ?? 0
-  }
-  return count
-}
+const tests = (root) => readRun(root).tests
 
 const realDecks = (root) => {
   const fixtures = path.join(root, "scripts/pptx-fixtures")
@@ -47,6 +38,7 @@ const plantedBreaks = (root) =>
 
 const measures = {
   "known faults": knownFaults,
+  tests,
   "real decks in the PowerPoint check": realDecks,
   "routes pptx writes": capabilitiesExported,
   "planted breaks the judge catches": plantedBreaks,
@@ -82,6 +74,13 @@ export const readSticks = async (root) => {
       continue
     }
     const measured = await measure(root)
+    if (typeof stick.floor === "number") {
+      rows.push({ name, now: measured, floor: stick.floor })
+      if (measured !== stick.floor) {
+        drift.push(`${name} is ${measured} and sticks.json says ${stick.floor}. Record ${measured} in sticks.json.`)
+      }
+      continue
+    }
     const { now, goal } = typeof measured === "number" ? { now: measured, goal: stick.goal } : measured
     rows.push({ name, now, goal })
     if (now !== stick.now)
@@ -111,6 +110,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const width = Math.max(...rows.map((row) => row.name.length))
   for (const row of rows) {
     if ("limit" in row) continue
+    if ("floor" in row) {
+      console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  floor ${row.floor}`)
+      continue
+    }
     console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
   }
   for (const line of drift) console.log(line)
