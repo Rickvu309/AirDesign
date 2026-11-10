@@ -1,7 +1,10 @@
+import { randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import { readFile } from "node:fs/promises"
 import type { AddressInfo } from "node:net"
 import path from "node:path"
+import { Client } from "pg"
+import { afterAll } from "vitest"
 
 import { createApi, type ApiOptions } from "./index.js"
 
@@ -12,10 +15,54 @@ export type PostgresInfo = {
   readonly listen: string
 }
 
-export async function postgresInfo(): Promise<PostgresInfo> {
-  const file = path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
-  return JSON.parse(await readFile(file, "utf8")) as PostgresInfo
+export function inDatabase(url: string, database: string): string {
+  const moved = new URL(url)
+  moved.pathname = `/${database}`
+  return moved.toString()
 }
+
+function databaseOf(url: string): string {
+  return new URL(url).pathname.slice(1)
+}
+
+async function onCluster(info: PostgresInfo, statement: string): Promise<void> {
+  const admin = new Client({ connectionString: inDatabase(info.admin, "postgres"), application_name: "api-database" })
+  await admin.connect()
+  try {
+    await admin.query(statement)
+  } finally {
+    await admin.end()
+  }
+}
+
+async function ownDatabase(): Promise<PostgresInfo> {
+  const file = path.join(process.cwd(), "node_modules/.cache/airdesign-api-postgres.json")
+  const template = JSON.parse(await readFile(file, "utf8")) as PostgresInfo
+  const database = `file_${String(process.pid)}_${randomBytes(6).toString("hex")}`
+  await onCluster(template, `create database ${database} template ${databaseOf(template.admin)}`)
+  return {
+    admin: inDatabase(template.admin, database),
+    session: inDatabase(template.session, database),
+    deck: inDatabase(template.deck, database),
+    listen: inDatabase(template.listen, database),
+  }
+}
+
+let own: Promise<PostgresInfo> | undefined
+
+export function postgresInfo(): Promise<PostgresInfo> {
+  own ??= ownDatabase()
+  return own
+}
+
+afterAll(async () => {
+  if (own === undefined) return
+  const info = await own
+  own = undefined
+  await onCluster(info, `drop database if exists ${databaseOf(info.admin)}`).catch((error: unknown) => {
+    if ((error as { code?: string }).code !== "55006") throw error
+  })
+})
 
 export function cookieFrom(headers: IncomingHttpHeaders): string | undefined {
   const header = headers["set-cookie"]
