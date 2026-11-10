@@ -58,7 +58,7 @@ StartAgain ==
   /\ phase # "idle"
   /\ UNCHANGED vars
 
-\* The write applies only while the stored id is running and readAt equals the current version.
+\* This model keeps one write, the fresh one, which is enough for start, stop, limit, resume, and read.
 \* A stopped or ended run does not accept another write from that run.
 AgentWrites ==
   \/ /\ phase = "running"

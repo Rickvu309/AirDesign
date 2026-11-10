@@ -131,6 +131,13 @@ function nodeRegister(spec: Spec): Register {
   if (num(spec, "agent") === 1 || num(spec, "agentAt") !== -1) {
     landed.push({ actor: "agent", value: "agent", visible: num(spec, "agent") === 1 })
   }
+  if (num(spec, "agent") === 2) {
+    const at = landed.findIndex((row) => row.actor === "agent")
+    const first = { actor: "agent" as const, value: "agent", visible: true }
+    const second = { actor: "agent" as const, value: "again", visible: true }
+    if (at >= 0) landed.splice(at, 1, first, second)
+    else landed.push(first, second)
+  }
   for (let index = 0; index < num(spec, "personAfter"); index += 1) {
     landed.push({ actor: "person", value: "later", visible: true })
   }
@@ -245,6 +252,25 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
       const decision = decide(register, { command: "undo", runId: run })
       if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
       else next = decision.register
+    } else if (edge.action === "AgentWritesAgain" || edge.action === "AgentKeepsClaim") {
+      const decision = decide(register, {
+        command: "agent",
+        runId: run,
+        readAt: num(source, "readAt"),
+        value: "again",
+      })
+      if (decision.decision !== "apply") failures.push(`edit ${where} refused ${decision.code}`)
+      else next = decision.register
+    } else if (edge.action === "AgentRefusesStale") {
+      const decision = decide(register, {
+        command: "agent",
+        runId: run,
+        readAt: num(source, "readAt"),
+        value: "stale",
+      })
+      if (decision.decision !== "refuse" || decision.code !== "stale") {
+        failures.push(`edit ${where} accepted the claimed read`)
+      } else replayed += 1
     } else {
       failures.push(`edit ${where} is not connected`)
       continue
