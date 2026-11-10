@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process"
+import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
@@ -1303,56 +1304,11 @@ describe("spec replay", () => {
   it("replays every reachable spec edge through decide", async () => {
     assertJar(jarPath())
     const found = topics(root)
-    {
-      const found = topics(root).filter((topic) => topic.name !== "run")
-      const usageAside = found.findIndex((topic) => topic.name === "usage")
-      if (usageAside >= 0) found.splice(usageAside, 1)
-      const oauthAside = found.findIndex((topic) => topic.name === "oauth")
-      if (oauthAside >= 0) found.splice(oauthAside, 1)
-      const rerunAside = found.findIndex((topic) => topic.name === "rerun")
-      if (rerunAside >= 0) found.splice(rerunAside, 1)
-      const ownerAside = found.findIndex((topic) => topic.name === "owner")
-      if (ownerAside >= 0) found.splice(ownerAside, 1)
-      new Function(
-        "found",
-        "expect",
-        `
-    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "structure", "undo"])
-`,
-      )(found, expect)
-    }
-    const usageTopic = found.find((topic) => topic.name === "usage")
-    if (usageTopic !== undefined) found.splice(found.indexOf(usageTopic), 1)
-    const oauthTopic = found.find((topic) => topic.name === "oauth")
-    if (oauthTopic !== undefined) found.splice(found.indexOf(oauthTopic), 1)
-    const rerunTopic = found.find((topic) => topic.name === "rerun")
-    if (rerunTopic !== undefined) found.splice(found.indexOf(rerunTopic), 1)
-    const ownerTopic = found.find((topic) => topic.name === "owner")
-    if (ownerTopic !== undefined) found.splice(found.indexOf(ownerTopic), 1)
-    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
-    if (usageTopic !== undefined) found.push(usageTopic)
-    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo", "usage"])
-    if (oauthTopic !== undefined) found.push(oauthTopic)
-    expect(found.map((topic) => topic.name).sort()).toEqual([
-      "edit",
-      "oauth",
-      "offline",
-      "run",
-      "structure",
-      "undo",
-      "usage",
-    ])
-    if (rerunTopic !== undefined) found.push(rerunTopic)
-    expect(found.map((topic) => topic.name).sort()).toEqual([
-      "edit",
-      "oauth",
-      "offline",
-      "rerun",
-      "run",
-      "structure",
-      "undo",
-      "usage",
-    ])
+    const folders = readdirSync(path.join(root, "specs"), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort()
+    expect(found.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of found) expect(topic.view).toBe(true)
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
@@ -1366,6 +1322,7 @@ describe("spec replay", () => {
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
     }
+    expect(Object.keys(views).sort()).toEqual(folders)
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)
