@@ -215,10 +215,9 @@ function writeTransform(
   ])
 }
 
-export type AppliedParts = Map<string, Uint8Array> & { readonly id: string | null }
-
-export function withId(parts: Map<string, Uint8Array>, id: string | null): AppliedParts {
-  return Object.assign(parts, { id })
+export type RouteResult = {
+  readonly parts: Map<string, Uint8Array>
+  readonly id: string | null
 }
 
 function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name: "add" }>): Uint8Array {
@@ -272,7 +271,7 @@ function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name:
   }
 }
 
-export function applyRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute): AppliedParts {
+export function writeRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute): RouteResult {
   const current = parts.get(route.part)
   if (current === undefined) throw new Error("part")
   if (route.name === "add") {
@@ -285,10 +284,14 @@ export function applyRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideR
     const nextBytes = encodeUtf8(written.xml)
     const next = new Map(parts)
     next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)
-    return withId(next, String(written.id))
+    return { parts: next, id: String(written.id) }
   }
   const nextBytes = editPart(current, route)
   const next = new Map(parts)
   next.set(route.part, sameBytes(nextBytes, current) ? current : nextBytes)
-  return withId(next, null)
+  return { parts: next, id: null }
+}
+
+export function applyRoute(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute): Map<string, Uint8Array> {
+  return writeRoute(parts, route).parts
 }

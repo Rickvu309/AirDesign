@@ -1,6 +1,6 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
-import { applyRoute, type AppliedParts } from "./slide-route.js"
-import { applyStructuralRoute } from "./structural-route.js"
+import { writeRoute } from "./slide-route.js"
+import { writeStructuralRoute } from "./structural-route.js"
 
 const elementId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const createdId = /^n[0-9a-z]{12}$/
@@ -121,33 +121,92 @@ function slideTokens(held: readonly Held[]): string[] {
   return [...new Set(held.map((row) => row.slide).filter(isCreated))].sort()
 }
 
-function writtenSlide(parts: ReadonlyMap<string, Uint8Array>, after: string): AppliedParts {
-  const written = applyStructuralRoute(parts, { name: "sldIdLst.add", after })
+function slideIds(parts: ReadonlyMap<string, Uint8Array>): Set<string> {
+  const presentation = parts.get(presentationPart)
+  const ids = new Set<string>()
+  if (presentation === undefined) return ids
+  for (const element of markupDocument(presentation).elements) {
+    if (element.kind === "p:sldId" && element.id !== null) ids.add(element.id)
+  }
+  return ids
+}
+
+function shapeIds(parts: ReadonlyMap<string, Uint8Array>, slide: string): Set<string> | null {
+  const part = partForSlide(parts, slide)
+  if (part === null) return null
+  const bytes = parts.get(part)
+  if (bytes === undefined) return null
+  const ids = new Set<string>()
+  for (const element of markupDocument(bytes).elements) {
+    if (element.kind === "p:cNvPr" && element.id !== null) ids.add(element.id)
+  }
+  return ids
+}
+
+function requireKnown(parts: ReadonlyMap<string, Uint8Array>, held: readonly Held[]): void {
+  const slides = slideIds(parts)
+  const shapes = new Map<string, Set<string>>()
+  const seen = new Set<string>()
+  for (const row of held) {
+    if (row.edit.name === "add") {
+      if (seen.has(row.edit.id)) throw new Error("shape")
+      seen.add(row.edit.id)
+    }
+    if (isCreated(row.slide)) {
+      if (!isCreated(row.shape)) throw new Error("shape")
+      continue
+    }
+    if (!slides.has(row.slide)) throw new Error("slide")
+    if (isCreated(row.shape)) continue
+    let ids = shapes.get(row.slide)
+    if (ids === undefined) {
+      const found = shapeIds(parts, row.slide)
+      if (found === null) throw new Error("slide")
+      ids = found
+      shapes.set(row.slide, ids)
+    }
+    if (!ids.has(row.shape)) throw new Error("shape")
+  }
+}
+
+function writtenSlide(parts: ReadonlyMap<string, Uint8Array>, after: string) {
+  const written = writeStructuralRoute(parts, { name: "sldIdLst.add", after })
   if (written.id === null) throw new Error("slide")
   return written
 }
 
 function partForHalf(
-  parts: ReadonlyMap<string, Uint8Array>,
+  original: ReadonlyMap<string, Uint8Array>,
+  current: ReadonlyMap<string, Uint8Array>,
   slide: string,
   slides: ReadonlyMap<string, string>,
 ): string {
-  const number = isCreated(slide) ? slides.get(slide) : slide
+  if (!isCreated(slide)) {
+    const part = partForSlide(original, slide)
+    if (part === null || !original.has(part) || !current.has(part)) throw new Error("slide")
+    return part
+  }
+  const number = slides.get(slide)
   if (number === undefined) throw new Error("slide")
-  const part = partForSlide(parts, number)
-  if (part === null || !parts.has(part)) throw new Error("slide")
+  const part = partForSlide(current, number)
+  if (part === null || !current.has(part)) throw new Error("slide")
   return part
 }
 
 function place(
-  parts: ReadonlyMap<string, Uint8Array>,
+  original: ReadonlyMap<string, Uint8Array>,
+  current: ReadonlyMap<string, Uint8Array>,
   slide: string,
   shape: string,
   slides: ReadonlyMap<string, string>,
   shapes: ReadonlyMap<string, ReadonlyMap<string, string>>,
 ): { readonly part: string; readonly shape: string } {
-  const part = partForHalf(parts, slide, slides)
-  if (!isCreated(shape)) return { part, shape }
+  const part = partForHalf(original, current, slide, slides)
+  if (!isCreated(shape)) {
+    const ids = shapeIds(original, slide)
+    if (ids === null || !ids.has(shape)) throw new Error("shape")
+    return { part, shape }
+  }
   const written = shapes.get(part)?.get(shape)
   if (written === undefined) throw new Error("shape")
   return { part, shape: written }
@@ -158,22 +217,23 @@ export function exportElements(
   edits: readonly ElementEdit[],
 ): { readonly parts: ReadonlyMap<string, Uint8Array>; readonly ids: WrittenIds } {
   const held = hold(edits)
+  requireKnown(parts, held)
   let current: ReadonlyMap<string, Uint8Array> = parts
   for (const edit of edits) {
     if (edit.name !== "sldIdLst.add") continue
-    current = fresh(writtenSlide(current, edit.after))
+    current = fresh(writtenSlide(current, edit.after).parts)
   }
   const slides = new Map<string, string>()
   for (const token of slideTokens(held)) {
     const written = writtenSlide(current, lastSlide(current))
     if (written.id === null) throw new Error("slide")
     slides.set(token, written.id)
-    current = fresh(written)
+    current = fresh(written.parts)
   }
   const grouped = new Map<string, { part: string; token: string; rows: Row[] }>()
   for (const row of held) {
     if (row.edit.name !== "add") continue
-    const part = partForHalf(current, row.slide, slides)
+    const part = partForHalf(parts, current, row.slide, slides)
     const key = `${part}\0${row.shape}`
     const group = grouped.get(key) ?? { part, token: row.shape, rows: [] }
     group.rows.push({ id: row.edit.id, shape: row.shape, edit: row.edit })
@@ -192,7 +252,7 @@ export function exportElements(
     let chosen = group.rows[0]
     if (chosen === undefined) throw new Error("shape")
     for (const row of group.rows) if (row.id < chosen.id) chosen = row
-    const written = applyRoute(current, {
+    const written = writeRoute(current, {
       name: "add",
       part: group.part,
       text: chosen.edit.text,
@@ -206,7 +266,7 @@ export function exportElements(
     const partShapes = byPart.get(group.part) ?? new Map<string, string>()
     partShapes.set(group.token, written.id)
     byPart.set(group.part, partShapes)
-    current = fresh(written)
+    current = fresh(written.parts)
   }
   const pending = held.filter((row) => row.edit.name !== "add")
   pending.sort((left, right) => {
@@ -215,27 +275,28 @@ export function exportElements(
     return 0
   })
   for (const row of pending) {
-    const located = place(current, row.slide, row.shape, slides, byPart)
+    const located = place(parts, current, row.slide, row.shape, slides, byPart)
     const edit = row.edit
     if (edit.name === "add") continue
     switch (edit.name) {
       case "text":
         current = fresh(
-          applyRoute(current, { name: "text", part: located.part, shape: located.shape, text: edit.text }),
+          writeRoute(current, { name: "text", part: located.part, shape: located.shape, text: edit.text }).parts,
         )
         break
       case "move":
         current = fresh(
-          applyRoute(current, { name: "move", part: located.part, shape: located.shape, x: edit.x, y: edit.y }),
+          writeRoute(current, { name: "move", part: located.part, shape: located.shape, x: edit.x, y: edit.y }).parts,
         )
         break
       case "resize":
         current = fresh(
-          applyRoute(current, { name: "resize", part: located.part, shape: located.shape, cx: edit.cx, cy: edit.cy }),
+          writeRoute(current, { name: "resize", part: located.part, shape: located.shape, cx: edit.cx, cy: edit.cy })
+            .parts,
         )
         break
       case "remove":
-        current = fresh(applyRoute(current, { name: "remove", part: located.part, shape: located.shape }))
+        current = fresh(writeRoute(current, { name: "remove", part: located.part, shape: located.shape }).parts)
         break
       default: {
         const unexpected: never = edit

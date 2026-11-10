@@ -12,14 +12,10 @@ const slideA = "n000000000001"
 const slideB = "n000000000002"
 const shapeA = "n000000000003"
 const shapeB = "n000000000004"
-const high = "nzzzzzzzzzzzz"
 const box = { x: 914400, y: 914400, cx: 914400, cy: 457200 }
 const slide = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="A"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>One</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
-const other = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="8" name="B"/></p:nvSpPr></p:sp></p:spTree></p:cSld></p:sld>`
 const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst><p:sldSz cx="1" cy="1"/></p:presentation>`
-const twoSlides = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/><p:sldId id="257" r:id="rId3"/></p:sldIdLst><p:sldSz cx="1" cy="1"/></p:presentation>`
 const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
-const twoRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/></Relationships>`
 const types = `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
 const slideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`
 
@@ -36,15 +32,6 @@ function deck(): Map<string, Uint8Array> {
     ["[Content_Types].xml", text(types)],
     ["ppt/media/keep.bin", Uint8Array.from([1, 0, 255])],
   ])
-}
-
-function twoDeck(): Map<string, Uint8Array> {
-  const parts = deck()
-  parts.set("ppt/slides/slide2.xml", text(other))
-  parts.set("ppt/slides/_rels/slide2.xml.rels", text(slideRels))
-  parts.set("ppt/presentation.xml", text(twoSlides))
-  parts.set("ppt/_rels/presentation.xml.rels", text(twoRels))
-  return parts
 }
 
 function add(id: string, value: string): ElementEdit {
@@ -90,29 +77,22 @@ describe("exportElements", () => {
     expect(rowsFor(written.parts, "ALPHA").some((row) => row.slide === "257")).toBe(false)
   })
 
-  it("writes two names for one part as two shapes", () => {
-    const parts = twoDeck()
-    const written = exportElements(parts, [add(`${slideA}.${high}`, "ZED"), add(`258.${slideA}`, "NUM")])
-    const num = rowsFor(written.parts, "NUM")
-    const zed = rowsFor(written.parts, "ZED")
-    expect(num).toHaveLength(1)
-    expect(zed).toHaveLength(1)
-    expect(num[0]).toMatchObject({ slide: "258", shape: "2" })
-    expect(zed[0]).toMatchObject({ slide: "258", shape: "3" })
-    expect(num[0]?.part).toBe(zed[0]?.part)
-    expect(rowsFor(written.parts, "NUM").some((row) => row.slide === "256" || row.slide === "257")).toBe(false)
-    expect(rowsFor(written.parts, "ZED").some((row) => row.slide === "256" || row.slide === "257")).toBe(false)
-    expect(newDuplicateShapeIds(shapeIdCounts(parts), shapeIdCounts(written.parts))).toEqual([])
-    expect(decodeUtf8(written.parts.get(num[0]?.part ?? "") ?? text(""))).toContain("NUM")
-    expect(decodeUtf8(written.parts.get(zed[0]?.part ?? "") ?? text(""))).toContain("ZED")
-  })
-
-  it("writes one shape when two names share one token", () => {
-    const parts = twoDeck()
-    const written = exportElements(parts, [add(`${slideA}.${shapeA}`, "ALPHA"), add(`258.${shapeA}`, "ALSO")])
-    const rows = readShapes(written.parts).filter((row) => row.text === "ALPHA" || row.text === "ALSO")
-    expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ slide: "258", shape: "2", text: "ALSO" })
+  it("writes one shape for one token and distinct numbers for distinct tokens", () => {
+    const parts = deck()
+    const written = exportElements(parts, [
+      add(`256.${shapeA}`, "ALPHA"),
+      add(`256.${shapeB}`, "BETA"),
+      { id: `256.${shapeA}`, name: "text", text: "ALPHA2" },
+    ])
+    const alpha = rowsFor(written.parts, "ALPHA2")
+    const beta = rowsFor(written.parts, "BETA")
+    expect(rowsFor(written.parts, "ALPHA")).toHaveLength(0)
+    expect(alpha).toHaveLength(1)
+    expect(beta).toHaveLength(1)
+    expect(alpha[0]).toMatchObject({ slide: "256", shape: "3" })
+    expect(beta[0]).toMatchObject({ slide: "256", shape: "4" })
+    expect(alpha[0]?.part).toBe("ppt/slides/slide1.xml")
+    expect(beta[0]?.part).toBe(alpha[0]?.part)
     expect(newDuplicateShapeIds(shapeIdCounts(parts), shapeIdCounts(written.parts))).toEqual([])
   })
 
@@ -127,10 +107,23 @@ describe("exportElements", () => {
     const twice = await exportPackage(exportElements(original, creates).parts)
     expect(sameBytes(once, twice)).toBe(true)
     await fc.assert(
-      fc.asyncProperty(fc.shuffledSubarray(creates, { minLength: creates.length }), async (order) => {
-        const file = await exportPackage(exportElements(deck(), order).parts)
-        expect(sameBytes(file, once)).toBe(true)
-      }),
+      fc.asyncProperty(
+        fc.shuffledSubarray(creates, { minLength: creates.length }),
+        fc.constantFrom(`${slideA}.${shapeA}`, `${slideB}.${shapeB}`),
+        fc.constantFrom("FIRST", "SECOND"),
+        async (order, id, value) => {
+          const file = await exportPackage(exportElements(deck(), order).parts)
+          expect(sameBytes(file, once)).toBe(true)
+          const parts = deck()
+          const kept = parts.get("ppt/slides/slide1.xml")
+          const repeated = add(id, value)
+          expect(() =>
+            exportElements(parts, [...order, repeated, add(id, value === "FIRST" ? "SECOND" : "FIRST")]),
+          ).toThrow(/shape/)
+          expect(parts.get("ppt/slides/slide1.xml")).toBe(kept)
+          expect(parts.has("ppt/slides/slide2.xml")).toBe(false)
+        },
+      ),
       { numRuns: 20 },
     )
   })
@@ -162,6 +155,61 @@ describe("exportElements", () => {
     wrong.set(beta.part, alphaBytes)
     expect(touchMatches(before, wrong, touch)).toBe(true)
     expect(createdShapesLanded(wrong, landed, untouched)).toBe(false)
+  })
+
+  it("throws when a numeric slide is not in the original file", () => {
+    const parts = deck()
+    const before = parts.get("ppt/presentation.xml")
+    expect(() =>
+      exportElements(parts, [{ name: "sldIdLst.add", after: "256" }, add("257.n00000000000a", "NUMERIC_257")]),
+    ).toThrow(/slide/)
+    expect(parts.get("ppt/presentation.xml")).toBe(before)
+    expect(parts.has("ppt/slides/slide2.xml")).toBe(false)
+    expect(rowsFor(parts, "NUMERIC_257")).toHaveLength(0)
+  })
+
+  it("throws when a kept slide number from an earlier export is not in the file", () => {
+    const first = exportElements(deck(), [add("n000000000001.n00000000000a", "ALPHA")])
+    expect(first.ids.slides.get("n000000000001")).toBe("257")
+    const parts = deck()
+    const before = parts.get("ppt/presentation.xml")
+    expect(() =>
+      exportElements(parts, [
+        { name: "sldIdLst.add", after: "256" },
+        add("n000000000001.n00000000000a", "ALPHA"),
+        add("257.n00000000000b", "MEANT_FOR_A"),
+      ]),
+    ).toThrow(/slide/)
+    expect(parts.get("ppt/presentation.xml")).toBe(before)
+    expect(parts.has("ppt/slides/slide2.xml")).toBe(false)
+    expect(rowsFor(parts, "ALPHA")).toHaveLength(0)
+    expect(rowsFor(parts, "MEANT_FOR_A")).toHaveLength(0)
+  })
+
+  it("throws when a numeric shape names one this run would create", () => {
+    const parts = deck()
+    const before = parts.get("ppt/slides/slide1.xml")
+    expect(() => exportElements(parts, [add("256.n00000000000a", "X"), { id: "256.3", name: "remove" }])).toThrow(
+      /shape/,
+    )
+    expect(parts.get("ppt/slides/slide1.xml")).toBe(before)
+    expect(rowsFor(parts, "One")).toHaveLength(1)
+    expect(rowsFor(parts, "X")).toHaveLength(0)
+  })
+
+  it("throws when two creates use one id and leaves the file", () => {
+    const first = add(`${slideA}.${shapeA}`, "FIRST")
+    const second = add(`${slideA}.${shapeA}`, "SECOND")
+    const forward = deck()
+    const forwardSlide = forward.get("ppt/slides/slide1.xml")
+    expect(() => exportElements(forward, [first, second])).toThrow(/shape/)
+    expect(forward.get("ppt/slides/slide1.xml")).toBe(forwardSlide)
+    expect(forward.has("ppt/slides/slide2.xml")).toBe(false)
+    const backward = deck()
+    const backwardSlide = backward.get("ppt/slides/slide1.xml")
+    expect(() => exportElements(backward, [second, first])).toThrow(/shape/)
+    expect(backward.get("ppt/slides/slide1.xml")).toBe(backwardSlide)
+    expect(backward.has("ppt/slides/slide2.xml")).toBe(false)
   })
 
   it("throws when an edit names a shape nothing created and leaves the file", () => {
