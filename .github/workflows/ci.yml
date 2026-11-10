@@ -75,7 +75,7 @@ jobs:
           key: spec-results-${{ hashFiles('specs/**') }}
       - if: matrix.part == 'main'
         id: pptx
-        run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/pptx-render.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
+        run: git diff --quiet ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }} HEAD -- packages/pptx packages/document pnpm-lock.yaml scripts/pptx-check.mjs scripts/pptx-render.mjs scripts/judge.mjs scripts/judge-proof.mjs scripts/stored-zip.mjs scripts/pptx-tools.sh scripts/pptx-judge scripts/pptx-fixtures apps/web packages/live packages/render tests/browser scripts/pptx-route-judge.mjs scripts/pptx-corpus.mjs scripts/metrics.mjs metrics.json .github/workflows/ci.yml && echo "changed=0" >> "$GITHUB_OUTPUT" || echo "changed=1" >> "$GITHUB_OUTPUT"
       - if: matrix.part == 'main' && steps.pptx.outputs.changed != '0'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         id: pptx-tools
@@ -99,6 +99,52 @@ jobs:
           path: ~/.cache/airdesign/pptx-renders
           key: pptx-renders-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
       - if: failure() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/red-main.sh
+  corpus:
+    name: corpus
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: playwright-version
+        run: echo "version=$(pnpm exec playwright --version | awk 'NF { print $NF }')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --only-shell chromium
+      - run: pnpm --filter '!@airdesign/site' -r --if-present run build
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/pptx-tools
+          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+      - id: runner-image
+        run: echo "id=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+          restore-keys: pptx-renders-
+      - run: pnpm check:pptx:corpus
+      - if: ${{ !cancelled() }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: ~/.cache/airdesign/pptx-renders
+          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+      - if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/red-main.sh

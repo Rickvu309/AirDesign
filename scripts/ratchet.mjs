@@ -9,6 +9,7 @@ const guardedFiles = new Set([".node-version", ".npmrc", ".oxfmtrc.json", "AGENT
 const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]
 const casesFile = "scripts/pptx-fixtures/cases.json"
 const proofFile = "scripts/pptx-fixtures/judge-proof.json"
+const corpusFile = "scripts/pptx-fixtures/corpus.json"
 
 export const guarded = (file) => {
   if (openFolders.some((folder) => file.startsWith(folder))) return false
@@ -19,7 +20,10 @@ export const guarded = (file) => {
 
 export const replacedFixtures = (files) =>
   files
-    .filter((file) => file.status !== "added" && file.name !== casesFile && file.name !== proofFile)
+    .filter(
+      (file) =>
+        file.status !== "added" && file.name !== casesFile && file.name !== proofFile && file.name !== corpusFile,
+    )
     .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
 
 const testFile = (name) => typeof name === "string" && (name.includes(".test.") || name.includes(".spec."))
@@ -113,6 +117,11 @@ export const lostCases = (baseCases, headCases) => {
   return baseCases.filter((row) => !kept.has(JSON.stringify(row))).map((row) => String(row.name))
 }
 
+export const lostDecks = (baseCorpus, headCorpus) => {
+  const kept = new Map(headCorpus.map((row) => [row.name, row.sha256]))
+  return baseCorpus.filter((row) => kept.get(row.name) !== row.sha256).map((row) => String(row.name))
+}
+
 export const lostKinds = (baseProof, headProof) =>
   Object.keys(baseProof).filter(
     (kind) => headProof[kind] === undefined || (baseProof[kind] === "caught" && headProof[kind] !== "caught"),
@@ -124,6 +133,7 @@ export const ownerReasons = ({
   changedFiles,
   changedScripts,
   changedCases = [],
+  changedDecks = [],
   changedFixtures = [],
   removedTests = [],
   changedKinds = [],
@@ -149,6 +159,13 @@ export const ownerReasons = ({
   }
   for (const name of changedCases) {
     reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, blocks: true })
+  }
+  for (const name of changedDecks) {
+    reasons.push({
+      about: `deck ${name}`,
+      text: `The corpus deck ${name} was removed or its sha256 changed.`,
+      blocks: true,
+    })
   }
   for (const name of changedKinds) {
     reasons.push({
@@ -244,6 +261,11 @@ const casesAt = (json, sha) => {
   return Array.isArray(cases) ? cases : []
 }
 
+const corpusAt = (json, sha) => {
+  const corpus = json(sha, corpusFile)
+  return Array.isArray(corpus) ? corpus : []
+}
+
 const proofAt = (json, sha) => {
   const proof = json(sha, proofFile)
   return proof !== null && typeof proof === "object" && !Array.isArray(proof) ? proof : {}
@@ -255,6 +277,7 @@ const printsAt = (repository, sha, reasons) => {
   const json = githubJson(repository)
   const metrics = metricsAt(json, sha) ?? {}
   const cases = casesAt(json, sha)
+  const corpus = corpusAt(json, sha)
   const proof = proofAt(json, sha)
   const prints = {}
   for (const { about } of reasons) {
@@ -265,6 +288,7 @@ const printsAt = (repository, sha, reasons) => {
     if (kind === "scripts") prints[about] = scriptsAt(json, sha, subject)
     if (kind === "break") prints[about] = JSON.stringify(proof[subject])
     if (kind === "case") prints[about] = JSON.stringify(cases.filter((row) => String(row.name) === subject))
+    if (kind === "deck") prints[about] = JSON.stringify(corpus.filter((row) => String(row.name) === subject))
   }
   return prints
 }
@@ -298,6 +322,7 @@ export const readReasons = ({ json, fork, head, listed }) => {
     changedFixtures: replacedFixtures(listed),
     removedTests: removedTestFiles(listed),
     changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
+    changedDecks: changedFiles.includes(corpusFile) ? lostDecks(corpusAt(json, fork), corpusAt(json, head)) : [],
     changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],
     changedScripts: changedFiles
       .filter(packageFile)

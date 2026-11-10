@@ -2,6 +2,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { caughtCount, readSeedList } from "./judge-proof.mjs"
+import { judgedDecks } from "./pptx-corpus.mjs"
 import { readRun } from "./vitest-metrics.mjs"
 
 const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
@@ -13,12 +14,7 @@ const knownFaults = (root) => readRun(root).faults + listedMisses(root)
 
 const testCount = (root) => readRun(root).tests
 
-const realDecks = (root) => {
-  const fixtures = path.join(root, "scripts/pptx-fixtures")
-  const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
-  const names = new Set(cases.flatMap((row) => [row.before, row.after]))
-  return [...names].filter((name) => fs.statSync(path.join(fixtures, name)).size >= 100_000).length
-}
+const realDecks = (root) => judgedDecks(root).length
 
 const built = (root, name) => {
   const entry = path.join(root, "packages", name, "dist/index.js")
