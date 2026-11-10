@@ -80,6 +80,16 @@ describe("readCommit", () => {
       refusal: "batch",
     })
   })
+
+  it("refuses a once that is not 1 to 64 safe characters", () => {
+    const batch = [{ value: "hi" }]
+    const fit = "a".repeat(64)
+    expect(readCommit({ deck: "deck", batch, once: "a".repeat(65) })).toEqual({ ok: false, refusal: "field" })
+    expect(readCommit({ deck: "deck", batch, once: "" })).toEqual({ ok: false, refusal: "field" })
+    expect(readCommit({ deck: "deck", batch, once: 1 })).toEqual({ ok: false, refusal: "field" })
+    expect(readCommit({ deck: "deck", batch, once: "bad once" })).toEqual({ ok: false, refusal: "field" })
+    expect(readCommit({ deck: "deck", batch, once: fit })).toEqual({ ok: true, deck: "deck", batch, once: fit })
+  })
 })
 
 describe("readWatch", () => {

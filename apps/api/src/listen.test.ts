@@ -1,7 +1,7 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
-import { createServer } from "node:net"
+import { connect, createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeAll, describe, expect, it } from "vitest"
@@ -32,6 +32,8 @@ function freePort(): Promise<number> {
 
 function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env }
+  delete env.FORCE_COLOR
+  delete env.NO_COLOR
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined) delete env[name]
     else env[name] = value
@@ -55,6 +57,23 @@ async function stopped(child: ChildProcess): Promise<{ code: number | null; stde
     })
     child.on("error", reject)
     child.on("exit", (code) => resolve({ code, stderr }))
+  })
+}
+
+function holdWatch(port: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = connect(port, "127.0.0.1")
+    const fail = (error: Error) => {
+      socket.destroy()
+      reject(error)
+    }
+    socket.once("error", fail)
+    socket.once("connect", () => {
+      socket.off("error", fail)
+      socket.on("error", () => undefined)
+      socket.write("POST /decks/watch HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 100000\r\n\r\n")
+      resolve()
+    })
   })
 }
 
@@ -156,6 +175,78 @@ describe("start entry", () => {
     const result = await stopped(child)
     child = undefined
     expect(result.code).toBe(1)
-    expect(result.stderr).toContain("DECK_DATABASE_URL")
+    expect(result.stderr).toBe("DECK_DATABASE_URL\n")
+    expect(result.stderr.includes("postgres://")).toBe(false)
+    for (const url of [info.session, info.listen]) {
+      expect(result.stderr.includes(url)).toBe(false)
+      const parsed = new URL(url)
+      expect(result.stderr.includes(decodeURIComponent(parsed.username))).toBe(false)
+      expect(result.stderr.includes(decodeURIComponent(parsed.password))).toBe(false)
+    }
   })
+
+  it("exits when the port is not a port", async () => {
+    const info = await postgresInfo()
+    for (const port of ["0", "abc", "70000", "1e4", "0x1F90", " 8080"]) {
+      child = spawnEntry(
+        childEnv({
+          PORT: port,
+          SESSION_DATABASE_URL: info.session,
+          DECK_DATABASE_URL: info.deck,
+          LISTEN_DATABASE_URL: info.listen,
+        }),
+      )
+      const result = await Promise.race([
+        stopped(child),
+        new Promise<{ code: number | null; stderr: string }>((resolve) => {
+          setTimeout(() => resolve({ code: null, stderr: "" }), 5000)
+        }),
+      ])
+      child.kill()
+      child = undefined
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe("PORT\n")
+    }
+  }, 40_000)
+
+  it("exits on SIGTERM", async () => {
+    const info = await postgresInfo()
+    const port = await freePort()
+    child = spawnEntry(
+      childEnv({
+        PORT: String(port),
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    await untilHealth(port, child)
+    await holdWatch(port)
+    const started = Date.now()
+    const done = stopped(child)
+    child.kill("SIGTERM")
+    const result = await done
+    child = undefined
+    expect(result.code).toBe(0)
+    expect(Date.now() - started).toBeLessThan(5000)
+  }, 20_000)
+
+  it("sends the sign-in mail through resend", async () => {
+    const info = await postgresInfo()
+    const port = await freePort()
+    const email = `person${randomBytes(4).toString("hex")}@example.com`
+    child = spawnEntry(
+      childEnv({
+        PORT: String(port),
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+        RESEND_API_KEY: undefined,
+        RESEND_FROM: undefined,
+      }),
+    )
+    await untilHealth(port, child)
+    const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
+    expect(response.status).toBe(500)
+  }, 20_000)
 })

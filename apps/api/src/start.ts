@@ -1,3 +1,5 @@
+import type { Socket } from "node:net"
+
 import { DeckListen } from "./listen.js"
 import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
@@ -25,7 +27,16 @@ if (sessionUrl === undefined || deckUrl === undefined || listenUrl === undefined
 function portNumber(): number {
   const text = process.env.PORT
   if (text === undefined || text.length === 0) return 3000
-  return Number(text)
+  if (!/^[0-9]+$/.test(text)) return Number.NaN
+  const port = Number(text)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return Number.NaN
+  return port
+}
+
+const port = portNumber()
+if (Number.isNaN(port)) {
+  process.stderr.write("PORT\n")
+  process.exit(1)
 }
 
 const session = openPool(sessionUrl, "api-session")
@@ -39,4 +50,36 @@ const server = createApi({
   listen,
   send: (mail) => sendWithResend(mail),
 })
-server.listen(portNumber(), "0.0.0.0")
+const sockets = new Set<Socket>()
+server.on("connection", (socket) => {
+  sockets.add(socket)
+  socket.on("close", () => {
+    sockets.delete(socket)
+  })
+})
+
+let stopping = false
+function stop(): void {
+  if (stopping) return
+  stopping = true
+  const force = setTimeout(() => {
+    process.exit(0)
+  }, 5000)
+  server.close()
+  for (const socket of sockets) socket.destroy()
+  void listen
+    .close()
+    .then(() => session.end())
+    .then(() => deck.end())
+    .then(() => {
+      clearTimeout(force)
+      process.exit(0)
+    })
+    .catch(() => {
+      process.exit(0)
+    })
+}
+
+process.on("SIGTERM", stop)
+process.on("SIGINT", stop)
+server.listen(port, "0.0.0.0")

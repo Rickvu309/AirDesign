@@ -28,4 +28,16 @@ describe("roles", () => {
     expect(sync.rows[0]?.synchronous_commit).toBe("on")
     expect(deck.options.pipeline).not.toBe(true)
   })
+
+  it("keeps the once table from the listen and session roles", async () => {
+    const info = await postgresInfo()
+    const listen = new Client({ connectionString: info.listen, application_name: "grant-listen-once" })
+    clients.push(listen)
+    await listen.connect()
+    const session = new Client({ connectionString: info.session, application_name: "grant-session-once" })
+    clients.push(session)
+    await session.connect()
+    await expect(listen.query("select once from deck.once")).rejects.toThrow(/permission denied/)
+    await expect(session.query("select once from deck.once")).rejects.toThrow(/permission denied/)
+  })
 })

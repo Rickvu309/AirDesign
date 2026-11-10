@@ -1,10 +1,15 @@
 import { randomBytes } from "node:crypto"
 import { notifyKey, readDeckId } from "@airdesign/catalog"
-import { openDeck } from "@airdesign/engine"
+import { call, openDeck } from "@airdesign/engine"
+import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
-import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { DeckListen, openPool, writeRevision, type Mail, type Sql } from "./index.js"
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 function deckName(): string {
   return `deck${randomBytes(4).toString("hex")}`
@@ -235,5 +240,269 @@ describe("deck routes", () => {
         }),
       }),
     )
+  })
+
+  it("keeps a once to its own account and deck", async () => {
+    const first = readDeckId(deckName())
+    const second = readDeckId(deckName())
+    const third = readDeckId(deckName())
+    if (!first.ok || !second.ok || !third.ok) throw new Error("deck")
+    const other = await sign(address("b"))
+    await ask(base, "POST", "/decks/open", { deck: first.deck }, cookie)
+    await ask(base, "POST", "/decks/open", { deck: second.deck }, cookie)
+    await ask(base, "POST", "/decks/open", { deck: third.deck }, other)
+    const once = "shared"
+    const own = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: first.deck, batch: [{ value: "one", node: "a" }], once },
+      cookie,
+    )
+    const sameAccount = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: second.deck, batch: [{ value: "two", node: "a" }], once },
+      cookie,
+    )
+    const otherAccount = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: third.deck, batch: [{ value: "three", node: "a" }], once },
+      other,
+    )
+    expect(own.json).toEqual({ ok: true, deck: first.deck, revision: 1, key: `${first.deck}:1` })
+    expect(sameAccount.json).toEqual({ ok: true, deck: second.deck, revision: 1, key: `${second.deck}:1` })
+    expect(otherAccount.json).toEqual({ ok: true, deck: third.deck, revision: 1, key: `${third.deck}:1` })
+  })
+
+  it("wakes a watch when a commit with once lands", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const info = await postgresInfo()
+    const ear = new Client({ connectionString: info.listen, application_name: "once-watch-ear" })
+    await ear.connect()
+    const notes: string[] = []
+    ear.on("notification", (message) => {
+      if (typeof message.payload === "string") notes.push(message.payload)
+    })
+    await ear.query("listen deck")
+    try {
+      await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+      let answered = false
+      const pending = ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, cookie).then((response) => {
+        answered = true
+        return response
+      })
+      await wait(200)
+      await ear.query("select pg_notify('deck', 'probe:0')")
+      await wait(200)
+      expect(answered).toBe(false)
+      const committed = await ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "wake" },
+        cookie,
+      )
+      const watched = await Promise.race([
+        pending,
+        wait(2000).then(() => ({ json: { ok: false, refusal: "timeout" } })),
+      ])
+      const heard = Date.now()
+      while (!notes.includes(`${named.deck}:1`) && Date.now() - heard < 1000) await wait(20)
+      expect(committed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
+      expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
+      expect(notes).toContain(`${named.deck}:1`)
+    } finally {
+      await ear.end()
+    }
+  }, 15_000)
+
+  it("refuses a stale commit that carries a once", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const info = await postgresInfo()
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const first = call(
+      "commit_edits",
+      openDeck(named.deck),
+      { actor: "person" },
+      {
+        deck: named.deck,
+        batch: [{ value: "one" }],
+      },
+    )
+    if (!first.ok) throw new Error(first.refusal)
+    const holder = new Client({ connectionString: info.deck, application_name: "once-holder" })
+    const admin = new Client({ connectionString: info.admin, application_name: "once-admin" })
+    await holder.connect()
+    await admin.connect()
+    try {
+      await holder.query("begin")
+      const held = await writeRevision(holder, {
+        id: first.deck.id,
+        revision: first.deck.revision,
+        register: first.deck.register,
+        expected: 0,
+        key: first.key,
+      })
+      expect(held).toBe(true)
+      const pending = ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: named.deck, batch: [{ value: "two", node: "a" }], once: "stale" },
+        cookie,
+      )
+      const started = Date.now()
+      let waiting = false
+      while (!waiting) {
+        const found = await admin.query(
+          "select pid from pg_stat_activity where application_name = $1 and wait_event_type = 'Lock'",
+          ["deck-handler"],
+        )
+        waiting = found.rows.length > 0
+        if (!waiting && Date.now() - started > 3000) throw new Error("the commit did not wait")
+        if (!waiting) await wait(20)
+      }
+      await holder.query("commit")
+      const landed = await pending
+      const saved = await deck.query<{ revision: number; register: { landed: { value: string }[] } }>(
+        "select revision, register from deck.saved where id = $1",
+        [named.deck],
+      )
+      expect(landed.json).toEqual({ ok: true, deck: named.deck, revision: 2, key: `${named.deck}:2` })
+      expect(saved.rows[0]?.revision).toBe(2)
+      expect(saved.rows[0]?.register.landed.map((row) => row.value)).toEqual(["one", "two"])
+    } finally {
+      await holder.query("rollback").catch(() => undefined)
+      await holder.end()
+      await admin.end()
+    }
+  }, 15_000)
+
+  it("keeps the once row with the deck row", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const info = await postgresInfo()
+    const reader = openPool(info.deck, "once-reader")
+    try {
+      await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+      const refused = await ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: named.deck, batch: [{ value: "no", node: "b" }], once: "refused" },
+        cookie,
+      )
+      const left = await reader.query<{ count: string }>(
+        "select count(*)::text as count from deck.once where deck = $1",
+        [named.deck],
+      )
+      expect(refused.json).toEqual({ ok: false, refusal: "dead" })
+      expect(left.rows[0]?.count).toBe("0")
+      let stop = false
+      let split = false
+      const polling = (async () => {
+        while (!stop) {
+          const seen = await reader.query<{ revision: number; noted: number }>(
+            "select saved.revision, (select count(*)::int from deck.once where deck = saved.id and once = $2) as noted from deck.saved saved where saved.id = $1",
+            [named.deck, "kept"],
+          )
+          const row = seen.rows[0]
+          if (row !== undefined && row.revision >= 1 && Number(row.noted) === 0) split = true
+          await wait(2)
+        }
+      })()
+      const landed = await ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: named.deck, batch: [{ value: "yes", node: "a" }], once: "kept" },
+        cookie,
+      )
+      stop = true
+      await polling
+      expect(split).toBe(false)
+      expect(landed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
+    } finally {
+      await reader.end()
+    }
+  }, 15_000)
+
+  it("replays the first revision after later commits moved the deck", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const body = { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "first" }
+    const first = await ask(base, "POST", "/decks/commit", body, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "two" }] }, cookie)
+    await ask(base, "POST", "/decks/commit", { deck: named.deck, batch: [{ value: "three" }] }, cookie)
+    const again = await ask(base, "POST", "/decks/commit", body, cookie)
+    const opened = await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    expect(first.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
+    expect(again.json).toEqual(first.json)
+    expect(opened.json).toEqual(
+      expect.objectContaining({
+        ok: true,
+        revision: 3,
+        register: expect.objectContaining({
+          landed: [
+            expect.objectContaining({ value: "once" }),
+            expect.objectContaining({ value: "two" }),
+            expect.objectContaining({ value: "three" }),
+          ],
+        }),
+      }),
+    )
+  })
+
+  it("lets a corrected commit land after a refused one with the same once", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    const refused = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "no", node: "b" }], once: "r" },
+      cookie,
+    )
+    const landed = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "yes", node: "a" }], once: "r" },
+      cookie,
+    )
+    expect(refused.json).toEqual({ ok: false, refusal: "dead" })
+    expect(landed.json).toEqual({ ok: true, deck: named.deck, revision: 1, key: `${named.deck}:1` })
+  })
+
+  it("refuses another account before it replays a once", async () => {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const other = await sign(address("c"))
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "once", node: "a" }], once: "owned" },
+      cookie,
+    )
+    const refused = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named.deck, batch: [{ value: "other", node: "a" }], once: "owned" },
+      other,
+    )
+    expect(refused.json).toEqual({ ok: false, refusal: "owner" })
+    expect(Object.hasOwn(refused.json as object, "revision")).toBe(false)
+    expect(Object.hasOwn(refused.json as object, "key")).toBe(false)
   })
 })
