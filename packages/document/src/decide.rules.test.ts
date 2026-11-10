@@ -766,9 +766,7 @@ describe("decide", () => {
       if (hit.failure !== null) {
         throw new Error(hit.failure)
       }
-      if (hit.hits === 0) {
-        throw new Error(`${rule.name} was not reached`)
-      }
+      expect(hit.hits, `${rule.name} was not reached`).toBeGreaterThan(0)
       if (rule.name === "A person edit after the agent has landed sets the guard") {
         setsGuardAfterAgent(rule.name)
       }
