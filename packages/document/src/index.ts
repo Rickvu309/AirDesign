@@ -1,4 +1,5 @@
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
+export { replay, unsent, type Queued } from "./replay.js"
 export {
   compactChain,
   currentValue,
