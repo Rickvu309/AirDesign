@@ -1,5 +1,5 @@
 import { afterEach, expect } from "vitest"
-import { propertyAsserts, resetPropertyAsserts } from "fast-check"
+import { propertyAsserts, resetPropertyAsserts } from "./property-count.mjs"
 
 afterEach((ctx) => {
   ctx.task.meta.assertions = expect.getState().assertionCalls + propertyAsserts
