@@ -186,7 +186,7 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   const failed = (reason: Reason, deck: Deck): ScoreResult => ({ pass: false, reason, answers, deck, start })
   if (attempt.length > task.want.calls) return failed("calls", start)
   let current = start
-  const caller = { actor: "agent" as const, runId: "run" }
+  const caller = { actor: "agent" as const, runId: "session" }
   for (const step of attempt) {
     const log = emptyLog()
     const now = 0

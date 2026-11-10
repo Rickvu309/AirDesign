@@ -147,7 +147,7 @@ describe("score", () => {
       id: "undone-rows",
       prompt: "Set the title of deck undone to Again.",
       deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "run-fenced" }], elements: { title: [] } },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
     }
     const result = score(task, [edit("undone", [{ element: "title", value: "Again", readAt: 0 }])])
     expect(result.start.register.elements[title]?.landed).toEqual([
@@ -209,9 +209,9 @@ describe("score", () => {
   it("lets other calls sit between the steps a task requires", () => {
     const row = rowOf("capture-open")
     const task: Task = { ...row.task, want: { ...row.task.want, calls: 3 } }
-    const between = edit("shots", [{ element: "footer", value: "Skipped", readAt: 0 }])
+    const between = edit("shots", [{ element: "footer", value: "Skipped", readAt: 5 }])
     const result = score(task, [row.reference[0] ?? between, between, capture("shots")])
-    expect(result.answers.map((answer) => answer.outcome)).toEqual(["ok", "run-fenced", "device"])
+    expect(result.answers.map((answer) => answer.outcome)).toEqual(["ok", "stale", "device"])
     expect(result.reason).toBe("ok")
     expect(result.pass).toBe(true)
   })

@@ -516,13 +516,13 @@ export const suite: readonly SuiteRow[] = [
   },
   {
     task: {
-      id: "element-without-run",
-      prompt: "Set the footer of deck bare to Thanks. No run has started on the footer.",
+      id: "element-not-in-deck",
+      prompt: "Set the footer of deck bare to Thanks. The deck has no footer yet.",
       deck: () => fixture("bare", [{ element: "title" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "run-fenced" }], elements: { footer: [] } },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { footer: ["Thanks"] } },
     },
     reference: one("bare", "footer", "Thanks", 0),
-    wrong: { attempt: one("bare", "title", "Thanks", 0), reason: "tool" },
+    wrong: { attempt: one("bare", "title", "Thanks", 0), reason: "touched" },
   },
   {
     task: {
@@ -628,9 +628,9 @@ export const suite: readonly SuiteRow[] = [
       id: "undone-run",
       prompt: "Your last run on the title of deck undone was undone. Set the title to Again.",
       deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }, { element: "body" }]),
-      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "run-fenced" }], elements: { title: [] } },
+      want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
     },
     reference: one("undone", "title", "Again", 0),
-    wrong: { attempt: one("undone", "body", "Again", 0), reason: "tool" },
+    wrong: { attempt: one("undone", "body", "Again", 0), reason: "touched" },
   },
 ]
