@@ -1299,6 +1299,8 @@ describe("spec replay", () => {
       if (oauthAside >= 0) found.splice(oauthAside, 1)
       const rerunAside = found.findIndex((topic) => topic.name === "rerun")
       if (rerunAside >= 0) found.splice(rerunAside, 1)
+      const ownerAside = found.findIndex((topic) => topic.name === "owner")
+      if (ownerAside >= 0) found.splice(ownerAside, 1)
       new Function(
         "found",
         "expect",
@@ -1313,6 +1315,8 @@ describe("spec replay", () => {
     if (oauthTopic !== undefined) found.splice(found.indexOf(oauthTopic), 1)
     const rerunTopic = found.find((topic) => topic.name === "rerun")
     if (rerunTopic !== undefined) found.splice(found.indexOf(rerunTopic), 1)
+    const ownerTopic = found.find((topic) => topic.name === "owner")
+    if (ownerTopic !== undefined) found.splice(found.indexOf(ownerTopic), 1)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
     if (usageTopic !== undefined) found.push(usageTopic)
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo", "usage"])

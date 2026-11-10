@@ -225,6 +225,9 @@ importers:
       '@airdesign/mcp':
         specifier: workspace:*
         version: link:../../packages/mcp
+      '@airdesign/oauth':
+        specifier: workspace:*
+        version: link:../../packages/oauth
       '@modelcontextprotocol/node':
         specifier: ^2.1.2
         version: 2.1.2(@modelcontextprotocol/server@2.4.0)

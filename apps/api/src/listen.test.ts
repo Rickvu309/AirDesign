@@ -37,6 +37,7 @@ function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv
     ...process.env,
     PUBLIC_ORIGIN: "https://app.example",
     SITE_ORIGIN: "https://site.example",
+    MCP_RESOURCE: "https://mcp.example/mcp",
   }
   delete env.FORCE_COLOR
   delete env.NO_COLOR
@@ -401,6 +402,14 @@ describe("start entry", () => {
       const result = await refusedStart({ SITE_ORIGIN: value })
       expect(result.code).toBe(1)
       expect(result.stderr).toBe("SITE_ORIGIN\n")
+    }
+  }, 60_000)
+
+  it("exits when the MCP address is missing or not an https url", async () => {
+    for (const value of [undefined, "", "http://mcp.example/mcp", "not a url"]) {
+      const result = await refusedStart({ MCP_RESOURCE: value })
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe("MCP_RESOURCE\n")
     }
   }, 60_000)
 

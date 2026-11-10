@@ -3,6 +3,7 @@ import type { Socket } from "node:net"
 import { DeckListen } from "./listen.js"
 import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
+import { checkedResource } from "./resource.js"
 import { createApi, requireDomain, requireOrigin } from "./server.js"
 
 const databaseNames = ["SESSION_DATABASE_URL", "DECK_DATABASE_URL", "LISTEN_DATABASE_URL"] as const
@@ -56,6 +57,7 @@ const publicOrigin = readSetting("PUBLIC_ORIGIN", (value) => {
 const siteOrigin = readSetting("SITE_ORIGIN", (value) => {
   requireOrigin("siteOrigin", value)
 })
+const resource = readSetting("MCP_RESOURCE", checkedResource)
 const cookieDomain = (process.env.COOKIE_DOMAIN ?? "") === "" ? undefined : readSetting("COOKIE_DOMAIN", requireDomain)
 
 function configuredHosts(): readonly string[] | undefined {
@@ -78,6 +80,7 @@ const server = createApi({
   listen,
   publicOrigin,
   siteOrigin,
+  resource,
   ...(cookieDomain === undefined ? {} : { cookieDomain }),
   send: (mail) => sendWithResend(mail),
   ...(hosts === undefined ? {} : { hosts }),
