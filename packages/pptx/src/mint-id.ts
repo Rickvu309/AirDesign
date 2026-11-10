@@ -107,16 +107,6 @@ function nextSlideId(parts: ReadonlyMap<string, Uint8Array>): number {
   return max + 1
 }
 
-function past(cursor: number, values: Iterable<string>, error: string): number {
-  let next = cursor
-  for (const value of values) {
-    const number = whole(value)
-    if (number !== null && number >= next) next = number + 1
-  }
-  if (next > maxId) throw new Error(error)
-  return next
-}
-
 function place(parts: ReadonlyMap<string, Uint8Array>, id: string, minted: MintedIds): { part: string; shape: string } {
   const split = splitId(id)
   const slide = isCreated(split.slide) ? minted.slides.get(split.slide) : split.slide
@@ -129,50 +119,90 @@ function place(parts: ReadonlyMap<string, Uint8Array>, id: string, minted: Minte
   return { part, shape }
 }
 
+function createdSlideNames(parsed: readonly { readonly slide: string }[]): string[] {
+  return [...new Set(parsed.map((row) => row.slide).filter(isCreated))].sort()
+}
+
+function sameSlideSet(names: readonly string[], slides: ReadonlyMap<string, string>): boolean {
+  if (slides.size !== names.length) return false
+  for (const name of names) if (!slides.has(name)) return false
+  return true
+}
+
+function assignSlides(
+  parts: ReadonlyMap<string, Uint8Array>,
+  parsed: readonly { readonly slide: string }[],
+  minted: MintedIds,
+): Map<string, string> {
+  const names = createdSlideNames(parsed)
+  const slides = new Map<string, string>()
+  if (names.length === 0) return slides
+  if (sameSlideSet(names, minted.slides)) {
+    for (const name of names) {
+      const number = minted.slides.get(name)
+      if (number !== undefined) slides.set(name, number)
+    }
+    return slides
+  }
+  let cursor = nextSlideId(parts)
+  for (const name of names) {
+    if (cursor > maxId) throw new Error("slide id")
+    slides.set(name, String(cursor))
+    cursor += 1
+  }
+  return slides
+}
+
+function assignShapes(
+  parts: ReadonlyMap<string, Uint8Array>,
+  parsed: readonly { readonly slide: string; readonly shape: string }[],
+  slides: ReadonlyMap<string, string>,
+): Map<string, string> {
+  const grouped = new Map<string, { readonly slide: string; readonly shape: string }[]>()
+  for (const row of parsed) {
+    if (!isCreated(row.shape)) continue
+    const number = isCreated(row.slide) ? slides.get(row.slide) : row.slide
+    if (number === undefined) continue
+    const part = partForSlide(parts, number)
+    if (part === null || !parts.has(part)) continue
+    const list = grouped.get(part) ?? []
+    list.push(row)
+    grouped.set(part, list)
+  }
+  const shapes = new Map<string, string>()
+  for (const part of [...grouped.keys()].sort()) {
+    const rows = grouped.get(part) ?? []
+    const bytes = parts.get(part)
+    if (bytes === undefined) continue
+    const tokens = [...new Set(rows.map((row) => row.shape))].sort()
+    let cursor = nextShapeId(decodeUtf8(bytes))
+    const numbers = new Map<string, string>()
+    for (const token of tokens) {
+      if (cursor > maxId) throw new Error("shape id")
+      numbers.set(token, String(cursor))
+      cursor += 1
+    }
+    const assigned = new Map<string, string>()
+    for (const row of rows) {
+      const number = numbers.get(row.shape)
+      if (number !== undefined) assigned.set(`${row.slide}.${row.shape}`, number)
+    }
+    for (const key of [...assigned.keys()].sort()) {
+      const number = assigned.get(key)
+      if (number !== undefined) shapes.set(key, number)
+    }
+  }
+  return shapes
+}
+
 export function mintIds(
   parts: ReadonlyMap<string, Uint8Array>,
   ids: readonly string[],
   minted: MintedIds = emptyMint(),
 ): MintedIds {
   const parsed = ids.map(splitId)
-  const slides = new Map(minted.slides)
-  const shapes = new Map(minted.shapes)
-  const slideNames = [...new Set(parsed.map((row) => row.slide).filter(isCreated))]
-    .filter((name) => !slides.has(name))
-    .sort()
-  if (slideNames.length > 0) {
-    let cursor = past(nextSlideId(parts), slides.values(), "slide id")
-    for (const name of slideNames) {
-      if (cursor > maxId) throw new Error("slide id")
-      slides.set(name, String(cursor))
-      cursor += 1
-    }
-  }
-  const grouped = new Map<string, string[]>()
-  for (const row of parsed) {
-    if (!isCreated(row.shape) || shapes.has(`${row.slide}.${row.shape}`)) continue
-    const list = grouped.get(row.slide) ?? []
-    list.push(row.shape)
-    grouped.set(row.slide, list)
-  }
-  for (const slide of [...grouped.keys()].sort()) {
-    const names = [...new Set(grouped.get(slide) ?? [])].sort()
-    const number = isCreated(slide) ? slides.get(slide) : slide
-    if (number === undefined) continue
-    const part = partForSlide(parts, number)
-    if (part === null) continue
-    const bytes = parts.get(part)
-    if (bytes === undefined) continue
-    const reserved: string[] = []
-    const prefix = `${slide}.`
-    for (const [key, value] of shapes) if (key.startsWith(prefix)) reserved.push(value)
-    let cursor = past(nextShapeId(decodeUtf8(bytes)), reserved, "shape id")
-    for (const name of names) {
-      if (cursor > maxId) throw new Error("shape id")
-      shapes.set(`${slide}.${name}`, String(cursor))
-      cursor += 1
-    }
-  }
+  const slides = assignSlides(parts, parsed, minted)
+  const shapes = assignShapes(parts, parsed, slides)
   return { slides, shapes }
 }
 
