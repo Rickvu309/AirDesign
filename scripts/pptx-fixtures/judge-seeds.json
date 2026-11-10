@@ -1,0 +1,17 @@
+{
+  "seeds": [424603714, 2835851095],
+  "known": [
+    {
+      "seed": 424603714,
+      "kind": "wrong child order",
+      "deck": "doe-heat-pumps.pptx",
+      "what": "ppt/slides/slide17.xml shape 2 of 3"
+    },
+    {
+      "seed": 2835851095,
+      "kind": "wrong child order",
+      "deck": "census-updating-spm.pptx",
+      "what": "ppt/slides/slide25.xml shape 2 of 4"
+    }
+  ]
+}
