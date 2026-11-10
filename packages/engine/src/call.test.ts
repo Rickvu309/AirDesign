@@ -121,6 +121,52 @@ describe("call", () => {
     expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "hi", visible: true }])
   })
 
+  it("lands an agent edit of two changes", () => {
+    const deck = running()
+    const readAt = version(deck.register)
+    const result = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: deck.revision, changes: [{ value: "one" }, { value: "two" }] },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+    expect(result.deck.revision).toBe(1)
+    expect(result.deck.register.landed).toEqual([
+      { actor: "agent", value: "one", visible: true },
+      { actor: "agent", value: "two", visible: true },
+    ])
+  })
+
+  it("refuses an edit from a different run id after the batch", () => {
+    const deck = running()
+    const readAt = version(deck.register)
+    const landed = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: deck.revision, changes: [{ value: "one" }, { value: "two" }] },
+    )
+    expect(landed.ok).toBe(true)
+    if (!landed.ok) {
+      return
+    }
+    const register = landed.deck.register
+    expect(
+      call(
+        "edit_deck",
+        landed.deck,
+        { actor: "agent", runId: "other", readAt: version(landed.deck.register) },
+        { deck: "deck", base: landed.deck.revision, changes: [{ value: "no" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(landed.deck.register).toBe(register)
+    expect(landed.deck.revision).toBe(1)
+  })
+
   it("refuses an agent edit read ahead of the version", () => {
     const deck = running()
     const register = deck.register

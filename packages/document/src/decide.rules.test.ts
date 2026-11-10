@@ -4,7 +4,7 @@ import { elementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type RunState = "match" | "miss"
-type ReadState = "equal" | "stale"
+type ReadState = "equal" | "stale" | "claimed" | "interrupted"
 type AgentState = "none" | "visible" | "hidden"
 type EditCommand = "person" | "agent" | "start" | "stop" | "undo" | "read"
 
@@ -188,10 +188,22 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           effect: { outcome: "refuse", code: "person-protected" },
         },
         {
-          name: "A second agent edit in one run stays fenced",
+          name: "A fresh read lands another agent row in the same run",
           command: "agent",
           when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "visible" },
-          effect: { outcome: "refuse", code: "run-fenced" },
+          effect: { outcome: "agent" },
+        },
+        {
+          name: "A later change of the same run with the claimed read lands",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "claimed", guarded: false },
+          effect: { outcome: "agent" },
+        },
+        {
+          name: "A claimed read after a person row refuses stale",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "interrupted" },
+          effect: { outcome: "refuse", code: "stale" },
         },
         {
           name: "An agent edit lands one row and records claimed",
@@ -258,7 +270,21 @@ function runState(register: Register, runId: string): RunState {
 }
 
 function readState(readAt: number, register: Register): ReadState {
-  return readAt === version(register) ? "equal" : "stale"
+  if (readAt === version(register)) {
+    return "equal"
+  }
+  if (
+    register.claimed !== null &&
+    readAt === register.claimed &&
+    register.landed.some((row) => row.actor === "agent")
+  ) {
+    const after = register.landed.slice(register.claimed + 1)
+    if (after.every((row) => row.actor === "agent")) {
+      return "claimed"
+    }
+    return "interrupted"
+  }
+  return "stale"
 }
 
 function situation(register: Register, command: Command): Situation | null {
@@ -347,9 +373,13 @@ function commands(register: Register): readonly Command[] {
   }
   push({ command: "person", value: "p" })
   for (const runId of ["r", "s"] as const) {
-    push({ command: "agent", runId, readAt: below, value: "a" })
-    push({ command: "agent", runId, readAt: current, value: "a" })
-    push({ command: "agent", runId, readAt: current + 1, value: "a" })
+    const readAt = [below, current, current + 1]
+    if (register.claimed !== null && !readAt.includes(register.claimed)) {
+      readAt.push(register.claimed)
+    }
+    for (const at of readAt) {
+      push({ command: "agent", runId, readAt: at, value: "a" })
+    }
   }
   const readIds: string[] = []
   for (const rule of rulesOf("read")) {
@@ -377,6 +407,16 @@ function visiblePeople(register: Register): number {
   let count = 0
   for (const row of register.landed) {
     if (row.actor === "person" && row.visible) {
+      count += 1
+    }
+  }
+  return count
+}
+
+function visibleAgents(register: Register): number {
+  let count = 0
+  for (const row of register.landed) {
+    if (row.actor === "agent" && row.visible) {
       count += 1
     }
   }
@@ -464,7 +504,7 @@ function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly ove
     start: freezeRegister(openRegister("floor", "slide")),
     identity,
     commands,
-    keep: (register) => visiblePeople(register) <= 2,
+    keep: (register) => visiblePeople(register) <= 2 && visibleAgents(register) <= 2,
     cap: (dequeued, register) => {
       if (version(register) > 4 || dequeued > 400) {
         throw new Error("state cap hit")
@@ -567,8 +607,44 @@ describe("decide", () => {
       if (rule.name === "A person edit keeps the guard after the agent has landed") {
         keptGuardAfterAgent(rule.name)
       }
+      if (
+        rule.name === "A fresh read lands another agent row in the same run" ||
+        rule.name === "A later change of the same run with the claimed read lands" ||
+        rule.name === "A claimed read after a person row refuses stale"
+      ) {
+        expect(hit.hits, rule.name).toBeGreaterThan(0)
+      }
     })
   }
+
+  it("An undo hides both rows of one run", () => {
+    const register = freezeRegister({
+      ...openRegister("floor", "slide"),
+      phase: "running",
+      runId: "run",
+      readAt: 0,
+      claimed: 0,
+      landed: [
+        { actor: "agent", value: "one", visible: true },
+        { actor: "agent", value: "two", visible: true },
+      ],
+    })
+    const before = copyRegister(register)
+    const decision = decide(register, { command: "undo", runId: "run" })
+    expect(register).toEqual(before)
+    expect(decision).toEqual({
+      decision: "apply",
+      route: register.route,
+      register: {
+        ...register,
+        phase: "undone",
+        landed: [
+          { actor: "agent", value: "one", visible: false },
+          { actor: "agent", value: "two", visible: false },
+        ],
+      },
+    })
+  })
 
   it("A person value is not trimmed", () => {
     const value = '  {"a":1}  \n\u0000café'
