@@ -1,18 +1,16 @@
 import { readNode } from "@airdesign/catalog"
-import { currentValue, version, type Kind, type Register } from "@airdesign/document"
+import { currentValue, version, writeTextValue, type Kind, type Register, type TextValue } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
+import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ReadShape, type ShapeKind } from "@airdesign/pptx"
 import {
-  exportElements,
-  exportPackage,
-  prepareMarkup,
-  readPackage,
-  readShapes,
-  shownText,
-  textStorable,
-  type ElementEdit,
-  type ShapeKind,
-} from "@airdesign/pptx"
-import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
+  Passage,
+  elementId,
+  paintStore,
+  slideId,
+  textValue,
+  type ElementId,
+  type PaintStore,
+} from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -44,6 +42,38 @@ export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly Ele
   return readShapes(parts).map((shape) => elementId(`${shape.slide}.${shape.shape}`))
 }
 
+function storedText(value: TextValue): string {
+  return value.length === 0 ? "" : writeTextValue(value)
+}
+
+function trialValue(value: TextValue): TextValue | null {
+  for (let paragraph = value.length - 1; paragraph >= 0; paragraph -= 1) {
+    const runs = value[paragraph]?.runs ?? []
+    for (let run = runs.length - 1; run >= 0; run -= 1) {
+      const found = runs[run]
+      if (found === undefined || found.text === "\n") continue
+      return value.map((each, index) =>
+        index === paragraph
+          ? { from: each.from, runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)) }
+          : each,
+      )
+    }
+  }
+  const first = value[0]
+  if (first === undefined) return null
+  return [{ from: first.from, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
+}
+
+export function valueStorable(parts: ReadonlyMap<string, Uint8Array>, shape: ReadShape, value: TextValue | null): boolean {
+  if (value === null) return false
+  try {
+    applyRoute(parts, { name: "text", part: shape.part, shape: shape.shape, value })
+    return true
+  } catch {
+    return false
+  }
+}
+
 export function shownValue(register: Register | null, id: ElementId, file: string): string {
   const body = register?.elements[id]
   return body === undefined ? file : currentValue(body)
@@ -53,24 +83,34 @@ function paint(
   store: PaintStore,
   parts: ReadonlyMap<string, Uint8Array>,
   register: Register | null,
-): { readonly ids: readonly ElementId[]; readonly boxes: ReadonlyMap<ElementId, TextBox> } {
+): {
+  readonly ids: readonly ElementId[]
+  readonly boxes: ReadonlyMap<ElementId, TextBox>
+  readonly shapes: ReadonlyMap<ElementId, ReadShape>
+} {
   const shapes = readShapes(parts)
   const ids = elementIds(parts)
   const seen = new Map<ElementId, number>()
   for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
   const boxes = new Map<ElementId, TextBox>()
+  const rows = new Map<ElementId, ReadShape>()
   shapes.forEach((shape, index) => {
     const id = ids[index]
     if (id === undefined) return
     const kind = paintKind(shape.kind)
-    const file = shownText(shape.text)
+    const file = storedText(shape.text)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
     const storable =
-      seen.get(id) === 1 && !shape.locked && readNode(id) !== undefined && textStorable(parts, shape.part, shape.shape)
-    if (storable) boxes.set(id, { id, file })
+      seen.get(id) === 1 &&
+      !shape.locked &&
+      readNode(id) !== undefined &&
+      valueStorable(parts, shape, trialValue(shape.text))
+    if (!storable) return
+    boxes.set(id, { id, file })
+    rows.set(id, shape)
   })
   store.setSlides([{ id: slideId("1"), elements: [...ids] }])
-  return { ids, boxes }
+  return { ids, boxes, shapes: rows }
 }
 
 type EditLink = {
@@ -105,14 +145,17 @@ export function exportedParts(
   parts: ReadonlyMap<string, Uint8Array>,
   register: Register,
 ): ReadonlyMap<string, Uint8Array> {
-  const edits: ElementEdit[] = []
+  const shapes = readShapes(parts)
+  let next: ReadonlyMap<string, Uint8Array> = parts
   for (const id of register.nodes) {
     const body = register.elements[id]
     if (body === undefined || version(body) === 0) continue
-    edits.push({ id, name: "text", text: currentValue(body) })
+    const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
+    const shape = named[0]
+    if (named.length !== 1 || shape === undefined || shape.locked) throw new Error("text-shape")
+    next = applyRoute(next, { name: "text", part: shape.part, shape: shape.shape, value: textValue(currentValue(body)) })
   }
-  if (edits.length === 0) return parts
-  return exportElements(parts, edits).parts
+  return next
 }
 
 export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uint8Array): Promise<string | null> {
@@ -124,6 +167,8 @@ export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uin
 export function ThinDeck({ id }: { id?: string }) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
+  const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
+  const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const [deckId, setDeckId] = useState(id)
   const [ids, setIds] = useState<readonly ElementId[]>([])
   const shownDeck = useRef(id)
@@ -139,6 +184,8 @@ export function ThinDeck({ id }: { id?: string }) {
       if (!live) return
       const painted = paint(store.current, stored.parts, opened.ok ? opened.register : null)
       boxes.current = painted.boxes
+      shapes.current = painted.shapes
+      shownParts.current = stored.parts
       setIds(painted.ids)
       await sendPending(connect, id)
     })()
@@ -175,6 +222,8 @@ export function ThinDeck({ id }: { id?: string }) {
     setDeckId(nextId)
     const painted = paint(store.current, read.parts, null)
     boxes.current = painted.boxes
+    shapes.current = painted.shapes
+    shownParts.current = read.parts
     setIds(painted.ids)
   }
 
@@ -182,17 +231,17 @@ export function ThinDeck({ id }: { id?: string }) {
     const box = boxes.current.get(target)
     if (box === undefined || deckId === undefined) return
     const deck = deckId
-    await commitEdit(
-      connect,
-      deck,
-      value,
-      box,
-      () => show(target, value),
-      async () => {
-        const opened = await connect(memoryRemote()).openDeck(deck)
-        show(target, shownValue(opened.ok ? opened.register : null, target, box.file))
-      },
-    )
+    const file = box.file
+    async function refused() {
+      const opened = await connect(memoryRemote()).openDeck(deck)
+      show(target, shownValue(opened.ok ? opened.register : null, target, file))
+    }
+    const shape = shapes.current.get(target)
+    if (shape === undefined || !valueStorable(shownParts.current, shape, textValue(value))) {
+      await refused()
+      return
+    }
+    await commitEdit(connect, deck, value, box, () => show(target, value), refused)
   }
 
   async function onExport() {

@@ -1,4 +1,4 @@
-import { decide, elementId, openRegister, type Register } from "@airdesign/document"
+import { decide, elementId, openRegister, writeTextValue, type Register } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
@@ -178,6 +178,10 @@ it("flushes the http remote for the given deck after Hello! on its element", asy
   expect(await postsCommit(flushed.remote, "different-deck", node)).toBe(true)
 })
 
+function oneRun(text: string): string {
+  return writeTextValue([{ from: 0, runs: [{ from: 0, text }] }])
+}
+
 function xml(text: string): Uint8Array {
   return new TextEncoder().encode(text)
 }
@@ -279,7 +283,9 @@ async function typeInto(
   value: string,
   flushes: number,
 ): Promise<void> {
-  box.textContent = value
+  const typed = window.document.createTreeWalker(box, window.NodeFilter.SHOW_TEXT).nextNode()
+  if (typed === null) box.textContent = value
+  else typed.nodeValue = value
   const flushed = live.reached("flush", flushes)
   await act(async () => {
     box.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
@@ -420,14 +426,23 @@ it("saves two opened files under distinct valid deck ids", async () => {
   ])
 })
 
-it("an export of a stored edit refuses a box with several paragraphs and writes nothing", () => {
+it("an export writes a stored value with several paragraphs and a value the route refuses writes nothing", () => {
   const lines = Array.from({ length: 9 }, (_, index) => `<a:p><a:r><a:t>Line ${index}</a:t></a:r></a:p>`).join("")
   const slide = new TextEncoder().encode(
     `<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/></p:nvSpPr><p:txBody><a:bodyPr/>${lines}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`,
   )
   const saved = Uint8Array.from(slide)
   const parts = onSlide(slide)
-  expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
+  const value = Array.from({ length: 9 }, (_, index) => ({
+    from: index,
+    runs: [{ from: 0, text: index === 3 ? "typed" : `Line ${index}` }],
+  }))
+  const next = exportedParts(parts, editedRegister([["256.2", writeTextValue(value)]]))
+  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml"))).toBe(
+    new TextDecoder().decode(slide).replace("Line 3", "typed"),
+  )
+  const outside = writeTextValue([{ from: 9, runs: [{ from: 0, text: "typed" }] }])
+  expect(() => exportedParts(parts, editedRegister([["256.2", outside]]))).toThrow(/text-paragraph/)
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
@@ -463,18 +478,25 @@ async function offeredWith(body: string) {
   return renderedDeck(parts)
 }
 
-it("does not offer a box with two runs in one paragraph for editing", async () => {
+it("offers a box with two runs in one paragraph for editing and shows each run", async () => {
   const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r><a:r><a:t>ep</a:t></a:r></a:p>")
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
-  expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
+  expect(shown?.getAttribute("contenteditable")).toBe("true")
+  expect([...(shown?.querySelectorAll("[data-run]") ?? [])].map((run) => run.textContent)).toEqual(["Ke", "ep"])
+  expect(editableTexts(window)).toEqual(["First", "Keep", "Last", "Other"])
 })
 
-it("does not offer a box with several paragraphs for editing", async () => {
+it("offers a box with several paragraphs for editing and shows each paragraph", async () => {
   const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r></a:p><a:p><a:r><a:t>ep</a:t></a:r></a:p>")
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
-  expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
+  expect(shown?.getAttribute("contenteditable")).toBe("true")
+  expect([...(shown?.querySelectorAll("[data-paragraph]") ?? [])].map((run) => run.textContent)).toEqual(["Ke", "ep"])
+  expect(editableTexts(window)).toEqual(["First", "Keep", "Last", "Other"])
+})
+
+it("offers an empty box for editing", async () => {
+  const window = await offeredWith("<a:p><a:endParaRPr lang=\"en-US\"/></a:p>")
+  expect(editableTexts(window)).toEqual(["", "First", "Last", "Other"])
 })
 
 it("does not offer a slide-number box for editing", async () => {
@@ -497,10 +519,10 @@ it("commits each box under its own id with its file text as floor", async () => 
   await typeInto(window, boxShowing(window, "Other"), "Three", 4)
   await typeInto(window, boxShowing(window, "One"), "Four", 5)
   expect(live.sent).toEqual([
-    { deck: "opened-deck", value: "One", node: "382.5", floor: "First" },
-    { deck: "opened-deck", value: "Two", node: "382.9", floor: "Last" },
-    { deck: "opened-deck", value: "Three", node: "452.2", floor: "Other" },
-    { deck: "opened-deck", value: "Four", node: "382.5", floor: "First" },
+    { deck: "opened-deck", value: oneRun("One"), node: "382.5", floor: oneRun("First") },
+    { deck: "opened-deck", value: oneRun("Two"), node: "382.9", floor: oneRun("Last") },
+    { deck: "opened-deck", value: oneRun("Three"), node: "452.2", floor: oneRun("Other") },
+    { deck: "opened-deck", value: oneRun("Four"), node: "382.5", floor: oneRun("First") },
   ])
 })
 
@@ -568,7 +590,7 @@ it("keeps what was typed while the opened file was still loading", async () => {
   })
   await act(async () => {})
   expect(box.textContent).toBe("Typed while held")
-  expect(live.sent.map((edit) => edit.value)).toEqual(["Typed while held"])
+  expect(live.sent.map((edit) => edit.value)).toEqual([oneRun("Typed while held")])
   expect(live.sent[0]?.deck).toBe(live.saved[0]?.deck)
 })
 

@@ -39,6 +39,15 @@ async function changedParts(before: string, after: string): Promise<string[]> {
   return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
 }
 
+function lines(value: string): string {
+  const paragraphs = JSON.parse(value) as { runs: { text: string }[] }[]
+  return paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
+}
+
+async function paragraphsOf(page: Page, box: ReturnType<Page["locator"]>): Promise<string[]> {
+  return box.locator("[data-paragraph]").allTextContents()
+}
+
 const deckAddress = /\/thin\/[A-Za-z0-9_-]{1,64}$/
 
 async function choose(page: Page, file: string): Promise<string> {
@@ -72,7 +81,14 @@ async function stored(page: Page, value: string): Promise<void> {
     })
     return rows.some((row) => {
       if (typeof row !== "object" || row === null || !("value" in row)) return false
-      return (row as { value: unknown }).value === expected
+      const value = (row as { value: unknown }).value
+      if (typeof value !== "string") return false
+      try {
+        const paragraphs = JSON.parse(value) as { runs: { text: string }[] }[]
+        return paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n") === expected
+      } catch {
+        return false
+      }
     })
   }, value)
 }
@@ -219,7 +235,7 @@ async function paste(page: Page, data: Record<string, string>): Promise<void> {
   }, data)
 }
 
-test("a line break stays out of a box that holds one line", async ({ page }) => {
+test("Enter and a pasted line break each start a new paragraph", async ({ page }) => {
   await open(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
@@ -228,20 +244,21 @@ test("a line break stays out of a box that holds one line", async ({ page }) => 
   await page.keyboard.press("Enter")
   await page.keyboard.press("Shift+Enter")
   await editor.pressSequentially("x", { delay: 50 })
-  await expect.poll(() => editor.textContent()).toBe("Hellox")
-  await stored(page, "Hellox")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello", "", "x"])
+  await stored(page, "Hello\n\nx")
   await paste(page, { "text/plain": "one\r\ntwo" })
-  await expect.poll(() => editor.textContent()).toBe("Helloxone two")
-  await stored(page, "Helloxone two")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(["Hello", "", "xone", "two"])
+  await stored(page, "Hello\n\nxone\ntwo")
   await paste(page, { "text/html": "<p>one</p><p>two</p>" })
   await paste(page, { "text/plain": "a\u2028b\u2029c\u0085d\u000be\u000cf" })
-  await expect.poll(() => editor.textContent()).toBe("Helloxone twoa b c d e f")
-  await stored(page, "Helloxone twoa b c d e f")
+  const pasted = ["Hello", "", "xone", "twoa", "b", "c", "d", "e", "f"]
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(pasted)
+  await stored(page, pasted.join("\n"))
   await page.keyboard.press("ControlOrMeta+a")
   await paste(page, {})
-  await expect.poll(() => editor.textContent()).toBe("Helloxone twoa b c d e f")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(pasted)
   await page.reload()
-  await expect.poll(() => editor.textContent()).toBe("Helloxone twoa b c d e f")
+  await expect.poll(() => paragraphsOf(page, editor)).toEqual(pasted)
 })
 
 test("a cleared box is stored empty", async ({ page }) => {
@@ -277,9 +294,11 @@ test("an export with no edit is the same file byte for byte", async ({ page }, t
 test("a box that cannot keep an edit is not editable", async ({ page }) => {
   await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
   await expect(page.getByText(/1D-Convolutional/).first()).toBeVisible()
-  await expect(page.locator('[contenteditable="false"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(1)
-  await expect(page.locator('[contenteditable="true"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(0)
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(18)
+  await expect(page.locator('[contenteditable="true"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(1)
+  const slideNumber = page.locator("[contenteditable]").nth(44)
+  await expect(slideNumber).toHaveText("10")
+  await expect(slideNumber).toHaveAttribute("contenteditable", "false")
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(35)
   await page.locator("input[type=file]").setInputFiles(fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveCount(1)
@@ -329,7 +348,7 @@ async function answerCommits(page: Page): Promise<void> {
 
 async function confirmed(page: Page, value: string): Promise<void> {
   await expect
-    .poll(async () => (await rowsOf(page)).map((row) => `${row.kind}:${row.value}`))
+    .poll(async () => (await rowsOf(page)).map((row) => `${row.kind}:${lines(row.value)}`))
     .toEqual([`confirmed:${value}`])
 }
 
@@ -369,7 +388,7 @@ test("an edit left pending by a failed commit is sent after a reload", async ({ 
   await page.keyboard.press("End")
   await editor.pressSequentially("!", { delay: 50 })
   await stored(page, "Hello!")
-  expect((await rowsOf(page)).map((row) => `${row.kind}:${row.value}`)).toEqual(["pending:Hello!"])
+  expect((await rowsOf(page)).map((row) => `${row.kind}:${lines(row.value)}`)).toEqual(["pending:Hello!"])
   await answerCommits(page)
   await page.reload()
   await confirmed(page, "Hello!")
@@ -385,8 +404,107 @@ test("an edit made offline is sent when the page comes back online", async ({ pa
   await page.keyboard.press("End")
   await editor.pressSequentially("?", { delay: 50 })
   await stored(page, "Hello?")
-  expect((await rowsOf(page)).map((row) => `${row.kind}:${row.value}`)).toEqual(["pending:Hello?"])
+  expect((await rowsOf(page)).map((row) => `${row.kind}:${lines(row.value)}`)).toEqual(["pending:Hello?"])
   await answerCommits(page)
   await context.setOffline(false)
   await confirmed(page, "Hello?")
+})
+
+function shapeIn(slideXml: string, id: string): string {
+  const named = slideXml.indexOf(`<p:cNvPr id="${id}"`)
+  const start = slideXml.lastIndexOf("<p:sp>", named)
+  const end = slideXml.indexOf("</p:sp>", named) + "</p:sp>".length
+  return slideXml.slice(start, end)
+}
+
+function runsIn(shape: string): [string, string][] {
+  return [...shape.matchAll(/<a:r>(<a:rPr(?:[^>]*\/>|[\s\S]*?<\/a:rPr>))?<a:t>([^<]*)<\/a:t><\/a:r>/g)].map((run) => [
+    run[1] ?? "",
+    run[2] ?? "",
+  ])
+}
+
+test("Enter inside a run of a box with eight runs makes a paragraph that keeps every run's format", async ({
+  page,
+}, testInfo) => {
+  const deck = join(fixtures, "doe-heat-pumps.pptx")
+  const download = testInfo.outputPath("paragraphs.pptx")
+  const part = "ppt/slides/slide7.xml"
+  await open(page, deck)
+  const box = page.locator('[contenteditable="true"]').filter({ hasText: /^Vapor Compression CyclePumped refrigerant/ })
+  await expect(box).toHaveCount(1)
+  const second = box.locator("[data-run]").nth(3)
+  await expect(second).toHaveText("delivers")
+  await second.click()
+  await second.evaluate((run) => {
+    const text = run.firstChild
+    if (text === null) return
+    window.getSelection()?.setBaseAndExtent(text, 3, text, 3)
+  })
+  await page.keyboard.type("X", { delay: 50 })
+  await page.keyboard.press("Enter")
+  await page.keyboard.type("Next line", { delay: 50 })
+  const shown = [
+    "Vapor Compression Cycle",
+    "Pumped refrigerant",
+    "Pressurized (liquid) delX",
+    "Next lineivers heat ",
+    "Depressurized (gas) collects heat ",
+  ]
+  await stored(page, shown.join("\n"))
+  await page.reload()
+  await expect.poll(() => paragraphsOf(page, box)).toEqual(shown)
+  await saveExport(page, download)
+  expect(await changedParts(deck, download)).toEqual([part])
+  const before = (await partsOf(deck)).get(part)?.toString("utf8") ?? ""
+  const after = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
+  const original = shapeIn(before, "45")
+  const written = shapeIn(after, "45")
+  expect(after.replace(written, "")).toBe(before.replace(original, ""))
+  const runs = runsIn(original)
+  expect(runs.map(([, text]) => text)).toEqual([
+    "Vapor Compression Cycle",
+    "Pumped refrigerant",
+    "Pressurized (liquid) ",
+    "delivers",
+    " heat ",
+    "Depressurized (gas) ",
+    "collects",
+    " heat ",
+  ])
+  const format = (index: number) => runs[index]?.[0] ?? ""
+  expect(runsIn(written)).toEqual([
+    [format(0), "Vapor Compression Cycle"],
+    [format(1), "Pumped refrigerant"],
+    [format(2), "Pressurized (liquid) "],
+    [format(3), "delX"],
+    [format(3), "Next lineivers"],
+    [format(4), " heat "],
+    [format(5), "Depressurized (gas) "],
+    [format(6), "collects"],
+    [format(7), " heat "],
+  ])
+  expect(written.match(/<a:p>|<a:p /g)?.length).toBe(5)
+})
+
+test("an empty box takes typed text, keeps it after reload and exports it", async ({ page }, testInfo) => {
+  const deck = join(fixtures, "doe-heat-pumps.pptx")
+  const download = testInfo.outputPath("empty-box.pptx")
+  const part = "ppt/slides/slide1.xml"
+  await open(page, deck)
+  const empty = page.locator("[contenteditable]").nth(2)
+  await expect(empty).toHaveAttribute("contenteditable", "true")
+  await expect(empty).toHaveText("")
+  await empty.click()
+  await empty.pressSequentially("Typed here", { delay: 50 })
+  await stored(page, "Typed here")
+  await page.reload()
+  await expect(page.locator("[contenteditable]").nth(2)).toHaveText("Typed here")
+  await saveExport(page, download)
+  expect(await changedParts(deck, download)).toEqual([part])
+  const before = (await partsOf(deck)).get(part)?.toString("utf8") ?? ""
+  const after = (await partsOf(download)).get(part)?.toString("utf8") ?? ""
+  const written = shapeIn(after, "4")
+  expect(after.replace(written, "")).toBe(before.replace(shapeIn(before, "4"), ""))
+  expect(written).toContain("<a:t>Typed here</a:t>")
 })

@@ -1,6 +1,6 @@
 import { act, createElement, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
-import { readTextValue, writeTextValue } from "@airdesign/document"
+import { readTextValue, writeTextValue, type TextValue } from "@airdesign/document"
 import { afterEach, describe, expect, it } from "vitest"
 import { Passage, elementId, paintStore } from "./index.js"
 
@@ -35,9 +35,15 @@ function editorIn(host: HTMLElement): HTMLElement {
 }
 
 function textIn(editor: HTMLElement): Text {
-  const node = editor.firstChild
+  const node = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT).nextNode()
   if (!(node instanceof Text)) throw new Error("missing text")
   return node
+}
+
+function lines(value: string | undefined): string | undefined {
+  const read = value === undefined ? null : readTextValue(value)
+  if (read === null) return value
+  return read.map((paragraph) => paragraph.runs.map((run) => run.text).join("")).join("\n")
 }
 
 function runText(editor: HTMLElement, index: number): Text {
@@ -87,8 +93,7 @@ describe("Passage", () => {
     const editor = host.querySelector("[contenteditable]")
     if (!(editor instanceof HTMLElement)) throw new Error("missing passage")
     editor.focus()
-    const textNode = editor.firstChild
-    if (!(textNode instanceof Text)) throw new Error("missing text")
+    const textNode = textIn(editor)
     const selection = window.getSelection()
     if (selection === null) throw new Error("missing selection")
     const range = document.createRange()
@@ -111,7 +116,7 @@ describe("Passage", () => {
       mounted.root.render(createElement(Parent, { generation: 1 }))
     })
 
-    expect(editor.firstChild).toBe(textNode)
+    expect(textIn(editor)).toBe(textNode)
     expect(textNode.nodeValue).toBe("helloあ")
     expect(document.activeElement).toBe(active)
     expect(selection.rangeCount).toBe(1)
@@ -125,7 +130,7 @@ describe("Passage", () => {
     const record = store.getElement(id)
     if (record === null) throw new Error("missing record")
     store.publish({ id: record.id, kind: record.kind, text: "outside", picture: record.picture })
-    expect(editor.firstChild).toBe(textNode)
+    expect(textIn(editor)).toBe(textNode)
     expect(store.getElement(id)?.text).toBe("hello")
 
     const seen: string[] = []
@@ -137,7 +142,7 @@ describe("Passage", () => {
       editor.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "helloあ" }))
     })
 
-    expect(seen[0]).toBe("helloあ")
+    expect(lines(seen[0])).toBe("helloあ")
     expect(store.getElement(id)?.text).toBe("outside")
   })
 
@@ -169,12 +174,12 @@ describe("Passage", () => {
     await act(async () => {
       editor.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "helloあ" }))
     })
-    expect(seen).toEqual(["helloあ"])
+    expect(seen.map(lines)).toEqual(["helloあ"])
     editor.textContent = "Hello!"
     await act(async () => {
       editor.dispatchEvent(new InputEvent("input", { bubbles: true }))
     })
-    expect(seen).toEqual(["helloあ", "Hello!"])
+    expect(seen.map(lines)).toEqual(["helloあ", "Hello!"])
   })
 
   it("an echo of its own value keeps the text node and the caret", async () => {
@@ -194,8 +199,8 @@ describe("Passage", () => {
     const typed = await typeInto(editor, "Hello!")
     const selection = window.getSelection()
 
-    expect(store.getElement(id)?.text).toBe("Hello!")
-    expect(editor.firstChild).toBe(typed)
+    expect(lines(store.getElement(id)?.text)).toBe("Hello!")
+    expect(textIn(editor)).toBe(typed)
     expect(editor.childNodes.length).toBe(1)
     expect(typed.nodeValue).toBe("Hello!")
     expect(selection?.rangeCount).toBe(1)
@@ -222,17 +227,17 @@ describe("Passage", () => {
     editor.textContent = "a"
     await typeInto(editor, "a")
     const typed = await typeInto(editor, "ab")
-    expect(sent).toEqual(["a", "ab"])
+    expect(sent.map(lines)).toEqual(["a", "ab"])
 
-    await show(store, id, "a")
+    await show(store, id, sent[0] ?? "")
     expect(editor.textContent).toBe("ab")
-    expect(editor.firstChild).toBe(typed)
+    expect(textIn(editor)).toBe(typed)
     expect(window.getSelection()?.getRangeAt(0).startContainer).toBe(typed)
     expect(window.getSelection()?.getRangeAt(0).startOffset).toBe(2)
 
-    await show(store, id, "ab")
+    await show(store, id, sent[1] ?? "")
     expect(editor.textContent).toBe("ab")
-    expect(editor.firstChild).toBe(typed)
+    expect(textIn(editor)).toBe(typed)
     expect(window.getSelection()?.getRangeAt(0).startOffset).toBe(2)
 
     await show(store, id, "a")
@@ -260,19 +265,19 @@ describe("Passage", () => {
     await show(store, id, "Hello wide world")
     expect(editor.textContent).toBe("Hello wide world")
     expect(selection.rangeCount).toBe(1)
-    expect(selection.getRangeAt(0).startContainer).toBe(editor.firstChild)
+    expect(selection.getRangeAt(0).startContainer).toBe(textIn(editor))
     expect(selection.getRangeAt(0).startOffset).toBe(8)
     expect(selection.getRangeAt(0).endOffset).toBe(8)
 
     await show(store, id, "Hey")
     expect(editor.textContent).toBe("Hey")
-    expect(selection.getRangeAt(0).startContainer).toBe(editor.firstChild)
+    expect(selection.getRangeAt(0).startContainer).toBe(textIn(editor))
     expect(selection.getRangeAt(0).startOffset).toBe(3)
     expect(selection.getRangeAt(0).endOffset).toBe(3)
 
     await show(store, id, "")
     expect(editor.textContent).toBe("")
-    expect(selection.getRangeAt(0).startContainer).toBe(editor)
+    expect(selection.getRangeAt(0).startContainer).toBe(editor.firstChild)
     expect(selection.getRangeAt(0).startOffset).toBe(0)
     expect(sent).toEqual([])
   })
@@ -333,5 +338,142 @@ describe("Passage paragraphs", () => {
       ],
     ])
     expect(editor.querySelectorAll("[data-paragraph]").length).toBe(2)
+  })
+
+  async function mountValue(value: TextValue) {
+    const sent: string[] = []
+    const store = paintStore()
+    const id = elementId("body")
+    await show(store, id, writeTextValue(value))
+    const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))
+    return { sent, store, id, editor: editorIn(host) }
+  }
+
+  async function press(editor: HTMLElement, key: string): Promise<boolean> {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true })
+    await act(async () => {
+      editor.dispatchEvent(event)
+    })
+    return event.defaultPrevented
+  }
+
+  async function input(editor: HTMLElement): Promise<void> {
+    await act(async () => {
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }))
+    })
+  }
+
+  const twoRuns = [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "world" }] }]
+
+  it("the caret stays at the start of the new paragraph and an echo of the split keeps it", async () => {
+    const { sent, store, id, editor } = await mountValue(twoRuns)
+    caretAt(runText(editor, 1), 2)
+    await press(editor, "Enter")
+    const tail = runText(editor, 2)
+    expect(tail.nodeValue).toBe("rld")
+    const selection = window.getSelection()
+    expect(selection?.getRangeAt(0).startContainer).toBe(tail)
+    expect(selection?.getRangeAt(0).startOffset).toBe(0)
+
+    await show(store, id, sent[0] ?? "")
+    expect(runText(editor, 2)).toBe(tail)
+    expect(selection?.getRangeAt(0).startContainer).toBe(tail)
+    expect(selection?.getRangeAt(0).startOffset).toBe(0)
+  })
+
+  it("typing inside a run keeps the run's from", async () => {
+    const { sent, editor } = await mountValue(twoRuns)
+    const world = runText(editor, 1)
+    world.nodeValue = "wor!ld"
+    caretAt(world, 4)
+    await input(editor)
+    expect(sent.map((text) => readTextValue(text))).toEqual([
+      [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "wor!ld" }] }],
+    ])
+  })
+
+  it("Backspace at the start of a paragraph joins it to the one before", async () => {
+    const { sent, editor } = await mountValue(twoRuns)
+    caretAt(runText(editor, 1), 2)
+    await press(editor, "Enter")
+    caretAt(runText(editor, 2), 0)
+    expect(await press(editor, "Backspace")).toBe(true)
+    expect(readTextValue(sent.at(-1) ?? "")).toEqual(twoRuns)
+    expect(editor.querySelectorAll("[data-paragraph]").length).toBe(1)
+    expect(window.getSelection()?.getRangeAt(0).startContainer).toBe(runText(editor, 1))
+    expect(window.getSelection()?.getRangeAt(0).startOffset).toBe(2)
+  })
+
+  it("a joined paragraph from another source paragraph writes its runs as new", async () => {
+    const { sent, editor } = await mountValue([
+      { from: 0, runs: [{ from: 0, text: "one" }] },
+      { from: 1, runs: [{ from: 0, text: "two" }] },
+    ])
+    caretAt(runText(editor, 1), 0)
+    await press(editor, "Backspace")
+    expect(readTextValue(sent.at(-1) ?? "")).toEqual([
+      { from: 0, runs: [{ from: 0, text: "one" }, { from: -1, text: "two" }] },
+    ])
+  })
+
+  it("Backspace inside a paragraph is left to the browser", async () => {
+    const { sent, editor } = await mountValue(twoRuns)
+    caretAt(runText(editor, 1), 2)
+    expect(await press(editor, "Backspace")).toBe(false)
+    expect(sent).toEqual([])
+  })
+
+  it("typing into an empty box writes a first run that is new", async () => {
+    const { sent, editor } = await mountValue([{ from: 0, runs: [] }])
+    const paragraph = editor.querySelector("[data-paragraph]")
+    if (paragraph === null) throw new Error("missing paragraph")
+    paragraph.replaceChildren("Hi")
+    await input(editor)
+    expect(sent.map((text) => readTextValue(text))).toEqual([[{ from: 0, runs: [{ from: -1, text: "Hi" }] }]])
+  })
+
+  it("a pasted line break becomes a paragraph break", async () => {
+    const { sent, editor } = await mountValue(twoRuns)
+    caretAt(runText(editor, 0), 5)
+    const event = new Event("paste", { bubbles: true, cancelable: true })
+    Object.defineProperty(event, "clipboardData", { value: { getData: () => "A\r\nB" } })
+    await act(async () => {
+      editor.dispatchEvent(event)
+    })
+    expect(readTextValue(sent.at(-1) ?? "")).toEqual([
+      { from: 0, runs: [{ from: 0, text: "HelloA" }] },
+      { from: 0, runs: [{ from: 0, text: "B " }, { from: 1, text: "world" }] },
+    ])
+  })
+
+  it("a stored plain string is one paragraph with one run", async () => {
+    const store = paintStore()
+    const id = elementId("body")
+    await show(store, id, "Hello")
+    const sent: string[] = []
+    const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))
+    const editor = editorIn(host)
+    const node = runText(editor, 0)
+    node.nodeValue = "Hello!"
+    caretAt(node, 6)
+    await input(editor)
+    expect(sent.map((text) => readTextValue(text))).toEqual([[{ from: 0, runs: [{ from: 0, text: "Hello!" }] }]])
+  })
+
+  it("typing over a selection of the whole box keeps the first run's from", async () => {
+    const { sent, editor } = await mountValue(twoRuns)
+    const selection = window.getSelection()
+    const range = document.createRange()
+    range.setStart(runText(editor, 0), 0)
+    range.setEnd(runText(editor, 1), 5)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    const event = new InputEvent("beforeinput", { inputType: "insertText", data: "X", bubbles: true, cancelable: true })
+    await act(async () => {
+      editor.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(sent.map((text) => readTextValue(text))).toEqual([[{ from: 0, runs: [{ from: 0, text: "X" }] }]])
+    expect(selection?.getRangeAt(0).startOffset).toBe(1)
   })
 })
