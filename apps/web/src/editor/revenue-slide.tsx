@@ -41,7 +41,7 @@ export function RevenueSlide({
         className={cn(
           "relative flex flex-col gap-0 p-1",
           working && "rounded-[var(--shape-control)] shadow-[0px_0px_0px_1px_var(--primary-35)]",
-          selected && "rounded-none shadow-[0_0_0_1px_var(--primary)]",
+          selected && "rounded-none shadow-[0_0_0_2px_var(--ring)]",
           !working && !selected && "rounded-[var(--shape-control)]",
         )}
       >
@@ -74,12 +74,7 @@ export function RevenueSlide({
       <span className="text-[length:var(--type-caption)] text-faint">Source: Q3 board notes, unaudited</span>
     </div>
   )
-  if (!working) return slide
-  return (
-    <div className="shrink-0 rounded-[var(--shape-control)] bg-[linear-gradient(135deg,var(--primary)_0%,var(--glow-blue)_35%,var(--glow-violet)_65%,var(--primary)_100%)] p-[var(--space-4)] shadow-[0px_0px_28px_var(--primary-35),-18px_-12px_56px_var(--top-28),18px_14px_56px_var(--violet-28)]">
-      {slide}
-    </div>
-  )
+  return slide
 }
 
 function SelectionHandles() {

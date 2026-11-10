@@ -358,7 +358,7 @@ export function SlideColumn() {
               className={cn(
                 "rounded-sm p-[var(--space-4)]",
                 itemIndex > 0 && "mt-2",
-                index === 3 && "shadow-[0px_0px_0px_2px_var(--primary)]",
+                index === 3 && "shadow-[0_0_0_2px_var(--ring)]",
               )}
             >
               <SlideThumb index={index} width={60} />

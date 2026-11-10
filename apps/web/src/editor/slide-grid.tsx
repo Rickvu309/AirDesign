@@ -135,12 +135,12 @@ function GridCard({ item, label, state }: { item: number | string; label: string
       <SlideThumb index={item as number} width={300} />
     )
   return (
-    <div className={cn("relative rounded-sm", selected && "shadow-[0px_0px_0px_2px_var(--primary)]")}>
+    <div className={cn("relative rounded-sm", selected && "shadow-[0_0_0_2px_var(--ring)]")}>
       {body}
       {label ? (
         <span
           className={cn(
-            "absolute top-[6px] left-[8px] text-[length:var(--type-caption)]",
+            "absolute top-[6px] left-[var(--space-8)] text-[length:var(--type-caption)]",
             selected ? "font-semibold text-[var(--primary-strong)]" : dark ? "text-white/70" : "text-faint",
           )}
         >
@@ -155,7 +155,7 @@ function InsertMark({ className, large = false }: { className: string; large?: b
   return (
     <span
       className={cn(
-        "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white",
+        "absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full bg-primary-strong text-white",
         className,
       )}
     >

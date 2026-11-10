@@ -19,11 +19,11 @@ export function DeckCard({
   previewClassName?: string
 }) {
   return (
-    <article className="relative rounded-[var(--shape-dialog)] bg-canvas p-1.5">
+    <article className="relative rounded-[var(--shape-dialog)] bg-background p-1.5">
       <div className="px-2.5 pt-2 pb-2.5">
         <h2
           className={cn(
-            "h-[21px] truncate text-[length:var(--type-body)] leading-[21px] font-medium text-foreground",
+            "h-[21px] truncate text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground",
             titleClassName,
             action && "pr-16",
           )}
@@ -32,7 +32,7 @@ export function DeckCard({
         </h2>
         <p
           className={cn(
-            "h-[19.5px] truncate text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground",
+            "h-[19.5px] truncate text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground",
             editedClassName,
           )}
         >

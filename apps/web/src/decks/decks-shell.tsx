@@ -40,7 +40,7 @@ export function DecksShell({
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
             {account.initials}
           </span>
-          <span className="text-[length:var(--type-body)] leading-[21px] font-medium text-foreground">
+          <span className="text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground">
             {account.name}
           </span>
           <span className="text-faint">
@@ -62,7 +62,7 @@ export function DecksShell({
           <a
             href={primary.href}
             className={cn(
-              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               active === primary.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
             )}
             aria-current={active === primary.id ? "page" : undefined}
@@ -77,7 +77,7 @@ export function DecksShell({
                 key={section.id}
                 href={section.href}
                 className={cn(
-                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[21px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                   active === section.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
                 )}
                 aria-current={active === section.id ? "page" : undefined}
@@ -89,7 +89,7 @@ export function DecksShell({
           </div>
         </nav>
         <div className="mt-6 flex flex-col gap-0.5">
-          <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[18px] font-medium text-muted-foreground">
+          <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground">
             <span className="text-faint">
               <DeckGlyph name="chevron" size={12} />
             </span>
@@ -104,7 +104,7 @@ export function DecksShell({
               <button
                 key={folder}
                 type="button"
-                className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[19.5px] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <span className="text-muted-foreground">
                   <DeckGlyph name="folder" size={15} />
