@@ -1,14 +1,13 @@
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter } from "@zip.js/zip.js"
+import { configure, Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter, type Configuration } from "@zip.js/zip.js"
 import { encodeUtf8, readParts, sameBytes } from "./package-bytes.js"
 
 export type ContainerKind =
   | "comment"
   | "disk"
   | "duplicate"
-  | "gap"
   | "method"
   | "order"
-  | "trailing"
+  | "unaccounted"
   | "unreadable"
   | "zip64"
 
@@ -22,6 +21,14 @@ export class ContainerError extends Error {
   }
 }
 
+export class CompressorError extends Error {
+  constructor() {
+    super("compressor")
+    this.name = "CompressorError"
+  }
+}
+
+const onlyBundledCompressor = { CompressionStream: false } as unknown as Configuration
 const localSignature = 0x04034b50
 const centralSignature = 0x02014b50
 const endSignature = 0x06054b50
@@ -52,6 +59,8 @@ type Original = {
   readonly central: Uint8Array
 }
 
+type Span = readonly [start: number, end: number]
+
 type Piece = { readonly local: Uint8Array; readonly central: Uint8Array }
 
 type Pack = { readonly stream: Uint8Array; readonly crc: number; readonly size: number; readonly method: number }
@@ -81,6 +90,7 @@ type CentralRow = {
   readonly compressed: number
   readonly size: number
   readonly offset: number
+  readonly at: number
   readonly nameBytes: Uint8Array
   readonly central: Uint8Array
 }
@@ -131,6 +141,7 @@ function centralRows(
       compressed,
       size,
       offset,
+      at: cursor,
       nameBytes: original.subarray(cursor + centralSize, cursor + centralSize + nameLength),
       central: original.subarray(cursor, end),
     })
@@ -139,18 +150,21 @@ function centralRows(
   return rows
 }
 
-function descriptorMatches(view: DataView, row: CentralRow, at: number, length: number): boolean {
-  if (length !== 12 && length !== 16) return false
-  if (length === 16 && view.getUint32(at, true) !== descriptorSignature) return false
-  const fields = at + length - 12
-  return (
+function descriptorEnd(view: DataView, row: CentralRow, at: number, limit: number): number {
+  const signed = at + 16 <= limit && view.getUint32(at, true) === descriptorSignature
+  const fields = signed ? at + 4 : at
+  if (
+    fields + 12 <= limit &&
     view.getUint32(fields, true) === row.crc &&
     view.getUint32(fields + 4, true) === row.compressed &&
     view.getUint32(fields + 8, true) === row.size
-  )
+  ) {
+    return fields + 12
+  }
+  throw new ContainerError("unaccounted")
 }
 
-function localRecord(original: Uint8Array, view: DataView, row: CentralRow, next: number, centralAt: number): Original {
+function localRecord(original: Uint8Array, view: DataView, row: CentralRow, centralAt: number): Original {
   if (row.offset + localSize > centralAt || view.getUint32(row.offset, true) !== localSignature) {
     throw new ContainerError("unreadable")
   }
@@ -160,25 +174,19 @@ function localRecord(original: Uint8Array, view: DataView, row: CentralRow, next
   const extraLength = view.getUint16(row.offset + 28, true)
   const headerEnd = row.offset + localSize + nameLength + extraLength
   const streamEnd = headerEnd + row.compressed
-  if (streamEnd > next) throw new ContainerError("unreadable")
   const localName = original.subarray(row.offset + localSize, row.offset + localSize + nameLength)
   if (!sameBytes(localName, row.nameBytes)) throw new ContainerError("unreadable")
   if (method !== row.method || (flags & descriptorFlag) !== (row.flags & descriptorFlag)) {
     throw new ContainerError("unreadable")
   }
-  const trail = next - streamEnd
-  if ((flags & descriptorFlag) === 0) {
-    if (trail !== 0) throw new ContainerError("gap")
-  } else if (!descriptorMatches(view, row, streamEnd, trail)) {
-    throw new ContainerError("gap")
-  }
+  const end = (flags & descriptorFlag) === 0 ? streamEnd : descriptorEnd(view, row, streamEnd, centralAt)
   return {
     name: row.name,
     directory: row.directory,
     method,
     flags,
     header: original.subarray(row.offset, headerEnd),
-    local: original.subarray(row.offset, next),
+    local: original.subarray(row.offset, end),
     central: row.central,
   }
 }
@@ -186,6 +194,15 @@ function localRecord(original: Uint8Array, view: DataView, row: CentralRow, next
 function severalDisks(view: DataView, endAt: number): boolean {
   const end = endFields(view, endAt)
   return end.disk !== 0 || end.startDisk !== 0 || end.here !== end.count
+}
+
+function accounted(spans: readonly Span[], fileLength: number): void {
+  let cursor = 0
+  for (const [start, end] of spans) {
+    if (start !== cursor) throw new ContainerError("unaccounted")
+    cursor = end
+  }
+  if (cursor !== fileLength) throw new ContainerError("unaccounted")
 }
 
 async function readContainer(original: Uint8Array): Promise<readonly Original[]> {
@@ -196,13 +213,13 @@ async function readContainer(original: Uint8Array): Promise<readonly Original[]>
   if (read === null) throw new ContainerError(hasEnd && severalDisks(view, endAt) ? "disk" : "unreadable")
   if (read.comment.length > 0) throw new ContainerError("comment")
   if (read.entries.some((entry) => entry.zip64)) throw new ContainerError("zip64")
-  if (!hasEnd) throw new ContainerError("trailing")
+  if (!hasEnd) throw new ContainerError("unaccounted")
   if (severalDisks(view, endAt)) throw new ContainerError("disk")
   const end = endFields(view, endAt)
   if (end.count === most16 || end.length === most32 || end.offset === most32) throw new ContainerError("zip64")
   if (end.offset + end.length !== endAt) {
     const zip64 = endAt >= locatorSize && view.getUint32(endAt - locatorSize, true) === locatorSignature
-    throw new ContainerError(zip64 ? "zip64" : "gap")
+    throw new ContainerError(zip64 ? "zip64" : "unaccounted")
   }
   if (end.count !== read.entries.length) throw new ContainerError("unreadable")
   const rows = centralRows(original, view, read.entries, end.offset)
@@ -210,30 +227,44 @@ async function readContainer(original: Uint8Array): Promise<readonly Original[]>
     const before = rows[index - 1]
     if (before !== undefined && row.offset <= before.offset) throw new ContainerError("order")
   })
-  const first = rows[0]
-  if (first !== undefined && first.offset !== 0) throw new ContainerError("gap")
-  return rows.map((row, index) => localRecord(original, view, row, rows[index + 1]?.offset ?? end.offset, end.offset))
+  const records = rows.map((row) => localRecord(original, view, row, end.offset))
+  accounted(
+    [
+      ...rows.map((row, index): Span => [row.offset, row.offset + (records[index]?.local.length ?? 0)]),
+      ...rows.map((row): Span => [row.at, row.at + row.central.length]),
+      [endAt, endAt + endSize + view.getUint16(endAt + 20, true)],
+    ],
+    original.length,
+  )
+  return records
 }
 
 async function packPart(data: Uint8Array, method: number): Promise<Pack> {
-  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter(), {
-    level: method === stored ? 0 : packLevel,
-    useWebWorkers: false,
-    useCompressionStream: false,
-    dataDescriptor: false,
-    zip64: false,
-    extendedTimestamp: false,
-  })
-  await writer.add("p", new Uint8ArrayReader(data))
-  const zipped = await writer.close()
+  configure(onlyBundledCompressor)
+  let zipped: Uint8Array
+  try {
+    const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter(), {
+      level: method === stored ? 0 : packLevel,
+      useWebWorkers: false,
+      useCompressionStream: false,
+      dataDescriptor: false,
+      zip64: false,
+      extendedTimestamp: false,
+    })
+    await writer.add("p", new Uint8ArrayReader(data))
+    zipped = await writer.close()
+  } catch {
+    throw new CompressorError()
+  }
   const view = recordView(zipped)
+  if (view.getUint16(8, true) !== method) throw new CompressorError()
   const compressed = view.getUint32(18, true)
   const start = localSize + view.getUint16(26, true) + view.getUint16(28, true)
   return {
     stream: zipped.slice(start, start + compressed),
     crc: view.getUint32(14, true),
     size: data.length,
-    method: view.getUint16(8, true),
+    method,
   }
 }
 
