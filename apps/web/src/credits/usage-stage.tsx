@@ -71,7 +71,7 @@ export function UsageStage({
 
 export function WaitingBanner() {
   return (
-    <div className="flex h-[37px] items-center justify-between gap-3 rounded-lg bg-[#eef4fe] px-3">
+    <div className="flex h-[37px] items-center justify-between gap-3 rounded-lg bg-[var(--blue-tint)] px-3">
       <span className="flex min-w-0 items-center gap-2.5">
         <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
           <defs>
@@ -84,17 +84,22 @@ export function WaitingBanner() {
             cy="8"
             r="8"
             fill="none"
-            stroke="#4d94fb"
+            stroke="var(--primary)"
             strokeWidth="4"
             strokeDasharray="14 30"
             strokeLinecap="butt"
             clipPath="url(#credits-wait-dash)"
           />
         </svg>
-        <span className="truncate text-[13px] leading-[17px] font-medium text-[#2d6fcd]">{creditsCopy.waiting}</span>
+        <span className="truncate text-[13px] leading-[17px] font-medium text-[var(--primary-strong)]">
+          {creditsCopy.waiting}
+        </span>
       </span>
       <span className="flex shrink-0 items-center gap-3.5">
-        <button type="button" className="text-[13px] leading-[17px] font-medium text-[#2d6fcd] hover:underline">
+        <button
+          type="button"
+          className="text-[13px] leading-[17px] font-medium text-[var(--primary-strong)] hover:underline"
+        >
           {productCopy.payOpen}
         </button>
         <button

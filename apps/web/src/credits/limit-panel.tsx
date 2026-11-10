@@ -56,7 +56,7 @@ function LimitPanel({ phase, mark }: { phase: "limit" | "reset"; mark: "tile" | 
             <MessageContent className="rounded-[14px] bg-line px-3.5 py-2.5 leading-[1.5]">
               {creditsCopy.ask}
             </MessageContent>
-            <span className="flex h-7 items-center gap-1.5 rounded-[8px] px-2 text-xs text-quiet shadow-[0px_0px_0px_1px_#d7d7d6]">
+            <span className="flex h-7 items-center gap-1.5 rounded-[8px] px-2 text-xs text-quiet shadow-[0px_0px_0px_1px_var(--field-edge)]">
               <EditorIcon name="doc" size={13} />
               {creditsCopy.notesFile}
             </span>
@@ -78,20 +78,20 @@ function LimitMark({ mark }: { mark: "tile" | "ring" }) {
   if (mark === "ring") {
     return (
       <span className="flex size-4 items-center justify-center">
-        <span className="size-3 rounded-full shadow-[0_0_0_1px_#d93f3f,inset_0_0_0_1px_#d93f3f]" />
+        <span className="size-3 rounded-full shadow-[0_0_0_1px_var(--destructive),inset_0_0_0_1px_var(--destructive)]" />
       </span>
     )
   }
   return (
-    <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,#f29a9a,#d93f3f)] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_#b92f2f,0_1px_2px_rgb(0_0_0/12%)]">
-      <span className="size-[6.6px] rounded-full shadow-[0_0_0_0.82px_#fff,inset_0_0_0_0.82px_#fff]" />
+    <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--danger-edge),0_1px_2px_rgb(0_0_0/12%)]">
+      <span className="size-[6.6px] rounded-full shadow-[0_0_0_0.82px_var(--background),inset_0_0_0_0.82px_var(--background)]" />
     </span>
   )
 }
 
 function LimitCard({ mark }: { mark: "tile" | "ring" }) {
   return (
-    <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_#eaeae7,0px_1px_2px_#0000000d]">
+    <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
       <span className="flex items-center gap-2">
         <LimitMark mark={mark} />
         <span className="text-[13px] leading-[17px] font-semibold text-foreground">{productCopy.usageLimitTitle}</span>
@@ -106,14 +106,14 @@ function LimitCard({ mark }: { mark: "tile" | "ring" }) {
 
 function ResetCard() {
   return (
-    <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_#eaeae7,0px_1px_2px_#0000000d]">
+    <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
       <span className="flex items-center gap-2">
-        <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,#93b8ef,#4d94fb)] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_#2d6fcd,0_1px_2px_rgb(0_0_0/12%)]">
+        <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--primary-strong),0_1px_2px_rgb(0_0_0/12%)]">
           <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
             <path
               d="M2.3 5.7 4.3 7.7 8.7 3.3"
               fill="none"
-              stroke="#ffffff"
+              stroke="var(--background)"
               strokeWidth="1.65"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -134,7 +134,7 @@ function CardButton({ children }: { children: string }) {
   return (
     <button
       type="button"
-      className="inline-flex h-8 items-center rounded-lg bg-[linear-gradient(180deg,#93b8ef,#4d94fb)] px-3 text-[13px] leading-[17px] font-medium text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_#2d6fcd,0_1px_2px_rgb(0_0_0/12%)] hover:brightness-105"
+      className="inline-flex h-8 items-center rounded-lg bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3 text-[13px] leading-[17px] font-medium text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--primary-strong),0_1px_2px_rgb(0_0_0/12%)] hover:brightness-105"
     >
       {children}
     </button>
@@ -179,10 +179,10 @@ function ReadyComposer() {
 
 function UsageMeter({ tone }: { tone: "limit" | "clear" }) {
   const dash = tone === "limit" ? "37.68 80" : "0.72 80"
-  const color = tone === "limit" ? "#e5484d" : "#4d94fb"
+  const color = tone === "limit" ? "var(--limit)" : "var(--primary)"
   return (
     <span className="relative block size-4">
-      <span className="absolute top-0.5 left-0.5 size-3 rounded-full shadow-[0_0_0_1px_#d7d7d6,inset_0_0_0_1px_#d7d7d6]" />
+      <span className="absolute top-0.5 left-0.5 size-3 rounded-full shadow-[0_0_0_1px_var(--field-edge),inset_0_0_0_1px_var(--field-edge)]" />
       <svg
         viewBox="0 0 12 12"
         width="12"

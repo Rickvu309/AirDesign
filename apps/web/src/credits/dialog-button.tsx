@@ -16,8 +16,8 @@ export function DialogButton({
       className={cn(
         "inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-4 text-[14px] leading-[18px] font-medium",
         tone === "brand"
-          ? "bg-[linear-gradient(180deg,#93b8ef,#4d94fb)] text-white shadow-[inset_0_0_0_1px_#2d6fcd] hover:brightness-105"
-          : "bg-white text-foreground shadow-[inset_0_0_0_1px_#d7d7d6] hover:bg-canvas",
+          ? "bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] text-white shadow-[inset_0_0_0_1px_var(--primary-strong)] hover:brightness-105"
+          : "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-canvas",
         className,
       )}
     >

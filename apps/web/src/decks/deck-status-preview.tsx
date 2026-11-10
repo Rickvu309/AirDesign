@@ -16,7 +16,7 @@ export function ImportingPreview() {
     <div className="relative flex h-full flex-col items-center justify-center gap-3 bg-canvas">
       <PptxMark />
       <span className="block h-1 w-40 overflow-hidden rounded-sm bg-line">
-        <span className="block h-full w-[93px] rounded-sm bg-[linear-gradient(90deg,#93b8ef,#4d94fb)]" />
+        <span className="block h-full w-[93px] rounded-sm bg-[linear-gradient(90deg,var(--primary-top),var(--primary))]" />
       </span>
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -31,7 +31,7 @@ export function ImportingPreview() {
           height="198"
           rx="9"
           fill="none"
-          stroke="#d7d7d6"
+          stroke="var(--field-edge)"
           strokeWidth="2"
           strokeDasharray="5 4"
         />
@@ -47,7 +47,7 @@ export function ImportFailedPreview() {
       <div className="flex translate-y-[-0.5px] items-center gap-4">
         <button
           type="button"
-          className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[13px] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_#d7d7d6]"
+          className="flex h-8 w-[145.83px] items-center rounded-lg border-0 bg-background px-3 text-[13px] leading-[17px] font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
           style={trimmed}
         >
           Choose another file

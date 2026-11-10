@@ -2,6 +2,17 @@ import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { floatShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { shapeArt, type ShapeArt } from "@/editor/shape-art"
+import {
+  imageColumns,
+  lineStroke,
+  shapeBox,
+  shapeBoxEdge,
+  shapeFill,
+  shapeStroke,
+  templateDark,
+  templateHalden,
+  templateLight,
+} from "@/editor/tool-panels-art"
 import { SlideThumb } from "@/editor/slide-thumb"
 import { cn } from "@/lib/utils"
 
@@ -24,13 +35,13 @@ const basicShapes: Record<string, string> = {
 
 const trayShapes = ["square", "circle", "diamond", "triangle", "star", "plus", "arrowl", "arrowr", "bubble"]
 
-function ShapeSvg({ markup, size, stroke = "#2D6FCD" }: { markup: string; size: number; stroke?: string }) {
+function ShapeSvg({ markup, size, stroke = shapeStroke }: { markup: string; size: number; stroke?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       width={size}
       height={size}
-      fill="#4D94FB"
+      fill={shapeFill}
       stroke={stroke}
       strokeWidth="1"
       strokeLinejoin="round"
@@ -47,7 +58,7 @@ function LineArt({ arrow, size }: { arrow: boolean; size: number }) {
       width={size}
       height={size}
       fill="none"
-      stroke="#222222"
+      stroke={lineStroke}
       strokeWidth={size > 24 ? 1.5 : 1.6}
       strokeLinecap="round"
       aria-hidden="true"
@@ -66,13 +77,13 @@ export function ShapeTray() {
           <LineArt arrow={arrow} size={22} />
         </span>
       ))}
-      <span className="mx-1 block h-6 w-px bg-[#d7d7d6]" />
+      <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       {trayShapes.map((name) => (
         <span key={name} className="flex size-9 items-center justify-center rounded-[7px]">
           <ShapeSvg markup={basicShapes[name]} size={26} />
         </span>
       ))}
-      <span className="mx-1 block h-6 w-px bg-[#d7d7d6]" />
+      <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       <span className="flex h-8 shrink-0 items-center rounded-[8px] px-2.5 text-xs font-medium text-foreground">
         More shapes
       </span>
@@ -150,20 +161,8 @@ function MediaChrome({ title, search }: { title: string; search: string }) {
 }
 
 export function ImagesPanel() {
-  const left: [number, string][] = [
-    [78, "#4f6b7d"],
-    [130, "#a9c4d2"],
-    [96, "#0f2433"],
-    [120, "#c1c1c0"],
-    [90, "#1d6b8f"],
-  ]
-  const right: [number, string][] = [
-    [120, "#d7d7d6"],
-    [88, "#1d6b8f"],
-    [140, "#a9c4d2"],
-    [80, "#4f6b7d"],
-    [110, "#eaeae7"],
-  ]
+  const left = imageColumns.left
+  const right = imageColumns.right
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
       <MediaChrome title="Images" search="Search images" />
@@ -238,14 +237,15 @@ function ShapeMark({ art }: { art: ShapeArt }) {
   if (art.kind === "box") {
     return (
       <span
-        className="absolute bg-[#4d94fb]"
+        className="absolute"
         style={{
           left: art.x,
           top: art.y,
           width: art.w,
           height: art.h,
           borderRadius: art.radius,
-          boxShadow: "0 0 0 0.63px #2d6fcd, inset 0 0 0 0.63px #2d6fcd",
+          backgroundColor: shapeBox,
+          boxShadow: shapeBoxEdge,
         }}
       />
     )
@@ -351,7 +351,7 @@ export function SlideColumn() {
       <span className="mt-5 mb-5 block h-px w-full bg-line" />
       {groups.map((group, groupIndex) => (
         <div key={group[0]} className="flex flex-col items-center">
-          {groupIndex > 0 ? <span className="my-5 block h-px w-8 bg-[#d7d7d6]" /> : null}
+          {groupIndex > 0 ? <span className="my-5 block h-px w-8 bg-[var(--field-edge)]" /> : null}
           {group.map((index, itemIndex) => (
             <span
               key={index}
@@ -387,24 +387,23 @@ export function TemplatePicker() {
       <div className="flex flex-col gap-6 px-4 pt-4">
         <div className="flex flex-col gap-3">
           <span className="text-[13px] font-semibold text-foreground">Your templates</span>
-          <TemplateCard name="Halden" className="bg-navy" title="Halden" titleColor="#ffffff" line="#ffffff55" />
+          <TemplateCard name="Halden" className="bg-navy" title="Halden" {...templateHalden} />
         </div>
         <div className="flex flex-col gap-3">
           <span className="text-[13px] font-semibold text-foreground">Basic</span>
           <div className="flex gap-4">
             <TemplateCard
               name="Light slides"
-              className="bg-white shadow-[0px_0px_0px_1px_#d7d7d6]"
+              className="bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]"
               title="Slide title"
-              titleColor="#222222"
-              line="#d7d7d6"
+              {...templateLight}
             />
             <TemplateCard
               name="Dark slides"
-              className="bg-[#111111]"
+              className={templateDark.className}
               title="Slide title"
-              titleColor="#ffffff"
-              line="#ffffff40"
+              titleColor={templateDark.titleColor}
+              line={templateDark.line}
             />
           </div>
         </div>

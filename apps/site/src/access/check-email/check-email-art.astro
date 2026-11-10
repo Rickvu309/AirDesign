@@ -1,0 +1,25 @@
+---
+interface Props {
+  name: "outlook" | "gmail";
+}
+
+const { name } = Astro.props;
+---
+
+{
+  name === "outlook" ? (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <rect x="7" y="4" width="15" height="16" rx="2" fill="#28a8ea" />
+      <rect x="2" y="7" width="12" height="12" rx="1.5" fill="#0364b8" />
+      <ellipse cx="8" cy="13" rx="2.6" ry="3.1" fill="none" stroke="#ffffff" stroke-width="1.6" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+      <path fill="#4285f4" d="M3.5 20H7v-9.2L2 7v11.5A1.5 1.5 0 0 0 3.5 20z" />
+      <path fill="#34a853" d="M17 20h3.5a1.5 1.5 0 0 0 1.5-1.5V7l-5 3.8z" />
+      <path fill="#fbbc04" d="M17 4.6v6.2l5-3.8V5.3c0-1.85-2.1-2.9-3.6-1.8z" />
+      <path fill="#ea4335" d="M7 10.8V4.6l5 3.8 5-3.8v6.2l-5 3.8z" />
+      <path fill="#c5221f" d="M2 5.3V7l5 3.8V4.6L5.6 3.5C4.1 2.4 2 3.45 2 5.3z" />
+    </svg>
+  )
+}

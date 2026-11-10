@@ -9,7 +9,7 @@ function FieldChevron() {
       <path
         d="M3.5 5.25 L7 8.75 L10.5 5.25"
         fill="none"
-        stroke="#909090"
+        stroke="var(--faint)"
         strokeWidth="1.02"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -24,7 +24,7 @@ function CloseMark() {
       <path
         d="M4 4 L12 12 M12 4 L4 12"
         fill="none"
-        stroke="#666666"
+        stroke="var(--muted-foreground)"
         strokeWidth="1.17"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -37,7 +37,7 @@ function OptionField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex h-9 items-center">
       <span className="w-[110px] shrink-0 text-[13px] leading-[17px] text-muted-foreground">{label}</span>
-      <span className="ml-4 flex h-9 min-w-0 flex-1 items-center justify-between rounded-lg bg-white pr-3 pl-3 shadow-[0_0_0_1px_#d7d7d6]">
+      <span className="ml-4 flex h-9 min-w-0 flex-1 items-center justify-between rounded-lg bg-white pr-3 pl-3 shadow-[0_0_0_1px_var(--field-edge)]">
         <span className="text-[13px] leading-[17px] text-foreground">{value}</span>
         <FieldChevron />
       </span>

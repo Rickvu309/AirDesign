@@ -1,4 +1,6 @@
 ---
+import { markBold, markRegular, markSlash } from "./airdesign-mark-art";
+
 type MarkWeight = "regular" | "bold";
 
 interface Props {
@@ -7,8 +9,8 @@ interface Props {
 }
 
 const strokes: Record<MarkWeight, { color: string; stem: string; bar: string }> = {
-  regular: { color: "#111111", stem: "3.063", bar: "2.188" },
-  bold: { color: "#222222", stem: "5.76", bar: "4.16" },
+  regular: { color: markRegular, stem: "3.063", bar: "2.188" },
+  bold: { color: markBold, stem: "5.76", bar: "4.16" },
 };
 
 const { size, weight = "regular" } = Astro.props;
@@ -17,5 +19,5 @@ const stroke = strokes[weight];
 
 <svg viewBox="0 0 64 64" width={size} height={size} class="shrink-0" aria-hidden="true">
   <path d="M13 57l19-50 19 50" fill="none" stroke={stroke.color} stroke-width={stroke.stem} stroke-linecap="round" stroke-linejoin="round"></path>
-  <path d="M6 44l52-14" fill="none" stroke="#FF58AE" stroke-width={stroke.bar} stroke-linecap="round"></path>
+  <path d="M6 44l52-14" fill="none" stroke={markSlash} stroke-width={stroke.bar} stroke-linecap="round"></path>
 </svg>

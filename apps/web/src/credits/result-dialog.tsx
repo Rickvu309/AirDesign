@@ -23,7 +23,7 @@ export function ResultDialog({
         <button
           type="button"
           aria-label={productCopy.close}
-          className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas"
+          className="flex size-7 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-canvas"
         >
           <CloseGlyph />
         </button>
@@ -40,8 +40,9 @@ export function ResultDialog({
   )
 }
 
-const tileShadow = "shadow-[inset_0_0_0_1px_#2d6fcd,0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]"
-const blueTile = `flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#93b8ef,#4d94fb)] ${tileShadow}`
+const tileShadow =
+  "shadow-[inset_0_0_0_1px_var(--primary-strong),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]"
+const blueTile = `flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] ${tileShadow}`
 
 export function OkTile() {
   return (
@@ -50,7 +51,7 @@ export function OkTile() {
         <path
           d="M0 4.5 L3.6 8 L11 0"
           fill="none"
-          stroke="#ffffff"
+          stroke="var(--background)"
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -70,10 +71,10 @@ export function MoneyTile() {
 
 export function ErrorTile() {
   return (
-    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#f29a9a,#d93f3f)] shadow-[inset_0_0_0_1px_#b92f2f,0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]">
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0_0_0_1px_var(--danger-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]">
       <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-        <line x1="7" y1="1.2" x2="7" y2="8.2" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
-        <circle cx="7" cy="11.4" r="1.3" fill="#ffffff" />
+        <line x1="7" y1="1.2" x2="7" y2="8.2" stroke="var(--background)" strokeWidth="2.4" strokeLinecap="round" />
+        <circle cx="7" cy="11.4" r="1.3" fill="var(--background)" />
       </svg>
     </span>
   )
@@ -82,15 +83,15 @@ export function ErrorTile() {
 export function ExpiredTile() {
   return (
     <span
-      className="flex size-10 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_0_0_1px_#8f8f8d,0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]"
-      style={{ backgroundImage: "linear-gradient(180deg, #d9d9d7, #a8a8a6)" }}
+      className="flex size-10 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_0_0_1px_var(--neutral-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]"
+      style={{ backgroundImage: "linear-gradient(180deg, var(--neutral-top), var(--neutral-bottom))" }}
     >
-      <span className="relative size-[18px] rounded-full shadow-[inset_0_0_0_2px_#ffffff]">
+      <span className="relative size-[18px] rounded-full shadow-[inset_0_0_0_2px_var(--background)]">
         <svg className="absolute top-[3px] left-[7px]" width="3" height="7" viewBox="0 0 3 6.5" aria-hidden="true">
           <path
             d="M0 0 L0 4.5 L3 6.5"
             fill="none"
-            stroke="#ffffff"
+            stroke="var(--background)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"

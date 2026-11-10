@@ -1,8 +1,10 @@
+import { markBold, markRegular, markSlash } from "@/decks/airdesign-mark-art"
+
 type MarkWeight = "regular" | "bold"
 
 const strokes: Record<MarkWeight, { color: string; stem: string; bar: string }> = {
-  regular: { color: "#111111", stem: "3.063", bar: "2.188" },
-  bold: { color: "#222222", stem: "5.76", bar: "4.16" },
+  regular: { color: markRegular, stem: "3.063", bar: "2.188" },
+  bold: { color: markBold, stem: "5.76", bar: "4.16" },
 }
 
 export function AirdesignMark({ size, weight = "regular" }: { size: number; weight?: MarkWeight }) {
@@ -17,7 +19,7 @@ export function AirdesignMark({ size, weight = "regular" }: { size: number; weig
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path d="M6 44l52-14" fill="none" stroke="#FF58AE" strokeWidth={stroke.bar} strokeLinecap="round" />
+      <path d="M6 44l52-14" fill="none" stroke={markSlash} strokeWidth={stroke.bar} strokeLinecap="round" />
     </svg>
   )
 }

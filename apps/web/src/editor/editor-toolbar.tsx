@@ -23,7 +23,7 @@ export function EditorToolbar({
 }) {
   const moveOn = activeTool === "move"
   return (
-    <div className="relative flex items-center gap-1 rounded-[12px] bg-white p-1 shadow-[0px_0px_0px_1px_#d7d7d6,0px_4px_12px_#0000000f]">
+    <div className="relative flex items-center gap-1 rounded-[12px] bg-white p-1 shadow-[0px_0px_0px_1px_var(--field-edge),0px_4px_12px_var(--black-6)]">
       <span className="flex items-center gap-0.5">
         <Button
           type="button"
@@ -70,7 +70,7 @@ export function EditorToolbar({
           </Button>
         )
       })}
-      <span className="mx-1 block h-6 w-px bg-[#d7d7d6]" />
+      <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
       <PanelSwitch active={panel} />
       {menuOpen ? <ToolMenu /> : null}
     </div>
@@ -79,7 +79,7 @@ export function EditorToolbar({
 
 function ToolMenu() {
   return (
-    <div className="absolute bottom-[52px] left-[42px] flex w-[188px] flex-col rounded-[12px] bg-foreground p-1.5 shadow-[0px_8px_24px_#00000033]">
+    <div className="absolute bottom-[52px] left-[42px] flex w-[188px] flex-col rounded-[12px] bg-foreground p-1.5 shadow-[0px_8px_24px_var(--black-20)]">
       <MenuRow icon="cursor" label="Move" shortcut="V" checked />
       <MenuRow icon="hand" label="Hand tool" shortcut="H" />
     </div>
@@ -104,7 +104,7 @@ function MenuRow({
       </span>
       <EditorIcon name={icon} size={16} />
       <span className="flex-1 text-[13px]">{label}</span>
-      <span className="text-xs text-[#8c8c8c]">{shortcut}</span>
+      <span className="text-xs text-[var(--shortcut)]">{shortcut}</span>
     </div>
   )
 }

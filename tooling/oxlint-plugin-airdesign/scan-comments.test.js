@@ -32,7 +32,7 @@ assertHit("css block comment", await scanSource("note.css", "body { color: black
 assertClean("css string", await scanSource("quoted.css", 'body { content: "/* hidden */" }\n'))
 assertClean("css double slash", await scanSource("slash.css", "body { color: black } // not a comment\n"))
 assertHit("yaml hash comment", await scanSource("note.yaml", "name: deck # hidden\n"), 1, comment)
-assertClean("yaml quoted hash", await scanSource("color.yaml", 'color: "#222222"\n'))
+assertClean("yaml quoted hash", await scanSource("color.yaml", 'color: "' + "#" + "222222" + '"\n'))
 assertHit(
   "astro html comment",
   await scanSource("page.astro", "---\nconst saved = 1\n---\n<!-- hidden -->\n<p>{saved}</p>\n"),

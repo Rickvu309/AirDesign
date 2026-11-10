@@ -8,7 +8,7 @@
   "ignorePatterns": [
     "AGENTS.md",
     "pnpm-lock.yaml",
-    "apps/site/src/landing/product-demo/editor-demo-markup.html",
+    "apps/site/src/landing/product-demo/editor-demo-art.html",
     "dist",
     ".astro",
     "test-results",

@@ -65,9 +65,9 @@
     justify-content: center;
     background-image: var(--fill-marketing);
     box-shadow:
-      inset 0 1px 0 #ffffff59,
+      inset 0 1px 0 var(--white-35),
       0 0 0 1px var(--primary-strong),
-      0 2px 6px #2d6fcd33;
+      0 2px 6px var(--strong-20);
     color: var(--primary-foreground);
     font-weight: 500;
     transition: filter var(--transition-micro);
@@ -85,9 +85,9 @@
     border-radius: 9999px;
     background-color: var(--background);
     box-shadow:
-      0 0 0 1px #0f243314,
-      0 14px 34px #2d6fcd2e,
-      0 2px 6px #0f24330f;
+      0 0 0 1px var(--navy-8),
+      0 14px 34px var(--strong-18),
+      0 2px 6px var(--navy-6);
     padding-left: 6px;
     padding-right: 20px;
     font-size: 15px;
@@ -106,7 +106,7 @@
     border-radius: 9999px;
     background-image: var(--fill-marketing);
     box-shadow:
-      inset 0 1px 0 #ffffff66,
+      inset 0 1px 0 var(--white-40),
       0 0 0 1px var(--primary-strong);
     color: var(--primary-foreground);
   }
@@ -133,8 +133,8 @@
   .nav-tab[data-active] {
     background-color: var(--background);
     box-shadow:
-      0 1px 3px #0f24331f,
-      0 0 0 1px #0f24330d;
+      0 1px 3px var(--navy-12),
+      0 0 0 1px var(--navy-5);
     font-weight: 500;
   }
 
@@ -152,8 +152,8 @@
     border-radius: 9999px;
     background-color: var(--background);
     box-shadow:
-      0 1px 3px #0f24331f,
-      0 0 0 1px #0f24330d;
+      0 1px 3px var(--navy-12),
+      0 0 0 1px var(--navy-5);
     opacity: 0;
     transform-origin: left center;
   }
@@ -194,7 +194,7 @@
   }
 
   .sign-in-email {
-    box-shadow: 0 0 0 1px #d7d7d6;
+    box-shadow: 0 0 0 1px var(--field-edge);
     outline: none;
     transition: box-shadow var(--transition-micro);
   }
@@ -202,7 +202,7 @@
   .sign-in-email:focus-visible {
     box-shadow:
       0 0 0 1px var(--ring),
-      0 0 0 3px #2d6fcd26;
+      0 0 0 3px var(--strong-15);
   }
 
   .code-box {
@@ -212,7 +212,7 @@
     justify-content: center;
     border-radius: 8px;
     background-color: var(--background);
-    box-shadow: inset 0 0 0 1px #d7d7d6;
+    box-shadow: inset 0 0 0 1px var(--field-edge);
     font-size: 20px;
     font-weight: 600;
   }

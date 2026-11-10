@@ -1,11 +1,13 @@
 ---
+import MailMark from "./check-email-art.astro";
+
 const codeBoxes = [0, 1, 2, 3, 4, 5];
 const mailButtonClass =
-  "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[15px] font-medium shadow-[0_0_0_1px_#d7d7d6,0_1px_2px_#0000000d] transition-[filter] duration-150 hover:brightness-[0.98]";
+  "flex h-11 items-center justify-center gap-3 rounded-lg bg-background text-[15px] font-medium shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_var(--black-5)] transition-[filter] duration-150 hover:brightness-[0.98]";
 ---
 
-<div class="flex flex-col items-center rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_#00000012,0px_1px_2px_0px_#00000008,0px_12px_32px_0px_#0000000a] max-sm:p-6">
-  <div class="my-px flex size-[46px] items-center justify-center rounded-xl bg-[linear-gradient(180deg,#93b8ef_0%,#4d94fb_100%)] text-white shadow-[inset_0_1px_0_#ffffff59,0_0_0_1px_#2d6fcd,0_1px_2px_#0000001f]">
+<div class="flex flex-col items-center rounded-2xl bg-background p-10 text-center shadow-[0px_0px_0px_1px_var(--black-7),0px_1px_2px_0px_var(--black-3),0px_12px_32px_0px_var(--black-4)] max-sm:p-6">
+  <div class="my-px flex size-[46px] items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--primary-top)_0%,var(--primary)_100%)] text-white shadow-[inset_0_1px_0_var(--white-35),0_0_0_1px_var(--primary-strong),0_1px_2px_var(--black-12)]">
     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
   </div>
 
@@ -27,11 +29,11 @@ const mailButtonClass =
 
   <div class="mt-6 grid w-full grid-cols-2 gap-2.5">
     <a class={mailButtonClass} href="https://outlook.live.com/mail/" target="_blank" rel="noreferrer">
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="7" y="4" width="15" height="16" rx="2" fill="#28a8ea"></rect><rect x="2" y="7" width="12" height="12" rx="1.5" fill="#0364b8"></rect><ellipse cx="8" cy="13" rx="2.6" ry="3.1" fill="none" stroke="#ffffff" stroke-width="1.6"></ellipse></svg>
+      <MailMark name="outlook" />
       Open Outlook
     </a>
     <a class={mailButtonClass} href="https://mail.google.com/" target="_blank" rel="noreferrer">
-      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="#4285f4" d="M3.5 20H7v-9.2L2 7v11.5A1.5 1.5 0 0 0 3.5 20z"></path><path fill="#34a853" d="M17 20h3.5a1.5 1.5 0 0 0 1.5-1.5V7l-5 3.8z"></path><path fill="#fbbc04" d="M17 4.6v6.2l5-3.8V5.3c0-1.85-2.1-2.9-3.6-1.8z"></path><path fill="#ea4335" d="M7 10.8V4.6l5 3.8 5-3.8v6.2l-5 3.8z"></path><path fill="#c5221f" d="M2 5.3V7l5 3.8V4.6L5.6 3.5C4.1 2.4 2 3.45 2 5.3z"></path></svg>
+      <MailMark name="gmail" />
       Open Gmail
     </a>
   </div>

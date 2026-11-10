@@ -57,7 +57,7 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
         <ConversationContent>
           <Message from="user">
             <MessageContent className="rounded-[14px] bg-line px-3.5 py-2.5 leading-[1.5]">{ask}</MessageContent>
-            <span className="flex h-7 items-center gap-1.5 pl-2 text-xs text-[#666666]">
+            <span className="flex h-7 items-center gap-1.5 pl-2 text-xs text-[var(--muted-foreground)]">
               <FileGlyph />
               Q3 board notes.docx
             </span>
@@ -96,12 +96,12 @@ function AgentTurn({ run }: { run: SidebarRun }) {
         <Tool>
           <ToolHeader title="Read 1 file, built slides 1 to 3" />
         </Tool>
-        <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_#EAEAE7,0px_1px_2px_#0000000d]">
+        <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
           <span className="flex items-center gap-2">
-            <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,#F29A9A,#D93F3F)] shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_#B92F2F,0px_1px_2px_#0000001f]">
+            <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
               <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
-                <path d="M6 2.6v4.2" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" />
-                <circle cx="6" cy="9.2" r="1" fill="#fff" />
+                <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
+                <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
               </svg>
             </span>
             <span className="text-[13px] font-semibold text-foreground">Unable to finish this run</span>
@@ -164,7 +164,7 @@ function Composer({ run }: { run: SidebarRun }) {
             <PromptInputText className="relative text-foreground leading-[1.6] [inset-block-start:1px]">
               {longAsk}
             </PromptInputText>
-            <span className="absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,#ffffff00_0%,#ffffff_100%)]" />
+            <span className="absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,var(--white-0)_0%,var(--background)_100%)]" />
           </div>
           <PromptInputFooter>
             <PromptInputButton className="size-7 rounded-[7px] text-foreground" aria-label="Attach">
@@ -224,7 +224,7 @@ function FileGlyph() {
       <path
         d="M7.58 1.63H3.79c-.6 0-1.08.48-1.08 1.08v7.58c0 .6.48 1.09 1.08 1.09h5.42c.6 0 1.08-.49 1.08-1.09V4.33L7.58 1.63z"
         fill="none"
-        stroke="#666666"
+        stroke="var(--muted-foreground)"
         strokeWidth="0.95"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -232,7 +232,7 @@ function FileGlyph() {
       <path
         d="M7.58 1.63V4.33h2.71"
         fill="none"
-        stroke="#666666"
+        stroke="var(--muted-foreground)"
         strokeWidth="0.95"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -245,13 +245,13 @@ function UsageRing({ fraction }: { fraction: number }) {
   const dash = (2 * Math.PI * 7.5 * fraction).toFixed(1)
   return (
     <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
-      <circle cx="10" cy="10" r="7.5" fill="none" stroke="#D7D7D6" strokeWidth="2.5" />
+      <circle cx="10" cy="10" r="7.5" fill="none" stroke="var(--field-edge)" strokeWidth="2.5" />
       <circle
         cx="10"
         cy="10"
         r="7.5"
         fill="none"
-        stroke="#4D94FB"
+        stroke="var(--primary)"
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeDasharray={`${dash} 100`}
@@ -263,7 +263,7 @@ function UsageRing({ fraction }: { fraction: number }) {
 
 function UsagePop() {
   return (
-    <div className="absolute top-[100px] right-3 flex w-[220px] flex-col gap-2 rounded-[10px] bg-white p-3 shadow-[0px_0px_0px_1px_#00000014,0px_8px_24px_#0000001a]">
+    <div className="absolute top-[100px] right-3 flex w-[220px] flex-col gap-2 rounded-[10px] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]">
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         Weekly usage
         <span>38%</span>
@@ -318,7 +318,7 @@ export function EditorToast({
                 <path
                   d="M3.13 7.81 5.94 10.63 11.88 4.69"
                   fill="none"
-                  stroke="#ffffff"
+                  stroke="var(--background)"
                   strokeWidth="1.09"
                   strokeLinecap="round"
                   strokeLinejoin="round"

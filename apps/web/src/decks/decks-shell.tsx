@@ -114,7 +114,7 @@ export function DecksShell({
           {firstVisit ? (
             <a
               href={deckRoutes.connectAgent}
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[13px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_#d7d7d6,0_1px_2px_rgba(0,0,0,0.04)]"
+              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[13px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"
             >
               <DeckGlyph name="plug" size={14} />
               Connect an agent

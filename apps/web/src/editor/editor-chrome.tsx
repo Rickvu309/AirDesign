@@ -6,16 +6,16 @@ import { cn } from "@/lib/utils"
 
 export const deckTitle = "Q3 Investor Update"
 
-export const surfaceShadow = "shadow-[0px_0px_0px_1px_#d7d7d6,0px_1px_2px_#0000000a]"
+export const surfaceShadow = "shadow-[0px_0px_0px_1px_var(--field-edge),0px_1px_2px_var(--black-4)]"
 
 export const brandShadow =
-  "shadow-[inset_0px_1px_0px_#ffffff59,0px_0px_0px_1px_var(--primary-strong),0px_1px_2px_#0000001f]"
+  "shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--primary-strong),0px_1px_2px_var(--black-12)]"
 
-export const cardShadow = "shadow-[0px_0px_0px_1px_#00000012,0px_2px_8px_#0000000a]"
+export const cardShadow = "shadow-[0px_0px_0px_1px_var(--black-7),0px_2px_8px_var(--black-4)]"
 
-export const floatShadow = "shadow-[0px_0px_0px_1px_#00000014,0px_12px_32px_#0000001f]"
+export const floatShadow = "shadow-[0px_0px_0px_1px_var(--black-8),0px_12px_32px_var(--black-12)]"
 
-export const hairlineShadow = "shadow-[0px_0px_0px_1px_#d7d7d6]"
+export const hairlineShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
 export function DeckTitle({ className }: { className?: string }) {
   return (

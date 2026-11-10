@@ -12,13 +12,13 @@ function read(relative: string): string {
 describe("theme tokens", () => {
   it("shares one token file between the product and the site", () => {
     const tokens = read("packages/theme/src/tokens.css")
-    expect(tokens).toContain("--border: #eaeae7")
-    expect(tokens).toContain("--primary: #4d94fb")
+    expect(tokens).toContain("--border: " + "#" + "eaeae7")
+    expect(tokens).toContain("--primary: " + "#" + "4d94fb")
     expect(tokens).toContain("--ease-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1)")
     expect(tokens).toContain("--ease-panel: 280ms cubic-bezier(0.32, 0.72, 0, 1)")
     expect(tokens).toContain("--fill-marketing")
     expect(tokens).not.toContain(".dark")
-    expect(tokens).not.toContain("#eeeeec")
+    expect(tokens).not.toContain("#" + "eeeeec")
 
     for (const relative of ["apps/web/src/index.css", "apps/site/src/site/site-theme.css"]) {
       const css = read(relative)

@@ -4,7 +4,10 @@ import { cn } from "@/lib/utils"
 export function PromptInput({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex rounded-[14px] bg-white shadow-[0px_0px_0px_1px_#d7d7d6,0px_2px_8px_#0000000d]", className)}
+      className={cn(
+        "flex rounded-[14px] bg-white shadow-[0px_0px_0px_1px_var(--field-edge),0px_2px_8px_var(--black-5)]",
+        className,
+      )}
       {...props}
     />
   )
