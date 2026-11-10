@@ -1,8 +1,10 @@
 import { rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { chromium, expect, test } from "@playwright/test"
 
-const killProfile = "/home/quan/tmp/airdesign-program/client/live-cache-kill"
-const coldProfile = "/home/quan/tmp/airdesign-program/client/live-cache-cold"
+const killProfile = join(tmpdir(), "airdesign-live-cache-kill")
+const coldProfile = join(tmpdir(), "airdesign-live-cache-cold")
 
 async function launch(directory: string, baseURL: string) {
   const context = await chromium.launchPersistentContext(directory, { baseURL })
