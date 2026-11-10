@@ -12,5 +12,9 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/catalog" }, { "path": "../../packages/engine" }]
+  "references": [
+    { "path": "../../packages/catalog" },
+    { "path": "../../packages/engine" },
+    { "path": "../../packages/mcp" }
+  ]
 }

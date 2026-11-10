@@ -1,5 +1,6 @@
 export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolContent, type ToolResult } from "./call-tool.js"
+export { afterWrite, agentCaller, openRun, readAtFor } from "./run.js"
 export {
   capture,
   edit,
@@ -28,4 +29,4 @@ export {
   suite,
   type SuiteRow,
 } from "./suite.js"
-export { createServer } from "./server.js"
+export { createServer, type Host } from "./server.js"

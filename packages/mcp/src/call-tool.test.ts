@@ -70,6 +70,7 @@ const forbidden = [
   "max_tokens",
   "messages",
   "readAt",
+  "runId",
 ] as const
 
 describe("callTool", () => {
@@ -155,17 +156,50 @@ describe("callTool", () => {
     expect(deck.revision).toBe(0)
   })
 
-  it("does not start a run", () => {
+  it("starts an idle element and lands", () => {
     const deck = opened()
     const result = callTool(
       "airdesign_edit_deck",
-      { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 },
+      { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      { caller: { actor: "agent", runId: "host-run", readAt: 9 }, deck, log: emptyLog(), now: 0 },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.deck.revision).toBe(1)
+    expect(result.deck.register.phase).toBe("running")
+    expect(result.deck.register.runId).toBe("host-run")
+    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(deck.register.phase).toBe("idle")
+    expect(deck.register.landed).toEqual([])
+  })
+
+  it("keeps the running element's run id when the session supplies another", () => {
+    const deck = running()
+    const result = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "21" }] },
+      { caller: { actor: "agent", runId: "other", readAt: 4 }, deck, log: emptyLog(), now: 0 },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.deck.register.runId).toBe("run")
+    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(deck.register.runId).toBe("run")
+    expect(deck.register.landed).toEqual([])
+  })
+
+  it("does not take a run id or a readAt from the arguments", () => {
+    const deck = running()
+    const result = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "21" }], runId: "client-run", readAt: 5 },
+      sessionFor(deck),
     )
     expect(result.ok).toBe(false)
     if (result.ok) return
-    expect(result.refusal).toBe("run-fenced")
-    expect(deck.register.phase).toBe("idle")
+    expect(result.refusal).toBe("field")
+    expect(result.deck).toBe(deck)
+    expect(deck.register.runId).toBe("run")
     expect(deck.register.landed).toEqual([])
   })
 

@@ -2,6 +2,7 @@ import { catalog, projectTools, readCapture } from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog } from "./admit.js"
+import { openRun } from "./run.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -51,7 +52,10 @@ function reached(deck: Deck, refusal: string, next: string): ToolResult {
 }
 
 function editDeck(raw: unknown, session: Session): ToolResult {
-  const result = call("edit_deck", session.deck, session.caller, raw)
+  const opened = openRun(session.deck.register, raw, () => session.caller.runId)
+  if (!opened.ok) return refused(session.deck, opened.refusal)
+  const deck = { id: session.deck.id, revision: session.deck.revision, register: opened.register }
+  const result = call("edit_deck", deck, opened.caller, raw)
   if (!result.ok) return refused(session.deck, result.refusal)
   return {
     ok: true,
