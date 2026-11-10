@@ -22,13 +22,12 @@ import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
 import {
   afterRender,
+  checkFails,
+  committedArgs,
+  corpusDecision,
   corpusFolder,
-  corpusLines,
-  corpusMisses,
-  corpusPlan,
-  judgedDecks,
-  readCorpus,
-  rendersOf,
+  corpusInputs,
+  corpusResult,
 } from "./pptx-corpus.mjs"
 import {
   committedBlobs,
@@ -53,9 +52,7 @@ const browserExportName = "exported-deck.pptx"
 const browserExportPath = path.join(root, "tests/browser", browserExportName)
 const browserShape = "2"
 const browserText = "Hello!"
-const corpusMode = process.argv.includes("--corpus")
-const listed = readCorpus(root).map((deck) => deck.name)
-const listedNames = new Set(listed)
+const inputs = corpusInputs(root)
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -108,7 +105,7 @@ cases.push({
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => {
   if (name === browserExportName) return browserExportPath
-  return path.join(listedNames.has(name) ? corpusFolder(root) : fixtures, name)
+  return path.join(inputs.listed.includes(name) ? corpusFolder(root) : fixtures, name)
 }
 const rendered = new Map()
 const renderNext = async () => {
@@ -119,7 +116,7 @@ const renderNext = async () => {
     try {
       rendered.set(render, await renders.pages({ file, bytes, use: renderUse({ render, bytes, committed }) }))
     } catch (error) {
-      if (!listedNames.has(render)) throw error
+      if (!decision.added.includes(render)) throw error
       console.log(`corpus render ${render}: ${error.message}`)
       rendered.set(render, [])
     }
@@ -133,17 +130,15 @@ const proofSeeds = seedsFor({
   draw: () => randomInt(0, 4294967296),
   commit: await run("git", ["rev-parse", "HEAD"]),
 })
-const corpusSeed = proofSeeds.at(-1)
-const plan = corpusPlan({
-  full: corpusMode,
-  every: judgedDecks(root),
-  listed,
-  seed: corpusSeed.seed,
-  fresh: corpusSeed.fresh,
+const decision = corpusDecision({
+  argv: process.argv,
+  seeds: proofSeeds,
+  ...inputs,
+  cases,
+  browser: browserExportName,
 })
-const addedDecks = plan.decks.filter((name) => listedNames.has(name))
-const waiting = rendersOf({ cases, added: addedDecks }).filter((render) => renderName(render) !== browserExportName)
-console.log(`${plan.announce}: ${addedDecks.join(", ")}`)
+const waiting = [...decision.renders]
+console.log(`${decision.announce}: ${decision.added.join(", ")}`)
 const gitAnswer = (args) => {
   try {
     return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
@@ -151,7 +146,7 @@ const gitAnswer = (args) => {
     return undefined
   }
 }
-const committed = committedBlobs(gitAnswer(["ls-tree", "-r", "HEAD", "scripts/pptx-fixtures/"]) ?? "")
+const committed = committedBlobs(gitAnswer(committedArgs("HEAD")) ?? "")
 committed.delete(browserExportName)
 const eventFile = process.env.GITHUB_EVENT_PATH
 const freshFails = freshMissFails({
@@ -165,13 +160,9 @@ for (const name of new Set([...names, ...cleanDecks])) {
   if (name === browserExportName) continue
   parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 }
-const realDecks = fs
-  .readdirSync(fixtures)
-  .filter((name) => name.endsWith(".pptx") && fs.statSync(fixturePath(name)).size >= 100_000)
-  .sort()
 const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
 const writtenDecks = []
-for (const name of new Set([...realDecks, ...plan.decks])) {
+for (const name of decision.routeDecks) {
   if (!parts.has(name)) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   const deckParts = parts.get(name)
   const written = await writtenRouteFiles(
@@ -293,14 +284,14 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
-const checkSeconds = corpusMode
-  ? { line: "the corpus check has no duration limit", over: undefined, fails: false }
-  : timeMetric(root, "pptx-check-duration", checkStarted)
+const checkSeconds = decision.timed
+  ? timeMetric(root, "pptx-check-duration", checkStarted)
+  : { line: "the corpus check has no duration limit", over: undefined, fails: false }
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
 const routeFailures = []
 const seen = new Map()
-for (const deck of writtenDecks.filter((written) => !listedNames.has(written.name))) {
+for (const deck of writtenDecks.filter((written) => decision.hardDecks.includes(written.name))) {
   const beforeErrors = lists.get(deck.name) ?? []
   for (const item of deck.written) {
     const operation = item.run.operation
@@ -326,24 +317,13 @@ if (recordedWrites !== passedOperations.length) {
     recorded: recordedWrites,
   })
 }
-const misses = corpusMisses({
-  pptx,
-  decks: writtenDecks.filter((written) => listedNames.has(written.name)),
-  lists,
-  rendered,
-})
-const settledCorpus = settleRun({
-  run: plan,
-  lines: corpusLines({ misses, full: corpusMode, seed: corpusSeed.seed }),
-  freshFails,
-})
-for (const line of settledCorpus.lines) console.log(line)
-failed += settledCorpus.failed
-console.log(`${addedDecks.length} corpus decks judged, ${misses.length} misses`)
+const corpus = corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })
+for (const line of corpus.lines) console.log(line)
+console.log(`${corpus.judged} corpus decks judged, ${corpus.misses} misses, ${corpus.failed} fail this run`)
 fs.rmSync(routeDir, { recursive: true, force: true })
 for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)
 else console.log(`${cases.length} pptx checks passed`)
 if (routeFailures.length > 0) console.log(`${routeFailures.length} route writes failed`)
 else console.log(`${pptx.routeOperations.length} route writes passed`)
-if (failed > 0 || routeFailures.length > 0 || checkSeconds.fails) process.exit(1)
+if (checkFails({ failed, routeFailures, duration: checkSeconds, corpus })) process.exit(1)

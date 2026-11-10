@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
-import { replay } from "./judge-proof.mjs"
-import { againSuffix } from "./pptx-render.mjs"
+import { replay, settleRun } from "./judge-proof.mjs"
+import { againSuffix, renderName } from "./pptx-render.mjs"
 import { scoreWrittenRoute } from "./pptx-route-judge.mjs"
 
 export const rotatingDecks = 2
@@ -12,18 +12,49 @@ const fixturesOf = (root) => path.join(root, "scripts/pptx-fixtures")
 
 export const corpusFolder = (root) => path.join(fixturesOf(root), "corpus")
 
-export const readCorpus = (root) => {
-  const file = path.join(fixturesOf(root), "corpus.json")
-  return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : []
+const caseNames = (root) => {
+  const cases = JSON.parse(fs.readFileSync(path.join(fixturesOf(root), "cases.json"), "utf8"))
+  return [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 }
 
-export const judgedDecks = (root) => {
-  const fixtures = fixturesOf(root)
-  const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
-  const names = new Set(cases.flatMap((row) => [row.before, row.after]))
-  const real = [...names].filter((name) => fs.statSync(path.join(fixtures, name)).size >= realDeckBytes)
-  return [...real, ...readCorpus(root).map((deck) => deck.name)]
+const topLevelDecks = (root) => fs.readdirSync(fixturesOf(root)).filter((name) => name.endsWith(".pptx"))
+
+const realDeck = (root, name) => fs.statSync(path.join(fixturesOf(root), name)).size >= realDeckBytes
+
+export const refusedEntries = ({ entries, taken }) => {
+  const seen = new Set(taken)
+  return entries.flatMap((entry) => {
+    if (seen.has(entry.name)) return [entry.name]
+    seen.add(entry.name)
+    return []
+  })
 }
+
+export const readCorpus = (root) => {
+  const file = path.join(fixturesOf(root), "corpus.json")
+  if (!fs.existsSync(file)) return []
+  const entries = JSON.parse(fs.readFileSync(file, "utf8"))
+  const refused = refusedEntries({ entries, taken: [...caseNames(root), ...topLevelDecks(root)] })
+  if (refused.length > 0) {
+    throw new Error(`corpus.json cannot list ${refused.join(", ")}. A listed name must be new and appear once.`)
+  }
+  return entries
+}
+
+export const judgedDecks = (root) => [
+  ...caseNames(root).filter((name) => realDeck(root, name)),
+  ...readCorpus(root).map((deck) => deck.name),
+]
+
+export const corpusInputs = (root) => ({
+  listed: readCorpus(root).map((deck) => deck.name),
+  every: judgedDecks(root),
+  fixed: topLevelDecks(root)
+    .filter((name) => realDeck(root, name))
+    .sort(),
+})
+
+export const committedArgs = (tree) => ["ls-tree", "-r", tree, "scripts/pptx-fixtures/"]
 
 export const corpusHashFailures = (root) =>
   readCorpus(root).flatMap((deck) => {
@@ -36,24 +67,37 @@ export const corpusHashFailures = (root) =>
 export const rotatingSubset = ({ names, size, seed }) =>
   Array.from({ length: Math.min(size, names.length) }, (_, step) => names[(seed + step) % names.length])
 
-export const corpusPlan = ({ full, every, listed, seed, fresh, size = rotatingDecks }) =>
-  full
-    ? { decks: every, fresh: false, announce: `corpus every deck, ${every.length} decks` }
-    : {
-        decks: rotatingSubset({ names: listed, size, seed }),
-        fresh,
-        announce: `corpus rotating ${Math.min(size, listed.length)} of ${listed.length} decks, ${replay(seed)}`,
-      }
-
 export const afterRender = (row) => (row.before === row.after ? `${row.after}${againSuffix}` : row.after)
 
 export const rendersOf = ({ cases, added }) => [
   ...new Set([...cases.flatMap((row) => [row.before, afterRender(row)]), ...added]),
 ]
 
-export const corpusMisses = ({ pptx, decks, lists, rendered }) =>
+export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, browser, size = rotatingDecks }) => {
+  const full = argv.includes("--corpus")
+  const { seed, fresh } = seeds.at(-1)
+  const chosen = full ? every : rotatingSubset({ names: listed, size, seed })
+  const added = chosen.filter((name) => listed.includes(name))
+  const routeDecks = [...new Set([...fixed, ...chosen])]
+  return {
+    full,
+    seed,
+    routeDecks,
+    added,
+    hardDecks: routeDecks.filter((name) => !listed.includes(name)),
+    renders: rendersOf({ cases, added: full ? added : [] }).filter((render) => renderName(render) !== browser),
+    rendersAdded: full,
+    timed: !full,
+    excusable: !full && fresh,
+    announce: full
+      ? `corpus every deck, ${every.length} decks`
+      : `corpus rotating ${added.length} of ${listed.length} decks, ${replay(seed)}`,
+  }
+}
+
+export const corpusMisses = ({ pptx, decks, lists, rendered, rendersAdded }) =>
   decks.flatMap((deck) => [
-    ...(rendered.get(deck.name)?.length > 0 ? [] : [{ deck: deck.name, render: "no pages" }]),
+    ...(!rendersAdded || rendered.get(deck.name)?.length > 0 ? [] : [{ deck: deck.name, render: "no pages" }]),
     ...deck.written.flatMap((item) => {
       const after = item.file === null ? undefined : lists.get(path.basename(item.file))
       const failure = scoreWrittenRoute(pptx, deck.deckParts, lists.get(deck.name) ?? [], item, after)
@@ -65,3 +109,17 @@ export const corpusLines = ({ misses, full, seed }) =>
   misses.map(
     (miss) => `corpus miss ${JSON.stringify(miss)}, ${full ? "replay with pnpm check:pptx:corpus" : replay(seed)}`,
   )
+
+export const corpusResult = ({ decision, pptx, decks, lists, rendered, freshFails }) => {
+  const judged = decks.filter((deck) => decision.added.includes(deck.name))
+  const misses = corpusMisses({ pptx, decks: judged, lists, rendered, rendersAdded: decision.rendersAdded })
+  const lines = corpusLines({ misses, full: decision.full, seed: decision.seed })
+  return {
+    ...settleRun({ run: { fresh: decision.excusable }, lines, freshFails }),
+    judged: judged.length,
+    misses: misses.length,
+  }
+}
+
+export const checkFails = ({ failed, routeFailures, duration, corpus }) =>
+  failed + corpus.failed > 0 || routeFailures.length > 0 || duration.fails
