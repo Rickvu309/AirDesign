@@ -1,21 +1,37 @@
 import { decide, version, type Register } from "./decide.js"
+import { elementId, type ElementId } from "./element-id.js"
 
 export type Queued = {
   readonly base: number
   readonly value: string
+  readonly node?: ElementId
 }
 
 export function unsent<Item>(queue: readonly Item[], acknowledged: number): readonly Item[] {
   return queue.slice(acknowledged)
 }
 
+function versionAt(register: Register, node: ElementId | undefined): number {
+  if (node === undefined || node === elementId("a")) return version(register)
+  const body = register.elements[node]
+  if (body === undefined) {
+    throw new Error("missing node")
+  }
+  return version(body)
+}
+
 export function replay(register: Register, pending: readonly Queued[]): Register {
   let current = register
   for (const edit of pending) {
-    if (edit.base !== version(current)) {
+    if (edit.base !== versionAt(current, edit.node)) {
       continue
     }
-    const decision = decide(current, { command: "person", value: edit.value })
+    const decision = decide(
+      current,
+      edit.node === undefined
+        ? { command: "person", value: edit.value }
+        : { command: "person", value: edit.value, node: edit.node },
+    )
     if (decision.decision !== "apply") {
       throw new Error("person edit refused")
     }

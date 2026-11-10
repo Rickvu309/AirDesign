@@ -6,12 +6,12 @@ import {
   version,
   type Command,
   type Decision,
-  type NodeName,
   type NodeRegister,
   type Phase,
   type Register,
   type Refusal,
 } from "./decide.js"
+import { elementId, type ElementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type Effect = "add" | "remove" | "read"
@@ -69,29 +69,36 @@ for (const rule of rules) {
   table.set(key, rule)
 }
 
-function names(hasA: boolean, hasB: boolean): NodeName[] {
-  const nodes: NodeName[] = []
+const opened = elementId("a")
+const paired = elementId("b")
+
+function names(hasA: boolean, hasB: boolean): ElementId[] {
+  const nodes: ElementId[] = []
   if (hasA) {
-    nodes.push("a")
+    nodes.push(opened)
   }
   if (hasB) {
-    nodes.push("b")
+    nodes.push(paired)
   }
   return nodes
 }
 
-function targetOf(command: Command): NodeName {
+function targetOf(command: Command): ElementId {
   if (command.command === "add") {
-    return "b"
+    return command.node
   }
-  return command.node ?? "a"
+  return command.node ?? opened
 }
 
-function bodyOf(register: Register, node: NodeName): NodeRegister | null {
-  if (node === "a") {
+function second(register: Register): NodeRegister | null {
+  return register.elements[paired] ?? null
+}
+
+function bodyOf(register: Register, node: ElementId): NodeRegister | null {
+  if (node === opened) {
     return register
   }
-  return register.b
+  return second(register)
 }
 
 function situationKey(register: Register, command: Command): string {
@@ -118,14 +125,14 @@ function readRun(): string {
 function commands(): readonly Command[] {
   const runId = readRun()
   return [
-    { command: "add", node: "b" },
-    { command: "remove", node: "b" },
+    { command: "add", node: paired, floor: "floor", route: "slide" },
+    { command: "remove", node: paired },
     { command: "person", value: "p" },
-    { command: "person", node: "b", value: "p" },
-    { command: "agent", node: "b", runId: "s", readAt: 0, value: "a" },
+    { command: "person", node: paired, value: "p" },
+    { command: "agent", node: paired, runId: "s", readAt: 0, value: "a" },
     { command: "start", runId },
     { command: "stop", runId },
-    { command: "read", runId, node: "a" },
+    { command: "read", runId, node: opened },
   ]
 }
 
@@ -143,7 +150,8 @@ function tooManyPeople(register: Register): boolean {
   if (visiblePeople(register) > 1) {
     return true
   }
-  return register.b !== null && visiblePeople(register.b) > 1
+  const other = second(register)
+  return other !== null && visiblePeople(other) > 1
 }
 
 function expectBody(
@@ -172,13 +180,16 @@ function unchangedBody(actual: NodeRegister, before: NodeRegister, key: string):
 
 function expectNodes(before: Register, after: Register, command: Command, effect: Effect, key: string): void {
   if (effect === "add") {
-    expect(after.nodes, key).toEqual(names(before.nodes.includes("a"), true))
+    expect(after.nodes, key).toEqual(names(before.nodes.includes(opened), true))
     return
   }
   if (effect === "remove") {
     const node = targetOf(command)
     expect(after.nodes, key).toEqual(
-      names(node === "a" ? false : before.nodes.includes("a"), node === "b" ? false : before.nodes.includes("b")),
+      names(
+        node === opened ? false : before.nodes.includes(opened),
+        node === paired ? false : before.nodes.includes(paired),
+      ),
     )
     return
   }
@@ -200,13 +211,15 @@ function expectTarget(before: Register, after: Register, command: Command, rule:
   }
   const node = targetOf(command)
   if (effect === "add") {
-    if (after.b === null) {
+    const afterBody = second(after)
+    const beforeBody = second(before)
+    if (afterBody === null) {
       throw new Error(`missing b ${key}`)
     }
-    if (before.b === null) {
-      expectBody(after.b, { version: 0, value: before.floor, phase: "idle", guarded: false }, key)
+    if (beforeBody === null) {
+      expectBody(afterBody, { version: 0, value: before.floor, phase: "idle", guarded: false }, key)
     } else {
-      unchangedBody(after.b, before.b, key)
+      unchangedBody(afterBody, beforeBody, key)
     }
     unchangedBody(after, before, key)
     return
@@ -224,7 +237,7 @@ function expectTarget(before: Register, after: Register, command: Command, rule:
   throw new Error(unreachable)
 }
 
-function sameIds(left: readonly NodeName[] | null, right: readonly NodeName[] | null): boolean {
+function sameIds(left: readonly ElementId[] | null, right: readonly ElementId[] | null): boolean {
   if (left === null || right === null) {
     return left === right
   }
@@ -235,7 +248,7 @@ function sameIds(left: readonly NodeName[] | null, right: readonly NodeName[] | 
 }
 
 function noteVisit(register: Register, command: Command, decision: Decision, seen: Set<string>): void {
-  if (command.command === "add" && decision.decision === "apply" && decision.register.nodes.includes("b")) {
+  if (command.command === "add" && decision.decision === "apply" && decision.register.nodes.includes(paired)) {
     seen.add("Add b. b is present.")
   }
   if (command.command === "add" && decision.decision === "refuse" && decision.code === "present") {
@@ -243,18 +256,18 @@ function noteVisit(register: Register, command: Command, decision: Decision, see
   }
   if (
     command.command === "agent" &&
-    command.node === "b" &&
+    command.node === paired &&
     decision.decision === "refuse" &&
     decision.code === "dead" &&
-    register.b !== null &&
-    !register.nodes.includes("b")
+    second(register) !== null &&
+    !register.nodes.includes(paired)
   ) {
     seen.add("Remove b. An agent edit of b refuses dead.")
   }
   if (
     command.command === "remove" &&
-    command.node === "b" &&
-    !register.nodes.includes("b") &&
+    command.node === paired &&
+    !register.nodes.includes(paired) &&
     decision.decision === "refuse" &&
     decision.code === "dead"
   ) {
@@ -293,7 +306,7 @@ function identity(register: Register): string {
     nodes: register.nodes,
     readNodes: register.readNodes,
     a: node(register),
-    b: node(register.b),
+    b: node(second(register)),
   })
 }
 

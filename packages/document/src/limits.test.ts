@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { decide, decideUndo, openRegister, type Register } from "./decide.js"
+import { decide, decideUndo, openRegister, type NodeRegister, type Register } from "./decide.js"
+import { elementId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 
 type InsideRow = {
@@ -59,27 +60,33 @@ function copyRegister(register: Register): Register {
     bytes: register.bytes,
     nodes: [...register.nodes],
     readNodes: register.readNodes === null ? null : [...register.readNodes],
-    b:
-      register.b === null
-        ? null
-        : {
-            route: register.b.route,
-            floor: register.b.floor,
-            landed: register.b.landed.map((row) => ({
-              actor: row.actor,
-              value: row.value,
-              visible: row.visible,
-            })),
-            phase: register.b.phase,
-            runId: register.b.runId,
-            readAt: register.b.readAt,
-            guarded: register.b.guarded,
-            claimed: register.b.claimed,
-            stoppedAt: register.b.stoppedAt,
-            slides: register.b.slides,
-            bytes: register.b.bytes,
-          },
+    elements: copyElements(register.elements),
   }
+}
+
+function copyElements(elements: Register["elements"]): Register["elements"] {
+  const copy: { [id: string]: NodeRegister | undefined } = {}
+  for (const [id, body] of Object.entries(elements)) {
+    if (body === undefined) continue
+    copy[id] = {
+      route: body.route,
+      floor: body.floor,
+      landed: body.landed.map((row) => ({
+        actor: row.actor,
+        value: row.value,
+        visible: row.visible,
+      })),
+      phase: body.phase,
+      runId: body.runId,
+      readAt: body.readAt,
+      guarded: body.guarded,
+      claimed: body.claimed,
+      stoppedAt: body.stoppedAt,
+      slides: body.slides,
+      bytes: body.bytes,
+    }
+  }
+  return copy
 }
 
 function visitInside(name: string, seen: Set<string>): void {
@@ -122,7 +129,7 @@ function visitOutside(name: string, seen: Set<string>): void {
           row.call === "person"
             ? { command: "person", value: "kept" }
             : row.call === "absent"
-              ? { command: "remove", node: "b" }
+              ? { command: "remove", node: elementId("b") }
               : { command: "undo", runId: "r" },
         )
   expect(decision, name).toEqual({ decision: "refuse", code: row.code })
