@@ -1,7 +1,7 @@
 ---- MODULE Run ----
 \* A run starts, stops, hits a limit, and resumes. A later run may start once that run has stopped or been undone.
 \* A read lands only when its run id is the one stored on the node.
-\* This model keeps one write. The later run does not land its own row here.
+\* This model keeps one write, so a later run lands a row only if the earlier run landed none.
 EXTENDS Integers
 
 VARIABLES
