@@ -68,10 +68,12 @@ export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, 
   return parts
 }
 
+const packageDate = new Date(Date.UTC(1980, 0, 1))
+
 export async function writeParts(parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
-  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter())
+  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter(), { lastModDate: packageDate })
   for (const [name, data] of parts) {
-    await writer.add(name, new Uint8ArrayReader(data))
+    await writer.add(name, new Uint8ArrayReader(data), { lastModDate: packageDate })
   }
   return writer.close()
 }

@@ -1,5 +1,7 @@
+import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8 } from "./package-bytes.js"
+import { readShapes } from "./read-shapes.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { writtenRoutes } from "./written-routes.js"
@@ -45,6 +47,7 @@ export const routeOperations = [
   "tbl.addRow",
   "tbl.removeRow",
   "tbl.orderRow",
+  "element.export",
 ] as const
 
 const routeName: Record<(typeof routeOperations)[number], string> = {
@@ -66,6 +69,7 @@ const routeName: Record<(typeof routeOperations)[number], string> = {
   "tbl.addRow": writtenRoutes.addRow,
   "tbl.removeRow": writtenRoutes.removeRow,
   "tbl.orderRow": writtenRoutes.orderRow,
+  "element.export": "element.export",
 }
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -171,6 +175,45 @@ function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, slide: string
     added: [],
     removed: [part, relsPart(part)],
   }
+}
+
+const createdSlideA = "n000000000001"
+const createdSlideB = "n000000000002"
+const createdShapeA = "n000000000003"
+const createdShapeB = "n000000000004"
+const createdTextA = "AirDesignCreatedA"
+const createdTextB = "AirDesignCreatedB"
+
+export function elementExportTouch(parts: ReadonlyMap<string, Uint8Array>): PartTouch {
+  const first = nextSlideFile(parts)
+  const added: string[] = []
+  for (let step = 0; step < 3; step += 1) {
+    const part = `${slidePrefix}${first + step}${slideSuffix}`
+    added.push(part, relsPart(part))
+  }
+  return {
+    changed: [presentationPart, presentationRels, contentTypesPart],
+    added,
+    removed: [],
+  }
+}
+
+export function createdShapesLanded(
+  parts: ReadonlyMap<string, Uint8Array>,
+  landed: readonly { readonly text: string; readonly slide: string }[],
+  untouched: readonly string[],
+): boolean {
+  const rows = readShapes(parts)
+  for (const item of landed) {
+    const found = rows.filter((row) => row.text === item.text)
+    if (found.length !== 1) return false
+    const row = found[0]
+    if (row === undefined || row.slide !== item.slide) return false
+  }
+  for (const slide of untouched) {
+    if (rows.some((row) => row.slide === slide && landed.some((item) => item.text === row.text))) return false
+  }
+  return true
 }
 
 export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute | StructuralEdit): PartTouch {
@@ -370,6 +413,16 @@ function oneShape(parts: ReadonlyMap<string, Uint8Array>): { part: string; id: s
   return null
 }
 
+function highestSlide(parts: ReadonlyMap<string, Uint8Array>): number {
+  let max = 0
+  for (const element of sldIds(parts)) {
+    if (element.id === null) continue
+    const value = digits(element.id)
+    if (value !== null && value > max) max = value
+  }
+  return max
+}
+
 function sldIds(parts: ReadonlyMap<string, Uint8Array>): MarkupElement[] {
   return presentation(parts)
     .filter((element) => element.kind === "p:sldId" && element.id !== null)
@@ -553,6 +606,37 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
     const added = { name: "sldIdLst.add", after: firstSlide.id } as const
     runs.push(
       attempt("sldIdLst.add", () => ({ touch: partTouch(parts, added), parts: applyStructuralRoute(parts, added) })),
+    )
+    const origin = highestSlide(parts)
+    runs.push(
+      attempt("element.export", () => {
+        const touch = elementExportTouch(parts)
+        const written = exportElements(parts, [
+          { name: "sldIdLst.add", after: added.after },
+          {
+            id: `${createdSlideA}.${createdShapeA}`,
+            name: "add",
+            text: createdTextA,
+            ...box,
+          },
+          {
+            id: `${createdSlideB}.${createdShapeB}`,
+            name: "add",
+            text: createdTextB,
+            ...box,
+          },
+        ])
+        const landed = createdShapesLanded(
+          written.parts,
+          [
+            { text: createdTextA, slide: String(origin + 2) },
+            { text: createdTextB, slide: String(origin + 3) },
+          ],
+          [String(origin + 1)],
+        )
+        if (!landed) throw new Error("slide")
+        return { touch, parts: new Map(written.parts) }
+      }),
     )
     const cloned = { name: "sldIdLst.clone", slide: firstSlide.id } as const
     runs.push(

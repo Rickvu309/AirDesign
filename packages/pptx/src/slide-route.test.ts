@@ -131,6 +131,7 @@ describe("applyRoute", () => {
   it("adds a shape and removes that same shape back to the original bytes", () => {
     const before = parts()
     const added = applyRoute(before, { name: "add", part, text: "New", x: 0, y: 0, cx: 914400, cy: 457200 })
+    expect(added.id).toBe("3")
     expect(added.get(kept)).toBe(before.get(kept))
     expect(xml(added)).toContain(`<p:cNvPr id="3" name="Shape 3"/>`)
     expect(xml(added)).toContain("<a:t>New</a:t>")

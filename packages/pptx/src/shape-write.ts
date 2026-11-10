@@ -71,17 +71,16 @@ function shapeProperties(box: ShapeBox): string {
   return xml
 }
 
-export function addTextShape(slideXml: string, text: string, box: ShapeBox, id?: number): string {
-  const shapeId = id ?? nextShapeId(slideXml)
+export function addTextShape(
+  slideXml: string,
+  text: string,
+  box: ShapeBox,
+): { readonly xml: string; readonly id: number } {
+  const shapeId = nextShapeId(slideXml)
   if (!Number.isInteger(shapeId) || shapeId < 1 || shapeId > 4294967295) throw new Error("shape id")
   const idText = String(shapeId)
   const bytes = encodeUtf8(slideXml)
   const document = markupDocument(bytes)
-  if (id !== undefined) {
-    for (const element of document.elements) {
-      if (element.kind === "p:cNvPr" && element.id === idText) throw new Error("shape id")
-    }
-  }
   const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (!document.wellFormed || tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
@@ -90,5 +89,5 @@ export function addTextShape(slideXml: string, text: string, box: ShapeBox, id?:
   merged.set(bytes.subarray(0, tree.closeStart), 0)
   merged.set(shapeBytes, tree.closeStart)
   merged.set(bytes.subarray(tree.closeStart), tree.closeStart + shapeBytes.length)
-  return decodeUtf8(merged)
+  return { xml: decodeUtf8(merged), id: shapeId }
 }
