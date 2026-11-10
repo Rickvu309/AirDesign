@@ -1,0 +1,90 @@
+name: deploy-site
+
+on:
+  workflow_run:
+    workflows:
+      - ci
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy-site:
+    name: deploy-site
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        continue-on-error: true
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - id: pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+        continue-on-error: true
+      - id: node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        continue-on-error: true
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - id: install
+        continue-on-error: true
+        run: pnpm install --frozen-lockfile
+      - id: deploy
+        continue-on-error: true
+        working-directory: apps/site
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          git fetch --quiet origin main
+          tip=$(git rev-parse origin/main)
+          if [ "$tip" != "$HEAD_SHA" ]; then
+            echo "main moved to $tip, its own run deploys it"
+            exit 0
+          fi
+          pnpm run deploy
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
+      - if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          DEPLOYED: ${{ steps.deploy.outputs.deployed }}
+          OUTCOMES: checkout=${{ steps.checkout.outcome }} pnpm=${{ steps.pnpm.outcome }} node=${{ steps.node.outcome }} install=${{ steps.install.outcome }} deploy=${{ steps.deploy.outcome }}
+        run: |
+          failed=""
+          for outcome in $OUTCOMES; do
+            case "$outcome" in
+              *=failure | *=cancelled) failed="$failed ${outcome%%=*}" ;;
+            esac
+          done
+          title="Site deploy is red"
+          open=$(gh issue list --label deploy-red --state open --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+          if [ -z "$failed" ]; then
+            if [ "$DEPLOYED" = "true" ] && [ -n "$open" ]; then
+              gh issue close "$open" --comment "Site deployed at $HEAD_SHA. $RUN_URL"
+            fi
+            exit 0
+          fi
+          line="Site deploy of $HEAD_SHA failed in:$failed. $RUN_URL"
+          if [ -n "$open" ]; then
+            gh issue comment "$open" --body "$line"
+          else
+            gh label create deploy-red --description "A deploy or the smoke check is red" --color B60205 --force
+            gh issue create --title "$title" --label deploy-red --body "$line"
+          fi
