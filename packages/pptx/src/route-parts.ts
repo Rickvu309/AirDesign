@@ -177,6 +177,7 @@ function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, slide: string
   }
 }
 
+const createdSlideFirst = "n000000000000"
 const createdSlideA = "n000000000001"
 const createdSlideB = "n000000000002"
 const createdShapeA = "n000000000003"
@@ -612,7 +613,9 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
       attempt("element.export", () => {
         const touch = elementExportTouch(parts)
         const written = exportElements(parts, [
-          { name: "sldIdLst.add", after: added.after },
+          { name: "sldIdLst.add", slide: createdSlideFirst, after: added.after },
+          { name: "sldIdLst.add", slide: createdSlideA, after: added.after },
+          { name: "sldIdLst.add", slide: createdSlideB, after: added.after },
           {
             id: `${createdSlideA}.${createdShapeA}`,
             name: "add",
