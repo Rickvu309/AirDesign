@@ -31,9 +31,9 @@ with recent as (
 ), sent as (
   insert into session.sent (email, issued)
   select email, now() from code
-  returning email
+  returning id
 )
-select email from sent
+select id::text as id from sent
 `
 
 const acceptCodeSql = `
@@ -144,15 +144,56 @@ async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Prom
   }
 }
 
+type Placed = {
+  readonly id: string
+  readonly code: string | null
+  readonly token: string | null
+  readonly issued: Date | null
+  readonly misses: number | null
+}
+
+async function undoSend(db: Sql, email: string, placed: Placed, link: string): Promise<void> {
+  await withAddress(db, email, async (client) => {
+    await client.query("delete from session.sent where id = $1::bigint", [placed.id])
+    if (placed.token === null) {
+      await client.query("delete from session.code where email = $1 and token = $2", [email, link])
+      return
+    }
+    await client.query(
+      "update session.code set code = $3, token = $4, issued = $5, misses = $6 where email = $1 and token = $2",
+      [email, link, placed.code, placed.token, placed.issued, placed.misses],
+    )
+  })
+}
+
 export async function issueMail(db: Sql, email: string, publicOrigin: string, send: Sender): Promise<void> {
   const code = newCode()
   const token = newToken()
-  const issued = await withAddress(db, email, async (client) => {
-    const stored = await client.query<{ email: string }>(issueSql, [email, digest(code), digest(token)])
-    return stored.rows.length > 0
+  const link = digest(token)
+  const placed = await withAddress(db, email, async (client) => {
+    const earlier = await client.query<{ code: string; token: string; issued: Date; misses: number }>(
+      "select code, token, issued, misses from session.code where email = $1",
+      [email],
+    )
+    const stored = await client.query<{ id: string }>(issueSql, [email, digest(code), link])
+    const row = stored.rows[0]
+    if (row === undefined) return undefined
+    const previous = earlier.rows[0]
+    return {
+      id: row.id,
+      code: previous?.code ?? null,
+      token: previous?.token ?? null,
+      issued: previous?.issued ?? null,
+      misses: previous?.misses ?? null,
+    }
   })
-  if (!issued) return
-  await send({ to: email, text: mailText(publicOrigin, token, code) })
+  if (placed === undefined) return
+  try {
+    await send({ to: email, text: mailText(publicOrigin, token, code) })
+  } catch (error) {
+    await undoSend(db, email, placed, link)
+    throw error
+  }
 }
 
 export async function acceptCode(db: Sql, email: string, code: string): Promise<string | undefined> {
