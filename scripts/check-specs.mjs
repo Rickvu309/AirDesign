@@ -73,11 +73,12 @@ const restoreIntegers = (modules) => {
   if (!fs.existsSync(extracted) && fs.existsSync(snapshot)) fs.copyFileSync(snapshot, extracted)
 }
 
-export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edit.cfg") => {
+const runTlc = (directory, java, jar, spec, config, extra, dot) => {
   const meta = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-tlc-"))
   const modules = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-tlc-modules-"))
   const keeper = integersSnapshot(modules)
   let result
+  let graph = ""
   try {
     result = spawnSync(
       java,
@@ -93,21 +94,40 @@ export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edi
         config,
         "-metadir",
         meta,
+        ...extra,
         spec,
       ],
-      { cwd: directory, encoding: "utf8" },
+      { cwd: directory, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
     )
+    if (dot && fs.existsSync(dot)) graph = fs.readFileSync(dot, "utf8")
   } finally {
     restoreIntegers(modules)
     fs.rmSync(modules, { recursive: true, force: true })
     fs.rmSync(meta, { recursive: true, force: true })
+    if (dot) fs.rmSync(dot, { force: true })
     if (keeper.exitCode === null) keeper.kill()
   }
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`
+  return { output, status: result?.status, graph }
+}
+
+export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edit.cfg") => {
+  const result = runTlc(directory, java, jar, spec, config, [])
   return {
-    states: distinctStates(output),
-    passed: result.status === 0 && output.includes("No error has been found."),
-    output,
+    states: distinctStates(result.output),
+    passed: result.status === 0 && result.output.includes("No error has been found."),
+    output: result.output,
+  }
+}
+
+export const dumpSpec = (directory, java, jar, spec, config) => {
+  const dot = path.join(os.tmpdir(), `airdesign-tlc-${process.pid}-${Date.now()}.dot`)
+  const result = runTlc(directory, java, jar, spec, config, ["-dump", "dot,actionlabels", dot], dot)
+  return {
+    states: distinctStates(result.output),
+    passed: result.status === 0 && result.output.includes("No error has been found."),
+    output: result.output,
+    graph: result.graph,
   }
 }
 
