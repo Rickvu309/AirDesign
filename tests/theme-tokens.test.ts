@@ -14,6 +14,8 @@ describe("theme tokens", () => {
     const tokens = read("packages/theme/src/tokens.css")
     expect(tokens).toContain("--border: " + "#" + "eaeae7")
     expect(tokens).toContain("--primary: " + "#" + "4d94fb")
+    expect(tokens).toContain("--white-0: " + "#" + "ffffff00")
+    expect(tokens).toContain("--white-88: " + "#" + "ffffffe0")
     expect(tokens).toContain("--ease-micro: 150ms cubic-bezier(0.22, 1, 0.36, 1)")
     expect(tokens).toContain("--ease-panel: 280ms cubic-bezier(0.32, 0.72, 0, 1)")
     expect(tokens).toContain("--fill-marketing")

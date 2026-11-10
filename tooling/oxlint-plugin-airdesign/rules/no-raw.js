@@ -22,6 +22,8 @@ const at = (source, index) => {
   return { line, column }
 }
 
+export const rawExtensions = new Set([".css", ".astro", ".html", ".vue", ".svelte", ".yml", ".yaml", ".svg"])
+
 const banned = "transition-" + "all"
 const hexMessage = "Use a theme token instead of a raw hex."
 const motionMessage = "Name the properties that change."

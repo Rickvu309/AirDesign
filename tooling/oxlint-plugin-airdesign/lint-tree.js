@@ -2,13 +2,12 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { rawFindings } from "./rules/no-raw.js"
+import { rawExtensions, rawFindings } from "./rules/no-raw.js"
 import { scanSource, scannedExtensions } from "./scan-comments.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
 const skipDirectories = new Set(["node_modules", "dist"])
-const rawExtensions = new Set([".css", ".astro", ".html", ".vue", ".svelte", ".yml", ".yaml"])
 
 const oxlint = spawnSync(
   "pnpm",

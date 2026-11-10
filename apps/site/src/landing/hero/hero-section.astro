@@ -22,7 +22,12 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
 ---
 
 <section class="relative h-[720px] overflow-clip bg-background lg:h-[900px]">
-  <HeroFinanceChart />
+  <div class="absolute inset-0 *:size-full">
+    <HeroFinanceChart />
+  </div>
+  <svg class="absolute inset-0 size-full max-lg:hidden" viewBox="0 0 1440 900" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="1182" y1="461.5" x2="1182" y2="324" stroke="var(--primary-strong)" stroke-width="1" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+  </svg>
   <HeaderNavigation />
 
   <div class="absolute inset-x-0 top-[128px] lg:top-[236px]">
