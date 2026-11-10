@@ -5,10 +5,11 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { addTextShape } from "./shape-write.js"
 import {
   markupChildren,
-  retypedOneRun,
+  oneRunIn,
   shapeTextValue,
   textValueEdits,
   type MarkupChildren,
+  type OneRun,
 } from "./text-value-route.js"
 
 export type SlideRoute =
@@ -129,16 +130,27 @@ function textTarget(bytes: Uint8Array, id: string): { children: MarkupChildren; 
   return { children: markupChildren(document.elements), shape: shapeById(document.elements, id) }
 }
 
+export function oneRunOf(parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): OneRun | null {
+  const bytes = parts.get(part)
+  if (bytes === undefined) return null
+  let target: { children: MarkupChildren; shape: MarkupElement }
+  try {
+    target = textTarget(bytes, shape)
+  } catch {
+    return null
+  }
+  return oneRunIn(shapeTextValue(target.children, bytes, target.shape))
+}
+
 export function oneRunValue(
   parts: ReadonlyMap<string, Uint8Array>,
   part: string,
   shape: string,
   text: string,
 ): TextValue {
-  const bytes = parts.get(part)
-  if (bytes === undefined) throw new Error("part")
-  const target = textTarget(bytes, shape)
-  return retypedOneRun(shapeTextValue(target.children, bytes, target.shape), text)
+  const found = oneRunOf(parts, part, shape)
+  if (found === null) throw new Error("text-shape")
+  return [{ from: found.paragraph, runs: [{ from: found.run, text }] }]
 }
 
 export type RouteResult = {

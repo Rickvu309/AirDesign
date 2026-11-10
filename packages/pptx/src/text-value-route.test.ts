@@ -5,8 +5,8 @@ import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "
 import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
-import { applyRoute, oneRunValue, shapeById } from "./slide-route.js"
-import { decodedXmlText, markupChildren, retypedOneRun, shapeTextValue } from "./text-value-route.js"
+import { applyRoute, oneRunOf, oneRunValue, shapeById } from "./slide-route.js"
+import { decodedXmlText, markupChildren, oneRunIn, shapeTextValue } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
@@ -408,9 +408,34 @@ describe("oneRunValue", () => {
   )
 
   it("puts the text in the one run of a one-run box and keeps its from", () => {
-    expect(retypedOneRun([{ from: 3, runs: [{ from: 1, text: "Old" }] }], "New")).toEqual([
-      { from: 3, runs: [{ from: 1, text: "New" }] },
+    expect(oneRunIn([{ from: 3, runs: [{ from: 1, text: "Old" }] }])).toEqual({ paragraph: 3, run: 1 })
+    expect(oneRunValue(new Map([[part, boxOf(`<a:p><a:r><a:t>Old</a:t></a:r></a:p>`)]]), part, "2", "New")).toEqual([
+      { from: 0, runs: [{ from: 0, text: "New" }] },
     ])
+  })
+
+  it("offers a box exactly when oneRunValue would write it", () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          bodyArb,
+          paragraphArb.map((paragraph) => [paragraph]),
+        ),
+        fc.constantFrom("2", "99"),
+        (body, shape) => {
+          const parts = new Map([[part, slideSource(body)]])
+          const offered = oneRunOf(parts, part, shape) !== null
+          let written = true
+          try {
+            oneRunValue(parts, part, shape, "x")
+          } catch {
+            written = false
+          }
+          expect(offered).toBe(written)
+        },
+      ),
+      { numRuns: 300 },
+    )
   })
 
   it("throws text-shape for anything but one paragraph with one non-empty run", () => {
@@ -433,7 +458,7 @@ describe("oneRunValue", () => {
         { from: 1, runs: [{ from: 0, text: "Two" }] },
       ],
     ]
-    for (const value of refusedValues) expect(() => retypedOneRun(value, "New")).toThrow(/text-shape/)
+    for (const value of refusedValues) expect(oneRunIn(value)).toBeNull()
   })
 
   it("keeps a box with several paragraphs from reaching the route with one string", () => {

@@ -143,12 +143,14 @@ export function shownText(value: TextValue): string {
   return value.flatMap((paragraph) => paragraph.runs.map((run) => (run.text === "\n" ? "" : run.text))).join("")
 }
 
-export function retypedOneRun(value: TextValue, text: string): TextValue {
+export type OneRun = { readonly paragraph: number; readonly run: number }
+
+export function oneRunIn(value: TextValue): OneRun | null {
   const paragraph = value[0]
   const run = paragraph?.runs[0]
-  if (value.length !== 1 || paragraph === undefined || paragraph.runs.length !== 1) throw new Error("text-shape")
-  if (run === undefined || run.text === "" || run.text === "\n") throw new Error("text-shape")
-  return [{ from: paragraph.from, runs: [{ from: run.from, text }] }]
+  if (value.length !== 1 || paragraph === undefined || paragraph.runs.length !== 1) return null
+  if (run === undefined || run.text === "" || run.text === "\n") return null
+  return { paragraph: paragraph.from, run: run.from }
 }
 
 function refuseBreak(text: string): void {

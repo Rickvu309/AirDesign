@@ -3,6 +3,7 @@ import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } fr
 import {
   applyRoute,
   exportPackage,
+  oneRunOf,
   oneRunValue,
   prepareMarkup,
   readPackage,
@@ -71,12 +72,15 @@ function paint(
     next.push(id)
   }
   store.setSlides([{ id: slideId("1"), elements: next }])
+  const offered = oneRunOf(parts, node.part, node.shape) !== null
   return {
     ids: next,
-    node: elementNode(
-      shapes.filter((shape) => !shape.locked),
-      node,
-    ),
+    node: offered
+      ? elementNode(
+          shapes.filter((shape) => !shape.locked),
+          node,
+        )
+      : undefined,
   }
 }
 
