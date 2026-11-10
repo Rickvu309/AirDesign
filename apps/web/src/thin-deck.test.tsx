@@ -571,3 +571,17 @@ it("keeps what was typed while the opened file was still loading", async () => {
   expect(live.sent.map((edit) => edit.value)).toEqual(["Typed while held"])
   expect(live.sent[0]?.deck).toBe(live.saved[0]?.deck)
 })
+
+it("does not offer a locked box whose fallback twin has one run", async () => {
+  const parts = shapedParts()
+  const one = fallbackSlide.replace(
+    /<a:p><a:r><a:t>One<\/a:t>.*?<a:t>Three<\/a:t><\/a:r><\/a:p>/,
+    "<a:p><a:r><a:t>Old</a:t></a:r></a:p>",
+  )
+  expect(one).not.toBe(fallbackSlide)
+  parts.set("ppt/slides/slide1.xml", xml(one))
+  const window = await renderedDeck(parts)
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+  expect(shown?.getAttribute("contenteditable")).toBe("false")
+  expect(editableTexts(window)).toEqual(["Choice", "Other"])
+})
