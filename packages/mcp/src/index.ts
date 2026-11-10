@@ -6,6 +6,7 @@ export {
   elements,
   score,
   type Attempt,
+  type Answer,
   type AttemptCall,
   type EditableName,
   type Outcome,

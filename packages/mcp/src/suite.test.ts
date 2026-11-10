@@ -20,6 +20,8 @@ describe("suite", () => {
       expect(row.wrong.attempt.length, row.task.id).toBeGreaterThan(0)
       expect(row.wrong.attempt.length, row.task.id).toBeLessThanOrEqual(row.task.want.calls)
       expect(row.wrong.reason, row.task.id).not.toBe("calls")
+      const outcomes = score(row.task, row.wrong.attempt).answers.map((answer) => answer.outcome)
+      expect(outcomes, row.task.id).not.toContain("field")
     }
   })
 })

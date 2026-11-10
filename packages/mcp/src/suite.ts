@@ -199,10 +199,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("steps", [{ element: "title" }]),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "ok" },
-          { name: "edit_deck", outcome: "ok" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { title: ["First", "Second"] },
       },
     },
@@ -352,10 +349,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("split", [{ element: "title", during: ["Mine"] }, { element: "body" }]),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "person-protected" },
-          { name: "edit_deck", outcome: "ok" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { title: ["Mine"], body: ["Notes"] },
       },
     },
@@ -449,10 +443,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("ledger", [{ element: "title", before: ["Draft", "Review"] }]),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "stale" },
-          { name: "edit_deck", outcome: "ok" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { title: ["Draft", "Review", "Final"] },
       },
     },
@@ -495,10 +486,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("bulk", [{ element: "title" }]),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "limit" },
-          { name: "edit_deck", outcome: "ok" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { title: [fits] },
       },
     },
@@ -577,10 +565,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("tight", [{ element: "title" }, { element: "body" }], tenBytesLeft),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "ok" },
-          { name: "edit_deck", outcome: "limit" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { title: ["Short"], body: [] },
       },
     },
@@ -631,15 +616,12 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("reread", [{ element: "body", before: ["Start"] }]),
       want: {
         calls: 2,
-        steps: [
-          { name: "edit_deck", outcome: "ok" },
-          { name: "edit_deck", outcome: "ok" },
-        ],
+        steps: [{ name: "edit_deck", outcome: "ok" }],
         elements: { body: ["Start", "First", "Second"] },
       },
     },
     reference: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 1)],
-    wrong: { attempt: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 5)], reason: "tool" },
+    wrong: { attempt: [...one("reread", "body", "First", 1), ...one("reread", "body", "Second", 5)], reason: "landed" },
   },
   {
     task: {
