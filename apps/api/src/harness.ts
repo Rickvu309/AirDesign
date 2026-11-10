@@ -24,19 +24,21 @@ export function cookieFrom(headers: IncomingHttpHeaders): string | undefined {
   return first.split(";")[0]
 }
 
-export async function ask(
-  base: string,
-  method: string,
-  route: string,
-  body?: unknown,
-  cookie?: string,
-): Promise<{
+type Reply = {
   readonly status: number
   readonly headers: IncomingHttpHeaders
   readonly json: unknown
   readonly text: string
-}> {
-  const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body))
+}
+
+function send(
+  base: string,
+  method: string,
+  route: string,
+  payload: Buffer | undefined,
+  contentType: string,
+  cookie?: string,
+): Promise<Reply> {
   const url = new URL(route, base)
   return new Promise((resolve, reject) => {
     const req = request(
@@ -46,9 +48,7 @@ export async function ask(
         port: url.port,
         path: `${url.pathname}${url.search}`,
         headers: {
-          ...(payload === undefined
-            ? {}
-            : { "content-type": "application/json", "content-length": String(payload.length) }),
+          ...(payload === undefined ? {} : { "content-type": contentType, "content-length": String(payload.length) }),
           ...(cookie === undefined ? {} : { cookie }),
         },
       },
@@ -78,10 +78,28 @@ export async function ask(
   })
 }
 
+export async function ask(
+  base: string,
+  method: string,
+  route: string,
+  body?: unknown,
+  cookie?: string,
+): Promise<Reply> {
+  const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body))
+  return send(base, method, route, payload, "application/json", cookie)
+}
+
+export async function askForm(base: string, route: string, fields: Record<string, string>): Promise<Reply> {
+  const payload = Buffer.from(new URLSearchParams(fields).toString())
+  return send(base, "POST", route, payload, "application/x-www-form-urlencoded")
+}
+
+export const testResource = "https://mcp.example.test/mcp"
+
 export async function serve(
-  options: ApiOptions,
+  options: Omit<ApiOptions, "resource"> & { readonly resource?: string },
 ): Promise<{ readonly base: string; readonly server: Server; readonly close: () => Promise<void> }> {
-  const server = createApi(options)
+  const server = createApi({ resource: testResource, ...options })
   await new Promise<void>((resolve) => {
     server.listen(0, "127.0.0.1", () => resolve())
   })

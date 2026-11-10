@@ -6,11 +6,16 @@ import type { CallerLog } from "@airdesign/mcp"
 
 import { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
 import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
+import type { Answer } from "./answer.js"
+import { registerClient } from "./clients.js"
+import { approve, describeClient } from "./consent.js"
 import { DeckListen } from "./listen.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
+import { checkedResource } from "./resource.js"
 import { chosenRevision, commitEdits, openSaved, readSaved } from "./saved.js"
+import { bearerPrincipal, readForm, revokeToken, tokenAnswer } from "./tokens.js"
 
 export type ApiOptions = {
   readonly session: Sql
@@ -23,6 +28,7 @@ export type ApiOptions = {
   readonly now?: () => number
   readonly mint?: () => string
   readonly hosts?: readonly string[]
+  readonly resource: string
 }
 
 const cookieName = "airdesign.session"
@@ -98,7 +104,7 @@ function cookieHeader(req: IncomingMessage): string | undefined {
   return typeof header === "string" ? header : undefined
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
+async function readBody(req: IncomingMessage): Promise<Buffer | undefined> {
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req) {
@@ -107,12 +113,21 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
     if (size > bodyCap) return undefined
     chunks.push(buffer)
   }
-  if (chunks.length === 0) return undefined
+  return Buffer.concat(chunks)
+}
+
+async function readJson(req: IncomingMessage): Promise<unknown> {
+  const body = await readBody(req)
+  if (body === undefined || body.length === 0) return undefined
   try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown
+    return JSON.parse(body.toString("utf8")) as unknown
   } catch {
     return undefined
   }
+}
+
+async function readFormBody(req: IncomingMessage): Promise<Map<string, string> | undefined> {
+  return readForm(req.headers["content-type"], await readBody(req))
 }
 
 function gone(res: ServerResponse): AbortSignal {
@@ -135,6 +150,24 @@ async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerRe
     return undefined
   }
   return email
+}
+
+const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/
+
+async function caller(
+  options: ApiOptions,
+  now: () => number,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<string | undefined> {
+  const authorization = req.headers.authorization
+  if (authorization === undefined) return signedIn(options, req, res)
+  const secret = bearerPattern.exec(authorization)?.[1]
+  const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
+  if (bearer?.ok === true) return bearer.principal
+  res.setHeader("www-authenticate", 'Bearer error="invalid_token"')
+  sendJson(res, 401, { error: "invalid_token" })
+  return undefined
 }
 
 async function hold(
@@ -246,6 +279,62 @@ async function deckListRoute(
   sendJson(res, 200, await route(options.deck, await readJson(req), email))
 }
 
+async function registerRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const answer = await registerClient(options.session, await readJson(req))
+  sendJson(res, answer.status, answer.body)
+}
+
+async function clientRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
+  const answer = await describeClient(options.session, await readJson(req), options.resource)
+  sendJson(res, answer.status, answer.body)
+}
+
+async function approveRoute(
+  options: ApiOptions,
+  now: () => number,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
+  const answer = await approve(options.session, await readJson(req), email, options.resource, now())
+  sendJson(res, answer.status, answer.body)
+}
+
+async function noStoreRoute(res: ServerResponse, work: () => Promise<Answer>): Promise<void> {
+  res.setHeader("cache-control", "no-store")
+  try {
+    const answer = await work()
+    sendJson(res, answer.status, answer.body)
+  } catch {
+    sendJson(res, 500, { error: "server_error" })
+  }
+}
+
+async function tokenRoute(
+  options: ApiOptions,
+  now: () => number,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  await noStoreRoute(res, async () =>
+    tokenAnswer(
+      {
+        db: options.session,
+        own: options.resource,
+        now: now(),
+      },
+      await readFormBody(req),
+    ),
+  )
+}
+
+async function revokeRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  await noStoreRoute(res, async () => revokeToken(options.session, await readFormBody(req)))
+}
+
 async function handle(
   options: ApiOptions,
   logs: Map<string, CallerLog>,
@@ -261,7 +350,7 @@ async function handle(
     return
   }
   if (url.pathname === "/mcp") {
-    const email = await signedIn(options, req, res)
+    const email = await caller(options, now, req, res)
     if (email === undefined) return
     await serveMcp(
       {
@@ -276,6 +365,26 @@ async function handle(
       req,
       res,
     )
+    return
+  }
+  if (method === "POST" && url.pathname === "/oauth/register") {
+    await registerRoute(options, req, res)
+    return
+  }
+  if (method === "POST" && url.pathname === "/oauth/client") {
+    await clientRoute(options, req, res)
+    return
+  }
+  if (method === "POST" && url.pathname === "/oauth/approve") {
+    await approveRoute(options, now, req, res)
+    return
+  }
+  if (method === "POST" && url.pathname === "/oauth/token") {
+    await tokenRoute(options, now, req, res)
+    return
+  }
+  if (method === "POST" && url.pathname === "/oauth/revoke") {
+    await revokeRoute(options, req, res)
     return
   }
   if (method === "POST" && url.pathname === "/sign-in/email") {
@@ -314,6 +423,7 @@ export function createApi(options: ApiOptions): Server {
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)
+  checkedResource(options.resource)
   const logs = new Map<string, CallerLog>()
   const now = options.now ?? Date.now
   const mint = options.mint ?? randomUUID

@@ -3,7 +3,7 @@ import { request as httpRequest, type IncomingHttpHeaders } from "node:http"
 import { Client, Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, createApi, openPool, sendWithResend, type Mail } from "./index.js"
 
 const publicOrigin = "https://app.example"
@@ -691,7 +691,7 @@ describe("sign-in", () => {
 
   it("rejects a public origin with a path", () => {
     const send = async () => {}
-    const shared = { session, deck, listen, send, siteOrigin }
+    const shared = { session, deck, listen, send, siteOrigin, resource: testResource }
     expect(() => createApi({ ...shared, publicOrigin: "https://app.example/path" })).toThrow(/publicOrigin/)
     expect(() => createApi({ ...shared, publicOrigin: "https://app.example/" })).toThrow(/publicOrigin/)
     expect(() => createApi({ ...shared, publicOrigin: "http://app.example" })).toThrow(/publicOrigin/)
@@ -699,7 +699,7 @@ describe("sign-in", () => {
 
   it("rejects a site origin with a path", () => {
     const send = async () => {}
-    const shared = { session, deck, listen, send, publicOrigin }
+    const shared = { session, deck, listen, send, publicOrigin, resource: testResource }
     expect(() => createApi({ ...shared, siteOrigin: "https://site.example/path" })).toThrow(/siteOrigin/)
     expect(() => createApi({ ...shared, siteOrigin: "https://site.example/" })).toThrow(/siteOrigin/)
     expect(() => createApi({ ...shared, siteOrigin: "http://site.example" })).toThrow(/siteOrigin/)
@@ -1328,7 +1328,7 @@ describe("sign-in", () => {
 
   it("names the option for an origin that does not parse", () => {
     const send = async () => {}
-    const shared = { session, deck, listen, send }
+    const shared = { session, deck, listen, send, resource: testResource }
     expect(() => createApi({ ...shared, siteOrigin, publicOrigin: "not an origin" })).toThrow(/publicOrigin/)
     expect(() => createApi({ ...shared, publicOrigin, siteOrigin: "not an origin" })).toThrow(/siteOrigin/)
   })
@@ -1341,6 +1341,7 @@ describe("sign-in", () => {
         listen,
         publicOrigin,
         siteOrigin,
+        resource: testResource,
         send: async () => {},
         cookieDomain: "app.example; SameSite=None; Max-Age=0",
       }),

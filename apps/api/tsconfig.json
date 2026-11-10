@@ -15,6 +15,7 @@
   "references": [
     { "path": "../../packages/catalog" },
     { "path": "../../packages/engine" },
-    { "path": "../../packages/mcp" }
+    { "path": "../../packages/mcp" },
+    { "path": "../../packages/oauth" }
   ]
 }

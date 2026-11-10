@@ -22,6 +22,7 @@
     "@airdesign/catalog": "workspace:*",
     "@airdesign/engine": "workspace:*",
     "@airdesign/mcp": "workspace:*",
+    "@airdesign/oauth": "workspace:*",
     "@modelcontextprotocol/node": "^2.1.2",
     "@modelcontextprotocol/server": "^2.4.0",
     "pg": "^8.16.3"

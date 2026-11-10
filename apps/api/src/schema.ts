@@ -28,6 +28,30 @@ create table session.sent (
   issued timestamptz not null,
   delivered boolean not null default false
 );
+create table session.oauth_client (
+  id text primary key,
+  name text,
+  redirect_uris text[] not null
+);
+create table session.oauth_grant (
+  id text primary key,
+  principal text not null,
+  code text not null check (code in ('open', 'used')),
+  generation integer not null,
+  revoked boolean not null,
+  client_id text not null references session.oauth_client (id),
+  redirect_uri text not null,
+  challenge text not null,
+  code_hash text not null unique,
+  code_expires double precision not null
+);
+create table session.oauth_token (
+  hash text primary key,
+  grant_id text not null references session.oauth_grant (id),
+  generation integer not null,
+  kind text not null check (kind in ('access', 'refresh')),
+  expires double precision
+);
 create table deck.saved (
   id text primary key,
   revision integer not null,
@@ -49,6 +73,7 @@ create table deck.once (
 grant usage on schema session to session;
 grant select, insert, update, delete on session.account, session.code, session.access, session.sent to session;
 grant usage, select on all sequences in schema session to session;
+grant select, insert, update on session.oauth_client, session.oauth_grant, session.oauth_token to session;
 grant usage on schema deck to deck;
 grant select, insert, update, delete on deck.saved to deck;
 grant select, insert, update, delete on deck.once to deck;
