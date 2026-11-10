@@ -19,9 +19,14 @@ VARIABLES
   owner,
   generation,
   ownedGen,
-  foreign
+  foreign,
+  startedLive,
+  liveId,
+  earlierLive
 
-vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+ghost == <<startedLive, liveId, earlierLive>>
+
+vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* The offered id has to equal the id stored on the node. The letter s is not special.
 accepted(readId) == readId = runId /\ phase \in {"stopped", "undone"}
@@ -42,6 +47,9 @@ TypeOK ==
   /\ generation \in {0, 1, 2}
   /\ ownedGen \in {-1, 0, 1, 2}
   /\ foreign \in {0, 1}
+  /\ startedLive \in BOOLEAN
+  /\ liveId \in {"none", "s", "t"}
+  /\ earlierLive \in BOOLEAN
 
 Init ==
   /\ phase = "idle"
@@ -59,6 +67,9 @@ Init ==
   /\ generation = 0
   /\ ownedGen = -1
   /\ foreign = 0
+  /\ startedLive = FALSE
+  /\ liveId = "none"
+  /\ earlierLive = FALSE
 
 \* The first start applies while the node is idle, and it stores the offered run id.
 Start ==
@@ -68,7 +79,9 @@ Start ==
   /\ readAt' = writes
   /\ opened' = TRUE
   /\ generation' = generation + 1
-  /\ UNCHANGED <<writes, mark, didRead, seen, seenId, seenGen, landed, owner, ownedGen, foreign>>
+  /\ startedLive' = (startedLive \/ phase = "running")
+  /\ liveId' = runId'
+  /\ UNCHANGED <<writes, mark, didRead, seen, seenId, seenGen, landed, owner, ownedGen, foreign, earlierLive>>
 
 \* A start during a live run is refused and does not replace the stored id.
 StartAgain ==
@@ -86,7 +99,9 @@ StartNext ==
   /\ mark' = -1
   /\ generation' = generation + 1
   /\ foreign' = IF (writes = 1 /\ owner # "none" /\ owner # runId') THEN 1 ELSE foreign
-  /\ UNCHANGED <<writes, didRead, seen, seenId, seenGen, opened, landed, owner, ownedGen>>
+  /\ startedLive' = (startedLive \/ phase = "running")
+  /\ liveId' = runId'
+  /\ UNCHANGED <<writes, didRead, seen, seenId, seenGen, opened, landed, owner, ownedGen, earlierLive>>
 
 \* A start that names an id which already has a row stays fenced.
 StartReuse ==
@@ -105,7 +120,7 @@ AgentWrites ==
      /\ landed' = 1
      /\ owner' = runId
      /\ ownedGen' = generation
-     /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, generation, foreign>>
+     /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, generation, foreign, ghost>>
   \/ /\ phase \in {"stopped", "undone"}
      /\ UNCHANGED vars
 
@@ -119,7 +134,7 @@ Stop ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = writes
-  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Stop applies only while the stored id is running.
 StopMiss ==
@@ -131,20 +146,20 @@ Limit ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = writes
-  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Resume continues the same run. It does not start a second run on the deck.
 Resume ==
   /\ phase = "stopped"
   /\ phase' = "running"
-  /\ UNCHANGED <<runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+  /\ UNCHANGED <<runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Undo of the current run hides that run's write and leaves an earlier run's write visible.
 Undo ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
   /\ writes' = IF owner = runId THEN 0 ELSE writes
-  /\ UNCHANGED <<runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+  /\ UNCHANGED <<runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Undo of an earlier run, while the later run is stopped or undone, hides only the earlier row.
 UndoEarlier ==
@@ -154,7 +169,8 @@ UndoEarlier ==
   /\ writes = 1
   /\ writes' = 0
   /\ foreign' = 0
-  /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen>>
+  /\ earlierLive' = (earlierLive \/ phase = "running")
+  /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, startedLive, liveId>>
 
 \* Undo of an earlier run stays fenced while a run is live.
 UndoEarlierLive ==
@@ -179,7 +195,7 @@ ReadS ==
      /\ seen' = phase
      /\ seenId' = "s"
      /\ seenGen' = generation
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign>>
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign, ghost>>
   \/ /\ ~accepted("s")
      /\ UNCHANGED vars
 
@@ -190,7 +206,7 @@ ReadT ==
      /\ seen' = phase
      /\ seenId' = "t"
      /\ seenGen' = generation
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign>>
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign, ghost>>
   \/ /\ ~accepted("t")
      /\ UNCHANGED vars
 
@@ -230,6 +246,14 @@ ReadMatchesStoredRun ==
 \* A later start stores an id that does not already own a row.
 LaterStartUsesAFreshId ==
   ownedGen = -1 \/ generation = ownedGen \/ runId # owner
+
+\* A start is refused while a run is live. No start applies over a running run, and a live run keeps the id it started with.
+StartRefusedWhileLive ==
+  /\ startedLive = FALSE
+  /\ phase # "running" \/ runId = liveId
+
+\* Undo of an earlier run waits for the later run to end. It never applies while a run is live.
+EarlierUndoWaitsForEnd == earlierLive = FALSE
 
 \* Undo of the current run leaves another run's visible row in place.
 UndoLeavesTheOtherRun ==

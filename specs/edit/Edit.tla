@@ -1,5 +1,5 @@
 ---- MODULE Edit ----
-\* This model follows one run editing one property of one deck. A later run is specified in the run and undo models.
+\* This model follows one run editing one property of one deck. A later run is specified in the run, undo and rerun models.
 \* Version is how many landed writes the property has.
 EXTENDS Integers
 
