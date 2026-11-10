@@ -17,6 +17,7 @@
   "rules": {
     "airdesign/no-comments": "error",
     "airdesign/no-raw": "error",
+    "airdesign/no-run-literal": "error",
     "airdesign/no-xml-search": "error"
   }
 }

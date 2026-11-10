@@ -21,11 +21,12 @@ VARIABLES
   prevAfter,
   prevAgent,
   phase,
-  runId
+  runId,
+  readId
 
 vars == <<
   nodeA, nodeB, record, recordNode, beforeA, beforeB, didRead, snapA, snapB, storedA, storedB,
-  lastKind, personBefore, personAfter, agent, prevBefore, prevAfter, prevAgent, phase, runId
+  lastKind, personBefore, personAfter, agent, prevBefore, prevAfter, prevAgent, phase, runId, readId
 >>
 
 TypeOK ==
@@ -49,8 +50,9 @@ TypeOK ==
   /\ prevAgent \in {-1, 0, 1}
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ runId \in {"s", "t"}
+  /\ readId \in {"s", "t"}
 
-accepted == runId = "s" /\ phase \in {"stopped", "undone"}
+accepted == readId = runId /\ phase \in {"stopped", "undone"}
 
 Init ==
   /\ nodeA = TRUE
@@ -73,6 +75,7 @@ Init ==
   /\ prevAgent = -1
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ runId \in {"s", "t"}
+  /\ readId \in {"s", "t"}
 
 AddNode ==
   /\ nodeB = FALSE
@@ -85,7 +88,7 @@ AddNode ==
   /\ prevBefore' = -1
   /\ prevAfter' = -1
   /\ prevAgent' = -1
-  /\ UNCHANGED <<nodeA, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId>>
+  /\ UNCHANGED <<nodeA, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId, readId>>
 
 RemoveNode ==
   /\ nodeB = TRUE
@@ -98,7 +101,7 @@ RemoveNode ==
   /\ prevBefore' = -1
   /\ prevAfter' = -1
   /\ prevAgent' = -1
-  /\ UNCHANGED <<nodeA, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId>>
+  /\ UNCHANGED <<nodeA, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId, readId>>
 
 SecondRunReads ==
   /\ nodeA = TRUE
@@ -112,7 +115,7 @@ SecondRunReads ==
      \/ /\ ~accepted
         /\ lastKind' = "fenced"
         /\ UNCHANGED <<didRead, snapA, snapB, storedA, storedB>>
-  /\ UNCHANGED <<nodeA, nodeB, record, recordNode, beforeA, beforeB, personBefore, personAfter, agent, prevBefore, prevAfter, prevAgent, phase, runId>>
+  /\ UNCHANGED <<nodeA, nodeB, record, recordNode, beforeA, beforeB, personBefore, personAfter, agent, prevBefore, prevAfter, prevAgent, phase, runId, readId>>
 
 NameAbsent ==
   /\ nodeB = FALSE
@@ -120,7 +123,7 @@ NameAbsent ==
   /\ prevBefore' = personBefore
   /\ prevAfter' = personAfter
   /\ prevAgent' = agent
-  /\ UNCHANGED <<nodeA, nodeB, record, recordNode, beforeA, beforeB, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId>>
+  /\ UNCHANGED <<nodeA, nodeB, record, recordNode, beforeA, beforeB, didRead, snapA, snapB, storedA, storedB, personBefore, personAfter, agent, phase, runId, readId>>
 
 Next == AddNode \/ RemoveNode \/ SecondRunReads \/ NameAbsent
 
