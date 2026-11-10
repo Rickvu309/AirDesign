@@ -587,6 +587,21 @@ describe("call", () => {
       ).toEqual({ ok: false, refusal: "limit" })
       expect(prepared.register).toBe(agentBefore)
       expect(currentValue(nodeBody(prepared.register, left))).toBe("")
+      const open = opened()
+      const openRegister = include(open.register, left)
+      const openDeck = { id: open.id, revision: open.revision, register: openRegister }
+      expect(
+        call("commit_edits", openDeck, person, { deck: "deck", batch: [{ value: "hi", node: "258.7", floor }] }),
+      ).toEqual({ ok: false, refusal: "limit" })
+      expect(openDeck.register).toBe(openRegister)
+      expect(
+        call("edit_deck", prepared, agent, {
+          deck: "deck",
+          base: prepared.revision,
+          changes: [{ value: "hi", node: "258.7", floor, readAt: 0 }],
+        }),
+      ).toEqual({ ok: false, refusal: "limit" })
+      expect(prepared.register).toBe(agentBefore)
     }
   })
 
