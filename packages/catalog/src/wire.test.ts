@@ -9,6 +9,8 @@ import {
   readCommit,
   readEdit,
   readNode,
+  readRun,
+  readRunStart,
   readWatch,
 } from "./index.js"
 
@@ -286,6 +288,150 @@ describe("parseNotifyKey", () => {
 
   it("refuses a fractional revision", () => {
     expect(parseNotifyKey("deck:1.5")).toEqual({ ok: false, refusal: "payload" })
+  })
+})
+
+describe("readRunStart", () => {
+  const elements = [{ node: "258.7" }]
+
+  it("reads a run and its elements", () => {
+    expect(
+      readRunStart({ deck: "deck", runId: "run", elements: [{ node: "258.7" }, { node: "258.8", floor: "" }] }),
+    ).toEqual({ ok: true, deck: "deck", runId: "run", elements: [{ node: "258.7" }, { node: "258.8", floor: "" }] })
+  })
+
+  it("refuses anything that is not an object", () => {
+    for (const raw of [null, 7, "run", [], undefined]) {
+      expect(readRunStart(raw)).toEqual({ ok: false, refusal: "field" })
+    }
+  })
+
+  it("refuses an actor beside the elements", () => {
+    expect(readRunStart({ deck: "deck", runId: "run", elements, actor: "person" })).toEqual({
+      ok: false,
+      refusal: "field",
+    })
+  })
+
+  it("refuses a missing deck as a field", () => {
+    expect(readRunStart({ runId: "run", elements })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a malformed deck", () => {
+    expect(readRunStart({ deck: "bad deck", runId: "run", elements })).toEqual({ ok: false, refusal: "deck" })
+  })
+
+  it("refuses a run id that is not 1 to 64 safe characters", () => {
+    for (const runId of [undefined, 7, "", "a".repeat(65), "bad run"]) {
+      expect(readRunStart({ deck: "deck", runId, elements })).toEqual({ ok: false, refusal: "field" })
+    }
+    const fit = "a".repeat(64)
+    expect(readRunStart({ deck: "deck", runId: fit, elements })).toEqual({
+      ok: true,
+      deck: "deck",
+      runId: fit,
+      elements,
+    })
+  })
+
+  it("refuses a missing run id", () => {
+    expect(readRunStart({ deck: "deck", elements })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses missing, empty or non-list elements as a batch", () => {
+    expect(readRunStart({ deck: "deck", runId: "run" })).toEqual({ ok: false, refusal: "batch" })
+    expect(readRunStart({ deck: "deck", runId: "run", elements: [] })).toEqual({ ok: false, refusal: "batch" })
+    expect(readRunStart({ deck: "deck", runId: "run", elements: { node: "258.7" } })).toEqual({
+      ok: false,
+      refusal: "batch",
+    })
+  })
+
+  it("reads 100 elements and refuses 101", () => {
+    const fit = Array.from({ length: 100 }, () => ({ node: "258.7" }))
+    expect(readRunStart({ deck: "deck", runId: "run", elements: fit })).toEqual({
+      ok: true,
+      deck: "deck",
+      runId: "run",
+      elements: fit,
+    })
+    expect(readRunStart({ deck: "deck", runId: "run", elements: [...fit, { node: "258.7" }] })).toEqual({
+      ok: false,
+      refusal: "batch",
+    })
+  })
+
+  it("refuses an element that is not an object", () => {
+    expect(readRunStart({ deck: "deck", runId: "run", elements: ["258.7"] })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a value or an actor on an element", () => {
+    for (const element of [
+      { node: "258.7", value: "hi" },
+      { node: "258.7", actor: "person" },
+    ]) {
+      expect(readRunStart({ deck: "deck", runId: "run", elements: [element] })).toEqual({
+        ok: false,
+        refusal: "field",
+      })
+    }
+  })
+
+  it("refuses a malformed element id", () => {
+    for (const node of ["a", "b", "258.", 7, undefined]) {
+      expect(readRunStart({ deck: "deck", runId: "run", elements: [{ node }] })).toEqual({
+        ok: false,
+        refusal: "field",
+      })
+    }
+  })
+
+  it("refuses a floor that is not a string", () => {
+    expect(readRunStart({ deck: "deck", runId: "run", elements: [{ node: "258.7", floor: 7 }] })).toEqual({
+      ok: false,
+      refusal: "field",
+    })
+  })
+})
+
+describe("readRun", () => {
+  it("reads a deck and a run id", () => {
+    expect(readRun({ deck: "deck", runId: "run" })).toEqual({ ok: true, deck: "deck", runId: "run" })
+  })
+
+  it("refuses anything that is not an object", () => {
+    for (const raw of [null, 7, "run", [], undefined]) {
+      expect(readRun(raw)).toEqual({ ok: false, refusal: "field" })
+    }
+  })
+
+  it("refuses an actor or elements beside the run", () => {
+    expect(readRun({ deck: "deck", runId: "run", actor: "person" })).toEqual({ ok: false, refusal: "field" })
+    expect(readRun({ deck: "deck", runId: "run", elements: [] })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a missing deck as a field", () => {
+    expect(readRun({ runId: "run" })).toEqual({ ok: false, refusal: "field" })
+  })
+
+  it("refuses a malformed deck", () => {
+    expect(readRun({ deck: "bad deck", runId: "run" })).toEqual({ ok: false, refusal: "deck" })
+  })
+
+  it("refuses a run id that is missing or not 1 to 64 safe characters", () => {
+    expect(readRun({ deck: "deck" })).toEqual({ ok: false, refusal: "field" })
+    for (const runId of [7, "", "a".repeat(65), "bad run"]) {
+      expect(readRun({ deck: "deck", runId })).toEqual({ ok: false, refusal: "field" })
+    }
+  })
+})
+
+describe("run operations in the catalog", () => {
+  it("lists them as commands an agent cannot call until its server answers them", () => {
+    for (const op of [catalog.start_run, catalog.stop_run, catalog.undo_run]) {
+      expect(op).toEqual({ kind: "command", exposure: "web" })
+    }
+    expect(projectTools(catalog).map((tool) => tool.op)).toEqual(["capture_slide", "edit_deck"])
   })
 })
 

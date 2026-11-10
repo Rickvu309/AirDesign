@@ -1,5 +1,26 @@
-import { decide, limits, openRegister, type Command, type Register, type Refusal } from "@airdesign/document"
-import { notifyKey, readAgentEdit, readCommit, type DeckId, type WireChange, type WireEdit } from "@airdesign/catalog"
+import {
+  decide,
+  elementId,
+  limits,
+  openRegister,
+  type Command,
+  type Decision,
+  type ElementId,
+  type NodeRegister,
+  type Register,
+  type Refusal,
+} from "@airdesign/document"
+import {
+  notifyKey,
+  readAgentEdit,
+  readCommit,
+  readRun,
+  readRunStart,
+  type DeckId,
+  type WireChange,
+  type WireEdit,
+  type WireRunElement,
+} from "@airdesign/catalog"
 
 export type Deck = {
   readonly id: DeckId
@@ -15,10 +36,12 @@ type CallResult =
   | { readonly ok: true; readonly deck: Deck; readonly key: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-type Touched = {
+type StartResult =
+  | { readonly ok: true; readonly deck: Deck; readonly key: string; readonly runId: string }
+  | { readonly ok: false; readonly refusal: CallRefusal }
+
+type Touched = WireRunElement & {
   readonly value: string
-  readonly node: WireEdit["node"]
-  readonly floor?: string
 }
 
 export function openDeck(id: DeckId): Deck {
@@ -51,7 +74,7 @@ function utf8Length(value: string): number {
 
 function openedRegister(
   register: Register,
-  edit: Touched,
+  edit: WireRunElement,
 ): { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal } {
   if (register.nodes.includes(edit.node)) return { ok: true, register }
   const opened = decide(register, {
@@ -65,6 +88,14 @@ function openedRegister(
 }
 
 const valueBytes = limits.valueBytes
+
+function landed(deck: Deck, register: Register): CallResult {
+  const changed = register !== deck.register
+  const revision = changed ? deck.revision + 1 : deck.revision
+  const notified = notifyKey(deck.id, revision)
+  if (!notified.ok) return refused("payload")
+  return { ok: true, deck: changed ? { id: deck.id, revision, register } : deck, key: notified.key }
+}
 
 function applyEdits<Edit extends Touched>(
   deck: Deck,
@@ -84,13 +115,133 @@ function applyEdits<Edit extends Touched>(
     if (decision.decision === "refuse") return refused(decision.code)
     register = { ...decision.register, bytes: next }
   }
-  const revision = deck.revision + 1
-  const notified = notifyKey(deck.id, revision)
-  if (!notified.ok) return refused("payload")
-  return { ok: true, deck: { id: deck.id, revision, register }, key: notified.key }
+  return landed(deck, register)
 }
 
-export function call(op: "commit_edits" | "edit_deck", deck: Deck, caller: Caller, raw: unknown): CallResult {
+function everyElement(register: Register): readonly ElementId[] {
+  return [...new Set([...register.nodes, ...Object.keys(register.elements).map((key) => elementId(key))])]
+}
+
+function bodyOf(register: Register, node: ElementId): NodeRegister {
+  return register.elements[node] ?? register
+}
+
+function isLive(body: NodeRegister | undefined, runId: string): boolean {
+  return body?.phase === "running" && body.runId === runId
+}
+
+function holdsRun(body: NodeRegister, runId: string): boolean {
+  return body.runId === runId || body.landed.some((row) => row.runId === runId)
+}
+
+function showsRun(body: NodeRegister, runId: string): boolean {
+  if (body.runId === runId && body.phase !== "undone") return true
+  return body.landed.some((row) => row.runId === runId && row.visible)
+}
+
+function decideOnElement(register: Register, node: ElementId, command: Command): Decision {
+  if (register.nodes.includes(node)) return decide(register, command)
+  const restored = decide(register, { command: "add", node, floor: register.floor, route: register.route })
+  if (restored.decision === "refuse") return restored
+  const decided = decide(restored.register, command)
+  if (decided.decision === "refuse") return decided
+  return decide(decided.register, { command: "remove", node })
+}
+
+function applyToElements(
+  deck: Deck,
+  nodes: readonly ElementId[],
+  commandFor: (node: ElementId) => Command,
+): CallResult {
+  let register = deck.register
+  for (const node of nodes) {
+    const decision = decideOnElement(register, node, commandFor(node))
+    if (decision.decision === "refuse") return refused(decision.code)
+    register = decision.register
+  }
+  return landed(deck, register)
+}
+
+function liveRun(register: Register, elements: readonly WireRunElement[]): string | null {
+  for (const { node } of elements) {
+    const body = register.elements[node]
+    if (body?.phase === "running") return body.runId
+  }
+  return null
+}
+
+function startRun(deck: Deck, requested: string, elements: readonly WireRunElement[]): StartResult {
+  const runId = liveRun(deck.register, elements) ?? requested
+  let register = deck.register
+  for (const element of elements) {
+    if (element.floor !== undefined && utf8Length(element.floor) > valueBytes) return refused("limit")
+    const opened = openedRegister(register, element)
+    if (!opened.ok) return refused(opened.refusal)
+    register = opened.register
+    if (isLive(register.elements[element.node], runId)) continue
+    const started = decide(register, { command: "start", runId, node: element.node })
+    if (started.decision === "refuse") return refused(started.code)
+    register = started.register
+  }
+  const result = landed(deck, register)
+  return result.ok ? { ...result, runId } : result
+}
+
+function stopRun(deck: Deck, runId: string): CallResult {
+  const { register } = deck
+  const nodes = everyElement(register)
+  if (!nodes.some((node) => holdsRun(bodyOf(register, node), runId))) return refused("run-fenced")
+  const live = nodes.filter((node) => isLive(bodyOf(register, node), runId))
+  return applyToElements(deck, live, (node) => ({ command: "stop", runId, node }))
+}
+
+function undoRun(deck: Deck, runId: string): CallResult {
+  const { register } = deck
+  const shown = everyElement(register).filter((node) => showsRun(bodyOf(register, node), runId))
+  if (shown.length === 0) return refused("run-fenced")
+  return applyToElements(deck, shown, (node) => ({ command: "undo", runId, node }))
+}
+
+function namesOtherRun(caller: Caller, runId: string): boolean {
+  return caller.actor === "agent" && caller.runId !== runId
+}
+
+function callStartRun(deck: Deck, caller: Caller, raw: unknown): StartResult {
+  if (caller.actor !== "agent") return refused("field")
+  const parsed = readRunStart(raw)
+  if (!parsed.ok) return refused(parsed.refusal)
+  if (parsed.deck !== deck.id) return refused("deck")
+  if (namesOtherRun(caller, parsed.runId)) return refused("run-fenced")
+  return startRun(deck, parsed.runId, parsed.elements)
+}
+
+function callEndRun(deck: Deck, caller: Caller, raw: unknown, end: typeof stopRun): CallResult {
+  const parsed = readRun(raw)
+  if (!parsed.ok) return refused(parsed.refusal)
+  if (parsed.deck !== deck.id) return refused("deck")
+  if (namesOtherRun(caller, parsed.runId)) return refused("run-fenced")
+  return end(deck, parsed.runId)
+}
+
+export function call(op: "start_run", deck: Deck, caller: Caller, raw: unknown): StartResult
+export function call(
+  op: "commit_edits" | "edit_deck" | "stop_run" | "undo_run",
+  deck: Deck,
+  caller: Caller,
+  raw: unknown,
+): CallResult
+export function call(
+  op: "commit_edits" | "edit_deck" | "start_run" | "stop_run" | "undo_run",
+  deck: Deck,
+  caller: Caller,
+  raw: unknown,
+): CallResult | StartResult {
+  if (op === "start_run") return callStartRun(deck, caller, raw)
+  if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
+  if (op === "stop_run") {
+    if (caller.actor !== "agent") return refused("field")
+    return callEndRun(deck, caller, raw, stopRun)
+  }
   if (op === "commit_edits") {
     if (caller.actor !== "person") return refused("field")
     const parsed = readCommit(raw)
