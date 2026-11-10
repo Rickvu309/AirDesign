@@ -642,6 +642,7 @@ describe("live cache", () => {
     expect([...files.keys()].sort()).toEqual([sharedHash, otherHash].sort())
     for (const [hash, bytes] of files) expect(hash).toBe(await sha256(bytes))
     const stored = [...files.keys()].sort()
+    const written = new Map(files)
     const cache = connect(memoryRemote())
     const opened = await cache.openDeck("clean")
     expect(opened.ok).toBe(true)
@@ -659,6 +660,43 @@ describe("live cache", () => {
     expect(read.nodes).toEqual(nodes)
     expect(files.size).toBe(2)
     expect([...files.keys()].sort()).toEqual(stored)
+    for (const [hash, bytes] of written) expect(files.get(hash)).toBe(bytes)
+  })
+
+  it("keeps each deck's parts apart after a new connect", async () => {
+    installParts()
+    const slide = "ppt/slides/slide1.xml"
+    const notes = "ppt/notesSlides/notesSlide1.xml"
+    const cleanNodes = { a: { part: slide, shape: "2" } }
+    const otherNodes = { a: { part: slide, shape: "5" } }
+    const clean = await putParts("clean", {
+      parts: new Map<string, Uint8Array>([[slide, new Uint8Array([9, 8, 7])]]),
+      nodes: cleanNodes,
+    })
+    const other = await putParts("other", {
+      parts: new Map<string, Uint8Array>([
+        [slide, new Uint8Array([4, 5])],
+        [notes, new Uint8Array([6])],
+      ]),
+      nodes: otherNodes,
+    })
+    expect(clean.ok).toBe(true)
+    expect(other.ok).toBe(true)
+    const cache = connect(memoryRemote())
+    expect((await cache.openDeck("clean")).ok).toBe(true)
+    expect((await cache.openDeck("other")).ok).toBe(true)
+    const readClean = await getParts("clean")
+    const readOther = await getParts("other")
+    expect(readClean.ok).toBe(true)
+    expect(readOther.ok).toBe(true)
+    if (!readClean.ok || !readOther.ok) return
+    expect([...readClean.parts.keys()]).toEqual([slide])
+    expect(Array.from(readClean.parts.get(slide) ?? [])).toEqual([9, 8, 7])
+    expect(readClean.nodes).toEqual(cleanNodes)
+    expect([...readOther.parts.keys()]).toEqual([slide, notes])
+    expect(Array.from(readOther.parts.get(slide) ?? [])).toEqual([4, 5])
+    expect(Array.from(readOther.parts.get(notes) ?? [])).toEqual([6])
+    expect(readOther.nodes).toEqual(otherNodes)
   })
 
   it("answers absent for parts after the database is deleted", async () => {
