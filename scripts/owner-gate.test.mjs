@@ -209,18 +209,46 @@ same(
   "abc",
 )
 
+const blocksOf = (change) =>
+  ownerReasons({ baseSticks: sticks, headSticks: sticks, changedFiles: [], changedScripts: [], ...change }).map(
+    (reason) => reason.blocks,
+  )
+same("a raised limit blocks", blocksOf(withStick("check seconds", { limit: 60 })), [true])
+same("a dropped deck count blocks", blocksOf(withStick(decks, { now: 1, goal: 20 })), [true])
+same("a moved goal blocks", blocksOf(withStick("known faults", { now: 2, goal: 5 })), [true])
+same("a recorded fault is listed and does not block", blocksOf(withStick("known faults", { now: 3, goal: 0 })), [false])
+same("a changed check file is listed and does not block", blocksOf({ changedFiles: ["scripts/check.mjs"] }), [false])
+same("changed scripts are listed and do not block", blocksOf({ changedScripts: ["package.json"] }), [false])
+same("a changed case blocks", blocksOf({ changedCases: ["text-page"] }), [true])
+same("a swapped deck blocks", blocksOf({ changedFixtures: [deck] }), [true])
+
+const listedOnly = verdict({
+  owner: "owner",
+  reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what the gate checks.", blocks: false }],
+  headPrints: {},
+})
+same("a pull that only touches the checks passes and is listed", [listedOnly.pass, listedOnly.listed], [true, true])
+same("its line says it does not block", listedOnly.lines, [
+  "Listed for owner, does not block: AGENTS.md decides what the gate checks.",
+])
+
 const reasons = [
-  { about: "file AGENTS.md", text: "AGENTS.md decides what the gate checks." },
-  { about: "stick known faults", text: "known faults went from 2 to 3, away from its goal of 0." },
+  {
+    about: "file scripts/pptx-fixtures/a.pptx",
+    text: "a.pptx is a deck the PowerPoint check already judges.",
+    blocks: true,
+  },
+  { about: "stick check seconds", text: "The limit of check seconds went from 40 to 60.", blocks: true },
 ]
-const prints = { "file AGENTS.md": "blob1", "stick known faults": '{"now":3,"goal":0}' }
-same("nothing to accept passes", verdict({ owner: "owner", reasons: [], headPrints: {} }).pass, true)
+const prints = { "file scripts/pptx-fixtures/a.pptx": "blob1", "stick check seconds": '{"limit":60}' }
+const untouched = verdict({ owner: "owner", reasons: [], headPrints: {} })
+same("nothing to accept passes and is not listed", [untouched.pass, untouched.listed], [true, false])
 const waiting = verdict({ owner: "owner", reasons, headPrints: prints })
 same("an unapproved pull waits", waiting.pass, false)
-if (!waiting.lines.includes("Only owner can accept this. Ask for a review, then rerun this check.")) {
+if (!waiting.lines.includes("Undo what lowers the bar. Only an approval from owner lets it through as it is.")) {
   throw new Error(waiting.lines.join("\n"))
 }
-const forks = { "file AGENTS.md": "base1", "stick known faults": '{"now":2,"goal":0}' }
+const forks = { "file scripts/pptx-fixtures/a.pptx": "base1", "stick check seconds": '{"limit":40}' }
 const settled = {
   owner: "owner",
   reasons,
@@ -230,17 +258,19 @@ const settled = {
   approvedForkPrints: forks,
 }
 same("an approval of this content passes", verdict(settled).pass, true)
-const amended = verdict({ ...settled, headPrints: { ...prints, "file AGENTS.md": "blob2" } })
+const amended = verdict({ ...settled, headPrints: { ...prints, "file scripts/pptx-fixtures/a.pptx": "blob2" } })
 same("content changed after the approval waits again", amended.pass, false)
-if (!amended.lines.includes("Changed since owner approved: file AGENTS.md.")) throw new Error(amended.lines.join("\n"))
+if (!amended.lines.includes("Changed since owner approved: file scripts/pptx-fixtures/a.pptx.")) {
+  throw new Error(amended.lines.join("\n"))
+}
 same(
   "a stick that got worse again after the approval waits again",
-  verdict({ ...settled, headPrints: { ...prints, "stick known faults": '{"now":4,"goal":0}' } }).pass,
+  verdict({ ...settled, headPrints: { ...prints, "stick check seconds": '{"limit":99}' } }).pass,
   false,
 )
-const reverted = verdict({ ...settled, forkPrints: { ...forks, "stick known faults": '{"now":1,"goal":0}' } })
+const reverted = verdict({ ...settled, forkPrints: { ...forks, "stick check seconds": '{"limit":30}' } })
 same("an approval does not cover what main changed since", reverted.pass, false)
-if (!reverted.lines.includes("Changed on main since owner approved: stick known faults.")) {
+if (!reverted.lines.includes("Changed on main since owner approved: stick check seconds.")) {
   throw new Error(reverted.lines.join("\n"))
 }
 

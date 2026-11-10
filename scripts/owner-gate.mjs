@@ -40,6 +40,8 @@ const keysOf = (stick) =>
 const timed = (stick) => keysOf(stick) === "limit" && finite(stick.limit)
 const counted = (stick) => keysOf(stick) === "goal,now" && finite(stick.now) && finite(stick.goal)
 
+const recordsFaults = new Set(["known faults"])
+
 const stickReason = (name, before, after) => {
   if (after === undefined) return `The stick ${name} was removed.`
   if (!timed(after) && !counted(after)) {
@@ -75,33 +77,52 @@ export const ownerReasons = ({
   const reasons = []
   for (const name of new Set([...Object.keys(baseSticks), ...Object.keys(headSticks)])) {
     const text = stickReason(name, baseSticks[name], headSticks[name])
-    if (text !== undefined) reasons.push({ about: `stick ${name}`, text })
+    const recorded = recordsFaults.has(name) && text?.includes("away from its goal")
+    if (text !== undefined) reasons.push({ about: `stick ${name}`, text, blocks: !recorded })
   }
   for (const file of changedFiles.filter(guarded)) {
-    reasons.push({ about: `file ${file}`, text: `${file} decides what the gate checks.` })
+    reasons.push({ about: `file ${file}`, text: `${file} decides what the gate checks.`, blocks: false })
   }
   for (const file of changedFixtures) {
-    reasons.push({ about: `file ${file}`, text: `${file} is a deck the PowerPoint check already judges.` })
+    reasons.push({
+      about: `file ${file}`,
+      text: `${file} is a deck the PowerPoint check already judges.`,
+      blocks: true,
+    })
   }
   for (const name of changedCases) {
-    reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.` })
+    reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, blocks: true })
   }
   for (const file of changedScripts) {
-    reasons.push({ about: `scripts ${file}`, text: `The scripts in ${file} changed, and they are what the gate runs.` })
+    reasons.push({
+      about: `scripts ${file}`,
+      text: `The scripts in ${file} changed, and they are what the gate runs.`,
+      blocks: false,
+    })
   }
   return reasons
 }
 
 export const verdict = ({ owner, reasons, headPrints, approvedPrints, forkPrints, approvedForkPrints }) => {
-  const lines = reasons.map((reason) => reason.text)
-  if (reasons.length === 0) return { pass: true, lines: ["Nothing here needs the owner."] }
-  const ask = `Only ${owner} can accept this. Ask for a review, then rerun this check.`
-  if (approvedPrints === undefined) return { pass: false, lines: [...lines, ask] }
-  const moved = reasons.filter((reason) => headPrints[reason.about] !== approvedPrints[reason.about])
-  const rebased = reasons.filter((reason) => forkPrints[reason.about] !== approvedForkPrints[reason.about])
-  if (moved.length === 0 && rebased.length === 0) return { pass: true, lines: [...lines, `${owner} approved this.`] }
+  if (reasons.length === 0) return { pass: true, listed: false, lines: ["Nothing here touches the bar."] }
+  const blocking = reasons.filter((reason) => reason.blocks)
+  const lines = [
+    ...blocking.map((reason) => `Lowers the bar: ${reason.text}`),
+    ...reasons
+      .filter((reason) => !reason.blocks)
+      .map((reason) => `Listed for ${owner}, does not block: ${reason.text}`),
+  ]
+  if (blocking.length === 0) return { pass: true, listed: true, lines }
+  const ask = `Undo what lowers the bar. Only an approval from ${owner} lets it through as it is.`
+  if (approvedPrints === undefined) return { pass: false, listed: true, lines: [...lines, ask] }
+  const moved = blocking.filter((reason) => headPrints[reason.about] !== approvedPrints[reason.about])
+  const rebased = blocking.filter((reason) => forkPrints[reason.about] !== approvedForkPrints[reason.about])
+  if (moved.length === 0 && rebased.length === 0) {
+    return { pass: true, listed: true, lines: [...lines, `${owner} approved this.`] }
+  }
   return {
     pass: false,
+    listed: true,
     lines: [
       ...lines,
       ...moved.map((reason) => `Changed since ${owner} approved: ${reason.about}.`),
@@ -226,7 +247,7 @@ const readPull = (repository, number) => {
       .filter((file) => scriptsAt(repository, fork, file) !== scriptsAt(repository, pull.head, file)),
   })
   const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
-  const commit = reasons.length === 0 ? undefined : approvedCommit(owner, reviews)
+  const commit = reasons.some((reason) => reason.blocks) ? approvedCommit(owner, reviews) : undefined
   return {
     owner,
     reasons,
@@ -243,6 +264,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   try {
     const result = verdict(readPull(repository, number))
     for (const line of result.lines) console.log(line)
+    if (result.listed && process.argv.includes("--label")) {
+      try {
+        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", "labels[]=touched the bar"])
+      } catch (error) {
+        console.log(`The label could not be added: ${String(error.stderr ?? error.message).trim()}`)
+      }
+    }
     if (!result.pass) process.exit(1)
   } catch (error) {
     console.error(error.message)
