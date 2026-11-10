@@ -1,10 +1,10 @@
-import { elementId } from "@airdesign/document"
+import { decide, elementId, openRegister } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
 import { readPackage, readShapes } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { expect, it, vi } from "vitest"
-import { commitEdit, elementNode, nodeA, ThinDeck } from "./thin-deck"
+import { commitEdit, elementNode, exportedParts, nodeA, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
   const sent: { value: string; node?: string }[] = []
@@ -219,4 +219,51 @@ it("saves under the id of the shape that was edited, not the first one", async (
 
 it("saves every edit under the id of the shape that was edited", async () => {
   expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"])).toEqual(["382.2", "382.2"])
+})
+
+it("paints before the commit is sent", async () => {
+  const order: string[] = []
+  void commitEdit(
+    () => {
+      return {
+        async enqueue() {
+          order.push("enqueue")
+          return { ok: true }
+        },
+        flush() {
+          order.push("flush")
+          return new Promise(() => undefined)
+        },
+      }
+    },
+    "Hello!",
+    "256.2",
+    () => {
+      order.push("paint")
+    },
+  )
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(order).toEqual(["enqueue", "paint", "flush"])
+})
+
+it("an export with no stored edit applies no route and keeps the stored parts", () => {
+  const node = { part: "ppt/slides/slide1.xml", shape: "2" }
+  const slide = new TextEncoder().encode(
+    '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
+  )
+  const parts = new Map([
+    ["ppt/presentation.xml", new TextEncoder().encode("<p:presentation/>")],
+    [node.part, slide],
+  ])
+  const empty = openRegister("", "clean")
+
+  expect(exportedParts(parts, node, empty)).toBe(parts)
+
+  const edited = decide(empty, { command: "person", value: "Hello!" })
+  if (edited.decision === "refuse") throw new Error("refused")
+  const next = exportedParts(parts, node, edited.register)
+  expect(new TextDecoder().decode(next.get(node.part)).match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
+  expect([...next.keys()]).toEqual([...parts.keys()])
+  expect(next.get("ppt/presentation.xml")).toBe(parts.get("ppt/presentation.xml"))
+  expect(parts.get(node.part)).toBe(slide)
 })

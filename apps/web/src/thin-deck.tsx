@@ -1,4 +1,4 @@
-import { currentValue, type Kind } from "@airdesign/document"
+import { currentValue, type Kind, type Register } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ShapeKind } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
@@ -85,6 +85,15 @@ export async function commitEdit(
     .catch(() => undefined)
 }
 
+export function exportedParts(
+  parts: ReadonlyMap<string, Uint8Array>,
+  node: { readonly part: string; readonly shape: string },
+  register: Register,
+): ReadonlyMap<string, Uint8Array> {
+  if (register.landed.length === 0) return parts
+  return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, text: currentValue(register) })
+}
+
 export function ThinDeck() {
   const store = useRef(paintStore())
   const nodes = useRef(nodeA)
@@ -140,13 +149,7 @@ export function ThinDeck() {
     if (!stored.ok) return
     const opened = await connect(memoryRemote()).openDeck(deckId)
     if (!opened.ok) return
-    const next = applyRoute(stored.parts, {
-      name: "text",
-      part: stored.nodes.a.part,
-      shape: stored.nodes.a.shape,
-      text: currentValue(opened.register),
-    })
-    const bytes = await exportPackage(next)
+    const bytes = await exportPackage(exportedParts(stored.parts, stored.nodes.a, opened.register))
     const copy = new Uint8Array(bytes.byteLength)
     copy.set(bytes)
     const url = URL.createObjectURL(new Blob([copy]))
