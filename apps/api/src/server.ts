@@ -19,10 +19,12 @@ export type ApiOptions = {
   readonly siteOrigin: string
   readonly cookieDomain?: string
   readonly now?: () => number
+  readonly hosts?: readonly string[]
 }
 
 const cookieName = "airdesign.session"
 const bodyCap = 1_000_000
+const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
 const plainHost = /^[A-Za-z0-9.-]+$/
 
@@ -229,7 +231,7 @@ async function handle(
   if (url.pathname === "/mcp") {
     const email = await signedIn(options, req, res)
     if (email === undefined) return
-    await serveMcp({ deck: options.deck, email, logs, now }, req, res)
+    await serveMcp({ deck: options.deck, email, logs, now, hosts: options.hosts ?? localHosts }, req, res)
     return
   }
   if (method === "POST" && url.pathname === "/sign-in/email") {

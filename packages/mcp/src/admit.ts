@@ -31,20 +31,26 @@ function sentence(kind: LimitKind, resetsAt: number): string {
   return `Twenty turns in five minutes. The next turn can start at ${at}.`
 }
 
+function live(log: CallerLog, now: number): CallerLog {
+  const events = log.events.filter((event) => now - event.at < windowOf[event.kind])
+  if (events.length === log.events.length) return log
+  return { events }
+}
+
 export function admit(log: CallerLog, kind: LimitKind, now: number): Admission {
+  const current = live(log, now)
   const window = windowOf[kind]
   let counted = 0
   let oldest: number | undefined
-  for (const event of log.events) {
+  for (const event of current.events) {
     if (event.kind !== kind) continue
-    if (now - event.at >= window) continue
     counted += 1
     if (oldest === undefined || event.at < oldest) oldest = event.at
   }
   if (counted >= limitOf[kind]) {
     if (oldest === undefined) throw new Error(kind)
     const resetsAt = oldest + window
-    return { ok: false, log, text: sentence(kind, resetsAt), resetsAt }
+    return { ok: false, log: current, text: sentence(kind, resetsAt), resetsAt }
   }
-  return { ok: true, log: { events: [...log.events, { kind, at: now }] } }
+  return { ok: true, log: { events: [...current.events, { kind, at: now }] } }
 }

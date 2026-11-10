@@ -28,7 +28,7 @@ describe("admit", () => {
     const next = admit(opened, "deck", 60_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
-    expect(next.log.events).toHaveLength(6)
+    expect(next.log.events).toHaveLength(5)
     expect(opened.events).toHaveLength(5)
   })
 
@@ -44,7 +44,7 @@ describe("admit", () => {
     const next = admit(called, "tool", 300_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
-    expect(next.log.events).toHaveLength(31)
+    expect(next.log.events).toHaveLength(30)
     expect(called.events).toHaveLength(30)
   })
 
@@ -60,7 +60,7 @@ describe("admit", () => {
     const next = admit(turned, "turn", 300_000)
     expect(next.ok).toBe(true)
     if (!next.ok) return
-    expect(next.log.events).toHaveLength(21)
+    expect(next.log.events).toHaveLength(20)
     expect(turned.events).toHaveLength(20)
   })
 
@@ -73,6 +73,25 @@ describe("admit", () => {
     expect(admitted.log).not.toBe(first)
     expect(second.events).toHaveLength(0)
     expect(admit(first, "deck", 0).ok).toBe(false)
+  })
+
+  it("drops tool events that have left the window and still refuses a full window", () => {
+    let log = emptyLog()
+    let now = 0
+    for (let call = 0; call < 1000; call += 1) {
+      const admitted = admit(log, "tool", now)
+      expect(admitted.ok).toBe(true)
+      if (!admitted.ok) throw new Error(admitted.text)
+      log = admitted.log
+      expect(log.events.length).toBeLessThanOrEqual(30)
+      now += 10_000
+    }
+    const filled = take(emptyLog(), "tool", 30, () => 5_000_000)
+    const refused = admit(filled, "tool", 5_000_000)
+    expect(refused.ok).toBe(false)
+    if (refused.ok) return
+    expect(refused.log.events).toHaveLength(30)
+    expect(refused.text).toBe("Thirty tool calls in five minutes. The next tool call can run at 5300000.")
   })
 
   it("counts a deck apart from a tool call and a turn", () => {

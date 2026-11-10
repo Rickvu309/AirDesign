@@ -189,7 +189,7 @@ describe("createServer", () => {
         { actor: "agent", value: "21", visible: true, runId: "run" },
       ])
       expect(deck.revision).toBe(0)
-      expect(session.log.events).toHaveLength(31)
+      expect(session.log.events).toEqual([{ kind: "tool", at: 300_000 }])
     })
   })
 })

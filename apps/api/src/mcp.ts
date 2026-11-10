@@ -12,20 +12,18 @@ import {
   type Session,
   type ToolResult,
 } from "@airdesign/mcp"
-import { localhostHostValidation, localhostOriginValidation, toNodeHandler } from "@modelcontextprotocol/node"
+import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import type { Sql } from "./pool.js"
 import { readSaved, writeRevision } from "./saved.js"
-
-const validateHost = localhostHostValidation()
-const validateOrigin = localhostOriginValidation()
 
 export type McpHost = {
   readonly deck: Sql
   readonly email: string
   readonly logs: Map<string, CallerLog>
   readonly now: () => number
+  readonly hosts: readonly string[]
 }
 
 function namedDeck(
@@ -55,14 +53,23 @@ function mcpRequest(req: IncomingMessage) {
 }
 
 export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!validateHost(req, res) || !validateOrigin(req, res)) return
+  const names = [...host.hosts]
+  if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
-  const found = host.logs.get(host.email)
-  const log = found ?? emptyLog()
-  if (found === undefined) host.logs.set(host.email, log)
+  if (!host.logs.has(host.email)) host.logs.set(host.email, emptyLog())
   const caller = { actor: "agent" as const, runId: randomUUID(), readAt: 0 }
-  const session: Session = { caller, deck: openDeck(pending.deck), log, now: host.now() }
+  const session: Session = {
+    caller,
+    deck: openDeck(pending.deck),
+    get log() {
+      return host.logs.get(host.email) ?? emptyLog()
+    },
+    set log(value) {
+      host.logs.set(host.email, value)
+    },
+    now: host.now(),
+  }
   let loaded: Deck = session.deck
   const bridge: Host = {
     prepare: async (_name, raw) => {
@@ -81,7 +88,6 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   try {
     await toNodeHandler(handler)(mcpRequest(req), res)
   } finally {
-    host.logs.set(host.email, session.log)
     await handler.close()
   }
 }
