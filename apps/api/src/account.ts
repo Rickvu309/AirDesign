@@ -207,6 +207,19 @@ export async function acceptLink(db: Sql, linkToken: string): Promise<string | u
   return token
 }
 
+const smokeSessionSql = `
+with account as (
+  insert into session.account (email) values ($1) on conflict (email) do nothing
+)
+insert into session.access (token, email, issued) values ($2, $1, now())
+`
+
+export async function openSmokeSession(db: Sql, email: string): Promise<string> {
+  const token = newToken()
+  await db.query(smokeSessionSql, [email, digest(token)])
+  return token
+}
+
 export async function findAccess(db: Sql, token: string): Promise<string | undefined> {
   const result = await db.query<{ email: string }>(
     "select email from session.access where token = $1 and issued > now() - interval '30 days'",

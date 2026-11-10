@@ -13,6 +13,8 @@ export type StartSettings = {
   readonly resource: string
   readonly cookieDomain: string | undefined
   readonly hosts: readonly string[] | undefined
+  readonly commit: string | undefined
+  readonly smokeToken: string | undefined
 }
 
 export type StartRefusal = { readonly refusal: string }
@@ -44,6 +46,10 @@ function configuredHosts(text: string | undefined): readonly string[] | undefine
   return names.length === 0 ? undefined : names
 }
 
+function nonEmpty(text: string | undefined): string | undefined {
+  return text === undefined || text.length === 0 ? undefined : text
+}
+
 export function readStartSettings(env: Environment): StartSettings | StartRefusal {
   const missing = databaseNames.filter((name) => (env[name] ?? "").length === 0)
   if (missing.length > 0) return { refusal: missing.join(" ") }
@@ -67,5 +73,7 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     resource,
     cookieDomain: cookieText === "" ? undefined : cookieText,
     hosts: configuredHosts(env.API_HOSTS),
+    commit: nonEmpty(env.RAILWAY_GIT_COMMIT_SHA),
+    smokeToken: nonEmpty(env.SMOKE_TOKEN),
   }
 }

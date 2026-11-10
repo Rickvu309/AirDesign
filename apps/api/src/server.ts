@@ -1,10 +1,10 @@
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 
 import { readWatch, type DeckId } from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
-import { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
+import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession, readCode, readEmail } from "./account.js"
 import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 import type { Answer } from "./answer.js"
 import { registerClient } from "./clients.js"
@@ -30,8 +30,12 @@ export type ApiOptions = {
   readonly hosts?: readonly string[]
   readonly logs?: Map<string, CallerLog>
   readonly resource: string
+  readonly commit?: string
+  readonly smokeToken?: string
 }
 
+export const smokeEmail = "smoke@airdesign.app"
+const smokeBearer = /^Bearer (.+)$/
 const cookieName = "airdesign.session"
 export const bodyCap = 1_000_000
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
@@ -188,6 +192,23 @@ async function hold(
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
   }
+}
+
+function sameSecret(given: string, expected: string): boolean {
+  const left = createHash("sha256").update(given).digest()
+  const right = createHash("sha256").update(expected).digest()
+  return timingSafeEqual(left, right)
+}
+
+async function smokeRoute(options: ApiOptions, token: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const given = smokeBearer.exec(req.headers.authorization ?? "")?.[1]
+  if (given === undefined || !sameSecret(given, token)) {
+    res.writeHead(404)
+    res.end()
+    return
+  }
+  const session = await openSmokeSession(options.session, smokeEmail)
+  sendJson(res, 200, { ok: true }, sessionCookie(session, options.cookieDomain))
 }
 
 async function emailRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -348,6 +369,14 @@ async function handle(
   const method = req.method ?? "GET"
   if (method === "GET" && url.pathname === "/health") {
     sendJson(res, 200, { ok: true })
+    return
+  }
+  if (method === "GET" && url.pathname === "/version") {
+    sendJson(res, 200, { commit: options.commit ?? "unknown" })
+    return
+  }
+  if (method === "POST" && url.pathname === "/smoke/session" && options.smokeToken !== undefined) {
+    await smokeRoute(options, options.smokeToken, req, res)
     return
   }
   if (url.pathname === "/mcp") {

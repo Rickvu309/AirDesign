@@ -32,7 +32,28 @@ describe("readStartSettings", () => {
       resource: good.MCP_RESOURCE,
       cookieDomain: "link.example",
       hosts: ["a.example", "b.example"],
+      commit: undefined,
+      smokeToken: undefined,
     })
+  })
+
+  it("reads the commit and the smoke token", () => {
+    expect(readStartSettings({ ...good, RAILWAY_GIT_COMMIT_SHA: "abc123", SMOKE_TOKEN: "smoke-secret" })).toMatchObject({
+      commit: "abc123",
+      smokeToken: "smoke-secret",
+    })
+  })
+
+  it("leaves the commit and the smoke token absent when empty or unset", () => {
+    expect(readStartSettings(good)).toMatchObject({ commit: undefined, smokeToken: undefined })
+    expect(readStartSettings({ ...good, RAILWAY_GIT_COMMIT_SHA: "", SMOKE_TOKEN: "" })).toMatchObject({
+      commit: undefined,
+      smokeToken: undefined,
+    })
+  })
+
+  it("does not refuse to start for a missing commit or smoke token", () => {
+    expect(refused({ RAILWAY_GIT_COMMIT_SHA: undefined, SMOKE_TOKEN: undefined })).toBeUndefined()
   })
 
   it("defaults the port, the cookie domain and the hosts", () => {
