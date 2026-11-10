@@ -1,4 +1,4 @@
-import { spawnSync } from "node:child_process"
+import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
@@ -10,15 +10,17 @@ const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
 
-const run = (command, args) => {
-  const result = spawnSync(command, args, { cwd: root, encoding: "utf8", env: process.env })
-  if (result.status !== 0) throw new Error((result.stderr || result.stdout || `${command} failed`).trim())
-  return result.stdout
-}
+const run = (command, args) =>
+  new Promise((resolve, reject) => {
+    execFile(command, args, { cwd: root, env: process.env, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
+      if (error) reject(new Error((stderr || stdout || `${command} failed`).trim()))
+      else resolve(stdout)
+    })
+  })
 
-const validatorLists = (files) => {
+const validatorLists = async (files) => {
   const lists = new Map()
-  const output = run(dotnet, ["run", "--project", "scripts/pptx-judge", "-v", "q", "--", ...files])
+  const output = await run(dotnet, ["run", "--project", "scripts/pptx-judge", "-v", "q", "--", ...files])
   for (const line of output.split("\n")) {
     if (!line.startsWith("{")) continue
     const row = JSON.parse(line)
@@ -27,11 +29,11 @@ const validatorLists = (files) => {
   return lists
 }
 
-const pageHashes = (file) => {
+const renderPages = async (file) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-page-"))
   const out = path.join(dir, "out")
   fs.mkdirSync(out)
-  run(soffice, [
+  await run(soffice, [
     `-env:UserInstallation=file://${path.join(dir, "profile")}`,
     "--headless",
     "--norestore",
@@ -43,8 +45,8 @@ const pageHashes = (file) => {
   ])
   const pdf = fs.readdirSync(out).find((name) => name.endsWith(".pdf"))
   if (pdf === undefined) throw new Error(file)
-  run("pdftoppm", ["-png", path.join(out, pdf), path.join(dir, "page")])
-  return fs
+  await run("pdftoppm", ["-png", path.join(out, pdf), path.join(dir, "page")])
+  const hashes = fs
     .readdirSync(dir)
     .filter((name) => /^page-\d+\.png$/.test(name))
     .sort((left, right) => Number(/\d+/.exec(left)?.[0]) - Number(/\d+/.exec(right)?.[0]))
@@ -53,14 +55,29 @@ const pageHashes = (file) => {
         .update(fs.readFileSync(path.join(dir, name)))
         .digest("hex"),
     )
+  fs.rmSync(dir, { recursive: true, force: true })
+  return hashes
 }
 
-run("pnpm", ["--filter", "@airdesign/pptx", "build"])
+await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => path.join(fixtures, name)
-const lists = validatorLists(names.map(fixturePath))
+const secondRender = (name) => `${name} again`
+const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
+const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))]
+const rendered = new Map()
+const renderNext = async () => {
+  for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
+    const name = render.endsWith(" again") ? render.slice(0, -" again".length) : render
+    rendered.set(render, await renderPages(fixturePath(name)))
+  }
+}
+const [lists] = await Promise.all([
+  validatorLists(names.map(fixturePath)),
+  ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
+])
 const parts = new Map()
 for (const name of names) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
@@ -69,8 +86,8 @@ for (const row of cases) {
   const errors = pptx.newValidatorErrors(lists.get(row.before), lists.get(row.after))
   const dupes = pptx.newDuplicateShapeIds(ids.get(row.before), ids.get(row.after))
   const pages = pptx.exactPageCheck({
-    before: pageHashes(fixturePath(row.before)),
-    after: pageHashes(fixturePath(row.after)),
+    before: rendered.get(row.before),
+    after: rendered.get(afterRender(row)),
     targeted: row.targeted,
     visible: row.visible,
   })
