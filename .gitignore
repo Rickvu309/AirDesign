@@ -7,3 +7,5 @@ blob-report/
 
 scripts/pptx-judge/bin/
 scripts/pptx-judge/obj/
+
+.stryker-tmp/

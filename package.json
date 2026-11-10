@@ -13,6 +13,7 @@
     "check:boundaries": "node scripts/check-boundaries.mjs",
     "check:specs": "node scripts/check-specs.mjs",
     "check:pptx": "bash scripts/pptx-tools.sh node scripts/pptx-check.mjs",
+    "check:mutation": "node scripts/check-mutation.mjs",
     "test": "pnpm test:unit && pnpm test:tooling",
     "test:unit": "vitest run",
     "test:tooling": "node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/sticks.test.mjs && node scripts/check-specs.test.mjs",
@@ -22,6 +23,8 @@
   "devDependencies": {
     "@astrojs/compiler": "^4.0.0",
     "@playwright/test": "1.65.0",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "fast-check": "4.10.2",
     "oxc-parser": "^0.157.0",
     "oxfmt": "0.78.0",
