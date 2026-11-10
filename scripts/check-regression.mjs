@@ -233,6 +233,12 @@ export const sandboxed = ({ env, command, runsInCi, seconds = proofSeconds }) =>
   ...command,
 ]
 
+export const withLoopback = (argv) => {
+  const split = argv.indexOf("--")
+  if (argv[0] !== "sudo" || split === -1) return argv
+  return [...argv.slice(0, split + 1), "sh", "-c", 'ip link set lo up && exec "$@"', "sh", ...argv.slice(split + 1)]
+}
+
 const found = (need) => {
   try {
     return needFinders[need]() ?? true
@@ -291,7 +297,7 @@ export const runProof = (
         ]
       : [process.execPath, path.join(baseRoot, proofRun), file]
   const env = proofEnv({ home, nodeFolder: path.dirname(process.execPath), tools: tools() })
-  const [program, ...args] = sandboxed({ env, command, runsInCi, seconds })
+  const [program, ...args] = withLoopback(sandboxed({ env, command, runsInCi, seconds }))
   const result = spawnSync(program, args, {
     cwd: baseRoot,
     input: runner === "node" ? `${token}\n` : "",
@@ -365,7 +371,9 @@ const openToSandbox = (baseRoot) => {
   }
   const home = scratchHome(true)
   const env = proofEnv({ home, nodeFolder: path.dirname(process.execPath) })
-  const [program, ...args] = sandboxed({ env, command: [process.execPath, "-e", sandboxProbe], runsInCi: true })
+  const [program, ...args] = withLoopback(
+    sandboxed({ env, command: [process.execPath, "-e", sandboxProbe], runsInCi: true }),
+  )
   const probe = spawnSync(program, args, { cwd: baseRoot, encoding: "utf8", timeout: 60000 })
   const seen = readReportText(probe.stdout)
   if (probe.status !== 0 || seen?.user !== unprivileged || seen.locked !== true || seen.offline !== true) {
