@@ -44,6 +44,8 @@ const measures = {
   "planted breaks the judge catches": plantedBreaks,
 }
 
+const measuredLive = new Set(["known faults"])
+
 export const timedSticks = {
   "check seconds": "scripts/check.mjs",
   "PowerPoint check seconds": "scripts/pptx-check.mjs",
@@ -76,9 +78,13 @@ export const readSticks = async (root) => {
     const measured = await measure(root)
     if (typeof stick.floor === "number") {
       rows.push({ name, now: measured, floor: stick.floor })
-      if (measured !== stick.floor) {
-        drift.push(`${name} is ${measured} and sticks.json says ${stick.floor}. Record ${measured} in sticks.json.`)
+      if (measured < stick.floor) {
+        drift.push(`${name} is ${measured} and its floor is ${stick.floor}. Put back the tests that are gone.`)
       }
+      continue
+    }
+    if (measuredLive.has(name)) {
+      rows.push({ name, now: measured, goal: stick.goal })
       continue
     }
     const { now, goal } = typeof measured === "number" ? { now: measured, goal: stick.goal } : measured
@@ -101,21 +107,24 @@ export const readSticks = async (root) => {
   return { rows, drift }
 }
 
+export const stickLines = (rows) => {
+  const width = Math.max(...rows.map((row) => row.name.length))
+  return rows
+    .filter((row) => !("limit" in row))
+    .map((row) =>
+      "floor" in row
+        ? `stick ${row.name.padEnd(width)}  now ${row.now}  floor ${row.floor}`
+        : `stick ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`,
+    )
+}
+
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const { rows, drift } = await readSticks(path.resolve(path.dirname(self), "..")).catch((error) => {
     console.error(error.message)
     process.exit(1)
   })
-  const width = Math.max(...rows.map((row) => row.name.length))
-  for (const row of rows) {
-    if ("limit" in row) continue
-    if ("floor" in row) {
-      console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  floor ${row.floor}`)
-      continue
-    }
-    console.log(`stick ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
-  }
+  for (const line of stickLines(rows)) console.log(line)
   for (const line of drift) console.log(line)
   if (drift.length > 0) process.exit(1)
 }

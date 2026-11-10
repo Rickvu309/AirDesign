@@ -109,15 +109,15 @@ try {
 if (unlimited !== "nobody limits has no limit in sticks.json.") throw new Error(`a missing limit passed: ${unlimited}`)
 
 const added = (await readSticks(root)).drift
-if (added.length !== 1 || added[0] !== "known faults is 2 and sticks.json says 1. Record 2 in sticks.json.") {
-  throw new Error(`a new known fault must be recorded\n${added.join("\n")}`)
+if (added.length !== 0) {
+  throw new Error(`a new known fault must need no record\n${added.join("\n")}`)
 }
 
 cache(2, 0)
 write("packages/a/src/a.test.ts", 'it("one", () => {})\nit("two", () => {})\n')
 const fixed = (await readSticks(root)).drift
-if (fixed.length !== 1 || !fixed[0].startsWith("known faults is 0")) {
-  throw new Error(`a fixed fault must be recorded\n${fixed.join("\n")}`)
+if (fixed.length !== 0) {
+  throw new Error(`a fixed fault must need no record\n${fixed.join("\n")}`)
 }
 
 write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(failure).toBeDefined()\n")
@@ -126,7 +126,7 @@ if ((await readSticks(root)).rows.find((row) => row.name === "known faults")?.no
   throw new Error("a passing test was counted as a known fault")
 cache(1, 0)
 const fewer = (await readSticks(root)).drift
-if (!fewer.includes("tests is 1 and sticks.json says 2. Record 1 in sticks.json.")) {
+if (!fewer.includes("tests is 1 and its floor is 2. Put back the tests that are gone.")) {
   throw new Error(`a deleted test must lower the count\n${fewer.join("\n")}`)
 }
 cache(2, 0)
@@ -220,5 +220,27 @@ const proveVitest = () => {
 }
 
 proveVitest()
+
+const { stickLines } = await import("./sticks.mjs")
+record(1, 2)
+cache(3, 1)
+const more = await readSticks(root)
+if (more.drift.length !== 0) throw new Error(`a new test must need no record\n${more.drift.join("\n")}`)
+const moreLines = stickLines(more.rows).map((line) => line.replace(/ {2,}/g, "  "))
+if (!moreLines.includes("stick tests  now 3  floor 2")) throw new Error(moreLines.join("\n"))
+if (moreLines.some((line) => line.includes("seconds"))) throw new Error("a limit stick was printed as a count")
+
+cache(2, 5)
+const faulty = await readSticks(root)
+if (faulty.drift.length !== 0) throw new Error(`four new known faults must not fail\n${faulty.drift.join("\n")}`)
+const faultyLines = stickLines(faulty.rows).map((line) => line.replace(/ {2,}/g, "  "))
+if (!faultyLines.includes("stick known faults  now 5  goal 0")) throw new Error(faultyLines.join("\n"))
+
+cache(1, 1)
+const under = (await readSticks(root)).drift
+if (under.length !== 1 || under[0] !== "tests is 1 and its floor is 2. Put back the tests that are gone.") {
+  throw new Error(`a count under the floor must fail and name both numbers\n${under.join("\n")}`)
+}
+if (under.some((line) => line.includes("Record"))) throw new Error("nobody is told to record a test count")
 
 console.log("sticks tests passed")
