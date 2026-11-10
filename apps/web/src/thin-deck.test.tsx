@@ -261,13 +261,18 @@ async function renderedDeck(
   return window
 }
 
-function boxShowing(window: Window, text: string): Element {
+function boxShowing(window: Window & typeof globalThis, text: string): Element {
   const found = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === text)
   if (found === undefined) throw new Error(text)
   return found
 }
 
-async function typeInto(window: Window, box: Element, value: string, flushes: number): Promise<void> {
+async function typeInto(
+  window: Window & typeof globalThis,
+  box: Element,
+  value: string,
+  flushes: number,
+): Promise<void> {
   box.textContent = value
   const flushed = live.reached("flush", flushes)
   await act(async () => {
