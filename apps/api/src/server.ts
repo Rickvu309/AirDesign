@@ -23,7 +23,7 @@ const bodyCap = 1_000_000
 
 const plainHost = /^[A-Za-z0-9.-]+$/
 
-function requireOrigin(name: string, value: string): void {
+export function requireOrigin(name: string, value: string): void {
   let parsed: URL
   try {
     parsed = new URL(value)
@@ -35,7 +35,7 @@ function requireOrigin(name: string, value: string): void {
   }
 }
 
-function requireDomain(cookieDomain: string | undefined): void {
+export function requireDomain(cookieDomain: string | undefined): void {
   if (cookieDomain === undefined) return
   if (!plainHost.test(cookieDomain)) throw new Error("cookieDomain is not a plain host name")
 }

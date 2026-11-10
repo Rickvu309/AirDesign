@@ -1,6 +1,6 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process"
 import { randomBytes } from "node:crypto"
-import { mkdir, writeFile } from "node:fs/promises"
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { connect, createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
@@ -31,9 +31,14 @@ function freePort(): Promise<number> {
 }
 
 function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = { ...process.env }
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    PUBLIC_ORIGIN: "https://app.example",
+    SITE_ORIGIN: "https://site.example",
+  }
   delete env.FORCE_COLOR
   delete env.NO_COLOR
+  delete env.COOKIE_DOMAIN
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined) delete env[name]
     else env[name] = value
@@ -112,6 +117,36 @@ describe("start entry", () => {
     child?.kill()
     child = undefined
   })
+
+  async function refusedStart(
+    values: Record<string, string | undefined>,
+  ): Promise<{ readonly code: number | null; readonly stderr: string }> {
+    const info = await postgresInfo()
+    const port = await freePort()
+    const running = spawnEntry(
+      childEnv({
+        PORT: String(port),
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+        ...values,
+      }),
+    )
+    child = running
+    let limit: NodeJS.Timeout | undefined
+    const result = await Promise.race([
+      stopped(running),
+      new Promise<{ code: number | null; stderr: string }>((resolve) => {
+        limit = setTimeout(() => resolve({ code: null, stderr: "" }), 15_000)
+      }),
+    ])
+    clearTimeout(limit)
+    running.kill()
+    child = undefined
+    return result
+  }
+
+  const notOrigins = [undefined, "", "http://app.example", "https://app.example/path", "https://app.example/", "app"]
 
   it("starts on a port and answers a sign-in request", async () => {
     const info = await postgresInfo()
@@ -283,5 +318,83 @@ describe("start entry", () => {
     await untilHealth(port, child)
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
     expect(response.status).toBe(500)
+  }, 20_000)
+
+  it("exits when the public origin is missing or not an origin", async () => {
+    for (const value of notOrigins) {
+      const result = await refusedStart({ PUBLIC_ORIGIN: value })
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe("PUBLIC_ORIGIN\n")
+    }
+  }, 60_000)
+
+  it("exits when the site origin is missing or not an origin", async () => {
+    for (const value of notOrigins) {
+      const result = await refusedStart({ SITE_ORIGIN: value })
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe("SITE_ORIGIN\n")
+    }
+  }, 60_000)
+
+  it("exits when the cookie domain is not a host name", async () => {
+    for (const value of ["app.example; SameSite=None", "https://app.example", "app example"]) {
+      const result = await refusedStart({ COOKIE_DOMAIN: value })
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe("COOKIE_DOMAIN\n")
+    }
+  }, 60_000)
+
+  it("sets the cookie domain and link origin from the environment", async () => {
+    const info = await postgresInfo()
+    const port = await freePort()
+    const stem = path.join(os.tmpdir(), `airdesign-resend-${randomBytes(4).toString("hex")}`)
+    const preload = `${stem}.mjs`
+    const capture = `${stem}.json`
+    await mkdir(path.dirname(preload), { recursive: true })
+    await writeFile(
+      preload,
+      [
+        'import { writeFileSync } from "node:fs"',
+        "globalThis.fetch = async (_url, init) => {",
+        `  writeFileSync(${JSON.stringify(capture)}, String(init.body))`,
+        '  return new Response("{}", { status: 200 })',
+        "}",
+        "",
+      ].join("\n"),
+    )
+    const email = `person${randomBytes(4).toString("hex")}@example.com`
+    try {
+      child = spawnEntry(
+        childEnv({
+          PORT: String(port),
+          SESSION_DATABASE_URL: info.session,
+          DECK_DATABASE_URL: info.deck,
+          LISTEN_DATABASE_URL: info.listen,
+          RESEND_API_KEY: "test-key",
+          RESEND_FROM: "sign-in@localhost",
+          PUBLIC_ORIGIN: "https://link.example",
+          SITE_ORIGIN: "https://home.example",
+          COOKIE_DOMAIN: "link.example",
+        }),
+        ["--import", preload],
+      )
+      await untilHealth(port, child)
+      const base = `http://127.0.0.1:${String(port)}`
+      const response = await ask(base, "POST", "/sign-in/email", { email })
+      expect(response.status).toBe(202)
+      const posted = JSON.parse(await readFile(capture, "utf8")) as { readonly text: string }
+      const link = posted.text.split("\n")[0] ?? ""
+      expect(link.startsWith("https://link.example/sign-in/link?token=")).toBe(true)
+      const url = new URL(link)
+      const opened = await ask(base, "GET", `${url.pathname}${url.search}`)
+      expect(opened.status).toBe(302)
+      expect(opened.headers.location).toBe("/")
+      expect(opened.headers["set-cookie"]?.[0]).toContain("; Domain=link.example")
+      const used = await ask(base, "GET", `${url.pathname}${url.search}`)
+      expect(used.headers.location).toBe("https://home.example/sign-in/expired")
+    } finally {
+      await rm(preload, { force: true })
+      await rm(capture, { force: true })
+    }
   }, 20_000)
 })
