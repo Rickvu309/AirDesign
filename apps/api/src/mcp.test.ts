@@ -53,6 +53,17 @@ function otherEdit(deck: string) {
   return { deck, base: 1, changes: [{ value: "no", node: element, readAt: 1 }] }
 }
 
+function editCall(deck: string) {
+  return {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: { name: "airdesign_edit_deck", arguments: firstEdit(deck) },
+  }
+}
+
+const sessionRefusal = { ok: false, refusal: "session" }
+
 function elementOf(stored: Stored | undefined, node = element): StoredElement {
   const body = stored?.register.elements[node]
   if (body === undefined) throw new Error("missing element")
@@ -176,11 +187,15 @@ describe("mcp route", () => {
     }
   }
 
-  async function posted(target: string, headers: Record<string, string>): Promise<{ status: number; text: string }> {
+  async function posted(
+    target: string,
+    headers: Record<string, string>,
+    body: unknown,
+  ): Promise<{ status: number; text: string }> {
     const response = await fetchAt(target, headers)(`${target}/mcp`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: "{}",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream" },
+      body: JSON.stringify(body),
     })
     return { status: response.status, text: await response.text() }
   }
@@ -239,13 +254,164 @@ describe("mcp route", () => {
     }
   }
 
+  async function ownServer(
+    mark: string,
+    fields: { readonly deck?: Sql; readonly now?: () => number; readonly session?: (pool: Sql) => Sql },
+  ): Promise<{ readonly base: string; readonly close: () => Promise<void> }> {
+    const info = await postgresInfo()
+    const session = openPool(info.session, `mcp-${mark}-session`)
+    const stored = openPool(info.deck, `mcp-${mark}-deck`)
+    const listen = new DeckListen(info.listen)
+    const served = await serve({
+      session: fields.session?.(session) ?? session,
+      deck: fields.deck ?? stored,
+      listen,
+      now: fields.now ?? (() => 1_000_000),
+      send: async () => undefined,
+    })
+    return {
+      base: served.base,
+      close: async () => {
+        await served.close()
+        await listen.close()
+        await session.end()
+        await stored.end()
+      },
+    }
+  }
+
+  function heldCapture(target: string, cookie: string, id: string): { release: () => void; answer: Promise<string> } {
+    const payload = Buffer.from(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "airdesign_capture_slide", arguments: { deck: id } },
+      }),
+    )
+    const url = new URL(`${target}/mcp`)
+    let release = () => {}
+    const answer = new Promise<string>((resolve, reject) => {
+      const sent = httpRequest(
+        {
+          hostname: "127.0.0.1",
+          port: url.port,
+          path: url.pathname,
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+            "content-length": String(payload.length),
+            cookie,
+          },
+        },
+        (res) => {
+          const chunks: Buffer[] = []
+          res.on("data", (chunk: Buffer) => chunks.push(chunk))
+          res.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")))
+        },
+      )
+      sent.on("error", reject)
+      sent.write(payload.subarray(0, 1))
+      release = () => sent.end(payload.subarray(1))
+    })
+    return { release, answer }
+  }
+
   it("refuses mcp without a session", async () => {
-    const missing = await ask(base, "POST", "/mcp", {})
-    const unknown = await ask(base, "POST", "/mcp", {}, "airdesign.session=missing")
-    expect(missing.status).toBe(401)
-    expect(missing.json).toEqual({ ok: false, refusal: "session" })
-    expect(unknown.status).toBe(401)
-    expect(unknown.json).toEqual({ ok: false, refusal: "session" })
+    const { id } = await openedDeck("unsigned")
+    const before = await row(id)
+    const missing = await posted(base, {}, editCall(id))
+    expect({ status: missing.status, text: missing.text, stored: await row(id) }).toEqual({
+      status: 401,
+      text: JSON.stringify(sessionRefusal),
+      stored: before,
+    })
+    const unknown = await posted(base, { cookie: "airdesign.session=missing" }, editCall(id))
+    expect({ status: unknown.status, text: unknown.text, stored: await row(id) }).toEqual({
+      status: 401,
+      text: JSON.stringify(sessionRefusal),
+      stored: before,
+    })
+  })
+
+  it("answers session for a malformed cookie on mcp and a deck route", async () => {
+    const { id } = await openedDeck("malformed")
+    const before = await row(id)
+    for (const value of ["%", "%E0%A4%A", "%00"]) {
+      const cookie = `airdesign.session=${value}`
+      const mcp = await posted(base, { cookie }, editCall(id))
+      expect({ status: mcp.status, text: mcp.text }).toEqual({ status: 401, text: JSON.stringify(sessionRefusal) })
+      const opened = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
+      expect({ status: opened.status, json: opened.json }).toEqual({ status: 401, json: sessionRefusal })
+      expect(await row(id)).toEqual(before)
+    }
+  })
+
+  it("answers session to an unsigned request whose host is not allowed", async () => {
+    const { id } = await openedDeck("unsignedhost")
+    const before = await row(id)
+    const unsigned = await posted(base, { host: "evil.example" }, editCall(id))
+    expect(unsigned.status).toBe(401)
+    expect(JSON.parse(unsigned.text)).toEqual(sessionRefusal)
+    expect(await row(id)).toEqual(before)
+  })
+
+  it("counts a call refused as deck, owner, field or a store failure toward the thirty", async () => {
+    const broken = await ownServer("uncounted", {
+      deck: { query: () => Promise.reject(new Error("connect ECONNREFUSED")) } as unknown as Sql,
+    })
+    try {
+      const foreign = await openedDeck("theirs")
+      const opened = await openedDeck("field")
+      const cases = [
+        { text: "deck", target: base, cookie: await sign(address("nodeck")), id: deckName(), extra: {} },
+        { text: "owner", target: base, cookie: await sign(address("noowner")), id: foreign.id, extra: {} },
+        { text: "field", target: base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
+        { text: storeFailure, target: broken.base, cookie: await sign(address("nostore")), id: deckName(), extra: {} },
+      ]
+      for (const item of cases) {
+        await withMcp(
+          item.cookie,
+          async (client) => {
+            for (let call = 0; call < 30; call += 1) {
+              expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(item.text)
+            }
+            expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(toolLimit)
+          },
+          item.target,
+        )
+      }
+      expect((await row(foreign.id))?.revision).toBe(0)
+      expect((await row(opened.id))?.revision).toBe(0)
+    } finally {
+      await broken.close()
+    }
+  })
+
+  it("refuses the thirty-first tool call until the injected clock leaves the window", async () => {
+    let clock = 1_000_000
+    const served = await ownServer("clock", { now: () => clock })
+    try {
+      const { id, cookie } = await openedDeck("clock")
+      await withMcp(
+        cookie,
+        async (client) => {
+          for (let call = 0; call < 30; call += 1) {
+            const captured = await client.callTool({ name: "airdesign_capture_slide", arguments: { deck: id } })
+            expect(captured.content).toEqual([{ type: "text", text: captureNext }])
+          }
+          expect(await editText(client, firstEdit(id))).toBe(toolLimit)
+          expect((await row(id))?.revision).toBe(0)
+          clock += 300_000
+          expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
+        },
+        served.base,
+      )
+      expect(values(await row(id))).toEqual(["21"])
+    } finally {
+      await served.close()
+    }
   })
 
   it("lands two edits in one run and keeps the server run id", async () => {
@@ -519,10 +685,14 @@ describe("mcp route", () => {
   })
 
   it("allows a configured host and refuses any other host or origin", async () => {
-    const unsigned = await posted(publicBase, { host: "mcp.airdesign.app" })
-    expect(unsigned.status).toBe(401)
-    expect(JSON.parse(unsigned.text)).toEqual({ ok: false, refusal: "session" })
-    const cookie = await sign(address("host"))
+    const { id, cookie } = await openedDeck("host")
+    const before = await row(id)
+    const unsigned = await posted(publicBase, { host: "mcp.airdesign.app" }, editCall(id))
+    expect({ status: unsigned.status, json: JSON.parse(unsigned.text), stored: await row(id) }).toEqual({
+      status: 401,
+      json: sessionRefusal,
+      stored: before,
+    })
     await withMcp(
       cookie,
       async (client) => {
@@ -532,42 +702,53 @@ describe("mcp route", () => {
       publicBase,
       { host: "mcp.airdesign.app" },
     )
-    const foreign = await posted(base, { host: "evil.example", cookie })
-    expect(foreign.status).toBe(403)
+    const foreign = await posted(base, { host: "evil.example", cookie }, editCall(id))
+    expect({ status: foreign.status, stored: await row(id) }).toEqual({ status: 403, stored: before })
     expect(foreign.text).toContain("Invalid Host")
-    const origin = await posted(publicBase, {
-      host: "mcp.airdesign.app",
-      origin: "https://evil.example",
-      cookie,
-    })
-    expect(origin.status).toBe(403)
+    const origin = await posted(
+      publicBase,
+      { host: "mcp.airdesign.app", origin: "https://evil.example", cookie },
+      editCall(id),
+    )
+    expect({ status: origin.status, stored: await row(id) }).toEqual({ status: 403, stored: before })
     expect(origin.text).toContain("Invalid Origin")
   })
 
   it("counts overlapping tool calls once each", async () => {
-    const named = readDeckId(deckName())
-    if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address("race"))
-    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const clients = await Promise.all(Array.from({ length: 31 }, () => connected(cookie)))
+    const requests = 33
+    let lookups = 0
+    let openGate = () => {}
+    const allSignedIn = new Promise<void>((resolve) => {
+      openGate = resolve
+    })
+    const served = await ownServer("overlap", {
+      session: (pool) =>
+        new Proxy(pool, {
+          get(target, prop, receiver) {
+            if (prop !== "query") return Reflect.get(target, prop, receiver)
+            const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
+            return async (sql: unknown, params?: unknown[]) => {
+              const result = await query(sql, params)
+              if (typeof sql === "string" && sql.includes("session.access")) {
+                lookups += 1
+                if (lookups === requests) openGate()
+              }
+              return result
+            }
+          },
+        }) as Sql,
+    })
     try {
-      const results = await Promise.all(
-        clients.map((client) =>
-          client.callTool({
-            name: "airdesign_capture_slide",
-            arguments: { deck: named.deck },
-          }),
-        ),
-      )
-      const texts = results.map((result) => {
-        const block = result.content[0]
-        if (block === undefined || block.type !== "text") throw new Error("text")
-        return block.text
-      })
-      expect(texts.filter((text) => text === captureNext)).toHaveLength(30)
-      expect(texts.filter((text) => text === toolLimit)).toHaveLength(1)
+      const { id, cookie } = await openedDeck("race")
+      const held = Array.from({ length: requests }, () => heldCapture(served.base, cookie, id))
+      await allSignedIn
+      await new Promise((resolve) => setImmediate(resolve))
+      for (const call of held) call.release()
+      const texts = await Promise.all(held.map((call) => call.answer))
+      expect(texts.filter((text) => text.includes(captureNext))).toHaveLength(30)
+      expect(texts.filter((text) => text.includes(toolLimit))).toHaveLength(3)
     } finally {
-      await Promise.all(clients.map((client) => client.close()))
+      await served.close()
     }
   })
 
@@ -591,16 +772,25 @@ describe("mcp route", () => {
     const bothLoaded = new Promise<void>((resolve) => {
       openGate = resolve
     })
+    const holding = new Proxy(stored, {
+      get(target, prop, receiver) {
+        if (prop !== "query") return Reflect.get(target, prop, receiver)
+        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
+        return async (sql: unknown, params?: unknown[]) => {
+          if (typeof sql === "string" && sql.includes("update deck.saved")) {
+            arrived += 1
+            if (arrived === 2) openGate()
+            await bothLoaded
+          }
+          return query(sql, params)
+        }
+      },
+    }) as Sql
     const served = await serve({
       session,
-      deck: stored,
+      deck: holding,
       listen,
       now: () => 1_000_000,
-      beforeWrite: async () => {
-        arrived += 1
-        if (arrived === 2) openGate()
-        await bothLoaded
-      },
       send: async () => undefined,
     })
     const cookie = await sign(address("pair"))

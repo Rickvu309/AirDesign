@@ -26,7 +26,6 @@ export type McpHost = {
   readonly mint: () => string
   readonly hosts: readonly string[]
   readonly bodyCap: number
-  readonly beforeWrite?: () => Promise<void>
 }
 
 const storeFailure = "The deck could not be reached."
@@ -91,7 +90,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       session.deck = loaded
       return { ok: true }
     },
-    commit: (result) => commitEdit(host.deck, loaded, result, host.beforeWrite),
+    commit: (result) => commitEdit(host.deck, loaded, result),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
   try {
@@ -101,16 +100,10 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   }
 }
 
-async function commitEdit(
-  db: Sql,
-  loaded: Deck,
-  result: ToolResult,
-  beforeWrite: (() => Promise<void>) | undefined,
-): Promise<ToolResult> {
+async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult> {
   if (!result.ok) return result
   const key = notifyKey(result.deck.id, result.deck.revision)
   if (!key.ok) return refused(loaded, "payload")
-  if (beforeWrite !== undefined) await beforeWrite()
   let wrote = false
   try {
     wrote = await writeRevision(db, {

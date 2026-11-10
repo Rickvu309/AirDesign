@@ -1,12 +1,14 @@
 import { execFile, spawn, type ChildProcess } from "node:child_process"
 import { randomBytes } from "node:crypto"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { request } from "node:http"
 import { connect, createServer } from "node:net"
 import os from "node:os"
 import path from "node:path"
 import { afterEach, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, postgresInfo } from "./harness.js"
+import { openPool } from "./index.js"
 
 const entry = path.join(process.cwd(), "apps/api/dist/start.js")
 
@@ -170,6 +172,68 @@ describe("start entry", () => {
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
     expect(response.status).toBe(202)
     expect(response.json).toEqual({ ok: true })
+  }, 20_000)
+
+  it("serves mcp on the hosts in API_HOSTS and keeps localhost without them", async () => {
+    const info = await postgresInfo()
+    const pool = openPool(info.session, "start-hosts")
+    const email = `hosts${randomBytes(4).toString("hex")}@example.com`
+    const token = randomBytes(16).toString("hex")
+    try {
+      await pool.query("insert into session.account (email) values ($1)", [email])
+      await pool.query("insert into session.access (token, email) values ($1, $2)", [token, email])
+    } finally {
+      await pool.end()
+    }
+    const statusFor = async (port: number, host: string): Promise<number> =>
+      new Promise((resolve, reject) => {
+        const payload = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" })
+        const req = request(
+          {
+            hostname: "127.0.0.1",
+            port,
+            path: "/mcp",
+            method: "POST",
+            headers: {
+              host,
+              cookie: `airdesign.session=${token}`,
+              "content-type": "application/json",
+              accept: "application/json, text/event-stream",
+              "content-length": String(Buffer.byteLength(payload)),
+            },
+          },
+          (res) => {
+            res.resume()
+            res.on("end", () => resolve(res.statusCode ?? 0))
+          },
+        )
+        req.on("error", reject)
+        req.end(payload)
+      })
+    const started = async (hosts: string | undefined): Promise<number> => {
+      const port = await freePort()
+      child = spawnEntry(
+        childEnv({
+          PORT: String(port),
+          SESSION_DATABASE_URL: info.session,
+          DECK_DATABASE_URL: info.deck,
+          LISTEN_DATABASE_URL: info.listen,
+          RESEND_API_KEY: "test-key",
+          RESEND_FROM: "sign-in@localhost",
+          API_HOSTS: hosts,
+        }),
+      )
+      await untilHealth(port, child)
+      return port
+    }
+    const named = await started(" mcp.airdesign.app, api.airdesign.app ")
+    expect(await statusFor(named, "mcp.airdesign.app")).toBe(200)
+    expect(await statusFor(named, "api.airdesign.app")).toBe(200)
+    expect(await statusFor(named, "localhost")).toBe(403)
+    child?.kill()
+    const unset = await started(undefined)
+    expect(await statusFor(unset, "localhost")).toBe(200)
+    expect(await statusFor(unset, "mcp.airdesign.app")).toBe(403)
   }, 20_000)
 
   it("answers health when the database cannot be reached", async () => {
