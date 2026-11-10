@@ -1,7 +1,7 @@
 export const limits = {
   decks: null,
   slides: 50,
-  bytes: 70 * 1024 * 1024,
+  bytes: 70_000_000,
 } as const
 
 export function overLimit(count: { readonly decks: number; readonly slides: number; readonly bytes: number }): boolean {

@@ -312,6 +312,9 @@ importers:
 
   packages/pptx:
     dependencies:
+      '@airdesign/document':
+        specifier: workspace:*
+        version: link:../document
       '@zip.js/zip.js':
         specifier: 2.24.0
         version: 2.24.0

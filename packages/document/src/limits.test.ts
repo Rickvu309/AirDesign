@@ -20,13 +20,11 @@ type OutsideRow = {
 
 type LimitRow = InsideRow | OutsideRow
 
-const ceiling = limits.bytes
-
 const table = new Map<string, LimitRow>([
-  ["decks", { decision: "inside", decks: 2, slides: 50, bytes: ceiling - 1, edit: true }],
+  ["decks", { decision: "inside", decks: 2, slides: 50, bytes: 69_999_999, edit: true }],
   ["opened", { decision: "inside", decks: 1, slides: 1, bytes: 0, edit: false }],
   ["slides", { decision: "refuse", code: "limit", slides: 51, bytes: 0, call: "person" }],
-  ["bytes", { decision: "refuse", code: "limit", slides: 1, bytes: ceiling, call: "person" }],
+  ["bytes", { decision: "refuse", code: "limit", slides: 1, bytes: 70_000_000, call: "person" }],
   ["absent", { decision: "refuse", code: "limit", slides: 51, bytes: 0, call: "absent" }],
   ["undo", { decision: "refuse", code: "limit", slides: 51, bytes: 0, call: "undo" }],
   ["direct", { decision: "refuse", code: "limit", slides: 51, bytes: 0, call: "direct" }],
@@ -135,7 +133,7 @@ function visitOutside(name: string, seen: Set<string>): void {
 function walk(): void {
   expect(limits.decks).toBe(null)
   expect(limits.slides).toBe(50)
-  expect(limits.bytes).toBe(70 * 1024 * 1024)
+  expect(limits.bytes).toBe(70_000_000)
   const seen = new Set<string>()
   visitInside("decks", seen)
   visitInside("opened", seen)

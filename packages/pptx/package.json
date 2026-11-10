@@ -22,6 +22,7 @@
     "typescript": "catalog:"
   },
   "dependencies": {
+    "@airdesign/document": "workspace:*",
     "@zip.js/zip.js": "2.24.0"
   }
 }
