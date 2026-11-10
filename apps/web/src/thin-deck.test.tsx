@@ -383,3 +383,26 @@ it("does not offer a locked box for editing", async () => {
   expect(shown?.getAttribute("contenteditable")).toBe("false")
   expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
 })
+
+async function offeredWith(body: string) {
+  const parts = shapedParts()
+  const slide = new TextDecoder().decode(parts.get("ppt/slides/slide1.xml"))
+  const keep = "<p:txBody><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody>"
+  expect(slide).toContain(keep)
+  parts.set("ppt/slides/slide1.xml", xml(slide.replace(keep, `<p:txBody>${body}</p:txBody>`)))
+  return renderedDeck(parts)
+}
+
+it("does not offer a box with two runs in one paragraph for editing", async () => {
+  const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r><a:r><a:t>ep</a:t></a:r></a:p>")
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+  expect(shown?.getAttribute("contenteditable")).toBe("false")
+  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+})
+
+it("does not offer a box with several paragraphs for editing", async () => {
+  const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r></a:p><a:p><a:r><a:t>ep</a:t></a:r></a:p>")
+  const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
+  expect(shown?.getAttribute("contenteditable")).toBe("false")
+  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+})
