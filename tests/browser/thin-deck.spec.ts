@@ -128,6 +128,49 @@ test("typed spaces are stored as plain spaces", async ({ page }) => {
   await expect.poll(() => editor.textContent()).toBe("Hello a  b ")
 })
 
+async function paste(page: Page, data: Record<string, string>): Promise<void> {
+  await page.evaluate((entries) => {
+    const clipboardData = new DataTransfer()
+    for (const [type, value] of Object.entries(entries)) clipboardData.setData(type, value)
+    document
+      .querySelector('[contenteditable="true"]')
+      ?.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }))
+  }, data)
+}
+
+test("a line break stays out of a box that holds one line", async ({ page }) => {
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await page.keyboard.press("Enter")
+  await editor.pressSequentially("x", { delay: 50 })
+  await expect.poll(() => editor.textContent()).toBe("Hellox")
+  await stored(page, "Hellox")
+  await paste(page, { "text/plain": "one\r\ntwo" })
+  await expect.poll(() => editor.textContent()).toBe("Helloxone two")
+  await stored(page, "Helloxone two")
+  await paste(page, { "text/html": "<p>long text that\nwraps in source</p>" })
+  await expect.poll(() => editor.textContent()).toBe("Helloxone twolong text that wraps in source")
+  await stored(page, "Helloxone twolong text that wraps in source")
+  await page.reload()
+  await expect.poll(() => editor.textContent()).toBe("Helloxone twolong text that wraps in source")
+})
+
+test("a cleared box is stored empty", async ({ page }) => {
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("ControlOrMeta+a")
+  await page.keyboard.press("Backspace")
+  await expect.poll(() => editor.textContent()).toBe("")
+  await stored(page, "")
+  await page.reload()
+  await expect(editor).toHaveText("")
+})
+
 test("an export with no edit keeps every part byte for byte", async ({ page }, testInfo) => {
   const saved = testInfo.outputPath("no-edit.pptx")
   await open(page, fixture)
