@@ -14,7 +14,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 ## Commands
 
 - `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
-- `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It installs LibreOffice into `~/.cache/pptx-tools` on first use and needs the .NET 8 SDK.
+- `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It uses LibreOffice and poppler when the machine has both, or installs them into `~/.cache/pptx-tools` on first use. It needs the .NET 8 SDK.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
@@ -52,7 +52,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## What enforces each rule
 
-A rule with a check fails `pnpm check`. A rule marked review is a judgment call, and nothing fails when you skip it. When a mistake repeats, give its rule a check and move the row.
+A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule marked review is a judgment call, and nothing fails when you skip it. When a mistake repeats, give its rule a check and move the row.
 
 | Rule | Enforced by |
 | --- | --- |
@@ -65,6 +65,6 @@ A rule with a check fails `pnpm check`. A rule marked review is a judgment call,
 | An edit changes only its PowerPoint parts and adds no validator error | `pnpm check:pptx` |
 | Every lint rule has a test and is switched on | `scripts/bug-rule.mjs` |
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
-| Tests never retry | `retry: 0` in the Vitest and Playwright configs |
+| Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a gated commit that contains the latest `main` | branch protection |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
