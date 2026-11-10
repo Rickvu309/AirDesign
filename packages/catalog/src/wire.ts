@@ -1,4 +1,4 @@
-import type { NodeName } from "@airdesign/document"
+import type { ElementId } from "@airdesign/document"
 
 declare const deckIdBrand: unique symbol
 
@@ -6,7 +6,7 @@ export type DeckId = string & { readonly [deckIdBrand]: true }
 
 export type WireEdit = {
   readonly value: string
-  readonly node?: NodeName
+  readonly node?: ElementId
   readonly actor?: never
   readonly command?: never
   readonly principal?: never
@@ -21,7 +21,7 @@ export type LiveKey = {
   readonly revision: number
 }
 
-const named = { a: true, b: true } satisfies Record<NodeName, true>
+const named = { a: true, b: true } satisfies Record<"a" | "b", true>
 const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
 const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const batchCap = 100
@@ -58,9 +58,9 @@ function whole(raw: unknown): number | undefined {
   return raw
 }
 
-function nodeOf(raw: unknown): NodeName | undefined {
+function nodeOf(raw: unknown): ElementId | undefined {
   if (typeof raw !== "string" || !Object.hasOwn(named, raw)) return undefined
-  return raw as NodeName
+  return raw as ElementId
 }
 
 function utf8Size(text: string): number {

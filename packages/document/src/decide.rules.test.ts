@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { decide, openRegister, version, type Command, type Phase, type Register, type Refusal } from "./decide.js"
+import { elementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type RunState = "match" | "miss"
@@ -367,7 +368,7 @@ function commands(register: Register): readonly Command[] {
   push({ command: "stop", runId: stored })
   push({ command: "undo", runId: stored })
   for (const runId of readIds) {
-    push({ command: "read", runId, node: "a" })
+    push({ command: "read", runId, node: elementId("a") })
   }
   return list
 }

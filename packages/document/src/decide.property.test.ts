@@ -1,0 +1,119 @@
+import fc from "fast-check"
+import { expect, it } from "vitest"
+import { currentValue, decide, history, openRegister, type Command, type ElementId, type Register } from "./index.js"
+import { elementId, shapeOf } from "./element-id.js"
+
+const ids = [elementId("a"), elementId("258.7"), elementId("258.n4k2j9x0q1zab")] as const
+const kinds = ["person", "start", "stop", "undo", "agent", "remove", "read", "add"] as const
+
+function picture(register: Register, id: ElementId): string {
+  if (id === elementId("a")) {
+    return JSON.stringify({
+      route: register.route,
+      floor: register.floor,
+      landed: register.landed,
+      phase: register.phase,
+      runId: register.runId,
+      readAt: register.readAt,
+      guarded: register.guarded,
+      claimed: register.claimed,
+      stoppedAt: register.stoppedAt,
+      slides: register.slides,
+      bytes: register.bytes,
+    })
+  }
+  return JSON.stringify(register.elements[id] ?? null)
+}
+
+function three(): Register {
+  let register = openRegister("floor", "slide")
+  for (const id of [elementId("258.7"), elementId("258.n4k2j9x0q1zab")]) {
+    const decision = decide(register, { command: "add", node: id, floor: id, route: "slide" })
+    if (decision.decision !== "apply") throw new Error("add")
+    register = decision.register
+  }
+  return register
+}
+
+function commandFor(kind: (typeof kinds)[number], id: ElementId): Command {
+  switch (kind) {
+    case "person":
+      return { command: "person", node: id, value: "p" }
+    case "start":
+      return { command: "start", node: id, runId: "run" }
+    case "stop":
+      return { command: "stop", node: id, runId: "run" }
+    case "undo":
+      return { command: "undo", node: id, runId: "run" }
+    case "agent":
+      return { command: "agent", node: id, runId: "run", readAt: 0, value: "g" }
+    case "remove":
+      return { command: "remove", node: id }
+    case "read":
+      return { command: "read", node: id, runId: "run" }
+    case "add":
+      return { command: "add", node: elementId("258.8"), floor: "n", route: "r" }
+  }
+}
+
+it("leaves every other element unchanged", () => {
+  fc.assert(
+    fc.property(
+      fc.integer({ min: 0, max: ids.length - 1 }),
+      fc.integer({ min: 0, max: kinds.length - 1 }),
+      (idIndex, kindIndex) => {
+        const target = ids[idIndex]
+        const kind = kinds[kindIndex]
+        if (target === undefined || kind === undefined) return false
+        const register = three()
+        const before = ids.map((id) => picture(register, id))
+        const decision = decide(register, commandFor(kind, target))
+        const after = decision.decision === "apply" ? decision.register : register
+        const touched = kind === "add" ? elementId("258.8") : target
+        return ids.every((id, index) => id === touched || before[index] === picture(after, id))
+      },
+    ),
+  )
+})
+
+it("adds any id except the one openRegister created", () => {
+  const first = elementId("258.7")
+  const second = elementId("258.n4k2j9x0q1zab")
+  const register = openRegister("floor", "slide")
+  expect(shapeOf(first)).toEqual({ slide: "258", shape: "7" })
+  expect(shapeOf(second)).toEqual({ slide: "258", shape: "n4k2j9x0q1zab" })
+  expect(decide(register, { command: "add", node: elementId("a"), floor: "x", route: "y" })).toEqual({
+    decision: "refuse",
+    code: "present",
+  })
+  const removed = decide(register, { command: "remove", node: elementId("a") })
+  if (removed.decision !== "apply") throw new Error("remove")
+  expect(decide(removed.register, { command: "add", node: elementId("a"), floor: "x", route: "y" })).toEqual({
+    decision: "refuse",
+    code: "present",
+  })
+  const added = decide(register, { command: "add", node: first, floor: "one", route: "part" })
+  if (added.decision !== "apply") throw new Error("add")
+  const edited = decide(added.register, { command: "person", node: first, value: "kept" })
+  if (edited.decision !== "apply") throw new Error("edit")
+  expect(history(edited.register)).toEqual([])
+  const dropped = decide(edited.register, { command: "remove", node: first })
+  if (dropped.decision !== "apply") throw new Error("drop")
+  expect(dropped.register.nodes.includes(first)).toBe(false)
+  const again = decide(dropped.register, { command: "add", node: first, floor: "other", route: "elsewhere" })
+  if (again.decision !== "apply") throw new Error("again")
+  const kept = again.register.elements[first]
+  if (kept === undefined) throw new Error("missing element")
+  expect(currentValue(kept)).toBe("kept")
+  expect(history(kept)).toEqual(["kept"])
+  const third = decide(again.register, { command: "add", node: second, floor: "two", route: "part" })
+  if (third.decision !== "apply") throw new Error("third")
+  expect(third.register.nodes).toEqual([elementId("a"), first, second])
+  const present = decide(third.register, { command: "add", node: second, floor: "two", route: "part" })
+  expect(present).toEqual({ decision: "refuse", code: "present" })
+  const other = third.register.elements[second]
+  if (other === undefined) throw new Error("missing element")
+  expect(history(edited.register)).toEqual([])
+  expect(history(other)).toEqual([])
+  expect(currentValue(other)).toBe("two")
+})

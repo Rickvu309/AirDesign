@@ -1,10 +1,9 @@
+import { elementId, type ElementId } from "./element-id.js"
 import { overLimit } from "./limits.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
 
 export type Actor = "person" | "agent"
-
-export type NodeName = "a" | "b"
 
 export type Landed = {
   readonly actor: Actor
@@ -26,38 +25,29 @@ export type NodeRegister = {
   readonly bytes: number
 }
 
-export type Register = {
-  readonly route: string
-  readonly floor: string
-  readonly landed: readonly Landed[]
-  readonly phase: Phase
-  readonly runId: string | null
-  readonly readAt: number | null
-  readonly guarded: boolean
-  readonly claimed: number | null
-  readonly stoppedAt: number | null
-  readonly slides: number
-  readonly bytes: number
-  readonly nodes: readonly NodeName[]
-  readonly readNodes: readonly NodeName[] | null
-  readonly b: NodeRegister | null
+type ElementMap = { readonly [id: string]: NodeRegister | undefined }
+
+export type Register = NodeRegister & {
+  readonly nodes: readonly ElementId[]
+  readonly readNodes: readonly ElementId[] | null
+  readonly elements: ElementMap
 }
 
 export type Command =
-  | { readonly command: "person"; readonly value: string; readonly node?: NodeName }
+  | { readonly command: "person"; readonly value: string; readonly node?: ElementId }
   | {
       readonly command: "agent"
       readonly runId: string
       readonly readAt: number
       readonly value: string
-      readonly node?: NodeName
+      readonly node?: ElementId
     }
-  | { readonly command: "start"; readonly runId: string; readonly node?: NodeName }
-  | { readonly command: "stop"; readonly runId: string; readonly node?: NodeName }
-  | { readonly command: "undo"; readonly runId: string; readonly node?: NodeName }
-  | { readonly command: "add"; readonly node: "b" }
-  | { readonly command: "remove"; readonly node: NodeName }
-  | { readonly command: "read"; readonly runId: string; readonly node: NodeName }
+  | { readonly command: "start"; readonly runId: string; readonly node?: ElementId }
+  | { readonly command: "stop"; readonly runId: string; readonly node?: ElementId }
+  | { readonly command: "undo"; readonly runId: string; readonly node?: ElementId }
+  | { readonly command: "add"; readonly node: ElementId; readonly floor: string; readonly route: string }
+  | { readonly command: "remove"; readonly node: ElementId }
+  | { readonly command: "read"; readonly runId: string; readonly node: ElementId }
 
 export type Refusal = "stale" | "person-protected" | "run-fenced" | "dead" | "present" | "limit"
 
@@ -68,6 +58,8 @@ export type Decision =
 type Edited =
   | { readonly decision: "apply"; readonly body: NodeRegister }
   | { readonly decision: "refuse"; readonly code: Refusal }
+
+const openedElement = elementId("a")
 
 function openNode(floor: string, route: string): NodeRegister {
   return {
@@ -88,9 +80,9 @@ function openNode(floor: string, route: string): NodeRegister {
 export function openRegister(floor: string, route: string): Register {
   return {
     ...openNode(floor, route),
-    nodes: ["a"],
+    nodes: [openedElement],
     readNodes: null,
-    b: null,
+    elements: {},
   }
 }
 
@@ -135,27 +127,40 @@ function refuse(code: Refusal): Decision {
   return { decision: "refuse", code }
 }
 
-function listed(hasA: boolean, hasB: boolean): readonly NodeName[] {
-  const nodes: NodeName[] = []
-  if (hasA) {
-    nodes.push("a")
-  }
-  if (hasB) {
-    nodes.push("b")
-  }
-  return nodes
+function pairedBody(register: Register): NodeRegister | null {
+  if (!Object.hasOwn(register, "b")) return null
+  const body = (register as { readonly b?: NodeRegister | null }).b
+  if (body === undefined || body === null) return null
+  return body
 }
 
-function land(register: Register, node: NodeName, body: NodeRegister): Decision {
-  if (node === "a") {
+function elementsOf(register: Register, id: ElementId): ElementMap {
+  if (register.elements[id] !== undefined) return register.elements
+  if (id !== elementId("b")) return register.elements
+  const paired = pairedBody(register)
+  if (paired === null) return register.elements
+  return { ...register.elements, [id]: paired }
+}
+
+function storedBody(register: Register, id: ElementId): NodeRegister | null {
+  if (id === openedElement) return nodeOf(register)
+  return elementsOf(register, id)[id] ?? null
+}
+
+function place(register: Register, id: ElementId, body: NodeRegister): Decision {
+  if (id === openedElement) {
     return apply({
+      ...register,
       ...body,
       nodes: register.nodes,
       readNodes: register.readNodes,
-      b: register.b,
+      elements: register.elements,
     })
   }
-  return apply({ ...register, b: body })
+  return apply({
+    ...register,
+    elements: { ...elementsOf(register, id), [id]: body },
+  })
 }
 
 function visibleAgent(register: NodeRegister): boolean {
@@ -235,26 +240,30 @@ export function compactChain(register: NodeRegister, eligible: boolean): NodeReg
   }
 }
 
-function addNode(register: Register): Decision {
-  if (register.nodes.includes("b")) {
+function addNode(register: Register, id: ElementId, floor: string, route: string): Decision {
+  if (id === openedElement || register.nodes.includes(id)) {
     return refuse("present")
   }
-  const b = register.b ?? openNode(register.floor, register.route)
-  return apply({ ...register, nodes: listed(register.nodes.includes("a"), true), b })
-}
-
-function removeNode(register: Register, node: NodeName): Decision {
+  const elements = elementsOf(register, id)
+  const kept = elements[id]
+  const body = kept ?? openNode(floor, route)
   return apply({
     ...register,
-    nodes: listed(
-      node === "a" ? false : register.nodes.includes("a"),
-      node === "b" ? false : register.nodes.includes("b"),
-    ),
+    nodes: [...register.nodes, id],
+    elements: { ...elements, [id]: body },
   })
 }
 
-function readNodes(register: Register, node: NodeName, runId: string): Decision {
-  const body = node === "a" ? nodeOf(register) : register.b
+function removeNode(register: Register, id: ElementId): Decision {
+  return apply({
+    ...register,
+    nodes: register.nodes.filter((node) => node !== id),
+    elements: elementsOf(register, id),
+  })
+}
+
+function readNodes(register: Register, id: ElementId, runId: string): Decision {
+  const body = storedBody(register, id)
   if (body === null) {
     throw new Error("missing node")
   }
@@ -264,13 +273,13 @@ function readNodes(register: Register, node: NodeName, runId: string): Decision 
   return apply({ ...register, readNodes: [...register.nodes] })
 }
 
-function editNode(register: Register, node: NodeName, command: Command): Decision {
-  const current = node === "a" ? nodeOf(register) : register.b
+function editNode(register: Register, id: ElementId, command: Command): Decision {
+  const current = storedBody(register, id)
   if (current === null) {
     throw new Error("missing node")
   }
   if (command.command === "person") {
-    return land(register, node, personEdit(current, command.value))
+    return place(register, id, personEdit(current, command.value))
   }
   const edited =
     command.command === "agent"
@@ -288,7 +297,7 @@ function editNode(register: Register, node: NodeName, command: Command): Decisio
   if (edited.decision === "refuse") {
     return refuse(edited.code)
   }
-  return land(register, node, edited.body)
+  return place(register, id, edited.body)
 }
 
 export function decide(register: Register, command: Command): Decision {
@@ -296,9 +305,10 @@ export function decide(register: Register, command: Command): Decision {
     return refuse("limit")
   }
   if (command.command === "add") {
-    return addNode(register)
+    const supplied = command as { readonly node: ElementId; readonly floor?: string; readonly route?: string }
+    return addNode(register, supplied.node, supplied.floor ?? register.floor, supplied.route ?? register.route)
   }
-  const node = command.node ?? "a"
+  const node = command.node ?? openedElement
   if (!register.nodes.includes(node)) {
     return refuse("dead")
   }

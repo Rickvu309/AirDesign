@@ -1,3 +1,4 @@
+export { elementId, shapeOf, slideId, type ElementId, type SlideId } from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export { replay, unsent, type Queued } from "./replay.js"
 export { limits, overLimit } from "./limits.js"
@@ -13,7 +14,6 @@ export {
   type Command,
   type Decision,
   type Landed,
-  type NodeName,
   type NodeRegister,
   type Phase,
   type Register,

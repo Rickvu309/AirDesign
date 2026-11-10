@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { history, openRegister, version, type Register } from "./decide.js"
+import { currentValue, decide, history, openRegister, version, type Register } from "./decide.js"
+import { elementId } from "./element-id.js"
 import { replay, unsent, type Queued } from "./replay.js"
 
 type ReplayRow = {
@@ -147,5 +148,26 @@ function walk(): void {
 describe("replay", () => {
   it("walks the unsent suffix in order", () => {
     walk()
+  })
+
+  it("applies a queued edit only to its element", () => {
+    const right = elementId("258.7")
+    const opened = decide(openRegister("left", "slide"), {
+      command: "add",
+      node: right,
+      floor: "right",
+      route: "other",
+    })
+    if (opened.decision !== "apply") throw new Error("add")
+    const next = replay(opened.register, [
+      { base: 0, value: "one", node: elementId("a") },
+      { base: 0, value: "two", node: right },
+    ])
+    expect(history(next)).toEqual(["one"])
+    expect(currentValue(next)).toBe("one")
+    const other = next.elements[right]
+    if (other === undefined) throw new Error("missing element")
+    expect(history(other)).toEqual(["two"])
+    expect(currentValue(other)).toBe("two")
   })
 })
