@@ -39,18 +39,23 @@ const keysOf = (stick) =>
   stick !== null && typeof stick === "object" && !Array.isArray(stick) ? Object.keys(stick).sort().join() : ""
 const timed = (stick) => keysOf(stick) === "limit" && finite(stick.limit)
 const counted = (stick) => keysOf(stick) === "goal,now" && finite(stick.now) && finite(stick.goal)
+const floored = (stick) => keysOf(stick) === "floor" && finite(stick.floor)
 
 const recordsFaults = new Set(["known faults"])
 
 const stickReason = (name, before, after) => {
   if (after === undefined) return `The stick ${name} was removed.`
-  if (!timed(after) && !counted(after)) {
-    return `The stick ${name} must be only a limit, or only now and goal, as numbers.`
+  if (!timed(after) && !counted(after) && !floored(after)) {
+    return `The stick ${name} must be only a limit, or only now and goal, or only a floor, as numbers.`
   }
   if (before === undefined) return undefined
   if (timed(before)) {
     if (!timed(after)) return `The stick ${name} stopped being a limit.`
     return after.limit <= before.limit ? undefined : `The limit of ${name} went from ${before.limit} to ${after.limit}.`
+  }
+  if (floored(before)) {
+    if (!floored(after)) return `The stick ${name} stopped being a floor.`
+    return after.floor >= before.floor ? undefined : `The floor of ${name} went from ${before.floor} to ${after.floor}.`
   }
   if (!counted(after)) return `The stick ${name} stopped being a count with a goal.`
   if (after.goal !== before.goal) return `The goal of ${name} went from ${before.goal} to ${after.goal}.`
