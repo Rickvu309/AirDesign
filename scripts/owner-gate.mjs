@@ -75,7 +75,9 @@ export const lostCases = (baseCases, headCases) => {
 }
 
 export const lostKinds = (baseProof, headProof) =>
-  Object.keys(baseProof).filter((kind) => baseProof[kind] === "caught" && headProof[kind] !== "caught")
+  Object.keys(baseProof).filter(
+    (kind) => headProof[kind] === undefined || (baseProof[kind] === "caught" && headProof[kind] !== "caught"),
+  )
 
 export const ownerReasons = ({
   baseSticks,
