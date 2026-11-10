@@ -261,11 +261,17 @@ describe("start entry", () => {
         LISTEN_DATABASE_URL: info.listen,
       }),
     )
-    const result = await stopped(child)
+    const result = await Promise.race([
+      stopped(child),
+      new Promise<{ code: number | null; stderr: string }>((resolve) => {
+        setTimeout(() => resolve({ code: null, stderr: "" }), 5000)
+      }),
+    ])
+    child.kill()
     child = undefined
     expect(result.code).toBe(1)
     expect(result.stderr).toBe("PORT\n")
-  })
+  }, 20_000)
 
   it("exits on SIGINT", async () => {
     const info = await postgresInfo()
