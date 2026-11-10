@@ -1020,9 +1020,9 @@ describe("mcp route", () => {
   it("counts overlapping tool calls once each", async () => {
     const requests = 33
     let lookups = 0
-    let openGate = () => {}
+    let markAllSignedIn = () => {}
     const allSignedIn = new Promise<void>((resolve) => {
-      openGate = resolve
+      markAllSignedIn = resolve
     })
     const served = await ownServer("overlap", {
       session: (pool) =>
@@ -1034,7 +1034,7 @@ describe("mcp route", () => {
               const result = await query(sql, params)
               if (typeof sql === "string" && sql.includes("session.access")) {
                 lookups += 1
-                if (lookups === requests) openGate()
+                if (lookups === requests) markAllSignedIn()
               }
               return result
             }
@@ -1071,9 +1071,9 @@ describe("mcp route", () => {
     const stored = openPool(info.deck, "mcp-lost-deck")
     const listen = new DeckListen(info.listen)
     let arrived = 0
-    let openGate = () => {}
+    let markAllSignedIn = () => {}
     const bothLoaded = new Promise<void>((resolve) => {
-      openGate = resolve
+      markAllSignedIn = resolve
     })
     const holding = new Proxy(stored, {
       get(target, prop, receiver) {
@@ -1082,7 +1082,7 @@ describe("mcp route", () => {
         return async (sql: unknown, params?: unknown[]) => {
           if (typeof sql === "string" && sql.includes("update deck.saved")) {
             arrived += 1
-            if (arrived === 2) openGate()
+            if (arrived === 2) markAllSignedIn()
             await bothLoaded
           }
           return query(sql, params)

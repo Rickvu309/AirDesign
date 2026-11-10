@@ -10,7 +10,7 @@ const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seed
 const listedMisses = (root) =>
   fs.existsSync(seedListFile(root)) ? readSeedList(fs.readFileSync(seedListFile(root), "utf8")).known.length : 0
 
-const knownFaults = (root) => readRun(root).faults + listedMisses(root)
+const knownFailures = (root) => readRun(root).faults + listedMisses(root)
 
 const testCount = (root) => readRun(root).tests
 
@@ -38,7 +38,7 @@ const plantedBreaks = (root) =>
   caughtCount(JSON.parse(fs.readFileSync(path.join(root, "scripts/pptx-fixtures/judge-proof.json"), "utf8")))
 
 const measures = {
-  "known-failures": knownFaults,
+  "known-failures": knownFailures,
   "test-count": testCount,
   "corpus-size": realDecks,
   "export-coverage": capabilitiesExported,
