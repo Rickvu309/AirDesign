@@ -77,7 +77,7 @@ function resolveTarget(source: string, target: string): string {
   return parts.join("/")
 }
 
-function encodeUtf8(text: string): Uint8Array {
+export function encodeUtf8(text: string): Uint8Array {
   const units: number[] = []
   for (let index = 0; index < text.length; index += 1) {
     let code = text.charCodeAt(index)
@@ -110,7 +110,7 @@ export function decodeLatin1(bytes: Uint8Array): string {
   return text
 }
 
-function decodeUtf8(bytes: Uint8Array): string {
+export function decodeUtf8(bytes: Uint8Array): string {
   let text = ""
   for (let index = 0; index < bytes.length;) {
     const first = bytes[index]

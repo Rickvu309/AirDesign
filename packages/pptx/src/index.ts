@@ -5,4 +5,5 @@ export { packageLimits, readPackage, type PackageLimitName, type ReadPackage } f
 export { exactPageCheck, pageChange, type PageChange } from "./render-pages.js"
 export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } from "./shape-id.js"
 export { addTextShape, type ShapeBox } from "./shape-write.js"
+export { applyRoute, type SlideRoute } from "./slide-route.js"
 export { newValidatorErrors } from "./validator-error.js"
