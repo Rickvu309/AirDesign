@@ -74,7 +74,7 @@ jobs:
             esac
           done
           title="Site deploy is red"
-          open=$(gh issue list --label deploy-red --state open --json number,title --jq "[.[] | select(.title == \"$title\")][0].number // empty")
+          open=$(gh issue list --label site-deploy-red --state open --json number --jq '.[0].number // empty')
           if [ -z "$failed" ]; then
             if [ "$DEPLOYED" = "true" ] && [ -n "$open" ]; then
               gh issue close "$open" --comment "Site deployed at $HEAD_SHA. $RUN_URL"
@@ -85,6 +85,6 @@ jobs:
           if [ -n "$open" ]; then
             gh issue comment "$open" --body "$line"
           else
-            gh label create deploy-red --description "A deploy or the smoke check is red" --color B60205 --force
-            gh issue create --title "$title" --label deploy-red --body "$line"
+            gh label create site-deploy-red --description "A site deploy is red" --color B60205 --force
+            gh issue create --title "$title" --label site-deploy-red --body "$line"
           fi
