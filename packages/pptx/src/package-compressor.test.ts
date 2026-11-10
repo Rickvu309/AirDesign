@@ -1,7 +1,8 @@
 import { terminateWorkers } from "@zip.js/zip.js"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { CompressorError, carryPackage } from "./package-carry.js"
-import { encodeUtf8, readParts, sameBytes } from "./package-bytes.js"
+import { encodeUtf8, sameBytes } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 
 declare const process: {
   cwd(): string

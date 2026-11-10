@@ -1,25 +1,24 @@
-import { configure, Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter, type Configuration } from "@zip.js/zip.js"
-import { encodeUtf8, readParts, sameBytes } from "./package-bytes.js"
-
-export type ContainerKind =
-  | "comment"
-  | "disk"
-  | "duplicate"
-  | "method"
-  | "order"
-  | "unaccounted"
-  | "unreadable"
-  | "zip64"
-
-export class ContainerError extends Error {
-  readonly kind: ContainerKind
-
-  constructor(kind: ContainerKind) {
-    super(`container ${kind}`)
-    this.name = "ContainerError"
-    this.kind = kind
-  }
-}
+import { configure, Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
+import { encodeUtf8, sameBytes } from "./package-bytes.js"
+import {
+  centralSignature,
+  centralSize,
+  ContainerError,
+  deflate,
+  descriptorFlag,
+  endSize,
+  localSignature,
+  localSize,
+  most16,
+  most32,
+  onlyBundledCompressor,
+  readContainer,
+  readParts,
+  recordView,
+  stored,
+  utf8Flag,
+  type ContainerRecord,
+} from "./package-container.js"
 
 export class CompressorError extends Error {
   constructor() {
@@ -28,216 +27,14 @@ export class CompressorError extends Error {
   }
 }
 
-const onlyBundledCompressor = { CompressionStream: false } as unknown as Configuration
-const localSignature = 0x04034b50
-const centralSignature = 0x02014b50
-const endSignature = 0x06054b50
-const locatorSignature = 0x07064b50
-const descriptorSignature = 0x08074b50
-const localSize = 30
-const centralSize = 46
-const endSize = 22
-const locatorSize = 20
 const centralShift = 2
-const stored = 0
-const deflate = 8
-const descriptorFlag = 0x8
-const utf8Flag = 0x800
-const most16 = 0xffff
-const most32 = 0xffffffff
 const packLevel = 6
 const madeByVersion = 20
 const fixedDate = 0x21
 
-type Original = {
-  readonly name: string
-  readonly directory: boolean
-  readonly method: number
-  readonly flags: number
-  readonly header: Uint8Array
-  readonly local: Uint8Array
-  readonly central: Uint8Array
-}
-
-type Span = readonly [start: number, end: number]
-
 type Piece = { readonly local: Uint8Array; readonly central: Uint8Array }
 
 type Pack = { readonly stream: Uint8Array; readonly crc: number; readonly size: number; readonly method: number }
-
-function recordView(bytes: Uint8Array): DataView {
-  return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-}
-
-async function zipEntries(original: Uint8Array) {
-  const reader = new ZipReader(new Uint8ArrayReader(original))
-  try {
-    const entries = await reader.getEntries()
-    return { entries, comment: reader.comment }
-  } catch {
-    return null
-  } finally {
-    await reader.close()
-  }
-}
-
-type CentralRow = {
-  readonly name: string
-  readonly directory: boolean
-  readonly method: number
-  readonly flags: number
-  readonly crc: number
-  readonly compressed: number
-  readonly size: number
-  readonly offset: number
-  readonly at: number
-  readonly nameBytes: Uint8Array
-  readonly central: Uint8Array
-}
-
-function endFields(view: DataView, at: number) {
-  return {
-    disk: view.getUint16(at + 4, true),
-    startDisk: view.getUint16(at + 6, true),
-    here: view.getUint16(at + 8, true),
-    count: view.getUint16(at + 10, true),
-    length: view.getUint32(at + 12, true),
-    offset: view.getUint32(at + 16, true),
-  }
-}
-
-function centralRows(
-  original: Uint8Array,
-  view: DataView,
-  entries: readonly { readonly filename: string; readonly directory: boolean; readonly offset: number }[],
-  start: number,
-): readonly CentralRow[] {
-  const rows: CentralRow[] = []
-  let cursor = start
-  for (const entry of entries) {
-    if (cursor + centralSize > original.length || view.getUint32(cursor, true) !== centralSignature) {
-      throw new ContainerError("unreadable")
-    }
-    const flags = view.getUint16(cursor + 8, true)
-    const method = view.getUint16(cursor + 10, true)
-    const compressed = view.getUint32(cursor + 20, true)
-    const size = view.getUint32(cursor + 24, true)
-    const nameLength = view.getUint16(cursor + 28, true)
-    const extraLength = view.getUint16(cursor + 30, true)
-    const commentLength = view.getUint16(cursor + 32, true)
-    const offset = view.getUint32(cursor + 42, true)
-    if (commentLength !== 0) throw new ContainerError("comment")
-    if (view.getUint16(cursor + 34, true) !== 0) throw new ContainerError("disk")
-    if (compressed === most32 || size === most32 || offset === most32) throw new ContainerError("zip64")
-    if (method !== stored && method !== deflate) throw new ContainerError("method")
-    if (offset !== entry.offset) throw new ContainerError("unreadable")
-    const end = cursor + centralSize + nameLength + extraLength
-    rows.push({
-      name: entry.filename,
-      directory: entry.directory,
-      method,
-      flags,
-      crc: view.getUint32(cursor + 16, true),
-      compressed,
-      size,
-      offset,
-      at: cursor,
-      nameBytes: original.subarray(cursor + centralSize, cursor + centralSize + nameLength),
-      central: original.subarray(cursor, end),
-    })
-    cursor = end
-  }
-  return rows
-}
-
-function descriptorEnd(view: DataView, row: CentralRow, at: number, limit: number): number {
-  const signed = at + 16 <= limit && view.getUint32(at, true) === descriptorSignature
-  const fields = signed ? at + 4 : at
-  if (
-    fields + 12 <= limit &&
-    view.getUint32(fields, true) === row.crc &&
-    view.getUint32(fields + 4, true) === row.compressed &&
-    view.getUint32(fields + 8, true) === row.size
-  ) {
-    return fields + 12
-  }
-  throw new ContainerError("unaccounted")
-}
-
-function localRecord(original: Uint8Array, view: DataView, row: CentralRow, centralAt: number): Original {
-  if (row.offset + localSize > centralAt || view.getUint32(row.offset, true) !== localSignature) {
-    throw new ContainerError("unreadable")
-  }
-  const flags = view.getUint16(row.offset + 6, true)
-  const method = view.getUint16(row.offset + 8, true)
-  const nameLength = view.getUint16(row.offset + 26, true)
-  const extraLength = view.getUint16(row.offset + 28, true)
-  const headerEnd = row.offset + localSize + nameLength + extraLength
-  const streamEnd = headerEnd + row.compressed
-  const localName = original.subarray(row.offset + localSize, row.offset + localSize + nameLength)
-  if (!sameBytes(localName, row.nameBytes)) throw new ContainerError("unreadable")
-  if (method !== row.method || (flags & descriptorFlag) !== (row.flags & descriptorFlag)) {
-    throw new ContainerError("unreadable")
-  }
-  const end = (flags & descriptorFlag) === 0 ? streamEnd : descriptorEnd(view, row, streamEnd, centralAt)
-  return {
-    name: row.name,
-    directory: row.directory,
-    method,
-    flags,
-    header: original.subarray(row.offset, headerEnd),
-    local: original.subarray(row.offset, end),
-    central: row.central,
-  }
-}
-
-function severalDisks(view: DataView, endAt: number): boolean {
-  const end = endFields(view, endAt)
-  return end.disk !== 0 || end.startDisk !== 0 || end.here !== end.count
-}
-
-function accounted(spans: readonly Span[], fileLength: number): void {
-  let cursor = 0
-  for (const [start, end] of spans) {
-    if (start !== cursor) throw new ContainerError("unaccounted")
-    cursor = end
-  }
-  if (cursor !== fileLength) throw new ContainerError("unaccounted")
-}
-
-async function readContainer(original: Uint8Array): Promise<readonly Original[]> {
-  const view = recordView(original)
-  const endAt = original.length - endSize
-  const hasEnd = endAt >= 0 && view.getUint32(endAt, true) === endSignature
-  const read = await zipEntries(original)
-  if (read === null) throw new ContainerError(hasEnd && severalDisks(view, endAt) ? "disk" : "unreadable")
-  if (read.comment.length > 0) throw new ContainerError("comment")
-  if (read.entries.some((entry) => entry.zip64)) throw new ContainerError("zip64")
-  if (!hasEnd) throw new ContainerError("unaccounted")
-  if (severalDisks(view, endAt)) throw new ContainerError("disk")
-  const end = endFields(view, endAt)
-  if (end.count === most16 || end.length === most32 || end.offset === most32) throw new ContainerError("zip64")
-  if (end.offset + end.length !== endAt) {
-    const zip64 = endAt >= locatorSize && view.getUint32(endAt - locatorSize, true) === locatorSignature
-    throw new ContainerError(zip64 ? "zip64" : "unaccounted")
-  }
-  if (end.count !== read.entries.length) throw new ContainerError("unreadable")
-  const rows = centralRows(original, view, read.entries, end.offset)
-  rows.forEach((row, index) => {
-    const before = rows[index - 1]
-    if (before !== undefined && row.offset <= before.offset) throw new ContainerError("order")
-  })
-  const records = rows.map((row) => localRecord(original, view, row, end.offset))
-  accounted(
-    [
-      ...rows.map((row, index): Span => [row.offset, row.offset + (records[index]?.local.length ?? 0)]),
-      ...rows.map((row): Span => [row.at, row.at + row.central.length]),
-      [endAt, endAt + endSize + view.getUint16(endAt + 20, true)],
-    ],
-    original.length,
-  )
-  return records
-}
 
 async function packPart(data: Uint8Array, method: number): Promise<Pack> {
   configure(onlyBundledCompressor)
@@ -283,7 +80,7 @@ function joined(head: Uint8Array, tail: Uint8Array): Uint8Array {
   return whole
 }
 
-async function changedPiece(original: Original, data: Uint8Array): Promise<Piece> {
+async function changedPiece(original: ContainerRecord, data: Uint8Array): Promise<Piece> {
   const pack = await packPart(data, original.method)
   const flags = original.flags & ~descriptorFlag
   const header = original.header.slice()
@@ -342,16 +139,11 @@ function assembled(pieces: readonly Piece[], originalEnd: Uint8Array): Uint8Arra
 
 export async function carryPackage(original: Uint8Array, parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
   const file = new Uint8Array(original.buffer, original.byteOffset, original.byteLength)
-  const records = await readContainer(file)
+  const records = readContainer(file)
   const names = new Set(records.map((record) => record.name))
-  if (names.size !== records.length) throw new ContainerError("duplicate")
   const opened = await readParts(file)
   const pieces: Piece[] = []
   for (const record of records) {
-    if (record.directory) {
-      pieces.push({ local: record.local, central: record.central })
-      continue
-    }
     const next = parts.get(record.name)
     if (next === undefined) continue
     const before = opened.get(record.name)
