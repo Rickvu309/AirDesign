@@ -1,4 +1,4 @@
-import { decide, openRegister, type Command, type Register, type Refusal } from "@airdesign/document"
+import { decide, limits, openRegister, type Command, type Register, type Refusal } from "@airdesign/document"
 import { notifyKey, readAgentEdit, readCommit, type DeckId, type WireEdit } from "@airdesign/catalog"
 
 export type Deck = {
@@ -39,10 +39,26 @@ function agentCommand(edit: WireEdit, caller: { readonly runId: string; readonly
   return { command: "agent", runId: caller.runId, readAt: caller.readAt, value: edit.value, node: edit.node }
 }
 
+function utf8Length(value: string): number {
+  let size = 0
+  for (const symbol of value) {
+    const code = symbol.codePointAt(0) ?? 0
+    if (code <= 0x7f) size += 1
+    else if (code <= 0x7ff) size += 2
+    else if (code <= 0xffff) size += 3
+    else size += 4
+  }
+  return size
+}
+
 function applyEdits(deck: Deck, edits: readonly WireEdit[], commandFor: (edit: WireEdit) => Command): CallResult {
   let register = deck.register
   for (const edit of edits) {
-    const decision = decide(register, commandFor(edit))
+    const next = register.bytes + utf8Length(edit.value)
+    if (next >= limits.bytes) {
+      return refused("limit")
+    }
+    const decision = decide({ ...register, bytes: next }, commandFor(edit))
     if (decision.decision === "refuse") {
       return refused(decision.code)
     }

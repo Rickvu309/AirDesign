@@ -172,4 +172,37 @@ describe("call", () => {
     expect(deck).toEqual(before)
     expect(history(deck.register)).toEqual([])
   })
+
+  it("counts the bytes a commit lands", () => {
+    const first = call("commit_edits", opened(), person, { deck: "deck", batch: [{ value: "hi" }] })
+    expect(first.ok).toBe(true)
+    if (!first.ok) {
+      return
+    }
+    expect(first.deck.register.bytes).toBe(2)
+    const second = call("commit_edits", first.deck, person, { deck: "deck", batch: [{ value: "é" }] })
+    expect(second.ok).toBe(true)
+    if (!second.ok) {
+      return
+    }
+    expect(second.deck.register.bytes).toBe(4)
+  })
+
+  it("refuses a commit that would reach the byte limit", () => {
+    const deck = opened()
+    const full = { ...deck, register: { ...deck.register, bytes: 69_999_999 } }
+    const register = full.register
+    expect(call("commit_edits", full, person, { deck: "deck", batch: [{ value: "x" }] })).toEqual({
+      ok: false,
+      refusal: "limit",
+    })
+    expect(full.register).toBe(register)
+    const room = { ...deck, register: { ...deck.register, bytes: 69_999_998 } }
+    const landed = call("commit_edits", room, person, { deck: "deck", batch: [{ value: "x" }] })
+    expect(landed.ok).toBe(true)
+    if (!landed.ok) {
+      return
+    }
+    expect(landed.deck.register.bytes).toBe(69_999_999)
+  })
 })

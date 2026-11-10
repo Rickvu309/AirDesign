@@ -3,7 +3,7 @@ import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
 
-const readSql = "select revision, register, owner from deck.saved where id = $1"
+const readSql = "select id, revision, register, owner from deck.saved where id = $1"
 
 const insertSql = `
 with inserted as (
@@ -28,6 +28,7 @@ from updated
 `
 
 type Saved = {
+  readonly id: string
   readonly revision: number
   readonly register: Deck["register"]
   readonly owner: string
@@ -43,7 +44,7 @@ export type RevisionWrite = {
 
 function savedFrom(row: Saved | undefined): Saved | undefined {
   if (row === undefined) return undefined
-  return { revision: row.revision, register: row.register, owner: row.owner }
+  return { id: row.id, revision: row.revision, register: row.register, owner: row.owner }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
@@ -123,7 +124,7 @@ export async function commitEdits(
     const saved = await readSaved(db, parsed.deck)
     if (saved === undefined) return { ok: false, refusal: "deck" }
     if (saved.owner !== owner) return { ok: false, refusal: "owner" }
-    const current: Deck = { id: parsed.deck, revision: saved.revision, register: saved.register }
+    const current: Deck = { id: saved.id as DeckId, revision: saved.revision, register: saved.register }
     const result = call("commit_edits", current, { actor: "person" }, raw)
     if (!result.ok) return { ok: false, refusal: result.refusal }
     const wrote = await writeRevision(db, {
