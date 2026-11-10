@@ -13,14 +13,13 @@ import {
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import {
+  changeRows,
   fitConfirmed,
   isConfirmed,
   isPending,
   logicalValues,
   pendingRow,
   readRows,
-  rowBytes,
-  rowCap,
   rowKey,
   textBytes,
   writeRows,
@@ -28,6 +27,8 @@ import {
   type PendingRow,
   type StoredRow,
 } from "./store.js"
+
+const batchSize = 100
 
 export type LivePhase = "on-device" | "confirmed"
 
@@ -123,33 +124,36 @@ export function connect(remote: Remote) {
     async enqueue(deck: string, value: string, node?: string): Promise<EnqueueResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const rows = await readRows(parsed.deck)
-      const { confirmed, pending } = split(rows)
-      const register = played(parsed.deck, confirmed, pending)
       const id = node === undefined ? undefined : elementId(node)
       const named = readNode(node)
-      let editing = register
-      if (named !== undefined && !editing.nodes.includes(named)) {
-        const opened = decide(editing, {
-          command: "add",
-          node: named,
-          floor: editing.floor,
-          route: editing.route,
-        })
-        if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
-        editing = opened.register
-      }
-      const decision = decide(
-        editing,
-        id === undefined ? { command: "person", value } : { command: "person", value, node: id },
-      )
-      if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
-      if (textBytes(value) > limits.valueBytes) return { ok: false, refusal: "limit" }
-      const order = pending.reduce((max, row) => Math.max(max, row.order + 1), 0)
-      const row = pendingRow(parsed.deck, order, version(register), value, id)
-      if (rowBytes(row) >= rowCap) return { ok: false, refusal: "limit" }
-      await writeRows([{ key: rowKey(parsed.deck, "pending", order), row }], [])
-      return { ok: true, painted: currentValue(decision.register) }
+      return changeRows<EnqueueResult>(parsed.deck, (rows) => {
+        const { confirmed, pending } = split(rows)
+        const register = played(parsed.deck, confirmed, pending)
+        let editing = register
+        if (named !== undefined && !editing.nodes.includes(named)) {
+          const opened = decide(editing, {
+            command: "add",
+            node: named,
+            floor: editing.floor,
+            route: editing.route,
+          })
+          if (opened.decision === "refuse") return { puts: [], result: { ok: false, refusal: opened.code } }
+          editing = opened.register
+        }
+        const decision = decide(
+          editing,
+          id === undefined ? { command: "person", value } : { command: "person", value, node: id },
+        )
+        if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
+        if (textBytes(value) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
+        const order = pending.reduce((max, row) => Math.max(max, row.order + 1), 0)
+        const row = pendingRow(parsed.deck, order, version(register), value, id)
+        const body = id === undefined ? undefined : decision.register.elements[id]
+        return {
+          puts: [{ key: rowKey(parsed.deck, "pending", order), row }],
+          result: { ok: true, painted: currentValue(body ?? decision.register) },
+        }
+      })
     },
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
@@ -158,23 +162,27 @@ export function connect(remote: Remote) {
       const { confirmed, pending } = split(rows)
       if (pending.length === 0) return { ok: false, refusal: "batch" }
       const sending = unsent(pending, 0)
-      const batch: WireEdit[] = []
+      const wiredRows: WiredRow[] = []
       for (const row of sending) {
         if (!wired(row)) return { ok: false, refusal: "field" }
-        batch.push(wireOf(row))
-      }
-      const result = await remote.commit({ deck: parsed.deck, batch })
-      if (!result.ok) return result
-      if (result.deck !== parsed.deck || result.key !== `${parsed.deck}:${result.revision}`) {
-        return { ok: false, refusal: "payload" }
+        wiredRows.push(row)
       }
       let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
-      const stored: ConfirmedRow[] = []
-      for (const row of pending) revision = fitConfirmed(parsed.deck, revision, row.value, row.node, stored)
-      await writeRows(
-        stored.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
-        pending.map((row) => rowKey(parsed.deck, "pending", row.order)),
-      )
+      let result: CommitResult = { ok: false, refusal: "batch" }
+      for (let start = 0; start < wiredRows.length; start += batchSize) {
+        const rowsInBatch = wiredRows.slice(start, start + batchSize)
+        result = await remote.commit({ deck: parsed.deck, batch: rowsInBatch.map(wireOf) })
+        if (!result.ok) return result
+        if (result.deck !== parsed.deck || result.key !== `${parsed.deck}:${result.revision}`) {
+          return { ok: false, refusal: "payload" }
+        }
+        const stored: ConfirmedRow[] = []
+        for (const row of rowsInBatch) revision = fitConfirmed(parsed.deck, revision, row.value, row.node, stored)
+        await writeRows(
+          stored.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
+          rowsInBatch.map((row) => rowKey(parsed.deck, "pending", row.order)),
+        )
+      }
       return result
     },
     async openDeck(deck: string): Promise<OpenDeckResult> {
