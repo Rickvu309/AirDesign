@@ -85,6 +85,15 @@ async function ageIssued(statement: string, email: string): Promise<void> {
   }
 }
 
+async function addressLockWaiter(admin: Client): Promise<number | undefined> {
+  const found = await admin.query<{ pid: number }>(
+    `select pid from pg_stat_activity
+     where application_name = $1 and wait_event_type = 'Lock' and query like '%pg_advisory_xact_lock%'`,
+    ["sign-in"],
+  )
+  return found.rows[0]?.pid
+}
+
 describe("sign-in", () => {
   const mails: Mail[] = []
   let calls: string[] = []
@@ -1023,12 +1032,7 @@ describe("sign-in", () => {
       const cut = ask(base, "POST", "/sign-in/email", { email })
       let backend: number | undefined
       while (backend === undefined) {
-        const found = await admin.query<{ pid: number }>(
-          `select pid from pg_stat_activity
-           where application_name = $1 and wait_event_type = 'Lock' and query like '%pg_advisory_xact_lock%'`,
-          ["sign-in"],
-        )
-        backend = found.rows[0]?.pid
+        backend = await addressLockWaiter(admin)
         if (backend === undefined) await new Promise((resolve) => setTimeout(resolve, 20))
       }
       await admin.query("select pg_terminate_backend($1)", [backend])
@@ -1137,6 +1141,164 @@ describe("sign-in", () => {
     expect(newer.status).toBe(302)
     expect(newer.headers.location).toBe("/")
     expect(cookieFrom(newer.headers)).toContain("airdesign.session=")
+  })
+
+  it("does not revive an older mail after the newer one was used", async () => {
+    const email = address()
+    const early = holdSend(email)
+    const first = ask(base, "POST", "/sign-in/email", { email })
+    await early.entered
+    const later = await ask(base, "POST", "/sign-in/email", { email })
+    expect(later.status).toBe(202)
+    const newer = mailParts(mails[0]?.text)
+    const used = await ask(base, "POST", "/sign-in/code", { email, code: newer.code })
+    expect(used.status).toBe(200)
+    early.finish()
+    expect((await first).status).toBe(202)
+    const refused = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(early.text()).code })
+    expect(refused.status).toBe(401)
+    expect(refused.json).toEqual({ ok: false, refusal: "code" })
+  })
+
+  it("keeps a session until 30 days", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const mailed = mailParts(mails[0]?.text)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    const cookie = cookieFrom(signed.headers)
+    if (cookie === undefined) throw new Error("cookie")
+    const deck = `deck${randomBytes(4).toString("hex")}`
+    await ageIssued("update session.access set issued = now() - interval '29 days 12 hours' where email = $1", email)
+    const inside = await ask(base, "POST", "/decks/open", { deck }, cookie)
+    expect(inside.status).toBe(200)
+    await ageIssued("update session.access set issued = now() - interval '30 days 12 hours' where email = $1", email)
+    const outside = await ask(base, "POST", "/decks/open", { deck }, cookie)
+    expect(outside.status).toBe(401)
+    expect(outside.json).toEqual({ ok: false, refusal: "session" })
+  })
+
+  it("keeps a link until 15 minutes", async () => {
+    const inside = address()
+    const outside = address()
+    await ask(base, "POST", "/sign-in/email", { email: inside })
+    await ask(base, "POST", "/sign-in/email", { email: outside })
+    const insideUrl = new URL(mailParts(mails[0]?.text).link)
+    const outsideUrl = new URL(mailParts(mails[1]?.text).link)
+    await ageIssued(
+      "update session.code set issued = now() - interval '14 minutes 30 seconds' where email = $1",
+      inside,
+    )
+    await ageIssued(
+      "update session.code set issued = now() - interval '15 minutes 30 seconds' where email = $1",
+      outside,
+    )
+    const opened = await ask(base, "GET", `${insideUrl.pathname}${insideUrl.search}`)
+    expect(opened.status).toBe(302)
+    expect(opened.headers.location).toBe("/")
+    expect(cookieFrom(opened.headers)).toContain("airdesign.session=")
+    const refused = await ask(base, "GET", `${outsideUrl.pathname}${outsideUrl.search}`)
+    expect(refused.status).toBe(302)
+    expect(refused.headers.location).toBe(expired)
+    expect(refused.headers["set-cookie"]).toBeUndefined()
+  })
+
+  it("using the code kills the link", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const mailed = mailParts(mails[0]?.text)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(signed.status).toBe(200)
+    const url = new URL(mailed.link)
+    const linked = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(linked.status).toBe(302)
+    expect(linked.headers.location).toBe(expired)
+    expect(linked.headers["set-cookie"]).toBeUndefined()
+  })
+
+  it("using the link kills the code", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    const mailed = mailParts(mails[0]?.text)
+    const url = new URL(mailed.link)
+    const linked = await ask(base, "GET", `${url.pathname}${url.search}`)
+    expect(linked.headers.location).toBe("/")
+    const coded = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(coded.status).toBe(401)
+    expect(coded.json).toEqual({ ok: false, refusal: "code" })
+    expect(coded.headers["set-cookie"]).toBeUndefined()
+  })
+
+  it("delivers a mail while a later send is still in flight", async () => {
+    const email = address()
+    const { early, later, first, second } = await parkTwo(email)
+    try {
+      early.finish()
+      expect((await first).status).toBe(202)
+      const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(early.text()).code })
+      expect(signed.status).toBe(200)
+    } finally {
+      early.finish()
+      later.finish()
+      await Promise.all([first, second])
+    }
+  })
+
+  it("gives a newly delivered mail its own issued time", async () => {
+    const email = address()
+    await ask(base, "POST", "/sign-in/email", { email })
+    await ageIssued("update session.code set issued = now() - interval '14 minutes' where email = $1", email)
+    await ask(base, "POST", "/sign-in/email", { email })
+    const newer = mailParts(mails[1]?.text)
+    await ageIssued("update session.code set issued = issued - interval '2 minutes' where email = $1", email)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: newer.code })
+    expect(signed.status).toBe(200)
+  })
+
+  it("delivery waits for the address lock", async () => {
+    const email = address()
+    const held = holdSend(email)
+    const sending = ask(base, "POST", "/sign-in/email", { email })
+    await held.entered
+    let answered = false
+    const tracked = sending.then((response) => {
+      answered = true
+      return response
+    })
+    const info = await postgresInfo()
+    const holder = new Client({ connectionString: info.session, application_name: "sign-in-holder" })
+    const admin = new Client({ connectionString: info.admin, application_name: "sign-in-admin" })
+    await holder.connect()
+    await admin.connect()
+    try {
+      await holder.query("begin")
+      await holder.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [email])
+      held.finish()
+      while (!answered && (await addressLockWaiter(admin)) === undefined) {
+        await new Promise((resolve) => setTimeout(resolve, 20))
+      }
+      expect(answered).toBe(false)
+      const codes = await session.query<{ total: number }>(
+        "select count(*)::int as total from session.code where email = $1",
+        [email],
+      )
+      expect(codes.rows[0]?.total).toBe(0)
+      await holder.query("commit")
+      expect((await tracked).status).toBe(202)
+      const signed = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(held.text()).code })
+      expect(signed.status).toBe(200)
+    } finally {
+      held.finish()
+      await holder.end().catch(() => undefined)
+      await admin.end().catch(() => undefined)
+      await tracked
+    }
+  })
+
+  it("names the option for an origin that does not parse", () => {
+    const send = async () => {}
+    const shared = { session, deck, listen, send }
+    expect(() => createApi({ ...shared, siteOrigin, publicOrigin: "not an origin" })).toThrow(/publicOrigin/)
+    expect(() => createApi({ ...shared, publicOrigin, siteOrigin: "not an origin" })).toThrow(/siteOrigin/)
   })
 
   it("rejects cookie domains containing cookie attributes", () => {

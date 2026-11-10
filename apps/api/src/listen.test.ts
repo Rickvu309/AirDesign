@@ -344,6 +344,24 @@ describe("start entry", () => {
     }
   }, 60_000)
 
+  it("starts with an empty cookie domain", async () => {
+    const info = await postgresInfo()
+    const port = await freePort()
+    child = spawnEntry(
+      childEnv({
+        PORT: String(port),
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+        COOKIE_DOMAIN: "",
+      }),
+    )
+    await untilHealth(port, child)
+    const health = await ask(`http://127.0.0.1:${String(port)}`, "GET", "/health")
+    expect(health.status).toBe(200)
+    expect(health.json).toEqual({ ok: true })
+  }, 20_000)
+
   it("sets the cookie domain and link origin from the environment", async () => {
     const info = await postgresInfo()
     const port = await freePort()
