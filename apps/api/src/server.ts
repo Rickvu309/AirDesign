@@ -1,10 +1,12 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 
 import { readWatch, type DeckId } from "@airdesign/catalog"
+import type { CallerLog } from "@airdesign/mcp"
 
 import { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
 import { DeckListen } from "./listen.js"
 import type { Sender } from "./mail.js"
+import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
 import { chosenRevision, commitEdits, openSaved, readSaved } from "./saved.js"
 
@@ -16,6 +18,7 @@ export type ApiOptions = {
   readonly publicOrigin: string
   readonly siteOrigin: string
   readonly cookieDomain?: string
+  readonly now?: () => number
 }
 
 const cookieName = "airdesign.session"
@@ -210,11 +213,23 @@ async function watchRoute(options: ApiOptions, req: IncomingMessage, res: Server
   sendJson(res, 200, { ok: true, deck: parsed.deck, revision })
 }
 
-async function handle(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function handle(
+  options: ApiOptions,
+  logs: Map<string, CallerLog>,
+  now: () => number,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
   const url = new URL(req.url ?? "/", "http://127.0.0.1")
   const method = req.method ?? "GET"
   if (method === "GET" && url.pathname === "/health") {
     sendJson(res, 200, { ok: true })
+    return
+  }
+  if (url.pathname === "/mcp") {
+    const email = await signedIn(options, req, res)
+    if (email === undefined) return
+    await serveMcp({ deck: options.deck, email, logs, now }, req, res)
     return
   }
   if (method === "POST" && url.pathname === "/sign-in/email") {
@@ -249,9 +264,11 @@ export function createApi(options: ApiOptions): Server {
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)
+  const logs = new Map<string, CallerLog>()
+  const now = options.now ?? Date.now
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
-    void handle(options, req, res).catch(() => {
+    void handle(options, logs, now, req, res).catch(() => {
       if (res.headersSent || res.writableEnded) return
       res.writeHead(500)
       res.end()

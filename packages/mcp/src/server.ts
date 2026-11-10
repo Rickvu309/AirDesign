@@ -34,7 +34,16 @@ function mcpResult(result: ToolResult) {
   return { content, isError: true as const }
 }
 
-export function createServer(session: Session): McpServer {
+export type Host = {
+  prepare?: (
+    name: string,
+    raw: unknown,
+    session: Session,
+  ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: string }>
+  commit?: (result: ToolResult, session: Session) => Promise<ToolResult>
+}
+
+export function createServer(session: Session, host?: Host): McpServer {
   const server = new McpServer({ name: "airdesign", version: "0.0.0" })
   for (const tool of projectTools(catalog)) {
     server.registerTool(
@@ -61,9 +70,21 @@ export function createServer(session: Session): McpServer {
           return mcpResult(refusal)
         }
         session.log = admitted.log
+        if (host?.prepare) {
+          const prepared = await host.prepare(tool.name, args, session)
+          if (!prepared.ok) {
+            return mcpResult({
+              ok: false,
+              refusal: prepared.refusal,
+              deck: session.deck,
+              content: [{ type: "text", text: prepared.refusal }],
+            })
+          }
+        }
         const result = callTool(tool.name, args, session)
-        if (result.ok) session.deck = result.deck
-        return mcpResult(result)
+        const settled = host?.commit ? await host.commit(result, session) : result
+        if (settled.ok) session.deck = settled.deck
+        return mcpResult(settled)
       },
     )
   }
