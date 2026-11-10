@@ -1,27 +1,26 @@
-import { decide, elementId, openRegister } from "@airdesign/document"
+import { decide, elementId, openRegister, type Register } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
-import { readPackage, readShapes } from "@airdesign/pptx"
+import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
-import { commitEdit, elementNode, exportedParts, nodeA, saveDeck, ThinDeck } from "./thin-deck"
+import { commitEdit, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
-  const sent: { deck: string; value: string; node?: string }[] = []
-  const saved: { deck: string; parts: ReadonlyMap<string, Uint8Array>; nodes: unknown }[] = []
+  const sent: { deck: string; value: string; node: string; floor: string }[] = []
+  const saved: { deck: string; parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }[] = []
   const reads: string[] = []
+  const flushed: string[] = []
   const state: {
-    parts:
-      | {
-          ok: true
-          parts: ReadonlyMap<string, Uint8Array>
-          nodes: { a: { part: string; shape: string } }
-        }
-      | { ok: false; refusal: "absent" }
-  } = { parts: { ok: false, refusal: "absent" } }
-  const counts = { openDeck: 0, flush: 0 }
-  let waiters: { kind: "openDeck" | "flush"; count: number; resolve: () => void }[] = []
-  function happened(kind: "openDeck" | "flush") {
+    parts: { ok: true; parts: ReadonlyMap<string, Uint8Array> } | { ok: false; refusal: "absent" }
+    opened: { ok: true; register: unknown } | { ok: false; refusal: "deck" }
+    refuse: boolean
+    gate: Promise<void> | null
+  } = { parts: { ok: false, refusal: "absent" }, opened: { ok: false, refusal: "deck" }, refuse: false, gate: null }
+  const counts = { openDeck: 0, flush: 0, putParts: 0 }
+  type Counted = keyof typeof counts
+  let waiters: { kind: Counted; count: number; resolve: () => void }[] = []
+  function happened(kind: Counted) {
     counts[kind] += 1
     for (const waiter of waiters) if (waiter.kind === kind && counts[kind] >= waiter.count) waiter.resolve()
     waiters = waiters.filter((waiter) => waiter.kind !== kind || counts[kind] < waiter.count)
@@ -30,16 +29,23 @@ const live = vi.hoisted(() => {
     sent,
     saved,
     reads,
+    flushed,
     state,
     reset() {
       sent.length = 0
       reads.length = 0
       saved.length = 0
+      flushed.length = 0
       counts.openDeck = 0
       counts.flush = 0
+      counts.putParts = 0
       waiters = []
+      state.parts = { ok: false, refusal: "absent" }
+      state.opened = { ok: false, refusal: "deck" }
+      state.refuse = false
+      state.gate = null
     },
-    reached(kind: "openDeck" | "flush", count: number): Promise<void> {
+    reached(kind: Counted, count: number): Promise<void> {
       if (counts[kind] >= count) return Promise.resolve()
       return new Promise((resolve) => {
         waiters.push({ kind, count, resolve })
@@ -47,27 +53,28 @@ const live = vi.hoisted(() => {
     },
     getParts: async (deck: string) => {
       reads.push(deck)
+      if (state.gate !== null) await state.gate
       return state.parts
     },
-    putParts: async (
-      deck: string,
-      stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; nodes: unknown },
-    ) => {
-      saved.push({ deck, parts: stored.parts, nodes: stored.nodes })
+    putParts: async (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }) => {
+      saved.push({ deck, ...stored })
+      happened("putParts")
       return { ok: true, ...stored }
     },
     connect: () => ({
-      async enqueue(deck: string, value: string, node?: string) {
-        sent.push({ deck, value, node })
-        return { ok: true, painted: "" }
+      async enqueue(deck: string, value: string, node: string, floor: string) {
+        if (state.refuse) return { ok: false, refusal: "limit" }
+        sent.push({ deck, value, node, floor })
+        return { ok: true, painted: value }
       },
-      async flush() {
+      async flush(deck: string) {
+        flushed.push(deck)
         happened("flush")
         return { ok: true }
       },
       async openDeck() {
         happened("openDeck")
-        return { ok: false, refusal: "deck" }
+        return state.opened
       },
     }),
   }
@@ -79,19 +86,25 @@ vi.mock("@airdesign/live", async () => {
     ...actual,
     connect: () => live.connect(),
     getParts: (deck: string) => live.getParts(deck),
-    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; nodes: unknown }) =>
+    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }) =>
       live.putParts(deck, stored),
   }
 })
 
-const editedId = (async () => {
+async function cleanParts(): Promise<ReadonlyMap<string, Uint8Array>> {
+  const read = await readPackage(await cleanFile())
+  if (!read.ok) throw new Error(read.reason)
+  return read.parts
+}
+
+async function cleanFile(): Promise<Uint8Array> {
   const fsName = "node:fs/promises"
   const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const read = await readPackage(
-    await fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url)),
-  )
-  if (!read.ok) throw new Error(read.reason)
-  const id = elementNode(readShapes(read.parts), nodeA)
+  return fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url))
+}
+
+const editedId = (async () => {
+  const id = elementIds(await cleanParts())[0]
   if (id === undefined) throw new Error("missing")
   return id
 })()
@@ -128,14 +141,15 @@ async function postsCommit(remote: Remote, deck: string, node: string): Promise<
   return seen[0] === "/decks/commit"
 }
 
-it("flushes the http remote for the given deck after Hello! on node a", async () => {
+it("flushes the http remote for the given deck after Hello! on its element", async () => {
   const node = await editedId
-  const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string }[] = []
+  const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string; floor?: string }[] =
+    []
   await commitEdit(
     (remote) => {
       return {
-        async enqueue(deck, value, named) {
-          calls.push({ op: "enqueue", remote, deck, value, node: named })
+        async enqueue(deck, value, named, floor) {
+          calls.push({ op: "enqueue", remote, deck, value, node: named, floor })
           return { ok: true }
         },
         async flush(deck) {
@@ -146,12 +160,12 @@ it("flushes the http remote for the given deck after Hello! on node a", async ()
     },
     "different-deck",
     "Hello!",
-    node,
+    { id: node, file: "Hello" },
   )
   const enqueued = calls[0]
   const flushed = calls[1]
   expect(calls.map((call) => call.op)).toEqual(["enqueue", "flush"])
-  expect(enqueued).toMatchObject({ deck: "different-deck", value: "Hello!", node })
+  expect(enqueued).toMatchObject({ deck: "different-deck", value: "Hello!", node, floor: "Hello" })
   expect(flushed).toMatchObject({ deck: "different-deck" })
   if (enqueued === undefined || flushed === undefined) return
   expect(await postsCommit(enqueued.remote, "different-deck", node)).toBe(false)
@@ -185,9 +199,14 @@ async function wasmBytes(): Promise<Uint8Array> {
   return fs.readFile(nodeModule.createRequire(import.meta.url).resolve("sax-wasm/lib/sax-wasm.wasm"))
 }
 
-async function renderedDeck(parts: ReadonlyMap<string, Uint8Array>, deck = "opened-deck") {
+async function renderedDeck(
+  parts: ReadonlyMap<string, Uint8Array>,
+  deck: string | undefined = "opened-deck",
+  register: Register | null = null,
+) {
   live.reset()
-  live.state.parts = { ok: true, parts, nodes: { a: nodeA } }
+  live.state.parts = { ok: true, parts }
+  if (register !== null) live.state.opened = { ok: true, register }
   if (jsdom === undefined) throw new Error("jsdom")
   const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
     url: "http://localhost/",
@@ -226,14 +245,35 @@ async function renderedDeck(parts: ReadonlyMap<string, Uint8Array>, deck = "open
       root.unmount()
     })
   })
-  const opened = live.reached("openDeck", 1)
+  if (deck === undefined) {
+    await act(async () => {
+      root.render(<ThinDeck />)
+    })
+    return window
+  }
+  const sentOnOpen = live.reached("flush", 1)
   await act(async () => {
     root.render(<ThinDeck id={deck} />)
   })
   await act(async () => {
-    await opened
+    await sentOnOpen
   })
   return window
+}
+
+function boxShowing(window: Window, text: string): Element {
+  const found = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === text)
+  if (found === undefined) throw new Error(text)
+  return found
+}
+
+async function typeInto(window: Window, box: Element, value: string, flushes: number): Promise<void> {
+  box.textContent = value
+  const flushed = live.reached("flush", flushes)
+  await act(async () => {
+    box.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
+    await flushed
+  })
 }
 
 async function committedNodes(
@@ -243,27 +283,13 @@ async function committedNodes(
   deck = "opened-deck",
 ): Promise<readonly (string | undefined)[]> {
   const window = await renderedDeck(parts, deck)
-  const passage = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === from)
-  if (passage === undefined) throw new Error("passage")
-  for (const [index, value] of values.entries()) {
-    passage.textContent = value
-    const flushed = live.reached("flush", index + 1)
-    await act(async () => {
-      passage.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
-      await flushed
-    })
-  }
+  const passage = boxShowing(window, from)
+  for (const [index, value] of values.entries()) await typeInto(window, passage, value, index + 2)
   return live.sent.map((edit) => edit.node)
 }
 
 it("saves the thin edit under its element id", async () => {
-  const fsName = "node:fs/promises"
-  const fs = (await import(fsName)) as { readFile: (path: URL) => Promise<Uint8Array> }
-  const read = await readPackage(
-    await fs.readFile(new URL("../../../scripts/pptx-fixtures/clean.pptx", import.meta.url)),
-  )
-  if (!read.ok) throw new Error(read.reason)
-  expect(await committedNodes(read.parts, "Hello", ["Hello!"])).toEqual(["256.2"])
+  expect(await committedNodes(await cleanParts(), "Hello", ["Hello!"])).toEqual(["256.2"])
 })
 
 it("saves under the id of the shape that was edited, not the first one", async () => {
@@ -296,7 +322,7 @@ it("paints before the commit is sent", async () => {
     },
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
     () => {
       order.push("paint")
     },
@@ -305,26 +331,61 @@ it("paints before the commit is sent", async () => {
   expect(order).toEqual(["enqueue", "paint", "flush"])
 })
 
-it("an export with no stored edit applies no route and keeps the stored parts", () => {
-  const node = { part: "ppt/slides/slide1.xml", shape: "2" }
-  const slide = new TextEncoder().encode(
-    '<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
-  )
-  const parts = new Map([
-    ["ppt/presentation.xml", new TextEncoder().encode("<p:presentation/>")],
-    [node.part, slide],
+function onSlide(slide: Uint8Array): Map<string, Uint8Array> {
+  const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>`
+  const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
+  return new Map([
+    ["ppt/presentation.xml", xml(presentation)],
+    ["ppt/_rels/presentation.xml.rels", xml(rels)],
+    ["ppt/slides/slide1.xml", slide],
   ])
-  const empty = openRegister("", "clean")
+}
 
-  expect(exportedParts(parts, node, empty)).toBe(parts)
+function editedRegister(edits: readonly (readonly [string, string])[]): Register {
+  let register = openRegister("", "clean")
+  for (const [id, value] of edits) {
+    if (!register.nodes.includes(elementId(id))) {
+      const added = decide(register, { command: "add", node: elementId(id), floor: "", route: register.route })
+      if (added.decision === "refuse") throw new Error("refused")
+      register = added.register
+    }
+    const edited = decide(register, { command: "person", value, node: elementId(id) })
+    if (edited.decision === "refuse") throw new Error("refused")
+    register = edited.register
+  }
+  return register
+}
 
-  const edited = decide(empty, { command: "person", value: "Hello!" })
-  if (edited.decision === "refuse") throw new Error("refused")
-  const next = exportedParts(parts, node, edited.register)
-  expect(new TextDecoder().decode(next.get(node.part)).match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
-  expect([...next.keys()]).toEqual([...parts.keys()])
-  expect(next.get("ppt/presentation.xml")).toBe(parts.get("ppt/presentation.xml"))
-  expect(parts.get(node.part)).toBe(slide)
+const twoBoxSlide = `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>World</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
+
+it("an export with no stored edit applies no route and keeps the stored parts", () => {
+  const slide = xml(twoBoxSlide)
+  const parts = onSlide(slide)
+  expect(exportedParts(parts, openRegister("", "clean"))).toBe(parts)
+  const next = exportedParts(parts, editedRegister([["256.2", "Hello!"]]))
+  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml")).match(/<a:t>[^<]*<\/a:t>/g)).toEqual([
+    "<a:t>Hello!</a:t>",
+    "<a:t>World</a:t>",
+  ])
+  expect([...next.keys()].sort()).toEqual([...parts.keys()].sort())
+  expect(next.get("ppt/presentation.xml")).toEqual(parts.get("ppt/presentation.xml"))
+  expect(parts.get("ppt/slides/slide1.xml")).toBe(slide)
+})
+
+it("an export writes each edited element into its own box", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const next = exportedParts(
+    parts,
+    editedRegister([
+      ["256.3", "Planet"],
+      ["256.2", "Hi"],
+      ["256.3", "Earth"],
+    ]),
+  )
+  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml")).match(/<a:t>[^<]*<\/a:t>/g)).toEqual([
+    "<a:t>Hi</a:t>",
+    "<a:t>Earth</a:t>",
+  ])
 })
 
 it("saves every edit under the deck id in the address", async () => {
@@ -343,37 +404,35 @@ it("saves two opened files under distinct valid deck ids", async () => {
   expect(second).toMatch(/^[A-Za-z0-9_-]{1,64}$/)
   expect(first).not.toBe(second)
   expect(live.saved).toEqual([
-    { deck: first, parts: firstParts, nodes: { a: nodeA } },
-    { deck: second, parts: secondParts, nodes: { a: nodeA } },
+    { deck: first, parts: firstParts, file: new Uint8Array([1]) },
+    { deck: second, parts: secondParts, file: new Uint8Array([2]) },
   ])
 })
 
 it("an export of a stored edit refuses a box with several paragraphs and writes nothing", () => {
-  const node = { part: "ppt/slides/slide1.xml", shape: "2" }
   const lines = Array.from({ length: 9 }, (_, index) => `<a:p><a:r><a:t>Line ${index}</a:t></a:r></a:p>`).join("")
   const slide = new TextEncoder().encode(
     `<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/></p:nvSpPr><p:txBody><a:bodyPr/>${lines}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`,
   )
   const saved = Uint8Array.from(slide)
-  const parts = new Map([[node.part, slide]])
-  const edited = decide(openRegister("", "clean"), { command: "person", value: "typed" })
-  if (edited.decision === "refuse") throw new Error("refused")
-  expect(() => exportedParts(parts, node, edited.register)).toThrow(/text-shape/)
-  expect(parts.get(node.part)).toEqual(saved)
+  const parts = onSlide(slide)
+  expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
+  expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
 const fallbackSlide = `<p:sld><p:cSld><p:spTree><mc:AlternateContent><mc:Choice Requires="x"><p:sp><p:nvSpPr><p:cNvPr id="6" name="C"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Choice</a:t></a:r></a:p></p:txBody></p:sp></mc:Choice><mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="2" name="F"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>One</a:t></a:r></a:p><a:p><a:r><a:rPr b="1"/><a:t>Two</a:t></a:r></a:p><a:p><a:r><a:t>Three</a:t></a:r></a:p></p:txBody></p:sp></mc:Fallback></mc:AlternateContent><p:sp><p:nvSpPr><p:cNvPr id="2" name="P"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
 
 it("an export of a stored edit refuses the fallback box that shares the edited id and writes nothing", () => {
-  const node = { part: "ppt/slides/slide1.xml", shape: "2" }
   const slide = new TextEncoder().encode(fallbackSlide)
   const saved = Uint8Array.from(slide)
-  const parts = new Map([[node.part, slide]])
-  const edited = decide(openRegister("", "clean"), { command: "person", value: "typed" })
-  if (edited.decision === "refuse") throw new Error("refused")
-  expect(() => exportedParts(parts, node, edited.register)).toThrow(/text-shape/)
-  expect(parts.get(node.part)).toEqual(saved)
+  const parts = onSlide(slide)
+  expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
+  expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
+
+function editableTexts(window: Window): readonly string[] {
+  return [...window.document.querySelectorAll('[contenteditable="true"]')].map((node) => node.textContent ?? "").sort()
+}
 
 it("does not offer a locked box for editing", async () => {
   const parts = shapedParts()
@@ -381,7 +440,7 @@ it("does not offer a locked box for editing", async () => {
   const window = await renderedDeck(parts)
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+  expect(editableTexts(window)).toEqual(["Choice", "Other"])
 })
 
 async function offeredWith(body: string) {
@@ -397,19 +456,107 @@ it("does not offer a box with two runs in one paragraph for editing", async () =
   const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r><a:r><a:t>ep</a:t></a:r></a:p>")
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
 })
 
 it("does not offer a box with several paragraphs for editing", async () => {
   const window = await offeredWith("<a:p><a:r><a:t>Ke</a:t></a:r></a:p><a:p><a:r><a:t>ep</a:t></a:r></a:p>")
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
 })
 
 it("does not offer a slide-number box for editing", async () => {
   const window = await offeredWith(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>Keep</a:t></a:fld></a:p>`)
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(window.document.querySelectorAll('[contenteditable="true"]')).toHaveLength(0)
+  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
+})
+
+it("names every element by its slide id and shape id in the server's pattern", () => {
+  const ids = elementIds(shapedParts())
+  expect(ids).toEqual(["452.2", "382.5", "382.2", "382.9"])
+  for (const id of ids) expect(id).toMatch(/^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/)
+})
+
+it("commits each box under its own id with its file text as floor", async () => {
+  const window = await renderedDeck(shapedParts())
+  await typeInto(window, boxShowing(window, "First"), "One", 2)
+  await typeInto(window, boxShowing(window, "Last"), "Two", 3)
+  await typeInto(window, boxShowing(window, "Other"), "Three", 4)
+  await typeInto(window, boxShowing(window, "One"), "Four", 5)
+  expect(live.sent).toEqual([
+    { deck: "opened-deck", value: "One", node: "382.5", floor: "First" },
+    { deck: "opened-deck", value: "Two", node: "382.9", floor: "Last" },
+    { deck: "opened-deck", value: "Three", node: "452.2", floor: "Other" },
+    { deck: "opened-deck", value: "Four", node: "382.5", floor: "First" },
+  ])
+})
+
+it("paints each element's stored value after a reload and the file text elsewhere", async () => {
+  const window = await renderedDeck(
+    shapedParts(),
+    "opened-deck",
+    editedRegister([
+      ["382.9", "Stored last"],
+      ["452.2", "Stored other"],
+    ]),
+  )
+  expect(editableTexts(window)).toEqual(["First", "Keep", "Stored last", "Stored other"])
+})
+
+it("sends what is pending when a deck opens", async () => {
+  await renderedDeck(shapedParts(), "address-deck")
+  expect(live.flushed).toEqual(["address-deck"])
+})
+
+it("puts a refused edit back to the last stored text", async () => {
+  const window = await renderedDeck(shapedParts(), "opened-deck", editedRegister([["382.9", "Stored last"]]))
+  live.state.refuse = true
+  const last = boxShowing(window, "Stored last")
+  const first = boxShowing(window, "First")
+  for (const [index, [box, typed]] of (
+    [
+      [last, "x".repeat(9000)],
+      [first, "y".repeat(9000)],
+    ] as const
+  ).entries()) {
+    box.textContent = typed
+    const reopened = live.reached("openDeck", index + 2)
+    await act(async () => {
+      box.dispatchEvent(new window.InputEvent("input", { bubbles: true }))
+      await reopened
+    })
+    await act(async () => {})
+  }
+  expect(last.textContent).toBe("Stored last")
+  expect(first.textContent).toBe("First")
+  expect(live.sent).toEqual([])
+})
+
+it("keeps what was typed while the opened file was still loading", async () => {
+  const window = await renderedDeck(await cleanParts(), undefined)
+  let release: () => void = () => undefined
+  live.state.gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const input = window.document.querySelector("input[type=file]")
+  if (input === null) throw new Error("input")
+  Object.defineProperty(input, "files", { value: [new File([Uint8Array.from(await cleanFile())], "clean.pptx")] })
+  const saved = live.reached("putParts", 1)
+  await act(async () => {
+    input.dispatchEvent(new window.Event("change", { bubbles: true }))
+    await saved
+  })
+  await act(async () => {})
+  const box = boxShowing(window, "Hello")
+  await typeInto(window, box, "Typed while held", 1)
+  await act(async () => {
+    release()
+    await live.state.gate
+  })
+  await act(async () => {})
+  expect(box.textContent).toBe("Typed while held")
+  expect(live.sent.map((edit) => edit.value)).toEqual(["Typed while held"])
+  expect(live.sent[0]?.deck).toBe(live.saved[0]?.deck)
 })

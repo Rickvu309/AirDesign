@@ -11,6 +11,7 @@
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
+    "@airdesign/catalog": "workspace:*",
     "@airdesign/document": "workspace:*",
     "@airdesign/live": "workspace:*",
     "@airdesign/pptx": "workspace:*",

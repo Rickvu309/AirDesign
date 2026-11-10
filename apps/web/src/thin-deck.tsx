@@ -1,14 +1,15 @@
-import { currentValue, type Kind, type Register } from "@airdesign/document"
+import { readNode } from "@airdesign/catalog"
+import { currentValue, version, type Kind, type Register } from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import {
-  applyRoute,
+  exportElements,
   exportPackage,
-  oneRunValue,
   prepareMarkup,
   readPackage,
   readShapes,
   shownText,
   textStorable,
+  type ElementEdit,
   type ShapeKind,
 } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
@@ -17,16 +18,8 @@ import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { galleryDeck } from "@/editor/gallery-deck"
-export const nodeA = { part: "ppt/slides/slide1.xml", shape: "2" }
 
-export function elementNode(
-  shapes: readonly { readonly slide: string; readonly part: string; readonly shape: string }[],
-  node: { readonly part: string; readonly shape: string },
-): string | undefined {
-  const found = shapes.find((shape) => shape.part === node.part && shape.shape === node.shape)
-  if (found === undefined) return undefined
-  return `${found.slide}.${found.shape}`
-}
+export type TextBox = { readonly id: ElementId; readonly file: string }
 
 let markup: Promise<void> | null = null
 
@@ -47,45 +40,44 @@ function paintKind(kind: ShapeKind): Kind {
   return "shape"
 }
 
-function linkedId(node: { readonly part: string; readonly shape: string }): ElementId {
-  return elementId(`${node.part}#${node.shape}`)
+export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
+  return readShapes(parts).map((shape) => elementId(`${shape.slide}.${shape.shape}`))
+}
+
+export function shownValue(register: Register | null, id: ElementId, file: string): string {
+  const body = register?.elements[id]
+  return body === undefined ? file : currentValue(body)
 }
 
 function paint(
   store: PaintStore,
   parts: ReadonlyMap<string, Uint8Array>,
-  node: { readonly part: string; readonly shape: string },
-  text: string | null,
-): { readonly ids: readonly ElementId[]; readonly node: string | undefined } {
+  register: Register | null,
+): { readonly ids: readonly ElementId[]; readonly boxes: ReadonlyMap<ElementId, TextBox> } {
   const shapes = readShapes(parts)
-  const anchor = linkedId(node)
-  const next: ElementId[] = []
-  for (const shape of shapes) {
-    const id = elementId(`${shape.part}#${shape.shape}`)
+  const ids = elementIds(parts)
+  const seen = new Map<ElementId, number>()
+  for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
+  const boxes = new Map<ElementId, TextBox>()
+  shapes.forEach((shape, index) => {
+    const id = ids[index]
+    if (id === undefined) return
     const kind = paintKind(shape.kind)
-    store.publish({
-      id,
-      kind,
-      text: id === anchor && text !== null ? text : shownText(shape.text),
-      picture: kind === "picture" ? "" : null,
-    })
-    next.push(id)
-  }
-  store.setSlides([{ id: slideId("1"), elements: next }])
-  const offered = textStorable(parts, node.part, node.shape)
-  return {
-    ids: next,
-    node: offered
-      ? elementNode(
-          shapes.filter((shape) => !shape.locked),
-          node,
-        )
-      : undefined,
-  }
+    const file = shownText(shape.text)
+    store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
+    const storable =
+      seen.get(id) === 1 &&
+      !shape.locked &&
+      readNode(id) !== undefined &&
+      textStorable(parts, shape.part, shape.shape)
+    if (storable) boxes.set(id, { id, file })
+  })
+  store.setSlides([{ id: slideId("1"), elements: [...ids] }])
+  return { ids, boxes }
 }
 
 type EditLink = {
-  enqueue(deck: string, value: string, node?: string): Promise<{ readonly ok: boolean }>
+  enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
   flush(deck: string): Promise<unknown>
 }
 
@@ -93,12 +85,20 @@ export async function commitEdit(
   open: (remote: Remote) => EditLink,
   deckId: string,
   value: string,
-  node: string,
+  box: TextBox,
   paint?: () => void,
+  refused?: () => Promise<void> | void,
 ): Promise<void> {
-  const result = await open(memoryRemote()).enqueue(deckId, value, node)
-  if (!result.ok) return
+  const result = await open(memoryRemote()).enqueue(deckId, value, box.id, box.file)
+  if (!result.ok) {
+    await refused?.()
+    return
+  }
   paint?.()
+  await sendPending(open, deckId)
+}
+
+export async function sendPending(open: (remote: Remote) => EditLink, deckId: string): Promise<void> {
   await open(httpRemote())
     .flush(deckId)
     .catch(() => undefined)
@@ -106,26 +106,30 @@ export async function commitEdit(
 
 export function exportedParts(
   parts: ReadonlyMap<string, Uint8Array>,
-  node: { readonly part: string; readonly shape: string },
   register: Register,
 ): ReadonlyMap<string, Uint8Array> {
-  if (register.landed.length === 0) return parts
-  const value = oneRunValue(parts, node.part, node.shape, currentValue(register))
-  return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, value })
+  const edits: ElementEdit[] = []
+  for (const id of register.nodes) {
+    const body = register.elements[id]
+    if (body === undefined || version(body) === 0) continue
+    edits.push({ id, name: "text", text: currentValue(body) })
+  }
+  if (edits.length === 0) return parts
+  return exportElements(parts, edits).parts
 }
 
 export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uint8Array): Promise<string | null> {
   const deckId = crypto.randomUUID()
-  const saved = await putParts(deckId, { parts, file, nodes: { a: nodeA } })
+  const saved = await putParts(deckId, { parts, file })
   return saved.ok ? deckId : null
 }
 
 export function ThinDeck({ id }: { id?: string }) {
   const store = useRef(paintStore())
-  const nodes = useRef(nodeA)
-  const edited = useRef<string | undefined>(undefined)
+  const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
   const [deckId, setDeckId] = useState(id)
   const [ids, setIds] = useState<readonly ElementId[]>([])
+  const shownDeck = useRef(id)
 
   useEffect(() => {
     if (id === undefined) return
@@ -135,17 +139,32 @@ export function ThinDeck({ id }: { id?: string }) {
       const stored = await getParts(id)
       if (!stored.ok || !live) return
       const opened = await connect(memoryRemote()).openDeck(id)
-      const text = opened.ok && opened.register.landed.length > 0 ? currentValue(opened.register) : null
       if (!live) return
-      nodes.current = stored.nodes.a
-      const painted = paint(store.current, stored.parts, stored.nodes.a, text)
-      edited.current = painted.node
+      const painted = paint(store.current, stored.parts, opened.ok ? opened.register : null)
+      boxes.current = painted.boxes
       setIds(painted.ids)
+      await sendPending(connect, id)
     })()
     return () => {
       live = false
     }
   }, [id])
+
+  useEffect(() => {
+    function online() {
+      const deck = shownDeck.current
+      if (deck !== undefined) void sendPending(connect, deck)
+    }
+    window.addEventListener("online", online)
+    return () => {
+      window.removeEventListener("online", online)
+    }
+  }, [])
+
+  function show(target: ElementId, text: string) {
+    const record = store.current.getElement(target)
+    if (record !== null) store.current.publish({ id: record.id, kind: record.kind, text, picture: record.picture })
+  }
 
   async function openFile(file: File) {
     await ensureMarkup()
@@ -155,23 +174,28 @@ export function ThinDeck({ id }: { id?: string }) {
     const nextId = await saveDeck(read.parts, bytes)
     if (nextId === null) return
     window.history.replaceState(null, "", `/thin/${nextId}`)
+    shownDeck.current = nextId
     setDeckId(nextId)
-    nodes.current = nodeA
-    const painted = paint(store.current, read.parts, nodeA, null)
-    edited.current = painted.node
+    const painted = paint(store.current, read.parts, null)
+    boxes.current = painted.boxes
     setIds(painted.ids)
   }
 
-  async function onEdit(value: string) {
-    const node = edited.current
-    if (node === undefined || deckId === undefined) return
-    await commitEdit(connect, deckId, value, node, () => {
-      const id = linkedId(nodes.current)
-      const record = store.current.getElement(id)
-      if (record !== null) {
-        store.current.publish({ id: record.id, kind: record.kind, text: value, picture: record.picture })
-      }
-    })
+  async function onEdit(target: ElementId, value: string) {
+    const box = boxes.current.get(target)
+    if (box === undefined || deckId === undefined) return
+    const deck = deckId
+    await commitEdit(
+      connect,
+      deck,
+      value,
+      box,
+      () => show(target, value),
+      async () => {
+        const opened = await connect(memoryRemote()).openDeck(deck)
+        show(target, shownValue(opened.ok ? opened.register : null, target, box.file))
+      },
+    )
   }
 
   async function onExport() {
@@ -181,7 +205,7 @@ export function ThinDeck({ id }: { id?: string }) {
     if (!stored.ok) return
     const opened = await connect(memoryRemote()).openDeck(deckId)
     if (!opened.ok) return
-    const bytes = await exportPackage(stored.file, exportedParts(stored.parts, stored.nodes.a, opened.register))
+    const bytes = await exportPackage(stored.file, exportedParts(stored.parts, opened.register))
     const copy = new Uint8Array(bytes.byteLength)
     copy.set(bytes)
     const url = URL.createObjectURL(new Blob([copy]))
@@ -193,8 +217,6 @@ export function ThinDeck({ id }: { id?: string }) {
     link.remove()
     URL.revokeObjectURL(url)
   }
-
-  const anchor = linkedId(nodes.current)
 
   return (
     <div className="thin-page">
@@ -219,8 +241,8 @@ export function ThinDeck({ id }: { id?: string }) {
           slide={
             <div>
               {ids.map((id) =>
-                id === anchor && edited.current !== undefined ? (
-                  <Passage key={id} id={id} onEdit={(value) => void onEdit(value)} store={store.current} />
+                boxes.current.has(id) ? (
+                  <Passage key={id} id={id} onEdit={(value) => void onEdit(id, value)} store={store.current} />
                 ) : (
                   <Passage key={id} id={id} store={store.current} />
                 ),
