@@ -10,7 +10,7 @@ export {
   type EditResult,
 } from "./edit-answer.js"
 export { editCodes, editNext, editSentence, type EditCode } from "./edit-next.js"
-export { afterWrite, agentCaller, openRun } from "./run.js"
+export { afterWrite, agentCaller, elementFloors, openRun, type ElementFloors } from "./run.js"
 export { textProblem, type TextProblem } from "./text-from.js"
 export {
   capture,

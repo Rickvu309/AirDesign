@@ -319,7 +319,7 @@ describe("editText", () => {
       ok: false,
       revision: 0,
       refusal: "person-protected",
-      elements: [{ node: "258.7", value: "from the person", version: before }],
+      elements: [{ node: "258.7", value: "from the person", version: before, closed: true }],
     })
     expect(version(elementBody(result.deck))).toBe(before)
     expect(currentValue(elementBody(deck))).toBe("from the person")
@@ -460,6 +460,74 @@ describe("editText", () => {
       elements: [{ node: "258.9", value: sent, version: 1 }],
     })
     expect(deck.register.elements[created]).toBeUndefined()
+  })
+
+  it("checks a second change on a new element that brings no floor against the first change's floor", () => {
+    const deck = textDeck()
+    const result = edit(deck, [
+      { value: changedRun(), node: "258.9", floor },
+      { value: badParagraph(), node: "258.9" },
+    ])
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("text-from")
+    expect(result.deck).toBe(deck)
+    expect(result.content[0]).toEqual({ type: "text", text: editNext["text-from"] })
+    expect(result.content[1]).toEqual({ type: "text", text: missingParagraph })
+    expect(deck.register.nodes).not.toContain(created)
+    expect(deck.register.elements[created]).toBeUndefined()
+  })
+
+  it("refuses a second change on a new element that brings a different floor", () => {
+    const deck = textDeck()
+    const result = edit(deck, [
+      { value: changedRun(), node: "258.9", floor },
+      { value: badParagraph(), node: "258.9", floor: "plain" },
+    ])
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("field")
+    expect(result.deck).toBe(deck)
+    expect(result.content[0]).toEqual({ type: "text", text: editNext.field })
+    expect(deck.register.nodes).not.toContain(created)
+    expect(deck.register.elements[created]).toBeUndefined()
+  })
+
+  it("lands a good second change on a new element against the first change's floor", () => {
+    const deck = textDeck()
+    const sent = newRun()
+    const result = edit(deck, [
+      { value: changedRun(), node: "258.9", floor },
+      { value: sent, node: "258.9", readAt: 1 },
+    ])
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(elementBody(result.deck, created).floor).toBe(floor)
+    expect(elementBody(result.deck, created).landed.map((row) => row.value)).toEqual([changedRun(), sent])
+    expect(readAnswer(result)).toEqual({
+      ok: true,
+      revision: 1,
+      elements: [{ node: "258.9", value: sent, version: 2 }],
+    })
+  })
+
+  it("answers person-protected, not stale, when a person edited the element during the run", () => {
+    const started = textDeck()
+    const person = decide(started.register, { command: "person", value: "from the person", node: text })
+    if (person.decision !== "apply") throw new Error(person.code)
+    const deck = { id: started.id, revision: started.revision, register: person.register }
+    const result = edit(deck, [{ value: changedRun(), node: "258.7", readAt: 0 }])
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal).toBe("person-protected")
+    expect(result.deck).toBe(deck)
+    expect(result.content[0]).toEqual({ type: "text", text: editNext["person-protected"] })
+    expect(readAnswer(result)).toEqual({
+      ok: false,
+      revision: 0,
+      refusal: "person-protected",
+      elements: [{ node: "258.7", value: "from the person", version: 1, closed: true }],
+    })
   })
 
   it("refuses a missing run through the client", async () => {

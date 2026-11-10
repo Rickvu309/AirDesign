@@ -79,7 +79,7 @@ describe("openRun", () => {
         base: 0,
         changes: [
           { value: "first", node: created, readAt: 0, floor: "given" },
-          { value: "second", node: created, readAt: 1, floor: "ignored" },
+          { value: "second", node: created, readAt: 1, floor: "given" },
         ],
       },
       () => {
@@ -93,6 +93,19 @@ describe("openRun", () => {
     expect(bodyOf(opened.register, created).floor).toBe("given")
     expect(bodyOf(opened.register, created).phase).toBe("running")
     expect(minted).toEqual(["one"])
+    const differs = openRun(
+      openRegister("", ""),
+      {
+        deck: "deck",
+        base: 0,
+        changes: [
+          { value: "first", node: created, readAt: 0, floor: "given" },
+          { value: "second", node: created, readAt: 1, floor: "ignored" },
+        ],
+      },
+      () => "two",
+    )
+    expect(differs).toEqual({ ok: false, refusal: "field" })
   })
 
   it("opens a new element on the register's floor when the change names none", () => {
@@ -208,5 +221,42 @@ describe("afterWrite", () => {
     expect(lost.answer).toEqual(answer)
     expect(JSON.stringify(lost)).not.toContain("lost")
     expect(afterWrite(true, landed, loaded)).toBe(landed)
+  })
+
+  it("answers person-protected when the stored row shows a person edited the element during the run", () => {
+    const named = readDeckId("deck")
+    if (!named.ok) throw new Error(named.refusal)
+    const loaded = openDeck(named.deck)
+    const node = elementId("258.7")
+    let register = loaded.register
+    for (const command of [
+      { command: "add", node, floor: "", route: "slide" },
+      { command: "start", runId: "run", node },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    const computed = decide(register, { command: "agent", runId: "run", readAt: 0, value: "agent", node })
+    if (computed.decision !== "apply") throw new Error(computed.code)
+    const won = decide(register, { command: "person", value: "person", node })
+    if (won.decision !== "apply") throw new Error(won.code)
+    const storedDeck = { id: loaded.id, revision: 1, register: won.register }
+    const landed: ToolResult = editLanded({ id: loaded.id, revision: 1, register: computed.register }, [node])
+    const lost = afterWrite(false, landed, storedDeck)
+    expect(lost.ok).toBe(false)
+    if (lost.ok) return
+    expect(lost.refusal).toBe("person-protected")
+    const answer = {
+      ok: false,
+      revision: 1,
+      refusal: "person-protected",
+      elements: [{ node, value: "person", version: 1, closed: true }],
+    }
+    expect(lost.content).toEqual([
+      { type: "text", text: editNext["person-protected"] },
+      { type: "text", text: JSON.stringify(answer) },
+    ])
+    expect(lost.answer).toEqual(answer)
   })
 })

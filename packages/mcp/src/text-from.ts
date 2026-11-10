@@ -1,5 +1,5 @@
 import type { WireChange } from "@airdesign/catalog"
-import { readTextValue, type Register, type TextRun, type TextValue } from "@airdesign/document"
+import { readTextValue, type ElementId, type TextRun, type TextValue } from "@airdesign/document"
 
 export type TextProblem = { readonly code: "field" | "text-from"; readonly detail: string }
 
@@ -22,13 +22,14 @@ function notText(file: TextValue): string {
   return `Send a JSON text value for this element. Each from must be one the file has, and -1 is a new run. ${paragraphSentence(file)}`
 }
 
-function floorOf(register: Register, change: WireChange): string {
-  return register.elements[change.node]?.floor ?? change.floor ?? register.floor
-}
-
-export function textProblem(register: Register, changes: readonly WireChange[]): TextProblem | undefined {
+export function textProblem(
+  floors: ReadonlyMap<ElementId, string>,
+  changes: readonly WireChange[],
+): TextProblem | undefined {
   for (const change of changes) {
-    const file = readTextValue(floorOf(register, change))
+    const floor = floors.get(change.node)
+    if (floor === undefined) continue
+    const file = readTextValue(floor)
     if (file === null) continue
     const next = readTextValue(change.value)
     if (next === null) return { code: "field", detail: notText(file) }
