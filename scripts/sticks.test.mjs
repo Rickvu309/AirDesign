@@ -3,6 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { passedWrites } from "./pptx-route-judge.mjs"
 import { overLimit, readSticks, timeStick } from "./sticks.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -46,14 +47,30 @@ write(
 )
 write("scripts/pptx-fixtures/judge-proof.json", JSON.stringify({ "one kind": "caught", "other kind": "missed" }))
 write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
-write("scripts/pptx-fixtures/b.pptx", "x")
+write("scripts/pptx-fixtures/b.pptx", "y".repeat(100_000))
+write("scripts/pptx-fixtures/routes.pptx", "deck")
 write(
   "packages/document/dist/index.js",
   `export const properties = { shape: { box: { route: "xfrm" }, text: { route: "txBody" } }, kept: { box: { route: "xfrm" } } }
 export const structure = { deck: {}, shape: { create: { route: "spTree.add" } } }
 `,
 )
-write("packages/pptx/dist/index.js", 'export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm" }\n')
+write(
+  "packages/pptx/dist/index.js",
+  `export const writtenRoutes = { text: "txBody", move: "xfrm", resize: "xfrm", add: "spTree.add" }
+export const routeOperations = ["text", "move", "resize"]
+const passed = (operation, route) => ({ operation, route, error: null, touch: { changed: ["s"], added: [], removed: [] }, parts: new Map() })
+export function routeRuns() {
+  return [passed("text", "txBody"), passed("move", "xfrm"), passed("resize", "xfrm")]
+}
+export async function readParts() { return new Map([["s", new Uint8Array([1])]]) }
+export async function exportPackage() { return new Uint8Array([2]) }
+export function newValidatorErrors() { return [] }
+export function shapeIdCounts() { return [] }
+export function newDuplicateShapeIds() { return [] }
+export function touchMatches() { return true }
+`,
+)
 record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })
 execFileSync("git", ["add", "-A"], { cwd: root })
@@ -69,7 +86,33 @@ if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
 
 const capabilities = steady.rows.find((row) => row.name === "routes pptx writes")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
-  throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
+  throw new Error(`routes that passed were not counted: ${JSON.stringify(capabilities)}`)
+if (steady.rows.find((row) => row.name === "real decks in the PowerPoint check")?.now !== 1)
+  throw new Error("a copied deck was counted, or the judged deck was not")
+const oneFailure = passedWrites([
+  {
+    runs: [
+      { route: "txBody", passed: true },
+      { route: "xfrm", passed: false },
+    ],
+  },
+])
+if (oneFailure.routes !== 1 || oneFailure.decks !== 0)
+  throw new Error(`a failed route still counted: ${JSON.stringify(oneFailure)}`)
+const twoDecks = passedWrites([
+  { runs: [{ route: "txBody", passed: true }] },
+  {
+    runs: [
+      { route: "txBody", passed: true },
+      { route: "xfrm", passed: true },
+    ],
+  },
+])
+if (twoDecks.routes !== 2 || twoDecks.decks !== 2)
+  throw new Error(`two passing decks were not counted: ${JSON.stringify(twoDecks)}`)
+const unfinished = passedWrites([{ runs: [{ route: "txBody", passed: true }], missing: true }])
+if (unfinished.routes !== 1 || unfinished.decks !== 0)
+  throw new Error(`a deck with a missing route counted: ${JSON.stringify(unfinished)}`)
 
 const planted = steady.rows.find((row) => row.name === "planted breaks the judge catches")
 if (planted?.now !== 1 || planted.goal !== 2)

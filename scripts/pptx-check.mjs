@@ -7,7 +7,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
 import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
-import { missingOperations, scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
+import { missingOperations, passedWrites, scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { timeStick } from "./sticks.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
@@ -153,17 +153,29 @@ const proofLines = proofFailures({
 for (const line of proofLines) console.log(line)
 let failed = proofLines.length
 const routeFailures = []
-for (const operation of missingOperations(
+const missing = missingOperations(
   pptx,
   written.map((item) => item.run),
-)) {
-  routeFailures.push({ operation, missing: true })
-}
+)
+for (const operation of missing) routeFailures.push({ operation, missing: true })
 const routeBefore = lists.get(routeFixture)
+const judgedRuns = []
 for (const item of written) {
   const afterErrors = item.file === null ? undefined : lists.get(path.basename(item.file))
   const failure = scoreWrittenRoute(pptx, routeParts, routeBefore ?? [], item, afterErrors)
   if (failure !== null) routeFailures.push(failure)
+  judgedRuns.push({ route: item.run.route, passed: failure === null })
+}
+const counted = passedWrites([{ runs: judgedRuns, missing: missing.length > 0 }])
+const recorded = JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))
+const stickDrift = []
+const routeNow = recorded["routes pptx writes"]?.now
+const deckNow = recorded["real decks in the PowerPoint check"]?.now
+if (routeNow !== counted.routes) {
+  stickDrift.push(`routes pptx writes is ${counted.routes} and sticks.json says ${routeNow}.`)
+}
+if (deckNow !== counted.decks) {
+  stickDrift.push(`real decks in the PowerPoint check is ${counted.decks} and sticks.json says ${deckNow}.`)
 }
 fs.rmSync(routeDir, { recursive: true, force: true })
 for (const row of cases) {
@@ -184,6 +196,7 @@ for (const row of cases) {
   }
 }
 for (const failure of routeFailures) console.log(JSON.stringify(failure))
+for (const line of stickDrift) console.log(line)
 const checkSeconds = timeStick(root, "PowerPoint check seconds", checkStarted)
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
@@ -191,4 +204,4 @@ if (failed > 0) console.log(`${failed} pptx checks failed`)
 else console.log(`${cases.length} pptx checks passed`)
 if (routeFailures.length > 0) console.log(`${routeFailures.length} route writes failed`)
 else console.log(`${pptx.routeOperations.length} route writes passed`)
-if (failed > 0 || routeFailures.length > 0 || checkSeconds.fails) process.exit(1)
+if (failed > 0 || routeFailures.length > 0 || stickDrift.length > 0 || checkSeconds.fails) process.exit(1)
