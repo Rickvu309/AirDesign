@@ -776,7 +776,16 @@ describe("decide", () => {
         rule.name === "A fresh read lands another agent row in the same run" ||
         rule.name === "A later change of the same run with the claimed read lands" ||
         rule.name === "A claimed read after a person row refuses person-protected" ||
-        rule.name === "A fresh read after a person row in the run refuses person-protected"
+        rule.name === "A fresh read after a person row in the run refuses person-protected" ||
+        rule.name === "A person edit during a second run before it lands sets the guard" ||
+        rule.name === "A person edit during a second run after it lands sets the guard" ||
+        rule.name === "A start from stopped opens a new run" ||
+        rule.name === "A start from undone opens a new run" ||
+        rule.name === "A start that reuses an id with rows stays fenced" ||
+        rule.name === "An undo of an earlier run hides only that run's rows" ||
+        rule.name === "An undo of an earlier run stays fenced while a run is live" ||
+        rule.name === "An edit from an ended run stays fenced" ||
+        rule.name === "An agent edit of a second run lands"
       ) {
         expect(hit.hits, rule.name).toBeGreaterThan(0)
       }
