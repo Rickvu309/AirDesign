@@ -7,6 +7,7 @@ const openFolders = ["scripts/pptx-fixtures/"]
 const guardedFiles = new Set([".node-version", ".npmrc", ".oxfmtrc.json", "AGENTS.md", "pnpm-workspace.yaml"])
 const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]
 const casesFile = "scripts/pptx-fixtures/cases.json"
+const proofFile = "scripts/pptx-fixtures/judge-proof.json"
 
 export const guarded = (file) => {
   if (openFolders.some((folder) => file.startsWith(folder))) return false
@@ -17,7 +18,7 @@ export const guarded = (file) => {
 
 export const replacedFixtures = (files) =>
   files
-    .filter((file) => file.status !== "added" && file.name !== casesFile)
+    .filter((file) => file.status !== "added" && file.name !== casesFile && file.name !== proofFile)
     .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
 
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
@@ -42,6 +43,7 @@ const counted = (stick) => keysOf(stick) === "goal,now" && finite(stick.now) && 
 const floored = (stick) => keysOf(stick) === "floor" && finite(stick.floor)
 
 const recordsFaults = new Set(["known faults"])
+const countsProof = new Set(["planted breaks the judge catches"])
 
 const stickReason = (name, before, after) => {
   if (after === undefined) return `The stick ${name} was removed.`
@@ -58,6 +60,7 @@ const stickReason = (name, before, after) => {
     return after.floor >= before.floor ? undefined : `The floor of ${name} went from ${before.floor} to ${after.floor}.`
   }
   if (!counted(after)) return `The stick ${name} stopped being a count with a goal.`
+  if (countsProof.has(name)) return undefined
   if (after.goal !== before.goal) return `The goal of ${name} went from ${before.goal} to ${after.goal}.`
   const closer = Math.abs(after.now - after.goal) <= Math.abs(before.now - before.goal)
   const sameSide = (after.now - after.goal) * (before.now - before.goal) >= 0
@@ -71,6 +74,9 @@ export const lostCases = (baseCases, headCases) => {
   return baseCases.filter((row) => !kept.has(JSON.stringify(row))).map((row) => String(row.name))
 }
 
+export const lostKinds = (baseProof, headProof) =>
+  Object.keys(baseProof).filter((kind) => baseProof[kind] === "caught" && headProof[kind] !== "caught")
+
 export const ownerReasons = ({
   baseSticks,
   headSticks,
@@ -78,6 +84,7 @@ export const ownerReasons = ({
   changedScripts,
   changedCases = [],
   changedFixtures = [],
+  changedKinds = [],
 }) => {
   const reasons = []
   for (const name of new Set([...Object.keys(baseSticks), ...Object.keys(headSticks)])) {
@@ -97,6 +104,13 @@ export const ownerReasons = ({
   }
   for (const name of changedCases) {
     reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, blocks: true })
+  }
+  for (const name of changedKinds) {
+    reasons.push({
+      about: `break ${name}`,
+      text: `The judge proof no longer records ${name} as caught.`,
+      blocks: true,
+    })
   }
   for (const file of changedScripts) {
     reasons.push({
@@ -185,9 +199,15 @@ const casesAt = (repository, sha) => {
   return Array.isArray(cases) ? cases : []
 }
 
+const proofAt = (repository, sha) => {
+  const proof = jsonAt(repository, sha, proofFile)
+  return proof !== null && typeof proof === "object" && !Array.isArray(proof) ? proof : {}
+}
+
 const printsAt = (repository, sha, reasons) => {
   const sticks = jsonAt(repository, sha, "sticks.json") ?? {}
   const cases = casesAt(repository, sha)
+  const proof = proofAt(repository, sha)
   const prints = {}
   for (const { about } of reasons) {
     const [kind, ...rest] = about.split(" ")
@@ -195,6 +215,7 @@ const printsAt = (repository, sha, reasons) => {
     if (kind === "stick") prints[about] = JSON.stringify(sticks[subject])
     if (kind === "file") prints[about] = blobAt(repository, sha, subject)
     if (kind === "scripts") prints[about] = scriptsAt(repository, sha, subject)
+    if (kind === "break") prints[about] = JSON.stringify(proof[subject])
     if (kind === "case") prints[about] = JSON.stringify(cases.filter((row) => String(row.name) === subject))
   }
   return prints
@@ -245,6 +266,9 @@ const readPull = (repository, number) => {
     changedFixtures: replacedFixtures(listed),
     changedCases: changedFiles.includes(casesFile)
       ? lostCases(casesAt(repository, fork), casesAt(repository, pull.head))
+      : [],
+    changedKinds: changedFiles.includes(proofFile)
+      ? lostKinds(proofAt(repository, fork), proofAt(repository, pull.head))
       : [],
     changedScripts: changedFiles
       .filter(packageFile)

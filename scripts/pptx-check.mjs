@@ -5,7 +5,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { judge } from "./judge.mjs"
+import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
 import { timeStick } from "./sticks.mjs"
+import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const checkStarted = Date.now()
@@ -79,17 +82,74 @@ const renderNext = async () => {
     rendered.set(render, await renderPages(fixturePath(name)))
   }
 }
-const [lists] = await Promise.all([
-  validatorLists(names.map(fixturePath)),
+const proofStarted = Date.now()
+const seed = seedFrom({ chosen: process.env.JUDGE_SEED, commit: await run("git", ["rev-parse", "HEAD"]) })
+const proofFile = path.join(fixtures, "judge-proof.json")
+const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
+const parts = new Map()
+for (const name of new Set([...names, ...cleanDecks])) {
+  parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
+}
+const planted = plantSamples({
+  pptx,
+  decks: cleanDecks.map((name) => ({ name, parts: parts.get(name) })),
+  seed,
+  samples: Number(process.env.JUDGE_SAMPLES ?? 3),
+})
+const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
+const sampleFile = (index) => `judge-sample-${index}.pptx`
+const judgedFiles = async () => {
+  try {
+    for (const [index, sample] of planted.entries()) {
+      fs.writeFileSync(path.join(proofFolder, sampleFile(index)), storedZip(sample.parts))
+    }
+    const planting = (Date.now() - proofStarted) / 1000
+    const found = await validatorLists([
+      ...[...parts.keys()].map(fixturePath),
+      ...planted.map((sample, index) => path.join(proofFolder, sampleFile(index))),
+    ])
+    return { found, planting }
+  } finally {
+    fs.rmSync(proofFolder, { recursive: true, force: true })
+  }
+}
+const [{ found: lists, planting }] = await Promise.all([
+  judgedFiles(),
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
-const parts = new Map()
-for (const name of names) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
-let failed = 0
+const judgedSamples = planted.map((sample, index) => {
+  const judged = judge(
+    pptx,
+    { list: lists.get(sample.deck), ids: ids.get(sample.deck) },
+    { list: lists.get(sampleFile(index)), ids: pptx.shapeIdCounts(sample.parts) },
+  )
+  const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
+  return { ...sample, accepted: judged.accepted, reason }
+})
+console.log(`judge proof ${replay(seed)}`)
+if (process.env.JUDGE_LIST !== undefined) {
+  for (const sample of judgedSamples) {
+    console.log(
+      `judge sample  ${sample.kind}  ${sample.deck}, ${sample.what}  ${sample.accepted ? "accepted" : "rejected"}`,
+    )
+  }
+}
+for (const line of proofTable(judgedSamples)) console.log(line)
+console.log(`judge proof planted ${planted.length} samples in ${planting.toFixed(1)} seconds`)
+const proofLines = proofFailures({
+  recorded: JSON.parse(fs.readFileSync(proofFile, "utf8")),
+  judged: judgedSamples,
+  seed,
+})
+for (const line of proofLines) console.log(line)
+let failed = proofLines.length
 for (const row of cases) {
-  const errors = pptx.newValidatorErrors(lists.get(row.before), lists.get(row.after))
-  const dupes = pptx.newDuplicateShapeIds(ids.get(row.before), ids.get(row.after))
+  const { errors, dupes } = judge(
+    pptx,
+    { list: lists.get(row.before), ids: ids.get(row.before) },
+    { list: lists.get(row.after), ids: ids.get(row.after) },
+  )
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),
     after: rendered.get(afterRender(row)),

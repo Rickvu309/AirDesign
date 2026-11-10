@@ -19,6 +19,7 @@ const record = (faults) =>
       "known faults": { now: faults, goal: 0 },
       "real decks in the PowerPoint check": { now: 1, goal: 20 },
       "routes pptx writes": { now: 2, goal: 3 },
+      "planted breaks the judge catches": { now: 1, goal: 2 },
       "check seconds": { limit: 40 },
       "PowerPoint check seconds": { limit: 90 },
     }),
@@ -33,6 +34,7 @@ write(
     { before: "a.pptx", after: "a.pptx" },
   ]),
 )
+write("scripts/pptx-fixtures/judge-proof.json", JSON.stringify({ "one kind": "caught", "other kind": "missed" }))
 write("scripts/pptx-fixtures/a.pptx", "x".repeat(100_000))
 write("scripts/pptx-fixtures/b.pptx", "x")
 write(
@@ -58,6 +60,10 @@ if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
 const capabilities = steady.rows.find((row) => row.name === "routes pptx writes")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
   throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
+
+const planted = steady.rows.find((row) => row.name === "planted breaks the judge catches")
+if (planted?.now !== 1 || planted.goal !== 2)
+  throw new Error(`caught kinds were not counted: ${JSON.stringify(planted)}`)
 
 const slow = overLimit({ name: "check seconds", now: 41.2, limit: 40 })
 if (slow !== "check seconds is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
