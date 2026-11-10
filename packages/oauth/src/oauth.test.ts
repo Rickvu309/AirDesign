@@ -221,6 +221,16 @@ describe("oauth", () => {
     expect(result.grant.revoked).toBe(false)
   })
 
+  it("a command that is not an object is refused and does not throw", () => {
+    const grant = exchanged()
+    for (const word of [undefined, "revoke", 7, true]) {
+      expect(() => oauth(grant, word as unknown as Command)).not.toThrow()
+      const result = oauth(grant, word as unknown as Command)
+      expect(result.accepted).toBe(false)
+      expect(result.grant).toBe(grant)
+    }
+  })
+
   it("an extra principal key is ignored", () => {
     const grant = exchanged()
     const plain = { command: "call" as const, deck, generation: 1 }
