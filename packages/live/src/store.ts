@@ -20,6 +20,7 @@ export type PendingRow = {
   readonly base: number
   readonly value: string
   readonly node?: ElementId
+  readonly floor?: string
 }
 
 export type StoredRow = ConfirmedRow | PendingRow
@@ -42,9 +43,16 @@ export function confirmedRow(deck: DeckId, revision: number, value: string, node
   return { kind: "confirmed", deck, revision, value, node }
 }
 
-export function pendingRow(deck: DeckId, order: number, base: number, value: string, node?: ElementId): PendingRow {
-  if (node === undefined) return { kind: "pending", deck, order, base, value }
-  return { kind: "pending", deck, order, base, value, node }
+export function pendingRow(
+  deck: DeckId,
+  order: number,
+  base: number,
+  value: string,
+  node: ElementId,
+  floor: string | undefined,
+): PendingRow {
+  if (floor === undefined) return { kind: "pending", deck, order, base, value, node }
+  return { kind: "pending", deck, order, base, value, node, floor }
 }
 
 export function isConfirmed(row: StoredRow): row is ConfirmedRow {
@@ -86,15 +94,17 @@ export function fitConfirmed(
   return revision
 }
 
-export function logicalValues(rows: readonly ConfirmedRow[]): string[] {
-  const values: string[] = []
+export type LogicalValue = { readonly value: string; readonly node?: ElementId }
+
+export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
+  const values: LogicalValue[] = []
   for (const row of rows) {
-    if (row.value.startsWith("\u0001") && values.length > 0) {
-      const last = values.at(-1)
-      if (last !== undefined) values[values.length - 1] = `${last}${row.value.slice(1)}`
+    const last = values.at(-1)
+    if (row.value.startsWith("\u0001") && last !== undefined) {
+      values[values.length - 1] = { ...last, value: `${last.value}${row.value.slice(1)}` }
       continue
     }
-    values.push(row.value)
+    values.push(row.node === undefined ? { value: row.value } : { value: row.value, node: row.node })
   }
   return values
 }
