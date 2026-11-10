@@ -250,6 +250,60 @@ describe("oauth", () => {
     }
   })
 
+  it("an extra key never changes an answer", () => {
+    const text = fc.oneof(fc.constant("intruder"), fc.string({ maxLength: 4 }))
+    const extra = fc.record(
+      {
+        principal: text,
+        actor: text,
+        deck: text,
+        owner: text,
+        code: fc.constantFrom("open", "used"),
+        generation: fc.integer({ min: 0, max: 9 }),
+        revoked: fc.boolean(),
+      },
+      { requiredKeys: [] },
+    )
+    const generation = fc.integer({ min: 0, max: 3 })
+    const command: fc.Arbitrary<Command> = fc.oneof(
+      { weight: 1, arbitrary: fc.constant<Command>({ command: "exchange" }) },
+      { weight: 2, arbitrary: generation.map<Command>((value) => ({ command: "call", generation: value })) },
+      { weight: 5, arbitrary: generation.map<Command>((value) => ({ command: "rotate", generation: value })) },
+      { weight: 1, arbitrary: fc.constant<Command>({ command: "revoke" }) },
+    )
+    fc.assert(
+      fc.property(fc.boolean(), fc.array(fc.tuple(command, extra), { maxLength: 10 }), (fresh, steps) => {
+        let grant = fresh ? openGrant(principal) : exchanged()
+        for (const [plain, keys] of steps) {
+          const clean = oauth(grant, plain)
+          const dirty = oauth(grant, { ...keys, ...plain } as Command)
+          expect(dirty).toEqual(clean)
+          expect(dirty.grant.principal).toBe(principal)
+          expect(Object.keys(dirty.grant).sort()).toEqual(["code", "generation", "principal", "revoked"])
+          if (clean.grant === grant) {
+            expect(dirty.grant).toBe(grant)
+          }
+          grant = clean.grant
+        }
+      }),
+      { numRuns: 500 },
+    )
+  })
+
+  it("a rotate with a generation that is not a number is refused and does not revoke", () => {
+    const first = exchanged()
+    const second = oauth(first, { command: "rotate", generation: 1 }).grant
+    expect(second.generation).toBe(2)
+    for (const grant of [first, second]) {
+      for (const generation of ["1", true, [1], null, undefined, { valueOf: () => 1 }]) {
+        const result = oauth(grant, { command: "rotate", generation } as unknown as Command)
+        expect(result.accepted).toBe(false)
+        expect(result.grant).toBe(grant)
+        expect(result.grant.revoked).toBe(false)
+      }
+    }
+  })
+
   it("an extra deck key is ignored", () => {
     const grant = exchanged()
     const plain = { command: "call" as const, generation: 1 }
