@@ -742,6 +742,16 @@ describe("spec replay", () => {
   it("replays every reachable spec edge through decide", async () => {
     assertJar(jarPath())
     const found = topics(root)
+    {
+      const found = topics(root).filter((topic) => topic.name !== "run")
+      new Function(
+        "found",
+        "expect",
+        `
+    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "structure", "undo"])
+`,
+      )(found, expect)
+    }
     expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
     for (const topic of found) expect(topic.view).toBe(true)
     const failures: string[] = []
