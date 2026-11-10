@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process"
+import { createRequire } from "node:module"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
@@ -63,6 +64,8 @@ const renderPages = async (file) => {
 
 await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
+const require = createRequire(path.join(root, "packages/pptx/package.json"))
+await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
 const fixturePath = (name) => path.join(fixtures, name)

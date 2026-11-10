@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute } from "./slide-route.js"
 
@@ -110,35 +111,137 @@ function shownText(slideXml: string): string {
 }
 
 describe("applyRoute known faults", () => {
-  it.fails("removes the picture it was asked to remove, not the shape before it", () => {
+  it("removes the picture it was asked to remove, not the shape before it", () => {
     const next = edited(shape("2", run("Keep")) + picture("3"), { name: "remove", part, shape: "3" })
     expect(next).toContain('<p:cNvPr id="2"')
     expect(next).not.toContain('<p:cNvPr id="3"')
   })
 
-  it.fails("moves the picture it was asked to move, not the shape before it", () => {
+  it("moves the picture it was asked to move, not the shape before it", () => {
     const next = edited(shape("2", run("Keep")) + picture("3"), { name: "move", part, shape: "3", x: 777, y: 777 })
     expect(next).toContain('<a:off x="1" y="1"/>')
     expect(next).toContain('<a:off x="777" y="777"/>')
   })
 
-  it.fails("replaces all the text of a shape that has two runs", () => {
+  it("replaces all the text of a shape that has two runs", () => {
     const next = edited(shape("2", run("Hello ") + run("world")), { name: "text", part, shape: "2", text: "New" })
     expect(shownText(next)).toBe("New")
   })
 
-  it.fails("writes well-formed text when the first run is empty", () => {
+  it("writes well-formed text when the first run is empty", () => {
     const next = edited(shape("2", `<a:r><a:t/></a:r>${run("Keep")}`), { name: "text", part, shape: "2", text: "New" })
     expect(next).not.toContain("<a:t/>New</a:t>")
+    expect(markupDocument(encodeUtf8(next)).wellFormed).toBe(true)
+    expect(shownText(next)).toBe("New")
   })
 
-  it.fails("keeps a character XML forbids out of the slide", () => {
-    let next = ""
-    try {
-      next = edited(shape("2", run("Old")), { name: "text", part, shape: "2", text: "a\u0001b" })
-    } catch {
-      return
-    }
+  it("keeps a character XML forbids out of the slide", () => {
+    const next = edited(shape("2", run("Old")), { name: "text", part, shape: "2", text: "a\u0001b" })
     expect(next).not.toContain("\u0001")
+    expect(shownText(next)).toBe("ab")
+  })
+})
+
+const pictureTree = `<p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="1" y="2"/><a:ext cx="3" cy="4"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Shape</a:t></a:r></a:p></p:txBody></p:sp><p:pic><p:nvPicPr><p:cNvPr id="3" name="P"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rId2"/></p:blipFill><p:spPr><a:xfrm><a:off x="9" y="8"/><a:ext cx="7" cy="6"/></a:xfrm></p:spPr></p:pic></p:spTree>`
+
+function pictureSpan() {
+  const bytes = encodeUtf8(pictureTree)
+  const found = markupDocument(bytes).elements.find((item) => item.kind === "p:pic")
+  if (found === undefined) throw new Error("pic")
+  return { bytes, found }
+}
+
+function outside(before: Uint8Array, after: Uint8Array, start: number, end: number): void {
+  expect(after.subarray(0, start)).toEqual(before.subarray(0, start))
+  expect(after.subarray(after.length - (before.length - end))).toEqual(before.subarray(end))
+}
+
+describe("applyRoute markup", () => {
+  it("removes picture 3 and keeps shape 2", () => {
+    const { bytes, found } = pictureSpan()
+    const name = "ppt/slides/slide3.xml"
+    const edited = applyRoute(new Map([[name, bytes]]), { name: "remove", part: name, shape: "3" })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    const prefix = bytes.subarray(0, found.start)
+    const suffix = bytes.subarray(found.end)
+    const joined = new Uint8Array(prefix.length + suffix.length)
+    joined.set(prefix, 0)
+    joined.set(suffix, prefix.length)
+    expect(after).toEqual(joined)
+    expect(markupDocument(after).wellFormed).toBe(true)
+    expect(decodeUtf8(after)).toContain(">Shape<")
+    expect(decodeUtf8(after)).not.toContain(`id="3"`)
+  })
+
+  it("moves picture 3 and leaves shape 2", () => {
+    const { bytes, found } = pictureSpan()
+    const name = "ppt/slides/slide3.xml"
+    const edited = applyRoute(new Map([[name, bytes]]), { name: "move", part: name, shape: "3", x: 11, y: 12 })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    outside(bytes, after, found.start, found.end)
+    expect(markupDocument(after).wellFormed).toBe(true)
+    const text = decodeUtf8(after)
+    expect(text).toContain(`x="1"`)
+    expect(text).toContain(`x="11"`)
+    expect(text).toContain(`y="12"`)
+    expect(text).not.toContain(`x="9"`)
+  })
+
+  it("replaces a self-closing first run without leaving a second run", () => {
+    const tree = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:p><a:r><a:rPr lang="en-US"/><a:t/></a:r><a:r><a:rPr b="1"/><a:t>Second</a:t></a:r></a:p></p:txBody></p:sp>`
+    const name = "ppt/slides/slide4.xml"
+    const edited = applyRoute(new Map([[name, encodeUtf8(tree)]]), {
+      name: "text",
+      part: name,
+      shape: "2",
+      text: "New",
+    })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    expect(markupDocument(after).wellFormed).toBe(true)
+    const text = decodeUtf8(after)
+    expect(text).toContain(`<a:t>New</a:t>`)
+    expect(text).toContain(`lang="en-US"`)
+    expect(text).not.toContain("<a:t/>")
+    expect(text).not.toContain("Second")
+    expect(text).not.toContain(`b="1"`)
+  })
+
+  it("replaces every run and keeps the first run's formatting", () => {
+    const tree = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:p><a:r><a:rPr lang="en-US"/><a:t>Hello </a:t></a:r><a:r><a:rPr b="1"/><a:t>world</a:t></a:r></a:p></p:txBody></p:sp>`
+    const name = "ppt/slides/slide5.xml"
+    const edited = applyRoute(new Map([[name, encodeUtf8(tree)]]), {
+      name: "text",
+      part: name,
+      shape: "2",
+      text: "New",
+    })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    expect(markupDocument(after).wellFormed).toBe(true)
+    const text = decodeUtf8(after)
+    expect(text).toContain(`<a:rPr lang="en-US"/><a:t>New</a:t>`)
+    expect(text).not.toContain("Hello")
+    expect(text).not.toContain("world")
+    expect(text).not.toContain(`b="1"`)
+  })
+
+  it("drops characters XML 1.0 does not allow and escapes the rest", () => {
+    const tree = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:p><a:r><a:t>Old</a:t></a:r></a:p></p:txBody></p:sp>`
+    const name = "ppt/slides/slide6.xml"
+    const edited = applyRoute(new Map([[name, encodeUtf8(tree)]]), {
+      name: "text",
+      part: name,
+      shape: "2",
+      text: "A\u0001B&<>\u0008\t\uFFFE\uFFFF\uD800",
+    })
+    const after = edited.get(name)
+    if (after === undefined) throw new Error("part")
+    expect(markupDocument(after).wellFormed).toBe(true)
+    expect(decodeUtf8(after)).toContain("<a:t>AB&amp;&lt;&gt;\t</a:t>")
+    expect(after.includes(1)).toBe(false)
+    expect(after.includes(8)).toBe(false)
   })
 })
