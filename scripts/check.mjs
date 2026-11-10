@@ -8,16 +8,18 @@ import { timeMetric } from "./metrics.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
+const specCache = path.join(os.homedir(), ".cache", "airdesign", "spec-results")
+
 export const stages = [
   [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
     ["actionlint", "node", ["scripts/actionlint.mjs"]],
-    ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1" }],
+    ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache }],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
-    ["specs", "pnpm", ["check:specs"]],
+    ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
   ],
