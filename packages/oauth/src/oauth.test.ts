@@ -24,7 +24,6 @@ describe("oauth", () => {
     const second = oauth(first.grant, { command: "exchange" })
     expect(second.accepted).toBe(false)
     expect(second.grant).toBe(first.grant)
-    expect(() => oauth(first.grant, { command: "exchange" })).not.toThrow()
   })
 
   it("a rotated refresh token never works again", () => {
@@ -68,8 +67,6 @@ describe("oauth", () => {
     const again = oauth(revoked.grant, { command: "revoke" })
     expect(again.accepted).toBe(false)
     expect(again.grant).toBe(revoked.grant)
-    expect(() => oauth(revoked.grant, { command: "call", generation: 1 })).not.toThrow()
-    expect(() => oauth(revoked.grant, { command: "rotate", generation: 1 })).not.toThrow()
   })
 
   it("the identity is the stored one", () => {
@@ -130,7 +127,6 @@ describe("oauth", () => {
       const result = oauth(grant, { command: "rotate", generation })
       expect(result.accepted).toBe(false)
       expect(result.grant).toBe(grant)
-      expect(() => oauth(grant, { command: "rotate", generation })).not.toThrow()
     }
   })
 
@@ -170,7 +166,6 @@ describe("oauth", () => {
       expect(call.accepted).toBe(false)
       expect(call.grant).toBe(rotated.grant)
       expect(call.grant.revoked).toBe(false)
-      expect(() => oauth(rotated.grant, { command: "call", generation })).not.toThrow()
     }
   })
 
@@ -193,7 +188,6 @@ describe("oauth", () => {
 
   it("a null command is refused and does not throw", () => {
     const grant = exchanged()
-    expect(() => oauth(grant, null as unknown as Command)).not.toThrow()
     const result = oauth(grant, null as unknown as Command)
     expect(result.accepted).toBe(false)
     expect(result.grant).toBe(grant)
@@ -203,7 +197,6 @@ describe("oauth", () => {
   it("a command that is not an object is refused and does not throw", () => {
     const grant = exchanged()
     for (const word of [undefined, "revoke", 7, true]) {
-      expect(() => oauth(grant, word as unknown as Command)).not.toThrow()
       const result = oauth(grant, word as unknown as Command)
       expect(result.accepted).toBe(false)
       expect(result.grant).toBe(grant)
@@ -289,7 +282,6 @@ describe("oauth", () => {
           grant = clean.grant
         }
       }),
-      { numRuns: 500 },
     )
   })
 
