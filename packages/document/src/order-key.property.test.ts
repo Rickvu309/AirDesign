@@ -1,5 +1,5 @@
 import fc from "fast-check"
-import { it } from "vitest"
+import { expect, it } from "vitest"
 import { orderKeyBetween, type OrderKey } from "./order-key.js"
 
 function beforeKey(keys: OrderKey[], index: number): OrderKey | null {
@@ -71,9 +71,7 @@ it("appends from 0 through 200 in strict order", () => {
   let previous: OrderKey | null = null
   for (let count = 0; count <= 200; count += 1) {
     const key = orderKeyBetween(previous, null)
-    if (previous !== null && !(previous < key)) {
-      throw new Error(`append ${count} is not greater`)
-    }
+    if (previous !== null) expect(previous < key, `append ${count} is not greater`).toBe(true)
     previous = key
   }
 })
