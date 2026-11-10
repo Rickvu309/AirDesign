@@ -144,6 +144,11 @@ function digest(value: string): string {
 async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Promise<T>): Promise<T> {
   const owned = db instanceof Pool ? await db.connect() : undefined
   const client = owned ?? db
+  let broken: Error | undefined
+  const noteBroken = (error: Error): void => {
+    broken = error
+  }
+  owned?.on("error", noteBroken)
   try {
     await client.query("begin")
     await client.query("select pg_advisory_xact_lock(hashtextextended($1, 0))", [email])
@@ -151,10 +156,11 @@ async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Prom
     await client.query("commit")
     return value
   } catch (error) {
-    await client.query("rollback").catch(() => undefined)
+    await client.query("rollback").catch(noteBroken)
     throw error
   } finally {
-    owned?.release()
+    owned?.off("error", noteBroken)
+    owned?.release(broken)
   }
 }
 
