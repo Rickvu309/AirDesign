@@ -56,7 +56,12 @@ export const overLimit = ({ name, now, limit }) =>
 export const timeStick = (root, name, started) => {
   const limit = record(root)[name]?.limit
   const now = Number(((Date.now() - started) / 1000).toFixed(1))
-  return { line: `stick ${name}  now ${now}  limit ${limit}`, over: overLimit({ name, now, limit }) }
+  const over = overLimit({ name, now, limit })
+  return {
+    line: `stick ${name}  now ${now}  limit ${limit}`,
+    over,
+    fails: over !== undefined && Boolean(process.env.CI),
+  }
 }
 
 export const readSticks = async (root) => {
