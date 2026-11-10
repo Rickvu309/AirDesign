@@ -15,7 +15,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
 - `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It uses LibreOffice and poppler when the machine has both, or installs them into `~/.cache/pptx-tools` on first use. It needs the .NET 8 SDK.
-- `pnpm check` prints the sticks, the numbers we want moved. Each has a goal in `sticks.json`. Pick one and move it.
+- `pnpm check` prints the sticks, the numbers we want moved. Each has a goal or a limit in `sticks.json`. Pick one and move it.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.

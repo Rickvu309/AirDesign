@@ -130,10 +130,8 @@ export const structure = {
 
 type StructureTable = typeof structure
 
+type RouteName<Named> = Named extends { readonly route: infer Name } ? Name : never
+
 export type StructuralRoute = {
-  [KindName in keyof StructureTable]: StructureTable[KindName][keyof StructureTable[KindName]] extends {
-    readonly route: infer Name
-  }
-    ? Name
-    : never
+  [KindName in keyof StructureTable]: RouteName<StructureTable[KindName][keyof StructureTable[KindName]]>
 }[keyof StructureTable]

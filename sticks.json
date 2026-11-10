@@ -1,6 +1,7 @@
 {
   "known faults": { "now": 5, "goal": 0 },
   "real decks in the PowerPoint check": { "now": 2, "goal": 20 },
+  "capabilities exported": { "now": 4, "goal": 50 },
   "check seconds": { "limit": 40 },
   "PowerPoint check seconds": { "limit": 90 }
 }

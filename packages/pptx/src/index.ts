@@ -8,3 +8,4 @@ export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } f
 export { addTextShape, type ShapeBox } from "./shape-write.js"
 export { applyRoute, type SlideRoute } from "./slide-route.js"
 export { newValidatorErrors } from "./validator-error.js"
+export { writtenRoutes } from "./written-routes.js"

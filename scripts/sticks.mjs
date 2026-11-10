@@ -1,9 +1,9 @@
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath } from "node:url"
+import { fileURLToPath, pathToFileURL } from "node:url"
 
-const unproven = /\.(?:fails|skip|todo)\b|\b(?:fails|skip|todo): true/g
+const unproven = /\.(?:fails|skip|todo)\b|\.(?:fixme|fail)\(|\b(?:fails|skip|todo): true/g
 
 const knownFaults = (root) => {
   const listed = spawnSync("git", ["ls-files", "-z", "*.test.*", "*.spec.*"], { cwd: root, encoding: "utf8" })
@@ -23,9 +23,24 @@ const realDecks = (root) => {
   return [...names].filter((name) => fs.statSync(path.join(fixtures, name)).size >= 100_000).length
 }
 
+const built = (root, name) => import(pathToFileURL(path.join(root, "packages", name, "dist/index.js")).href)
+
+const routeNames = (table) =>
+  Object.values(table).flatMap((routes) => Object.values(routes).map((named) => named.route))
+
+const capabilitiesExported = async (root) => {
+  const document = await built(root, "document")
+  const pptx = await built(root, "pptx")
+  return {
+    now: new Set(Object.values(pptx.writtenRoutes)).size,
+    goal: new Set([...routeNames(document.properties), ...routeNames(document.structure)]).size,
+  }
+}
+
 const measures = {
   "known faults": knownFaults,
   "real decks in the PowerPoint check": realDecks,
+  "capabilities exported": capabilitiesExported,
 }
 
 export const timedSticks = {
@@ -44,7 +59,7 @@ export const timeStick = (root, name, started) => {
   return { line: `stick ${name}  now ${now}  limit ${limit}`, over: overLimit({ name, now, limit }) }
 }
 
-export const readSticks = (root) => {
+export const readSticks = async (root) => {
   const recorded = record(root)
   const rows = []
   const drift = []
@@ -54,10 +69,13 @@ export const readSticks = (root) => {
       drift.push(`${name} is measured and missing from sticks.json.`)
       continue
     }
-    const now = measure(root)
-    rows.push({ name, now, goal: stick.goal })
+    const measured = await measure(root)
+    const { now, goal } = typeof measured === "number" ? { now: measured, goal: stick.goal } : measured
+    rows.push({ name, now, goal })
     if (now !== stick.now)
       drift.push(`${name} is ${now} and sticks.json says ${stick.now}. Record ${now} in sticks.json.`)
+    if (goal !== stick.goal)
+      drift.push(`${name} has goal ${goal} and sticks.json says ${stick.goal}. Record goal ${goal} in sticks.json.`)
   }
   for (const [name, runner] of Object.entries(timedSticks)) {
     const limit = recorded[name]?.limit
@@ -74,7 +92,7 @@ export const readSticks = (root) => {
 
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
-  const { rows, drift } = readSticks(path.resolve(path.dirname(self), ".."))
+  const { rows, drift } = await readSticks(path.resolve(path.dirname(self), ".."))
   const width = Math.max(...rows.map((row) => row.name.length))
   for (const row of rows) {
     const value = "limit" in row ? `limit ${row.limit}` : `now ${row.now}  goal ${row.goal}`
