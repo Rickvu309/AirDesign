@@ -1,4 +1,4 @@
-name: failure audit
+name: ci-failure-report
 
 on:
   schedule:
@@ -11,12 +11,12 @@ permissions:
   issues: write
 
 jobs:
-  failure-audit:
-    name: failure audit
+  ci-failure-report:
+    name: ci-failure-report
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/failure-audit.mjs "$GITHUB_REPOSITORY" --issue
+        run: node scripts/ci-failure-report.mjs "$GITHUB_REPOSITORY" --issue

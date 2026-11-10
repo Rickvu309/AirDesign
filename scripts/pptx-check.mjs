@@ -8,7 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
 import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
-import { judgedWrites, timeStick } from "./sticks.mjs"
+import { judgedWrites, timeMetric } from "./metrics.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -194,7 +194,7 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
-const checkSeconds = timeStick(root, "PowerPoint check seconds", checkStarted)
+const checkSeconds = timeMetric(root, "pptx-check-duration", checkStarted)
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
 const routeFailures = []
@@ -217,10 +217,10 @@ const passedOperations = [...seen].filter(([, row]) => row.ok).map(([operation])
 for (const operation of pptx.routeOperations) {
   if (!seen.has(operation)) routeFailures.push({ operation, missing: true })
 }
-const recordedWrites = JSON.parse(fs.readFileSync(path.join(root, "sticks.json"), "utf8"))[judgedWrites]?.now
+const recordedWrites = JSON.parse(fs.readFileSync(path.join(root, "metrics.json"), "utf8"))[judgedWrites]?.now
 if (recordedWrites !== passedOperations.length) {
   routeFailures.push({
-    stick: judgedWrites,
+    metric: judgedWrites,
     measured: passedOperations.length,
     recorded: recordedWrites,
   })

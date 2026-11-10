@@ -9,8 +9,8 @@ export const failureClass = (log) => {
   const step = /\bfail ([a-z:-]+)(?: [\d.]+s)?$/m.exec(log)
   if (step) return `pnpm check: ${step[1]}`
   if (/\d+ pptx checks failed/.test(log)) return "PowerPoint check: a case failed"
-  if (/ is \d+(\.\d+)? and its limit is /.test(log)) return "a timed stick went over its limit"
-  if (/Only \S+ can accept this\./.test(log)) return "owner gate: waiting for the owner"
+  if (/ is \d+(\.\d+)? and its limit is /.test(log)) return "a timed metric went over its limit"
+  if (/Only \S+ can accept this\./.test(log)) return "ratchet: waiting for the owner"
   const named = /^[^\t]*\t([^\t]+)\t/m.exec(log)
   return named ? `other: ${named[1].replace(/[^\w .:/-]/g, "")}` : "the run left no log"
 }
@@ -79,7 +79,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       return []
     }
   }
-  const runs = [...runsOf("gate"), ...listed("owner gate")]
+  const runs = [...runsOf("ci"), ...listed("ratchet")]
   const logs = new Map()
   for (const run of runs.filter((each) => each.conclusion === "failure").slice(0, logLimit)) {
     try {
@@ -98,7 +98,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       "--repo",
       repository,
       "--title",
-      `Failure audit, week to ${new Date().toISOString().slice(0, 10)}`,
+      `CI failure report, week to ${new Date().toISOString().slice(0, 10)}`,
       "--body",
       lines.join("\n"),
     ])

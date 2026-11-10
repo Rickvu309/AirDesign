@@ -1,4 +1,4 @@
-name: owner gate
+name: ratchet
 
 on:
   pull_request_target:
@@ -12,12 +12,12 @@ on:
       - edited
 
 concurrency:
-  group: owner-gate-${{ github.event.pull_request.number }}
+  group: ratchet-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  owner-gate:
-    name: owner gate
+  ratchet:
+    name: ratchet
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -28,10 +28,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/owner-gate.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
+        run: node scripts/ratchet.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
 
-  old-proofs:
-    name: old proofs
+  check-regression:
+    name: check-regression
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PULL_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: node base/scripts/old-proofs.mjs approved "$GITHUB_REPOSITORY" "$PULL_NUMBER" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
+        run: node base/scripts/check-regression.mjs approved "$GITHUB_REPOSITORY" "$PULL_NUMBER" "$HEAD_SHA" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ github.event.pull_request.head.sha }}
@@ -55,7 +55,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - id: check
-        run: node base/scripts/old-proofs.mjs changed base head >> "$GITHUB_OUTPUT"
+        run: node base/scripts/check-regression.mjs changed base head >> "$GITHUB_OUTPUT"
       - if: steps.check.outputs.changed == 'true'
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
         with:
@@ -72,4 +72,4 @@ jobs:
       - env:
           APPROVED: ${{ steps.approval.outputs.approved }}
           TLA2TOOLS: ${{ github.workspace }}/tla2tools.jar
-        run: node base/scripts/old-proofs.mjs judge base head "--approved=$APPROVED"
+        run: node base/scripts/check-regression.mjs judge base head "--approved=$APPROVED"

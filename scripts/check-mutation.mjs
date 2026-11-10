@@ -8,7 +8,7 @@ const mutatedPackages = ["packages/document/src", "packages/pptx/src"]
 const workers = 4
 const listedSurvivors = 50
 const tsconfigStrykerCannotParseWithTypescript7 = "no-tsconfig-to-rewrite.json"
-const stickName = "guards a test would miss"
+const metricName = "guards a test would miss"
 
 const sourcePattern = (target) => {
   const relative = path.relative(root, path.resolve(root, target)).split(path.sep).join("/")
@@ -65,7 +65,7 @@ const byPosition = (left, right) =>
   left.location.start.line - right.location.start.line ||
   left.location.start.column - right.location.start.column
 
-console.log(`stick ${stickName}  now ${missed.length}  goal 0`)
+console.log(`metric ${metricName}  now ${missed.length}  goal 0`)
 for (const mutant of missed.toSorted(byPosition).slice(0, listedSurvivors))
   console.log(
     `${position(mutant)}  ${original(mutant)} -> ${oneLine(mutant.replacement ?? "")}${mutant.status === "NoCoverage" ? "  (no test runs this line)" : ""}`,

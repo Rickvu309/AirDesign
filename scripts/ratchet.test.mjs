@@ -4,7 +4,10 @@ import {
   guarded,
   lostCases,
   lostKinds,
+  metricsFrom,
   newPackageFile,
+  oldMetricNames,
+  oldMetricsFile,
   onlyAddsReferences,
   ownerReasons,
   packageFile,
@@ -12,12 +15,12 @@ import {
   replacedFixtures,
   sameButReferences,
   verdict,
-} from "./owner-gate.mjs"
+} from "./ratchet.mjs"
 
-const sticks = {
-  "known faults": { now: 2, goal: 0 },
-  "real decks in the PowerPoint check": { now: 2, goal: 20 },
-  "check seconds": { limit: 40 },
+const metrics = {
+  "known-failures": { now: 2, goal: 0 },
+  "corpus-size": { now: 2, goal: 20 },
+  "ci-duration": { limit: 40 },
 }
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -25,61 +28,65 @@ const same = (name, actual, expected) => {
   }
 }
 const texts = (change) =>
-  ownerReasons({ baseSticks: sticks, headSticks: sticks, changedFiles: [], changedScripts: [], ...change }).map(
+  ownerReasons({ baseMetrics: metrics, headMetrics: metrics, changedFiles: [], changedScripts: [], ...change }).map(
     (reason) => reason.text,
   )
-const withStick = (name, value) => ({ headSticks: { ...sticks, [name]: value } })
-const decks = "real decks in the PowerPoint check"
+const withMetric = (name, value) => ({ headMetrics: { ...metrics, [name]: value } })
+const decks = "corpus-size"
 
 same("product code alone needs nobody", texts({ changedFiles: ["packages/pptx/src/slide-route.ts"] }), [])
-same("a fixed fault needs nobody", texts(withStick("known faults", { now: 1, goal: 0 })), [])
-same("a deck added needs nobody", texts(withStick(decks, { now: 3, goal: 20 })), [])
-same("a tighter limit needs nobody", texts(withStick("check seconds", { limit: 30 })), [])
-same("a new stick needs nobody", texts(withStick("new one", { now: 9, goal: 0 })), [])
-same("a new floor needs nobody", texts(withStick("tests", { floor: 9 })), [])
+same("a fixed fault needs nobody", texts(withMetric("known-failures", { now: 1, goal: 0 })), [])
+same("a deck added needs nobody", texts(withMetric(decks, { now: 3, goal: 20 })), [])
+same("a tighter limit needs nobody", texts(withMetric("ci-duration", { limit: 30 })), [])
+same("a new metric needs nobody", texts(withMetric("new one", { now: 9, goal: 0 })), [])
+same("a new floor needs nobody", texts(withMetric("test-count", { floor: 9 })), [])
 same(
   "a higher floor needs nobody",
   texts({
-    baseSticks: { ...sticks, tests: { floor: 10 } },
-    headSticks: { ...sticks, tests: { floor: 11 } },
+    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
+    headMetrics: { ...metrics, "test-count": { floor: 11 } },
   }),
   [],
 )
 same(
   "a lower floor needs the owner",
   texts({
-    baseSticks: { ...sticks, tests: { floor: 10 } },
-    headSticks: { ...sticks, tests: { floor: 9 } },
+    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
+    headMetrics: { ...metrics, "test-count": { floor: 9 } },
   }),
-  ["The floor of tests went from 10 to 9."],
+  ["The floor of test-count went from 10 to 9."],
 )
 same(
   "a floor turned into a count needs the owner",
   texts({
-    baseSticks: { ...sticks, tests: { floor: 10 } },
-    headSticks: { ...sticks, tests: { now: 10, goal: 10 } },
+    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
+    headMetrics: { ...metrics, "test-count": { now: 10, goal: 10 } },
   }),
-  ["The stick tests stopped being a floor."],
+  ["The metric test-count stopped being a floor."],
 )
-same("a new fault needs the owner", texts(withStick("known faults", { now: 3, goal: 0 })), [
-  "known faults went from 2 to 3, away from its goal of 0.",
+same("a new fault needs the owner", texts(withMetric("known-failures", { now: 3, goal: 0 })), [
+  "known-failures went from 2 to 3, away from its goal of 0.",
 ])
-same("a deck dropped needs the owner", texts(withStick(decks, { now: 1, goal: 20 })), [
+same("a deck dropped needs the owner", texts(withMetric(decks, { now: 1, goal: 20 })), [
   `${decks} went from 2 to 1, away from its goal of 20.`,
 ])
-same("a count that jumps past its goal needs the owner", texts(withStick(decks, { now: 38, goal: 20 })), [
+same("a count that jumps past its goal needs the owner", texts(withMetric(decks, { now: 38, goal: 20 })), [
   `${decks} went from 2 to 38, away from its goal of 20.`,
 ])
-same("a looser limit needs the owner", texts(withStick("check seconds", { limit: 60 })), [
-  "The limit of check seconds went from 40 to 60.",
+same("a looser limit needs the owner", texts(withMetric("ci-duration", { limit: 60 })), [
+  "The limit of ci-duration went from 40 to 60.",
 ])
-same("a moved goal needs the owner", texts(withStick("known faults", { now: 2, goal: 5 })), [
-  "The goal of known faults went from 0 to 5.",
+same("a moved goal needs the owner", texts(withMetric("known-failures", { now: 2, goal: 5 })), [
+  "The goal of known-failures went from 0 to 5.",
 ])
-same("a limit turned into a count needs the owner", texts(withStick("check seconds", { now: 1, goal: 0 })), [
-  "The stick check seconds stopped being a limit.",
+same("a limit turned into a count needs the owner", texts(withMetric("ci-duration", { now: 1, goal: 0 })), [
+  "The metric ci-duration stopped being a limit.",
 ])
-same("a removed stick needs the owner", texts({ headSticks: { "known faults": sticks["known faults"] } }).length, 2)
+same(
+  "a removed metric needs the owner",
+  texts({ headMetrics: { "known-failures": metrics["known-failures"] } }).length,
+  2,
+)
 for (const loose of [
   { limit: "9" },
   { limit: null },
@@ -89,17 +96,17 @@ for (const loose of [
   7,
   null,
 ]) {
-  same(`a stick shaped ${JSON.stringify(loose)} needs the owner`, texts(withStick("known faults", loose)), [
-    "The stick known faults must be only a limit, or only now and goal, or only a floor, as numbers.",
+  same(`a metric shaped ${JSON.stringify(loose)} needs the owner`, texts(withMetric("known-failures", loose)), [
+    "The metric known-failures must be only a limit, or only now and goal, or only a floor, as numbers.",
   ])
 }
-same("a malformed new stick needs the owner", texts(withStick("new one", { now: [] })).length, 1)
+same("a malformed new metric needs the owner", texts(withMetric("new one", { now: [] })).length, 1)
 
 for (const file of [
-  ".github/workflows/gate.yml",
+  ".github/workflows/ci.yml",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
   "AGENTS.md",
-  "scripts/sticks.mjs",
+  "scripts/metrics.mjs",
   "scripts/pptx-check.mjs",
   "scripts/pptx-tools.sh",
   "scripts/pptx-judge/Program.cs",
@@ -115,13 +122,13 @@ for (const file of [
   "specs/edit/Edit.cfg",
   "vitest.workspace.ts",
 ]) {
-  if (!guarded(file)) throw new Error(`${file} decides the gate and is not guarded`)
+  if (!guarded(file)) throw new Error(`${file} decides ci and is not guarded`)
 }
 for (const file of [
   "apps/web/src/App.tsx",
   "packages/pptx/src/slide-route.ts",
   "scripts/pptx-fixtures/cases.json",
-  "sticks.json",
+  "metrics.json",
 ]) {
   if (guarded(file)) throw new Error(`${file} is product or data and is guarded`)
 }
@@ -131,14 +138,16 @@ same(
   [true, true, false],
 )
 same("changed scripts need the owner", texts({ changedScripts: ["package.json"] }), [
-  "The scripts in package.json changed, and they are what the gate runs.",
+  "The scripts in package.json changed, and they are what ci runs.",
 ])
 
-same("a count given a limit as well needs the owner", texts(withStick("known faults", { now: 2, goal: 0, limit: 5 })), [
-  "The stick known faults must be only a limit, or only now and goal, or only a floor, as numbers.",
-])
-same("a count turned into a limit needs the owner", texts(withStick("known faults", { limit: 5 })), [
-  "The stick known faults stopped being a count with a goal.",
+same(
+  "a count given a limit as well needs the owner",
+  texts(withMetric("known-failures", { now: 2, goal: 0, limit: 5 })),
+  ["The metric known-failures must be only a limit, or only now and goal, or only a floor, as numbers."],
+)
+same("a count turned into a limit needs the owner", texts(withMetric("known-failures", { limit: 5 })), [
+  "The metric known-failures stopped being a count with a goal.",
 ])
 
 const cases = [
@@ -175,15 +184,15 @@ same(
 same("a lost kind needs the owner", texts({ changedKinds: ["duplicate shape id"] }), [
   "The judge proof no longer records duplicate shape id as caught.",
 ])
-const caughtStick = "planted breaks the judge catches"
-const proofSticks = { baseSticks: { ...sticks, [caughtStick]: { now: 9, goal: 10 } } }
+const caughtMetric = "fault-detection"
+const proofMetrics = { baseMetrics: { ...metrics, [caughtMetric]: { now: 9, goal: 10 } } }
 same(
   "a new kind moves the count of caught kinds and its goal freely",
-  texts({ ...proofSticks, headSticks: { ...sticks, [caughtStick]: { now: 9, goal: 11 } } }),
+  texts({ ...proofMetrics, headMetrics: { ...metrics, [caughtMetric]: { now: 9, goal: 11 } } }),
   [],
 )
-same("the count of caught kinds cannot be removed", texts({ ...proofSticks, headSticks: sticks }), [
-  `The stick ${caughtStick} was removed.`,
+same("the count of caught kinds cannot be removed", texts({ ...proofMetrics, headMetrics: metrics }), [
+  `The metric ${caughtMetric} was removed.`,
 ])
 
 const deck = "scripts/pptx-fixtures/nasa-1d-cnn.pptx"
@@ -272,13 +281,15 @@ same(
 )
 
 const blocksOf = (change) =>
-  ownerReasons({ baseSticks: sticks, headSticks: sticks, changedFiles: [], changedScripts: [], ...change }).map(
+  ownerReasons({ baseMetrics: metrics, headMetrics: metrics, changedFiles: [], changedScripts: [], ...change }).map(
     (reason) => reason.blocks,
   )
-same("a raised limit blocks", blocksOf(withStick("check seconds", { limit: 60 })), [true])
-same("a dropped deck count blocks", blocksOf(withStick(decks, { now: 1, goal: 20 })), [true])
-same("a moved goal blocks", blocksOf(withStick("known faults", { now: 2, goal: 5 })), [true])
-same("a recorded fault is listed and does not block", blocksOf(withStick("known faults", { now: 3, goal: 0 })), [false])
+same("a raised limit blocks", blocksOf(withMetric("ci-duration", { limit: 60 })), [true])
+same("a dropped deck count blocks", blocksOf(withMetric(decks, { now: 1, goal: 20 })), [true])
+same("a moved goal blocks", blocksOf(withMetric("known-failures", { now: 2, goal: 5 })), [true])
+same("a recorded fault is listed and does not block", blocksOf(withMetric("known-failures", { now: 3, goal: 0 })), [
+  false,
+])
 same("a changed check file is listed and does not block", blocksOf({ changedFiles: ["scripts/check.mjs"] }), [false])
 same("changed scripts are listed and do not block", blocksOf({ changedScripts: ["package.json"] }), [false])
 same("a changed case blocks", blocksOf({ changedCases: ["text-page"] }), [true])
@@ -287,12 +298,12 @@ same("a lost kind blocks", blocksOf({ changedKinds: ["duplicate shape id"] }), [
 
 const listedOnly = verdict({
   owner: "owner",
-  reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what the gate checks.", blocks: false }],
+  reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", blocks: false }],
   headPrints: {},
 })
 same("a pull that only touches the checks passes and is listed", [listedOnly.pass, listedOnly.listed], [true, true])
 same("its line says it does not block", listedOnly.lines, [
-  "Listed for owner, does not block: AGENTS.md decides what the gate checks.",
+  "Listed for owner, does not block: AGENTS.md decides what ci checks.",
 ])
 
 const reasons = [
@@ -301,9 +312,9 @@ const reasons = [
     text: "a.pptx is a deck the PowerPoint check already judges.",
     blocks: true,
   },
-  { about: "stick check seconds", text: "The limit of check seconds went from 40 to 60.", blocks: true },
+  { about: "metric ci-duration", text: "The limit of ci-duration went from 40 to 60.", blocks: true },
 ]
-const prints = { "file scripts/pptx-fixtures/a.pptx": "blob1", "stick check seconds": '{"limit":60}' }
+const prints = { "file scripts/pptx-fixtures/a.pptx": "blob1", "metric ci-duration": '{"limit":60}' }
 const untouched = verdict({ owner: "owner", reasons: [], headPrints: {} })
 same("nothing to accept passes and is not listed", [untouched.pass, untouched.listed], [true, false])
 const waiting = verdict({ owner: "owner", reasons, headPrints: prints })
@@ -311,7 +322,7 @@ same("an unapproved pull waits", waiting.pass, false)
 if (!waiting.lines.includes("Undo what lowers the bar. Only an approval from owner lets it through as it is.")) {
   throw new Error(waiting.lines.join("\n"))
 }
-const forks = { "file scripts/pptx-fixtures/a.pptx": "base1", "stick check seconds": '{"limit":40}' }
+const forks = { "file scripts/pptx-fixtures/a.pptx": "base1", "metric ci-duration": '{"limit":40}' }
 const settled = {
   owner: "owner",
   reasons,
@@ -327,13 +338,13 @@ if (!amended.lines.includes("Changed since owner approved: file scripts/pptx-fix
   throw new Error(amended.lines.join("\n"))
 }
 same(
-  "a stick that got worse again after the approval waits again",
-  verdict({ ...settled, headPrints: { ...prints, "stick check seconds": '{"limit":99}' } }).pass,
+  "a metric that got worse again after the approval waits again",
+  verdict({ ...settled, headPrints: { ...prints, "metric ci-duration": '{"limit":99}' } }).pass,
   false,
 )
-const reverted = verdict({ ...settled, forkPrints: { ...forks, "stick check seconds": '{"limit":30}' } })
+const reverted = verdict({ ...settled, forkPrints: { ...forks, "metric ci-duration": '{"limit":30}' } })
 same("an approval does not cover what main changed since", reverted.pass, false)
-if (!reverted.lines.includes("Changed on main since owner approved: stick check seconds.")) {
+if (!reverted.lines.includes("Changed on main since owner approved: metric ci-duration.")) {
   throw new Error(reverted.lines.join("\n"))
 }
 
@@ -351,8 +362,8 @@ same(
   ["packages/pptx/src/slide-route.test.ts", "tests/browser/every-screen.spec.ts", "packages/pptx/src/shape-id.test.ts"],
 )
 const removedTest = ownerReasons({
-  baseSticks: sticks,
-  headSticks: sticks,
+  baseMetrics: metrics,
+  headMetrics: metrics,
   changedFiles: [],
   changedScripts: [],
   removedTests: ["packages/pptx/src/slide-route.test.ts"],
@@ -365,11 +376,11 @@ same("a removed test file lowers the bar", removedTest, [
   },
 ])
 
-const routes = "routes pptx writes"
+const routes = "export-coverage"
 const withRoutes = (base, head) =>
   ownerReasons({
-    baseSticks: { [routes]: base },
-    headSticks: { [routes]: head },
+    baseMetrics: { [routes]: base },
+    headMetrics: { [routes]: head },
     changedFiles: [],
     changedScripts: [],
   }).map((reason) => reason.text)
@@ -405,4 +416,48 @@ same(
   [`The goal of ${routes} went from 4 to 9.`],
 )
 
-console.log("owner-gate tests passed")
+const renamed = {
+  "known-failures": { now: 17, goal: 0 },
+  "test-count": { floor: 199 },
+  "corpus-size": { now: 2, goal: 20 },
+  "fault-detection": { now: 9, goal: 10 },
+  "export-coverage": { now: 17, goal: 50 },
+  "ci-duration": { limit: 40 },
+  "pptx-check-duration": { limit: 90 },
+}
+const oldFile = Object.fromEntries(Object.entries(oldMetricNames).map(([old, name]) => [old, renamed[name]]))
+const atMergeBase = metricsFrom((file) => (file === oldMetricsFile ? oldFile : undefined))
+const atHead = metricsFrom((file) => (file === "metrics.json" ? renamed : undefined))
+same("the old file at the merge base reads under the new names", atMergeBase, renamed)
+same(
+  "the old file at the merge base and the same values at the head need nobody",
+  ownerReasons({ baseMetrics: atMergeBase, headMetrics: atHead, changedFiles: [], changedScripts: [] }),
+  [],
+)
+same(
+  "a floor lowered across the rename is still caught",
+  ownerReasons({
+    baseMetrics: atMergeBase,
+    headMetrics: { ...atHead, "test-count": { floor: 198 } },
+    changedFiles: [],
+    changedScripts: [],
+  }).map((reason) => reason.text),
+  ["The floor of test-count went from 199 to 198."],
+)
+same(
+  "the new file wins when both exist",
+  metricsFrom((file) => (file === "metrics.json" ? renamed : oldFile)),
+  renamed,
+)
+same(
+  "no file at a commit reads as absent",
+  metricsFrom(() => undefined),
+  undefined,
+)
+same(
+  "a name the old file added itself is kept",
+  metricsFrom((file) => (file === oldMetricsFile ? { "new one": { limit: 1 } } : undefined)),
+  { "new one": { limit: 1 } },
+)
+
+console.log("ratchet tests passed")

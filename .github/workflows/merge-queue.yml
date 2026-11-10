@@ -1,0 +1,21 @@
+name: merge-queue
+
+on:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  ratchet:
+    name: ratchet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: echo "The ratchet judged each pull request in this group before it entered the queue."
+  check-regression:
+    name: check-regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: echo "The check-regression check judged each pull request in this group before it entered the queue."

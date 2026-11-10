@@ -5,12 +5,12 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { jarPath, javaBin } from "./check-specs.mjs"
-import { approvedCommit, guarded, packageFile } from "./owner-gate.mjs"
+import { approvedCommit, guarded, packageFile } from "./ratchet.mjs"
 
 const checkFolders = ["tooling/", "scripts/"]
 const proofName = /\.test\.(js|mjs|ts)$/
-const supportName = /^(harness|run-tests|old-proofs-run)\.m?js$/
-const proofRun = "scripts/old-proofs-run.mjs"
+const supportName = /^(harness|run-tests|check-regression-run)\.m?js$/
+const proofRun = "scripts/check-regression-run.mjs"
 const proofSeconds = 300
 const killSeconds = 10
 const timedOutStatus = 124
@@ -19,8 +19,8 @@ const largeOutput = 64 * 1024 * 1024
 const proofNeeds = {
   "scripts/bug-rule.test.mjs": ["git"],
   "scripts/check-specs.test.mjs": ["Java 21", "tla2tools.jar"],
-  "scripts/old-proofs.test.mjs": ["git"],
-  "scripts/sticks.test.mjs": ["git"],
+  "scripts/check-regression.test.mjs": ["git"],
+  "scripts/metrics.test.mjs": ["git"],
 }
 const needFinders = {
   git: () => execFileSync("git", ["--version"], { stdio: "ignore" }),
@@ -244,7 +244,7 @@ const tools = () =>
   )
 
 const scratchHome = (runsInCi) => {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-old-proofs-"))
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-check-regression-"))
   fs.writeFileSync(path.join(home, ".gitconfig"), "[safe]\n\tdirectory = *\n")
   if (runsInCi) fs.chmodSync(home, 0o777)
   return home
@@ -328,7 +328,7 @@ const mergeCommit = (headRoot, baseCommit) => {
   try {
     return git(headRoot, ["merge-base", "HEAD", baseCommit]).trim()
   } catch {
-    throw new Error("The pull request checkout has no history back to main, so the old proofs cannot be judged.")
+    throw new Error("The pull request checkout has no history back to main, so check-regression cannot judge it.")
   }
 }
 
@@ -405,7 +405,7 @@ const judge = (baseRoot, headRoot, approved) => {
   const results = [...losses, ...proofs.map((file) => runProof(baseRoot, file, { runsInCi }))]
   const result = verdict({ results, approved, behind })
   for (const line of result.lines) console.log(line)
-  console.log(`Old proofs took ${Math.round((Date.now() - started) / 1000)} seconds.`)
+  console.log(`check-regression took ${Math.round((Date.now() - started) / 1000)} seconds.`)
   return result.pass
 }
 
