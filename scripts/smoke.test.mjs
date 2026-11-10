@@ -209,6 +209,9 @@ same("a refused commit names the refusal", refusedCommit.result.line, "smoke fai
 const refusedRead = await run({ refuseRead: true })
 same("a refused read names the refusal", refusedRead.result.line, "smoke failed at read: status 200 owner")
 
+const emptyToken = await run({}, { token: "" })
+same("an empty token fails", emptyToken.result.line, "smoke failed at setup: SMOKE_TOKEN is not set")
+
 const noToken = await run({}, { token: undefined })
 same("no token fails", noToken.result.line, "smoke failed at setup: SMOKE_TOKEN is not set")
 same("no token touches neither git nor the API", [noToken.git.calls.length, noToken.state.versionCalls], [0, 0])
@@ -249,5 +252,9 @@ same(
   /^permissions:\n {2}contents: read\n {2}issues: write$/m.test(workflow),
   true,
 )
-same("the alarm is the deploy-red issue", workflow.includes("--label deploy-red"), true)
+same(
+  "the alarm is a deploy-red issue with the agreed title",
+  workflow.includes('gh issue create --title "Deploy or smoke check is red" --label deploy-red --body'),
+  true,
+)
 same("the workflow does not swallow a failure with || true", workflow.includes("|| true"), false)
