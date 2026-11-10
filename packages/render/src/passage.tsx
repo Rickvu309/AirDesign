@@ -30,6 +30,15 @@ function showText(box: HTMLElement, text: string): void {
   selection.addRange(kept)
 }
 
+function pastedLine(data: DataTransfer): string {
+  const plain = data.getData("text/plain")
+  const text =
+    plain !== ""
+      ? plain
+      : (new DOMParser().parseFromString(data.getData("text/html"), "text/html").body.textContent ?? "")
+  return text.replace(/\s*[\r\n]+\s*/g, " ")
+}
+
 export function Passage(props: {
   readonly store: PaintStore
   readonly id: ElementId
@@ -65,6 +74,16 @@ export function Passage(props: {
       ref={box}
       contentEditable={props.onEdit !== undefined}
       style={{ whiteSpace: "pre-wrap" }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && !composing.current && !event.nativeEvent.isComposing) event.preventDefault()
+      }}
+      onPaste={(event) => {
+        event.preventDefault()
+        event.currentTarget.ownerDocument.execCommand("insertText", false, pastedLine(event.clipboardData))
+      }}
+      onDrop={(event) => {
+        event.preventDefault()
+      }}
       onCompositionStart={() => {
         composing.current = true
         props.store.beginComposition(props.id)
