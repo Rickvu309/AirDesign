@@ -20,7 +20,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
 
-`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. `main` only merges a PR that contains the latest `main`, so when yours falls behind, run `gh pr update-branch --rebase`. After it merges, remove its local worktree and branch if nothing else uses them.
+`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. `main` only merges a PR that contains the latest `main`, so when yours falls behind, run `gh pr update-branch --rebase`. A PR that changes what the gate checks, or moves a stick away from its goal, also needs the `owner gate` check, which passes only after the repo owner approves it. Ask for that review, then run `gh run rerun` on the check. After it merges, remove its local worktree and branch if nothing else uses them.
 
 ## Ways to hurt yourself
 
@@ -68,5 +68,6 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a gated commit that contains the latest `main` | branch protection |
+| A stick moves only toward its goal, and the files that decide the gate change only with the owner's approval | the `owner gate` check, run from `main` |
 | A bug you find and do not fix is an `it.fails` test. A failing-expected, skipped or todo test counts as a known fault | `scripts/sticks.mjs`: the count must match `sticks.json` |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |

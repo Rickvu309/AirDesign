@@ -16,7 +16,7 @@
     "check:mutation": "node scripts/check-mutation.mjs",
     "test": "pnpm test:unit && pnpm test:tooling",
     "test:unit": "vitest run",
-    "test:tooling": "node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/sticks.test.mjs && node scripts/check-specs.test.mjs",
+    "test:tooling": "node tooling/oxlint-plugin-airdesign/run-tests.js && node scripts/bug-rule.test.mjs && node scripts/sticks.test.mjs && node scripts/owner-gate.test.mjs && node scripts/failure-audit.test.mjs && node scripts/check-specs.test.mjs",
     "test:browser": "playwright test",
     "build": "pnpm -r --if-present run build"
   },
