@@ -39,7 +39,7 @@ function sessionFor(deck: Deck): Session {
 
 function held(deck: Deck, holder: { log: CallerLog }): Session {
   return {
-    caller: { actor: "agent", runId: "run", readAt: version(deck.register) },
+    caller: { actor: "agent", runId: "run" },
     deck,
     get log() {
       return holder.log
@@ -214,14 +214,15 @@ describe("createServer", () => {
     await withClient(session, async (client) => {
       const result = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(result.isError).not.toBe(true)
       expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
       expect(session.deck.revision).toBe(1)
-      expect(session.deck.register.phase).toBe("running")
-      expect(session.deck.register.runId).toBe("run")
-      expect(session.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      const body = nodeBody(session.deck.register)
+      expect(body.phase).toBe("running")
+      expect(body.runId).toBe("run")
+      expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
       expect(before.register.phase).toBe("idle")
       expect(before.register.landed).toEqual([])
     })
@@ -255,7 +256,7 @@ describe("createServer", () => {
       }
       const refused = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(refused.isError).toBe(true)
       expect(refused.content).toEqual([
@@ -282,7 +283,7 @@ describe("createServer", () => {
       session.now = 298_501
       const refused = await client.callTool({
         name: "airdesign_edit_deck",
-        arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
+        arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(refused.isError).toBe(true)
       expect(refused.content).toEqual([

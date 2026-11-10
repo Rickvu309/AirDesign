@@ -17,11 +17,19 @@ function address(mark: string): string {
   return `${mark}${randomBytes(4).toString("hex")}@example.com`
 }
 
+type StoredElement = {
+  floor: string
+  phase: string
+  runId: string | null
+  guarded: boolean
+  landed: { value: string }[]
+}
+
 type Stored = {
   revision: number
   register: {
-    runId: string | null
-    landed: { value: string }[]
+    nodes: string[]
+    elements: Record<string, StoredElement>
   }
 }
 
@@ -29,16 +37,30 @@ const toolLimit = "Thirty tool calls in five minutes. The next tool call can run
 const captureNext = "Open the deck in AirDesign, then try again."
 const storeFailure = "The deck could not be reached."
 
+const element = "258.7"
+const sibling = "258.8"
+const created = "258.n0123456789ab"
+
 function firstEdit(deck: string) {
-  return { deck, base: 0, changes: [{ value: "21" }] }
+  return { deck, base: 0, changes: [{ value: "21", node: element, readAt: 0 }] }
 }
 
 function secondEdit(deck: string) {
-  return { deck, base: 1, changes: [{ value: "22" }] }
+  return { deck, base: 1, changes: [{ value: "22", node: element, readAt: 1 }] }
 }
 
 function otherEdit(deck: string) {
-  return { deck, base: 1, changes: [{ value: "no" }] }
+  return { deck, base: 1, changes: [{ value: "no", node: element, readAt: 1 }] }
+}
+
+function elementOf(stored: Stored | undefined, node = element): StoredElement {
+  const body = stored?.register.elements[node]
+  if (body === undefined) throw new Error("missing element")
+  return body
+}
+
+function values(stored: Stored | undefined, node = element): string[] {
+  return elementOf(stored, node).landed.map((item) => item.value)
 }
 
 describe("mcp route", () => {
@@ -191,6 +213,32 @@ describe("mcp route", () => {
     return client
   }
 
+  async function openedDeck(mark: string): Promise<{ id: string; cookie: string }> {
+    const named = readDeckId(deckName())
+    if (!named.ok) throw new Error(named.refusal)
+    const cookie = await sign(address(mark))
+    await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
+    return { id: named.deck, cookie }
+  }
+
+  async function editText(client: Client, args: Record<string, unknown>): Promise<string> {
+    const result = await client.callTool({ name: "airdesign_edit_deck", arguments: args })
+    const block = result.content[0]
+    if (block === undefined || block.type !== "text") throw new Error("text")
+    return block.text
+  }
+
+  async function seeded(client: Client, id: string): Promise<void> {
+    const edits = [
+      { base: 0, changes: [{ value: "a1", node: element, readAt: 0 }] },
+      { base: 1, changes: [{ value: "a2", node: element, readAt: 1 }] },
+      { base: 2, changes: [{ value: "b1", node: sibling, readAt: 0 }] },
+    ]
+    for (const [index, edit] of edits.entries()) {
+      expect(await editText(client, { deck: id, ...edit })).toBe(`Landed revision ${String(index + 1)}.`)
+    }
+  }
+
   it("refuses mcp without a session", async () => {
     const missing = await ask(base, "POST", "/mcp", {})
     const unknown = await ask(base, "POST", "/mcp", {}, "airdesign.session=missing")
@@ -222,8 +270,8 @@ describe("mcp route", () => {
       expect(first.content).toEqual([{ type: "text", text: "Landed revision 1." }])
       const started = await row(named.deck)
       expect(started?.revision).toBe(1)
-      expect(started?.register.landed.map((item) => item.value)).toEqual(["21"])
-      const runId = started?.register.runId
+      expect(values(started)).toEqual(["21"])
+      const runId = elementOf(started).runId
       expect(minted.slice(before)).toContain(runId)
       const watched = await ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, firstCookie)
       expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
@@ -234,7 +282,7 @@ describe("mcp route", () => {
         ok: true,
         deck: named.deck,
         revision: 1,
-        register: { runId, landed: [{ actor: "agent", value: "21", visible: true }] },
+        register: { elements: { [element]: { runId, landed: [{ actor: "agent", value: "21", visible: true }] } } },
       })
       const second = await client.callTool({
         name: "airdesign_edit_deck",
@@ -244,8 +292,8 @@ describe("mcp route", () => {
       expect(second.content).toEqual([{ type: "text", text: "Landed revision 2." }])
       const kept = await row(named.deck)
       expect(kept?.revision).toBe(2)
-      expect(kept?.register.landed.map((item) => item.value)).toEqual(["21", "22"])
-      expect(kept?.register.runId).toBe(runId)
+      expect(values(kept)).toEqual(["21", "22"])
+      expect(elementOf(kept).runId).toBe(runId)
     })
   })
 
@@ -274,6 +322,118 @@ describe("mcp route", () => {
     expect(await row(named.deck)).toEqual(before)
   })
 
+  it("lands one call on two elements at different versions, each at its own readAt", async () => {
+    const { id, cookie } = await openedDeck("pair")
+    const before = minted.length
+    await withMcp(cookie, async (client) => {
+      await seeded(client, id)
+      const text = await editText(client, {
+        deck: id,
+        base: 3,
+        changes: [
+          { value: "a3", node: element, readAt: 2 },
+          { value: "b2", node: sibling, readAt: 1 },
+        ],
+      })
+      expect(text).toBe("Landed revision 4.")
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(4)
+    expect(values(kept)).toEqual(["a1", "a2", "a3"])
+    expect(values(kept, sibling)).toEqual(["b1", "b2"])
+    const runId = elementOf(kept).runId
+    expect(minted.slice(before)).toContain(runId)
+    expect(elementOf(kept, sibling).runId).toBe(runId)
+  })
+
+  it("answers stale for a readAt behind the element and lands nothing of the call", async () => {
+    const { id, cookie } = await openedDeck("behind")
+    await withMcp(cookie, async (client) => {
+      await seeded(client, id)
+      const seededRow = await row(id)
+      const alone = await editText(client, {
+        deck: id,
+        base: 3,
+        changes: [{ value: "late", node: element, readAt: 0 }],
+      })
+      expect(alone).toBe("stale")
+      expect(await row(id)).toEqual(seededRow)
+      const paired = await editText(client, {
+        deck: id,
+        base: 3,
+        changes: [
+          { value: "b2", node: sibling, readAt: 1 },
+          { value: "late", node: element, readAt: 0 },
+        ],
+      })
+      expect(paired).toBe("stale")
+      expect(await row(id)).toEqual(seededRow)
+    })
+  })
+
+  it("lands a call whose base is behind the revision when each readAt is current", async () => {
+    const { id, cookie } = await openedDeck("oldbase")
+    await withMcp(cookie, async (client) => {
+      await seeded(client, id)
+      const text = await editText(client, {
+        deck: id,
+        base: 0,
+        changes: [{ value: "a3", node: element, readAt: 2 }],
+      })
+      expect(text).toBe("Landed revision 4.")
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(4)
+    expect(values(kept)).toEqual(["a1", "a2", "a3"])
+  })
+
+  it("opens a new element with the given floor, starts it and lands", async () => {
+    const { id, cookie } = await openedDeck("created")
+    const before = minted.length
+    await withMcp(cookie, async (client) => {
+      const text = await editText(client, {
+        deck: id,
+        base: 0,
+        changes: [{ value: "After", node: created, readAt: 0, floor: "Before" }],
+      })
+      expect(text).toBe("Landed revision 1.")
+    })
+    const kept = await row(id)
+    expect(kept?.revision).toBe(1)
+    expect(kept?.register.nodes).toContain(created)
+    const body = elementOf(kept, created)
+    expect(body.floor).toBe("Before")
+    expect(body.phase).toBe("running")
+    expect(minted.slice(before)).toContain(body.runId)
+    expect(values(kept, created)).toEqual(["After"])
+  })
+
+  it("answers person-protected after a person commits on the element during the run", async () => {
+    const { id, cookie } = await openedDeck("guard")
+    await withMcp(cookie, async (client) => {
+      expect(await editText(client, firstEdit(id))).toBe("Landed revision 1.")
+      const committed = await ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: id, batch: [{ value: "person", node: element }] },
+        cookie,
+      )
+      expect(committed.json).toMatchObject({ ok: true, revision: 2 })
+      const guarded = await row(id)
+      expect(elementOf(guarded).guarded).toBe(true)
+      const text = await editText(client, {
+        deck: id,
+        base: 2,
+        changes: [{ value: "agent", node: element, readAt: 2 }],
+      })
+      expect(text).toBe("person-protected")
+      const kept = await row(id)
+      expect(kept).toEqual(guarded)
+      expect(values(kept).at(-1)).toBe("person")
+    })
+  })
+
   it("refuses a client run id and leaves the stored run", async () => {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
@@ -287,15 +447,17 @@ describe("mcp route", () => {
       })
       expect(landed.content).toEqual([{ type: "text", text: "Landed revision 1." }])
       const started = await row(named.deck)
-      expect(minted.slice(before)).toContain(started?.register.runId)
+      expect(minted.slice(before)).toContain(elementOf(started).runId)
       for (const extra of [{ runId: "client-run" }, { readAt: 5 }, { actor: "person" }] as const) {
         const refused = await client.callTool({
           name: "airdesign_edit_deck",
-          arguments: { deck: named.deck, base: 1, changes: [{ value: "99" }], ...extra },
+          arguments: { deck: named.deck, base: 1, changes: [{ value: "99", node: element, readAt: 1 }], ...extra },
         })
         expect(refused.isError).toBe(true)
         expect(refused.content).toEqual([{ type: "text", text: "field" }])
-        expect(await row(named.deck)).toEqual(started)
+        const kept = await row(named.deck)
+        expect(kept).toEqual(started)
+        expect(minted.slice(before)).toContain(elementOf(kept).runId)
       }
     })
   })
@@ -343,7 +505,7 @@ describe("mcp route", () => {
     })
     const kept = await row(named.deck)
     expect(kept?.revision).toBe(0)
-    expect(kept?.register.landed).toEqual([])
+    expect(kept?.register.elements).toEqual({})
     const again = await sign(email)
     await withMcp(again, async (client) => {
       const blocked = await client.callTool({
@@ -448,11 +610,11 @@ describe("mcp route", () => {
       const [first, second] = await Promise.all([
         left.callTool({
           name: "airdesign_edit_deck",
-          arguments: { deck: named.deck, base: 0, changes: [{ value: "21" }] },
+          arguments: { deck: named.deck, base: 0, changes: [{ value: "21", node: element, readAt: 0 }] },
         }),
         right.callTool({
           name: "airdesign_edit_deck",
-          arguments: { deck: named.deck, base: 0, changes: [{ value: "22" }] },
+          arguments: { deck: named.deck, base: 0, changes: [{ value: "22", node: element, readAt: 0 }] },
         }),
       ])
       const texts = [first, second].map((result) => {
@@ -464,8 +626,8 @@ describe("mcp route", () => {
       expect(texts.filter((text) => text === "stale")).toHaveLength(1)
       const kept = await row(named.deck)
       expect(kept?.revision).toBe(1)
-      expect(kept?.register.landed).toHaveLength(1)
-      const value = kept?.register.landed[0]?.value
+      expect(elementOf(kept).landed).toHaveLength(1)
+      const value = elementOf(kept).landed[0]?.value
       expect(value === "21" || value === "22").toBe(true)
     } finally {
       await Promise.all([left.close(), right.close()])
@@ -499,20 +661,30 @@ describe("mcp route", () => {
     if (!named.ok) throw new Error(named.refusal)
     const cookie = await sign(address("size"))
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
-    const call = (value: string) =>
+    const nodes = Array.from({ length: 100 }, (_, index) => `258.${String(index)}`)
+    const call = (texts: readonly string[]) =>
       JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
         method: "tools/call",
         params: {
           name: "airdesign_edit_deck",
-          arguments: { deck: named.deck, base: 0, changes: [{ value }] },
+          arguments: {
+            deck: named.deck,
+            base: 0,
+            changes: nodes.map((node, index) => ({ value: texts[index] ?? "", node, readAt: 0 })),
+          },
         },
       })
-    const emptySize = Buffer.byteLength(call(""))
-    const underValue = "y".repeat(bodyCap - emptySize - 1)
-    const under = call(underValue)
-    const over = call("x".repeat(bodyCap))
+    const packed = (wire: number) =>
+      nodes.map((_, index) => {
+        const share = Math.floor(wire / nodes.length) + (index < wire % nodes.length ? 1 : 0)
+        return `${share % 2 === 1 ? "y" : ""}${'"'.repeat(Math.floor(share / 2))}`
+      })
+    const emptySize = Buffer.byteLength(call(nodes.map(() => "")))
+    const underValues = packed(bodyCap - emptySize - 1)
+    const under = call(underValues)
+    const over = call(packed(bodyCap))
     expect(Buffer.byteLength(under)).toBe(bodyCap - 1)
     expect(Buffer.byteLength(over)).toBeGreaterThan(bodyCap)
     const blocked = await fetch(`${base}/mcp`, {
@@ -527,7 +699,7 @@ describe("mcp route", () => {
     const blockedText = await blocked.text()
     expect(blocked.status).toBe(413)
     expect(blockedText).toContain("Payload Too Large")
-    expect(await row(named.deck)).toMatchObject({ revision: 0, register: { landed: [] } })
+    expect(await row(named.deck)).toMatchObject({ revision: 0, register: { elements: {} } })
     const allowed = await fetch(`${base}/mcp`, {
       method: "POST",
       headers: {
@@ -542,7 +714,7 @@ describe("mcp route", () => {
     expect(allowedText).toContain("Landed revision 1.")
     const kept = await row(named.deck)
     expect(kept?.revision).toBe(1)
-    expect(kept?.register.landed.map((item) => item.value)).toEqual([underValue])
+    expect(nodes.map((node) => values(kept, node)[0])).toEqual(underValues)
   })
 
   it("answers a fixed sentence when the store throws", async () => {
@@ -650,8 +822,8 @@ describe("mcp route", () => {
     expect(response.status).toBe(200)
     expect(text).toContain("Landed revision 1.")
     const kept = await row(named.deck)
-    expect(minted.slice(before)).toEqual([kept?.register.runId])
-    expect(kept?.register.runId).not.toBe("client-side")
-    expect(kept?.register.landed.map((item) => item.value)).toEqual(["21"])
+    expect(minted.slice(before)).toEqual([elementOf(kept).runId])
+    expect(elementOf(kept).runId).not.toBe("client-side")
+    expect(values(kept)).toEqual(["21"])
   })
 })

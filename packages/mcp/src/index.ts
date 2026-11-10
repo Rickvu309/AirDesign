@@ -1,6 +1,6 @@
 export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolContent, type ToolResult } from "./call-tool.js"
-export { afterWrite, agentCaller, openRun, readAtFor } from "./run.js"
+export { afterWrite, agentCaller, openRun } from "./run.js"
 export {
   capture,
   edit,
