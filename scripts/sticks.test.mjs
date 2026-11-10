@@ -75,8 +75,11 @@ for (const [value, fails] of [
   ["false", false],
 ]) {
   process.env.CI = value
-  if (timeStick(root, "check seconds", Date.now() - 41_200).fails !== fails) {
-    throw new Error(`an over-limit time with CI=${value} should ${fails ? "fail" : "pass"}`)
+  if (timeStick(root, "check seconds", Date.now() - 81_200).fails !== fails) {
+    throw new Error(`a time over twice its limit with CI=${value} should ${fails ? "fail" : "pass"}`)
+  }
+  if (timeStick(root, "check seconds", Date.now() - 48_400).fails) {
+    throw new Error(`a time over its limit and under twice it must only warn, with CI=${value}`)
   }
 }
 if (gate === undefined) delete process.env.CI
