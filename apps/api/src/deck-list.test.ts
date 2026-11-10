@@ -90,6 +90,19 @@ describe("deck list and trash", () => {
     return found.rows[0]?.count as number
   }
 
+  async function waiters(count: number): Promise<void> {
+    const started = Date.now()
+    for (;;) {
+      const found = await admin.query(
+        "select count(*)::int as count from pg_stat_activity where application_name = $1 and wait_event_type = 'Lock'",
+        ["list-deck"],
+      )
+      if ((found.rows[0]?.count as number) >= count) return
+      if (Date.now() - started > 5000) throw new Error("the statements did not wait")
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
+
   it("refuses every deck list route without a session", async () => {
     for (const path of ["/decks/list", "/decks/rename", "/decks/trash", "/decks/restore", "/decks/delete"]) {
       const response = await ask(base, "POST", path, { deck: "abc", name: "x", decks: ["abc"] })
@@ -178,7 +191,7 @@ describe("deck list and trash", () => {
   it("refuses a name that is blank or longer than 200 characters", async () => {
     const named = deckName()
     await open(named)
-    for (const name of ["", "   ", "x".repeat(201), 7, null]) {
+    for (const name of ["", "   ", "x".repeat(201), 7, null, "a\u0000b"]) {
       const response = await ask(base, "POST", "/decks/rename", { deck: named, name }, cookie)
       expect(response.json).toEqual({ ok: false, refusal: "field" })
     }
@@ -423,6 +436,96 @@ describe("deck list and trash", () => {
     expect((await list(own)).trash.map((entry) => entry.deck)).toEqual([newer, older])
     await ask(base, "POST", "/decks/commit", { deck: older, batch: [{ value: "hi", node: "258.7" }] }, own)
     expect((await list(own)).trash.map((entry) => entry.deck)).toEqual([older, newer])
+  })
+
+  it("moves the edited time when a commit with a once key lands", async () => {
+    const named = deckName()
+    await open(named)
+    const before = (await list()).decks.find((one) => one.deck === named)
+    const batch = [{ value: "hi", node: "258.7" }]
+    await ask(base, "POST", "/decks/commit", { deck: named, batch, once: "moves" }, cookie)
+    const after = (await list()).decks.find((one) => one.deck === named)
+    expect(millis(after?.edited)).toBeGreaterThan(millis(before?.edited))
+  })
+
+  it("keeps the created time when the deck is opened again", async () => {
+    const named = deckName()
+    await open(named)
+    const before = (await list()).decks.find((one) => one.deck === named)
+    await open(named)
+    await open(named)
+    const after = (await list()).decks.find((one) => one.deck === named)
+    expect(after?.created).toBe(before?.created)
+    expect(after?.edited).toBe(before?.edited)
+  })
+
+  it("keeps a deck older than 30 days that is not in Trash when the list is read", async () => {
+    const named = deckName()
+    await open(named)
+    await admin.query(
+      "update deck.saved set created = now() - interval '40 days', edited = now() - interval '40 days' where id = $1",
+      [named],
+    )
+    const listed = await list()
+    expect(listed.decks.map((entry) => entry.deck)).toContain(named)
+    expect(await row(named)).toBeDefined()
+  })
+
+  it("drops a deck from Trash after 30 days and 1 minute and keeps one at 29 days and 23 hours", async () => {
+    const gone = deckName()
+    const kept = deckName()
+    await open(gone)
+    await open(kept)
+    await ask(base, "POST", "/decks/trash", { deck: gone }, cookie)
+    await ask(base, "POST", "/decks/trash", { deck: kept }, cookie)
+    await admin.query("update deck.saved set trashed = now() - interval '30 days 1 minute' where id = $1", [gone])
+    await admin.query("update deck.saved set trashed = now() - interval '29 days 23 hours' where id = $1", [kept])
+    const listed = await list()
+    expect(listed.trash.map((entry) => entry.deck)).toContain(kept)
+    expect(listed.trash.map((entry) => entry.deck)).not.toContain(gone)
+    expect(await row(gone)).toBeUndefined()
+  })
+
+  it("deletes a deck for good while a commit with once is landing", async () => {
+    const named = deckName()
+    await open(named)
+    await ask(base, "POST", "/decks/trash", { deck: named }, cookie)
+    const info = await postgresInfo()
+    const holder = new Client({ connectionString: info.deck, application_name: "list-holder" })
+    await holder.connect()
+    try {
+      await holder.query("begin")
+      await holder.query("update deck.saved set revision = revision where id = $1", [named])
+      const commit = ask(
+        base,
+        "POST",
+        "/decks/commit",
+        { deck: named, batch: [{ value: "first", node: "258.7" }], once: "race" },
+        cookie,
+      )
+      await waiters(1)
+      const deleted = ask(base, "POST", "/decks/delete", { decks: [named] }, cookie)
+      await waiters(2)
+      await holder.query("commit")
+      expect((await commit).json).toEqual({ ok: true, deck: named, revision: 1, key: `${named}:1` })
+      expect((await deleted).json).toEqual({ ok: true, deleted: [named] })
+    } finally {
+      await holder.query("rollback").catch(() => undefined)
+      await holder.end()
+    }
+    expect(await onceCount(named)).toBe(0)
+    await open(named)
+    const again = await ask(
+      base,
+      "POST",
+      "/decks/commit",
+      { deck: named, batch: [{ value: "second", node: "258.7" }], once: "race" },
+      cookie,
+    )
+    expect(again.json).toEqual({ ok: true, deck: named, revision: 1, key: `${named}:1` })
+    const read = await ask(base, "POST", "/decks/open", { deck: named }, cookie)
+    const register = (read.json as { register: { elements: Record<string, { landed: { value: string }[] }> } }).register
+    expect(register.elements["258.7"]?.landed.map((one) => one.value)).toEqual(["second"])
   })
 
   it("lets the listen role read the list columns and nothing else", async () => {

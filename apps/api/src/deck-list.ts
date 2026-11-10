@@ -25,15 +25,9 @@ type ListRow = {
 type Refusal = "field" | "deck" | "owner"
 
 const expireSql = `
-with gone as (
-  delete from deck.saved
-  where owner = $1 and trashed is not null and trashed < now() - interval '30 days'
-  returning id
-),
-noted as (
-  delete from deck.once where deck in (select id from gone)
-)
-select id from gone
+delete from deck.saved
+where owner = $1 and trashed is not null and trashed < now() - interval '30 days'
+returning id
 `
 
 const listSql = `
@@ -54,15 +48,9 @@ returning id, trashed
 const restoreSql = "update deck.saved set trashed = null where id = $1 and owner = $2 returning id"
 
 const deleteSql = `
-with gone as (
-  delete from deck.saved
-  where owner = $1 and id = any($2::text[]) and trashed is not null
-  returning id
-),
-noted as (
-  delete from deck.once where deck in (select id from gone)
-)
-select id from gone
+delete from deck.saved
+where owner = $1 and id = any($2::text[]) and trashed is not null
+returning id
 `
 
 function recordOf(raw: unknown): Record<string, unknown> | undefined {
@@ -78,7 +66,7 @@ function readName(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined
   const name = raw.trim()
   const size = [...name].length
-  if (size < 1 || size > nameCap) return undefined
+  if (size < 1 || size > nameCap || name.includes("\u0000")) return undefined
   return name
 }
 
