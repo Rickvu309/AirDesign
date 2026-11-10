@@ -89,7 +89,32 @@ describe("sign-in", () => {
   const mails: Mail[] = []
   let calls: string[] = []
   let failSends = 0
-  let park: { mark: () => void; gate: Promise<Error | undefined> } | undefined
+  const parks: { mark: () => void; gate: Promise<Error | undefined>; mail?: Mail }[] = []
+
+  function holdNext(): {
+    readonly entered: Promise<void>
+    readonly finish: (error?: Error) => void
+    readonly text: () => string
+  } {
+    let mark!: () => void
+    const entered = new Promise<void>((resolve) => {
+      mark = resolve
+    })
+    let settle!: (error: Error | undefined) => void
+    const gate = new Promise<Error | undefined>((resolve) => {
+      settle = resolve
+    })
+    const held: { mark: () => void; gate: Promise<Error | undefined>; mail?: Mail } = { mark, gate }
+    parks.push(held)
+    return {
+      entered,
+      finish: (error) => settle(error),
+      text: () => {
+        if (held.mail?.text === undefined) throw new Error("mail")
+        return held.mail.text
+      },
+    }
+  }
   let base = ""
   let close = async () => {}
   let session = openPool("postgres://session@127.0.0.1/api")
@@ -109,9 +134,9 @@ describe("sign-in", () => {
       publicOrigin,
       siteOrigin,
       send: async (mail) => {
-        const held = park
+        const held = parks.shift()
         if (held !== undefined) {
-          park = undefined
+          held.mail = mail
           held.mark()
           const error = await held.gate
           if (error !== undefined) throw error
@@ -141,7 +166,7 @@ describe("sign-in", () => {
     mails.length = 0
     calls = []
     failSends = 0
-    park = undefined
+    parks.length = 0
     globalThis.fetch = (async (input: string | URL) => {
       calls.push(String(input))
       throw new Error("fetch")
@@ -729,24 +754,14 @@ describe("sign-in", () => {
 
   it("leaves a newer mail alone when an older send fails late", async () => {
     const email = address()
-    let fail!: (error: Error) => void
-    let mark!: () => void
-    const entered = new Promise<void>((resolve) => {
-      mark = resolve
-    })
-    park = {
-      mark,
-      gate: new Promise<Error | undefined>((resolve) => {
-        fail = resolve
-      }),
-    }
+    const held = holdNext()
     const first = ask(base, "POST", "/sign-in/email", { email })
-    await entered
+    await held.entered
     const second = await ask(base, "POST", "/sign-in/email", { email })
     expect(second.status).toBe(202)
     expect(mails).toHaveLength(1)
     const newer = mailParts(mails[0]?.text)
-    fail(new Error("provider"))
+    held.finish(new Error("provider"))
     const failed = await first
     expect(failed.status).toBe(500)
     const signed = await ask(base, "POST", "/sign-in/code", { email, code: newer.code })
@@ -757,6 +772,158 @@ describe("sign-in", () => {
       [email],
     )
     expect(counted.rows[0]?.total).toBe(1)
+  })
+
+  it("keeps a delivered sign-in usable when two sends at once both fail", async () => {
+    async function failBoth(email: string, laterFirst: boolean): Promise<void> {
+      const early = holdNext()
+      const later = holdNext()
+      const first = ask(base, "POST", "/sign-in/email", { email })
+      const second = ask(base, "POST", "/sign-in/email", { email })
+      await early.entered
+      await later.entered
+      const order = laterFirst
+        ? [
+            { held: later, response: second },
+            { held: early, response: first },
+          ]
+        : [
+            { held: early, response: first },
+            { held: later, response: second },
+          ]
+      for (const step of order) {
+        step.held.finish(new Error("provider"))
+        const failed = await step.response
+        expect(failed.status).toBe(500)
+        expect(failed.json).toBeUndefined()
+      }
+    }
+
+    const linked = address()
+    const opened = await ask(base, "POST", "/sign-in/email", { email: linked })
+    expect(opened.status).toBe(202)
+    const mailed = mailParts(mails[0]?.text)
+    mails.length = 0
+    await failBoth(linked, false)
+    const signed = await ask(base, "POST", "/sign-in/code", { email: linked, code: mailed.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+
+    const reversed = address()
+    const again = await ask(base, "POST", "/sign-in/email", { email: reversed })
+    expect(again.status).toBe(202)
+    const kept = mailParts(mails[0]?.text)
+    mails.length = 0
+    await failBoth(reversed, true)
+    const still = await ask(base, "POST", "/sign-in/code", { email: reversed, code: kept.code })
+    expect(still.status).toBe(200)
+    expect(still.json).toEqual({ ok: true })
+
+    const fresh = address()
+    const early = holdNext()
+    const later = holdNext()
+    const first = ask(base, "POST", "/sign-in/email", { email: fresh })
+    const second = ask(base, "POST", "/sign-in/email", { email: fresh })
+    await early.entered
+    await later.entered
+    const earlyCode = mailParts(early.text()).code
+    const laterCode = mailParts(later.text()).code
+    early.finish(new Error("provider"))
+    later.finish(new Error("provider"))
+    expect((await first).status).toBe(500)
+    expect((await second).status).toBe(500)
+    const pending = await session.query<{ total: number }>(
+      "select count(*)::int as total from session.code where email = $1",
+      [fresh],
+    )
+    expect(pending.rows[0]?.total).toBe(0)
+    const earlySign = await ask(base, "POST", "/sign-in/code", { email: fresh, code: earlyCode })
+    const laterSign = await ask(base, "POST", "/sign-in/code", { email: fresh, code: laterCode })
+    expect(earlySign.status).toBe(401)
+    expect(laterSign.status).toBe(401)
+  })
+
+  it("does not give an older mail more time when a later send fails", async () => {
+    const email = address()
+    const opened = await ask(base, "POST", "/sign-in/email", { email })
+    expect(opened.status).toBe(202)
+    const mailed = mailParts(mails[0]?.text)
+    await ageIssued("update session.code set issued = now() - interval '14 minutes' where email = $1", email)
+    failSends = 1
+    const failed = await ask(base, "POST", "/sign-in/email", { email })
+    expect(failed.status).toBe(500)
+    await ageIssued("update session.code set issued = issued - interval '2 minutes' where email = $1", email)
+    const refused = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(refused.status).toBe(401)
+    expect(refused.json).toEqual({ ok: false, refusal: "code" })
+  })
+
+  it("keeps the wrong-guess count when a later send fails", async () => {
+    const email = address()
+    const opened = await ask(base, "POST", "/sign-in/email", { email })
+    expect(opened.status).toBe(202)
+    const mailed = mailParts(mails[0]?.text)
+    const wrongCode = mailed.code === "000000" ? "111111" : "000000"
+    for (let guess = 0; guess < 3; guess += 1) {
+      const wrong = await ask(base, "POST", "/sign-in/code", { email, code: wrongCode })
+      expect(wrong.status).toBe(401)
+    }
+    failSends = 1
+    const failed = await ask(base, "POST", "/sign-in/email", { email })
+    expect(failed.status).toBe(500)
+    for (let guess = 0; guess < 7; guess += 1) {
+      const wrong = await ask(base, "POST", "/sign-in/code", { email, code: wrongCode })
+      expect(wrong.status).toBe(401)
+    }
+    const refused = await ask(base, "POST", "/sign-in/code", { email, code: mailed.code })
+    expect(refused.status).toBe(401)
+    expect(refused.json).toEqual({ ok: false, refusal: "code" })
+  })
+
+  it("lets a newer mail win when an older one is delivered late", async () => {
+    const email = address()
+    const older = holdNext()
+    const first = ask(base, "POST", "/sign-in/email", { email })
+    await older.entered
+    const second = await ask(base, "POST", "/sign-in/email", { email })
+    expect(second.status).toBe(202)
+    const newer = mailParts(mails[0]?.text)
+    older.finish()
+    const late = await first
+    expect(late.status).toBe(202)
+    const signed = await ask(base, "POST", "/sign-in/code", { email, code: newer.code })
+    expect(signed.status).toBe(200)
+    expect(signed.json).toEqual({ ok: true })
+    const rejected = await ask(base, "POST", "/sign-in/code", { email, code: mailParts(older.text()).code })
+    expect(rejected.status).toBe(401)
+    expect(rejected.json).toEqual({ ok: false, refusal: "code" })
+  })
+
+  it("answers other sign-ins while two sends are slow", async () => {
+    const known = address()
+    const opened = await ask(base, "POST", "/sign-in/email", { email: known })
+    expect(opened.status).toBe(202)
+    const mailed = mailParts(mails[0]?.text)
+    const left = holdNext()
+    const right = holdNext()
+    const slowLeft = ask(base, "POST", "/sign-in/email", { email: address() })
+    const slowRight = ask(base, "POST", "/sign-in/email", { email: address() })
+    await left.entered
+    await right.entered
+    try {
+      const [third, coded] = await Promise.all([
+        ask(base, "POST", "/sign-in/email", { email: address() }),
+        ask(base, "POST", "/sign-in/code", { email: known, code: mailed.code }),
+      ])
+      expect(third.status).toBe(202)
+      expect(third.json).toEqual({ ok: true })
+      expect(coded.status).toBe(200)
+      expect(coded.json).toEqual({ ok: true })
+    } finally {
+      left.finish()
+      right.finish()
+      await Promise.all([slowLeft, slowRight])
+    }
   })
 
   it("sends at most 5 messages to each address under six sends at once", async () => {
