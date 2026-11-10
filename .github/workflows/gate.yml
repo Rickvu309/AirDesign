@@ -101,11 +101,33 @@ jobs:
           if [ -f "$brand/program/unopkg" ]; then
             sed -i "s|/usr/lib/libreoffice|${brand}|g" "$brand/program/unopkg"
           fi
-          if [ ! -f "$brand/share/.registry/main.xcd" ]; then
+          registry="$brand/share/registry"
+          if [ -L "$registry" ] || [ ! -d "$registry" ]; then
+            rm -f "$registry"
+            mkdir -p "$registry"
+          fi
+          if [ -d "$brand/share/.registry" ]; then
+            while IFS= read -r source; do
+              rel="${source#"$brand/share/.registry/"}"
+              dest="$registry/$rel"
+              mkdir -p "$(dirname "$dest")"
+              ln -sfn "$source" "$dest"
+            done < <(find "$brand/share/.registry" -type f)
+          fi
+          if [ ! -f "$registry/main.xcd" ]; then
             echo "LibreOffice registry is missing." >&2
             exit 1
           fi
-          ln -sfn "$brand/share/.registry/main.xcd" "$brand/share/registry/main.xcd"
+          while IFS= read -r link; do
+            target=$(readlink "$link")
+            case "$target" in
+              /*)
+                if [ -e "$root$target" ]; then
+                  ln -sfn "$root$target" "$link"
+                fi
+                ;;
+            esac
+          done < <(find "$root" -type l)
       - if: steps.pptx.outputs.changed != '0'
         run: |
           set -euo pipefail
