@@ -320,7 +320,15 @@ describe("Passage paragraphs", () => {
     const sent: string[] = []
     const store = paintStore()
     const id = elementId("body")
-    const value = [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "world" }] }]
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "Hello " },
+          { from: 1, text: "world" },
+        ],
+      },
+    ]
     await show(store, id, writeTextValue(value))
     const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))
     const editor = editorIn(host)
@@ -333,7 +341,13 @@ describe("Passage paragraphs", () => {
     expect(event.defaultPrevented).toBe(true)
     expect(sent.map((text) => readTextValue(text))).toEqual([
       [
-        { from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "wo" }] },
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "Hello " },
+            { from: 1, text: "wo" },
+          ],
+        },
         { from: 0, runs: [{ from: 1, text: "rld" }] },
       ],
     ])
@@ -363,7 +377,15 @@ describe("Passage paragraphs", () => {
     })
   }
 
-  const twoRuns = [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "world" }] }]
+  const twoRuns = [
+    {
+      from: 0,
+      runs: [
+        { from: 0, text: "Hello " },
+        { from: 1, text: "world" },
+      ],
+    },
+  ]
 
   it("the caret stays at the start of the new paragraph and an echo of the split keeps it", async () => {
     const { sent, store, id, editor } = await mountValue(twoRuns)
@@ -388,7 +410,15 @@ describe("Passage paragraphs", () => {
     caretAt(world, 4)
     await input(editor)
     expect(sent.map((text) => readTextValue(text))).toEqual([
-      [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "wor!ld" }] }],
+      [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "Hello " },
+            { from: 1, text: "wor!ld" },
+          ],
+        },
+      ],
     ])
   })
 
@@ -412,7 +442,13 @@ describe("Passage paragraphs", () => {
     caretAt(runText(editor, 1), 0)
     await press(editor, "Backspace")
     expect(readTextValue(sent.at(-1) ?? "")).toEqual([
-      { from: 0, runs: [{ from: 0, text: "one" }, { from: -1, text: "two" }] },
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "one" },
+          { from: -1, text: "two" },
+        ],
+      },
     ])
   })
 
@@ -442,7 +478,13 @@ describe("Passage paragraphs", () => {
     })
     expect(readTextValue(sent.at(-1) ?? "")).toEqual([
       { from: 0, runs: [{ from: 0, text: "HelloA" }] },
-      { from: 0, runs: [{ from: 0, text: "B " }, { from: 1, text: "world" }] },
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "B " },
+          { from: 1, text: "world" },
+        ],
+      },
     ])
   })
 

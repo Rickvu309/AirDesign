@@ -77,7 +77,10 @@ function readBox(box: HTMLElement): ReadBox {
   }
   units.forEach((unit, index) => {
     const paragraph = paragraphs[index]
-    if (paragraph !== undefined && !(unit[0] !== undefined && isElement(unit[0]) && unit[0].dataset.paragraph !== undefined)) {
+    if (
+      paragraph !== undefined &&
+      !(unit[0] !== undefined && isElement(unit[0]) && unit[0].dataset.paragraph !== undefined)
+    ) {
       collectRuns(unit, paragraph.from, paragraph.runs)
     }
   })
