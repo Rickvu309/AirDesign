@@ -1,5 +1,5 @@
 import { currentValue, type Kind } from "@airdesign/document"
-import { connect, getParts, httpRemote, memoryRemote, putParts } from "@airdesign/live"
+import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import { applyRoute, exportPackage, prepareMarkup, readPackage, readShapes, type ShapeKind } from "@airdesign/pptx"
 import { Passage, elementId, paintStore, slideId, type ElementId, type PaintStore } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
@@ -56,6 +56,20 @@ function paint(
   return next
 }
 
+type EditLink = {
+  enqueue(deck: string, value: string, node?: "a"): Promise<{ readonly ok: boolean }>
+  flush(deck: string): Promise<unknown>
+}
+
+export async function commitEdit(open: (remote: Remote) => EditLink, value: string, paint?: () => void): Promise<void> {
+  const result = await open(memoryRemote()).enqueue(deckId, value, "a")
+  if (!result.ok) return
+  paint?.()
+  await open(httpRemote())
+    .flush(deckId)
+    .catch(() => undefined)
+}
+
 export function ThinDeck() {
   const store = useRef(paintStore())
   const nodes = useRef(nodeA)
@@ -89,16 +103,13 @@ export function ThinDeck() {
   }
 
   async function onEdit(value: string) {
-    const result = await connect(memoryRemote()).enqueue(deckId, value, "a")
-    if (!result.ok) return
-    const id = linkedId(nodes.current)
-    const record = store.current.getElement(id)
-    if (record !== null) {
-      store.current.publish({ id: record.id, kind: record.kind, text: value, picture: record.picture })
-    }
-    await connect(httpRemote())
-      .flush(deckId)
-      .catch(() => undefined)
+    await commitEdit(connect, value, () => {
+      const id = linkedId(nodes.current)
+      const record = store.current.getElement(id)
+      if (record !== null) {
+        store.current.publish({ id: record.id, kind: record.kind, text: value, picture: record.picture })
+      }
+    })
   }
 
   async function onExport() {
