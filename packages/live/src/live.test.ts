@@ -17,19 +17,19 @@ import {
 const node = elementId("258.7")
 
 function installIndexedDb(): void {
-  const databases = new Map<string, { names: string[]; rows: Map<string, Map<string, unknown>> }>()
+  type Running = { mode: string; started: boolean; start: () => void }
+  type Fake = {
+    names: string[]
+    rows: Map<string, Map<string, unknown>>
+    live: Running[]
+    settle: (transaction: Running) => void
+  }
+  const databases = new Map<string, Fake>()
 
   function contains(key: string, range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) {
     if (range.lowerOpen ? key <= range.lower : key < range.lower) return false
     if (range.upperOpen ? key >= range.upper : key > range.upper) return false
     return true
-  }
-
-  function finish(transaction: { requests: { onsuccess: (() => void) | null }[]; oncomplete: (() => void) | null }) {
-    queueMicrotask(() => {
-      for (const request of transaction.requests) request.onsuccess?.()
-      transaction.oncomplete?.()
-    })
   }
 
   type Opened = {
@@ -56,7 +56,18 @@ function installIndexedDb(): void {
         let database = databases.get(name)
         const created = database === undefined
         if (database === undefined) {
-          database = { names: [], rows: new Map() }
+          const created: Fake = {
+            names: [],
+            rows: new Map(),
+            live: [],
+            settle: (transaction) => {
+              if (transaction.started) return
+              const earlier = created.live.slice(0, created.live.indexOf(transaction))
+              const blocked = earlier.some((other) => other.mode === "readwrite" || transaction.mode === "readwrite")
+              if (!blocked) transaction.start()
+            },
+          }
+          database = created
           databases.set(name, database)
         }
         const current = database
@@ -66,50 +77,65 @@ function installIndexedDb(): void {
             current.names.push(store)
             current.rows.set(store, new Map())
           },
-          transaction: (store: string) => {
+          transaction: (store: string, mode: string) => {
             const rows = current.rows.get(store) ?? new Map()
+            type Operation = { request: { result: unknown; onsuccess: (() => void) | null }; run: () => unknown }
+            const queue: Operation[] = []
             const transaction = {
-              requests: [] as { onsuccess: (() => void) | null }[],
+              mode,
+              started: false,
               oncomplete: null as (() => void) | null,
               onerror: null as (() => void) | null,
               onabort: null as (() => void) | null,
-              objectStore: () => ({
-                getAll: (range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) => {
-                  const result = [...rows.keys()]
-                    .filter((key) => contains(key, range))
-                    .sort()
-                    .map((key) => rows.get(key))
-                  const pending = {
-                    result,
+              objectStore: () => {
+                const enqueue = (run: () => unknown) => {
+                  const request = {
+                    result: undefined as unknown,
                     onsuccess: null as (() => void) | null,
                     onerror: null as (() => void) | null,
                   }
-                  transaction.requests.push(pending)
-                  return pending
-                },
-                put: (value: unknown, key: string) => {
-                  rows.set(key, value)
-                  const pending = {
-                    result: key,
-                    onsuccess: null as (() => void) | null,
-                    onerror: null as (() => void) | null,
+                  queue.push({ request, run })
+                  return request
+                }
+                return {
+                  getAll: (range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) =>
+                    enqueue(() =>
+                      [...rows.keys()]
+                        .filter((key) => contains(key, range))
+                        .sort()
+                        .map((key) => rows.get(key)),
+                    ),
+                  put: (value: unknown, key: string) =>
+                    enqueue(() => {
+                      rows.set(key, value)
+                      return key
+                    }),
+                  delete: (key: string) =>
+                    enqueue(() => {
+                      rows.delete(key)
+                      return undefined
+                    }),
+                }
+              },
+              start: () => {
+                transaction.started = true
+                const pump = () => {
+                  const next = queue.shift()
+                  if (next === undefined) {
+                    current.live.splice(current.live.indexOf(transaction), 1)
+                    transaction.oncomplete?.()
+                    for (const waiting of [...current.live]) current.settle(waiting)
+                    return
                   }
-                  transaction.requests.push(pending)
-                  return pending
-                },
-                delete: (key: string) => {
-                  rows.delete(key)
-                  const pending = {
-                    result: undefined,
-                    onsuccess: null as (() => void) | null,
-                    onerror: null as (() => void) | null,
-                  }
-                  transaction.requests.push(pending)
-                  return pending
-                },
-              }),
+                  next.request.result = next.run()
+                  next.request.onsuccess?.()
+                  queueMicrotask(pump)
+                }
+                queueMicrotask(pump)
+              },
             }
-            finish(transaction)
+            current.live.push(transaction)
+            current.settle(transaction)
             return transaction
           },
           close: () => undefined,
@@ -389,9 +415,86 @@ describe("live cache", () => {
     expect(currentValue(opened.register)).not.toBe("solo")
   })
 
-  it.fails("paints the value just typed on a new element", async () => {
+  it("paints the value just typed on a new element", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.enqueue("deck", "solo", "258.7")).toEqual({ ok: true, painted: "solo" })
+  })
+
+  it("sends 101 pending edits in batches of at most 100", async () => {
+    const { remote, commits } = countingRemote()
+    const cache = connect(remote)
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    expect(await cache.flush("deck")).toMatchObject({ ok: true })
+    expect(commits.map((batch) => batch.length)).toEqual([100, 1])
+    expect(commits.flat()).toEqual(Array.from({ length: 101 }, (_, index) => `v${index}`))
+    expect(await cache.pending("deck")).toEqual([])
+    expect((await cache.rows("deck")).filter((row) => row.kind === "confirmed")).toHaveLength(101)
+  })
+
+  it("sends exactly 100 pending edits in one batch", async () => {
+    const { remote, commits } = countingRemote()
+    const cache = connect(remote)
+    for (let index = 0; index < 100; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    expect(await cache.flush("deck")).toMatchObject({ ok: true })
+    expect(commits.map((batch) => batch.length)).toEqual([100])
+    expect(await cache.pending("deck")).toEqual([])
+  })
+
+  it("keeps the last row pending when the second batch is refused", async () => {
+    const real = memoryRemote()
+    const sizes: number[] = []
+    let refuse = true
+    const remote: Remote = {
+      open: (body) => real.open(body),
+      watch: (body) => real.watch(body),
+      commit: async (body) => {
+        sizes.push(body.batch.length)
+        if (sizes.length === 2 && refuse) return { ok: false, refusal: "session" }
+        return real.commit(body)
+      },
+    }
+    const cache = connect(remote)
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
+    expect(sizes).toEqual([100, 1])
+    const kept = await cache.rows("deck")
+    expect(kept.filter((row) => row.kind === "confirmed")).toHaveLength(100)
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["v100"])
+    refuse = false
+    expect(await cache.flush("deck")).toMatchObject({ ok: true })
+    expect(sizes).toEqual([100, 1, 1])
+    expect(await cache.pending("deck")).toEqual([])
+    expect((await cache.rows("deck")).filter((row) => row.kind === "confirmed")).toHaveLength(101)
+  })
+
+  it("moves a batch to confirmed rows only after the commit answers", async () => {
+    const real = memoryRemote()
+    let seenWhileCommitting: string[] = []
+    let cache: ReturnType<typeof connect> | undefined
+    const remote: Remote = {
+      open: (body) => real.open(body),
+      watch: (body) => real.watch(body),
+      commit: async (body) => {
+        seenWhileCommitting = (await cache?.rows("deck"))?.map((row) => row.kind) ?? []
+        return real.commit(body)
+      },
+    }
+    cache = connect(remote)
+    await cache.enqueue("deck", "only", "258.7")
+    await cache.flush("deck")
+    expect(seenWhileCommitting).toEqual(["pending"])
+  })
+
+  it("two enqueues at once keep two rows", async () => {
+    const cache = connect(memoryRemote())
+    const results = await Promise.all([
+      cache.enqueue("deck", "first", "258.7"),
+      cache.enqueue("deck", "second", "258.8"),
+    ])
+    expect(results.map((result) => result.ok)).toEqual([true, true])
+    const pending = await cache.pending("deck")
+    expect(pending.map((row) => row.value).sort()).toEqual(["first", "second"])
+    expect(new Set(pending.map((row) => row.order)).size).toBe(2)
   })
 
   it("refuses a row of 65536 bytes", async () => {
@@ -472,7 +575,7 @@ describe("live cache", () => {
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
     })
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("clean", "Hello!", "258.7")).toMatchObject({ ok: true })
+    expect(await cache.enqueue("clean", "Hello!", "258.7")).toEqual({ ok: true, painted: "Hello!" })
     expect(await connect(httpRemote()).flush("clean")).toEqual({
       ok: true,
       deck: "clean",
