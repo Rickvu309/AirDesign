@@ -56,6 +56,16 @@ describe("utf8", () => {
 })
 
 describe("readParts", () => {
+  it("reads an entry that claims to be a directory as a part", async () => {
+    const zip = await zipOf({ "a.xml": "<first/>", "b.xml": "<last/>" })
+    const marked = Uint8Array.from(zip)
+    let central = 0
+    while (decode(marked.subarray(central, central + 4)) !== "PK\x01\x02") central += 1
+    marked[central + 5] = 0
+    marked[central + 38] = (marked[central + 38] ?? 0) | 0x10
+    expect([...(await readParts(marked)).keys()]).toEqual(["a.xml", "b.xml"])
+  })
+
   it("refuses a zip that names one part twice", async () => {
     const zip = await zipOf({ "a.xml": "<first/>", "b.xml": "<last/>" })
     const repeated = Uint8Array.from(zip)
