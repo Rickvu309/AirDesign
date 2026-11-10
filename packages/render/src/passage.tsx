@@ -4,12 +4,12 @@ import type { ElementId } from "./brand.js"
 import { useElement } from "./element-view.js"
 import {
   cutValue,
-  insertLines,
   joinParagraph,
   paragraphText,
   splitParagraph,
   textValue,
   type Caret,
+  replaceSelection,
 } from "./paragraph-edit.js"
 import type { PaintStore } from "./store.js"
 
@@ -199,7 +199,7 @@ export function Passage(props: {
       const at = selectionCarets(shown, read.units)
       if (at === null || sameCaret(at)) return
       event.preventDefault()
-      const [value, caret] = insertLines(cutValue(read.value, at.start, at.end), at.start, event.data.split(lineBreak))
+      const [value, caret] = replaceSelection(read.value, at.start, at.end, event.data.split(lineBreak))
       edit(shown, value, caret)
     }
     shown.addEventListener("beforeinput", replace)
@@ -257,15 +257,14 @@ export function Passage(props: {
         if (data === "") return
         const lines = data.split(lineBreak)
         const shown = event.currentTarget
-        if (lines.length === 1) {
-          shown.ownerDocument.execCommand("insertText", false, data)
-          return
-        }
         const read = readBox(shown)
         const at = selectionCarets(shown, read.units)
         if (at === null) return
-        const kept = sameCaret(at) ? read.value : cutValue(read.value, at.start, at.end)
-        const [value, caret] = insertLines(kept, at.start, lines)
+        if (lines.length === 1 && sameCaret(at)) {
+          shown.ownerDocument.execCommand("insertText", false, data)
+          return
+        }
+        const [value, caret] = replaceSelection(read.value, at.start, at.end, lines)
         edit(shown, value, caret)
       }}
       onDrop={(event) => {

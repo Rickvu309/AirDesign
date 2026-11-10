@@ -97,3 +97,32 @@ export function insertLines(value: TextValue, caret: Caret, lines: readonly stri
   })
   return [next, at]
 }
+
+export function replaceSelection(
+  value: TextValue,
+  start: Caret,
+  end: Caret,
+  lines: readonly string[],
+): readonly [TextValue, Caret] {
+  const anchor = splitRuns(value[start.paragraph]?.runs ?? [], start.offset)[1][0]
+  const cut = cutValue(value, start, end)
+  const paragraph = cut[start.paragraph]
+  const line = lines[0] ?? ""
+  if (anchor === undefined || paragraph === undefined || line === "") return insertLines(cut, start, lines)
+  const [head, tail] = splitRuns(paragraph.runs, start.offset)
+  if (head.at(-1)?.from === anchor.from) return insertLines(cut, start, lines)
+  const first = tail[0]
+  const emptied = first !== undefined && first.text === ""
+  const rest = emptied ? tail.slice(1) : tail
+  const joins = rest[0]?.from === anchor.from
+  const written = joins
+    ? [...head, { from: anchor.from, text: line + (rest[0]?.text ?? "") }, ...rest.slice(1)]
+    : [...head, { from: anchor.from, text: line }, ...rest]
+  const next = [
+    ...cut.slice(0, start.paragraph),
+    { from: paragraph.from, runs: written },
+    ...cut.slice(start.paragraph + 1),
+  ]
+  const at = { paragraph: start.paragraph, offset: start.offset + line.length }
+  return lines.length === 1 ? [next, at] : insertLines(next, at, ["", ...lines.slice(1)])
+}
