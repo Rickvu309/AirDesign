@@ -1,7 +1,7 @@
 import { markupDocument } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
-const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
+export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
 
 export type ShapeIdCount = {

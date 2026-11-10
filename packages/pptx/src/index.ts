@@ -1,5 +1,5 @@
 export { renderedAccent } from "./accent-paint.js"
-export { childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
+export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
 export { readShapes, type ReadShape, type ShapeKind } from "./read-shapes.js"

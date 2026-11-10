@@ -1,10 +1,15 @@
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
-import { caughtCount } from "./judge-proof.mjs"
+import { caughtCount, readSeedList } from "./judge-proof.mjs"
 import { readRun } from "./vitest-metrics.mjs"
 
-const knownFaults = (root) => readRun(root).faults
+const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seeds.json")
+
+const listedMisses = (root) =>
+  fs.existsSync(seedListFile(root)) ? readSeedList(fs.readFileSync(seedListFile(root), "utf8")).known.length : 0
+
+const knownFaults = (root) => readRun(root).faults + listedMisses(root)
 
 const testCount = (root) => readRun(root).tests
 

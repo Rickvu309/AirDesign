@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process"
+import { execFile, execFileSync } from "node:child_process"
 import { createRequire } from "node:module"
 import { createHash, randomInt } from "node:crypto"
 import fs from "node:fs"
@@ -6,7 +6,15 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
-import { plantSamples, proofFailures, proofTable, readSeedList, seedsFor } from "./judge-proof.mjs"
+import {
+  freshMissFails,
+  plantSamples,
+  proofFailures,
+  proofTable,
+  readSeedList,
+  seedsFor,
+  settleRun,
+} from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
 import { judgedWrites, timeMetric } from "./metrics.mjs"
@@ -103,10 +111,24 @@ const renderNext = async () => {
 }
 const proofStarted = Date.now()
 const proofFile = path.join(fixtures, "judge-proof.json")
-const plan = seedsFor({
+const proofSeeds = seedsFor({
   chosen: process.env.JUDGE_SEED,
   list: readSeedList(fs.readFileSync(path.join(fixtures, "judge-seeds.json"), "utf8")),
   draw: () => randomInt(0, 4294967296),
+  commit: await run("git", ["rev-parse", "HEAD"]),
+})
+const gitAnswer = (args) => {
+  try {
+    return execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim()
+  } catch {
+    return undefined
+  }
+}
+const eventFile = process.env.GITHUB_EVENT_PATH
+const freshFails = freshMissFails({
+  eventText: eventFile === undefined ? undefined : fs.existsSync(eventFile) ? fs.readFileSync(eventFile, "utf8") : "",
+  mergeBase: () => gitAnswer(["merge-base", "HEAD", "origin/main"]),
+  changedSince: (base) => gitAnswer(["diff", "--name-only", base, "HEAD"])?.split("\n"),
 })
 const cleanDecks = ["clean.pptx", "nasa-1d-cnn.pptx", "doe-heat-pumps.pptx", "census-updating-spm.pptx"]
 const parts = new Map()
@@ -130,7 +152,7 @@ const routeFiles = writtenDecks.flatMap((deck) =>
 )
 const decks = cleanDecks.map((name) => ({ name, parts: parts.get(name) }))
 const samples = Number(process.env.JUDGE_SAMPLES ?? 3)
-const runs = plan.seeds.map((seed) => ({ seed, planted: plantSamples({ pptx, decks, seed, samples }) }))
+const runs = proofSeeds.map((run) => ({ ...run, planted: plantSamples({ pptx, decks, seed: run.seed, samples }) }))
 const proofFolder = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-judge-proof-"))
 const sampleFile = (seed, index) => `judge-sample-${seed}-${index}.pptx`
 const judgedFiles = async () => {
@@ -156,19 +178,24 @@ const [{ found: lists, planting }] = await Promise.all([
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
+const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
 let failed = 0
-for (const [runIndex, run] of runs.entries()) {
+for (const run of runs) {
   const judgedSamples = run.planted.map((sample, index) => {
     const judged = judge(
       pptx,
-      { list: lists.get(sample.deck), ids: ids.get(sample.deck) },
-      { list: lists.get(sampleFile(run.seed, index)), ids: pptx.shapeIdCounts(sample.parts) },
+      { list: lists.get(sample.deck), ids: ids.get(sample.deck), orders: orders.get(sample.deck) },
+      {
+        list: lists.get(sampleFile(run.seed, index)),
+        ids: pptx.shapeIdCounts(sample.parts),
+        orders: pptx.branchOrderErrors(sample.parts),
+      },
     )
     const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
     return { ...sample, accepted: judged.accepted, reason }
   })
-  console.log(`judge proof ${plan.announce[runIndex]}`)
+  console.log(`judge proof ${run.announce}`)
   if (process.env.JUDGE_LIST !== undefined) {
     for (const sample of judgedSamples) {
       console.log(
@@ -181,19 +208,20 @@ for (const [runIndex, run] of runs.entries()) {
     recorded,
     judged: judgedSamples,
     seed: run.seed,
-    known: plan.known,
-    chosen: plan.chosen,
+    known: run.known,
+    chosen: run.chosen,
   })
-  for (const line of proofLines) console.log(line)
-  failed += proofLines.length
+  const settled = settleRun({ run, lines: proofLines, freshFails })
+  for (const line of settled.lines) console.log(line)
+  failed += settled.failed
 }
 const plantedCount = runs.reduce((sum, run) => sum + run.planted.length, 0)
 console.log(`judge proof planted ${plantedCount} samples in ${planting.toFixed(1)} seconds`)
 for (const row of cases) {
   const { errors, dupes } = judge(
     pptx,
-    { list: lists.get(row.before), ids: ids.get(row.before) },
-    { list: lists.get(row.after), ids: ids.get(row.after) },
+    { list: lists.get(row.before), ids: ids.get(row.before), orders: orders.get(row.before) },
+    { list: lists.get(row.after), ids: ids.get(row.after), orders: orders.get(row.after) },
   )
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),

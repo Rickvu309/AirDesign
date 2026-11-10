@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
+import { branchOrderErrors, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
+import { encodeUtf8 } from "./package-bytes.js"
 
 const schemaOrder = {
+  "p:sp": ["p:nvSpPr", "p:spPr", "p:style", "p:txBody", "p:extLst"],
   "p:spPr": [
     "a:xfrm",
     "a:custGeom",
@@ -106,5 +108,56 @@ describe("insertChild", () => {
 
   it("rejects an element whose root is not the requested tag", () => {
     expect(() => insertChild("a:p", "a:r", "<a:t/>", "<a:p></a:p>")).toThrow(/a:r/)
+  })
+})
+
+describe("branchOrderErrors", () => {
+  const slide = (body: string) => `<p:spTree>${body}</p:spTree>`
+  const branch = (kind: "mc:Choice" | "mc:Fallback", shape: string) =>
+    `<mc:AlternateContent><${kind} Requires="a14">${shape}</${kind}></mc:AlternateContent>`
+  const outOfOrder = "<p:sp><p:nvSpPr/><p:txBody/><p:spPr/></p:sp>"
+  const inOrder = "<p:sp><p:nvSpPr/><p:spPr/><p:txBody/></p:sp>"
+  const errorsIn = (name: string, xml: string) => branchOrderErrors(new Map([[name, encodeUtf8(xml)]]))
+  const slidePart = "ppt/slides/slide1.xml"
+  const fault = `Order: p:spPr after p:txBody in p:sp of a markup branch /${slidePart}`
+
+  it("finds p:txBody before p:spPr inside mc:Choice", () => {
+    expect(errorsIn(slidePart, slide(branch("mc:Choice", outOfOrder)))).toEqual([fault])
+  })
+
+  it("finds p:txBody before p:spPr inside mc:Fallback", () => {
+    expect(errorsIn(slidePart, slide(branch("mc:Fallback", outOfOrder)))).toEqual([fault])
+  })
+
+  it("finds a shape nested below the branch", () => {
+    expect(errorsIn(slidePart, slide(branch("mc:Choice", `<p:grpSp>${outOfOrder}</p:grpSp>`)))).toEqual([fault])
+  })
+
+  it("leaves a shape outside any branch to the validator", () => {
+    expect(errorsIn(slidePart, slide(outOfOrder))).toEqual([])
+  })
+
+  it("passes a correctly ordered shape inside a branch", () => {
+    expect(errorsIn(slidePart, slide(branch("mc:Choice", inOrder)))).toEqual([])
+  })
+
+  it("passes runs, breaks and fields in any order inside a paragraph", () => {
+    const paragraph = "<a:p><a:pPr/><a:br/><a:r/><a:fld/><a:r/><a:endParaRPr/></a:p>"
+    expect(errorsIn(slidePart, slide(branch("mc:Choice", paragraph)))).toEqual([])
+  })
+
+  it("ignores children the table does not know", () => {
+    const paragraph = "<a:p><a14:m/><a:r/><a14:m/><a:endParaRPr/></a:p>"
+    expect(errorsIn(slidePart, slide(branch("mc:Choice", paragraph)))).toEqual([])
+  })
+
+  it("does not check a part that holds no shapes", () => {
+    expect(errorsIn("ppt/theme/theme1.xml", slide(branch("mc:Choice", outOfOrder)))).toEqual([])
+  })
+
+  it("returns the same answer when asked twice about the same bytes", () => {
+    const parts = new Map([[slidePart, encodeUtf8(slide(branch("mc:Choice", outOfOrder)))]])
+    expect(branchOrderErrors(parts)).toEqual([fault])
+    expect(branchOrderErrors(parts)).toEqual([fault])
   })
 })
