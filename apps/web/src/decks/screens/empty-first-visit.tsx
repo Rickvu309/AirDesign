@@ -11,8 +11,8 @@ export function EmptyFirstVisit() {
             key={deck.name}
             name={deck.name}
             edited={deck.edited}
-            titleClassName="h-[18px] leading-[18px]"
-            editedClassName="h-[17px] leading-[17px]"
+            titleClassName="h-[var(--space-16)] leading-[18px]"
+            editedClassName="h-[var(--space-16)] leading-[17px]"
           />
         ))}
       </DeckGrid>

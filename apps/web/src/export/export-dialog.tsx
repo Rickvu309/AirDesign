@@ -36,9 +36,11 @@ function CloseMark() {
 function OptionField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex h-9 items-center">
-      <span className="w-[110px] shrink-0 text-[13px] leading-[17px] text-muted-foreground">{label}</span>
+      <span className="w-[110px] shrink-0 text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
+        {label}
+      </span>
       <span className="ml-4 flex h-9 min-w-0 flex-1 items-center justify-between rounded-lg bg-white pr-3 pl-3 shadow-[0_0_0_1px_var(--field-edge)]">
-        <span className="text-[13px] leading-[17px] text-foreground">{value}</span>
+        <span className="text-[length:var(--type-dense)] leading-[17px] text-foreground">{value}</span>
         <FieldChevron />
       </span>
     </div>
@@ -57,12 +59,12 @@ export function ExportDialog({ format }: { format: ExportFormat }) {
           initialFocus={false}
           className={
             format === "pdf"
-              ? "fixed top-[317px] left-[495px] z-50 w-[480px] rounded-[14px] bg-white shadow-[0_24px_64px_rgb(0_0_0/25%)] outline-none"
-              : "fixed top-[341px] left-[495px] z-50 w-[480px] rounded-[14px] bg-white shadow-[0_24px_64px_rgb(0_0_0/25%)] outline-none"
+              ? "fixed top-[317px] left-[495px] z-50 w-[480px] rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px_rgb(0_0_0/25%)] outline-none"
+              : "fixed top-[341px] left-[495px] z-50 w-[480px] rounded-[var(--shape-dialog)] bg-white shadow-[0_24px_64px_rgb(0_0_0/25%)] outline-none"
           }
         >
           <div className="flex h-14 items-center justify-between border-b border-line pr-3 pl-5">
-            <DialogTitle className="text-[15px] leading-5 font-semibold text-foreground">
+            <DialogTitle className="text-[length:var(--type-section)] leading-5 font-semibold text-foreground">
               {exportCopy.title}
             </DialogTitle>
             <DialogClose
@@ -82,7 +84,7 @@ export function ExportDialog({ format }: { format: ExportFormat }) {
               <Button
                 type="button"
                 variant="brand"
-                className="h-9 w-[73.25px] rounded-lg px-0 text-[13px] leading-[17px] font-medium"
+                className="h-9 w-[73.25px] rounded-lg px-0 text-[length:var(--type-dense)] leading-[17px] font-medium"
               >
                 {exportCopy.action}
               </Button>

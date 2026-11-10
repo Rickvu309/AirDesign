@@ -19,7 +19,7 @@ function SortMark() {
 
 function SortLabel({ children }: { children: string }) {
   return (
-    <span className="inline-flex h-4 items-center gap-[6.5px]" style={trimmed}>
+    <span className="inline-flex h-4 items-center gap-[var(--space-8)]" style={trimmed}>
       {children}
       <SortMark />
     </span>
@@ -41,14 +41,17 @@ export function DeckRow({
     <article className="border-b border-line">
       <div className="grid h-[60px] grid-cols-[64px_minmax(0,1fr)_150px_150px] items-center px-3">
         <div className="h-9 w-16 rounded bg-line">{preview}</div>
-        <h2 className="truncate pl-4 text-[14px] leading-[18px] font-medium text-foreground" style={trimmed}>
+        <h2
+          className="truncate pl-4 text-[length:var(--type-body)] leading-[18px] font-medium text-foreground"
+          style={trimmed}
+        >
           {name}
         </h2>
-        <p className="text-[14px] leading-[18px] text-muted-foreground" style={trimmed}>
+        <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
           {edited}
         </p>
         {created ? (
-          <p className="text-[14px] leading-[18px] text-muted-foreground" style={trimmed}>
+          <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
             {created}
           </p>
         ) : (
@@ -62,7 +65,7 @@ export function DeckRow({
 export function DeckTable({ rows }: { rows: DeckRowData[] }) {
   return (
     <div className="mt-8">
-      <div className="grid h-[26px] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[13px] leading-[17px] text-faint">
+      <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-faint">
         <SortLabel>Name</SortLabel>
         <SortLabel>Edited</SortLabel>
         <SortLabel>Created</SortLabel>

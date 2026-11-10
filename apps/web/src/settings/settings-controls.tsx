@@ -19,7 +19,7 @@ export function SettingsButton({
       <Button
         type="button"
         variant="brand"
-        className="h-[34px] px-3.5 text-[13px] leading-[17px] shadow-[inset_0_0_0_1px_var(--primary-strong)]"
+        className="h-[var(--space-32)] px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--primary-strong)]"
         style={width ? { width } : undefined}
       >
         {children}
@@ -31,7 +31,7 @@ export function SettingsButton({
       type="button"
       variant="outline"
       className={cn(
-        "h-[34px] border-0 bg-background px-3.5 text-[13px] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background",
+        "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background",
         tone === "danger" && "text-destructive",
       )}
       style={width ? { width } : undefined}
@@ -55,7 +55,7 @@ export function SettingsSelect({ value }: { value: string }) {
   return (
     <button
       type="button"
-      className="flex h-8 w-[120px] items-center justify-between rounded-lg bg-background px-2.5 text-[13px] leading-[17px] text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="flex h-8 w-[120px] items-center justify-between rounded-lg bg-background px-2.5 text-[length:var(--type-dense)] leading-[17px] text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       {value}
       <svg width="8" height="4" viewBox="0 0 8 4" className="text-muted-foreground" aria-hidden="true">
@@ -74,7 +74,7 @@ export function SettingsSelect({ value }: { value: string }) {
 
 export function AiraTile() {
   return (
-    <span className="flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-background shadow-[inset_0_0_0_1px_var(--line)]">
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background shadow-[inset_0_0_0_1px_var(--line)]">
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
         <path
           d="M3 13.67 L6.27 6.8 M13 13.67 L9.73 6.8"
@@ -100,7 +100,7 @@ export function AgentTile({ name }: { name: "claude" | "codex" }) {
   if (name === "codex") {
     return (
       <span
-        className="flex size-7 shrink-0 items-center justify-center rounded-[7px]"
+        className="flex size-7 shrink-0 items-center justify-center rounded-md"
         style={{ backgroundColor: codexTile }}
       >
         <svg width="23.68" height="24" viewBox="2.16 2 23.68 24" aria-hidden="true">
@@ -110,7 +110,7 @@ export function AgentTile({ name }: { name: "claude" | "codex" }) {
     )
   }
   return (
-    <span className="flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-claude text-white">
+    <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-claude text-white">
       <span className="block size-6 [&_svg]:size-full" dangerouslySetInnerHTML={{ __html: claudeLogo }} />
     </span>
   )

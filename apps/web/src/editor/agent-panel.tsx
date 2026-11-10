@@ -33,20 +33,25 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
         <ExportButton faded={offline} />
       </div>
       <div className="flex h-11 shrink-0 items-center justify-between pr-3 pl-3">
-        <span className="flex h-6 items-center gap-1.5 rounded-[6px] pr-1.5 pl-1 text-xs text-quiet">
+        <span className="flex h-6 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet">
           <EditorIcon name="history" size={13} className="text-faint" />
           Q3 investor update
           <EditorIcon name="chev" size={11} className="text-faint" />
         </span>
         <span className="flex items-center gap-0.5">
-          <span className={cn("flex size-6 items-center justify-center rounded-[6px]", usageOpen && "bg-line")}>
+          <span
+            className={cn(
+              "flex size-6 items-center justify-center rounded-[var(--shape-control)]",
+              usageOpen && "bg-line",
+            )}
+          >
             <UsageRing fraction={fraction} />
           </span>
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="size-7 rounded-[7px] text-quiet active:translate-y-0"
+            className="size-7 rounded-md text-quiet active:translate-y-0"
             aria-label="New chat"
           >
             <EditorIcon name="pen" size={15} />
@@ -56,7 +61,9 @@ export function AgentPanel({ run, usageOpen = false }: { run: SidebarRun; usageO
       <Conversation>
         <ConversationContent>
           <Message from="user">
-            <MessageContent className="rounded-[14px] bg-line px-3.5 py-2.5 leading-[1.5]">{ask}</MessageContent>
+            <MessageContent className="rounded-[var(--shape-dialog)] bg-line px-3.5 py-2.5 leading-[1.5]">
+              {ask}
+            </MessageContent>
             <span className="flex h-7 items-center gap-1.5 pl-2 text-xs text-[var(--muted-foreground)]">
               <FileGlyph />
               Q3 board notes.docx
@@ -96,22 +103,27 @@ function AgentTurn({ run }: { run: SidebarRun }) {
         <Tool>
           <ToolHeader title="Read 1 file, built slides 1 to 3" />
         </Tool>
-        <div className="flex flex-col gap-3 rounded-[12px] bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
+        <div className="flex flex-col gap-3 rounded-xl bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
           <span className="flex items-center gap-2">
-            <span className="flex size-5 items-center justify-center rounded-[6px] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
+            <span className="flex size-5 items-center justify-center rounded-[var(--shape-control)] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
               <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
                 <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
                 <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
               </svg>
             </span>
-            <span className="text-[13px] font-semibold text-foreground">Unable to finish this run</span>
+            <span className="text-[length:var(--type-dense)] font-semibold text-foreground">
+              Unable to finish this run
+            </span>
           </span>
-          <p className="text-[12.5px] leading-[1.5] text-quiet">Your work so far is saved.</p>
+          <p className="text-[length:var(--type-dense)] leading-[1.5] text-quiet">Your work so far is saved.</p>
           <span className="flex items-center gap-2">
             <Button
               type="button"
               variant="brand"
-              className={cn("h-8 rounded-[8px] px-3 text-[13px] font-medium active:translate-y-0", brandShadow)}
+              className={cn(
+                "h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0",
+                brandShadow,
+              )}
             >
               Resume
             </Button>
@@ -119,7 +131,7 @@ function AgentTurn({ run }: { run: SidebarRun }) {
               type="button"
               variant="ghost"
               className={cn(
-                "h-8 rounded-[8px] bg-white px-3 text-[13px] font-medium text-foreground hover:bg-white active:translate-y-0",
+                "h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0",
                 surfaceShadow,
               )}
             >
@@ -167,7 +179,7 @@ function Composer({ run }: { run: SidebarRun }) {
             <span className="absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,var(--white-0)_0%,var(--background)_100%)]" />
           </div>
           <PromptInputFooter>
-            <PromptInputButton className="size-7 rounded-[7px] text-foreground" aria-label="Attach">
+            <PromptInputButton className="size-7 rounded-md text-foreground" aria-label="Attach">
               <EditorIcon name="plus" size={17} />
             </PromptInputButton>
             <PromptInputButton
@@ -191,7 +203,7 @@ function Composer({ run }: { run: SidebarRun }) {
     <div className="flex flex-col px-3 pb-3">
       <PromptInput className={cn("h-12 items-center pr-2 pl-3", offline && "bg-canvas opacity-60")}>
         <PromptInputBody>
-          <PromptInputButton className="size-7 rounded-[7px] text-foreground" aria-label="Attach">
+          <PromptInputButton className="size-7 rounded-md text-foreground" aria-label="Attach">
             <EditorIcon name="plus" size={17} />
           </PromptInputButton>
           {offline ? null : (
@@ -209,7 +221,7 @@ function Composer({ run }: { run: SidebarRun }) {
             <span className="block size-2.5 rounded-[2px] bg-white" />
           </PromptInputButton>
         ) : (
-          <PromptInputButton className="size-7 rounded-[7px] text-foreground" aria-label="Microphone">
+          <PromptInputButton className="size-7 rounded-md text-foreground" aria-label="Microphone">
             <EditorIcon name="mic" size={17} />
           </PromptInputButton>
         )}
@@ -263,7 +275,7 @@ function UsageRing({ fraction }: { fraction: number }) {
 
 function UsagePop() {
   return (
-    <div className="absolute top-[100px] right-3 flex w-[220px] flex-col gap-2 rounded-[10px] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]">
+    <div className="absolute top-[100px] right-3 flex w-[220px] flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]">
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         Weekly usage
         <span>38%</span>
@@ -272,8 +284,8 @@ function UsagePop() {
         <span className="block h-1 w-[38%] rounded-full bg-primary" />
       </span>
       <span className="flex items-center justify-between">
-        <span className="text-[11px] text-faint">Resets Mon 8:00 AM</span>
-        <span className="flex items-center gap-0.5 text-[11px] font-medium text-foreground">
+        <span className="text-[length:var(--type-caption)] text-faint">Resets Mon 8:00 AM</span>
+        <span className="flex items-center gap-0.5 text-[length:var(--type-caption)] font-medium text-foreground">
           See all
           <EditorIcon name="arrowr" size={11} />
         </span>
@@ -303,7 +315,7 @@ export function EditorToast({
     toast.custom(
       () => (
         <div
-          className="flex h-10 items-center gap-2.5 rounded-[10px] bg-foreground pr-4 pl-3.5 text-[13px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
+          className="flex h-10 items-center gap-2.5 rounded-[var(--shape-card)] bg-foreground pr-4 pl-3.5 text-[length:var(--type-dense)] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
           style={{ width }}
         >
           {kind === "success" ? (
@@ -327,7 +339,7 @@ export function EditorToast({
             </span>
           ) : null}
           <span className="min-w-0 flex-1 truncate">{text}</span>
-          {action ? <span className="text-[13px] font-medium">{action}</span> : null}
+          {action ? <span className="text-[length:var(--type-dense)] font-medium">{action}</span> : null}
         </div>
       ),
       {

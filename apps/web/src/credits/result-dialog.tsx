@@ -28,9 +28,9 @@ export function ResultDialog({
           <CloseGlyph />
         </button>
       </div>
-      <div className="h-[47.5px]">
-        <h2 className="text-[17px] leading-[22px] font-semibold text-foreground">{title}</h2>
-        <p className="mt-1.5 text-[13px] leading-[19.5px] text-muted-foreground">{body}</p>
+      <div className="h-[var(--space-48)]">
+        <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">{title}</h2>
+        <p className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">{body}</p>
       </div>
       <div className="flex h-10 items-end justify-end gap-2">
         {secondary ? <DialogButton tone="quiet">{secondary}</DialogButton> : null}
@@ -86,7 +86,7 @@ export function ExpiredTile() {
       className="flex size-10 shrink-0 items-center justify-center rounded-xl shadow-[inset_0_0_0_1px_var(--neutral-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]"
       style={{ backgroundImage: "linear-gradient(180deg, var(--neutral-top), var(--neutral-bottom))" }}
     >
-      <span className="relative size-[18px] rounded-full shadow-[inset_0_0_0_2px_var(--background)]">
+      <span className="relative size-[var(--space-16)] rounded-full shadow-[inset_0_0_0_2px_var(--background)]">
         <svg className="absolute top-[3px] left-[7px]" width="3" height="7" viewBox="0 0 3 6.5" aria-hidden="true">
           <path
             d="M0 0 L0 4.5 L3 6.5"

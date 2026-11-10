@@ -35,8 +35,8 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
       <h1 class="font-serif text-[clamp(2.5rem,11vw,6.5rem)] leading-none font-normal tracking-[-0.0327em] whitespace-nowrap lg:text-[clamp(4.5rem,7.22vw,6.5rem)]">Clarity is the edge.</h1>
       <p class="pt-5 text-[clamp(1.125rem,2vw,1.5rem)] leading-[1.3] tracking-[-0.4px] text-muted-foreground">So clear the CEO puts the phone down.</p>
       <div class="flex items-center gap-6 pt-9">
-        <a href="/sign-in" class="primary-button h-[50px] rounded-full px-5 text-[15px]">Start free</a>
-        <a href="/sign-in" class="flex items-center gap-1.5 text-[15px] font-medium">
+        <a href="/sign-in" class="primary-button h-[var(--space-48)] rounded-full px-5 text-[length:var(--type-section)]">Start free</a>
+        <a href="/sign-in" class="flex items-center gap-1.5 text-[length:var(--type-section)] font-medium">
           Import a PowerPoint
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
         </a>
@@ -49,23 +49,23 @@ const quarters = ["Q3 24", "Q4 24", "Q1 25", "Q2 25", "Q3 25"];
     Zero follow-up questions.
   </div>
   <div class="absolute top-[470.5px] left-[calc(1182/1440*100%-5px)] size-2.5 rounded-full bg-primary-strong max-lg:hidden"></div>
-  <div class="absolute top-[464.5px] left-[calc(1182/1440*100%-11px)] size-[22px] rounded-full opacity-35 shadow-[0_0_0_0.5px_var(--primary-strong),inset_0_0_0_0.5px_var(--primary-strong)] max-lg:hidden"></div>
+  <div class="absolute top-[464.5px] left-[calc(1182/1440*100%-11px)] size-[var(--space-24)] rounded-full opacity-35 shadow-[0_0_0_0.5px_var(--primary-strong),inset_0_0_0_0.5px_var(--primary-strong)] max-lg:hidden"></div>
 
   <div class="absolute inset-x-0 bottom-[50px]">
-    <div class="page-column flex justify-between font-mono text-[11px] tracking-[0.6px] text-faint-foreground">
+    <div class="page-column flex justify-between font-mono text-[length:var(--type-caption)] tracking-[0.6px] text-faint-foreground">
       {quarters.map((quarter) => <span>{quarter}</span>)}
     </div>
   </div>
 
   <div class="absolute inset-x-0 bottom-0 flex h-10 items-center overflow-clip border-t border-[var(--steel)] bg-background">
-    <div class="relative z-10 flex h-full shrink-0 items-center bg-navy px-6 text-[11px] font-semibold tracking-[1px] whitespace-nowrap text-primary-foreground">GOOD DECK</div>
+    <div class="relative z-10 flex h-full shrink-0 items-center bg-navy px-6 text-[length:var(--type-caption)] font-semibold tracking-[1px] whitespace-nowrap text-primary-foreground">GOOD DECK</div>
     <div class="ticker-track flex h-full shrink-0">
       {tickerCopies.map((copy) => (
         <div class="flex h-full shrink-0 items-center" aria-hidden={copy === 0 ? undefined : "true"}>
           {ticks.map((tick) => (
             <div class="flex h-full shrink-0 items-center gap-2.5 border-r border-[var(--parchment)] px-6">
-              <span class="font-mono text-[11px] tracking-[0.6px] whitespace-nowrap text-faint-foreground">{tick.label}</span>
-              <span class="text-[13px] font-medium whitespace-nowrap">{tick.value}</span>
+              <span class="font-mono text-[length:var(--type-caption)] tracking-[0.6px] whitespace-nowrap text-faint-foreground">{tick.label}</span>
+              <span class="text-[length:var(--type-dense)] font-medium whitespace-nowrap">{tick.value}</span>
               <span class:list={["text-[9px]", tick.direction === "up" ? "text-positive" : "text-negative"]}>{tick.direction === "up" ? "▲" : "▼"}</span>
             </div>
           ))}

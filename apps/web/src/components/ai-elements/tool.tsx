@@ -12,7 +12,7 @@ export function Tool({ className, children, ...props }: HTMLAttributes<HTMLDivEl
 export function ToolHeader({ title, caret = true }: { title: string; caret?: boolean }) {
   return (
     <>
-      <span className="text-[13px] text-faint">{title}</span>
+      <span className="text-[length:var(--type-dense)] text-faint">{title}</span>
       {caret ? (
         <svg viewBox="0 0 10 10" width={10} height={10} className="shrink-0 text-faint" aria-hidden="true">
           <path d="M3.5 2.5 7 5l-3.5 2.5z" fill="currentColor" />

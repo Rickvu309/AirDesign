@@ -30,34 +30,42 @@ export function ApproveAgent({
         <AgentPair agent={agent} />
         <header className="flex flex-col items-center gap-1.5 text-center">
           <h1
-            className={`flex h-7 items-center text-[20px] font-semibold tracking-[-0.3px] text-foreground ${trimmed}`}
+            className={`flex h-7 items-center text-[length:var(--type-title)] font-semibold tracking-[-0.3px] text-foreground ${trimmed}`}
           >
             {title}
           </h1>
-          <p className={`flex h-[17px] items-center text-[13px] text-faint ${trimmed}`}>{subtitle}</p>
+          <p className={`flex h-[var(--space-16)] items-center text-[length:var(--type-dense)] text-faint ${trimmed}`}>
+            {subtitle}
+          </p>
         </header>
-        <div className="flex h-[57px] w-full items-center gap-3 rounded-[12px] px-3">
+        <div className="flex h-[57px] w-full items-center gap-3 rounded-xl px-3">
           <span
-            className={`flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[12px] font-semibold text-white ${trimmed}`}
+            className={`flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white ${trimmed}`}
           >
             {signedInAccount.initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-[13px] leading-[17px] font-medium text-foreground">{signedInAccount.name}</span>
-            <span className="block text-[12px] leading-4 text-faint">{signedInAccount.email}</span>
+            <span className="block text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground">
+              {signedInAccount.name}
+            </span>
+            <span className="block text-[length:var(--type-caption)] leading-4 text-faint">
+              {signedInAccount.email}
+            </span>
           </span>
           <button
             type="button"
-            className={`relative text-[13px] leading-[17px] font-medium text-[color:var(--primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:[outline-color:var(--primary-strong)] active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[color:color-mix(in_oklch,var(--primary-strong),black_15%)] after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
+            className={`relative text-[length:var(--type-dense)] leading-[17px] font-medium text-[color:var(--primary-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:[outline-color:var(--primary-strong)] active:scale-[0.97] motion-safe:transition-transform motion-safe:duration-150 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)] [@media(hover:hover)_and_(pointer:fine)]:hover:text-[color:color-mix(in_oklch,var(--primary-strong),black_15%)] after:absolute after:inset-[min(0px,calc((100%-44px)/2))] after:content-[''] ${trimmed}`}
           >
             Switch
           </button>
         </div>
         <div className="flex w-full flex-col gap-2.5">
-          <p className="ps-1 text-[12px] leading-4 font-medium text-muted-foreground">{ability}</p>
+          <p className="ps-1 text-[length:var(--type-caption)] leading-4 font-medium text-muted-foreground">
+            {ability}
+          </p>
           <ul className="flex flex-col gap-2.5">
             {connectPermissions.map((permission) => (
-              <li key={permission} className="flex h-[17px] items-center gap-2.5 ps-1">
+              <li key={permission} className="flex h-[var(--space-16)] items-center gap-2.5 ps-1">
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0 text-faint">
                   <path
                     d="M2.92 7.29 5.54 9.92 11.08 4.38"
@@ -68,7 +76,9 @@ export function ApproveAgent({
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className={`text-[13px] leading-[17px] text-foreground ${trimmed}`}>{permission}</span>
+                <span className={`text-[length:var(--type-dense)] leading-[17px] text-foreground ${trimmed}`}>
+                  {permission}
+                </span>
               </li>
             ))}
           </ul>
@@ -77,19 +87,19 @@ export function ApproveAgent({
           <Button
             type="button"
             variant="outline"
-            className={`h-10 w-[176px] rounded-[9px] border-0 bg-white px-0 text-sm font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] hover:bg-white active:scale-[0.97] ${trimmed}`}
+            className={`h-10 w-[176px] rounded-[var(--shape-card)] border-0 bg-white px-0 text-sm font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] hover:bg-white active:scale-[0.97] ${trimmed}`}
           >
             Cancel
           </Button>
           <Button
             type="button"
             variant="brand"
-            className={`h-10 w-[176px] rounded-[9px] px-0 text-sm font-medium active:scale-[0.97] ${trimmed}`}
+            className={`h-10 w-[176px] rounded-[var(--shape-card)] px-0 text-sm font-medium active:scale-[0.97] ${trimmed}`}
           >
             Allow
           </Button>
         </div>
-        <p className="w-full text-center text-[12px] leading-[18px] text-faint">{footer}</p>
+        <p className="w-full text-center text-[length:var(--type-caption)] leading-[18px] text-faint">{footer}</p>
       </section>
     </main>
   )

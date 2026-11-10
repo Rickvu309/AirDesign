@@ -14,11 +14,11 @@ const links = [
   <div class="page-column flex flex-col gap-5 py-10 md:h-[119px] md:flex-row md:items-center md:justify-between md:py-0">
     <div class="flex items-center gap-2.5">
       <AirdesignMark size={20} />
-      <span class="text-[14px] font-semibold">AirDesign</span>
-      <span class="text-[14px] text-faint-foreground">Clarity is the edge.</span>
+      <span class="text-[length:var(--type-body)] font-semibold">AirDesign</span>
+      <span class="text-[length:var(--type-body)] text-faint-foreground">Clarity is the edge.</span>
     </div>
     <nav class="flex flex-wrap items-center gap-x-7 gap-y-2" aria-label="Footer">
-      {links.map((link) => <a href={link.href} class="text-link text-[13px] text-muted-foreground">{link.label}</a>)}
+      {links.map((link) => <a href={link.href} class="text-link text-[length:var(--type-dense)] text-muted-foreground">{link.label}</a>)}
     </nav>
   </div>
 </footer>

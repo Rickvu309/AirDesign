@@ -28,7 +28,7 @@ export function SettingsFrame({
               <h1 className="text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground">
                 {settingsCopy.title}
               </h1>
-              <nav className="mt-6 flex h-[34px] items-start gap-7" aria-label={settingsCopy.title}>
+              <nav className="mt-6 flex h-[var(--space-32)] items-start gap-7" aria-label={settingsCopy.title}>
                 {tabs.map((item) => {
                   const active = item.id === tab
                   return (
@@ -37,7 +37,7 @@ export function SettingsFrame({
                       href={settingsRoutes[item.id]}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "relative flex h-full items-start text-[14px] leading-[1.43] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                        "relative flex h-full items-start text-[length:var(--type-body)] leading-[1.43] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                         active ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground",
                       )}
                     >

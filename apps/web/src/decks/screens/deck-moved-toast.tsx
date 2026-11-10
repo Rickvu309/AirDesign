@@ -10,7 +10,7 @@ const toastWidth = "322.07px"
 function MovedToast() {
   return (
     <div
-      className="flex h-10 items-center rounded-[10px] bg-foreground pr-4 pl-4 text-[13px] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
+      className="flex h-10 items-center rounded-[var(--shape-card)] bg-foreground pr-4 pl-4 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
       style={{ width: toastWidth }}
     >
       <span className="min-w-0 flex-1 truncate">Pricing Strategy Review moved to Trash</span>

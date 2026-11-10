@@ -24,7 +24,7 @@ export function BrowseHeader({
       <h1
         className={
           compact
-            ? "h-[34px] text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground"
+            ? "h-[var(--space-32)] text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground"
             : "h-[39px] text-[26px] leading-[39px] font-semibold tracking-[-0.5px] text-foreground"
         }
       >

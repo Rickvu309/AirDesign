@@ -23,7 +23,7 @@ const columns = years.map((year, yearIndex) => {
 });
 
 const agentCapClass =
-  "flex h-16 w-[248px] items-center gap-3.5 rounded-full bg-background pr-6 pl-2.5 text-[17px] font-semibold tracking-[-0.2px] whitespace-nowrap shadow-[0px_0px_0px_1px_var(--navy-8),0px_8px_24px_var(--navy-4)] lg:absolute lg:left-0";
+  "flex h-16 w-[248px] items-center gap-3.5 rounded-full bg-background pr-6 pl-2.5 text-[length:var(--type-section)] font-semibold tracking-[-0.2px] whitespace-nowrap shadow-[0px_0px_0px_1px_var(--navy-8),0px_8px_24px_var(--navy-4)] lg:absolute lg:left-0";
 const agentTileClass = "flex size-11 shrink-0 items-center justify-center rounded-full";
 ---
 
@@ -43,11 +43,11 @@ const agentTileClass = "flex size-11 shrink-0 items-center justify-center rounde
         </svg>
 
         <div class:list={[agentCapClass, "lg:top-[28px]"]}>
-          <span class:list={[agentTileClass, "bg-background text-[var(--claude)] shadow-[inset_0px_0px_0px_1px_var(--mist-edge)]"]}><span class="block size-[26px]" set:html={claudeLogo} /></span>
+          <span class:list={[agentTileClass, "bg-background text-[var(--claude)] shadow-[inset_0px_0px_0px_1px_var(--mist-edge)]"]}><span class="block size-[var(--space-24)]" set:html={claudeLogo} /></span>
           Claude
         </div>
         <div class:list={[agentCapClass, "lg:top-[148px]"]}>
-          <span class:list={[agentTileClass, "bg-[var(--foreground)] text-white"]}><span class="block size-[22px]" set:html={openAiLogo} /></span>
+          <span class:list={[agentTileClass, "bg-[var(--foreground)] text-white"]}><span class="block size-[var(--space-24)]" set:html={openAiLogo} /></span>
           Codex
         </div>
         <div class:list={[agentCapClass, "lg:top-[268px]"]}>
@@ -62,10 +62,10 @@ const agentTileClass = "flex size-11 shrink-0 items-center justify-center rounde
           AirDesign
         </div>
 
-        <div class="fit-frame w-full max-w-[480px] rounded-[6px] bg-background shadow-[0px_0px_0px_1px_var(--black-10),0px_30px_80px_var(--strong-15),0px_4px_12px_var(--navy-5)] lg:absolute lg:top-[45px] lg:left-[768px] lg:w-[480px]" data-fit-frame style="--frame-width: 480; --frame-height: 270">
-          <div class="fit-frame-content overflow-clip rounded-[6px]">
+        <div class="fit-frame w-full max-w-[480px] rounded-[var(--shape-control)] bg-background shadow-[0px_0px_0px_1px_var(--black-10),0px_30px_80px_var(--strong-15),0px_4px_12px_var(--navy-5)] lg:absolute lg:top-[45px] lg:left-[768px] lg:w-[480px]" data-fit-frame style="--frame-width: 480; --frame-height: 270">
+          <div class="fit-frame-content overflow-clip rounded-[var(--shape-control)]">
             <span class="absolute top-6 left-7 text-[19px] font-semibold tracking-[-0.3px] whitespace-nowrap text-navy">Enterprise carried the quarter</span>
-            <span class="absolute top-[52px] left-7 text-[10px] whitespace-nowrap" style={{ color: chartCaption }}>Revenue by customer segment, $M. Sample data.</span>
+            <span class="absolute top-[52px] left-7 text-[length:var(--type-caption)] whitespace-nowrap" style={{ color: chartCaption }}>Revenue by customer segment, $M. Sample data.</span>
             {columns.map((column) => (
               <>
                 {column.bars.map((bar) => (

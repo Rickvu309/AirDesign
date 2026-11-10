@@ -19,23 +19,30 @@ export function DeckCard({
   previewClassName?: string
 }) {
   return (
-    <article className="relative rounded-[14px] bg-canvas p-1.5">
+    <article className="relative rounded-[var(--shape-dialog)] bg-canvas p-1.5">
       <div className="px-2.5 pt-2 pb-2.5">
         <h2
           className={cn(
-            "h-[21px] truncate text-[14px] leading-[21px] font-medium text-foreground",
+            "h-[21px] truncate text-[length:var(--type-body)] leading-[21px] font-medium text-foreground",
             titleClassName,
             action && "pr-16",
           )}
         >
           {name}
         </h2>
-        <p className={cn("h-[19.5px] truncate text-[13px] leading-[19.5px] text-muted-foreground", editedClassName)}>
+        <p
+          className={cn(
+            "h-[19.5px] truncate text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground",
+            editedClassName,
+          )}
+        >
           {edited}
         </p>
       </div>
       {action ? <div className="absolute top-5 right-3.5">{action}</div> : null}
-      <div className={cn("h-[200px] overflow-hidden rounded-[10px] bg-line", previewClassName)}>{preview}</div>
+      <div className={cn("h-[200px] overflow-hidden rounded-[var(--shape-card)] bg-line", previewClassName)}>
+        {preview}
+      </div>
     </article>
   )
 }

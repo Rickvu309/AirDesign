@@ -19,14 +19,14 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         brand:
           "h-9 gap-2 border-0 bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3.5 text-sm text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--primary-strong),0_1px_2px_0_rgb(0_0_0/12%)] hover:bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] hover:brightness-105 active:translate-y-0",
-        ink: "h-8 gap-2 border-0 bg-foreground px-3.5 text-[13px] text-white hover:bg-foreground hover:brightness-110 active:translate-y-0",
+        ink: "h-8 gap-2 border-0 bg-foreground px-3.5 text-[length:var(--type-dense)] text-white hover:bg-foreground hover:brightness-110 active:translate-y-0",
         danger:
           "h-9 gap-2 border-0 bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] px-3.5 text-sm text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--danger-edge),0_1px_2px_0_rgb(0_0_0/12%)] hover:brightness-105 active:translate-y-0",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[length:var(--type-dense)] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
         lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
         icon: "size-8",
         "icon-xs":

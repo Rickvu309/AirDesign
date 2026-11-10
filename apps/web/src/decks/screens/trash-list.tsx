@@ -16,7 +16,7 @@ function RestoreButton() {
   return (
     <button
       type="button"
-      className="flex h-7 items-center rounded-[7px] bg-background px-2.5 text-[12px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
+      className="flex h-7 items-center rounded-md bg-background px-2.5 text-[length:var(--type-caption)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
     >
       Restore
     </button>
@@ -59,10 +59,10 @@ function EmptyTrashDialog() {
             <span className="sr-only">Close</span>
           </DialogClose>
           <div className="px-6 pt-20">
-            <DialogTitle className="text-[17px] leading-[22px] font-semibold text-foreground">
+            <DialogTitle className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
               Delete 3 decks for good?
             </DialogTitle>
-            <DialogDescription className="mt-1.5 text-[13px] leading-[19.5px] text-muted-foreground">
+            <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">
               This can't be undone.
             </DialogDescription>
             <div className="mt-5 flex items-center justify-end gap-2">

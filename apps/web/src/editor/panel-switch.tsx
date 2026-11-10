@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils"
 export function PanelSwitch({ active }: { active: "agent" | "design" }) {
   const agent = active === "agent"
   return (
-    <div className="inline-flex h-8 items-center rounded-[8px] bg-line p-0.5" role="group" aria-label="Panel">
+    <div className="inline-flex h-8 items-center rounded-lg bg-line p-0.5" role="group" aria-label="Panel">
       <Button
         type="button"
         variant="ghost"
         aria-pressed={agent}
         className={cn(
-          "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
+          "h-7 gap-1.5 rounded-[var(--shape-control)] px-2.5 text-[length:var(--type-dense)] active:translate-y-0",
           agent
             ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
             : "text-quiet hover:bg-transparent",
@@ -25,7 +25,7 @@ export function PanelSwitch({ active }: { active: "agent" | "design" }) {
         variant="ghost"
         aria-pressed={!agent}
         className={cn(
-          "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
+          "h-7 gap-1.5 rounded-[var(--shape-control)] px-2.5 text-[length:var(--type-dense)] active:translate-y-0",
           agent
             ? "text-quiet hover:bg-transparent"
             : "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
