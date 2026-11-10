@@ -20,6 +20,18 @@ export const replacedFixtures = (files) =>
     .filter((file) => file.status !== "added" && file.name !== casesFile)
     .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
 
+const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
+
+export const sameButReferences = (left, right) =>
+  left !== undefined && right !== undefined && withoutReferences(left) === withoutReferences(right)
+
+export const onlyAddsReferences = (base, head) =>
+  sameButReferences(base, head) &&
+  (base.references ?? []).every((kept) => (head.references ?? []).some((each) => each.path === kept.path))
+
+export const newPackageFile = (file, name) =>
+  file.status === "added" && new RegExp(`^packages/[a-z0-9-]+/${name.replace(".", "\\.")}$`).test(file.name)
+
 export const packageFile = (file) => file === "package.json" || file.endsWith("/package.json")
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value)
@@ -176,16 +188,41 @@ const readPull = (repository, number) => {
   const baseSticks = jsonAt(repository, fork, "sticks.json")
   if (baseSticks === undefined) throw new Error("sticks.json could not be read where this branch left main.")
   const owner = repository.split("/")[0]
+  const modelPackage = "packages/document"
+  const generated = new Set()
+  for (const file of listed) {
+    const model = `${modelPackage}/${file.name.slice(file.name.lastIndexOf("/") + 1)}`
+    if (
+      newPackageFile(file, "tsconfig.json") &&
+      sameButReferences(jsonAt(repository, pull.head, file.name), jsonAt(repository, fork, model))
+    ) {
+      generated.add(file.name)
+    }
+    if (
+      newPackageFile(file, "package.json") &&
+      scriptsAt(repository, pull.head, file.name) === scriptsAt(repository, fork, model)
+    ) {
+      generated.add(file.name)
+    }
+    if (
+      file.name === "tsconfig.json" &&
+      file.status === "modified" &&
+      onlyAddsReferences(jsonAt(repository, fork, file.name), jsonAt(repository, pull.head, file.name))
+    ) {
+      generated.add(file.name)
+    }
+  }
   const reasons = ownerReasons({
     baseSticks,
     headSticks: jsonAt(repository, pull.head, "sticks.json") ?? {},
-    changedFiles,
+    changedFiles: changedFiles.filter((file) => !generated.has(file)),
     changedFixtures: replacedFixtures(listed),
     changedCases: changedFiles.includes(casesFile)
       ? lostCases(casesAt(repository, fork), casesAt(repository, pull.head))
       : [],
     changedScripts: changedFiles
       .filter(packageFile)
+      .filter((file) => !generated.has(file))
       .filter((file) => scriptsAt(repository, fork, file) !== scriptsAt(repository, pull.head, file)),
   })
   const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
