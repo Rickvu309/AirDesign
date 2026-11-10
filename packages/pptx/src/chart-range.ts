@@ -2,6 +2,8 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, readParts } from "./package-bytes.js"
 
 const chartPart = /^ppt\/charts\/chart\d+\.xml$/
+const maxColumn = 16384
+const maxRow = 1048576
 
 type Cell = {
   column: number
@@ -30,35 +32,6 @@ function elementText(bytes: Uint8Array, element: MarkupElement): string {
   return decodeUtf8(bytes.subarray(element.openEnd, element.closeStart))
 }
 
-function xmlText(value: string): string {
-  let text = ""
-  let start = 0
-  for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== "&") continue
-    let end = index + 1
-    while (end < value.length && value[end] !== ";") end += 1
-    if (end >= value.length) break
-    const token = value.slice(index + 1, end)
-    const decoded =
-      token === "amp"
-        ? "&"
-        : token === "lt"
-          ? "<"
-          : token === "gt"
-            ? ">"
-            : token === "quot"
-              ? '"'
-              : token === "apos"
-                ? "'"
-                : null
-    if (decoded === null) continue
-    text += value.slice(start, index) + decoded
-    start = end + 1
-    index = end
-  }
-  return text + value.slice(start)
-}
-
 function isLetter(code: number): boolean {
   return (code >= 65 && code <= 90) || (code >= 97 && code <= 122)
 }
@@ -81,20 +54,20 @@ function parseColumn(text: string, start: number): { value: number; next: number
     const code = text.charCodeAt(index)
     value = value * 26 + ((code >= 97 ? code - 32 : code) - 64)
     width += 1
-    if (width > 3 || value > 16384) return null
+    if (width > 3 || value > maxColumn) return null
     index += 1
   }
   if (width === 0) return null
   return { value, next: index }
 }
 
-function parseNumber(text: string, start: number): { value: number; next: number } | null {
+function parseNumber(text: string, start: number, max: number): { value: number; next: number } | null {
   let index = start
   if (!isDigit(text.charCodeAt(index))) return null
   let value = 0
   while (index < text.length && isDigit(text.charCodeAt(index))) {
     value = value * 10 + (text.charCodeAt(index) - 48)
-    if (!Number.isSafeInteger(value)) return null
+    if (value > max) return null
     index += 1
   }
   if (value < 1) return null
@@ -108,7 +81,7 @@ function parseCell(text: string, start: number): (Cell & { next: number }) | nul
   if (column === null) return null
   index = column.next
   if (text[index] === "$") index += 1
-  const row = parseNumber(text, index)
+  const row = parseNumber(text, index, maxRow)
   if (row === null) return null
   return { column: column.value, row: row.value, next: row.next }
 }
@@ -148,14 +121,8 @@ function parseSheet(formula: string): { sheet: string; rest: string } | null {
 }
 
 function parseFormula(formula: string): Area | null {
-  let text = formula.trim()
-  if (text.startsWith("=")) text = text.slice(1).trim()
-  if (text.startsWith("[")) {
-    let index = 1
-    while (index < text.length && text[index] !== "]") index += 1
-    if (text[index] !== "]") return null
-    text = text.slice(index + 1)
-  }
+  const text = formula.trim()
+  if (text.length === 0 || text.includes("[") || text.includes("&") || text.includes("=")) return null
   const sheet = parseSheet(text)
   if (sheet === null) return null
   const start = parseCell(sheet.rest, 0)
@@ -182,10 +149,6 @@ function parseFormula(formula: string): Area | null {
       row: Math.max(start.row, endRow),
     },
   }
-}
-
-function areaSize(area: Area): number {
-  return (area.end.column - area.start.column + 1) * (area.end.row - area.start.row + 1)
 }
 
 function relsPart(part: string): string {
@@ -285,41 +248,32 @@ function findSheet(sheets: ReadonlyMap<string, ReadonlySet<string>>, name: strin
   return undefined
 }
 
-function covers(sheets: ReadonlyMap<string, ReadonlySet<string>>, area: Area): boolean {
+function cellKey(key: string): Cell | null {
+  let colon = -1
+  for (let index = 0; index < key.length; index += 1) if (key[index] === ":") colon = index
+  if (colon < 0) return null
+  const column = Number(key.slice(0, colon))
+  const row = Number(key.slice(colon + 1))
+  if (!Number.isInteger(column) || !Number.isInteger(row)) return null
+  return { column, row }
+}
+
+function outside(sheets: ReadonlyMap<string, ReadonlySet<string>>, area: Area): boolean {
   const cells = findSheet(sheets, area.sheet)
-  if (cells === undefined) return false
-  const width = area.end.column - area.start.column + 1
-  const height = area.end.row - area.start.row + 1
-  if (width > cells.size || height > cells.size || width * height > cells.size) return false
-  for (let column = area.start.column; column <= area.end.column; column += 1) {
-    for (let row = area.start.row; row <= area.end.row; row += 1) {
-      if (!cells.has(`${column}:${row}`)) return false
+  if (cells === undefined) return true
+  for (const key of cells) {
+    const cell = cellKey(key)
+    if (cell === null) continue
+    if (
+      cell.column >= area.start.column &&
+      cell.column <= area.end.column &&
+      cell.row >= area.start.row &&
+      cell.row <= area.end.row
+    ) {
+      return false
     }
   }
   return true
-}
-
-function cachedPoints(elements: readonly MarkupElement[], formula: MarkupElement): number | null {
-  let cache: MarkupElement | null = null
-  for (const element of elements) {
-    if (element.parent !== formula.parent || !localName(element.kind).endsWith("Cache")) continue
-    cache = element
-  }
-  if (cache === null) return null
-  let counted: number | null = null
-  let points = 0
-  for (const element of elements) {
-    if (element.parent !== cache.index) continue
-    const name = localName(element.kind)
-    if (name === "pt") points += 1
-    if (name !== "ptCount") continue
-    const value = attribute(element, "val")
-    if (value === null) continue
-    const parsed = parseNumber(value, 0)
-    if (parsed !== null && skipSpaces(value, parsed.next) === value.length) counted = parsed.value
-  }
-  if (counted !== null) return counted
-  return points > 0 ? points : null
 }
 
 export async function chartRangeFaults(parts: ReadonlyMap<string, Uint8Array>): Promise<readonly string[]> {
@@ -331,17 +285,10 @@ export async function chartRangeFaults(parts: ReadonlyMap<string, Uint8Array>): 
     const parsed = markupDocument(bytes)
     for (const element of parsed.elements) {
       if (localName(element.kind) !== "f") continue
-      const formula = xmlText(elementText(bytes, element)).trim()
+      const formula = elementText(bytes, element).trim()
       const area = parseFormula(formula)
       if (area === null) continue
-      if (!covers(book, area)) {
-        faults.push(`${name} formula ${formula} points outside the workbook`)
-        continue
-      }
-      const cached = cachedPoints(parsed.elements, element)
-      if (cached !== null && cached !== areaSize(area)) {
-        faults.push(`${name} formula ${formula} cached points do not match`)
-      }
+      if (outside(book, area)) faults.push(`${name} formula ${formula} points outside the workbook`)
     }
   }
   return faults
