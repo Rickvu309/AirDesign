@@ -16,11 +16,12 @@ const stages = [
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["specs", "pnpm", ["check:specs"]],
     ["browser", "pnpm", ["test:browser"]],
+    ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
   ],
   [["typecheck", "pnpm", ["typecheck"]]],
   [
     ["boundaries", "pnpm", ["check:boundaries"]],
-    ["build", "pnpm", ["build"]],
+    ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
   ],
   [["sticks", "node", ["scripts/sticks.mjs"]]],
 ]
