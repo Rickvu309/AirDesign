@@ -7,6 +7,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { judge } from "./judge.mjs"
 import { plantSamples, proofFailures, proofTable, replay, seedFrom } from "./judge-proof.mjs"
+import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { timeStick } from "./sticks.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
@@ -106,6 +107,19 @@ const parts = new Map()
 for (const name of new Set([...names, ...cleanDecks])) {
   parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
 }
+const realDecks = [...new Set(cases.filter((row) => row.before === row.after).map((row) => row.before))].filter(
+  (name) => fs.statSync(fixturePath(name)).size >= 100_000,
+)
+const routeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-route-"))
+const writtenDecks = []
+for (const name of realDecks) {
+  const deckParts = parts.get(name)
+  const written = await writtenRouteFiles(pptx, deckParts, routeDir, name.slice(0, -".pptx".length))
+  writtenDecks.push({ name, deckParts, written })
+}
+const routeFiles = writtenDecks.flatMap((deck) =>
+  deck.written.flatMap((item) => (item.file === null ? [] : [item.file])),
+)
 const planted = plantSamples({
   pptx,
   decks: cleanDecks.map((name) => ({ name, parts: parts.get(name) })),
@@ -122,6 +136,7 @@ const judgedFiles = async () => {
     const planting = (Date.now() - proofStarted) / 1000
     const found = await validatorLists([
       ...[...parts.keys()].map(fixturePath),
+      ...routeFiles,
       ...planted.map((sample, index) => path.join(proofFolder, sampleFile(index))),
     ])
     return { found, planting }
@@ -180,6 +195,24 @@ for (const row of cases) {
 const checkSeconds = timeStick(root, "PowerPoint check seconds", checkStarted)
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
+const routeFailures = []
+const seen = new Set()
+for (const deck of writtenDecks) {
+  const beforeErrors = lists.get(deck.name) ?? []
+  for (const item of deck.written) {
+    seen.add(item.run.operation)
+    const afterErrors = item.file === null ? undefined : lists.get(path.basename(item.file))
+    const failure = scoreWrittenRoute(pptx, deck.deckParts, beforeErrors, item, afterErrors)
+    if (failure !== null) routeFailures.push({ deck: deck.name, ...failure })
+  }
+}
+for (const operation of pptx.routeOperations) {
+  if (!seen.has(operation)) routeFailures.push({ operation, missing: true })
+}
+fs.rmSync(routeDir, { recursive: true, force: true })
+for (const failure of routeFailures) console.log(JSON.stringify(failure))
 if (failed > 0) console.log(`${failed} pptx checks failed`)
-if (failed > 0 || checkSeconds.fails) process.exit(1)
-console.log(`${cases.length} pptx checks passed`)
+else console.log(`${cases.length} pptx checks passed`)
+if (routeFailures.length > 0) console.log(`${routeFailures.length} route writes failed`)
+else console.log(`${pptx.routeOperations.length} route writes passed`)
+if (failed > 0 || routeFailures.length > 0 || checkSeconds.fails) process.exit(1)
