@@ -170,4 +170,6 @@ jobs:
           echo "$bindir" >> "$GITHUB_PATH"
           echo "PPTX_SOFFICE=$bindir/soffice" >> "$GITHUB_ENV"
       - if: steps.pptx.outputs.changed != '0'
-        run: node scripts/pptx-check.mjs
+        run: |
+          rm -f packages/pptx/dist/tsconfig.tsbuildinfo
+          node scripts/pptx-check.mjs
