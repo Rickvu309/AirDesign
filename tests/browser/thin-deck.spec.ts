@@ -115,6 +115,19 @@ test("typing key by key keeps the order of the letters", async ({ page }) => {
   await stored(page, "HeXYllo world")
 })
 
+test("typed spaces are stored as plain spaces", async ({ page }) => {
+  await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially(" a  b ", { delay: 50 })
+  await expect.poll(() => editor.textContent()).toBe("Hello a  b ")
+  await stored(page, "Hello a  b ")
+  await page.reload()
+  await expect.poll(() => editor.textContent()).toBe("Hello a  b ")
+})
+
 test("an export with no edit keeps every part byte for byte", async ({ page }, testInfo) => {
   const saved = testInfo.outputPath("no-edit.pptx")
   await open(page, fixture)
