@@ -24,6 +24,8 @@ const hiddenChain: NodeRegister = {
   guarded: false,
   claimed: 1,
   stoppedAt: null,
+  slides: 1,
+  bytes: 0,
 }
 
 const personChain: NodeRegister = {
@@ -36,6 +38,8 @@ const personChain: NodeRegister = {
   guarded: false,
   claimed: null,
   stoppedAt: null,
+  slides: 1,
+  bytes: 0,
 }
 
 const keptPerson: CompactRow = {

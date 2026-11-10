@@ -50,6 +50,8 @@ const agentAndPerson: NodeRegister = {
   guarded: false,
   claimed: 1,
   stoppedAt: null,
+  slides: 1,
+  bytes: 0,
 }
 
 const noAgent: NodeRegister = {
@@ -62,6 +64,8 @@ const noAgent: NodeRegister = {
   guarded: false,
   claimed: null,
   stoppedAt: null,
+  slides: 1,
+  bytes: 0,
 }
 
 const table = new Map<string, UndoRow>([
@@ -113,6 +117,8 @@ function copyNode(register: NodeRegister): NodeRegister {
     guarded: register.guarded,
     claimed: register.claimed,
     stoppedAt: register.stoppedAt,
+    slides: register.slides,
+    bytes: register.bytes,
   }
 }
 
@@ -148,6 +154,8 @@ function nodeFrom(register: Register): NodeRegister {
     guarded: register.guarded,
     claimed: register.claimed,
     stoppedAt: register.stoppedAt,
+    slides: register.slides,
+    bytes: register.bytes,
   })
 }
 
