@@ -86,6 +86,10 @@ export const seedsFor = ({ chosen, list, draw, commit }) => {
 
 const judgeFile = /^scripts\/(judge\.mjs|judge-proof\.mjs|pptx-check\.mjs|pptx-fixtures\/judge-[^/]*\.json)$/
 
+const judgeSource = /^(packages\/pptx\/src\/(child-order|shape-id|validator-error)\.ts|scripts\/pptx-judge\/[^/]+)$/
+
+export const changesJudgeSource = (files) => files.some((file) => judgeSource.test(file))
+
 export const changedSinceArgs = (base) => ["diff", "--no-renames", "--name-only", base, "HEAD"]
 
 export const changesJudge = (files) => files.some((file) => judgeFile.test(file))
@@ -105,7 +109,7 @@ export const freshMissFails = ({ eventText, mergeBase, changedSince }) => {
   const base = eventText === undefined ? mergeBase() : eventBase(eventText)
   if (base === undefined) return true
   const changed = changedSince(base)
-  return changed === undefined || changesJudge(changed)
+  return changed === undefined || changesJudge(changed) || changesJudgeSource(changed)
 }
 
 export const settleRun = ({ run, lines, freshFails }) =>

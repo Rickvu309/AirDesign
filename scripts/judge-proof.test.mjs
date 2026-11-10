@@ -3,6 +3,7 @@ import { judge } from "./judge.mjs"
 import {
   changedSinceArgs,
   changesJudge,
+  changesJudgeSource,
   breakKinds,
   caughtCount,
   freshMissFails,
@@ -198,6 +199,25 @@ for (const file of [
   same(`${file} is not a judge file`, changesJudge([file]), false)
 }
 same("no changed file is not a judge change", changesJudge([]), false)
+for (const file of [
+  "packages/pptx/src/child-order.ts",
+  "packages/pptx/src/shape-id.ts",
+  "packages/pptx/src/validator-error.ts",
+  "scripts/pptx-judge/Program.cs",
+  "scripts/pptx-judge/PptxJudge.csproj",
+]) {
+  same(`${file} is code the judge runs`, changesJudgeSource([file]), true)
+  same(`${file} fails a fresh miss`, decide({ eventText: push, changedSince: () => [file] }), true)
+}
+for (const file of [
+  "packages/pptx/src/index.ts",
+  "packages/pptx/src/child-order.test.ts",
+  "packages/pptx/src/read-shapes.ts",
+  "scripts/pptx-judge/obj/project.assets.json",
+]) {
+  same(`${file} is not code the judge runs`, changesJudgeSource([file]), false)
+  same(`${file} leaves a fresh miss printed only`, decide({ eventText: push, changedSince: () => [file] }), false)
+}
 same("a rename lists both paths", changedSinceArgs("base"), ["diff", "--no-renames", "--name-only", "base", "HEAD"])
 
 const freshRun = { seed: 5, fresh: true }
