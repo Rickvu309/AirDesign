@@ -200,7 +200,12 @@ function sameSecret(given: string, expected: string): boolean {
   return timingSafeEqual(left, right)
 }
 
-async function smokeRoute(options: ApiOptions, token: string, req: IncomingMessage, res: ServerResponse): Promise<void> {
+async function smokeRoute(
+  options: ApiOptions,
+  token: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
   const given = smokeBearer.exec(req.headers.authorization ?? "")?.[1]
   if (given === undefined || !sameSecret(given, token)) {
     res.writeHead(404)
