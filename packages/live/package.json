@@ -5,13 +5,9 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./public.d.ts",
-      "import": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
-  },
-  "imports": {
-    "@airdesign/catalog": "../../catalog/src/index.ts",
-    "@airdesign/document": "../../document/src/index.ts"
   },
   "files": [
     "dist"
