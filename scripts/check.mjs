@@ -14,7 +14,6 @@ const stages = [
     ["test", "pnpm", ["test:unit"]],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
-    ["sticks", "node", ["scripts/sticks.mjs"]],
     ["specs", "pnpm", ["check:specs"]],
     ["browser", "pnpm", ["test:browser"]],
   ],
@@ -23,6 +22,7 @@ const stages = [
     ["boundaries", "pnpm", ["check:boundaries"]],
     ["build", "pnpm", ["build"]],
   ],
+  [["sticks", "node", ["scripts/sticks.mjs"]]],
 ]
 
 const showOnSuccess = new Set(["bug-rule", "sticks", "specs"])
