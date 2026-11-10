@@ -25,6 +25,6 @@ describe("editor shell", () => {
     const saved = renderToStaticMarkup(<AgentComplete />)
     expect(saved).toContain("Q3 Investor Update")
     expect(saved).toContain("Lead with the trend, then the Q3 number. Mention the two enterprise deals.")
-    expect(saved).toContain(">3<")
+    expect(saved).toContain('text-[length:var(--type-dense)] text-faint">3<')
   })
 })
