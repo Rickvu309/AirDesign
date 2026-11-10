@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "lib": ["dom", "es2023"],
+    "types": [],
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "paths": {
+      "@airdesign/document": ["../document/dist/index.d.ts"],
+      "@airdesign/catalog": ["../catalog/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "references": [{ "path": "../document" }, { "path": "../catalog" }]
+}
