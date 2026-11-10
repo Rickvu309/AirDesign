@@ -15,7 +15,7 @@ import {
 } from "@/components/ai-elements/prompt-input"
 import { Tool, ToolHeader } from "@/components/ai-elements/tool"
 import { EditorIcon } from "@/editor/editor-icons"
-import { brandShadow, ExportButton, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
+import { ExportButton, surfaceShadow, ZoomReadout } from "@/editor/editor-chrome"
 import type { SidebarRun } from "@/editor/slide-sidebar"
 import { cn } from "@/lib/utils"
 
@@ -182,9 +182,8 @@ function Composer({ run }: { run: SidebarRun }) {
             </PromptInputButton>
             <PromptInputButton
               className={cn(
-                "size-8 rounded-full text-white",
-                brandShadow,
-                "bg-[linear-gradient(180deg,var(--primary-top),var(--primary))]",
+                "size-8 rounded-full bg-white text-foreground hover:bg-white active:translate-y-0",
+                surfaceShadow,
               )}
               aria-label="Send"
             >
