@@ -1,0 +1,64 @@
+export type Grant = {
+  readonly principal: string
+  readonly deck: string
+  readonly code: "open" | "used"
+  readonly generation: number
+  readonly revoked: boolean
+}
+
+export type Command =
+  | { readonly command: "exchange"; readonly deck: string }
+  | { readonly command: "call"; readonly deck: string; readonly generation: number }
+  | { readonly command: "rotate"; readonly generation: number }
+  | { readonly command: "revoke" }
+
+export type OauthResult = {
+  readonly grant: Grant
+  readonly accepted: boolean
+}
+
+export function openGrant(principal: string, deck: string): Grant {
+  return { principal, deck, code: "open", generation: 0, revoked: false }
+}
+
+function refused(grant: Grant): OauthResult {
+  return { grant, accepted: false }
+}
+
+function accepted(grant: Grant): OauthResult {
+  return { grant, accepted: true }
+}
+
+export function oauth(grant: Grant, command: Command): OauthResult {
+  if (typeof command !== "object" || command === null) return refused(grant)
+  if (command.command === "exchange") {
+    if (grant.code === "used" || command.deck !== grant.deck || grant.revoked) return refused(grant)
+    return accepted({ ...grant, code: "used", generation: 1 })
+  }
+  if (command.command === "call") {
+    if (
+      grant.revoked ||
+      grant.generation < 1 ||
+      command.generation !== grant.generation ||
+      command.deck !== grant.deck
+    ) {
+      return refused(grant)
+    }
+    return accepted(grant)
+  }
+  if (command.command === "rotate") {
+    if (grant.revoked || !Number.isInteger(command.generation)) return refused(grant)
+    if (command.generation >= 1 && command.generation === grant.generation) {
+      return accepted({ ...grant, generation: grant.generation + 1 })
+    }
+    if (command.generation >= 1 && command.generation < grant.generation) {
+      return { grant: { ...grant, revoked: true }, accepted: false }
+    }
+    return refused(grant)
+  }
+  if (command.command === "revoke") {
+    if (grant.revoked) return refused(grant)
+    return accepted({ ...grant, revoked: true })
+  }
+  return refused(grant)
+}

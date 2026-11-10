@@ -1,0 +1,12 @@
+{
+  "name": "airdesign-web",
+  "main": "worker/api-forward.ts",
+  "compatibility_date": "2026-11-09",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/sign-in/*", "/decks/*"],
+  },
+}

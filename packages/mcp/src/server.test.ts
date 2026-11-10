@@ -119,10 +119,9 @@ describe("createServer", () => {
         name: "airdesign_edit_deck",
         arguments: { deck: "deck", base: 1, changes: [{ value: "22" }] },
       })
-      expect(second.isError).toBe(true)
-      expect(second.content).toEqual([{ type: "text", text: "run-fenced" }])
-      expect(session.deck.revision).toBe(1)
-      expect(session.deck.register.landed.map((row) => row.value)).toEqual(["21"])
+      expect(second.isError).not.toBe(true)
+      expect(session.deck.revision).toBe(2)
+      expect(session.deck.register.landed.map((row) => row.value)).toEqual(["21", "22"])
       expect(before.revision).toBe(0)
     })
   })

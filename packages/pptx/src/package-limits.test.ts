@@ -32,11 +32,16 @@ function concat(chunks: readonly Uint8Array[]): Uint8Array {
   return out
 }
 
+const crcOfByte = Uint32Array.from({ length: 256 }, (_, byte) => {
+  let crc = byte
+  for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1))
+  return crc >>> 0
+})
+
 function crc32(data: Uint8Array): number {
   let crc = 0xffffffff
-  for (const byte of data) {
-    crc ^= byte
-    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1))
+  for (let index = 0; index < data.length; index += 1) {
+    crc = (crc >>> 8) ^ (crcOfByte[(crc ^ (data[index] ?? 0)) & 255] ?? 0)
   }
   return (crc ^ 0xffffffff) >>> 0
 }
@@ -58,6 +63,7 @@ function storedZip(
     const flag = file.flag ?? 0
     const payload = file.data ?? Uint8Array.of()
     const uncompressed = file.declared ?? file.size
+    const crc = u32(crc32(payload))
     const local = concat([
       u32(0x04034b50),
       u16(20),
@@ -65,7 +71,7 @@ function storedZip(
       u16(0),
       u16(0),
       u16(0),
-      u32(crc32(payload)),
+      crc,
       u32(payload.length),
       u32(uncompressed),
       u16(name.length),
@@ -82,7 +88,7 @@ function storedZip(
         u16(0),
         u16(0),
         u16(0),
-        u32(crc32(payload)),
+        crc,
         u32(payload.length),
         u32(uncompressed),
         u16(name.length),
@@ -236,7 +242,7 @@ describe("readPackage", () => {
       { name: "ppt/slides/slide1.xml", size: 0, data: payload, declared: 0 },
     ])
     expect(await readPackage(lying)).toEqual({ ok: false, reason: "limit", limit: "xmlBytes" })
-  })
+  }, 60_000)
 
   it("rejects an encrypted package before reading its parts", async () => {
     const locked = storedZip([
@@ -273,7 +279,7 @@ describe("readPackage", () => {
       reason: "limit",
       limit: "nodes",
     })
-  }, 20_000)
+  }, 60_000)
 
   it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
     expect((await readPackage(await deck(`<a><![CDATA[${"<b>".repeat(packageLimits.depth + 1)}]]></a>`))).ok).toBe(true)

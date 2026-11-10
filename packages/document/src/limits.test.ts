@@ -141,6 +141,7 @@ function walk(): void {
   expect(limits.decks).toBe(null)
   expect(limits.slides).toBe(50)
   expect(limits.bytes).toBe(70_000_000)
+  expect(limits.valueBytes).toBe(8_000)
   const seen = new Set<string>()
   visitInside("decks", seen)
   visitInside("opened", seen)
@@ -164,5 +165,57 @@ function walk(): void {
 describe("limits", () => {
   it("holds a deck inside the table", () => {
     walk()
+  })
+
+  it("refuses the element past the limit", () => {
+    expect(limits.elements).toBe(5_000)
+    let register = openRegister("floor", "slide")
+    const throughDecide = 400
+    for (let index = 0; index < throughDecide; index += 1) {
+      const decision = decide(register, {
+        command: "add",
+        node: elementId(`n.${index}`),
+        floor: "floor",
+        route: "slide",
+      })
+      if (decision.decision !== "apply") throw new Error("add")
+      register = decision.register
+    }
+    expect(register.nodes.length).toBe(throughDecide + 1)
+    const nodes = [...register.nodes]
+    while (nodes.length < limits.elements) {
+      nodes.push(elementId(`n.${nodes.length}`))
+    }
+    register = { ...register, nodes }
+    expect(register.nodes.length).toBe(limits.elements)
+    const before = copyRegister(register)
+    const refused = decide(register, {
+      command: "add",
+      node: elementId("n.past"),
+      floor: "floor",
+      route: "slide",
+    })
+    expect(refused).toEqual({ decision: "refuse", code: "limit" })
+    expect(register).toEqual(before)
+    const present = decide(register, {
+      command: "add",
+      node: elementId("n.0"),
+      floor: "other",
+      route: "slide",
+    })
+    expect(present).toEqual({ decision: "refuse", code: "present" })
+    expect(register).toEqual(before)
+    const removed = decide(register, { command: "remove", node: elementId("n.1") })
+    if (removed.decision !== "apply") throw new Error("remove")
+    const added = decide(removed.register, {
+      command: "add",
+      node: elementId("n.past"),
+      floor: "fresh",
+      route: "slide",
+    })
+    expect(added.decision).toBe("apply")
+    if (added.decision !== "apply") throw new Error("again")
+    expect(added.register.nodes.length).toBe(limits.elements)
+    expect(added.register.nodes.includes(elementId("n.past"))).toBe(true)
   })
 })

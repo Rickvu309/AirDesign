@@ -1,4 +1,6 @@
 const textOf = (v) => {
+  if (v.agent === 2 && v.personAfter === 1) return "Two agent edits and a later person"
+  if (v.agent === 2) return "Two agent edits"
   if (v.personAfter === 1) return "Later person edit"
   if (v.agent === 1) return "Agent edit"
   if (v.personBefore === 1) return "Person edit"
@@ -29,6 +31,9 @@ export const step = (action, from) => {
   if (action === "PersonWrites") return "the person edits"
   if (action === "RunStarts") return "the run reads the property"
   if (action === "AgentWrites") return "the agent writes"
+  if (action === "AgentWritesAgain") return "the agent writes the fresh row"
+  if (action === "AgentKeepsClaim") return "the agent writes the claimed row"
+  if (action === "AgentRefusesProtected") return "the read after a person stays protected"
   if (action === "RunStops") return "the person stops the run"
   if (action === "RunUndoes") return "the person undoes the run"
   return null
@@ -48,4 +53,4 @@ export const colors = {
   Undone: "teal",
 }
 
-export const title = "One person and one agent edit one property"
+export const title = "One person and one agent run edit one property"

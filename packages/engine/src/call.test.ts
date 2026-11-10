@@ -121,6 +121,86 @@ describe("call", () => {
     expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "hi", visible: true }])
   })
 
+  it("lands an agent edit of two changes", () => {
+    const deck = running()
+    const readAt = version(deck.register)
+    const result = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: deck.revision, changes: [{ value: "one" }, { value: "two" }] },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+    expect(result.deck.revision).toBe(1)
+    expect(result.deck.register.landed).toEqual([
+      { actor: "agent", value: "one", visible: true },
+      { actor: "agent", value: "two", visible: true },
+    ])
+  })
+
+  it("refuses an agent batch after a person commit in the same run", () => {
+    const started = running()
+    const readAt = version(started.register)
+    const agentLanded = call(
+      "edit_deck",
+      started,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: started.revision, changes: [{ value: "one" }] },
+    )
+    expect(agentLanded.ok).toBe(true)
+    if (!agentLanded.ok) {
+      return
+    }
+    const personLanded = call("commit_edits", agentLanded.deck, person, {
+      deck: "deck",
+      batch: [{ value: "mine" }],
+    })
+    expect(personLanded.ok).toBe(true)
+    if (!personLanded.ok) {
+      return
+    }
+    const register = personLanded.deck.register
+    expect(
+      call(
+        "edit_deck",
+        personLanded.deck,
+        { actor: "agent", runId: "run", readAt: version(personLanded.deck.register) },
+        { deck: "deck", base: personLanded.deck.revision, changes: [{ value: "two" }, { value: "three" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "person-protected" })
+    expect(personLanded.deck.register).toBe(register)
+    expect(personLanded.deck.revision).toBe(2)
+  })
+
+  it("refuses an edit from a different run id after the batch", () => {
+    const deck = running()
+    const readAt = version(deck.register)
+    const landed = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: deck.revision, changes: [{ value: "one" }, { value: "two" }] },
+    )
+    expect(landed.ok).toBe(true)
+    if (!landed.ok) {
+      return
+    }
+    const register = landed.deck.register
+    expect(
+      call(
+        "edit_deck",
+        landed.deck,
+        { actor: "agent", runId: "other", readAt: version(landed.deck.register) },
+        { deck: "deck", base: landed.deck.revision, changes: [{ value: "no" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(landed.deck.register).toBe(register)
+    expect(landed.deck.revision).toBe(1)
+  })
+
   it("refuses an agent edit read ahead of the version", () => {
     const deck = running()
     const register = deck.register

@@ -126,6 +126,14 @@ it("edits only the requested shape in a mixed tree", () => {
         expect(document.wellFormed).toBe(true)
         const span = shapeById(document.elements, String(target.id))
         expect(span.kind).toBe(target.kind)
+        const onlyRun = target.kind === "p:sp" && target.runs.length === 1 ? target.runs[0] : undefined
+        const oneRun = onlyRun !== undefined && !onlyRun.empty && onlyRun.text !== ""
+        if (op === "text" && !oneRun) {
+          const saved = Uint8Array.from(before)
+          expect(() => applyRoute(new Map([[part, before]]), routeFor(op, target))).toThrow(/text-shape/)
+          expect(before).toEqual(saved)
+          return
+        }
         const edited = applyRoute(new Map([[part, before]]), routeFor(op, target))
         const after = edited.get(part)
         if (after === undefined) throw new Error("part")
