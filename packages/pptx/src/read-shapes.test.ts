@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 declare const process: {
   cwd(): string
@@ -12,6 +12,28 @@ import { readParts } from "./package-container.js"
 import { readPackage } from "./package-limits.js"
 import { readShapes, type ShapeKind } from "./read-shapes.js"
 import { shapeById, applyRoute } from "./slide-route.js"
+
+const work = vi.hoisted(() => ({ counting: false, parses: 0, elements: 0, visits: 0 }))
+
+vi.mock("./element-span.js", async (importOriginal) => {
+  const real = await importOriginal<typeof import("./element-span.js")>()
+  return {
+    ...real,
+    markupDocument: (bytes: Uint8Array) => {
+      const document = real.markupDocument(bytes)
+      if (!work.counting) return document
+      work.parses += 1
+      work.elements += document.elements.length
+      const elements = new Proxy(document.elements, {
+        get(target, key, receiver) {
+          if (typeof key === "string" && Number.isInteger(Number(key))) work.visits += 1
+          return Reflect.get(target, key, receiver)
+        },
+      })
+      return { ...document, elements }
+    },
+  }
+})
 
 const kinds = new Set<ShapeKind>(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
@@ -96,4 +118,17 @@ describe("readShapes", () => {
       if (read.ok) expect(samePartBytes(parts, read.parts)).toBe(true)
     }
   }, 30_000)
+
+  it("parses each part once and visits each element a few times on a real deck", async () => {
+    const parts = await readParts(readFileSync(fixture("doe-heat-pumps.pptx")))
+    const slides = [...parts.keys()].filter((name) => slidePart.test(name)).length
+    work.counting = true
+    try {
+      expect(readShapes(parts)).toHaveLength(247)
+    } finally {
+      work.counting = false
+    }
+    expect(work.parses).toBeLessThanOrEqual(slides + 2)
+    expect(work.visits).toBeLessThanOrEqual(8 * work.elements)
+  })
 })
