@@ -23,6 +23,8 @@ create table session.access (
 create table session.sent (
   id bigint generated always as identity primary key,
   email text not null,
+  code text not null,
+  token text not null,
   issued timestamptz not null
 );
 create table deck.saved (
