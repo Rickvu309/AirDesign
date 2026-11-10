@@ -12,6 +12,7 @@ const stages = [
     ["test", "pnpm", ["test:unit"]],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
+    ["sticks", "node", ["scripts/sticks.mjs"]],
     ["specs", "pnpm", ["check:specs"]],
     ["browser", "pnpm", ["test:browser"]],
   ],
@@ -22,7 +23,7 @@ const stages = [
   ],
 ]
 
-const showOnSuccess = new Set(["bug-rule", "specs"])
+const showOnSuccess = new Set(["bug-rule", "sticks", "specs"])
 const all = process.argv.includes("--all")
 const failed = []
 
