@@ -20,9 +20,10 @@ VARIABLES
   stoppedAt,
   keptFirst,
   keptPerson,
-  wroteAfterStop
+  wroteAfterStop,
+  secondEditRows
 
-secondVars == <<secondRows, secondPerson, keptFirst, keptPerson>>
+secondVars == <<secondRows, secondPerson, keptFirst, keptPerson, secondEditRows>>
 
 vars == <<phase, run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
 
@@ -41,6 +42,7 @@ TypeOK ==
   /\ readAt \in -1..5
   /\ guarded \in BOOLEAN
   /\ guardedAt \in {-1, 0, 1, 2}
+  /\ secondEditRows \in {-1, 0, 1, 2}
   /\ claims \in -1..5
   /\ claimRun \in {0, 1, 2}
   /\ stoppedAt \in -1..5
@@ -59,6 +61,7 @@ Init ==
   /\ readAt = -1
   /\ guarded = FALSE
   /\ guardedAt = -1
+  /\ secondEditRows = -1
   /\ claims = -1
   /\ claimRun = 0
   /\ stoppedAt = -1
@@ -82,6 +85,7 @@ PersonWritesSecond ==
   /\ secondPerson' = 1
   /\ guarded' = IF phase = "running" THEN TRUE ELSE guarded
   /\ guardedAt' = IF phase = "running" /\ guarded = FALSE THEN secondRows ELSE guardedAt
+  /\ secondEditRows' = IF phase = "running" THEN secondRows ELSE secondEditRows
   /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, readAt, claims, claimRun, stoppedAt, secondRows, keptFirst, keptPerson, wroteAfterStop>>
 
 \* The first run reads the current version.
@@ -104,7 +108,7 @@ StartNext ==
   /\ claimRun' = 0
   /\ stoppedAt' = -1
   /\ keptFirst' = firstRows
-  /\ UNCHANGED <<firstRows, firstLanded, person, secondRows, secondPerson, keptPerson, wroteAfterStop>>
+  /\ UNCHANGED <<secondEditRows, firstRows, firstLanded, person, secondRows, secondPerson, keptPerson, wroteAfterStop>>
 
 \* Reading again names the current version, including after the run's first row. It does not clear a guard.
 AgentRereads ==
@@ -140,7 +144,7 @@ SecondWrites ==
   /\ claims' = readAt
   /\ claimRun' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
 
 \* A later row of the second run lands on a fresh read.
 SecondWritesAgain ==
@@ -153,7 +157,7 @@ SecondWritesAgain ==
   /\ claims' = readAt
   /\ claimRun' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
 
 \* A later row of the second run lands on that run's own claim.
 SecondKeepsClaim ==
@@ -165,7 +169,7 @@ SecondKeepsClaim ==
   /\ readAt # Version
   /\ secondRows' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, keptFirst, keptPerson>>
 
 \* A read after a person edit during the second run does not land, before or after that run has landed a row.
 SecondRefusesProtected ==
@@ -198,7 +202,7 @@ SecondUndoes ==
   /\ phase' = "undone"
   /\ secondRows' = 0
   /\ keptPerson' = person + secondPerson
-  /\ UNCHANGED <<run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondPerson, keptFirst, wroteAfterStop>>
+  /\ UNCHANGED <<secondEditRows, run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondPerson, keptFirst, wroteAfterStop>>
 
 Done ==
   /\ phase = "undone"
@@ -212,7 +216,7 @@ Next ==
 Spec == Init /\ [][Next]_vars
 
 \* A person edit made during the second run keeps that run from landing afterwards.
-SecondRunStaysProtected == run = 1 \/ guardedAt = -1 \/ secondRows <= guardedAt
+SecondRunStaysProtected == secondEditRows = -1 \/ secondRows <= secondEditRows
 
 \* A new run never continues the claim of an earlier run. The claim on the register was made by the current run, or there is none.
 NewRunNeverContinuesOldClaim ==
@@ -220,9 +224,11 @@ NewRunNeverContinuesOldClaim ==
   /\ claimRun \in {0, run}
 
 \* A guard comes only from a person edit during the current run. A new run starts unguarded.
-GuardBelongsToThisRun == guarded = (guardedAt # -1)
+GuardBelongsToThisRun ==
+  /\ guarded = (guardedAt # -1)
+  /\ guarded => (IF run = 1 THEN person = 1 ELSE secondPerson = 1)
 
-\* Stop fixes the property. No agent write of a stopped run lands, and a live run carries no stop mark.
+\* No agent write of a stopped run lands, and a live run carries no stop mark.
 StopFences ==
   /\ wroteAfterStop = FALSE
   /\ phase # "running" \/ stoppedAt = -1
