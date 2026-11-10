@@ -177,8 +177,21 @@ same(
   [
     "package.json changes how checks run and has no proof.",
     "pnpm-lock.yaml changes how checks run and has no proof.",
-    "vitest.config.mts changes how checks run and has no proof. It is listed for the owner.",
   ],
+)
+same(
+  "a vitest config is not on the bar, so it is not named",
+  unprovedLines(
+    mergeTree,
+    headWith([
+      ["vitest.config.mts", "100644 soft"],
+      ["package.json", "100644 soft"],
+      ["pnpm-lock.yaml", "100644 soft"],
+      ["apps/web/src/main.tsx", "100644 z"],
+      ["scripts/sticks.mjs", "100644 z"],
+    ]),
+  ).some((line) => line.includes("vitest.config.mts")),
+  false,
 )
 
 same("a pull request behind main changed no check that main added later", changesBy([]), [])
