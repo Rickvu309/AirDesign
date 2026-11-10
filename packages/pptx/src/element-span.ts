@@ -166,6 +166,35 @@ function closeStart(bytes: Uint8Array, end: number, kind: string): number {
   return start
 }
 
+function kindFollows(bytes: Uint8Array, index: number, kind: string): boolean {
+  if (index + kind.length >= bytes.length) return false
+  for (let cursor = 0; cursor < kind.length; cursor += 1) {
+    const code = kind.charCodeAt(cursor)
+    if (code > 127 || bytes[index + cursor] !== code) return false
+  }
+  const next = bytes[index + kind.length]
+  return next === 32 || next === 9 || next === 10 || next === 13 || next === 47 || next === 62
+}
+
+function tagStart(bytes: Uint8Array, end: number, kind: string): number {
+  if (end < 2 || end > bytes.length || bytes[end - 1] !== 62) return -1
+  let quote = 0
+  for (let index = end - 2; index >= 0; index -= 1) {
+    const byte = bytes[index]
+    if (quote !== 0) {
+      if (byte === quote) quote = 0
+      continue
+    }
+    if (byte === 34 || byte === 39) {
+      quote = byte
+      continue
+    }
+    if (byte !== 60) continue
+    return kindFollows(bytes, index + 1, kind) ? index : -1
+  }
+  return -1
+}
+
 function writeDocument(parser: SAXParser, bytes: Uint8Array): void {
   const wasm = parser.wasmSaxParser
   if (wasm === undefined) throw new Error("wasm")
@@ -215,8 +244,9 @@ function readMarkup(bytes: Uint8Array, full: boolean): MarkupDocument {
     }
     const name = tag.name
     const selfClosing = tag.selfClosing
-    const start = tag.byteOffsets.start
     const end = tag.byteOffsets.end
+    const repaired = tagStart(bytes, end, name)
+    const start = repaired >= 0 ? repaired : tag.byteOffsets.start
     if (type === SaxEventType.CloseTag) {
       if (selfClosing) return
       const open = stack.pop()

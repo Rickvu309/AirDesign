@@ -43,6 +43,21 @@ describe("markupDocument", () => {
     expect(element("a:t", "<a:t/>")).toMatchObject({ start: 0, end: 6, selfClosing: true })
   })
 
+  it("keeps the real start when an open tag crosses a 64 KiB write", () => {
+    const tag = `<p:pic name="a>b" id="3"/>`
+    const encoded = encodeUtf8(tag)
+    expect(element("p:pic", tag)).toMatchObject({ start: 0, end: encoded.length, selfClosing: true })
+    for (const at of [65530, 65531, 65532, 65533, 65534, 65535, 65536]) {
+      const bytes = new Uint8Array(at + encoded.length)
+      bytes.fill(32)
+      bytes.set(encoded, at)
+      const found = markupDocument(bytes).elements.find((item) => item.kind === "p:pic")
+      const id = found?.attributes.find((item) => item.name === "id")
+      expect(found).toMatchObject({ start: at, end: at + encoded.length, selfClosing: true })
+      expect(id).toMatchObject({ value: "3", valueStart: at + tag.indexOf("3"), valueEnd: at + tag.indexOf("3") + 1 })
+    }
+  })
+
   it("accepts comments and cdata, and refuses a doctype or a broken tag", () => {
     expect(markupDocument(encodeUtf8(`<a><![CDATA[${"<b>".repeat(4)}]]></a>`))).toMatchObject({
       wellFormed: true,
