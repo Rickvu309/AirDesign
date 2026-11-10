@@ -3,9 +3,12 @@ import {
   contents,
   guarded,
   lostCases,
+  newPackageFile,
+  onlyAddsReferences,
   ownerReasons,
   packageFile,
   replacedFixtures,
+  sameButReferences,
   verdict,
 } from "./owner-gate.mjs"
 
@@ -142,6 +145,52 @@ same(
   "a path cannot smuggle a query into the address",
   contents("o/r", "abc", "apps/a#b/c?d e.json"),
   "repos/o/r/contents/apps/a%23b/c%3Fd%20e.json?ref=abc",
+)
+
+const generatedConfig = {
+  extends: "../../tsconfig.base.json",
+  compilerOptions: { composite: true, types: [] },
+  include: ["src"],
+}
+same(
+  "a new package config like the model, plus references, is the generator's",
+  sameButReferences({ ...generatedConfig, references: [{ path: "../document" }] }, generatedConfig),
+  true,
+)
+same(
+  "a new package config with a looser option is not",
+  sameButReferences(
+    { ...generatedConfig, compilerOptions: { composite: true, types: [], strict: false } },
+    generatedConfig,
+  ),
+  false,
+)
+same("a config that cannot be read is not", sameButReferences(undefined, generatedConfig), false)
+const rootConfig = { files: [], references: [{ path: "./packages/document" }] }
+same(
+  "the root config may gain a package",
+  onlyAddsReferences(rootConfig, { files: [], references: [...rootConfig.references, { path: "./packages/catalog" }] }),
+  true,
+)
+same(
+  "the root config may not lose a package",
+  onlyAddsReferences(rootConfig, { files: [], references: [{ path: "./packages/catalog" }] }),
+  false,
+)
+same(
+  "the root config may not change anything else",
+  onlyAddsReferences(rootConfig, { files: [], references: rootConfig.references, compilerOptions: { strict: false } }),
+  false,
+)
+same(
+  "only an added file directly inside a package counts as new",
+  [
+    { name: "packages/catalog/tsconfig.json", status: "added" },
+    { name: "packages/document/tsconfig.json", status: "modified" },
+    { name: "packages/catalog/deep/tsconfig.json", status: "added" },
+    { name: "apps/web/tsconfig.json", status: "added" },
+  ].map((file) => newPackageFile(file, "tsconfig.json")),
+  [true, false, false, false],
 )
 
 const review = (user, state, commit) => ({ user, state, commit })
