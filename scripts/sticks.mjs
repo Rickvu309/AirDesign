@@ -21,16 +21,9 @@ const built = (root, name) => {
   return import(pathToFileURL(entry).href)
 }
 
-const routeNames = (table) =>
-  Object.values(table).flatMap((routes) => Object.values(routes).map((named) => named.route))
-
 const capabilitiesExported = async (root) => {
-  const document = await built(root, "document")
   const pptx = await built(root, "pptx")
-  return {
-    now: new Set(Object.values(pptx.writtenRoutes)).size,
-    goal: new Set([...routeNames(document.properties), ...routeNames(document.structure)]).size,
-  }
+  return new Set(Object.values(pptx.writtenRoutes)).size
 }
 
 const plantedBreaks = (root) =>
