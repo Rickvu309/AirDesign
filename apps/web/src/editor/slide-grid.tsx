@@ -37,7 +37,7 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
               <EditorIcon name="plus" size={13} />
               New slide
             </Button>
-            <span className="mx-1 block h-5 w-px bg-[#d7d7d6]" />
+            <span className="mx-1 block h-5 w-px bg-[var(--field-edge)]" />
             <Button
               type="button"
               variant="ghost"
@@ -102,7 +102,7 @@ function Section({ name, items, state }: { name: string; items: (number | string
       </div>
       <div className="relative flex gap-8">
         {showHandle ? (
-          <span className="absolute top-1/2 left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[#a7c5f2]" />
+          <span className="absolute top-1/2 left-[-26px] h-9 w-1.5 -translate-y-1/2 rounded-full bg-[var(--drop)]" />
         ) : null}
         {state === "hover" && name === "Performance" ? <InsertMark className="left-[308px] size-4" /> : null}
         {state === "hold" && name === "Performance" ? <InsertMark className="left-[966px] size-7" large /> : null}
@@ -128,7 +128,7 @@ function GridCard({ item, label, state }: { item: number | string; label: string
   const dark = item === 1 || item === 8
   const body =
     item === "ghost" ? (
-      <div className="h-[169px] w-[300px] rounded-[2px] border-2 border-dashed border-[#a8a8a8] bg-line" />
+      <div className="h-[169px] w-[300px] rounded-[2px] border-2 border-dashed border-[var(--placeholder)] bg-line" />
     ) : item === "region" || item === "churn" ? (
       <PastedThumb kind={item} />
     ) : (

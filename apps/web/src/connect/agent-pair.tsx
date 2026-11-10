@@ -8,9 +8,9 @@ export function AgentPair({ agent }: { agent: "claude" | "codex" }) {
         <AirdesignMark size={28} />
       </span>
       <span className="flex w-5 justify-between" aria-hidden="true">
-        <span className="size-1 rounded-full bg-[#c1c1c0]" />
-        <span className="size-1 rounded-full bg-[#c1c1c0]" />
-        <span className="size-1 rounded-full bg-[#c1c1c0]" />
+        <span className="size-1 rounded-full bg-[var(--dot)]" />
+        <span className="size-1 rounded-full bg-[var(--dot)]" />
+        <span className="size-1 rounded-full bg-[var(--dot)]" />
       </span>
       <span
         className={

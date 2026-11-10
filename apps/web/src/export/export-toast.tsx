@@ -12,7 +12,7 @@ function CheckMark() {
       <path
         d="M3.63 8.31 L6.44 11.13 L12.38 5.19"
         fill="none"
-        stroke="#ffffff"
+        stroke="var(--background)"
         strokeWidth="1.09"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -24,9 +24,9 @@ function CheckMark() {
 function ErrorMark() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-      <circle cx="8" cy="8" r="7" fill="#d93f3f" />
-      <line x1="8" y1="4.5" x2="8" y2="8.7" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="8" cy="11.3" r="1" fill="#ffffff" />
+      <circle cx="8" cy="8" r="7" fill="var(--destructive)" />
+      <line x1="8" y1="4.5" x2="8" y2="8.7" stroke="var(--background)" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="8" cy="11.3" r="1" fill="var(--background)" />
     </svg>
   )
 }

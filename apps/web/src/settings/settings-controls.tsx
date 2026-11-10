@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { claudeLogo } from "@/decks/agent-logos"
+import { codexFill, codexTile } from "@/settings/settings-agent-art"
 import { cn } from "@/lib/utils"
 
 export function SettingsButton({
@@ -78,14 +79,14 @@ export function AiraTile() {
         <path
           d="M3 13.67 L6.27 6.8 M13 13.67 L9.73 6.8"
           fill="none"
-          stroke="#4d94fb"
+          stroke="var(--primary)"
           strokeWidth="1.4"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
           d="M9.33 1.07 C9.76 3.44 10.96 4.64 13.33 5.07 C10.96 5.5 9.76 6.7 9.33 9.07 C8.9 6.7 7.7 5.5 5.33 5.07 C7.7 4.64 8.9 3.44 9.33 1.07 Z"
-          fill="#4d94fb"
+          fill="var(--primary)"
         />
       </svg>
     </span>
@@ -98,9 +99,12 @@ const codexMark =
 export function AgentTile({ name }: { name: "claude" | "codex" }) {
   if (name === "codex") {
     return (
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-[7px] bg-[#111111]">
+      <span
+        className="flex size-7 shrink-0 items-center justify-center rounded-[7px]"
+        style={{ backgroundColor: codexTile }}
+      >
         <svg width="23.68" height="24" viewBox="2.16 2 23.68 24" aria-hidden="true">
-          <path d={codexMark} fill="#ffffff" fillRule="evenodd" />
+          <path d={codexMark} fill={codexFill} fillRule="evenodd" />
         </svg>
       </span>
     )

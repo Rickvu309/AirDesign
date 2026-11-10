@@ -3,13 +3,13 @@ import AirdesignMark from "../../site/airdesign-mark.astro";
 ---
 
 <header class="pointer-events-none fixed inset-x-0 top-5 z-50 flex justify-center px-4">
-  <nav class="pointer-events-auto flex h-14 items-center gap-6 rounded-full bg-[#FFFFFFCC] pr-2 pl-5 shadow-[0px_0px_0px_1px_#0f243314,0px_10px_30px_#0f24331a,0px_2px_6px_#0f24330d,inset_0px_1px_0px_#ffffff] backdrop-blur-sm" aria-label="Main">
+  <nav class="pointer-events-auto flex h-14 items-center gap-6 rounded-full bg-[var(--white-80)] pr-2 pl-5 shadow-[0px_0px_0px_1px_var(--navy-8),0px_10px_30px_var(--navy-10),0px_2px_6px_var(--navy-5),inset_0px_1px_0px_var(--background)] backdrop-blur-sm" aria-label="Main">
     <a href="/" class="flex items-center gap-2.5">
       <AirdesignMark size={22} />
       <span class="text-[15px] font-semibold tracking-[-0.3px]">AirDesign</span>
     </a>
-    <div class="hidden h-5 w-px bg-[#0f24331f] md:block"></div>
-    <div class="nav-tabs relative hidden h-10 items-center gap-0.5 rounded-full bg-[#0f24330a] p-1 shadow-[inset_0px_1px_2px_#0f24330f] md:flex" data-nav-tabs>
+    <div class="hidden h-5 w-px bg-[var(--navy-12)] md:block"></div>
+    <div class="nav-tabs relative hidden h-10 items-center gap-0.5 rounded-full bg-[var(--navy-4)] p-1 shadow-[inset_0px_1px_2px_var(--navy-6)] md:flex" data-nav-tabs>
       <span class="nav-tab-pill" data-nav-pill aria-hidden="true"></span>
       <a href="#product" class="nav-tab" data-nav-tab data-active aria-current="location">Product</a>
       <a href="#agents" class="nav-tab" data-nav-tab>Agents</a>

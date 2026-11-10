@@ -19,7 +19,7 @@ export function SlideSidebar({ run }: { run: SidebarRun }) {
             New slide
             <EditorIcon name="chev" size={13} className="text-faint" />
           </span>
-          <span className="block h-8 w-px bg-[#d7d7d6]" />
+          <span className="block h-8 w-px bg-[var(--field-edge)]" />
           <Button
             type="button"
             variant="ghost"
@@ -42,8 +42,8 @@ export function SlideSidebar({ run }: { run: SidebarRun }) {
         <div className="flex pt-1 pl-[34px]">
           <div className="flex w-[180px] flex-col items-center">
             <SlideThumb index={6} width={thumbWidth} queued={queuedFrom > 0 && 6 >= queuedFrom} />
-            <span className="block h-1.5 w-[166px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_#d7d7d6]" />
-            <span className="block h-1.5 w-[150px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_#d7d7d6]" />
+            <span className="block h-1.5 w-[166px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
+            <span className="block h-1.5 w-[150px] rounded-b-[3px] bg-white shadow-[0px_0px_0px_1px_var(--field-edge)]" />
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@ function SectionHead({ name, open = false, range }: { name: string; open?: boole
       <EditorIcon name={open ? "chev" : "chevr"} size={14} className="text-faint" />
       <span className="text-[13px] font-semibold text-foreground">{name}</span>
       {range ? (
-        <span className="flex h-5 items-center rounded-[5px] px-1.5 text-[11px] text-faint shadow-[0px_0px_0px_1px_#d7d7d6]">
+        <span className="flex h-5 items-center rounded-[5px] px-1.5 text-[11px] text-faint shadow-[0px_0px_0px_1px_var(--field-edge)]">
           {range}
         </span>
       ) : null}
@@ -69,7 +69,7 @@ function StripItem({ index, run, queuedFrom }: { index: number; run: SidebarRun;
   const active = index === 3
   const working = (run === "working" || run === "own") && index === 3
   return (
-    <div className={cn("flex items-start gap-2 rounded-[10px] p-2", active && "bg-[#e8f1fe]")}>
+    <div className={cn("flex items-start gap-2 rounded-[10px] p-2", active && "bg-[var(--row)]")}>
       <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
         <span className={cn("text-xs", active ? "font-medium text-[var(--primary-strong)]" : "text-faint")}>
           {index}

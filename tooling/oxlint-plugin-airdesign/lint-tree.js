@@ -2,11 +2,13 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { rawFindings } from "./rules/no-raw.js"
 import { scanSource, scannedExtensions } from "./scan-comments.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
 const skipDirectories = new Set(["node_modules", "dist"])
+const rawExtensions = new Set([".css", ".astro", ".html", ".vue", ".svelte", ".yml", ".yaml"])
 
 const oxlint = spawnSync(
   "pnpm",
@@ -31,9 +33,18 @@ const filesUnder = (absolute) => {
 const hits = []
 for (const relativePath of lintPaths) {
   for (const file of filesUnder(path.resolve(root, relativePath))) {
-    if (!scannedExtensions.has(path.extname(file).toLowerCase())) continue
+    const extension = path.extname(file).toLowerCase()
+    const comment = scannedExtensions.has(extension)
+    const raw = rawExtensions.has(extension)
+    if (!comment && !raw) continue
     const relative = path.relative(root, file).split(path.sep).join("/")
-    hits.push(...(await scanSource(relative, fs.readFileSync(file, "utf8"))))
+    const source = fs.readFileSync(file, "utf8")
+    if (comment) hits.push(...(await scanSource(relative, source)))
+    if (raw) {
+      for (const finding of rawFindings(relative, source)) {
+        hits.push(`${relative}:${finding.line}: ${finding.message}`)
+      }
+    }
   }
 }
 

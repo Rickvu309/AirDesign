@@ -16,7 +16,7 @@ function RestoreButton() {
   return (
     <button
       type="button"
-      className="flex h-7 items-center rounded-[7px] bg-background px-2.5 text-[12px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_#d7d7d6]"
+      className="flex h-7 items-center rounded-[7px] bg-background px-2.5 text-[12px] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
     >
       Restore
     </button>
@@ -34,8 +34,16 @@ function EmptyTrashDialog() {
         >
           <div className="absolute top-6 left-6 flex size-10 items-center justify-center rounded-xl bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0_0_0_1px_var(--danger-edge),0_1px_0_rgb(255_255_255/35%),0_2px_6px_rgb(0_0_0/14%)]">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <line x1="7" y1="1.2" x2="7" y2="8.2" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
-              <circle cx="7" cy="11.4" r="1.3" fill="#ffffff" />
+              <line
+                x1="7"
+                y1="1.2"
+                x2="7"
+                y2="8.2"
+                stroke="var(--background)"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+              />
+              <circle cx="7" cy="11.4" r="1.3" fill="var(--background)" />
             </svg>
           </div>
           <DialogClose className="absolute top-0 left-[324px] flex size-7 items-center justify-center rounded-md text-muted-foreground">
@@ -61,13 +69,13 @@ function EmptyTrashDialog() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 border-0 bg-background px-4 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_#d7d7d6] hover:bg-background"
+                className="h-9 border-0 bg-background px-4 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
               >
                 Cancel
               </Button>
               <Button
                 type="button"
-                className="h-9 border-0 bg-destructive px-4 text-sm font-medium text-white shadow-[inset_0_0_0_1px_#b92f2f] hover:bg-destructive"
+                className="h-9 border-0 bg-destructive px-4 text-sm font-medium text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-destructive"
               >
                 Delete for good
               </Button>
@@ -87,7 +95,7 @@ export function TrashList({ confirm = false }: { confirm?: boolean }) {
       trailing={
         <button
           type="button"
-          className="h-9 rounded-lg bg-background px-3.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_#d7d7d6]"
+          className="h-9 rounded-lg bg-background px-3.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
         >
           Empty Trash
         </button>

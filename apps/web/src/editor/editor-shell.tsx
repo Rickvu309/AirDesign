@@ -74,7 +74,7 @@ export function EditorShell({
           <RevenueSlide width={width} working={working} selected={run === "compose"} />
         </div>
         <span className="block flex-1" />
-        <span className="block h-1 w-12 rounded-full bg-[#c1c1c0]" />
+        <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
         <span className="block h-2" />
         <div className="flex h-12 items-center rounded-[10px] bg-line px-4" style={{ width }}>
           <span className={cnTone(run === "working")}>{run === "working" ? "Add speaker notes" : notes}</span>

@@ -32,7 +32,7 @@ export function AddCreditsDialog({
         <button
           type="button"
           aria-label={productCopy.close}
-          className="flex size-7 items-center justify-center rounded-md text-[#666666] hover:bg-canvas"
+          className="flex size-7 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-canvas"
         >
           <CloseGlyph />
         </button>
@@ -41,10 +41,10 @@ export function AddCreditsDialog({
       <div>
         <div className="text-[12px] leading-4 font-medium text-muted-foreground">{productCopy.amount}</div>
         <div className="mt-2.5 flex h-11 items-center gap-2">
-          <div className="flex h-11 min-w-0 flex-1 items-center gap-1 rounded-lg bg-white pr-3 pl-3 shadow-[inset_0_0_0_2px_#4d94fb]">
-            <span className="text-[16px] leading-[21px] text-[#666666]">$</span>
+          <div className="flex h-11 min-w-0 flex-1 items-center gap-1 rounded-lg bg-white pr-3 pl-3 shadow-[inset_0_0_0_2px_var(--primary)]">
+            <span className="text-[16px] leading-[21px] text-[var(--muted-foreground)]">$</span>
             <span className="text-[16px] leading-[21px] font-semibold text-foreground">{amount}</span>
-            <span className="h-5 w-[1.5px] bg-[#4d94fb]" />
+            <span className="h-5 w-[1.5px] bg-[var(--primary)]" />
           </div>
           <div className="flex h-11 items-center gap-2" role="group" aria-label={productCopy.amount}>
             {presets.map((preset) => {
@@ -57,8 +57,8 @@ export function AddCreditsDialog({
                   className={cn(
                     "flex h-11 items-center rounded-lg px-3 text-[13px] leading-[17px] font-medium",
                     on
-                      ? "bg-[#eef4fe] text-[#2d6fcd] shadow-[inset_0_0_0_1px_#4d94fb]"
-                      : "bg-white text-foreground shadow-[inset_0_0_0_1px_#d7d7d6] hover:bg-canvas",
+                      ? "bg-[var(--blue-tint)] text-[var(--primary-strong)] shadow-[inset_0_0_0_1px_var(--primary)]"
+                      : "bg-white text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-canvas",
                   )}
                 >
                   {preset.label}

@@ -13,7 +13,7 @@ export function PanelSwitch({ active }: { active: "agent" | "design" }) {
         className={cn(
           "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
           agent
-            ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white"
+            ? "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white"
             : "text-quiet hover:bg-transparent",
         )}
       >
@@ -28,7 +28,7 @@ export function PanelSwitch({ active }: { active: "agent" | "design" }) {
           "h-7 gap-1.5 rounded-[6px] px-2.5 text-[13px] active:translate-y-0",
           agent
             ? "text-quiet hover:bg-transparent"
-            : "bg-white font-medium text-foreground shadow-[0px_1px_2px_#0000001a] hover:bg-white",
+            : "bg-white font-medium text-foreground shadow-[0px_1px_2px_var(--black-10)] hover:bg-white",
         )}
       >
         <EditorIcon name="sliders" size={14} />

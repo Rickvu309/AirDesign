@@ -1,3 +1,5 @@
+import { shimmerImage } from "./editor-demo-shimmer-art"
+
 type DemoMotion = "fade" | "rise" | "reveal-up" | "draw"
 
 interface DemoCue {
@@ -386,7 +388,7 @@ function animateShimmer(demo: Element, part: string, sweepStartsMs: number[]): A
       ...Array.from(line.children, (child) => (child as HTMLElement).offsetLeft + (child as HTMLElement).offsetWidth),
     ) + 12
   const band = document.createElement("span")
-  band.style.cssText = `position: absolute; top: 0; bottom: 0; left: 0; width: ${shimmerWidth}px; background-image: linear-gradient(90deg, #ffffff00, #ffffffe0, #ffffff00); transform: translateX(${-shimmerWidth}px);`
+  band.style.cssText = `position: absolute; top: 0; bottom: 0; left: 0; width: ${shimmerWidth}px; background-image: ${shimmerImage}; transform: translateX(${-shimmerWidth}px);`
   line.style.overflow = "hidden"
   line.append(band)
   return [startPaused(band, shimmerKeyframes(sweepStartsMs, travel))]
