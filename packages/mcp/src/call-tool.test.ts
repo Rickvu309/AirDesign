@@ -298,6 +298,99 @@ describe("callTool", () => {
     ])
   })
 
+  it("answers stale with the send-again sentence on an open element while another element is closed", () => {
+    const deck = opened()
+    const other = elementId("258.8")
+    let register = deck.register
+    for (const command of [
+      { command: "add", node, floor: "", route: "slide" },
+      { command: "add", node: other, floor: "", route: "slide" },
+      { command: "person", value: "before", node: other },
+      { command: "start", runId: "run", node },
+      { command: "start", runId: "run", node: other },
+      { command: "person", value: "typed", node },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    const before = { id: deck.id, revision: 0, register }
+    const stale = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "agent", node: "258.8", readAt: 0 }] },
+      sessionFor(before),
+    )
+    expect(stale.ok).toBe(false)
+    if (stale.ok) return
+    expect(stale.refusal).toBe("stale")
+    expect(stale.content[0]).toEqual({ type: "text", text: editNext.stale })
+    expect(stale.answer).toEqual({
+      ok: false,
+      revision: 0,
+      refusal: "stale",
+      elements: [{ node: "258.8", value: "before", version: 1 }],
+    })
+    const sent = stale.answer?.elements[0]
+    if (sent === undefined) throw new Error("missing element")
+    const resent = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "agent", node: sent.node, readAt: sent.version }] },
+      sessionFor(before),
+    )
+    expect(resent.ok).toBe(true)
+    if (!resent.ok) return
+    expect(nodeBody(resent.deck.register, other).landed.at(-1)).toEqual({
+      actor: "agent",
+      value: "agent",
+      visible: true,
+      runId: "run",
+    })
+    expect(nodeBody(resent.deck.register).guarded).toBe(true)
+  })
+
+  it("shows a stopped element as open and lands on it under a new run", () => {
+    const deck = opened()
+    let register = deck.register
+    for (const command of [
+      { command: "add", node, floor: "", route: "slide" },
+      { command: "start", runId: "old", node },
+      { command: "person", value: "typed", node },
+      { command: "stop", runId: "old", node },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    expect(nodeBody(register).guarded).toBe(true)
+    expect(nodeBody(register).phase).toBe("stopped")
+    const before = { id: deck.id, revision: 0, register }
+    const stale = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "agent", node: "258.7", readAt: 0 }] },
+      sessionFor(before),
+    )
+    expect(stale.ok).toBe(false)
+    if (stale.ok) return
+    expect(stale.refusal).toBe("stale")
+    expect(stale.answer?.elements).toEqual([{ node: "258.7", value: "typed", version: 1 }])
+    expect(stale.answer?.elements[0]?.closed).not.toBe(true)
+    const landed = callTool(
+      "airdesign_edit_deck",
+      { deck: "deck", base: 0, changes: [{ value: "agent", node: "258.7", readAt: 1 }] },
+      sessionFor(before),
+    )
+    expect(landed.ok).toBe(true)
+    if (!landed.ok) return
+    expect(nodeBody(landed.deck.register).runId).toBe("run")
+    expect(nodeBody(landed.deck.register).landed.at(-1)).toEqual({
+      actor: "agent",
+      value: "agent",
+      visible: true,
+      runId: "run",
+    })
+    expect(landed.answer?.elements).toEqual([{ node: "258.7", value: "agent", version: 2 }])
+  })
+
   it("refuses an unknown tool", () => {
     const deck = running()
     const result = callTool("airdesign_missing", { deck: "deck" }, sessionFor(deck))
