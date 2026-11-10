@@ -1,5 +1,5 @@
 import { parseNotifyKey, readDeckId } from "@airdesign/catalog"
-import { history } from "@airdesign/document"
+import { decide, history, version } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { call, openDeck, type Deck } from "./index.js"
 
@@ -9,6 +9,15 @@ function opened(): Deck {
     throw new Error(id.refusal)
   }
   return openDeck(id.deck)
+}
+
+function running(): Deck {
+  const deck = opened()
+  const started = decide(deck.register, { command: "start", runId: "run" })
+  if (started.decision !== "apply") {
+    throw new Error(started.code)
+  }
+  return { id: deck.id, revision: deck.revision, register: started.register }
 }
 
 const person = { actor: "person" } as const
@@ -93,6 +102,47 @@ describe("call", () => {
     expect(deck.revision).toBe(0)
     expect(deck.register).toBe(register)
     expect(deck.register.landed).toEqual([])
+  })
+
+  it("lands an agent edit at the version it read", () => {
+    const deck = running()
+    const readAt = version(deck.register)
+    const result = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: deck.revision, changes: [{ value: "hi" }] },
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) {
+      return
+    }
+    expect(result.deck.revision).toBe(1)
+    expect(result.deck.register.landed).toEqual([{ actor: "agent", value: "hi", visible: true }])
+  })
+
+  it("refuses an agent edit read ahead of the version", () => {
+    const deck = running()
+    const register = deck.register
+    expect(
+      call(
+        "edit_deck",
+        deck,
+        { actor: "agent", runId: "run", readAt: version(deck.register) + 1 },
+        { deck: "deck", base: deck.revision, changes: [{ value: "hi" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "stale" })
+    expect(deck.register).toBe(register)
+    expect(deck.revision).toBe(0)
+  })
+
+  it("refuses a commit for a different deck id", () => {
+    const deck = opened()
+    expect(call("commit_edits", deck, person, { deck: "other", batch: [{ value: "hi" }] })).toEqual({
+      ok: false,
+      refusal: "deck",
+    })
+    expect(deck.revision).toBe(0)
   })
 
   it("drops the batch when a later edit is refused", () => {
