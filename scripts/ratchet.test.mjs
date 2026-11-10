@@ -422,6 +422,7 @@ const renamed = {
   "corpus-size": { now: 2, goal: 20 },
   "fault-detection": { now: 9, goal: 10 },
   "export-coverage": { now: 17, goal: 50 },
+  "export-verified": { now: 18, goal: 50 },
   "ci-duration": { limit: 40 },
   "pptx-check-duration": { limit: 90 },
 }
