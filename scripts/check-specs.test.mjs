@@ -17,6 +17,7 @@ const opened = ["AgentWrites ==", '  /\\ phase = "running"', "  /\\ agent = 0"].
 if (!source.includes(guard)) throw new Error("the agent write guard was not found")
 
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-edit-"))
+process.on("exit", () => fs.rmSync(directory, { recursive: true, force: true }))
 fs.cpSync(path.join(root, "specs/edit"), directory, { recursive: true })
 fs.writeFileSync(path.join(directory, "Edit.tla"), source.replace(guard, opened))
 
