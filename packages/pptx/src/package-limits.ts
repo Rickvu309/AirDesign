@@ -22,6 +22,23 @@ export type ReadPackage =
   | { readonly ok: false; readonly reason: "limit"; readonly limit: PackageLimitName }
   | { readonly ok: false; readonly reason: "encrypted" | "not-pptx" | "xml" | "zip" }
 
+export type MarkupLimits = { readonly depth: number; readonly attributes: number; readonly nodes: number }
+
+export type MarkupScan =
+  | { readonly ok: true; readonly nodes: number }
+  | { readonly ok: false; readonly reason: "xml" }
+  | { readonly ok: false; readonly reason: "limit"; readonly limit: "depth" | "attributes" | "nodes" }
+
+export function scanMarkup(data: Uint8Array, limits: MarkupLimits, nodesBefore: number): MarkupScan {
+  const shape = markupLimits(data)
+  if (!shape.wellFormed) return { ok: false, reason: "xml" }
+  if (shape.depth > limits.depth) return { ok: false, reason: "limit", limit: "depth" }
+  if (shape.attributes > limits.attributes) return { ok: false, reason: "limit", limit: "attributes" }
+  const nodes = nodesBefore + shape.nodes
+  if (nodes > limits.nodes) return { ok: false, reason: "limit", limit: "nodes" }
+  return { ok: true, nodes }
+}
+
 function overLimit(limit: PackageLimitName): ReadPackage {
   return { ok: false, reason: "limit", limit }
 }
@@ -87,12 +104,9 @@ export async function readPackage(bytes: Uint8Array): Promise<ReadPackage> {
       if (actual !== null) return actual
       parts.set(entry.filename, data)
       if (!xmlPart(entry.filename)) continue
-      const shape = markupLimits(data)
-      if (!shape.wellFormed) return { ok: false, reason: "xml" }
-      if (shape.depth > packageLimits.depth) return overLimit("depth")
-      if (shape.attributes > packageLimits.attributes) return overLimit("attributes")
-      nodes += shape.nodes
-      if (nodes > packageLimits.nodes) return overLimit("nodes")
+      const scan = scanMarkup(data, packageLimits, nodes)
+      if (!scan.ok) return scan
+      nodes = scan.nodes
     }
     return { ok: true, parts }
   } finally {

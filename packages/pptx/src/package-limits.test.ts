@@ -1,6 +1,7 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
-import { packageLimits, readPackage } from "./package-limits.js"
+import { markupReady } from "./element-span.js"
+import { packageLimits, readPackage, scanMarkup } from "./package-limits.js"
 
 function encode(text: string): Uint8Array {
   const bytes = new Uint8Array(text.length)
@@ -252,7 +253,7 @@ describe("readPackage", () => {
     expect(await readPackage(locked)).toEqual({ ok: false, reason: "encrypted" })
   })
 
-  it("rejects markup past the depth, attribute, and node caps", async () => {
+  it("reports a markup cap through the package path", async () => {
     const nested = (depth: number) => `${"<a>".repeat(depth)}${"</a>".repeat(depth)}`
     expect((await readPackage(await deck(nested(packageLimits.depth)))).ok).toBe(true)
     expect(await readPackage(await deck(nested(packageLimits.depth + 1)))).toEqual({
@@ -260,26 +261,7 @@ describe("readPackage", () => {
       reason: "limit",
       limit: "depth",
     })
-    const attributed = (count: number) => {
-      let attrs = ""
-      for (let index = 0; index < count; index += 1) attrs += ` a${index}="1"`
-      return `<a${attrs}/>`
-    }
-    expect((await readPackage(await deck(attributed(packageLimits.attributes)))).ok).toBe(true)
-    expect(await readPackage(await deck(attributed(packageLimits.attributes + 1)))).toEqual({
-      ok: false,
-      reason: "limit",
-      limit: "attributes",
-    })
-    const otherNodes = 2
-    const nodes = (count: number) => "<a/>".repeat(count)
-    expect((await readPackage(await deck(nodes(packageLimits.nodes - otherNodes)))).ok).toBe(true)
-    expect(await readPackage(await deck(nodes(packageLimits.nodes - otherNodes + 1)))).toEqual({
-      ok: false,
-      reason: "limit",
-      limit: "nodes",
-    })
-  }, 60_000)
+  })
 
   it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
     expect((await readPackage(await deck(`<a><![CDATA[${"<b>".repeat(packageLimits.depth + 1)}]]></a>`))).ok).toBe(true)
@@ -289,5 +271,53 @@ describe("readPackage", () => {
     expect(await readPackage(await deck("<a>"))).toEqual({ ok: false, reason: "xml" })
     expect(await readPackage(await deck("<a></b>"))).toEqual({ ok: false, reason: "xml" })
     expect(await readPackage(await deck("<a><!--"))).toEqual({ ok: false, reason: "xml" })
+  })
+})
+
+describe("scanMarkup", () => {
+  const small = { depth: 4, attributes: 3, nodes: 10 }
+  const nested = (depth: number) => encode(`${"<a>".repeat(depth)}${"</a>".repeat(depth)}`)
+  const attributed = (count: number) => {
+    let attrs = ""
+    for (let index = 0; index < count; index += 1) attrs += ` a${index}="1"`
+    return encode(`<a${attrs}/>`)
+  }
+  const siblings = (count: number) => encode("<a/>".repeat(count))
+
+  it("accepts markup at each cap and names the cap one past it", async () => {
+    await markupReady()
+    expect(scanMarkup(nested(small.depth), small, 0)).toEqual({ ok: true, nodes: small.depth })
+    expect(scanMarkup(nested(small.depth + 1), small, 0)).toEqual({ ok: false, reason: "limit", limit: "depth" })
+    expect(scanMarkup(attributed(small.attributes), small, 0)).toEqual({ ok: true, nodes: 1 })
+    expect(scanMarkup(attributed(small.attributes + 1), small, 0)).toEqual({
+      ok: false,
+      reason: "limit",
+      limit: "attributes",
+    })
+    expect(scanMarkup(siblings(small.nodes), small, 0)).toEqual({ ok: true, nodes: small.nodes })
+    expect(scanMarkup(siblings(small.nodes + 1), small, 0)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
+  })
+
+  it("counts nodes across parts", async () => {
+    await markupReady()
+    expect(scanMarkup(siblings(4), small, 6)).toEqual({ ok: true, nodes: small.nodes })
+    expect(scanMarkup(siblings(5), small, 6)).toEqual({ ok: false, reason: "limit", limit: "nodes" })
+  })
+
+  it("does not treat comments, cdata, or quoted greater-than as markup", async () => {
+    await markupReady()
+    expect(scanMarkup(encode(`<a><![CDATA[${"<b>".repeat(small.depth + 1)}]]></a>`), small, 0)).toEqual({
+      ok: true,
+      nodes: 1,
+    })
+    expect(scanMarkup(encode(`<a><!-- ${"<b></b>".repeat(20)} --></a>`), small, 0)).toEqual({ ok: true, nodes: 1 })
+    expect(scanMarkup(encode(`<a b="x>y"/>`), small, 0)).toEqual({ ok: true, nodes: 1 })
+    expect(scanMarkup(encode(`<a b="${"=".repeat(300)}"/>`), small, 0)).toEqual({ ok: true, nodes: 1 })
+  })
+
+  it("rejects markup that is not well formed", async () => {
+    await markupReady()
+    expect(scanMarkup(encode("<a>"), small, 0)).toEqual({ ok: false, reason: "xml" })
+    expect(scanMarkup(encode("<a></b>"), small, 0)).toEqual({ ok: false, reason: "xml" })
   })
 })
