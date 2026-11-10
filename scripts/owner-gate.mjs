@@ -70,6 +70,13 @@ const stickReason = (name, before, after) => {
   }
   if (!counted(after)) return `The stick ${name} stopped being a count with a goal.`
   if (countsProof.has(name)) return undefined
+  const ahead = before.goal - before.now
+  const harder = ahead * (after.goal - before.goal) > 0
+  if (harder) {
+    return (after.now - before.now) * ahead >= 0
+      ? undefined
+      : `${name} went from ${before.now} to ${after.now}, away from its goal of ${before.goal}.`
+  }
   if (after.goal !== before.goal) return `The goal of ${name} went from ${before.goal} to ${after.goal}.`
   const closer = Math.abs(after.now - after.goal) <= Math.abs(before.now - before.goal)
   const sameSide = (after.now - after.goal) * (before.now - before.goal) >= 0
