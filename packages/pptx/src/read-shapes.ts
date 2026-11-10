@@ -21,31 +21,45 @@ const presentationPart = "ppt/presentation.xml"
 const presentationRels = "ppt/_rels/presentation.xml.rels"
 const fallbackKind = "mc:Fallback"
 
-const owns = (elements: readonly MarkupElement[], index: number, shape: MarkupElement): boolean => {
-  let parent = elements[index]?.parent ?? -1
-  while (parent >= 0) {
-    const ancestor = elements[parent]
-    if (ancestor === undefined) return false
-    if (kinds.has(ancestor.kind)) return ancestor.index === shape.index
-    parent = ancestor.parent
-  }
-  return false
-}
-
-const inFallback = (elements: readonly MarkupElement[], index: number): boolean => {
-  let parent = elements[index]?.parent ?? -1
-  while (parent >= 0) {
-    const ancestor = elements[parent]
-    if (ancestor === undefined) return false
-    if (ancestor.kind === fallbackKind) return true
-    parent = ancestor.parent
-  }
-  return false
-}
-
 const attr = (element: MarkupElement, name: string): string | null => {
   for (const item of element.attributes) if (item.name === name) return item.value
   return null
+}
+
+type ShapeParts = {
+  id: string | null
+  off: MarkupElement | null
+  ext: MarkupElement | null
+}
+
+type SlideShapes = {
+  readonly parts: ReadonlyMap<number, ShapeParts>
+  readonly fallback: Uint8Array
+}
+
+const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
+  const below = new Int32Array(elements.length).fill(-1)
+  const hidden = new Uint8Array(elements.length)
+  const fallback = new Uint8Array(elements.length)
+  const parts = new Map<number, ShapeParts>()
+  for (const element of elements) {
+    const parent = element.parent
+    const shape = parent >= 0 ? (below[parent] ?? -1) : -1
+    const covered = parent >= 0 ? (hidden[parent] ?? 0) : 0
+    fallback[element.index] = covered
+    below[element.index] = kinds.has(element.kind) ? element.index : shape
+    hidden[element.index] = element.kind === fallbackKind ? 1 : covered
+    if (shape < 0) continue
+    let found = parts.get(shape)
+    if (found === undefined) {
+      found = { id: null, off: null, ext: null }
+      parts.set(shape, found)
+    }
+    if (found.id === null && element.kind === "p:cNvPr") found.id = element.id
+    if (found.off === null && element.kind === "a:off") found.off = element
+    if (found.ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) found.ext = element
+  }
+  return { parts, fallback }
 }
 
 const emu = (value: string | null): number | null => {
@@ -65,18 +79,17 @@ const slideByPart = (parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string
   const rels = parts.get(presentationRels)
   const slides = new Map<string, string>()
   if (presentation === undefined || rels === undefined) return slides
-  const relationships = markupDocument(rels).elements
+  const relationships = new Map<string, MarkupElement>()
+  for (const item of markupDocument(rels).elements) {
+    if (item.kind !== "Relationship") continue
+    const id = attr(item, "Id")
+    if (id !== null && !relationships.has(id)) relationships.set(id, item)
+  }
   for (const element of markupDocument(presentation).elements) {
     if (element.kind !== "p:sldId" || element.id === null) continue
     const rid = attr(element, "r:id")
     if (rid === null) continue
-    let relationship: MarkupElement | undefined
-    for (const item of relationships) {
-      if (item.kind === "Relationship" && attr(item, "Id") === rid) {
-        relationship = item
-        break
-      }
-    }
+    const relationship = relationships.get(rid)
     if (relationship === undefined) continue
     const type = attr(relationship, "Type")
     const target = attr(relationship, "Target")
@@ -97,19 +110,12 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     const children = markupChildren(elements)
     const fallbackIds = new Set<string>()
     const kept: ReadShape[] = []
+    const { parts: found, fallback } = slideShapes(elements)
     for (const shape of elements) {
       if (!kinds.has(shape.kind)) continue
-      let id: string | null = null
-      let off: MarkupElement | null = null
-      let ext: MarkupElement | null = null
-      for (const element of elements) {
-        if (!owns(elements, element.index, shape)) continue
-        if (id === null && element.kind === "p:cNvPr") id = element.id
-        if (off === null && element.kind === "a:off") off = element
-        if (ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) ext = element
-      }
+      const { id = null, off = null, ext = null } = found.get(shape.index) ?? {}
       if (id === null) continue
-      if (inFallback(elements, shape.index)) {
+      if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
         continue
       }
