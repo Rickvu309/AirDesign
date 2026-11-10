@@ -8,11 +8,11 @@ export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "of
 
 const thumbWidth = 180
 
-export function SlideSidebar({ run }: { run: SidebarRun }) {
+export function SlideSidebar({ run, title }: { run: SidebarRun; title: string }) {
   const queuedFrom = run === "working" ? 4 : 0
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
-      <SidebarHead />
+      <SidebarHead title={title} />
       <div className="flex px-3 pb-2">
         <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
           <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground">

@@ -7,6 +7,10 @@ const alias = [
     replacement: path.join(import.meta.dirname, "packages/$1/src/index.ts"),
   },
   {
+    find: /^@\//,
+    replacement: `${path.join(import.meta.dirname, "apps/web/src")}/`,
+  },
+  {
     find: /^fast-check$/,
     replacement: path.join(import.meta.dirname, "scripts/property-count.mjs"),
   },

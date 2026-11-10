@@ -1,57 +1,59 @@
 import { EditorToast } from "@/editor/agent-panel"
+import { galleryDeck } from "@/editor/gallery-deck"
 import { EditorView } from "@/editor/screens/editor-view"
 
 export function AgentWorking() {
-  return <EditorView run="working" />
+  return <EditorView {...galleryDeck} run="working" />
 }
 
 export function AgentComplete() {
-  return <EditorView run="done" toolMenu usageOpen />
+  return <EditorView {...galleryDeck} run="done" toolMenu usageOpen />
 }
 
 export function AgentOwn() {
-  return <EditorView run="own" />
+  return <EditorView {...galleryDeck} run="own" />
 }
 
 export function AgentLong() {
-  return <EditorView run="compose" />
+  return <EditorView {...galleryDeck} run="compose" />
 }
 
 export function TemplatePickerScreen() {
-  return <EditorView run="done" templatePicker />
+  return <EditorView {...galleryDeck} run="done" templatePicker />
 }
 
 export function DesignPanelScreen() {
-  return <EditorView run="done" panel="design" />
+  return <EditorView {...galleryDeck} run="done" panel="design" />
 }
 
 export function ImagesScreen() {
-  return <EditorView run="done" rail="images" activeTool="image" />
+  return <EditorView {...galleryDeck} run="done" rail="images" activeTool="image" />
 }
 
 export function ShapesScreen() {
-  return <EditorView run="done" activeTool="shape" shapeTray />
+  return <EditorView {...galleryDeck} run="done" activeTool="shape" shapeTray />
 }
 
 export function ShapesExpandedScreen() {
-  return <EditorView run="done" rail="shapes" activeTool="shape" />
+  return <EditorView {...galleryDeck} run="done" rail="shapes" activeTool="shape" />
 }
 
 export function TextScreen() {
-  return <EditorView run="done" rail="text" activeTool="text" />
+  return <EditorView {...galleryDeck} run="done" rail="text" activeTool="text" />
 }
 
 export function ActionsScreen() {
-  return <EditorView run="done" activeTool="actions" actionsMenu />
+  return <EditorView {...galleryDeck} run="done" activeTool="actions" actionsMenu />
 }
 
 export function RunFailed() {
-  return <EditorView run="failed" />
+  return <EditorView {...galleryDeck} run="failed" />
 }
 
 export function Offline() {
   return (
     <EditorView
+      {...galleryDeck}
       run="offline"
       toast={<EditorToast kind="info" text="You're offline. Edits are saved on this device." place="canvas" />}
     />

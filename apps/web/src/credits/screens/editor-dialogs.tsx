@@ -4,6 +4,7 @@ import { lowBalanceEntry } from "@/credits/credits-sample"
 import { LimitCover } from "@/credits/limit-panel"
 import { ResetToast } from "@/credits/reset-toast"
 import { ConfirmResetDialog } from "@/credits/screens/settings-dialogs"
+import { galleryDeck } from "@/editor/gallery-deck"
 import { SlideThumb } from "@/editor/slide-thumb"
 import { EditorView } from "@/editor/screens/editor-view"
 
@@ -18,6 +19,7 @@ function EditorBackdrop({
 }) {
   return (
     <EditorView
+      {...galleryDeck}
       run="done"
       toast={toast}
       overlay={
