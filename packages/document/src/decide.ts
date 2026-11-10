@@ -190,28 +190,21 @@ function startRun(register: NodeRegister, runId: string): Edited {
 }
 
 function continuation(register: NodeRegister, readAt: number): boolean {
-  if (register.claimed === null || readAt !== register.claimed) {
-    return false
-  }
-  if (!register.landed.some((row) => row.actor === "agent")) {
-    return false
-  }
-  return register.landed.slice(register.claimed + 1).every((row) => row.actor === "agent")
+  return readAt === register.claimed && register.landed.slice(readAt).every((row) => row.actor === "agent")
 }
 
 function agentEdit(register: NodeRegister, runId: string, readAt: number, value: string): Edited {
   if (register.phase !== "running" || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
-  const fresh = readAt === version(register)
-  if (!fresh && !continuation(register, readAt)) {
+  if (readAt !== version(register) && !continuation(register, readAt)) {
     return { decision: "refuse", code: "stale" }
   }
   if (register.guarded) {
     return { decision: "refuse", code: "person-protected" }
   }
   const landed = [...register.landed, { actor: "agent" as const, value, visible: true }]
-  return { decision: "apply", body: { ...register, landed, claimed: fresh ? readAt : register.claimed } }
+  return { decision: "apply", body: { ...register, landed, claimed: readAt } }
 }
 
 function stopRun(register: NodeRegister, runId: string): Edited {
