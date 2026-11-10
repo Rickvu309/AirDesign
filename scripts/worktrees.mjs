@@ -80,7 +80,8 @@ const usedByAProcess = (worktree) => {
 
 const clean = (worktree) => git(worktree, ["status", "--porcelain"]) === ""
 
-export const staleReason = ({ commits, gone, idle }) => {
+export const staleReason = ({ commits, gone, idle, detached }) => {
+  if (detached && !idle) return undefined
   if (commits !== undefined && commits.total > 0 && commits.unlanded === 0) return "its work is on main"
   if (gone) return "its branch is gone from GitHub"
   if (commits !== undefined && commits.total === 0 && idle) return "it has no work of its own and sat idle"
@@ -99,6 +100,7 @@ export const findStale = ({ root, base = "origin/main", now = Date.now(), busy =
       commits,
       gone: upstreamGone(root, worktree.branch),
       idle: now - lastTouched(worktree.path) > idleBefore,
+      detached: worktree.branch === undefined,
     })
     if (reason === undefined) continue
     if (busy(worktree.path) || !clean(worktree.path)) continue

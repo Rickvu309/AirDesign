@@ -127,4 +127,15 @@ const branches = git(root, "branch", "--format=%(refname:short)").split("\n").fi
 same("a landed branch is deleted and a closed one is kept", branches.includes("landed"), false)
 same("a closed branch keeps its commits", branches.includes("closed"), true)
 
+same(
+  "a detached worktree on merged work stays while it is in use, like a verifier judging that commit",
+  staleReason({ commits: { total: 1, unlanded: 0 }, gone: false, idle: false, detached: true }),
+  undefined,
+)
+same(
+  "a detached worktree on merged work goes once it sat idle",
+  staleReason({ commits: { total: 1, unlanded: 0 }, gone: false, idle: true, detached: true }),
+  "its work is on main",
+)
+
 console.log("worktrees tests passed")
