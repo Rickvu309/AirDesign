@@ -20,6 +20,7 @@ import {
 import { assertJar, jarPath, topics } from "../scripts/check-specs.mjs"
 import { group as editGroup, state as editState, step as editStep } from "../specs/edit/view.mjs"
 import { group as offlineGroup, state as offlineState, step as offlineStep } from "../specs/offline/view.mjs"
+import { group as runGroup, state as runState, step as runStep } from "../specs/run/view.mjs"
 import { group as structureGroup, state as structureState, step as structureStep } from "../specs/structure/view.mjs"
 import { group as undoGroup, state as undoState, step as undoStep } from "../specs/undo/view.mjs"
 
@@ -463,6 +464,134 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered: 0 }
 }
 
+function runRegister(spec: Spec): Register {
+  const rows: NodeRegister["landed"][number][] = []
+  if (num(spec, "writes") === 1) rows.push({ actor: "agent", value: "agent", visible: true })
+  const stored = text(spec, "runId")
+  return {
+    ...openRegister("floor", "slide"),
+    landed: rows,
+    phase: phaseOf(spec),
+    runId: stored === "none" ? null : stored,
+    readAt: num(spec, "readAt") === -1 ? null : num(spec, "readAt"),
+    guarded: false,
+    stoppedAt: num(spec, "mark") === -1 ? null : num(spec, "mark"),
+    readNodes: flag(spec, "didRead") ? ["a"] : null,
+  }
+}
+
+function runPicture(register: Register) {
+  return {
+    phase: register.phase,
+    runId: register.runId ?? "none",
+    writes: register.landed.filter((row) => row.visible && row.actor === "agent").length,
+    readAt: register.readAt ?? -1,
+    mark: register.stoppedAt ?? -1,
+    didRead: register.readNodes !== null,
+  }
+}
+
+function runExpected(spec: Spec) {
+  return {
+    phase: phaseOf(spec),
+    runId: text(spec, "runId"),
+    writes: num(spec, "writes"),
+    readAt: num(spec, "readAt"),
+    mark: num(spec, "mark"),
+    didRead: flag(spec, "didRead"),
+  }
+}
+
+function otherRun(id: string): string {
+  if (id === "s") return "t"
+  if (id === "t") return "s"
+  throw new Error(`bad run ${id}`)
+}
+
+function offeredRead(action: string): string | null {
+  if (action === "ReadS") return "s"
+  if (action === "ReadT") return "t"
+  return null
+}
+
+function replayRun(graph: Graph, view: View, failures: string[]) {
+  let replayed = 0
+  const unconnected: Record<string, number> = { Resume: 0, Limit: 0 }
+  for (const edge of graph.edges) {
+    const source = graph.states.get(edge.from)
+    const target = graph.states.get(edge.to)
+    if (!source || !target) throw new Error(`missing run state for ${edge.action}`)
+    const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
+    if (edge.action === "Resume" || edge.action === "Limit") {
+      unconnected[edge.action] += 1
+      continue
+    }
+    const register = runRegister(source)
+    const stored = text(source, "runId")
+    const offer = offeredRead(edge.action)
+    if (edge.action === "StartAgain") {
+      const repeat = decide(register, { command: "start", runId: stored })
+      const other = decide(register, { command: "start", runId: otherRun(stored) })
+      const held =
+        repeat.decision === "refuse" &&
+        repeat.code === "run-fenced" &&
+        other.decision === "refuse" &&
+        other.code === "run-fenced" &&
+        same(runExpected(source), runExpected(target))
+      if (!held) failures.push(`run ${where} replaced the stored run`)
+      else replayed += 1
+      continue
+    }
+    const refused =
+      edge.action === "StopMiss" ||
+      edge.action === "AgentMiss" ||
+      (edge.action === "AgentWrites" && text(source, "phase") !== "running") ||
+      (offer !== null && !(flag(target, "didRead") && !flag(source, "didRead")))
+    const decision =
+      edge.action === "Start"
+        ? decide(register, { command: "start", runId: text(target, "runId") })
+        : edge.action === "Stop"
+          ? decide(register, { command: "stop", runId: stored })
+          : edge.action === "StopMiss"
+            ? decide(register, { command: "stop", runId: otherRun(stored) })
+            : edge.action === "AgentWrites" || edge.action === "AgentMiss"
+              ? decide(register, {
+                  command: "agent",
+                  runId: edge.action === "AgentMiss" ? otherRun(stored) : stored,
+                  readAt: num(source, "readAt"),
+                  value: "agent",
+                })
+              : edge.action === "Undo"
+                ? decide(register, { command: "undo", runId: stored })
+                : offer !== null
+                  ? decide(register, { command: "read", runId: offer, node: "a" })
+                  : null
+    if (decision === null) {
+      failures.push(`run ${where} is not connected`)
+      continue
+    }
+    if (refused) {
+      const held =
+        decision.decision === "refuse" &&
+        decision.code === "run-fenced" &&
+        same(runExpected(source), runExpected(target))
+      if (!held) failures.push(`run ${where} did not fence the run`)
+      else replayed += 1
+      continue
+    }
+    if (decision.decision !== "apply") {
+      failures.push(`run ${where} refused ${decision.code}`)
+      continue
+    }
+    const actual = runPicture(decision.register)
+    const expected = runExpected(target)
+    if (!same(actual, expected)) {
+      failures.push(`run ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
+    } else replayed += 1
+  }
+  return { replayed, stuttered: 0, unconnected }
+}
+
 function queueOf(spec: Spec): Queued[] {
   const queue: Queued[] = []
   if (flag(spec, "queued1")) queue.push({ base: 0, value: "one" })
@@ -613,7 +742,7 @@ describe("spec replay", () => {
   it("replays every reachable spec edge through decide", async () => {
     assertJar(jarPath())
     const found = topics(root)
-    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "structure", "undo"])
+    expect(found.map((topic) => topic.name).sort()).toEqual(["edit", "offline", "run", "structure", "undo"])
     for (const topic of found) expect(topic.view).toBe(true)
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
@@ -621,6 +750,7 @@ describe("spec replay", () => {
       edit: { state: editState, step: editStep, group: editGroup },
       undo: { state: undoState, step: undoStep, group: undoGroup },
       structure: { state: structureState, step: structureStep, group: structureGroup },
+      run: { state: runState, step: runStep, group: runGroup },
       offline: { state: offlineState, step: offlineStep, group: offlineGroup },
     }
     for (const dumped of await dumpTopics(found)) {
@@ -644,6 +774,13 @@ describe("spec replay", () => {
           ...replayStructure(graph, view, failures),
         }
       }
+      if (topic.name === "run") {
+        reports.run = {
+          states: graph.states.size,
+          edges: graph.edges.length,
+          ...replayRun(graph, view, failures),
+        }
+      }
       if (topic.name === "offline") {
         reports.offline = {
           states: graph.states.size,
@@ -657,7 +794,11 @@ describe("spec replay", () => {
       edit: { stuttered: expect.any(Number) },
       undo: { stuttered: expect.any(Number) },
       structure: { replayed: expect.any(Number) },
+      run: { unconnected: { Resume: expect.any(Number), Limit: expect.any(Number) } },
       offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
     })
+    const runReport = reports.run as { unconnected: { Resume: number; Limit: number } }
+    expect(runReport.unconnected.Resume).toBeGreaterThan(0)
+    expect(runReport.unconnected.Limit).toBeGreaterThan(0)
   }, 60_000)
 })
