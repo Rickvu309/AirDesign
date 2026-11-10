@@ -51,6 +51,15 @@ describe("replaceSelection", () => {
     ])
   })
 
+  it("keeps a caret's text in the run before it when nothing is selected", () => {
+    const [next] = replaceSelection(value, { paragraph: 0, offset: 12 }, { paragraph: 0, offset: 12 }, ["a", "b"])
+    expect(next[0]?.runs).toEqual([{ from: 0, text: "Pressurized a" }])
+    expect(next[1]?.runs).toEqual([
+      { from: 1, text: "bdelivers" },
+      { from: 2, text: " heat" },
+    ])
+  })
+
   it("starts a new paragraph for each further line", () => {
     const [next, caret] = replaceSelection(value, { paragraph: 0, offset: 12 }, { paragraph: 0, offset: 20 }, [
       "a",

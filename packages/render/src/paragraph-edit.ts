@@ -104,6 +104,7 @@ export function replaceSelection(
   end: Caret,
   lines: readonly string[],
 ): readonly [TextValue, Caret] {
+  if (start.paragraph === end.paragraph && start.offset === end.offset) return insertLines(value, start, lines)
   const anchor = splitRuns(value[start.paragraph]?.runs ?? [], start.offset)[1][0]
   const cut = cutValue(value, start, end)
   const paragraph = cut[start.paragraph]
