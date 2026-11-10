@@ -3,6 +3,7 @@ import { judge } from "./judge.mjs"
 import {
   changedSinceArgs,
   changesJudge,
+  benignKinds,
   changesJudgeSource,
   breakKinds,
   caughtCount,
@@ -410,5 +411,50 @@ same(
   }),
   [`The judge missed third, recorded caught: a.pptx, other. Fix the cause, then add the seed to the list. ${again}`],
 )
+
+const plantPart = "ppt/slides/slide1.xml"
+const plantParts = new Map([[plantPart, new Uint8Array(1)]])
+const severalParagraphs = [
+  { from: 0, runs: [{ from: 0, text: "One" }] },
+  { from: 1, runs: [{ from: 0, text: "Two" }] },
+]
+const plantPptx = (rows, asked) => ({
+  shapeIdCounts: () => rows.map((row) => ({ part: plantPart, id: row.shape, count: 1 })),
+  readShapes: () => rows.map((row) => ({ part: plantPart, shape: row.shape, text: row.text })),
+  oneRunValue: (value, text) => {
+    if (value.length !== 1) throw new Error("text-shape")
+    return [{ from: value[0].from, runs: [{ from: 0, text }] }]
+  },
+  applyRoute: (parts, route) => {
+    asked.push(route.shape)
+    return new Map([[plantPart, new Uint8Array(2)]])
+  },
+})
+const plantAsked = []
+const planted = benignKinds["text replaced"](
+  plantPptx(
+    [
+      { shape: "2", text: severalParagraphs },
+      { shape: "3", text: [{ from: 0, runs: [{ from: 0, text: "One" }] }] },
+    ],
+    plantAsked,
+  ),
+  new Map(plantParts),
+  seededRandom(5),
+)
+same("the text plant writes only a shape with one run", plantAsked, ["3"])
+same("the text plant names the shape it wrote", planted.what.includes("shape 3,"), true)
+let noPlace = ""
+try {
+  benignKinds["text replaced"](
+    plantPptx([{ shape: "2", text: severalParagraphs }], plantAsked),
+    new Map(plantParts),
+    seededRandom(5),
+  )
+} catch (error) {
+  noPlace = error.constructor.name
+}
+same("the text plant reports no place when no shape has one run", noPlace, "NoPlace")
+same("the text plant never routes a box with several paragraphs", plantAsked, ["3"])
 
 console.log("judge-proof tests passed")

@@ -323,10 +323,19 @@ export const breakKinds = {
   },
 }
 
+const readTexts = new WeakMap()
+
+const readText = (pptx, parts, row) => {
+  if (!readTexts.has(parts)) {
+    readTexts.set(parts, new Map(pptx.readShapes(parts).map((item) => [`${item.part}#${item.shape}`, item.text])))
+  }
+  return readTexts.get(parts).get(`${row.part}#${row.id}`) ?? []
+}
+
 const routed = (route, describe) => (pptx, parts, random) => {
   for (const row of random.shuffled(single(pptx, parts))) {
-    const asked = { ...route(random), part: row.part, shape: row.id }
     try {
+      const asked = { ...route(random, pptx, parts, row), part: row.part, shape: row.id }
       const next = pptx.applyRoute(parts, asked)
       if (next.get(row.part) === parts.get(row.part)) continue
       return { parts: next, what: `${row.part} shape ${row.id}, ${describe(asked)}` }
@@ -343,7 +352,10 @@ const words = (random) => `${random.word()} ${random.word()} ${random.between(1,
 
 export const benignKinds = {
   "text replaced": routed(
-    (random) => ({ name: "text", value: [{ from: 0, runs: [{ from: 0, text: words(random) }] }] }),
+    (random, pptx, parts, row) => ({
+      name: "text",
+      value: pptx.oneRunValue(readText(pptx, parts, row), words(random)),
+    }),
     (asked) => asked.value[0].runs[0].text,
   ),
   "shape moved": routed(
