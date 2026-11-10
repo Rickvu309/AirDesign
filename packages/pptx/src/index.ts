@@ -11,7 +11,7 @@ export { packageLimits, readPackage, type PackageLimitName, type ReadPackage } f
 export { exactPageCheck, pageChange, type PageChange } from "./render-pages.js"
 export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } from "./shape-id.js"
 export { addTextShape, type ShapeBox } from "./shape-write.js"
-export { applyRoute, oneRunOf, oneRunValue, type SlideRoute } from "./slide-route.js"
+export { applyRoute, oneRunValue, textStorable, type SlideRoute } from "./slide-route.js"
 export { shownText } from "./text-value-route.js"
 export { exportElements, type ElementEdit, type WrittenIds } from "./element-export.js"
 export { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"

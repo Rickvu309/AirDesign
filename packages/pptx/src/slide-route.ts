@@ -130,7 +130,11 @@ function textTarget(bytes: Uint8Array, id: string): { children: MarkupChildren; 
   return { children: markupChildren(document.elements), shape: shapeById(document.elements, id) }
 }
 
-export function oneRunOf(parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): OneRun | null {
+function oneRunRead(
+  parts: ReadonlyMap<string, Uint8Array>,
+  part: string,
+  shape: string,
+): (OneRun & { readonly text: string }) | null {
   const bytes = parts.get(part)
   if (bytes === undefined) return null
   let target: { children: MarkupChildren; shape: MarkupElement }
@@ -139,7 +143,10 @@ export function oneRunOf(parts: ReadonlyMap<string, Uint8Array>, part: string, s
   } catch {
     return null
   }
-  return oneRunIn(shapeTextValue(target.children, bytes, target.shape))
+  const value = shapeTextValue(target.children, bytes, target.shape)
+  const found = oneRunIn(value)
+  const text = value[0]?.runs[0]?.text
+  return found === null || text === undefined ? null : { ...found, text }
 }
 
 export function oneRunValue(
@@ -148,9 +155,22 @@ export function oneRunValue(
   shape: string,
   text: string,
 ): TextValue {
-  const found = oneRunOf(parts, part, shape)
+  const found = oneRunRead(parts, part, shape)
   if (found === null) throw new Error("text-shape")
-  return [{ from: found.paragraph, runs: [{ from: found.run, text }] }]
+  const value = [{ from: found.paragraph, runs: [{ from: found.run, text }] }]
+  writeRoute(parts, { name: "text", part, shape, value })
+  return value
+}
+
+export function textStorable(parts: ReadonlyMap<string, Uint8Array>, part: string, shape: string): boolean {
+  const current = oneRunRead(parts, part, shape)
+  if (current === null) return false
+  try {
+    oneRunValue(parts, part, shape, `${current.text}.`)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export type RouteResult = {
