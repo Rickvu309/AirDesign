@@ -309,10 +309,6 @@ it("saves the thin edit under its element id", async () => {
   expect(await committedNodes(await cleanParts(), "Hello", ["Hello!"])).toEqual(["256.2"])
 })
 
-it("saves under the id of the shape that was edited, not the first one", async () => {
-  expect(await committedNodes(shapedParts(), "Keep", ["Next"])).toEqual(["382.2"])
-})
-
 it("saves every edit under the id of the shape that was edited", async () => {
   expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"])).toEqual(["382.2", "382.2"])
 })
