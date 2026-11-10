@@ -59,7 +59,7 @@ jobs:
         id: pptx-tools
         with:
           path: ~/.cache/pptx-tools
-          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-1
+          key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-2
       - if: steps.pptx.outputs.changed != '0' && steps.pptx-tools.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
@@ -95,27 +95,35 @@ jobs:
             exit 1
           fi
           sed -i "s|/usr/lib/libreoffice|${brand}|g" "$brand/program/fundamentalrc"
+          sed -i "s|/etc/libreoffice|${root}/etc/libreoffice|g" "$brand/program/fundamentalrc"
+          if [ -f "$brand/program/sofficerc" ]; then
+            sed -i "s|/etc/libreoffice|${root}/etc/libreoffice|g" "$brand/program/sofficerc"
+          fi
           if [ -f "$brand/program/java-set-classpath" ]; then
             sed -i "s|/usr/lib/libreoffice|${brand}|g" "$brand/program/java-set-classpath"
           fi
           if [ -f "$brand/program/unopkg" ]; then
             sed -i "s|/usr/lib/libreoffice|${brand}|g" "$brand/program/unopkg"
           fi
-          registry="$brand/share/registry"
-          if [ -L "$registry" ] || [ ! -d "$registry" ]; then
-            rm -f "$registry"
-            mkdir -p "$registry"
-          fi
+          registry="$root/etc/libreoffice/registry"
+          mkdir -p "$registry"
           if [ -d "$brand/share/.registry" ]; then
             while IFS= read -r source; do
               rel="${source#"$brand/share/.registry/"}"
               dest="$registry/$rel"
+              if [ -e "$dest" ]; then
+                continue
+              fi
               mkdir -p "$(dirname "$dest")"
               ln -sfn "$source" "$dest"
             done < <(find "$brand/share/.registry" -type f)
           fi
           if [ ! -f "$registry/main.xcd" ]; then
             echo "LibreOffice registry is missing." >&2
+            exit 1
+          fi
+          if ! grep -q "xcsxcu:file://${root}/etc/libreoffice/registry" "$brand/program/fundamentalrc"; then
+            echo "LibreOffice configuration still points outside the prefix." >&2
             exit 1
           fi
           while IFS= read -r link; do
