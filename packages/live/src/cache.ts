@@ -36,7 +36,7 @@ export type OpenDeckResult =
       readonly pending: readonly PendingRow[]
       readonly confirmed: readonly ConfirmedRow[]
     }
-  | { ok: false; readonly refusal: "field" | "deck" | "session" }
+  | { ok: false; readonly refusal: "field" | "deck" | "session" | "owner" }
 
 export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: string }
 

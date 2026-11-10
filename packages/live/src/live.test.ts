@@ -3,9 +3,12 @@ import {
   connect,
   deleteDatabase,
   getPart,
+  getParts,
   httpRemote,
   memoryRemote,
+  ownerRemote,
   putPart,
+  putParts,
   type CommitResult,
   type Remote,
 } from "./index.js"
@@ -406,5 +409,40 @@ describe("live cache", () => {
     expect(second).toBe(first)
     expect(files.size).toBe(1)
     expect(Array.from(await getPart(first))).toEqual([1, 2, 3, 4])
+  })
+
+  it("keeps the register when the owner refuses", async () => {
+    const cache = connect(ownerRemote())
+    expect(await cache.enqueue("deck", "kept", "a")).toEqual({ ok: true, painted: "kept" })
+    const before = await cache.rows("deck")
+    const opened = await cache.openDeck("deck")
+    expect(opened.ok).toBe(true)
+    if (!opened.ok) return
+    expect(opened.register.landed.map((row) => row.value)).toEqual(["kept"])
+    expect(await cache.rows("deck")).toEqual(before)
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "owner" })
+    expect(await cache.rows("deck")).toEqual(before)
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["kept"])
+  })
+
+  it("stores a deck's parts beside node a", async () => {
+    installParts()
+    const bytes = new Uint8Array([9, 8, 7])
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, bytes]]), nodes })
+    expect(saved.ok).toBe(true)
+    const read = await getParts("clean")
+    expect(read.ok).toBe(true)
+    if (!read.ok) return
+    expect(read.nodes).toEqual(nodes)
+    expect(Array.from(read.parts.get(nodes.a.part) ?? [])).toEqual([9, 8, 7])
+  })
+
+  it("refuses a part list of 65536 bytes", async () => {
+    installParts()
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    const saved = await putParts("clean", { parts: new Map([["n".repeat(70_000), new Uint8Array([1])]]), nodes })
+    expect(saved).toEqual({ ok: false, refusal: "limit" })
+    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
 })

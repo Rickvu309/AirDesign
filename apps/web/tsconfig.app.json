@@ -26,5 +26,10 @@
     }
   },
   "include": ["src"],
-  "references": [{ "path": "../../packages/live" }]
+  "references": [
+    { "path": "../../packages/document" },
+    { "path": "../../packages/live" },
+    { "path": "../../packages/pptx" },
+    { "path": "../../packages/render" }
+  ]
 }

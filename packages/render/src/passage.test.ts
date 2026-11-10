@@ -93,4 +93,40 @@ describe("Passage", () => {
     expect(seen[0]).toBe("helloあ")
     expect(store.getElement(id)?.text).toBe("outside")
   })
+
+  it("reports committed text and stays quiet during composition", async () => {
+    const seen: string[] = []
+    const store = paintStore()
+    const id = elementId("body")
+    expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
+    const mounted = await render(
+      createElement(Passage, {
+        store,
+        id,
+        onEdit: (value) => {
+          seen.push(value)
+        },
+      }),
+    )
+    const editor = mounted.host.querySelector("[contenteditable]")
+    if (!(editor instanceof HTMLElement)) throw new Error("missing passage")
+    const textNode = editor.firstChild
+    await act(async () => {
+      editor.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
+      editor.dispatchEvent(new CompositionEvent("compositionupdate", { bubbles: true, data: "helloあ" }))
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true, data: "あ" }))
+    })
+    expect(seen).toEqual([])
+    expect(editor.firstChild).toBe(textNode)
+    editor.textContent = "helloあ"
+    await act(async () => {
+      editor.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "helloあ" }))
+    })
+    expect(seen).toEqual(["helloあ"])
+    editor.textContent = "Hello!"
+    await act(async () => {
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }))
+    })
+    expect(seen).toEqual(["helloあ", "Hello!"])
+  })
 })

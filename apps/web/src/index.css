@@ -40,3 +40,13 @@ html:has(.screen-frame) #root {
   overflow: hidden;
   margin: 0;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .thin-page,
+  .thin-page * {
+    animation-duration: 0s;
+    animation-delay: 0s;
+    transition-duration: 0s;
+    transition-delay: 0s;
+  }
+}

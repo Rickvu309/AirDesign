@@ -21,7 +21,7 @@ export function DeckTitle({ title, className }: { title: string; className?: str
   )
 }
 
-export function ExportButton({ faded = false }: { faded?: boolean }) {
+export function ExportButton({ faded = false, onClick }: { faded?: boolean; onClick?: () => void }) {
   return (
     <Button
       type="button"
@@ -30,6 +30,7 @@ export function ExportButton({ faded = false }: { faded?: boolean }) {
         "h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0",
         faded && "opacity-40",
       )}
+      {...(onClick === undefined ? {} : { onClick })}
     >
       Export
     </Button>

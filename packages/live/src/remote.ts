@@ -3,7 +3,7 @@ import { decide, openRegister, type Register } from "@airdesign/document"
 
 export type OpenResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Register }
-  | { ok: false; readonly refusal: "field" | "deck" | "session" }
+  | { ok: false; readonly refusal: "field" | "deck" | "session" | "owner" }
 
 export type CommitRefusal =
   | "field"
@@ -17,6 +17,7 @@ export type CommitRefusal =
   | "present"
   | "limit"
   | "session"
+  | "owner"
 
 export type CommitResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number; readonly key: string }
@@ -24,7 +25,7 @@ export type CommitResult =
 
 export type WatchResult =
   | { ok: true; readonly deck: DeckId; readonly revision: number }
-  | { ok: false; readonly refusal: "field" | "deck" | "cursor" | "session" }
+  | { ok: false; readonly refusal: "field" | "deck" | "cursor" | "session" | "owner" }
 
 export type Remote = {
   open(body: { readonly deck: string }): Promise<OpenResult>
@@ -122,6 +123,15 @@ export function memoryRemote(): Remote {
         waiters.set(parsed.deck, waiting)
       })
     },
+  }
+}
+
+export function ownerRemote(): Remote {
+  const refused = { ok: false as const, refusal: "owner" as const }
+  return {
+    open: () => Promise.resolve(refused),
+    commit: () => Promise.resolve(refused),
+    watch: () => Promise.resolve(refused),
   }
 }
 
