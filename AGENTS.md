@@ -15,6 +15,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
 - `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It uses LibreOffice and poppler when the machine has both, or installs them into `~/.cache/pptx-tools` on first use. It needs the .NET 8 SDK.
+- `pnpm check` prints the sticks, the numbers we want moved. Each has a goal in `sticks.json`. Pick one and move it.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
@@ -67,4 +68,5 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Rule code in `tooling/` stays under 10 percent of product code | `scripts/bug-rule.mjs` |
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a gated commit that contains the latest `main` | branch protection |
+| A bug you find and do not fix is an `it.fails` test. A failing-expected, skipped or todo test counts as a known fault | `scripts/sticks.mjs`: the count must match `sticks.json` |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
