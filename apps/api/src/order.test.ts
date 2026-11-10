@@ -22,7 +22,7 @@ describe("two sessions on one row", () => {
     if (!named.ok) throw new Error(named.refusal)
     const deck = openPool(info.deck, "order-store")
     pools.push(deck)
-    const opened = await openSaved(deck, { deck: named.deck })
+    const opened = await openSaved(deck, { deck: named.deck }, "a@example.com")
     if (!opened.ok) throw new Error(opened.refusal)
     const first = call(
       "commit_edits",
@@ -65,7 +65,7 @@ describe("two sessions on one row", () => {
     const waiter = openPool(info.deck, "order-waiter")
     pools.push(waiter)
     let finished = false
-    const second = commitEdits(waiter, { deck: named.deck, batch: [{ value: "two" }] }).finally(() => {
+    const second = commitEdits(waiter, { deck: named.deck, batch: [{ value: "two" }] }, "a@example.com").finally(() => {
       finished = true
     })
     const started = Date.now()

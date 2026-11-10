@@ -87,31 +87,33 @@ function gone(res: ServerResponse): AbortSignal {
   return controller.signal
 }
 
-async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<string | undefined> {
   const token = readSessionCookie(cookieHeader(req))
   if (token === undefined || token.length === 0) {
     sendJson(res, 401, { ok: false, refusal: "session" })
-    return false
+    return undefined
   }
-  const found = await findAccess(options.session, token)
-  if (!found) {
+  const email = await findAccess(options.session, token)
+  if (email === undefined) {
     sendJson(res, 401, { ok: false, refusal: "session" })
-    return false
+    return undefined
   }
-  return true
+  return email
 }
 
 async function hold(
   options: ApiOptions,
   deck: DeckId,
   cursor: number | null,
+  email: string,
   signal: AbortSignal,
-): Promise<number | undefined> {
+): Promise<number | "owner" | undefined> {
   for (;;) {
     if (signal.aborted) return undefined
     await options.listen.ready()
     if (signal.aborted) return undefined
     const saved = await readSaved(options.deck, deck)
+    if (saved !== undefined && saved.owner !== email) return "owner"
     const revision = chosenRevision(cursor, saved?.revision)
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
@@ -157,27 +159,34 @@ async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Pr
 }
 
 async function openRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!(await signedIn(options, req, res))) return
-  const opened = await openSaved(options.deck, await readJson(req))
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
+  const opened = await openSaved(options.deck, await readJson(req), email)
   sendJson(res, 200, opened)
 }
 
 async function commitRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!(await signedIn(options, req, res))) return
-  const committed = await commitEdits(options.deck, await readJson(req))
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
+  const committed = await commitEdits(options.deck, await readJson(req), email)
   sendJson(res, 200, committed)
 }
 
 async function watchRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  if (!(await signedIn(options, req, res))) return
+  const email = await signedIn(options, req, res)
+  if (email === undefined) return
   const parsed = readWatch(await readJson(req))
   if (!parsed.ok) {
     sendJson(res, 200, parsed)
     return
   }
   const signal = gone(res)
-  const revision = await hold(options, parsed.deck, parsed.cursor, signal)
+  const revision = await hold(options, parsed.deck, parsed.cursor, email, signal)
   if (revision === undefined || signal.aborted || res.writableEnded || res.destroyed) return
+  if (revision === "owner") {
+    sendJson(res, 200, { ok: false, refusal: "owner" })
+    return
+  }
   sendJson(res, 200, { ok: true, deck: parsed.deck, revision })
 }
 

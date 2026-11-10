@@ -111,7 +111,7 @@ export async function acceptLink(db: Sql, linkToken: string): Promise<string | u
   return result.rows[0]?.token
 }
 
-export async function findAccess(db: Sql, token: string): Promise<boolean> {
-  const result = await db.query("select email from session.access where token = $1", [token])
-  return result.rows.length === 1
+export async function findAccess(db: Sql, token: string): Promise<string | undefined> {
+  const result = await db.query<{ email: string }>("select email from session.access where token = $1", [token])
+  return result.rows[0]?.email
 }

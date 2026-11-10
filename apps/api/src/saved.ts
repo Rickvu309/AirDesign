@@ -3,16 +3,16 @@ import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
 
-const readSql = "select revision, register from deck.saved where id = $1"
+const readSql = "select revision, register, owner from deck.saved where id = $1"
 
 const insertSql = `
 with inserted as (
-  insert into deck.saved (id, revision, register)
-  values ($1, $2, $3::jsonb)
+  insert into deck.saved (id, revision, register, owner)
+  values ($1, $2, $3::jsonb, $4)
   on conflict (id) do nothing
-  returning id, revision, register
+  returning id, revision, register, owner
 )
-select inserted.id, inserted.revision, inserted.register, pg_notify('deck', $4) as notified
+select inserted.id, inserted.revision, inserted.register, inserted.owner, pg_notify('deck', $5) as notified
 from inserted
 `
 
@@ -30,6 +30,7 @@ from updated
 type Saved = {
   readonly revision: number
   readonly register: Deck["register"]
+  readonly owner: string
 }
 
 export type RevisionWrite = {
@@ -40,13 +41,13 @@ export type RevisionWrite = {
   readonly key: string
 }
 
-function savedFrom(row: { revision: number; register: Deck["register"] } | undefined): Saved | undefined {
+function savedFrom(row: Saved | undefined): Saved | undefined {
   if (row === undefined) return undefined
-  return { revision: row.revision, register: row.register }
+  return { revision: row.revision, register: row.register, owner: row.owner }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
-  const result = await db.query<{ revision: number; register: Deck["register"] }>(readSql, [id])
+  const result = await db.query<Saved>(readSql, [id])
   return savedFrom(result.rows[0])
 }
 
@@ -57,35 +58,44 @@ export function chosenRevision(cursor: number | null, current: number | undefine
   return undefined
 }
 
+function openedRow(
+  deck: DeckId,
+  saved: Saved,
+  owner: string,
+):
+  | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
+  | { readonly ok: false; readonly refusal: "owner" } {
+  if (saved.owner !== owner) return { ok: false, refusal: "owner" }
+  return { ok: true, deck, revision: saved.revision, register: saved.register }
+}
+
 export async function openSaved(
   db: Sql,
   raw: unknown,
+  owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "field" | "deck" }
+  | { readonly ok: false; readonly refusal: "field" | "deck" | "owner" }
 > {
   const parsed = readCapture(raw)
   if (!parsed.ok) return parsed
   const existing = await readSaved(db, parsed.deck)
-  if (existing !== undefined) {
-    return { ok: true, deck: parsed.deck, revision: existing.revision, register: existing.register }
-  }
+  if (existing !== undefined) return openedRow(parsed.deck, existing, owner)
   const opened = openDeck(parsed.deck)
   const key = notifyKey(opened.id, opened.revision)
   if (!key.ok) return { ok: false, refusal: "deck" }
-  const inserted = await db.query<{ revision: number; register: Deck["register"] }>(insertSql, [
+  const inserted = await db.query<Saved>(insertSql, [
     opened.id,
     opened.revision,
     JSON.stringify(opened.register),
+    owner,
     key.key,
   ])
   const created = savedFrom(inserted.rows[0])
-  if (created !== undefined) {
-    return { ok: true, deck: parsed.deck, revision: created.revision, register: created.register }
-  }
+  if (created !== undefined) return openedRow(parsed.deck, created, owner)
   const raced = await readSaved(db, parsed.deck)
   if (raced === undefined) return { ok: false, refusal: "deck" }
-  return { ok: true, deck: parsed.deck, revision: raced.revision, register: raced.register }
+  return openedRow(parsed.deck, raced, owner)
 }
 
 export async function writeRevision(db: Sql, input: RevisionWrite): Promise<boolean> {
@@ -102,6 +112,7 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
 export async function commitEdits(
   db: Sql,
   raw: unknown,
+  owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly key: string }
   | { readonly ok: false; readonly refusal: string }
@@ -111,6 +122,7 @@ export async function commitEdits(
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const saved = await readSaved(db, parsed.deck)
     if (saved === undefined) return { ok: false, refusal: "deck" }
+    if (saved.owner !== owner) return { ok: false, refusal: "owner" }
     const current: Deck = { id: parsed.deck, revision: saved.revision, register: saved.register }
     const result = call("commit_edits", current, { actor: "person" }, raw)
     if (!result.ok) return { ok: false, refusal: result.refusal }

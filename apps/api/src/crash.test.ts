@@ -26,7 +26,7 @@ describe("crash before commit", () => {
     if (!named.ok) throw new Error(named.refusal)
     const deck = openPool(info.deck, "crash-deck")
     pools.push(deck)
-    const opened = await openSaved(deck, { deck: named.deck })
+    const opened = await openSaved(deck, { deck: named.deck }, "a@example.com")
     if (!opened.ok) throw new Error(opened.refusal)
     const first = call(
       "commit_edits",
