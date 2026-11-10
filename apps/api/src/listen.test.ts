@@ -187,17 +187,18 @@ describe("start entry", () => {
 
   it("exits when a database url is empty", async () => {
     const info = await postgresInfo()
-    child = spawnEntry(
-      childEnv({
-        SESSION_DATABASE_URL: info.session,
-        DECK_DATABASE_URL: "",
-        LISTEN_DATABASE_URL: info.listen,
-      }),
-    )
-    const result = await stopped(child)
-    child = undefined
-    expect(result.code).toBe(1)
-    expect(result.stderr).toBe("DECK_DATABASE_URL\n")
+    const urls = {
+      SESSION_DATABASE_URL: info.session,
+      DECK_DATABASE_URL: info.deck,
+      LISTEN_DATABASE_URL: info.listen,
+    }
+    for (const name of Object.keys(urls)) {
+      child = spawnEntry(childEnv({ ...urls, [name]: "" }))
+      const result = await stopped(child)
+      child = undefined
+      expect(result.code).toBe(1)
+      expect(result.stderr).toBe(`${name}\n`)
+    }
   })
 
   it("exits on SIGINT", async () => {
