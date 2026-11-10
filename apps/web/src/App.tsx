@@ -39,6 +39,10 @@ export default function App() {
   if (path === "/thin") {
     return <ThinDeck />
   }
+  const thinDeck = /^\/thin\/([A-Za-z0-9_-]{1,64})$/.exec(path)
+  if (thinDeck?.[1] !== undefined) {
+    return <ThinDeck id={thinDeck[1]} />
+  }
   if (path === screenIndexPath) {
     return <ScreenIndex />
   }
