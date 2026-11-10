@@ -21,6 +21,7 @@ create table session.access (
   issued timestamptz not null
 );
 create table session.sent (
+  id bigint generated always as identity primary key,
   email text not null,
   issued timestamptz not null
 );
@@ -40,6 +41,7 @@ create table deck.once (
 );
 grant usage on schema session to session;
 grant select, insert, update, delete on session.account, session.code, session.access, session.sent to session;
+grant usage, select on all sequences in schema session to session;
 grant usage on schema deck to deck;
 grant select, insert, update, delete on deck.saved to deck;
 grant select, insert, update, delete on deck.once to deck;
