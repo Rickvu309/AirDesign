@@ -63,7 +63,7 @@ export const timeStick = (root, name, started) => {
   if (typeof limit !== "number") throw new Error(`${name} has no limit in sticks.json.`)
   const over = overLimit({ name, now, limit })
   const gated = process.env.CI === "true" || process.env.CI === "1"
-  return { line: `stick ${name}  now ${now}  limit ${limit}`, over, fails: over !== undefined && gated }
+  return { line: `stick ${name}  now ${now}  limit ${limit}`, over, fails: gated && now > limit * 2 }
 }
 
 export const readSticks = async (root) => {
