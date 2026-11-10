@@ -26,6 +26,7 @@ export default defineConfig({
     reporters: ["default", "scripts/vitest-sticks.mjs"],
     include: ["apps/**/*.test.ts", "apps/**/*.test.tsx", "packages/**/*.test.ts", "tests/**/*.test.ts"],
     exclude: ["tests/browser/**", "**/node_modules/**", "**/dist/**"],
+    globalSetup: ["apps/api/src/postgres-setup.ts"],
     projects: [
       {
         test: {
