@@ -331,6 +331,15 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
 
+  packages/device:
+    devDependencies:
+      oxlint:
+        specifier: ^1.90.0
+        version: 1.92.0
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+
   packages/document:
     devDependencies:
       oxlint:

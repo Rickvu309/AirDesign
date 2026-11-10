@@ -15,6 +15,9 @@
     },
     {
       "path": "./packages/render"
+    },
+    {
+      "path": "./packages/device"
     }
   ]
 }
