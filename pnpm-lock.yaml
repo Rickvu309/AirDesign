@@ -290,6 +290,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@airdesign/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
       '@airdesign/document':
         specifier: workspace:*
         version: link:../../packages/document

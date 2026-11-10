@@ -154,7 +154,32 @@ function view(
   }
 }
 
+const flushing = new Map<DeckId, Promise<unknown>>()
+
 export function connect(remote: Remote) {
+  async function sendRows(deck: DeckId): Promise<CommitResult> {
+    const { confirmed, pending } = split(await readDeck(deck))
+    if (pending.length === 0) return { ok: false, refusal: "batch" }
+    const sending = unsent(pending, 0)
+    let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
+    let result: CommitResult = { ok: false, refusal: "batch" }
+    for (let start = 0; start < sending.length; start += batchSize) {
+      const rowsInBatch = sending.slice(start, start + batchSize)
+      result = await remote.commit({ deck, batch: rowsInBatch.map(wireOf) })
+      if (!result.ok) return result
+      if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
+        return { ok: false, refusal: "payload" }
+      }
+      const stored: ConfirmedRow[] = []
+      for (const row of rowsInBatch) revision = fitConfirmed(deck, revision, row.value, row.node, stored)
+      await writeRows(
+        stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
+        rowsInBatch.map((row) => rowKey(deck, "pending", row.order)),
+      )
+    }
+    return result
+  }
+
   return {
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const parsed = readDeckId(deck)
@@ -188,26 +213,13 @@ export function connect(remote: Remote) {
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const { confirmed, pending } = split(await readDeck(parsed.deck))
-      if (pending.length === 0) return { ok: false, refusal: "batch" }
-      const sending = unsent(pending, 0)
-      let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
-      let result: CommitResult = { ok: false, refusal: "batch" }
-      for (let start = 0; start < sending.length; start += batchSize) {
-        const rowsInBatch = sending.slice(start, start + batchSize)
-        result = await remote.commit({ deck: parsed.deck, batch: rowsInBatch.map(wireOf) })
-        if (!result.ok) return result
-        if (result.deck !== parsed.deck || result.key !== `${parsed.deck}:${result.revision}`) {
-          return { ok: false, refusal: "payload" }
-        }
-        const stored: ConfirmedRow[] = []
-        for (const row of rowsInBatch) revision = fitConfirmed(parsed.deck, revision, row.value, row.node, stored)
-        await writeRows(
-          stored.map((row) => ({ key: rowKey(parsed.deck, "confirmed", row.revision), row })),
-          rowsInBatch.map((row) => rowKey(parsed.deck, "pending", row.order)),
-        )
-      }
-      return result
+      const before = flushing.get(parsed.deck) ?? Promise.resolve()
+      const sent = before.then(
+        () => sendRows(parsed.deck),
+        () => sendRows(parsed.deck),
+      )
+      flushing.set(parsed.deck, sent)
+      return sent
     },
     async openDeck(deck: string): Promise<OpenDeckResult> {
       const parsed = readDeckId(deck)

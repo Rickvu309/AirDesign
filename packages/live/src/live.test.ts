@@ -484,6 +484,17 @@ describe("live cache", () => {
     ])
   })
 
+  it("sends each pending row once when two flushes start together", async () => {
+    const { remote, commits } = countingRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "one", node, "")
+    await cache.enqueue("deck", "two", other, "")
+    const [first, second] = await Promise.all([cache.flush("deck"), connect(remote).flush("deck")])
+    expect(first).toMatchObject({ ok: true, revision: 1 })
+    expect(second).toEqual({ ok: false, refusal: "batch" })
+    expect(commits).toEqual([["one", "two"]])
+  })
+
   it("paints the value just typed on a new element", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.enqueue("deck", "solo", node, "")).toEqual({ ok: true, painted: "solo" })
