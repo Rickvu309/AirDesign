@@ -15,6 +15,12 @@ const checkStarted = Date.now()
 const dotnet = process.env.PPTX_DOTNET ?? "dotnet"
 const soffice = process.env.PPTX_SOFFICE ?? "soffice"
 const fixtures = path.join(root, "scripts/pptx-fixtures")
+const browserExportName = "exported-deck.pptx"
+const browserExportPath = path.join(root, "tests/browser", browserExportName)
+if (!fs.existsSync(browserExportPath)) {
+  console.error("missing tests/browser/exported-deck.pptx")
+  process.exit(1)
+}
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -70,8 +76,18 @@ const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/inde
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
 await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
 const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
+cases.push({
+  name: "browser-text-export",
+  before: "clean.pptx",
+  after: browserExportName,
+  visible: true,
+  targeted: [1],
+  errors: 0,
+  dupes: 0,
+  pages: true,
+})
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const fixturePath = (name) => path.join(fixtures, name)
+const fixturePath = (name) => (name === browserExportName ? browserExportPath : path.join(fixtures, name))
 const secondRender = (name) => `${name} again`
 const afterRender = (row) => (row.before === row.after ? secondRender(row.after) : row.after)
 const waiting = [...new Set(cases.flatMap((row) => [row.before, afterRender(row)]))]
