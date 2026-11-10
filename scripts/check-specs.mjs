@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -33,14 +33,76 @@ const distinctStates = (output) => {
   return Number(matches[matches.length - 1][1])
 }
 
+const integersSnapshot = (modules) => {
+  const extracted = path.join(modules, "Integers.tla")
+  const snapshot = path.join(modules, ".Integers.tla.kept")
+  return spawn(
+    process.execPath,
+    [
+      "-e",
+      [
+        "const fs = require('node:fs')",
+        "const extracted = process.argv[1]",
+        "const snapshot = process.argv[2]",
+        "const deadline = Date.now() + 180000",
+        "while (Date.now() < deadline) {",
+        "  if (fs.existsSync(extracted)) {",
+        "    try {",
+        "      fs.copyFileSync(extracted, snapshot)",
+        "      const written = fs.statSync(extracted).size",
+        "      if (written > 0 && written === fs.statSync(snapshot).size) break",
+        "    } catch {}",
+        "  }",
+        "  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10)",
+        "}",
+      ].join("\n"),
+      extracted,
+      snapshot,
+    ],
+    { stdio: "ignore" },
+  )
+}
+
+const restoreIntegers = (modules) => {
+  const extracted = path.join(modules, "Integers.tla")
+  const snapshot = path.join(modules, ".Integers.tla.kept")
+  const deadline = Date.now() + 2000
+  while (!fs.existsSync(snapshot) && Date.now() < deadline) {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20)
+  }
+  if (!fs.existsSync(extracted) && fs.existsSync(snapshot)) fs.copyFileSync(snapshot, extracted)
+}
+
 export const checkSpec = (directory, java, jar, spec = "Edit.tla", config = "Edit.cfg") => {
   const meta = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-tlc-"))
-  const result = spawnSync(
-    java,
-    ["-XX:+UseParallelGC", "-cp", jar, "tlc2.TLC", "-workers", "1", "-config", config, "-metadir", meta, spec],
-    { cwd: directory, encoding: "utf8" },
-  )
-  fs.rmSync(meta, { recursive: true, force: true })
+  const modules = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-tlc-modules-"))
+  const keeper = integersSnapshot(modules)
+  let result
+  try {
+    result = spawnSync(
+      java,
+      [
+        "-XX:+UseParallelGC",
+        `-Djava.io.tmpdir=${modules}`,
+        "-cp",
+        jar,
+        "tlc2.TLC",
+        "-workers",
+        "1",
+        "-config",
+        config,
+        "-metadir",
+        meta,
+        spec,
+      ],
+      { cwd: directory, encoding: "utf8" },
+    )
+  } finally {
+    restoreIntegers(modules)
+    fs.rmSync(modules, { recursive: true, force: true })
+    fs.rmSync(meta, { recursive: true, force: true })
+    if (keeper.exitCode === null) keeper.kill()
+  }
   const output = `${result.stdout ?? ""}${result.stderr ?? ""}`
   return {
     states: distinctStates(output),
