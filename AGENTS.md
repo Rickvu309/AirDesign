@@ -4,7 +4,7 @@ AirDesign makes slide decks from an idea or a PowerPoint. A person and their AI 
 
 ## What we never compromise
 
-1. **No-loss PowerPoint.** Content nobody touched survives byte for byte. Real PowerPoint is the judge, not our own re-import.
+1. **No-loss PowerPoint.** Content nobody touched survives byte for byte. Microsoft's own validator judges every export against its original. Our own re-import never counts. Where that validator is blind, we add a check for the break it missed. No tool shows PowerPoint's repair prompt, so we do not say a file opens clean in PowerPoint until a person has opened it there.
 2. **The user's machine does the work.** Painting, import, export, capture and the agent loop run on the device. The server keeps the order of edits, storage, the Claude key and the MCP address.
 3. **One path for agents.** A person connects their own agent over MCP or uses Aira. Both get the same tools, permissions and limits.
 4. **An edit paints before the network.**
