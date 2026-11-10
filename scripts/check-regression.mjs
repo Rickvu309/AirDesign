@@ -5,7 +5,8 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { jarPath, javaBin } from "./check-specs.mjs"
-import { approvedCommit, guarded, packageFile } from "./ratchet.mjs"
+import { workingTree } from "./checked.mjs"
+import { approvedCommit, guarded, localFork, localOwner, localWarning, packageFile } from "./ratchet.mjs"
 
 const checkFolders = ["tooling/", "scripts/"]
 const proofName = /\.test\.(js|mjs|ts)$/
@@ -21,6 +22,7 @@ const proofNeeds = {
   "scripts/check-specs.test.mjs": ["Java 21", "tla2tools.jar"],
   "scripts/check-regression.test.mjs": ["git"],
   "scripts/metrics.test.mjs": ["git"],
+  "scripts/ratchet.test.mjs": ["git"],
 }
 const needFinders = {
   git: () => execFileSync("git", ["--version"], { stdio: "ignore" }),
@@ -29,6 +31,7 @@ const needFinders = {
 }
 const advice =
   "Restore the behaviour each broken case expects and the lines each proof lost. If the check is meant to change, ask the repo owner to approve the pull request, then run this check again."
+const sameProofs = "Every proof is the same as on main, and the tooling and test steps run each one here."
 const behindAdvice = "This pull request is behind main. Update it and run again."
 const sandboxProbe = [
   'const fs = require("node:fs")',
@@ -77,6 +80,9 @@ export const changedProofs = (mergeTree, headTree) =>
   changedFiles(mergeTree, headTree).filter(
     (file) => mergeTree.has(file) && (proofRunner(file) !== undefined || proofSupport(file)),
   )
+
+export const localProofs = (proofs, changed) =>
+  changed.some(proofSupport) ? proofs : proofs.filter((file) => changed.includes(file))
 
 export const lostLines = (numstat) =>
   numstat
@@ -376,18 +382,17 @@ const readReportText = (text) => {
   }
 }
 
-const judge = (baseRoot, headRoot, approved) => {
-  const { proofs, changes, unproved, losses, behind } = read(baseRoot, headRoot)
+const judge = ({ proofs, changes, unproved, losses, behind }, approved, { baseRoot, headRoot, local = false }) => {
   for (const line of unproved) console.log(line)
-  if (changes.length === 0) {
+  if (changes.length === 0 || proofs.length === 0) {
     const result = verdict({ results: losses, approved })
     for (const line of result.lines) console.log(line)
-    console.log("No check changed.")
+    console.log(changes.length === 0 ? "No check changed." : sameProofs)
     return result.pass
   }
   const started = Date.now()
   const runsInCi = Boolean(process.env.CI)
-  const install = spawnSync("pnpm", ["install", "--frozen-lockfile"], {
+  const install = spawnSync("pnpm", ["install", "--frozen-lockfile", ...(local ? ["--offline"] : [])], {
     cwd: baseRoot,
     encoding: "utf8",
     maxBuffer: largeOutput,
@@ -397,7 +402,11 @@ const judge = (baseRoot, headRoot, approved) => {
       `${install.stdout ?? ""}${install.stderr ?? ""}${install.error?.message ?? ""}`.split("\n").slice(-20).join("\n"),
     )
     console.log("The install failed on main, so no old proof could run.")
-    return false
+    if (!local) return false
+    console.log("Only the lost lines are judged here. The check on GitHub runs the proofs main has.")
+    const result = verdict({ results: losses, approved })
+    for (const line of result.lines) console.log(line)
+    return result.pass
   }
   layIn(baseRoot, changes, (file, print) => git(headRoot, ["cat-file", "blob", print], "buffer"))
   for (const { file } of changes) console.log(`laid in ${file}`)
@@ -407,6 +416,39 @@ const judge = (baseRoot, headRoot, approved) => {
   for (const line of result.lines) console.log(line)
   console.log(`check-regression took ${Math.round((Date.now() - started) / 1000)} seconds.`)
   return result.pass
+}
+
+const judgeLocal = (root) => {
+  if (!judgeTree(root)) console.log(localWarning("check-regression", localOwner(root)))
+  return true
+}
+
+const judgeTree = (root) => {
+  const { fork, why } = localFork(root)
+  if (why !== undefined) {
+    console.log(why)
+    return true
+  }
+  const head = workingTree(root)
+  const mergeTree = tree(root, fork)
+  const headTree = tree(root, head)
+  const found = {
+    proofs: localProofs(proofFiles([...mergeTree.keys()]), changedProofs(mergeTree, headTree)),
+    changes: checkChanges(mergeTree, headTree),
+    unproved: unprovedLines(mergeTree, headTree),
+    losses: readLosses(root, fork, head, mergeTree, headTree),
+    behind: false,
+  }
+  if (found.changes.length === 0 || found.proofs.length === 0) return judge(found, false, { headRoot: root })
+  const folder = path.join(os.homedir(), ".cache", "airdesign")
+  fs.mkdirSync(folder, { recursive: true })
+  const baseRoot = fs.mkdtempSync(path.join(folder, "check-regression-"))
+  try {
+    git(root, ["worktree", "add", "--detach", "--quiet", baseRoot, fork])
+    return judge(found, false, { baseRoot, headRoot: root, local: true })
+  } finally {
+    git(root, ["worktree", "remove", "--force", baseRoot])
+  }
 }
 
 const approved = (repository, number, sha) => {
@@ -434,8 +476,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     else if (mode === "changed") {
       console.log(`changed=${read(path.resolve(rest[0]), path.resolve(rest[1])).changes.length > 0}`)
     } else if (mode === "judge") {
-      if (!judge(path.resolve(rest[0]), path.resolve(rest[1]), rest[2] === "--approved=true")) process.exit(1)
-    } else throw new Error("Use approved, changed or judge.")
+      const [baseRoot, headRoot] = [path.resolve(rest[0]), path.resolve(rest[1])]
+      if (!judge(read(baseRoot, headRoot), rest[2] === "--approved=true", { baseRoot, headRoot })) process.exit(1)
+    } else if (mode === "local") {
+      if (!judgeLocal(path.resolve(rest[0] ?? "."))) process.exit(1)
+    } else throw new Error("Use approved, changed, judge or local.")
   } catch (error) {
     console.error(String(error.stderr ?? "").trim() || error.message)
     process.exit(1)

@@ -1,21 +1,32 @@
+import { execFileSync } from "node:child_process"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
 import {
   approvedCommit,
   contents,
   guarded,
   lostCases,
+  listedFiles,
+  localFork,
+  localWarning,
   lostKinds,
   metricsFrom,
   newPackageFile,
   oldMetricNames,
   oldMetricsFile,
   onlyAddsReferences,
+  ownerOf,
   ownerReasons,
   packageFile,
+  readLocal,
+  readReasons,
   removedTestFiles,
   replacedFixtures,
   sameButReferences,
   verdict,
 } from "./ratchet.mjs"
+import { workingTree } from "./checked.mjs"
 
 const metrics = {
   "known-failures": { now: 2, goal: 0 },
@@ -460,5 +471,100 @@ same(
   metricsFrom((file) => (file === oldMetricsFile ? { "new one": { limit: 1 } } : undefined)),
   { "new one": { limit: 1 } },
 )
+
+same(
+  "git's name-status reads as the files a pull request lists",
+  listedFiles("M\0metrics.json\0R087\0scripts/a.test.mjs\0scripts/a.mjs\0D\0tests/gone.test.ts\0A\0new.ts\0"),
+  [
+    { name: "metrics.json", status: "modified" },
+    { name: "scripts/a.mjs", before: "scripts/a.test.mjs", status: "renamed" },
+    { name: "tests/gone.test.ts", status: "removed" },
+    { name: "new.ts", status: "added" },
+  ],
+)
+same("the owner is read from an https remote", ownerOf("https://github.com/Rickvu309/AirDesign.git"), "Rickvu309")
+same("the owner is read from an ssh remote", ownerOf("git@github.com:Rickvu309/AirDesign.git"), "Rickvu309")
+same("no remote names the repo owner", ownerOf(undefined), "the repo owner")
+same(
+  "the reasons read through any reader",
+  readReasons({
+    json: (sha, file) => (file === "metrics.json" ? { "ci-duration": { limit: sha === "fork" ? 40 : 45 } } : undefined),
+    fork: "fork",
+    head: "head",
+    listed: [{ name: "metrics.json", status: "modified" }],
+  }).map((reason) => reason.text),
+  ["The limit of ci-duration went from 40 to 45."],
+)
+
+const localRepo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ratchet-local-"))
+process.on("exit", () => fs.rmSync(localRepo, { recursive: true, force: true }))
+const localGit = (args, input) =>
+  execFileSync("git", ["-C", localRepo, ...args], {
+    encoding: "utf8",
+    input,
+    stdio: ["pipe", "pipe", "pipe"],
+  }).trim()
+const localFile = (file, text) => {
+  fs.mkdirSync(path.dirname(path.join(localRepo, file)), { recursive: true })
+  fs.writeFileSync(path.join(localRepo, file), text)
+}
+localGit(["init", "--quiet"])
+same(
+  "a clone with no origin/main passes and says why",
+  localFork(localRepo).why,
+  "There is no origin/main here, so this branch cannot be judged locally. CI judges it.",
+)
+localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 40 }, "corpus-size": { now: 2, goal: 20 } }))
+localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }, { name: "doe-heat-pumps" }]))
+localFile("packages/pptx/src/route.test.ts", "case\n")
+localGit(["add", "--all"])
+const stamp = "proof <proof@example.com> 0 +0000"
+const mainCommit = localGit(
+  ["hash-object", "-t", "commit", "-w", "--stdin"],
+  `tree ${localGit(["write-tree"])}\nauthor ${stamp}\ncommitter ${stamp}\n\nmain\n`,
+)
+localGit(["update-ref", "refs/remotes/origin/main", mainCommit])
+localGit(["update-ref", "HEAD", mainCommit])
+localGit(["remote", "add", "origin", "https://github.com/Rickvu309/AirDesign.git"])
+same("an untouched branch forks where main is", localFork(localRepo).fork, mainCommit)
+same("an untouched branch touches nothing", verdict(readLocal(localRepo)).lines, ["Nothing here touches the bar."])
+localFile("metrics.json", JSON.stringify({ "ci-duration": { limit: 50 }, "corpus-size": { now: 1, goal: 20 } }))
+localFile("scripts/pptx-fixtures/cases.json", JSON.stringify([{ name: "nasa-1d-cnn" }]))
+fs.rmSync(path.join(localRepo, "packages/pptx/src/route.test.ts"))
+localFile("scripts/new-check.mjs", "check\n")
+const localVerdict = verdict(readLocal(localRepo))
+same("a lowered bar in the working tree fails locally", localVerdict.pass, false)
+same("the local verdict says what ci says", localVerdict.lines, [
+  "Lowers the bar: The limit of ci-duration went from 40 to 50.",
+  "Lowers the bar: corpus-size went from 2 to 1, away from its goal of 20.",
+  "Lowers the bar: The test file packages/pptx/src/route.test.ts was removed.",
+  "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
+  "Listed for Rickvu309, does not block: scripts/new-check.mjs decides what ci checks.",
+  "Undo what lowers the bar. Only an approval from Rickvu309 lets it through as it is.",
+])
+const localStep = () => {
+  try {
+    return {
+      status: 0,
+      output: execFileSync(process.execPath, ["scripts/ratchet.mjs", "local", localRepo], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }),
+    }
+  } catch (error) {
+    return { status: error.status, output: `${error.stdout}${error.stderr}` }
+  }
+}
+same("locally a lowered bar prints what ci says, warns and passes", localStep(), {
+  status: 0,
+  output: [...localVerdict.lines, localWarning("ratchet", "Rickvu309"), ""].join("\n"),
+})
+same(
+  "the local warning names the check on GitHub and the owner",
+  localWarning("ratchet", "Rickvu309"),
+  "Warning: the ratchet check on GitHub blocks this unless Rickvu309 approves it. This step passes, and GitHub judges.",
+)
+same("reading the working tree leaves the index alone", localGit(["diff", "--cached", "--name-only"]), "")
+same("the working tree is read with what is not staged", workingTree(localRepo) === localGit(["write-tree"]), false)
 
 console.log("ratchet tests passed")
