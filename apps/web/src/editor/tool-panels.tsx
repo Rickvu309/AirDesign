@@ -142,13 +142,13 @@ function ActionGlyph({ name }: { name: "chart" | "table" | "icon" | "rmbg" | "hd
   )
 }
 
-function MediaChrome({ title, search }: { title: string; search: string }) {
+function MediaChrome({ title, heading, search }: { title: string; heading: string; search: string }) {
   return (
     <>
-      <SidebarHead />
+      <SidebarHead title={title} />
       <div className="flex h-10 shrink-0 items-center gap-1 px-2">
         <EditorIcon name="chevl" size={16} />
-        <span className="text-sm font-semibold text-foreground">{title}</span>
+        <span className="text-sm font-semibold text-foreground">{heading}</span>
       </div>
       <div className="flex border-b border-line px-3 pb-3">
         <span className="flex h-8 flex-1 items-center gap-2 rounded-lg bg-line px-2.5 text-[length:var(--type-dense)] text-faint">
@@ -160,12 +160,12 @@ function MediaChrome({ title, search }: { title: string; search: string }) {
   )
 }
 
-export function ImagesPanel() {
+export function ImagesPanel({ title }: { title: string }) {
   const left = imageColumns.left
   const right = imageColumns.right
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
-      <MediaChrome title="Images" search="Search images" />
+      <MediaChrome title={title} heading="Images" search="Search images" />
       <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden px-3 pt-3">
         <span className="text-xs font-medium text-quiet">Stock photos</span>
         <div className="flex gap-2">
@@ -208,10 +208,10 @@ const lineArt = shapeArt.slice(0, 2)
 const basicArt = shapeArt.slice(2, 16)
 const flowArt = shapeArt.slice(16)
 
-export function ShapesPanel() {
+export function ShapesPanel({ title }: { title: string }) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
-      <MediaChrome title="Shapes" search="Search shapes" />
+      <MediaChrome title={title} heading="Shapes" search="Search shapes" />
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden px-3 pt-2">
         <GroupHead title="Lines" />
         <ShapeRow arts={lineArt} />
@@ -296,10 +296,10 @@ const textStyles = [
   ["Note", "text-xs text-quiet"],
 ] as const
 
-export function TextPanel() {
+export function TextPanel({ title }: { title: string }) {
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
-      <SidebarHead />
+      <SidebarHead title={title} />
       <div className="flex h-10 shrink-0 items-center gap-1 px-2">
         <EditorIcon name="chevl" size={16} />
         <span className="text-sm font-semibold text-foreground">Text</span>

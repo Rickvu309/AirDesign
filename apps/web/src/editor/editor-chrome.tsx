@@ -4,8 +4,6 @@ import { AirdesignMark } from "@/decks/airdesign-mark"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
-export const deckTitle = "Q3 Investor Update"
-
 export const surfaceShadow = "shadow-[0px_0px_0px_1px_var(--field-edge),0px_1px_2px_var(--black-4)]"
 
 export const cardShadow = "shadow-[0px_0px_0px_1px_var(--black-7),0px_2px_8px_var(--black-4)]"
@@ -14,10 +12,10 @@ export const floatShadow = "shadow-[0px_0px_0px_1px_var(--black-8),0px_12px_32px
 
 export const hairlineShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"
 
-export function DeckTitle({ className }: { className?: string }) {
+export function DeckTitle({ title, className }: { title: string; className?: string }) {
   return (
     <span className={cn("flex min-w-0 items-center gap-1", className)}>
-      <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{deckTitle}</span>
+      <span className="truncate text-[length:var(--type-dense)] font-medium text-foreground">{title}</span>
       <EditorIcon name="chev" size={14} className="text-faint" />
     </span>
   )
@@ -57,12 +55,12 @@ export function Island({ children, className }: { children: ReactNode; className
   )
 }
 
-export function SidebarHead({ trailing }: { trailing?: ReactNode }) {
+export function SidebarHead({ title, trailing }: { title: string; trailing?: ReactNode }) {
   return (
     <div className="flex h-14 shrink-0 items-center justify-between pr-2 pl-3">
       <span className="flex items-center gap-2">
         <AirdesignMark size={20} />
-        <DeckTitle />
+        <DeckTitle title={title} />
       </span>
       {trailing ?? (
         <Button

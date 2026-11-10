@@ -17,6 +17,9 @@ import {
 export type EditorRail = "slides" | "images" | "shapes" | "text"
 
 export type EditorShellProps = {
+  title: string
+  slideLabel: string
+  notes: string
   run?: SidebarRun
   panel?: "agent" | "design"
   rail?: EditorRail
@@ -30,9 +33,10 @@ export type EditorShellProps = {
   overlay?: ReactNode
 }
 
-const notes = "Lead with the trend, then the Q3 number. Mention the two enterprise deals."
-
 export function EditorShell({
+  title,
+  slideLabel,
+  notes,
   run = "done",
   panel = "agent",
   rail = "slides",
@@ -49,28 +53,28 @@ export function EditorShell({
   const working = run === "working" || run === "own"
   return (
     <div className="relative flex h-full min-h-0">
-      {rail === "slides" ? <SlideSidebar run={run} /> : null}
+      {rail === "slides" ? <SlideSidebar run={run} title={title} /> : null}
       {rail === "images" ? (
         <>
-          <ImagesPanel />
+          <ImagesPanel title={title} />
           <SlideColumn />
         </>
       ) : null}
       {rail === "shapes" ? (
         <>
-          <ShapesPanel />
+          <ShapesPanel title={title} />
           <SlideColumn />
         </>
       ) : null}
       {rail === "text" ? (
         <>
-          <TextPanel />
+          <TextPanel title={title} />
           <SlideColumn />
         </>
       ) : null}
       <div className="relative flex min-w-0 flex-1 flex-col items-center pt-14 pb-4">
         <div className="flex flex-col gap-3" style={{ width }}>
-          <span className="text-[length:var(--type-dense)] text-faint">3</span>
+          <span className="text-[length:var(--type-dense)] text-faint">{slideLabel}</span>
           <RevenueSlide width={width} working={working} selected={run === "compose"} />
         </div>
         <span className="block flex-1" />

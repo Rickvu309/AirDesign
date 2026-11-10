@@ -16,7 +16,7 @@ const sections: { name: string; items: number[] }[] = [
   { name: "Outlook", items: [6, 7, 8] },
 ]
 
-export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNode }) {
+export function SlideGrid({ state, title, toast }: { state: GridState; title: string; toast?: ReactNode }) {
   return (
     <EditorFrame
       top={
@@ -25,7 +25,7 @@ export function SlideGrid({ state, toast }: { state: GridState; toast?: ReactNod
             <span className="flex size-8 items-center justify-center">
               <AirdesignMark size={20} />
             </span>
-            <DeckTitle className="pr-2 pl-0.5" />
+            <DeckTitle title={title} className="pr-2 pl-0.5" />
             <Button
               type="button"
               variant="ghost"
