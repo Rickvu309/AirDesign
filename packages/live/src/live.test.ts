@@ -669,7 +669,7 @@ describe("live cache", () => {
     const notes = "ppt/notesSlides/notesSlide1.xml"
     const layout = "ppt/slideLayouts/slideLayout1.xml"
     const cleanNodes = { a: { part: slide, shape: "2" } }
-    const otherNodes = { a: { part: slide, shape: "5" } }
+    const otherNodes = { a: { part: notes, shape: "5" } }
     const clean = await putParts("clean", {
       parts: new Map<string, Uint8Array>([
         [slide, new Uint8Array([9, 8, 7])],
