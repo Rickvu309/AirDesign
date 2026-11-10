@@ -2,44 +2,7 @@
 @import "@fontsource-variable/geist";
 @import "@fontsource-variable/geist-mono";
 @import "@fontsource-variable/newsreader";
-
-:root {
-  color-scheme: light;
-  --background: #ffffff;
-  --canvas: #f5f5f2;
-  --foreground: #222222;
-  --muted-foreground: #666666;
-  --faint-foreground: #909090;
-  --border: #eeeeec;
-  --primary: #4d94fb;
-  --primary-top: #93b8ef;
-  --primary-strong: #2d6fcd;
-  --primary-foreground: #ffffff;
-  --ring: #2d6fcd;
-  --navy: #0f2433;
-  --positive: #16a34a;
-  --negative: #dc2626;
-  --ease-micro: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-panel: cubic-bezier(0.32, 0.72, 0, 1);
-  --transition-micro: 150ms var(--ease-micro);
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-canvas: var(--canvas);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-faint-foreground: var(--faint-foreground);
-  --color-border: var(--border);
-  --color-primary: var(--primary);
-  --color-primary-strong: var(--primary-strong);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-navy: var(--navy);
-  --color-positive: var(--positive);
-  --color-negative: var(--negative);
-  --font-sans: "Geist Variable", system-ui, sans-serif;
-  --font-serif: "Newsreader Variable", Georgia, serif;
-  --font-mono: "Geist Mono Variable", ui-monospace, monospace;
-}
+@import "@airdesign/theme/tokens.css";
 
 @keyframes ticker-run {
   to {
@@ -100,7 +63,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: linear-gradient(180deg, var(--primary-top) 0%, var(--primary) 100%);
+    background-image: var(--fill-marketing);
     box-shadow:
       inset 0 1px 0 #ffffff59,
       0 0 0 1px var(--primary-strong),
@@ -141,7 +104,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 9999px;
-    background-image: linear-gradient(180deg, var(--primary-top) 0%, var(--primary) 100%);
+    background-image: var(--fill-marketing);
     box-shadow:
       inset 0 1px 0 #ffffff66,
       0 0 0 1px var(--primary-strong);

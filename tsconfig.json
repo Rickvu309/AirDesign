@@ -1,4 +1,11 @@
 {
   "files": [],
-  "references": [{ "path": "./packages/document" }]
+  "references": [
+    {
+      "path": "./packages/document"
+    },
+    {
+      "path": "./packages/theme"
+    }
+  ]
 }

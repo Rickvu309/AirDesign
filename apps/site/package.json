@@ -10,6 +10,7 @@
     "deploy": "astro build && wrangler deploy"
   },
   "dependencies": {
+    "@airdesign/theme": "workspace:*",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",
     "@fontsource-variable/newsreader": "5.3.0",

@@ -445,11 +445,16 @@ function animateAgentPresence(demo: Element, easings: DemoEasings): Animation[] 
   ]
 }
 
+function bezierEasing(token: string): string {
+  const match = /cubic-bezier\([^)]*\)/.exec(token)
+  return match === null ? token : match[0]
+}
+
 function readEasings(): DemoEasings {
   const rootStyle = getComputedStyle(document.documentElement)
   return {
-    micro: rootStyle.getPropertyValue("--ease-micro").trim(),
-    panel: rootStyle.getPropertyValue("--ease-panel").trim(),
+    micro: bezierEasing(rootStyle.getPropertyValue("--ease-micro").trim()),
+    panel: bezierEasing(rootStyle.getPropertyValue("--ease-panel").trim()),
   }
 }
 

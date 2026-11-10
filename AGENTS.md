@@ -28,7 +28,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## Where code lives
 
-- `apps/site` is the marketing and sign-in site. Shared classes and theme are in `src/site/site-theme.css`.
+- `apps/site` is the marketing and sign-in site. Color, type, space and motion live in `packages/theme`. Site classes stay in `src/site/site-theme.css`.
 - `apps/web` is the product UI. Product screens go here, never in `apps/site`. Each designed state is a page at `/screens/<id>-<name>`, registered in `src/<area>/<area>-screens.tsx`. Use shadcn parts, Sonner for toasts, and AI Elements for agent chat.
 - `packages/*` are shared packages. The build refuses a deep import, an undeclared dependency, or a browser or Node API in a pure package.
 
@@ -37,9 +37,9 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - Code has no comments. If code needs explaining, use a better name.
 - Never name a file or folder `utils`, `helpers` or `common`. Name it after what it contains.
 - Use one word per idea, everywhere. The same name appears in the code, the test and the tool, so one search finds all of it.
-- Every package exposes only its `index.ts`, and tests sit beside the code.
+- Every package exposes only its `index.ts`, and tests sit beside the code. `@airdesign/theme` also exposes `tokens.css`.
 - Extend what exists before building a parallel version.
-- Copy and layout follow the existing screens. Do not invent product copy.
+- Copy follows the existing screens. Do not invent product copy. Layout follows the tokens in `packages/theme` and the components in `apps/web/src/components/ui/`. Add a missing role to the token file.
 - With reduced motion on, a page shows its finished state with no movement.
 - Test behavior that can break, at the lowest layer that fails. Tests never retry.
 - Do not commit plans, research notes or scratch files. A merged PR is the record.
