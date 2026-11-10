@@ -31,6 +31,26 @@ export function missingOperations(pptx, runs) {
   return pptx.routeOperations.filter((operation) => !have.has(operation))
 }
 
+export function passedWrites(decks) {
+  const passedRoutes = new Set()
+  let decksPassed = 0
+  for (const deck of decks) {
+    const byRoute = new Map()
+    for (const run of deck.runs) {
+      const row = byRoute.get(run.route) ?? { ok: true }
+      if (run.passed !== true) row.ok = false
+      byRoute.set(run.route, row)
+    }
+    let deckOk = byRoute.size > 0 && deck.missing !== true
+    for (const [route, row] of byRoute) {
+      if (!row.ok) deckOk = false
+      else passedRoutes.add(route)
+    }
+    if (deckOk) decksPassed += 1
+  }
+  return { routes: passedRoutes.size, decks: decksPassed }
+}
+
 export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterErrors) {
   if (item.run.error !== null) return { operation: item.run.operation, error: item.run.error }
   if (item.exportError !== null) return { operation: item.run.operation, error: item.exportError }

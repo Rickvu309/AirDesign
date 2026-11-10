@@ -1,7 +1,10 @@
 import { spawnSync } from "node:child_process"
+import { createRequire } from "node:module"
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { missingOperations, passedWrites, scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 
 const unproven = /\.(?:fails|skip|todo)\b|\.(?:fixme|fail)\(|\b(?:fails|skip|todo): true/g
 
@@ -16,13 +19,6 @@ const knownFaults = (root) => {
   return count
 }
 
-const realDecks = (root) => {
-  const fixtures = path.join(root, "scripts/pptx-fixtures")
-  const cases = JSON.parse(fs.readFileSync(path.join(fixtures, "cases.json"), "utf8"))
-  const names = new Set(cases.flatMap((row) => [row.before, row.after]))
-  return [...names].filter((name) => fs.statSync(path.join(fixtures, name)).size >= 100_000).length
-}
-
 const built = (root, name) => {
   const entry = path.join(root, "packages", name, "dist/index.js")
   if (!fs.existsSync(entry)) throw new Error(`packages/${name} is not built. Run pnpm build, then run this again.`)
@@ -32,11 +28,55 @@ const built = (root, name) => {
 const routeNames = (table) =>
   Object.values(table).flatMap((routes) => Object.values(routes).map((named) => named.route))
 
+const judgedCache = new Map()
+
+const judgeDeck = async (root) => {
+  const pptx = await built(root, "pptx")
+  const file = path.join(root, "scripts/pptx-fixtures/routes.pptx")
+  if (!fs.existsSync(file) || typeof pptx.readParts !== "function" || typeof pptx.routeRuns !== "function") {
+    return { routes: 0, decks: 0 }
+  }
+  if (typeof pptx.prepareMarkup === "function") {
+    const require = createRequire(path.join(root, "packages/pptx/package.json"))
+    await pptx.prepareMarkup(fs.readFileSync(require.resolve("sax-wasm/lib/sax-wasm.wasm")))
+  }
+  const original = await pptx.readParts(fs.readFileSync(file))
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "pptx-stick-"))
+  try {
+    const written = await writtenRouteFiles(pptx, original, directory, "stick")
+    const runs = written.map((item) => ({
+      route: item.run.route,
+      passed: scoreWrittenRoute(pptx, original, [], item, []) === null,
+    }))
+    return passedWrites([
+      {
+        runs,
+        missing:
+          missingOperations(
+            pptx,
+            written.map((item) => item.run),
+          ).length > 0,
+      },
+    ])
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+}
+
+const judged = (root) => {
+  const cached = judgedCache.get(root)
+  if (cached !== undefined) return cached
+  const pending = judgeDeck(root)
+  judgedCache.set(root, pending)
+  return pending
+}
+
+const realDecks = async (root) => (await judged(root)).decks
+
 const capabilitiesExported = async (root) => {
   const document = await built(root, "document")
-  const pptx = await built(root, "pptx")
   return {
-    now: new Set(Object.values(pptx.writtenRoutes)).size,
+    now: (await judged(root)).routes,
     goal: new Set([...routeNames(document.properties), ...routeNames(document.structure)]).size,
   }
 }
