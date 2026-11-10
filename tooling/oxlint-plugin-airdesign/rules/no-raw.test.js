@@ -1,5 +1,5 @@
 import { expectAccepts, expectRejects } from "../harness.js"
-import { rawFindings } from "./no-raw.js"
+import { rawExtensions, rawFindings } from "./no-raw.js"
 
 const rule = { "airdesign/no-raw": "error" }
 const hex = "Use a theme token instead of a raw hex."
@@ -26,7 +26,12 @@ expectAccepts("a sized class stays off", "screen.tsx", 'export const size = "h-[
 
 const css = rawFindings("page.css", `x { color: ${color}; }\n`)
 const html = rawFindings("page.html", `<p style="color:${color}"></p>\n`)
-if (css.length !== 1 || html.length !== 1) throw new Error("css and html walk failed")
+const svg = rawFindings("favicon.svg", `<svg fill="${color}"></svg>\n`)
+const svgArt = rawFindings("favicon-art.svg", `<svg fill="${color}"></svg>\n`)
+if (css.length !== 1 || html.length !== 1 || svg.length !== 1 || svgArt.length !== 0) {
+  throw new Error("css and html walk failed")
+}
+if (!rawExtensions.has(".svg")) throw new Error("svg walk failed")
 if (!css[0].message.includes("token") || !html[0].message.includes("token")) {
   throw new Error("css and html walk failed")
 }

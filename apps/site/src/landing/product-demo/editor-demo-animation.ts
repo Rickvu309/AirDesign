@@ -1,5 +1,3 @@
-import { shimmerImage } from "./editor-demo-shimmer-art"
-
 type DemoMotion = "fade" | "rise" | "reveal-up" | "draw"
 
 interface DemoCue {
@@ -68,6 +66,7 @@ const streamWordGapPattern = [70, 55, 85, 60, 95, 50, 75]
 const streamWordDurationMs = 200
 const shimmerSweepMs = 950
 const shimmerWidth = 72
+const shimmerImage = "linear-gradient(90deg, var(--white-0), var(--white-88), var(--white-0))"
 const shimmerRepeatMs = 1150
 const sparkMoveMs = 280
 const sparkMoveLeadMs = 90
