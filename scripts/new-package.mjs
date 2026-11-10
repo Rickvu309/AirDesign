@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process"
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
+import { sortedReferences } from "./reference-order.mjs"
 
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const name = process.argv[2]
@@ -101,7 +102,7 @@ writeFileSync(
 
 writeFileSync(sourcePath, `export function packageId(): string {\n  return "${packageName}"\n}\n`)
 
-rootTsconfig.references = [...references, { path: reference }]
+rootTsconfig.references = sortedReferences([...references, { path: reference }])
 writeFileSync(rootTsconfigPath, `${JSON.stringify(rootTsconfig, null, 2)}\n`)
 
 const oxfmt = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../node_modules/.bin/oxfmt")

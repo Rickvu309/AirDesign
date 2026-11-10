@@ -2,37 +2,37 @@
   "files": [],
   "references": [
     {
-      "path": "./packages/document"
-    },
-    {
-      "path": "./packages/theme"
-    },
-    {
-      "path": "./packages/pptx"
+      "path": "./apps/api"
     },
     {
       "path": "./packages/catalog"
     },
     {
-      "path": "./packages/engine"
-    },
-    {
-      "path": "./packages/render"
-    },
-    {
       "path": "./packages/device"
     },
     {
-      "path": "./apps/api"
+      "path": "./packages/document"
     },
     {
-      "path": "./packages/usage"
+      "path": "./packages/engine"
     },
     {
       "path": "./packages/live"
     },
     {
       "path": "./packages/mcp"
+    },
+    {
+      "path": "./packages/pptx"
+    },
+    {
+      "path": "./packages/render"
+    },
+    {
+      "path": "./packages/theme"
+    },
+    {
+      "path": "./packages/usage"
     }
   ]
 }
