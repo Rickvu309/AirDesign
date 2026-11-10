@@ -23,4 +23,4 @@ export const imageColumns: { left: [number, string][]; right: [number, string][]
 
 export const templateHalden = { titleColor: "#ffffff", line: "#ffffff55" }
 export const templateLight = { titleColor: "#222222", line: "#d7d7d6" }
-export const templateDark = { className: "bg-[#111111]", titleColor: "#ffffff", line: "#ffffff40" }
+export const templateDark = { fill: "#111111", titleColor: "#ffffff", line: "#ffffff40" }
