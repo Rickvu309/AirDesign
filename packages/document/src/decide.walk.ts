@@ -21,12 +21,9 @@ export function copyNode(node: NodeRegister): NodeRegister {
 }
 
 function copyElements(elements: Register["elements"]): Register["elements"] {
-  const copy: { [id: string]: NodeRegister | undefined } = {}
-  for (const [id, body] of Object.entries(elements)) {
-    if (body === undefined) continue
-    copy[id] = copyNode(body)
-  }
-  return copy
+  return Object.fromEntries(
+    Object.entries(elements).flatMap(([id, body]) => (body === undefined ? [] : [[id, copyNode(body)] as const])),
+  )
 }
 
 export function copyRegister(register: Register): Register {
@@ -48,12 +45,11 @@ export function freezeNode(node: NodeRegister): NodeRegister {
 }
 
 function freezeElements(elements: Register["elements"]): Register["elements"] {
-  const copy: { [id: string]: NodeRegister | undefined } = {}
-  for (const [id, body] of Object.entries(elements)) {
-    if (body === undefined) continue
-    copy[id] = freezeNode(body)
-  }
-  return Object.freeze(copy)
+  return Object.freeze(
+    Object.fromEntries(
+      Object.entries(elements).flatMap(([id, body]) => (body === undefined ? [] : [[id, freezeNode(body)] as const])),
+    ),
+  )
 }
 
 export function freezeRegister(register: Register): Register {

@@ -120,8 +120,8 @@ function nodeOf(register: Register): NodeRegister {
   }
 }
 
-function apply(register: Register): Decision {
-  return { decision: "apply", register, route: register.route }
+function apply(register: Register, route: string): Decision {
+  return { decision: "apply", register, route }
 }
 
 function refuse(code: Refusal): Decision {
@@ -155,18 +155,18 @@ function storedBody(register: Register, id: ElementId): NodeRegister | null {
 
 function place(register: Register, id: ElementId, body: NodeRegister): Decision {
   if (id === openedElement) {
-    return apply({
-      ...register,
-      ...body,
-      nodes: register.nodes,
-      readNodes: register.readNodes,
-      elements: register.elements,
-    })
+    return apply(
+      {
+        ...register,
+        ...body,
+        nodes: register.nodes,
+        readNodes: register.readNodes,
+        elements: register.elements,
+      },
+      body.route,
+    )
   }
-  return apply({
-    ...register,
-    elements: { ...elementsOf(register, id), [id]: body },
-  })
+  return apply({ ...register, elements: { ...elementsOf(register, id), [id]: body } }, body.route)
 }
 
 function personEdit(register: NodeRegister, value: string): NodeRegister {
@@ -252,19 +252,22 @@ function addNode(register: Register, id: ElementId, floor: string, route: string
   const elements = elementsOf(register, id)
   const kept = ownBody(elements, id)
   const body = kept ?? openNode(floor, route)
-  return apply({
-    ...register,
-    nodes: [...register.nodes, id],
-    elements: { ...elements, [id]: body },
-  })
+  return apply({ ...register, nodes: [...register.nodes, id], elements: { ...elements, [id]: body } }, body.route)
 }
 
 function removeNode(register: Register, id: ElementId): Decision {
-  return apply({
-    ...register,
-    nodes: register.nodes.filter((node) => node !== id),
-    elements: elementsOf(register, id),
-  })
+  const body = storedBody(register, id)
+  if (body === null) {
+    throw new Error("missing node")
+  }
+  return apply(
+    {
+      ...register,
+      nodes: register.nodes.filter((node) => node !== id),
+      elements: elementsOf(register, id),
+    },
+    body.route,
+  )
 }
 
 function readNodes(register: Register, id: ElementId, runId: string): Decision {
@@ -275,7 +278,7 @@ function readNodes(register: Register, id: ElementId, runId: string): Decision {
   if (body.runId !== runId || (body.phase !== "stopped" && body.phase !== "undone")) {
     return refuse("run-fenced")
   }
-  return apply({ ...register, readNodes: [...register.nodes] })
+  return apply({ ...register, readNodes: [...register.nodes] }, body.route)
 }
 
 function editNode(register: Register, id: ElementId, command: Command): Decision {
