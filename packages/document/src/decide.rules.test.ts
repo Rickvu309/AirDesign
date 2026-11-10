@@ -433,7 +433,7 @@ function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly ove
             }
       if (!sameText(decision, expected)) {
         hit.failure = hit.failure ?? `${chosen.name} disagreed`
-        return null
+        return chosen.effect.outcome === "refuse" ? null : nextRegister(register, command, chosen.effect)
       }
       hit.hits += 1
       return decision.decision === "apply" ? decision.register : null
@@ -447,6 +447,29 @@ let walked: ReturnType<typeof walkOnce> | undefined
 function walkAll(): ReturnType<typeof walkOnce> {
   walked ??= walkOnce()
   return walked
+}
+
+function keptGuardAfterAgent(name: string): void {
+  const register = freezeRegister({
+    ...openRegister("floor", "slide"),
+    phase: "running",
+    runId: "r",
+    readAt: 1,
+    guarded: true,
+    landed: [{ actor: "agent", value: "wrote", visible: true }],
+  })
+  const before = copyRegister(register)
+  const decision = decide(register, { command: "person", value: "kept" })
+  expect(register, name).toEqual(before)
+  expect(decision, name).toEqual({
+    decision: "apply",
+    route: register.route,
+    register: {
+      ...register,
+      landed: [...register.landed, { actor: "person", value: "kept", visible: true }],
+      guarded: true,
+    },
+  })
 }
 
 describe("decide", () => {
@@ -471,6 +494,9 @@ describe("decide", () => {
       }
       if (hit.hits === 0) {
         throw new Error(`${rule.name} was not reached`)
+      }
+      if (rule.name === "A person edit keeps the guard after the agent has landed") {
+        keptGuardAfterAgent(rule.name)
       }
     })
   }
