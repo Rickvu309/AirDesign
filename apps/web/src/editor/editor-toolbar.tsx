@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { EditorIcon, type EditorIconName } from "@/editor/editor-icons"
 import { PanelSwitch } from "@/editor/panel-switch"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
 

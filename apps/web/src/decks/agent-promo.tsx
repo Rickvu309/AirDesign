@@ -1,5 +1,5 @@
 import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 import { promoFill, promoMark, promoSlash } from "@/decks/agent-promo-art"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
 import { DeckGlyph } from "@/decks/deck-glyph"

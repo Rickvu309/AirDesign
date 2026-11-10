@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export function Conversation({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("flex min-h-0 flex-1 flex-col", className)} role="log" {...props} />

@@ -4,7 +4,7 @@ import { DeckGlyph } from "@/decks/deck-glyph"
 import { AgentPromo } from "@/decks/agent-promo"
 import { account, starredFolders } from "@/decks/sample-decks"
 import { deckRoutes, type DeckSection } from "@/decks/deck-routes"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const sections: {
   id: DeckSection

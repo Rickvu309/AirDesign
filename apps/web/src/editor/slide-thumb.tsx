@@ -11,7 +11,7 @@ import {
   thumbTeal,
   thumbTitle,
 } from "@/editor/slide-thumb-art"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 const bars = [4.1, 4.6, 5, 5.4, 5.7]
 const frameShadow = "shadow-[0px_0px_0px_1px_var(--field-edge)]"

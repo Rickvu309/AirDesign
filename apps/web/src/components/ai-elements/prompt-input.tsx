@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 
 export function PromptInput({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (

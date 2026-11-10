@@ -4,6 +4,7 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { rawExtensions, rawFindings } from "./rules/no-raw.js"
 import { scanSource, scannedExtensions } from "./scan-comments.js"
+import { nameFindings } from "./scan-names.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
@@ -32,11 +33,12 @@ const filesUnder = (absolute) => {
 const hits = []
 for (const relativePath of lintPaths) {
   for (const file of filesUnder(path.resolve(root, relativePath))) {
+    const relative = path.relative(root, file).split(path.sep).join("/")
+    hits.push(...nameFindings(relative))
     const extension = path.extname(file).toLowerCase()
     const comment = scannedExtensions.has(extension)
     const raw = rawExtensions.has(extension)
     if (!comment && !raw) continue
-    const relative = path.relative(root, file).split(path.sep).join("/")
     const source = fs.readFileSync(file, "utf8")
     if (comment) hits.push(...(await scanSource(relative, source)))
     if (raw) {

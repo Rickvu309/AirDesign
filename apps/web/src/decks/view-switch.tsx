@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/class-names"
 import { deckRoutes } from "@/decks/deck-routes"
 import { DeckGlyph } from "@/decks/deck-glyph"
 
