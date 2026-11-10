@@ -1,3 +1,4 @@
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
 import { exportElements, idFields, type ElementEdit, type IdRole } from "./element-export.js"
@@ -23,6 +24,12 @@ const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/20
 const wideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/></Relationships>`
 const types = `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`
 const slideRels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/></Relationships>`
+
+async function zipped(parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
+  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter())
+  for (const [name, data] of parts) await writer.add(name, new Uint8ArrayReader(data))
+  return writer.close()
+}
 
 function text(value: string): Uint8Array {
   return encodeUtf8(value)
@@ -322,8 +329,9 @@ describe("exportElements", () => {
       setText("256.2", "FIRST"),
       { id: "256.2", name: "move", x: 5, y: 6 } as const,
     ]
-    const once = await exportPackage(exportElements(deck(), edits).parts)
-    const twice = await exportPackage(exportElements(deck(), edits).parts)
+    const original = await zipped(deck())
+    const once = await exportPackage(original, exportElements(deck(), edits).parts)
+    const twice = await exportPackage(original, exportElements(deck(), edits).parts)
     expect(sameBytes(once, twice)).toBe(true)
   })
 
