@@ -11,7 +11,7 @@ const stages = [
     ["format", "pnpm", ["exec", "oxfmt", "--check"]],
     ["lint", "pnpm", ["lint"]],
     ["actionlint", "node", ["scripts/actionlint.mjs"]],
-    ["test", "pnpm", ["test:unit"]],
+    ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1" }],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["specs", "pnpm", ["check:specs"]],
@@ -30,10 +30,13 @@ const showOnSuccess = new Set(["bug-rule", "sticks", "specs"])
 const all = process.argv.includes("--all")
 const failed = []
 
-const run = ([name, command, args]) =>
+const run = ([name, command, args, extra]) =>
   new Promise((resolve) => {
     const started = Date.now()
-    const child = spawn(command, args, { cwd: root, env: process.env })
+    const child = spawn(command, args, {
+      cwd: root,
+      env: extra ? { ...process.env, ...extra } : process.env,
+    })
     let output = ""
     child.stdout.on("data", (chunk) => (output += chunk))
     child.stderr.on("data", (chunk) => (output += chunk))
