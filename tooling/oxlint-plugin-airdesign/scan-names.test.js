@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 import { nameFindings } from "./scan-names.js"
-import { glossary, wordFindings } from "./scan-names.js"
+import { glossary, glossaryFindings, wordFindings } from "./scan-names.js"
 
 const expectHits = (relative, count) => {
   const hits = nameFindings(relative)
@@ -27,7 +27,6 @@ const oldFailure = "known " + "fa" + "ult"
 const oldMetric = "st" + "ick"
 const oldCi = "ga" + "te"
 const oldRatchet = `owner ${oldCi}`
-const oldRegression = "old " + "pro" + "of"
 const instead = (relative, line, use, old) => `${relative}:${line}: Write "${use}" instead of "${old}".`
 
 expectWords("scripts/metrics.mjs", `  throw new Error("one ${oldFailure} was not counted")`, [
@@ -41,8 +40,13 @@ expectWords(
 expectWords("scripts/metrics.mjs", `const ${"known" + "Fa" + "ults"} = (root) => 0`, [
   instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
 ])
-expectWords("scripts/check-regression.mjs", `\n  console.log("no ${oldRegression} could run")`, [
-  instead("scripts/check-regression.mjs", 2, "check-regression", oldRegression),
+expectWords(
+  "scripts/check-regression.mjs",
+  `\n  console.log("Only the lost lines are judged here. CI runs the old proofs.")`,
+  [],
+)
+expectWords("scripts/metrics.mjs", `const ${"known" + "fa" + "ults"} = 0`, [
+  instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
 ])
 expectWords("scripts/check.mjs", `${oldMetric}s and ${oldMetric}`, [
   instead("scripts/check.mjs", 1, "metric", oldMetric),
@@ -56,6 +60,26 @@ expectWords("tooling/oxlint-plugin-airdesign/glossary.json", `"${oldMetric}": "m
 const pastPath = expectHits(`scripts/${oldMetric}s.mjs`, 1)
 if (pastPath[0] !== `scripts/${oldMetric}s.mjs: Write "metric" instead of "${oldMetric}".`) throw new Error(pastPath[0])
 expectHits(`.github/workflows/owner-${oldCi}.yml`, 1)
+
+const sameHits = (name, hits, said) => {
+  if (hits.join("\n") !== said.join("\n")) throw new Error(`${name} gave\n${hits.join("\n")}`)
+}
+const where = "tooling/oxlint-plugin-airdesign/glossary.json: The allowed line in scripts/ratchet.mjs"
+const entry = { file: "scripts/ratchet.mjs", text: "x", reason: "compatibility", expires: "2027-02-09" }
+sameHits("a live entry passes", glossaryFindings("2026-11-11", [entry]), [])
+sameHits("an entry passes on its last day", glossaryFindings("2027-02-09", [entry]), [])
+sameHits("an expired entry fails", glossaryFindings("2027-02-10", [entry]), [
+  `${where} expired on 2027-02-09. Replace the word or renew it with a reason.`,
+])
+sameHits("an entry may not stay past 92 days", glossaryFindings("2026-11-01", [entry]), [
+  `${where} may stay at most 92 days. Set expires on or before that.`,
+])
+sameHits("an entry needs a reason", glossaryFindings("2026-11-11", [{ ...entry, reason: "" }]), [
+  `${where} needs a reason.`,
+])
+sameHits("an entry needs an expiry", glossaryFindings("2026-11-11", [{ ...entry, expires: undefined }]), [
+  `${where} needs an expires date.`,
+])
 
 const root = path.resolve(import.meta.dirname, "../..")
 for (const one of glossary.allowed) {
