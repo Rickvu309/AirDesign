@@ -30,7 +30,7 @@ import {
   renderPages,
   renderSettings,
   renderUse,
-  toolVersions,
+  readMachine,
 } from "./pptx-render.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
@@ -64,10 +64,10 @@ const validatorLists = async (files) => {
   return lists
 }
 
-const renderCacheReady = toolVersions({ soffice, pdftoppm: "pdftoppm" }).then((tools) =>
+const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: process.env }).then((machine) =>
   renderCache({
     folder: renderCacheFolder,
-    tools,
+    machine,
     settings: renderSettings,
     code: renderCode(),
     render: (file) => renderPages(file, { soffice, pdftoppm: "pdftoppm", run }),
