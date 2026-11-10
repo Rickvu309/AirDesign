@@ -66,3 +66,14 @@ it("sorts strictly between its bounds, including repeated insertion at one spot"
     ),
   )
 })
+
+it("appends from 0 through 200 in strict order", () => {
+  let previous: OrderKey | null = null
+  for (let count = 0; count <= 200; count += 1) {
+    const key = orderKeyBetween(previous, null)
+    if (previous !== null && !(previous < key)) {
+      throw new Error(`append ${count} is not greater`)
+    }
+    previous = key
+  }
+})

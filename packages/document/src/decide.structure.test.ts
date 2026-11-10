@@ -14,16 +14,14 @@ import {
 } from "./decide.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
-type Effect = "add" | "remove" | "person" | "start" | "stop" | "read"
+type Effect = "add" | "remove" | "read"
 
 type StructureRule = {
   readonly command: "add" | "remove" | "person" | "agent" | "start" | "stop" | "read"
   readonly present: boolean
   readonly phase?: Phase
-  readonly guarded?: boolean
   readonly outcome: "apply" | "refuse"
   readonly effect?: Effect
-  readonly guardedNext?: boolean
   readonly code?: Refusal
 }
 
@@ -33,61 +31,10 @@ const rules: readonly StructureRule[] = [
   { command: "remove", present: false, outcome: "refuse", code: "dead" },
   { command: "remove", present: true, outcome: "apply", effect: "remove" },
   { command: "person", present: false, outcome: "refuse", code: "dead" },
-  {
-    command: "person",
-    present: true,
-    phase: "idle",
-    guarded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    present: true,
-    phase: "running",
-    guarded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    present: true,
-    phase: "running",
-    guarded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
-  {
-    command: "person",
-    present: true,
-    phase: "stopped",
-    guarded: false,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: false,
-  },
-  {
-    command: "person",
-    present: true,
-    phase: "stopped",
-    guarded: true,
-    outcome: "apply",
-    effect: "person",
-    guardedNext: true,
-  },
   { command: "agent", present: false, outcome: "refuse", code: "dead" },
   { command: "agent", present: true, phase: "idle", outcome: "refuse", code: "run-fenced" },
   { command: "start", present: false, outcome: "refuse", code: "dead" },
-  { command: "start", present: true, phase: "idle", outcome: "apply", effect: "start" },
-  { command: "start", present: true, phase: "running", outcome: "refuse", code: "run-fenced" },
-  { command: "start", present: true, phase: "stopped", outcome: "refuse", code: "run-fenced" },
   { command: "stop", present: false, outcome: "refuse", code: "dead" },
-  { command: "stop", present: true, phase: "idle", outcome: "refuse", code: "run-fenced" },
-  { command: "stop", present: true, phase: "running", outcome: "apply", effect: "stop" },
-  { command: "stop", present: true, phase: "stopped", outcome: "refuse", code: "run-fenced" },
   { command: "read", present: false, outcome: "refuse", code: "dead" },
   { command: "read", present: true, phase: "idle", outcome: "refuse", code: "run-fenced" },
   { command: "read", present: true, phase: "running", outcome: "refuse", code: "run-fenced" },
@@ -100,15 +47,7 @@ function rowKey(rule: StructureRule): string {
   if (rule.phase === undefined) {
     return JSON.stringify({ command: rule.command, present: rule.present })
   }
-  if (rule.guarded === undefined) {
-    return JSON.stringify({ command: rule.command, present: rule.present, phase: rule.phase })
-  }
-  return JSON.stringify({
-    command: rule.command,
-    present: rule.present,
-    phase: rule.phase,
-    guarded: rule.guarded,
-  })
+  return JSON.stringify({ command: rule.command, present: rule.present, phase: rule.phase })
 }
 
 for (const rule of rules) {
@@ -153,14 +92,6 @@ function situationKey(register: Register, command: Command): string {
   const body = bodyOf(register, node)
   if (body === null) {
     throw new Error("missing node")
-  }
-  if (command.command === "person") {
-    return JSON.stringify({
-      command: command.command,
-      present: true,
-      phase: body.phase,
-      guarded: body.guarded,
-    })
   }
   return JSON.stringify({ command: command.command, present: true, phase: body.phase })
 }
@@ -269,43 +200,8 @@ function expectTarget(before: Register, after: Register, command: Command, rule:
     unchangedBody(afterBody, beforeBody, key)
     return
   }
-  if (effect === "person") {
-    if (rule.guardedNext === undefined) {
-      throw new Error(`missing guardedNext ${key}`)
-    }
-    if (command.command !== "person") {
-      throw new Error(`person effect ${key}`)
-    }
-    expectBody(
-      afterBody,
-      {
-        version: version(beforeBody) + 1,
-        value: command.value,
-        phase: beforeBody.phase,
-        guarded: rule.guardedNext,
-      },
-      key,
-    )
-    return
-  }
-  if (effect === "start") {
-    expectBody(
-      afterBody,
-      { version: version(beforeBody), value: currentValue(beforeBody), phase: "running", guarded: false },
-      key,
-    )
-    return
-  }
-  expectBody(
-    afterBody,
-    {
-      version: version(beforeBody),
-      value: currentValue(beforeBody),
-      phase: "stopped",
-      guarded: beforeBody.guarded,
-    },
-    key,
-  )
+  const unreachable: never = effect
+  throw new Error(unreachable)
 }
 
 function sameIds(left: readonly NodeName[] | null, right: readonly NodeName[] | null): boolean {
@@ -343,14 +239,6 @@ function noteVisit(register: Register, command: Command, decision: Decision, see
     decision.code === "dead"
   ) {
     seen.add("Remove absent b. Refuse dead.")
-  }
-  if (
-    command.command === "person" &&
-    command.node === undefined &&
-    register.nodes.includes("a") &&
-    decision.decision === "apply"
-  ) {
-    seen.add("Person edit of present a applies.")
   }
   if (
     (command.command === "add" || command.command === "remove") &&
@@ -396,6 +284,9 @@ function checkCommand(register: Register, command: Command, seen: Set<string>): 
   expect(register, key).toEqual(before)
   const rule = table.get(key)
   if (rule === undefined) {
+    if (command.command === "person" || command.command === "start" || command.command === "stop") {
+      return decision.decision === "apply" ? decision.register : null
+    }
     throw new Error(`missing row ${key}`)
   }
   if (rule.outcome === "refuse") {
@@ -426,7 +317,6 @@ const required = [
   "Add b again. Refuse present.",
   "Remove b. An agent edit of b refuses dead.",
   "Remove absent b. Refuse dead.",
-  "Person edit of present a applies.",
   "Stop a, then read run s. readNodes stays after a later structure step.",
   "read from idle refuses run-fenced.",
 ]

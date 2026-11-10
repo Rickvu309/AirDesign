@@ -42,6 +42,24 @@ const personChain: NodeRegister = {
   bytes: 0,
 }
 
+const visibleAgentChain: NodeRegister = {
+  route: "slide",
+  floor: "floor",
+  landed: [
+    { actor: "person", value: "kept", visible: true },
+    { actor: "agent", value: "shown", visible: true },
+    { actor: "agent", value: "gone", visible: false },
+  ],
+  phase: "running",
+  runId: "r",
+  readAt: 1,
+  guarded: false,
+  claimed: 1,
+  stoppedAt: null,
+  slides: 1,
+  bytes: 0,
+}
+
 const keptPerson: CompactRow = {
   landed: [{ actor: "person", value: "kept", visible: true }],
   version: 1,
@@ -70,12 +88,28 @@ const table = new Map<string, CompactRow>([
   ],
   ["drops-hidden", keptPerson],
   ["keeps-person", keptPerson],
+  [
+    "keeps-visible-agent",
+    {
+      landed: [
+        { actor: "person", value: "kept", visible: true },
+        { actor: "agent", value: "shown", visible: true },
+      ],
+      version: 2,
+      value: "shown",
+      history: ["kept", "shown"],
+      floor: "floor",
+      phase: "running",
+      guarded: false,
+    },
+  ],
 ])
 
 const required = [
   "eligible false keeps a hidden agent row",
   "eligible true drops that hidden row",
   "eligible true does not drop a visible person row",
+  "eligible true keeps a visible agent row and drops a hidden one",
 ]
 
 function rowOf(name: string): CompactRow {
@@ -105,10 +139,13 @@ function walk(): void {
   seen.add("drops-hidden")
   expectChain(compactChain(personChain, true), "keeps-person")
   seen.add("keeps-person")
+  expectChain(compactChain(visibleAgentChain, true), "keeps-visible-agent")
+  seen.add("keeps-visible-agent")
   const names = new Map<string, string>([
     ["keeps-hidden", "eligible false keeps a hidden agent row"],
     ["drops-hidden", "eligible true drops that hidden row"],
     ["keeps-person", "eligible true does not drop a visible person row"],
+    ["keeps-visible-agent", "eligible true keeps a visible agent row and drops a hidden one"],
   ])
   for (const name of required) {
     const key = [...names.entries()].find((entry) => entry[1] === name)?.[0]
