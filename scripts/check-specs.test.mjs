@@ -24,7 +24,22 @@ fs.writeFileSync(path.join(directory, "Edit.tla"), source.replace(guard, opened)
 const java = javaBin()
 const jar = jarPath()
 assertJar(jar)
-const result = checkSpec(directory, java, jar)
+const realRemove = fs.rmSync
+let integersInModuleDir = false
+fs.rmSync = (target, options) => {
+  const location = String(target)
+  if (path.basename(location).startsWith("airdesign-tlc-modules-")) {
+    integersInModuleDir = fs.existsSync(path.join(location, "Integers.tla"))
+  }
+  return realRemove(target, options)
+}
+let result
+try {
+  result = checkSpec(directory, java, jar)
+} finally {
+  fs.rmSync = realRemove
+}
+if (!integersInModuleDir) throw new Error("Integers.tla was not in the private module directory")
 const trace = result.output
 const read = trace.indexOf("<RunStarts")
 const edited = trace.indexOf("<PersonWrites")
