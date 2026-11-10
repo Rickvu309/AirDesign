@@ -1,6 +1,6 @@
 {
   "known faults": { "now": 0, "goal": 0 },
-  "real decks in the PowerPoint check": { "now": 2, "goal": 20 },
+  "real decks in the PowerPoint check": { "now": 0, "goal": 20 },
   "routes pptx writes": { "now": 17, "goal": 50 },
   "check seconds": { "limit": 40 },
   "PowerPoint check seconds": { "limit": 90 }
