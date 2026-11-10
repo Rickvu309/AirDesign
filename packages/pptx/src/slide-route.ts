@@ -140,9 +140,15 @@ function attributeEdit(element: MarkupElement, name: string, value: string): Byt
   return { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }
 }
 
-function firstOwned(elements: readonly MarkupElement[], shape: MarkupElement, kind: string): MarkupElement {
+function ownedAttributes(
+  elements: readonly MarkupElement[],
+  shape: MarkupElement,
+  kind: string,
+  names: readonly string[],
+): MarkupElement {
   for (const element of elements) {
-    if (element.kind === kind && owns(elements, element.index, shape)) return element
+    if (element.kind !== kind || !owns(elements, element.index, shape)) continue
+    if (names.every((name) => element.attributes.some((item) => item.name === name))) return element
   }
   throw new Error(kind)
 }
@@ -159,7 +165,7 @@ function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
       const y = emu(route.y)
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
-      const off = firstOwned(document.elements, shape, "a:off")
+      const off = ownedAttributes(document.elements, shape, "a:off", ["x", "y"])
       return spliceBytes(bytes, [attributeEdit(off, "x", String(x)), attributeEdit(off, "y", String(y))])
     }
     case "resize": {
@@ -167,7 +173,7 @@ function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
       const cy = emu(route.cy)
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
-      const ext = firstOwned(document.elements, shape, "a:ext")
+      const ext = ownedAttributes(document.elements, shape, "a:ext", ["cx", "cy"])
       return spliceBytes(bytes, [attributeEdit(ext, "cx", String(cx)), attributeEdit(ext, "cy", String(cy))])
     }
     case "add":
