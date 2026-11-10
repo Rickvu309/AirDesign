@@ -184,6 +184,14 @@ describe("oauth host", () => {
     return (await bearerPrincipal(session, secret, clock)).ok
   }
 
+  async function clientsWith(uris: readonly string[], prefix?: string): Promise<number> {
+    const result = await session.query<{ count: number }>(
+      "select count(*)::int as count from session.oauth_client where redirect_uris && $1::text[] or exists (select 1 from unnest(redirect_uris) as uri where starts_with(uri, $2))",
+      [uris, prefix ?? null],
+    )
+    return result.rows[0]?.count ?? 0
+  }
+
   async function rawForm(route: string, text: string): Promise<Reply> {
     const url = new URL(route, base)
     const response = await fetch(url, {
@@ -302,14 +310,15 @@ describe("oauth host", () => {
     })
 
     it("refuses what is not a public client's metadata and stores nothing", async () => {
+      const named = "http://127.0.0.1:8123/metadata"
       const bad: unknown[] = [
         { redirect_uris: ["http://example.com/cb"] },
         { redirect_uris: ["https://example.com/cb#frag"] },
         { redirect_uris: ["https://example.com/cb#"] },
         { redirect_uris: [] },
         { redirect_uris: Array.from({ length: 6 }, (_, index) => `https://example.com/${String(index)}`) },
-        { redirect_uris: [callback], client_name: "x".repeat(201) },
-        { redirect_uris: [callback], client_name: 7 },
+        { redirect_uris: [named], client_name: "x".repeat(201) },
+        { redirect_uris: [named], client_name: 7 },
         { redirect_uris: "https://example.com/cb" },
         { redirect_uris: ["not a url"] },
         { redirect_uris: ["ftp://localhost/cb"] },
@@ -324,7 +333,7 @@ describe("oauth host", () => {
       const stored = () =>
         session.query<{ count: number }>(
           "select count(*)::int as count from session.oauth_client where redirect_uris <@ $1::text[]",
-          [[...sent, callback]],
+          [sent],
         )
       const before = await stored()
       for (const body of bad) {
@@ -354,31 +363,28 @@ describe("oauth host", () => {
       expect(at).toHaveLength(2000)
       const accepted = await ask(base, "POST", "/oauth/register", { redirect_uris: [at] })
       expect(accepted.status).toBe(201)
-      const before = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
       const refused = await ask(base, "POST", "/oauth/register", { redirect_uris: [`${at}a`] })
       expect(refused.status).toBe(400)
       expect(refused.json).toEqual({ error: "invalid_client_metadata" })
-      const after = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
-      expect(after.rows[0]?.count).toBe(before.rows[0]?.count)
+      expect(await clientsWith([`${at}a`])).toBe(0)
     })
 
     it("refuses an address whose host only starts like a loopback host", async () => {
-      const before = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
-      for (const uri of ["http://localhost.evil.example/cb", "http://127.0.0.1.evil.example/cb"]) {
+      const evil = ["http://localhost.evil.example/cb", "http://127.0.0.1.evil.example/cb"]
+      for (const uri of evil) {
         const reply = await ask(base, "POST", "/oauth/register", { redirect_uris: [uri] })
         expect(reply.status).toBe(400)
         expect(reply.json).toEqual({ error: "invalid_client_metadata" })
       }
-      const after = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
-      expect(after.rows[0]?.count).toBe(before.rows[0]?.count)
+      expect(await clientsWith(evil)).toBe(0)
     })
 
     it("refuses text that Postgres cannot store and stores nothing", async () => {
-      const before = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
+      const unstored = "http://127.0.0.1:8123/unstored"
       const bad: unknown[] = [
-        { redirect_uris: [callback], client_name: "a\u0000b" },
-        { redirect_uris: [callback], client_name: "\ud800" },
-        { redirect_uris: [callback], client_name: "a\udc00" },
+        { redirect_uris: [unstored], client_name: "a\u0000b" },
+        { redirect_uris: [unstored], client_name: "\ud800" },
+        { redirect_uris: [unstored], client_name: "a\udc00" },
         { redirect_uris: ["https://a.example/\u0000"] },
         { redirect_uris: ["https://a.example/\ud800"] },
       ]
@@ -387,8 +393,7 @@ describe("oauth host", () => {
         expect(reply.status).toBe(400)
         expect(reply.json).toEqual({ error: "invalid_client_metadata" })
       }
-      const after = await session.query<{ count: number }>("select count(*)::int as count from session.oauth_client")
-      expect(after.rows[0]?.count).toBe(before.rows[0]?.count)
+      expect(await clientsWith([unstored], "https://a.example/")).toBe(0)
       const paired = await ask(base, "POST", "/oauth/register", {
         redirect_uris: [callback],
         client_name: "ok \ud83d\ude00",

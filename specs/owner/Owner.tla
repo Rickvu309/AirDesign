@@ -2,10 +2,10 @@
 EXTENDS Integers
 
 VARIABLES codeA, generationA, revokedA, codeB, generationB, revokedB,
-          callAccount, callDeck, callOutcome
+          callHolder, callClaim, callAccount, callDeck, callOutcome
 
 vars == <<codeA, generationA, revokedA, codeB, generationB, revokedB,
-          callAccount, callDeck, callOutcome>>
+          callHolder, callClaim, callAccount, callDeck, callOutcome>>
 
 Accounts == {"a", "b"}
 Decks == {"deckA", "deckB", "unmade"}
@@ -26,20 +26,28 @@ TypeOK ==
   /\ generationB \in 0..Max
   /\ revokedA \in BOOLEAN
   /\ revokedB \in BOOLEAN
+  /\ callHolder \in Accounts \cup {"nobody"}
+  /\ callClaim \in Accounts \cup {"nobody"}
   /\ callAccount \in Accounts \cup {"nobody"}
   /\ callDeck \in Decks \cup {"none"}
   /\ callOutcome \in {"none", "landed", "owner", "deck", "invalid"}
 
-\* Only the deck's owner can act on it through a tool call:
-\* every accepted tool call's deck is owned by the account behind its credential.
-OnlyOwnerActs == callOutcome = "landed" => Owner(callDeck) = callAccount
+\* Only the deck's owner can act on it through a tool call.
+\* An accepted tool call acts as the account its credential belongs to,
+\* the grant's principal for a token and the session's account for a cookie,
+\* whatever account the caller claims, and that account owns the deck.
+OnlyOwnerActs ==
+  callOutcome = "landed" =>
+    /\ callAccount = callHolder
+    /\ Owner(callDeck) = callAccount
 
 Init ==
   /\ codeA = "none" /\ generationA = 0 /\ revokedA = FALSE
   /\ codeB = "none" /\ generationB = 0 /\ revokedB = FALSE
-  /\ callAccount = "nobody" /\ callDeck = "none" /\ callOutcome = "none"
+  /\ callHolder = "nobody" /\ callClaim = "nobody" /\ callAccount = "nobody"
+  /\ callDeck = "none" /\ callOutcome = "none"
 
-calls == <<callAccount, callDeck, callOutcome>>
+calls == <<callHolder, callClaim, callAccount, callDeck, callOutcome>>
 
 Grant(account, code, generation, revoked) ==
   IF account = "a"
@@ -102,13 +110,18 @@ Outcome(account, deck) ==
   ELSE IF Owner(deck) # account THEN "owner"
   ELSE "landed"
 
-Call(account, deck) ==
-  /\ callAccount' = account
+Call(holder, claim, deck) ==
+  LET outcome == Outcome(holder, deck) IN
+  /\ callOutcome' = outcome
   /\ callDeck' = deck
-  /\ callOutcome' = Outcome(account, deck)
+  /\ callHolder' = IF outcome = "landed" THEN holder ELSE "nobody"
+  /\ callClaim' = IF outcome = "landed" THEN claim ELSE "nobody"
+  /\ callAccount' = IF outcome = "landed" THEN holder ELSE "nobody"
   /\ UNCHANGED grants
 
 Refuse ==
+  /\ callHolder' = "nobody"
+  /\ callClaim' = "nobody"
   /\ callAccount' = "nobody"
   /\ callDeck' = "none"
   /\ callOutcome' = "invalid"
@@ -120,12 +133,12 @@ Live(account, generation) ==
   /\ Generation(account) = generation
 
 CookieCall ==
-  \E account \in Accounts, deck \in Decks : Call(account, deck)
+  \E account \in Accounts, claim \in Accounts, deck \in Decks : Call(account, claim, deck)
 
 TokenCall ==
-  \E account \in Accounts, generation \in 1..Max, deck \in Decks :
+  \E account \in Accounts, generation \in 1..Max, claim \in Accounts, deck \in Decks :
     /\ Live(account, generation)
-    /\ Call(account, deck)
+    /\ Call(account, claim, deck)
 
 TokenRefused ==
   \E account \in Accounts, generation \in 1..Max :
