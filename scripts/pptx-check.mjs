@@ -151,15 +151,17 @@ const [{ found: lists, planting }] = await Promise.all([
   ...Array.from({ length: Math.min(os.availableParallelism(), 4) }, renderNext),
 ])
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
-const judgedSamples = planted.map((sample, index) => {
-  const judged = judge(
-    pptx,
-    { list: lists.get(sample.deck), ids: ids.get(sample.deck) },
-    { list: lists.get(sampleFile(index)), ids: pptx.shapeIdCounts(sample.parts) },
-  )
-  const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
-  return { ...sample, accepted: judged.accepted, reason }
-})
+const judgedSamples = await Promise.all(
+  planted.map(async (sample, index) => {
+    const judged = await judge(
+      pptx,
+      { list: lists.get(sample.deck), ids: ids.get(sample.deck), parts: parts.get(sample.deck) },
+      { list: lists.get(sampleFile(index)), ids: pptx.shapeIdCounts(sample.parts), parts: sample.parts },
+    )
+    const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
+    return { ...sample, accepted: judged.accepted, reason }
+  }),
+)
 console.log(`judge proof ${replay(seed)}`)
 if (process.env.JUDGE_LIST !== undefined) {
   for (const sample of judgedSamples) {
@@ -178,10 +180,10 @@ const proofLines = proofFailures({
 for (const line of proofLines) console.log(line)
 let failed = proofLines.length
 for (const row of cases) {
-  const { errors, dupes } = judge(
+  const { errors, dupes } = await judge(
     pptx,
-    { list: lists.get(row.before), ids: ids.get(row.before) },
-    { list: lists.get(row.after), ids: ids.get(row.after) },
+    { list: lists.get(row.before), ids: ids.get(row.before), parts: parts.get(row.before) },
+    { list: lists.get(row.after), ids: ids.get(row.after), parts: parts.get(row.after) },
   )
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),
