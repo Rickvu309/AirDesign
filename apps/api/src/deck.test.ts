@@ -11,6 +11,25 @@ function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function untilParked(observer: Client, since: Date): Promise<void> {
+  const started = Date.now()
+  for (;;) {
+    const found = await observer.query(
+      `select pid from pg_stat_activity
+       where application_name = 'deck-handler' and state = 'idle' and query like 'select id, revision, register, owner from deck.saved%' and state_change > $1`,
+      [since],
+    )
+    if (found.rows.length > 0) return
+    if (Date.now() - started > 5000) throw new Error("the watch did not park")
+    await wait(20)
+  }
+}
+
+async function clockOf(observer: Client): Promise<Date> {
+  const result = await observer.query<{ now: Date }>("select clock_timestamp() as now")
+  return result.rows[0]?.now ?? new Date()
+}
+
 function deckName(): string {
   return `deck${randomBytes(4).toString("hex")}`
 }
@@ -390,16 +409,20 @@ describe("deck routes", () => {
       if (typeof message.payload === "string") notes.push(message.payload)
     })
     await ear.query("listen deck")
+    const observer = new Client({ connectionString: info.deck, application_name: "once-watch-observer" })
+    await observer.connect()
     try {
       await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
       let answered = false
+      const sent = await clockOf(observer)
       const pending = ask(base, "POST", "/decks/watch", { deck: named.deck, cursor: 0 }, cookie).then((response) => {
         answered = true
         return response
       })
-      await wait(200)
+      await untilParked(observer, sent)
+      const probed = await clockOf(observer)
       await ear.query("select pg_notify('deck', 'probe:0')")
-      await wait(200)
+      await untilParked(observer, probed)
       expect(answered).toBe(false)
       const committed = await ask(
         base,
@@ -418,6 +441,7 @@ describe("deck routes", () => {
       expect(watched.json).toEqual({ ok: true, deck: named.deck, revision: 1 })
       expect(notes).toContain(`${named.deck}:1`)
     } finally {
+      await observer.end()
       await ear.end()
     }
   }, 15_000)

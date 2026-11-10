@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
+import type { CallerLog } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -231,10 +232,10 @@ describe("mcp route", () => {
     return client
   }
 
-  async function openedDeck(mark: string): Promise<{ id: string; cookie: string }> {
+  async function openedDeck(mark: string, email = address(mark)): Promise<{ id: string; cookie: string }> {
     const named = readDeckId(deckName())
     if (!named.ok) throw new Error(named.refusal)
-    const cookie = await sign(address(mark))
+    const cookie = await sign(email)
     await ask(base, "POST", "/decks/open", { deck: named.deck }, cookie)
     return { id: named.deck, cookie }
   }
@@ -259,7 +260,12 @@ describe("mcp route", () => {
 
   async function ownServer(
     mark: string,
-    fields: { readonly deck?: Sql; readonly now?: () => number; readonly session?: (pool: Sql) => Sql },
+    fields: {
+      readonly deck?: Sql
+      readonly now?: () => number
+      readonly session?: (pool: Sql) => Sql
+      readonly logs?: Map<string, CallerLog>
+    },
   ): Promise<{ readonly base: string; readonly close: () => Promise<void> }> {
     const info = await postgresInfo()
     const session = openPool(info.session, `mcp-${mark}-session`)
@@ -271,6 +277,7 @@ describe("mcp route", () => {
       deck: fields.deck ?? stored,
       listen,
       now: fields.now ?? (() => 1_000_000),
+      ...(fields.logs === undefined ? {} : { logs: fields.logs }),
       send: async () => undefined,
     })
     return {
@@ -362,25 +369,37 @@ describe("mcp route", () => {
   })
 
   it("counts a call refused as deck, owner, field or a store failure toward the thirty", async () => {
+    const logs = new Map<string, CallerLog>()
+    function nearLimit(mark: string): string {
+      const email = address(mark)
+      logs.set(email, { events: Array.from({ length: 29 }, () => ({ kind: "tool" as const, at: 1_000_000 })) })
+      return email
+    }
+    const counting = await ownServer("counted", { logs })
     const broken = await ownServer("uncounted", {
       deck: { query: () => Promise.reject(new Error("connect ECONNREFUSED")) } as unknown as Sql,
+      logs,
     })
     try {
       const foreign = await openedDeck("theirs")
-      const opened = await openedDeck("field")
+      const opened = await openedDeck("field", nearLimit("field"))
       const cases = [
-        { text: "deck", target: base, cookie: await sign(address("nodeck")), id: deckName(), extra: {} },
-        { text: "owner", target: base, cookie: await sign(address("noowner")), id: foreign.id, extra: {} },
-        { text: "field", target: base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
-        { text: storeFailure, target: broken.base, cookie: await sign(address("nostore")), id: deckName(), extra: {} },
+        { text: "deck", target: counting.base, cookie: await sign(nearLimit("nodeck")), id: deckName(), extra: {} },
+        { text: "owner", target: counting.base, cookie: await sign(nearLimit("noowner")), id: foreign.id, extra: {} },
+        { text: "field", target: counting.base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
+        {
+          text: storeFailure,
+          target: broken.base,
+          cookie: await sign(nearLimit("nostore")),
+          id: deckName(),
+          extra: {},
+        },
       ]
       for (const item of cases) {
         await withMcp(
           item.cookie,
           async (client) => {
-            for (let call = 0; call < 30; call += 1) {
-              expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(item.text)
-            }
+            expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(item.text)
             expect(await editText(client, { ...firstEdit(item.id), ...item.extra })).toBe(toolLimit)
           },
           item.target,
@@ -389,6 +408,7 @@ describe("mcp route", () => {
       expect((await row(foreign.id))?.revision).toBe(0)
       expect((await row(opened.id))?.revision).toBe(0)
     } finally {
+      await counting.close()
       await broken.close()
     }
   })

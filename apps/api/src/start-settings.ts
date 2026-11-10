@@ -1,0 +1,71 @@
+import { checkedResource } from "./resource.js"
+import { requireDomain, requireOrigin } from "./server.js"
+
+const databaseNames = ["SESSION_DATABASE_URL", "DECK_DATABASE_URL", "LISTEN_DATABASE_URL"] as const
+
+export type StartSettings = {
+  readonly sessionUrl: string
+  readonly deckUrl: string
+  readonly listenUrl: string
+  readonly port: number
+  readonly publicOrigin: string
+  readonly siteOrigin: string
+  readonly resource: string
+  readonly cookieDomain: string | undefined
+  readonly hosts: readonly string[] | undefined
+}
+
+export type StartRefusal = { readonly refusal: string }
+
+type Environment = Readonly<Record<string, string | undefined>>
+
+function portNumber(text: string | undefined): number {
+  if (text === undefined || text.length === 0) return 3000
+  if (!/^[0-9]+$/.test(text)) return Number.NaN
+  const port = Number(text)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) return Number.NaN
+  return port
+}
+
+function accepted(value: string, check: (value: string) => void): boolean {
+  try {
+    check(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function configuredHosts(text: string | undefined): readonly string[] | undefined {
+  const names = (text ?? "")
+    .split(",")
+    .map((name) => name.trim().toLowerCase())
+    .filter((name) => name.length > 0)
+  return names.length === 0 ? undefined : names
+}
+
+export function readStartSettings(env: Environment): StartSettings | StartRefusal {
+  const missing = databaseNames.filter((name) => (env[name] ?? "").length === 0)
+  if (missing.length > 0) return { refusal: missing.join(" ") }
+  const port = portNumber(env.PORT)
+  if (Number.isNaN(port)) return { refusal: "PORT" }
+  const publicOrigin = env.PUBLIC_ORIGIN ?? ""
+  if (!accepted(publicOrigin, (value) => requireOrigin("publicOrigin", value))) return { refusal: "PUBLIC_ORIGIN" }
+  const siteOrigin = env.SITE_ORIGIN ?? ""
+  if (!accepted(siteOrigin, (value) => requireOrigin("siteOrigin", value))) return { refusal: "SITE_ORIGIN" }
+  const resource = env.MCP_RESOURCE ?? ""
+  if (!accepted(resource, checkedResource)) return { refusal: "MCP_RESOURCE" }
+  const cookieText = env.COOKIE_DOMAIN ?? ""
+  if (cookieText !== "" && !accepted(cookieText, requireDomain)) return { refusal: "COOKIE_DOMAIN" }
+  return {
+    sessionUrl: env.SESSION_DATABASE_URL ?? "",
+    deckUrl: env.DECK_DATABASE_URL ?? "",
+    listenUrl: env.LISTEN_DATABASE_URL ?? "",
+    port,
+    publicOrigin,
+    siteOrigin,
+    resource,
+    cookieDomain: cookieText === "" ? undefined : cookieText,
+    hosts: configuredHosts(env.API_HOSTS),
+  }
+}

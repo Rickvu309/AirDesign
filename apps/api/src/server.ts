@@ -28,6 +28,7 @@ export type ApiOptions = {
   readonly now?: () => number
   readonly mint?: () => string
   readonly hosts?: readonly string[]
+  readonly logs?: Map<string, CallerLog>
   readonly resource: string
 }
 
@@ -424,7 +425,7 @@ export function createApi(options: ApiOptions): Server {
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)
   checkedResource(options.resource)
-  const logs = new Map<string, CallerLog>()
+  const logs = options.logs ?? new Map<string, CallerLog>()
   const now = options.now ?? Date.now
   const mint = options.mint ?? randomUUID
   void options.listen.open().catch(() => undefined)
