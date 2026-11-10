@@ -1,4 +1,4 @@
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader, ZipWriter } from "@zip.js/zip.js"
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
 
 export function encodeUtf8(text: string): Uint8Array {
   const units: number[] = []
@@ -68,20 +68,14 @@ export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, 
   return parts
 }
 
-const packageDate = new Date(Date.UTC(1980, 0, 1))
-
-export async function writeParts(parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
-  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter(), { lastModDate: packageDate })
-  for (const [name, data] of parts) {
-    await writer.add(name, new Uint8ArrayReader(data), { lastModDate: packageDate })
+export function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
+  if (left.length !== right.length) return false
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) return false
   }
-  return writer.close()
+  return true
 }
 
 export function carryParts(parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string, Uint8Array> {
   return new Map(parts)
-}
-
-export async function roundTripPackage(bytes: Uint8Array): Promise<Uint8Array> {
-  return writeParts(carryParts(await readParts(bytes)))
 }

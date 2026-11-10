@@ -121,9 +121,10 @@ export function ThinDeck() {
 
   async function openFile(file: File) {
     await ensureMarkup()
-    const read = await readPackage(new Uint8Array(await file.arrayBuffer()))
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    const read = await readPackage(bytes)
     if (!read.ok) return
-    const saved = await putParts(deckId, { parts: read.parts, nodes: { a: nodeA } })
+    const saved = await putParts(deckId, { parts: read.parts, file: bytes, nodes: { a: nodeA } })
     if (!saved.ok) return
     nodes.current = nodeA
     const painted = paint(store.current, read.parts, nodeA, null)
@@ -149,7 +150,7 @@ export function ThinDeck() {
     if (!stored.ok) return
     const opened = await connect(memoryRemote()).openDeck(deckId)
     if (!opened.ok) return
-    const bytes = await exportPackage(exportedParts(stored.parts, stored.nodes.a, opened.register))
+    const bytes = await exportPackage(stored.file, exportedParts(stored.parts, stored.nodes.a, opened.register))
     const copy = new Uint8Array(bytes.byteLength)
     copy.set(bytes)
     const url = URL.createObjectURL(new Blob([copy]))

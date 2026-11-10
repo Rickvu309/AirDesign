@@ -89,7 +89,7 @@ describe("readShapes", () => {
         expect(inFallback(document.elements, found.index)).toBe(false)
       }
       expect(shapes.filter((shape) => shape.locked)).toHaveLength(name === "doe-heat-pumps.pptx" ? 5 : 0)
-      const written = await exportPackage(parts)
+      const written = await exportPackage(readFileSync(fixture(name)), parts)
       const read = await readPackage(written)
       expect(read.ok).toBe(true)
       if (read.ok) expect(samePartBytes(parts, read.parts)).toBe(true)

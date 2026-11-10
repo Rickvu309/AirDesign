@@ -1,3 +1,4 @@
+import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import { describe, expect, it } from "vitest"
 import { exportPackage, samePartBytes } from "./export-package.js"
 import { readPackage } from "./package-limits.js"
@@ -18,10 +19,16 @@ function deck(): Map<string, Uint8Array> {
   ])
 }
 
+async function zipped(parts: ReadonlyMap<string, Uint8Array>): Promise<Uint8Array> {
+  const writer = new ZipWriter<Uint8Array>(new Uint8ArrayWriter())
+  for (const [name, data] of parts) await writer.add(name, new Uint8ArrayReader(data))
+  return writer.close()
+}
+
 describe("exportPackage", () => {
   it("re-imports every part byte, including a dangling relationship and a media part", async () => {
     const parts = deck()
-    const packed = await exportPackage(parts)
+    const packed = await exportPackage(await zipped(parts), parts)
     const read = await readPackage(packed)
     if (!read.ok) throw new Error(read.reason)
     expect(read.parts.size).toBe(parts.size)
@@ -32,16 +39,20 @@ describe("exportPackage", () => {
   })
 
   it("rejects a file the reader refuses", async () => {
+    const original = await zipped(deck())
     const broken = deck()
     broken.set("ppt/slides/slide1.xml", text("<a>"))
-    await expect(exportPackage(broken)).rejects.toThrow(/xml/)
-    await expect(exportPackage(new Map([["ppt/slides/slide1.xml", text("<p:sld/>")]]))).rejects.toThrow(/not-pptx/)
+    await expect(exportPackage(original, broken)).rejects.toThrow(/xml/)
+    await expect(exportPackage(original, new Map([["ppt/slides/slide1.xml", text("<p:sld/>")]]))).rejects.toThrow(
+      /not-pptx/,
+    )
   })
 
   it("rejects a part the re-import drops", async () => {
     const parts = deck()
+    const original = await zipped(parts)
     parts.set("ppt/extra/", text("x"))
-    await expect(exportPackage(parts)).rejects.toThrow(/part/)
+    await expect(exportPackage(original, parts)).rejects.toThrow(/part/)
   })
 })
 

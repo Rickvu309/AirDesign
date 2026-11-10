@@ -152,7 +152,13 @@ const writtenDecks = []
 for (const name of realDecks) {
   if (!parts.has(name)) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   const deckParts = parts.get(name)
-  const written = await writtenRouteFiles(pptx, deckParts, routeDir, name.slice(0, -".pptx".length))
+  const written = await writtenRouteFiles(
+    pptx,
+    fs.readFileSync(fixturePath(name)),
+    deckParts,
+    routeDir,
+    name.slice(0, -".pptx".length),
+  )
   writtenDecks.push({ name, deckParts, written })
 }
 const routeFiles = writtenDecks.flatMap((deck) =>

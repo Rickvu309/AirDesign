@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
-export async function writtenRouteFiles(pptx, parts, directory, prefix) {
+export async function writtenRouteFiles(pptx, original, parts, directory, prefix) {
   const files = []
   for (const run of pptx.routeRuns(parts)) {
     if (run.error !== null || run.parts === null || run.touch === null) {
@@ -10,7 +10,7 @@ export async function writtenRouteFiles(pptx, parts, directory, prefix) {
     }
     const name = `${prefix}-${run.operation.replaceAll(".", "-")}.pptx`
     try {
-      const packed = await pptx.exportPackage(run.parts)
+      const packed = await pptx.exportPackage(original, run.parts)
       const file = path.join(directory, name)
       fs.writeFileSync(file, packed)
       files.push({ run, file, back: await pptx.readParts(packed), exportError: null })

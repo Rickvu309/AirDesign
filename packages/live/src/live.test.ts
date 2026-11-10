@@ -13,6 +13,7 @@ import {
   type CommitResult,
   type Remote,
 } from "./index.js"
+import { writeSlot } from "./store.js"
 
 const node = elementId("258.7")
 
@@ -698,7 +699,7 @@ describe("live cache", () => {
     installParts()
     const bytes = new Uint8Array([9, 8, 7])
     const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
-    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, bytes]]), nodes })
+    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, bytes]]), file: new Uint8Array([5]), nodes })
     expect(saved.ok).toBe(true)
     const read = await getParts("clean")
     expect(read.ok).toBe(true)
@@ -710,7 +711,11 @@ describe("live cache", () => {
   it("refuses a part list of 65536 bytes", async () => {
     installParts()
     const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
-    const saved = await putParts("clean", { parts: new Map([["n".repeat(70_000), new Uint8Array([1])]]), nodes })
+    const saved = await putParts("clean", {
+      parts: new Map([["n".repeat(70_000), new Uint8Array([1])]]),
+      file: new Uint8Array([5]),
+      nodes,
+    })
     expect(saved).toEqual({ ok: false, refusal: "limit" })
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
@@ -821,6 +826,42 @@ describe("live cache", () => {
     const saved = await putParts("clean", { parts: new Map([[nodes.a.part, new Uint8Array([9, 8, 7])]]), nodes })
     expect(saved.ok).toBe(true)
     await deleteDatabase()
+
+  it("reads a deck's opened file back after a new connect", async () => {
+    installParts()
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    const file = new Uint8Array([80, 75, 3, 4, 200, 1])
+    await putParts("clean", { parts: new Map([[nodes.a.part, new Uint8Array([9])]]), file, nodes })
+    await connect(memoryRemote()).openDeck("clean")
+    const read = await getParts("clean")
+    expect(read.ok).toBe(true)
+    if (!read.ok) return
+    expect(Array.from(read.file)).toEqual(Array.from(file))
+  })
+
+  it("keeps each deck's own opened file", async () => {
+    installParts()
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    await putParts("first", {
+      parts: new Map([[nodes.a.part, new Uint8Array([9])]]),
+      file: new Uint8Array([1, 1]),
+      nodes,
+    })
+    await putParts("second", {
+      parts: new Map([[nodes.a.part, new Uint8Array([9])]]),
+      file: new Uint8Array([2, 2]),
+      nodes,
+    })
+    const first = await getParts("first")
+    const second = await getParts("second")
+    expect(first.ok && Array.from(first.file)).toEqual([1, 1])
+    expect(second.ok && Array.from(second.file)).toEqual([2, 2])
+  })
+
+  it("answers absent for a row without the opened file", async () => {
+    installParts()
+    const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
+    await writeSlot("clean\u0001", { names: { [nodes.a.part]: await putPart(new Uint8Array([9])) }, nodes })
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
 
