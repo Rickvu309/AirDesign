@@ -174,10 +174,7 @@ same(
       ["scripts/sticks.mjs", "100644 z"],
     ]),
   ),
-  [
-    "package.json changes how checks run and has no proof.",
-    "pnpm-lock.yaml changes how checks run and has no proof.",
-  ],
+  ["package.json changes how checks run and has no proof.", "pnpm-lock.yaml changes how checks run and has no proof."],
 )
 same(
   "a vitest config is not on the bar, so it is not named",
