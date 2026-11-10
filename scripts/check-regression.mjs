@@ -378,7 +378,7 @@ const openToSandbox = (baseRoot) => {
   const seen = readReportText(probe.stdout)
   if (probe.status !== 0 || seen?.user !== unprivileged || seen.locked !== true || seen.offline !== true) {
     const said = `${probe.stdout ?? ""}${probe.stderr ?? ""}${probe.error?.message ?? ""}`.trim().slice(0, 600)
-    throw new Error(`The sandbox did not start, so no old proof could run: ${said}`)
+    throw new Error(`The sandbox did not start, so no proof from main could run: ${said}`)
   }
 }
 
@@ -409,7 +409,7 @@ const judge = ({ proofs, changes, unproved, losses, behind }, approved, { baseRo
     console.log(
       `${install.stdout ?? ""}${install.stderr ?? ""}${install.error?.message ?? ""}`.split("\n").slice(-20).join("\n"),
     )
-    console.log("The install failed on main, so no old proof could run.")
+    console.log("The install failed on main, so no proof from main could run.")
     if (!local) return false
     console.log("Only the lost lines are judged here. The check on GitHub runs the proofs main has.")
     const result = verdict({ results: losses, approved })

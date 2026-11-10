@@ -4,10 +4,11 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { rawExtensions, rawFindings } from "./rules/no-raw.js"
 import { scanSource, scannedExtensions } from "./scan-comments.js"
-import { nameFindings } from "./scan-names.js"
+import { nameFindings, wordExtensions, wordFindings } from "./scan-names.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const lintPaths = ["apps", "packages", "scripts", "tests", "tooling", "playwright.config.ts", "vitest.config.mts"]
+const wordPaths = ["AGENTS.md", ".github"]
 const skipDirectories = new Set(["node_modules", "dist"])
 
 const oxlint = spawnSync(
@@ -31,15 +32,18 @@ const filesUnder = (absolute) => {
 }
 
 const hits = []
-for (const relativePath of lintPaths) {
+for (const relativePath of [...lintPaths, ...wordPaths]) {
+  const wordsOnly = wordPaths.includes(relativePath)
   for (const file of filesUnder(path.resolve(root, relativePath))) {
     const relative = path.relative(root, file).split(path.sep).join("/")
     hits.push(...nameFindings(relative))
     const extension = path.extname(file).toLowerCase()
-    const comment = scannedExtensions.has(extension)
-    const raw = rawExtensions.has(extension)
-    if (!comment && !raw) continue
+    const comment = !wordsOnly && scannedExtensions.has(extension)
+    const raw = !wordsOnly && rawExtensions.has(extension)
+    const words = scannedExtensions.has(extension) || rawExtensions.has(extension) || wordExtensions.has(extension)
+    if (!words) continue
     const source = fs.readFileSync(file, "utf8")
+    hits.push(...wordFindings(relative, source))
     if (comment) hits.push(...(await scanSource(relative, source)))
     if (raw) {
       for (const finding of rawFindings(relative, source)) {

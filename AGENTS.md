@@ -68,6 +68,8 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | No comments, no lint suppressions | lint: `no-comments` and the comment scan |
 | No raw hex, sized arbitrary class or blanket transition | lint: `no-raw` |
 | No file or folder named `utils`, `helpers` or `common` | lint: the name scan |
+| One word per idea: a word listed in `tooling/oxlint-plugin-airdesign/glossary.json` is replaced by the word it names | lint: the name scan reads the glossary. A line kept on purpose is listed there with a reason |
+| Product code takes the clock, randomness and temp folders as options: no `Date.now()`, `new Date()`, `Math.random()` or `tmpdir()` | lint: `no-hidden-input` |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
@@ -85,5 +87,5 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A change to what `ci` checks is seen by the owner | the `ratchet` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure, and the number of tests cannot fall | `scripts/metrics.mjs` prints both counts on every run and fails when `test-count` is under its floor. A known failure is shown, never blocked. Tests deleted from a file that still exists are caught only in review until a per-file count exists |
 | A new check starts in `warnSteps` in `scripts/check.mjs` and blocks only after it has caught a real fault with no false stop | review |
-| One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
+| Extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
 | How agents work here | review |

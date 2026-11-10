@@ -98,7 +98,7 @@ describe("sign-in", () => {
   const mails: Mail[] = []
   let calls: string[] = []
   let failSends = 0
-  const parks: { to: string; mark: () => void; gate: Promise<Error | undefined>; mail?: Mail }[] = []
+  const parks: { to: string; mark: () => void; outcome: Promise<Error | undefined>; mail?: Mail }[] = []
 
   function holdSend(to: string): {
     readonly entered: Promise<void>
@@ -110,10 +110,14 @@ describe("sign-in", () => {
       mark = resolve
     })
     let settle!: (error: Error | undefined) => void
-    const gate = new Promise<Error | undefined>((resolve) => {
+    const outcome = new Promise<Error | undefined>((resolve) => {
       settle = resolve
     })
-    const held: { to: string; mark: () => void; gate: Promise<Error | undefined>; mail?: Mail } = { to, mark, gate }
+    const held: { to: string; mark: () => void; outcome: Promise<Error | undefined>; mail?: Mail } = {
+      to,
+      mark,
+      outcome,
+    }
     parks.push(held)
     return {
       entered,
@@ -164,7 +168,7 @@ describe("sign-in", () => {
         if (held !== undefined) {
           held.mail = mail
           held.mark()
-          const error = await held.gate
+          const error = await held.outcome
           if (error !== undefined) throw error
         }
         if (failSends > 0) {

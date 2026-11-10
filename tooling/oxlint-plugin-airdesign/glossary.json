@@ -1,0 +1,36 @@
+{
+  "words": {
+    "known fault": "known failure",
+    "stick": "metric",
+    "gate": "ci",
+    "owner gate": "ratchet",
+    "old proof": "check-regression"
+  },
+  "allowed": [
+    {
+      "file": "scripts/ratchet.mjs",
+      "text": "export const oldMetricsFile = \"sticks.json\"",
+      "reason": "ratchet reads the metrics file of a main that still has the old name"
+    },
+    {
+      "file": "scripts/ratchet.mjs",
+      "text": "\"known faults\": \"known-failures\",",
+      "reason": "ratchet maps the old metric name to the new one"
+    },
+    {
+      "file": "scripts/metrics.test.mjs",
+      "text": "throw new Error(\"one known fault was not counted\")",
+      "reason": "check-regression fails a proof that loses a line it has on main"
+    },
+    {
+      "file": "scripts/metrics.test.mjs",
+      "text": "throw new Error(`a new known fault must need no record\\n${added.join(\"\\n\")}`)",
+      "reason": "check-regression fails a proof that loses a line it has on main"
+    },
+    {
+      "file": "scripts/metrics.test.mjs",
+      "text": "throw new Error(\"a passing test was counted as a known fault\")",
+      "reason": "check-regression fails a proof that loses a line it has on main"
+    }
+  ]
+}
