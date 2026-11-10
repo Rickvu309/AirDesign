@@ -1,3 +1,4 @@
+import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { addTextShape, xmlText } from "./shape-write.js"
@@ -140,17 +141,49 @@ function attributeEdit(element: MarkupElement, name: string, value: string): Byt
   return { start: attribute.valueStart, end: attribute.valueEnd, next: encodeUtf8(value) }
 }
 
-function ownedAttributes(
+function ownedMatch(
   elements: readonly MarkupElement[],
   shape: MarkupElement,
   kind: string,
   names: readonly string[],
-): MarkupElement {
+): MarkupElement | null {
   for (const element of elements) {
     if (element.kind !== kind || !owns(elements, element.index, shape)) continue
     if (names.every((name) => element.attributes.some((item) => item.name === name))) return element
   }
-  throw new Error(kind)
+  return null
+}
+
+function ownedKind(elements: readonly MarkupElement[], shape: MarkupElement, kind: string): MarkupElement | null {
+  for (const element of elements) {
+    if (element.kind === kind && owns(elements, element.index, shape)) return element
+  }
+  return null
+}
+
+function insertAtBytes(bytes: Uint8Array, at: number, xml: string): Uint8Array {
+  return spliceBytes(bytes, [{ start: at, end: at, next: encodeUtf8(xml) }])
+}
+
+function writeTransform(
+  bytes: Uint8Array,
+  elements: readonly MarkupElement[],
+  shape: MarkupElement,
+  xfrm: string,
+): Uint8Array {
+  const frame = ownedKind(elements, shape, "a:xfrm")
+  if (frame !== null && frame.selfClosing) {
+    return spliceBytes(bytes, [{ start: frame.start, end: frame.end, next: encodeUtf8(xfrm) }])
+  }
+  const spPr = ownedKind(elements, shape, "p:spPr")
+  if (spPr === null) throw new Error("p:spPr")
+  if (spPr.selfClosing) {
+    return spliceBytes(bytes, [{ start: spPr.start, end: spPr.end, next: encodeUtf8(`<p:spPr>${xfrm}</p:spPr>`) }])
+  }
+  const parentXml = decodeUtf8(bytes.subarray(spPr.start, spPr.end))
+  return spliceBytes(bytes, [
+    { start: spPr.start, end: spPr.end, next: encodeUtf8(insertChild("p:spPr", "a:xfrm", xfrm, parentXml)) },
+  ])
 }
 
 function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
@@ -165,7 +198,14 @@ function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
       const y = emu(route.y)
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
-      const off = ownedAttributes(document.elements, shape, "a:off", ["x", "y"])
+      const off = ownedMatch(document.elements, shape, "a:off", ["x", "y"])
+      if (off === null) {
+        const frame = ownedKind(document.elements, shape, "a:xfrm")
+        if (frame !== null && !frame.selfClosing) {
+          return insertAtBytes(bytes, frame.openEnd, `<a:off x="${x}" y="${y}"/>`)
+        }
+        return writeTransform(bytes, document.elements, shape, `<a:xfrm><a:off x="${x}" y="${y}"/></a:xfrm>`)
+      }
       return spliceBytes(bytes, [attributeEdit(off, "x", String(x)), attributeEdit(off, "y", String(y))])
     }
     case "resize": {
@@ -173,7 +213,16 @@ function editPart(bytes: Uint8Array, route: SlideRoute): Uint8Array {
       const cy = emu(route.cy)
       const document = requireMarkup(bytes)
       const shape = shapeById(document.elements, route.shape)
-      const ext = ownedAttributes(document.elements, shape, "a:ext", ["cx", "cy"])
+      const ext = ownedMatch(document.elements, shape, "a:ext", ["cx", "cy"])
+      if (ext === null) {
+        const frame = ownedKind(document.elements, shape, "a:xfrm")
+        const off = ownedMatch(document.elements, shape, "a:off", ["x", "y"])
+        if (frame !== null && !frame.selfClosing) {
+          const at = off === null ? frame.openEnd : off.end
+          return insertAtBytes(bytes, at, `<a:ext cx="${cx}" cy="${cy}"/>`)
+        }
+        return writeTransform(bytes, document.elements, shape, `<a:xfrm><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`)
+      }
       return spliceBytes(bytes, [attributeEdit(ext, "cx", String(cx)), attributeEdit(ext, "cy", String(cy))])
     }
     case "add":
