@@ -1,5 +1,3 @@
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from "@zip.js/zip.js"
-
 export function encodeUtf8(text: string): Uint8Array {
   const units: number[] = []
   for (let index = 0; index < text.length; index += 1) {
@@ -54,18 +52,6 @@ export function decodeUtf8(bytes: Uint8Array): string {
     index += width
   }
   return text
-}
-
-export async function readParts(bytes: Uint8Array): Promise<ReadonlyMap<string, Uint8Array>> {
-  const reader = new ZipReader(new Uint8ArrayReader(bytes), { checkAmbiguity: true })
-  const entries = await reader.getEntries()
-  const parts = new Map<string, Uint8Array>()
-  for (const entry of entries) {
-    if (entry.directory) throw new Error(`directory entry ${entry.filename}`)
-    parts.set(entry.filename, await entry.getData(new Uint8ArrayWriter()))
-  }
-  await reader.close()
-  return parts
 }
 
 export function sameBytes(left: Uint8Array, right: Uint8Array): boolean {

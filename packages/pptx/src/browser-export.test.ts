@@ -7,7 +7,7 @@ declare const process: {
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, spliceBytes, type ByteEdit } from "./element-span.js"
-import { readParts } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 import { applyRoute, shapeById } from "./slide-route.js"
 import { browserExportFailures } from "./browser-export.js"
 

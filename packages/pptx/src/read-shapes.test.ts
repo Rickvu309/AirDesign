@@ -8,7 +8,7 @@ declare const process: {
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { exportPackage, samePartBytes } from "./export-package.js"
-import { readParts } from "./package-bytes.js"
+import { readParts } from "./package-container.js"
 import { readPackage } from "./package-limits.js"
 import { readShapes, type ShapeKind } from "./read-shapes.js"
 import { shapeById, applyRoute } from "./slide-route.js"
