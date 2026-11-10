@@ -727,7 +727,7 @@ it("keeps the edit without a word when the answer body is not JSON", async () =>
     linkAnswering(() => Promise.reject(new SyntaxError("Unexpected token '<'"))),
     "any-deck",
     "Hello!",
-    "256.2",
+    { id: elementId("256.2"), file: "Hello" },
   )
   expect(outcome).toBe("kept")
 })

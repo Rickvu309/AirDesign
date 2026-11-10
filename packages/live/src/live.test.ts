@@ -1061,7 +1061,18 @@ describe("live cache", () => {
       async () => new Response("null", { status: 200, headers: { "content-type": "application/json" } }),
     )
     const cache = connect(memoryRemote())
-    await cache.enqueue("clean", "Hello!", "258.7")
+    await cache.enqueue("clean", "Hello!", node, "Hello")
+    expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
+    expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
+  })
+
+  it("refuses a commit answered 200 with a JSON array body as payload and keeps the row", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async () => new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+    )
+    const cache = connect(memoryRemote())
+    await cache.enqueue("clean", "Hello!", node, "Hello")
     expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
   })
@@ -1072,7 +1083,7 @@ describe("live cache", () => {
       async () => new Response("null", { status: 500, headers: { "content-type": "application/json" } }),
     )
     const cache = connect(memoryRemote())
-    await cache.enqueue("clean", "Hello!", "258.7")
+    await cache.enqueue("clean", "Hello!", node, "Hello")
     expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
   })
