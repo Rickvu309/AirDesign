@@ -360,7 +360,7 @@ function walk(): void {
     start: freezeRegister(openRegister("floor", "slide")),
     identity,
     commands: () => commands(),
-    keep: (register) => !tooManyPeople(register),
+    keep: (register) => !tooManyPeople(register) && !(register.phase === "running" && register.readNodes !== null),
     cap: (dequeued) => {
       if (dequeued > 80) {
         throw new Error("state cap hit")

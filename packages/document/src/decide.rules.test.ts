@@ -6,6 +6,8 @@ import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 type RunState = "match" | "miss"
 type ReadState = "equal" | "stale" | "claimed" | "interrupted"
 type AgentState = "none" | "visible" | "hidden"
+type NamedRows = "none" | "visible" | "hidden"
+type PriorRows = "none" | "some"
 type EditCommand = "person" | "agent" | "start" | "stop" | "undo" | "read"
 
 type Situation = {
@@ -15,6 +17,8 @@ type Situation = {
   readonly read: ReadState
   readonly guarded: boolean
   readonly agent: AgentState
+  readonly named: NamedRows
+  readonly prior: PriorRows
 }
 
 type Clause = {
@@ -23,6 +27,8 @@ type Clause = {
   readonly read?: ReadState
   readonly guarded?: boolean
   readonly agent?: AgentState
+  readonly named?: NamedRows | readonly NamedRows[]
+  readonly prior?: PriorRows
 }
 
 type Effect =
@@ -31,6 +37,7 @@ type Effect =
   | { readonly outcome: "start" }
   | { readonly outcome: "stop" }
   | { readonly outcome: "undo" }
+  | { readonly outcome: "undo-run" }
   | { readonly outcome: "agent" }
   | { readonly outcome: "read" }
 
@@ -64,6 +71,16 @@ function phaseMatches(expected: Phase | readonly Phase[] | undefined, actual: Ph
   return expected.includes(actual)
 }
 
+function namedMatches(expected: NamedRows | readonly NamedRows[] | undefined, actual: NamedRows): boolean {
+  if (expected === undefined) {
+    return true
+  }
+  if (typeof expected === "string") {
+    return expected === actual
+  }
+  return expected.includes(actual)
+}
+
 function matchesClause(clause: Clause, picture: Situation): boolean {
   if (!phaseMatches(clause.phase, picture.phase)) {
     return false
@@ -78,6 +95,12 @@ function matchesClause(clause: Clause, picture: Situation): boolean {
     return false
   }
   if (clause.agent !== undefined && clause.agent !== picture.agent) {
+    return false
+  }
+  if (!namedMatches(clause.named, picture.named)) {
+    return false
+  }
+  if (clause.prior !== undefined && clause.prior !== picture.prior) {
     return false
   }
   return true
@@ -109,7 +132,19 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
         {
           name: "A person edit after the agent has landed sets the guard",
           command: "person",
-          when: { phase: "running", agent: "visible" },
+          when: { phase: "running", agent: "visible", prior: "none" },
+          effect: { outcome: "person", guarded: "set" },
+        },
+        {
+          name: "A person edit during a second run before it lands sets the guard",
+          command: "person",
+          when: { phase: "running", named: "none", prior: "some" },
+          effect: { outcome: "person", guarded: "set" },
+        },
+        {
+          name: "A person edit during a second run after it lands sets the guard",
+          command: "person",
+          when: { phase: "running", named: "visible", prior: "some" },
           effect: { outcome: "person", guarded: "set" },
         },
         {
@@ -117,7 +152,9 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
           command: "person",
           unless: [
             { phase: "running", agent: "none" },
-            { phase: "running", agent: "visible" },
+            { phase: "running", agent: "visible", prior: "none" },
+            { phase: "running", named: "none", prior: "some" },
+            { phase: "running", named: "visible", prior: "some" },
           ],
           effect: { outcome: "person", guarded: "keep" },
         },
@@ -127,13 +164,31 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
         {
           name: "A start from idle opens the run",
           command: "start",
-          when: { phase: "idle" },
+          when: { phase: "idle", named: "none" },
           effect: { outcome: "start" },
         },
         {
-          name: "A start outside idle stays fenced",
+          name: "A start from stopped opens a new run",
           command: "start",
-          unless: [{ phase: "idle" }],
+          when: { phase: "stopped", named: "none" },
+          effect: { outcome: "start" },
+        },
+        {
+          name: "A start from undone opens a new run",
+          command: "start",
+          when: { phase: "undone", named: "none" },
+          effect: { outcome: "start" },
+        },
+        {
+          name: "A start from a running run stays fenced",
+          command: "start",
+          when: { phase: "running" },
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+        {
+          name: "A start that reuses an id with rows stays fenced",
+          command: "start",
+          when: { phase: ["idle", "stopped", "undone"], named: ["visible", "hidden"] },
           effect: { outcome: "refuse", code: "run-fenced" },
         },
       ]
@@ -155,24 +210,49 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
     case "undo":
       return [
         {
-          name: "An undo with the matching run id hides the agent row",
+          name: "An undo of the current run hides only that run's rows",
           command: "undo",
-          when: { phase: ["running", "stopped"], run: "match" },
+          when: { phase: ["running", "stopped"], run: "match", named: ["none", "visible"] },
           effect: { outcome: "undo" },
+        },
+        {
+          name: "An undo of an earlier run hides only that run's rows",
+          command: "undo",
+          when: { phase: ["stopped", "undone"], run: "miss", named: "visible" },
+          effect: { outcome: "undo-run" },
+        },
+        {
+          name: "An undo of an earlier run stays fenced while a run is live",
+          command: "undo",
+          when: { phase: "running", run: "miss", named: "visible" },
+          effect: { outcome: "refuse", code: "run-fenced" },
         },
         {
           name: "An undo outside a live run stays fenced",
           command: "undo",
-          unless: [{ phase: ["running", "stopped"], run: "match" }],
+          unless: [
+            { phase: ["running", "stopped"], run: "match", named: ["none", "visible"] },
+            { phase: ["stopped", "undone"], run: "miss", named: "visible" },
+            { phase: "running", run: "miss", named: "visible" },
+          ],
           effect: { outcome: "refuse", code: "run-fenced" },
         },
       ]
     case "agent":
       return [
         {
+          name: "An edit from an ended run stays fenced",
+          command: "agent",
+          when: { phase: "running", run: "miss", named: ["visible", "hidden"] },
+          effect: { outcome: "refuse", code: "run-fenced" },
+        },
+        {
           name: "An agent edit outside the running run stays fenced",
           command: "agent",
-          unless: [{ phase: "running", run: "match" }],
+          unless: [
+            { phase: "running", run: "match" },
+            { phase: "running", run: "miss", named: ["visible", "hidden"] },
+          ],
           effect: { outcome: "refuse", code: "run-fenced" },
         },
         {
@@ -197,7 +277,13 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
         {
           name: "A fresh read lands another agent row in the same run",
           command: "agent",
-          when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "visible" },
+          when: { phase: "running", run: "match", read: "equal", guarded: false, named: "visible" },
+          effect: { outcome: "agent" },
+        },
+        {
+          name: "An agent edit of a second run lands",
+          command: "agent",
+          when: { phase: "running", run: "match", read: "equal", guarded: false, named: "none", prior: "some" },
           effect: { outcome: "agent" },
         },
         {
@@ -215,7 +301,7 @@ function rulesOf(kind: Command["command"]): readonly Rule[] {
         {
           name: "An agent edit lands one row and records claimed",
           command: "agent",
-          when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "none" },
+          when: { phase: "running", run: "match", read: "equal", guarded: false, agent: "none", prior: "none" },
           effect: { outcome: "agent" },
         },
       ]
@@ -276,6 +362,21 @@ function runState(register: Register, runId: string): RunState {
   return register.runId === runId ? "match" : "miss"
 }
 
+function namedRows(register: Register, runId: string | null): { named: NamedRows; prior: PriorRows } {
+  let named: NamedRows = "none"
+  let prior: PriorRows = "none"
+  for (const row of register.landed) {
+    if (row.actor !== "agent" || row.runId === undefined) continue
+    if (row.runId === runId) {
+      if (row.visible) named = "visible"
+      else if (named !== "visible") named = "hidden"
+    } else {
+      prior = "some"
+    }
+  }
+  return { named, prior }
+}
+
 function readState(readAt: number, register: Register): ReadState {
   if (readAt === version(register)) {
     return "equal"
@@ -304,6 +405,7 @@ function situation(register: Register, command: Command): Situation | null {
         read: "equal",
         guarded: register.guarded,
         agent: agentState(register),
+        ...namedRows(register, register.runId),
       }
     case "agent":
       return {
@@ -313,6 +415,7 @@ function situation(register: Register, command: Command): Situation | null {
         read: readState(command.readAt, register),
         guarded: register.guarded,
         agent: agentState(register),
+        ...namedRows(register, command.runId),
       }
     case "start":
     case "stop":
@@ -324,6 +427,7 @@ function situation(register: Register, command: Command): Situation | null {
         read: "equal",
         guarded: register.guarded,
         agent: agentState(register),
+        ...namedRows(register, command.runId),
       }
     case "add":
     case "remove":
@@ -336,6 +440,7 @@ function situation(register: Register, command: Command): Situation | null {
         read: "equal",
         guarded: register.guarded,
         agent: agentState(register),
+        ...namedRows(register, command.runId),
       }
     default: {
       const unreachable: never = command
@@ -430,6 +535,54 @@ function visibleAgents(register: Register): number {
   return count
 }
 
+function agentRows(register: Register): number {
+  let count = 0
+  for (const row of register.landed) {
+    if (row.actor === "agent") {
+      count += 1
+    }
+  }
+  return count
+}
+
+function runIds(register: Register): number {
+  return runIdSet(register).size
+}
+
+function runIdSet(register: Register): Set<string> {
+  const ids = new Set<string>()
+  if (register.runId !== null) ids.add(register.runId)
+  for (const row of register.landed) {
+    if (row.actor === "agent" && row.runId !== undefined) ids.add(row.runId)
+  }
+  return ids
+}
+
+function usesStoredRun(register: Register): boolean {
+  return runIdSet(register).has(storedRun)
+}
+
+function usesPairRun(register: Register): boolean {
+  const ids = runIdSet(register)
+  return ids.has("r") || ids.has("s")
+}
+
+function keepRegister(register: Register): boolean {
+  if (visiblePeople(register) > 2 || visibleAgents(register) > 2) {
+    return false
+  }
+  if (agentRows(register) > 2 || runIds(register) > 2) {
+    return false
+  }
+  if (usesStoredRun(register) && usesPairRun(register)) {
+    return false
+  }
+  if (runIds(register) < 2) {
+    return true
+  }
+  return visiblePeople(register) === 0 && version(register) <= 2 && !register.guarded && register.phase !== "undone"
+}
+
 function identity(register: Register): string {
   return JSON.stringify({
     phase: register.phase,
@@ -466,27 +619,32 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
         runId: command.runId,
         readAt: version(register),
         guarded: false,
+        claimed: null,
+        stoppedAt: null,
       }
     }
     case "stop":
       return { ...register, phase: "stopped", stoppedAt: version(register) }
     case "undo":
-      return {
-        ...register,
-        phase: "undone",
-        landed: register.landed.map((row) =>
-          row.actor === "agent"
-            ? { actor: "agent", value: row.value, visible: false }
-            : { actor: row.actor, value: row.value, visible: row.visible },
-        ),
+    case "undo-run": {
+      if (command.command !== "undo") {
+        throw new Error(effect.outcome)
       }
+      const landed = register.landed.map((row) =>
+        row.actor === "agent" && row.runId === command.runId ? { ...row, visible: false } : row,
+      )
+      if (effect.outcome === "undo-run") {
+        return { ...register, landed }
+      }
+      return { ...register, phase: "undone", landed }
+    }
     case "agent": {
       if (command.command !== "agent") {
         throw new Error(effect.outcome)
       }
       return {
         ...register,
-        landed: [...register.landed, { actor: "agent", value: command.value, visible: true }],
+        landed: [...register.landed, { actor: "agent", value: command.value, visible: true, runId: command.runId }],
         claimed: command.readAt,
       }
     }
@@ -511,7 +669,7 @@ function walkOnce(): { readonly hits: ReadonlyMap<string, WalkHit>; readonly ove
     start: freezeRegister(openRegister("floor", "slide")),
     identity,
     commands,
-    keep: (register) => visiblePeople(register) <= 2 && visibleAgents(register) <= 2,
+    keep: keepRegister,
     cap: (dequeued, register) => {
       if (version(register) > 4 || dequeued > 400) {
         throw new Error("state cap hit")
@@ -633,8 +791,8 @@ describe("decide", () => {
       readAt: 0,
       claimed: 0,
       landed: [
-        { actor: "agent", value: "one", visible: true },
-        { actor: "agent", value: "two", visible: true },
+        { actor: "agent", value: "one", visible: true, runId: "run" },
+        { actor: "agent", value: "two", visible: true, runId: "run" },
       ],
     })
     const before = copyRegister(register)
@@ -647,11 +805,77 @@ describe("decide", () => {
         ...register,
         phase: "undone",
         landed: [
-          { actor: "agent", value: "one", visible: false },
-          { actor: "agent", value: "two", visible: false },
+          { actor: "agent", value: "one", visible: false, runId: "run" },
+          { actor: "agent", value: "two", visible: false, runId: "run" },
         ],
       },
     })
+  })
+
+  it("An undo of a run whose rows are already hidden stays fenced", () => {
+    const register = freezeRegister({
+      ...openRegister("floor", "slide"),
+      phase: "stopped",
+      runId: "run",
+      landed: [{ actor: "agent", value: "one", visible: false, runId: "run" }],
+    })
+    const before = copyRegister(register)
+    expect(decide(register, { command: "undo", runId: "run" })).toEqual({ decision: "refuse", code: "run-fenced" })
+    expect(register).toEqual(before)
+  })
+
+  it("A read equal to an undone run's claim is stale for the next run", () => {
+    let register = openRegister("floor", "slide")
+    const person = decide(register, { command: "person", value: "p" })
+    expect(person.decision).toBe("apply")
+    if (person.decision !== "apply") return
+    register = person.register
+    const started = decide(register, { command: "start", runId: "first" })
+    expect(started.decision).toBe("apply")
+    if (started.decision !== "apply") return
+    register = started.register
+    const claim = version(register)
+    const wrote = decide(register, { command: "agent", runId: "first", readAt: claim, value: "one" })
+    expect(wrote.decision).toBe("apply")
+    if (wrote.decision !== "apply") return
+    register = wrote.register
+    const during = decide(register, { command: "person", value: "q" })
+    expect(during.decision).toBe("apply")
+    if (during.decision !== "apply") return
+    register = during.register
+    const undone = decide(register, { command: "undo", runId: "first" })
+    expect(undone.decision).toBe("apply")
+    if (undone.decision !== "apply") return
+    register = undone.register
+    const next = decide(register, { command: "start", runId: "second" })
+    expect(next.decision).toBe("apply")
+    if (next.decision !== "apply") return
+    register = next.register
+    expect(register.claimed).toBeNull()
+    expect(register.guarded).toBe(false)
+    expect(decide(register, { command: "agent", runId: "second", readAt: claim, value: "old" })).toEqual({
+      decision: "refuse",
+      code: "stale",
+    })
+    const read = version(register)
+    const firstRow = decide(register, { command: "agent", runId: "second", readAt: read, value: "two" })
+    expect(firstRow.decision).toBe("apply")
+    if (firstRow.decision !== "apply") return
+    const secondRow = decide(firstRow.register, {
+      command: "agent",
+      runId: "second",
+      readAt: read,
+      value: "three",
+    })
+    expect(secondRow.decision).toBe("apply")
+    if (secondRow.decision !== "apply") return
+    expect(secondRow.register.claimed).toBe(read)
+    expect(
+      secondRow.register.landed.filter((row) => row.actor === "agent" && row.visible && row.runId === "second"),
+    ).toEqual([
+      { actor: "agent", value: "two", visible: true, runId: "second" },
+      { actor: "agent", value: "three", visible: true, runId: "second" },
+    ])
   })
 
   it("A person value is not trimmed", () => {

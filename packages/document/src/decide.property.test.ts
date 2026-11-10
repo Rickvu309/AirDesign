@@ -195,3 +195,46 @@ it("throws missing node for a listed id that has no body", () => {
     expect(() => decide(register, { command: "read", runId: "r1", node: id })).toThrow("missing node")
   }
 })
+
+it("undoes each element of a run on its own", () => {
+  const other = elementId("258.7")
+  const opened = openRegister("floor", "slide")
+  const added = decide(opened, { command: "add", node: other, floor: "one", route: "slide" })
+  expect(added.decision).toBe("apply")
+  if (added.decision !== "apply") return
+  const run = "run"
+  const firstStarted = decide(added.register, { command: "start", runId: run })
+  expect(firstStarted.decision).toBe("apply")
+  if (firstStarted.decision !== "apply") return
+  const secondStarted = decide(firstStarted.register, { command: "start", runId: run, node: other })
+  expect(secondStarted.decision).toBe("apply")
+  if (secondStarted.decision !== "apply") return
+  const firstWrote = decide(secondStarted.register, { command: "agent", runId: run, readAt: 0, value: "left" })
+  expect(firstWrote.decision).toBe("apply")
+  if (firstWrote.decision !== "apply") return
+  const secondWrote = decide(firstWrote.register, {
+    command: "agent",
+    runId: run,
+    readAt: 0,
+    value: "right",
+    node: other,
+  })
+  expect(secondWrote.decision).toBe("apply")
+  if (secondWrote.decision !== "apply") return
+  const firstUndone = decide(secondWrote.register, { command: "undo", runId: run })
+  expect(firstUndone.decision).toBe("apply")
+  if (firstUndone.decision !== "apply") return
+  expect(firstUndone.register.phase).toBe("undone")
+  expect(firstUndone.register.landed).toEqual([{ actor: "agent", value: "left", visible: false, runId: run }])
+  const kept = firstUndone.register.elements[other]
+  expect(kept?.phase).toBe("running")
+  expect(kept?.landed).toEqual([{ actor: "agent", value: "right", visible: true, runId: run }])
+  const secondUndone = decide(firstUndone.register, { command: "undo", runId: run, node: other })
+  expect(secondUndone.decision).toBe("apply")
+  if (secondUndone.decision !== "apply") return
+  expect(secondUndone.register.phase).toBe("undone")
+  expect(secondUndone.register.landed).toEqual([{ actor: "agent", value: "left", visible: false, runId: run }])
+  const hidden = secondUndone.register.elements[other]
+  expect(hidden?.phase).toBe("undone")
+  expect(hidden?.landed).toEqual([{ actor: "agent", value: "right", visible: false, runId: run }])
+})

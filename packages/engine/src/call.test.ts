@@ -1,5 +1,14 @@
 import { parseNotifyKey, readDeckId } from "@airdesign/catalog"
-import { currentValue, decide, elementId, history, version, type ElementId, type Register } from "@airdesign/document"
+import {
+  currentValue,
+  decide,
+  decideUndo,
+  elementId,
+  history,
+  version,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { call, openDeck, type Deck } from "./index.js"
 
@@ -147,7 +156,9 @@ describe("call", () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.deck.revision).toBe(1)
-    expect(nodeBody(result.deck.register, left).landed).toEqual([{ actor: "agent", value: "hi", visible: true }])
+    expect(nodeBody(result.deck.register, left).landed).toEqual([
+      { actor: "agent", value: "hi", visible: true, runId: "run" },
+    ])
   })
 
   it("lands an agent edit of two changes", () => {
@@ -165,8 +176,8 @@ describe("call", () => {
     if (!result.ok) return
     expect(result.deck.revision).toBe(1)
     expect(nodeBody(result.deck.register, left).landed).toEqual([
-      { actor: "agent", value: "one", visible: true },
-      { actor: "agent", value: "two", visible: true },
+      { actor: "agent", value: "one", visible: true, runId: "run" },
+      { actor: "agent", value: "two", visible: true, runId: "run" },
     ])
   })
 
@@ -608,5 +619,107 @@ describe("call", () => {
       }),
     ).toEqual({ ok: false, refusal: "limit" })
     expect(prepared.register).toBe(before)
+  })
+
+  function finishedRun(): { deck: Deck; register: Register } {
+    const started = running()
+    const first = call("edit_deck", started, agent, {
+      deck: "deck",
+      base: started.revision,
+      changes: [{ value: "one", node: "258.7", readAt: version(nodeBody(started.register, left)) }],
+    })
+    expect(first.ok).toBe(true)
+    if (!first.ok) throw new Error("first run refused")
+    const stopped = decide(first.deck.register, { command: "stop", runId: "run", node: left })
+    expect(stopped.decision).toBe("apply")
+    if (stopped.decision !== "apply") throw new Error(stopped.code)
+    return { deck: first.deck, register: stopped.register }
+  }
+
+  it("lands a second run on an element a finished run edited", () => {
+    const finished = finishedRun()
+    const again = decide(finished.register, { command: "start", runId: "next", node: left })
+    expect(again.decision).toBe("apply")
+    if (again.decision !== "apply") return
+    const deck = { id: finished.deck.id, revision: finished.deck.revision, register: again.register }
+    const second = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "next" },
+      {
+        deck: "deck",
+        base: deck.revision,
+        changes: [{ value: "two", node: "258.7", readAt: version(nodeBody(deck.register, left)) }],
+      },
+    )
+    expect(second.ok).toBe(true)
+    if (!second.ok) return
+    expect(nodeBody(second.deck.register, left).landed).toEqual([
+      { actor: "agent", value: "one", visible: true, runId: "run" },
+      { actor: "agent", value: "two", visible: true, runId: "next" },
+    ])
+    expect(history(nodeBody(second.deck.register, left))).toEqual(["one", "two"])
+  })
+
+  it("a second run while the first is live stays fenced", () => {
+    const started = running()
+    const landed = call("edit_deck", started, agent, {
+      deck: "deck",
+      base: started.revision,
+      changes: [{ value: "one", node: "258.7", readAt: version(nodeBody(started.register, left)) }],
+    })
+    expect(landed.ok).toBe(true)
+    if (!landed.ok) return
+    expect(decide(landed.deck.register, { command: "start", runId: "next", node: left })).toEqual({
+      decision: "refuse",
+      code: "run-fenced",
+    })
+    const register = landed.deck.register
+    expect(
+      call(
+        "edit_deck",
+        landed.deck,
+        { actor: "agent", runId: "next" },
+        {
+          deck: "deck",
+          base: landed.deck.revision,
+          changes: [{ value: "two", node: "258.7", readAt: version(nodeBody(landed.deck.register, left)) }],
+        },
+      ),
+    ).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(landed.deck.register).toBe(register)
+  })
+
+  it("undo of the first run keeps the second run's value", () => {
+    const finished = finishedRun()
+    const again = decide(finished.register, { command: "start", runId: "next", node: left })
+    expect(again.decision).toBe("apply")
+    if (again.decision !== "apply") return
+    const deck = { id: finished.deck.id, revision: finished.deck.revision, register: again.register }
+    const second = call(
+      "edit_deck",
+      deck,
+      { actor: "agent", runId: "next" },
+      {
+        deck: "deck",
+        base: deck.revision,
+        changes: [{ value: "two", node: "258.7", readAt: version(nodeBody(deck.register, left)) }],
+      },
+    )
+    expect(second.ok).toBe(true)
+    if (!second.ok) return
+    const ended = decide(second.deck.register, { command: "stop", runId: "next", node: left })
+    expect(ended.decision).toBe("apply")
+    if (ended.decision !== "apply") return
+    const undone = decideUndo(nodeBody(ended.register, left), "run")
+    expect(undone.decision).toBe("apply")
+    if (undone.decision !== "apply") return
+    expect(undone.body.phase).toBe("stopped")
+    expect(undone.body.runId).toBe("next")
+    expect(undone.body.landed).toEqual([
+      { actor: "agent", value: "one", visible: false, runId: "run" },
+      { actor: "agent", value: "two", visible: true, runId: "next" },
+    ])
+    expect(history(undone.body)).toEqual(["two"])
   })
 })

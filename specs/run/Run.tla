@@ -1,6 +1,7 @@
 ---- MODULE Run ----
-\* One run starts, stops, hits a limit, and resumes on one deck.
+\* A run starts, stops, hits a limit, and resumes. A later run may start once that run has stopped or been undone.
 \* A read lands only when its run id is the one stored on the node.
+\* This model keeps one write. The later run does not land its own row here.
 EXTENDS Integers
 
 VARIABLES
@@ -12,10 +13,15 @@ VARIABLES
   didRead,
   seen,
   seenId,
+  seenGen,
   opened,
-  landed
+  landed,
+  owner,
+  generation,
+  ownedGen,
+  foreign
 
-vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, opened, landed>>
+vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
 
 \* The offered id has to equal the id stored on the node. The letter s is not special.
 accepted(readId) == readId = runId /\ phase \in {"stopped", "undone"}
@@ -29,8 +35,13 @@ TypeOK ==
   /\ didRead \in BOOLEAN
   /\ seen \in {"none", "stopped", "undone"}
   /\ seenId \in {"none", "s", "t"}
+  /\ seenGen \in {-1, 0, 1, 2}
   /\ opened \in BOOLEAN
   /\ landed \in {0, 1}
+  /\ owner \in {"none", "s", "t"}
+  /\ generation \in {0, 1, 2}
+  /\ ownedGen \in {-1, 0, 1, 2}
+  /\ foreign \in {0, 1}
 
 Init ==
   /\ phase = "idle"
@@ -41,32 +52,60 @@ Init ==
   /\ didRead = FALSE
   /\ seen = "none"
   /\ seenId = "none"
+  /\ seenGen = -1
   /\ opened = FALSE
   /\ landed = 0
+  /\ owner = "none"
+  /\ generation = 0
+  /\ ownedGen = -1
+  /\ foreign = 0
 
-\* Start applies only while the node is idle, and it stores the offered run id.
+\* The first start applies while the node is idle, and it stores the offered run id.
 Start ==
   /\ phase = "idle"
   /\ phase' = "running"
   /\ runId' \in {"s", "t"}
   /\ readAt' = writes
   /\ opened' = TRUE
-  /\ UNCHANGED <<writes, mark, didRead, seen, seenId, landed>>
+  /\ generation' = generation + 1
+  /\ UNCHANGED <<writes, mark, didRead, seen, seenId, seenGen, landed, owner, ownedGen, foreign>>
 
-\* A later start is refused and does not replace the stored id.
+\* A start during a live run is refused and does not replace the stored id.
 StartAgain ==
-  /\ phase # "idle"
+  /\ phase = "running"
   /\ UNCHANGED vars
 
-\* This model keeps one write, the fresh one, which is enough for start, stop, limit, resume, and read.
-\* A stopped or ended run does not accept another write from that run.
+\* A start from a stopped or undone run stores a new id. An id that already owns a row is not offered here.
+StartNext ==
+  /\ phase \in {"stopped", "undone"}
+  /\ generation < 2
+  /\ runId' \in {"s", "t"}
+  /\ (runId' # owner \/ owner = "none")
+  /\ phase' = "running"
+  /\ readAt' = writes
+  /\ mark' = -1
+  /\ generation' = generation + 1
+  /\ foreign' = IF (writes = 1 /\ owner # "none" /\ owner # runId') THEN 1 ELSE foreign
+  /\ UNCHANGED <<writes, didRead, seen, seenId, seenGen, opened, landed, owner, ownedGen>>
+
+\* A start that names an id which already has a row stays fenced.
+StartReuse ==
+  /\ phase \in {"stopped", "undone"}
+  /\ landed = 1
+  /\ owner \in {"s", "t"}
+  /\ UNCHANGED vars
+
+\* A fresh run with no row yet may land one write. A stopped or undone run does not accept a write.
 AgentWrites ==
   \/ /\ phase = "running"
+     /\ owner = "none"
      /\ readAt = writes
      /\ writes = 0
      /\ writes' = 1
      /\ landed' = 1
-     /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, opened>>
+     /\ owner' = runId
+     /\ ownedGen' = generation
+     /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, generation, foreign>>
   \/ /\ phase \in {"stopped", "undone"}
      /\ UNCHANGED vars
 
@@ -80,7 +119,7 @@ Stop ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = writes
-  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, opened, landed>>
+  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
 
 \* Stop applies only while the stored id is running.
 StopMiss ==
@@ -92,20 +131,46 @@ Limit ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = writes
-  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, opened, landed>>
+  /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
 
 \* Resume continues the same run. It does not start a second run on the deck.
 Resume ==
   /\ phase = "stopped"
   /\ phase' = "running"
-  /\ UNCHANGED <<runId, writes, readAt, mark, didRead, seen, seenId, opened, landed>>
+  /\ UNCHANGED <<runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
 
-\* Undo reaches a phase a later read may accept. It keeps the landed write and hides it.
+\* Undo of the current run hides that run's write and leaves an earlier run's write visible.
 Undo ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
+  /\ writes' = IF owner = runId THEN 0 ELSE writes
+  /\ UNCHANGED <<runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign>>
+
+\* Undo of an earlier run, while the later run is stopped or undone, hides only the earlier row.
+UndoEarlier ==
+  /\ phase \in {"stopped", "undone"}
+  /\ owner \in {"s", "t"}
+  /\ owner # runId
+  /\ writes = 1
   /\ writes' = 0
-  /\ UNCHANGED <<runId, readAt, mark, didRead, seen, seenId, opened, landed>>
+  /\ foreign' = 0
+  /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen>>
+
+\* Undo of an earlier run stays fenced while a run is live.
+UndoEarlierLive ==
+  /\ phase = "running"
+  /\ owner \in {"s", "t"}
+  /\ owner # runId
+  /\ UNCHANGED vars
+
+\* A second undo of an earlier run whose row is already hidden removes nothing.
+UndoEarlierAgain ==
+  /\ phase \in {"stopped", "undone"}
+  /\ owner \in {"s", "t"}
+  /\ owner # runId
+  /\ landed = 1
+  /\ writes = 0
+  /\ UNCHANGED vars
 
 ReadS ==
   \/ /\ accepted("s")
@@ -113,7 +178,8 @@ ReadS ==
      /\ didRead' = TRUE
      /\ seen' = phase
      /\ seenId' = "s"
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed>>
+     /\ seenGen' = generation
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign>>
   \/ /\ ~accepted("s")
      /\ UNCHANGED vars
 
@@ -123,12 +189,13 @@ ReadT ==
      /\ didRead' = TRUE
      /\ seen' = phase
      /\ seenId' = "t"
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed>>
+     /\ seenGen' = generation
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign>>
   \/ /\ ~accepted("t")
      /\ UNCHANGED vars
 
 Next ==
-  Start \/ StartAgain \/ AgentWrites \/ AgentMiss \/ Stop \/ StopMiss \/ Limit \/ Resume \/ Undo \/ ReadS \/ ReadT
+  Start \/ StartAgain \/ StartNext \/ StartReuse \/ AgentWrites \/ AgentMiss \/ Stop \/ StopMiss \/ Limit \/ Resume \/ Undo \/ UndoEarlier \/ UndoEarlierLive \/ UndoEarlierAgain \/ ReadS \/ ReadT
 
 Spec == Init /\ [][Next]_vars
 
@@ -136,13 +203,13 @@ Spec == Init /\ [][Next]_vars
 UnstartedHasNoWrites ==
   phase = "idle" => writes = 0 /\ landed = 0 /\ runId = "none" /\ opened = FALSE /\ didRead = FALSE
 
-\* Stop freezes the deck against a later write from that run. Writes already landed stay.
+\* Stop freezes the visible rows. Undo of an earlier run may hide one afterwards, and it does not add a row.
 StopFreezesLandedWrites ==
-  phase # "stopped" \/ (writes = mark /\ writes = landed)
+  phase # "stopped" \/ writes <= mark
 
 \* A limit ends the run the way stop does.
 LimitEndsLikeStop ==
-  phase # "stopped" \/ (writes = mark /\ writes = landed /\ runId \in {"s", "t"})
+  phase # "stopped" \/ (writes <= mark /\ runId \in {"s", "t"})
 
 \* Resume continues the same run. It does not start a second run on that deck.
 ResumeContinuesSameRun ==
@@ -150,14 +217,22 @@ ResumeContinuesSameRun ==
   /\ opened = FALSE => runId = "none" /\ landed = 0
   /\ opened = TRUE => runId \in {"s", "t"}
 
-\* A stopped or ended run does not accept another write from that run.
+\* A stopped run does not grow its visible rows. An undone run shows none of its own rows.
 StoppedOrEndedRejectsWrite ==
-  /\ phase = "stopped" => writes = landed
-  /\ phase = "undone" => writes = 0
+  /\ phase = "stopped" => writes <= mark
+  /\ phase = "undone" => owner # runId \/ writes = 0
 
-\* A read is accepted only when its run id equals the run id stored on that node, and the phase is stopped or undone.
+\* A read is stored only from a stopped or undone phase, and only for the run id stored then. A later run does not erase it.
 ReadMatchesStoredRun ==
-  /\ didRead => seen \in {"stopped", "undone"} /\ seenId = runId /\ seenId \in {"s", "t"}
-  /\ didRead = FALSE => seen = "none" /\ seenId = "none"
+  /\ didRead => seen \in {"stopped", "undone"} /\ seenId \in {"s", "t"} /\ (generation = seenGen => seenId = runId)
+  /\ didRead = FALSE => seen = "none" /\ seenId = "none" /\ seenGen = -1
+
+\* A later start stores an id that does not already own a row.
+LaterStartUsesAFreshId ==
+  ownedGen = -1 \/ generation = ownedGen \/ runId # owner
+
+\* Undo of the current run leaves another run's visible row in place.
+UndoLeavesTheOtherRun ==
+  foreign = 0 \/ writes = 1
 
 ====

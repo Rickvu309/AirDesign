@@ -53,4 +53,4 @@ export const colors = {
   Undone: "teal",
 }
 
-export const title = "One person and one agent run edit one property"
+export const title = "This model follows one run editing one property"

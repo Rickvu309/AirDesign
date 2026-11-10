@@ -9,6 +9,7 @@ export type Landed = {
   readonly actor: Actor
   readonly value: string
   readonly visible: boolean
+  readonly runId?: string
 }
 
 export type NodeRegister = {
@@ -175,7 +176,7 @@ function personEdit(register: NodeRegister, value: string): NodeRegister {
 }
 
 function startRun(register: NodeRegister, runId: string): Edited {
-  if (register.phase !== "idle") {
+  if (register.phase === "running" || register.landed.some((row) => row.actor === "agent" && row.runId === runId)) {
     return { decision: "refuse", code: "run-fenced" }
   }
   return {
@@ -186,6 +187,8 @@ function startRun(register: NodeRegister, runId: string): Edited {
       runId,
       readAt: version(register),
       guarded: false,
+      claimed: null,
+      stoppedAt: null,
     },
   }
 }
@@ -200,7 +203,7 @@ function agentEdit(register: NodeRegister, runId: string, readAt: number, value:
   if (register.guarded) {
     return { decision: "refuse", code: "person-protected" }
   }
-  const landed = [...register.landed, { actor: "agent" as const, value, visible: true }]
+  const landed = [...register.landed, { actor: "agent" as const, value, visible: true, runId }]
   return { decision: "apply", body: { ...register, landed, claimed: readAt } }
 }
 
@@ -215,13 +218,20 @@ export function decideUndo(register: NodeRegister, runId: string): Edited {
   if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
     return { decision: "refuse", code: "limit" }
   }
-  if ((register.phase !== "running" && register.phase !== "stopped") || register.runId !== runId) {
+  const rows = register.landed.filter((row) => row.actor === "agent" && row.runId === runId)
+  if (rows.length > 0 && rows.every((row) => !row.visible)) {
     return { decision: "refuse", code: "run-fenced" }
   }
   const landed = register.landed.map((row) =>
-    row.actor === "agent" ? { actor: "agent" as const, value: row.value, visible: false } : row,
+    row.actor === "agent" && row.runId === runId ? { ...row, visible: false } : row,
   )
-  return { decision: "apply", body: { ...register, phase: "undone", landed } }
+  if (register.runId === runId && (register.phase === "running" || register.phase === "stopped")) {
+    return { decision: "apply", body: { ...register, phase: "undone", landed } }
+  }
+  if ((register.phase === "stopped" || register.phase === "undone") && rows.some((row) => row.visible)) {
+    return { decision: "apply", body: { ...register, landed } }
+  }
+  return { decision: "refuse", code: "run-fenced" }
 }
 
 export function compactChain(register: NodeRegister, eligible: boolean): NodeRegister {

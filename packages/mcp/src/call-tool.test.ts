@@ -84,7 +84,9 @@ describe("callTool", () => {
     if (!result.ok) return
     expect(result.deck).not.toBe(deck)
     expect(result.deck.revision).toBe(1)
-    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([
+      { actor: "agent", value: "21", visible: true, runId: "run" },
+    ])
     expect(deck.revision).toBe(0)
     expect(nodeBody(deck.register).landed).toEqual([])
     expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
@@ -133,7 +135,9 @@ describe("callTool", () => {
     if (!result.ok) return
     expect(result.deck).not.toBe(deck)
     expect(result.deck.revision).toBe(1)
-    expect(nodeBody(result.deck.register).landed).toEqual([{ actor: "agent", value: "22", visible: true }])
+    expect(nodeBody(result.deck.register).landed).toEqual([
+      { actor: "agent", value: "22", visible: true, runId: "run" },
+    ])
     expect(deck.revision).toBe(0)
   })
 

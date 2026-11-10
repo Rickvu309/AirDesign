@@ -143,6 +143,9 @@ function nodeRegister(spec: Spec): Register {
   for (let index = 0; index < num(spec, "personAfter"); index += 1) {
     landed.push({ actor: "person", value: "later", visible: true })
   }
+  for (const row of landed) {
+    if (row.actor === "agent") Object.assign(row, { runId: run })
+  }
   const phase = phaseOf(spec)
   return {
     ...openRegister("floor", "slide"),
@@ -306,6 +309,9 @@ function undoRegister(spec: Spec): Register {
   if (num(spec, "agent") === 1 || num(spec, "hidden") === 1) {
     landed.push({ actor: "agent", value: "agent", visible: num(spec, "agent") === 1 })
   }
+  for (const row of landed) {
+    if (row.actor === "agent") Object.assign(row, { runId: run })
+  }
   const people = landed.filter((row) => row.visible && row.actor === "person").length
   return {
     ...openRegister("floor", "slide"),
@@ -335,6 +341,67 @@ function undoExpected(spec: Spec) {
   }
 }
 
+function laterPhase(spec: Spec): Phase {
+  const track = text(spec, "track")
+  if (track === "bothGone") return "undone"
+  if (track === "second") return "running"
+  if (track === "old") return undoPhase(spec)
+  return "stopped"
+}
+
+function laterRunId(spec: Spec): string {
+  const track = text(spec, "track")
+  if (track === "second" || track === "secondStopped" || track === "firstGone" || track === "bothGone") return "s"
+  return run
+}
+
+function laterRegister(spec: Spec): Register {
+  const landed: NodeRegister["landed"][number][] = []
+  if (num(spec, "person") === 1) landed.push({ actor: "person", value: "person", visible: true })
+  if (num(spec, "agent") === 1 || num(spec, "hidden") === 1) {
+    landed.push({ actor: "agent", value: "agent", visible: num(spec, "agent") === 1, runId: run })
+  }
+  if (num(spec, "later") === 1 || num(spec, "laterHidden") === 1) {
+    landed.push({ actor: "agent", value: "later", visible: num(spec, "later") === 1, runId: "s" })
+  }
+  return {
+    ...openRegister("floor", "slide"),
+    landed,
+    phase: laterPhase(spec),
+    runId: laterRunId(spec),
+    readAt: landed.filter((row) => row.visible).length,
+    guarded: false,
+  }
+}
+
+function laterPicture(register: Register) {
+  let person = 0
+  let first = 0
+  let firstHidden = 0
+  let later = 0
+  let laterHidden = 0
+  for (const row of register.landed) {
+    if (row.actor === "person" && row.visible) person += 1
+    if (row.actor === "agent" && row.runId === run && row.visible) first += 1
+    if (row.actor === "agent" && row.runId === run && !row.visible) firstHidden += 1
+    if (row.actor === "agent" && row.runId === "s" && row.visible) later += 1
+    if (row.actor === "agent" && row.runId === "s" && !row.visible) laterHidden += 1
+  }
+  return { phase: register.phase, runId: register.runId, person, first, firstHidden, later, laterHidden }
+}
+
+function laterExpected(spec: Spec) {
+  return {
+    phase: laterPhase(spec),
+    runId: laterRunId(spec),
+    person: num(spec, "person"),
+    first: num(spec, "agent"),
+    firstHidden: num(spec, "hidden"),
+    later: num(spec, "later"),
+    laterHidden: num(spec, "laterHidden"),
+  }
+}
+
 function replayUndo(graph: Graph, view: View, failures: string[]) {
   let replayed = 0
   let stuttered = 0
@@ -343,6 +410,52 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing undo state for ${edge.action}`)
     const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
+    if (
+      edge.action === "StopFirst" ||
+      edge.action === "StartSecond" ||
+      edge.action === "LaterWrites" ||
+      edge.action === "UndoFirstLive" ||
+      edge.action === "StopSecond" ||
+      edge.action === "UndoFirst" ||
+      edge.action === "UndoSecond" ||
+      edge.action === "UndoFirstAgain" ||
+      edge.action === "UndoLaterAgain"
+    ) {
+      const register = laterRegister(source)
+      const stutter =
+        edge.action === "UndoFirstLive" || edge.action === "UndoFirstAgain" || edge.action === "UndoLaterAgain"
+      const decision =
+        edge.action === "StopFirst"
+          ? decide(register, { command: "stop", runId: run })
+          : edge.action === "StartSecond"
+            ? decide(register, { command: "start", runId: "s" })
+            : edge.action === "LaterWrites"
+              ? decide(register, { command: "agent", runId: "s", readAt: version(register), value: "later" })
+              : edge.action === "StopSecond"
+                ? decide(register, { command: "stop", runId: "s" })
+                : edge.action === "UndoSecond" || edge.action === "UndoLaterAgain"
+                  ? decide(register, { command: "undo", runId: "s" })
+                  : decide(register, { command: "undo", runId: run })
+      if (stutter) {
+        const held =
+          decision.decision === "refuse" &&
+          decision.code === "run-fenced" &&
+          same(laterExpected(source), laterExpected(target))
+        if (!held) failures.push(`undo ${where} changed the other run`)
+        else replayed += 1
+        continue
+      }
+      if (decision.decision !== "apply") {
+        failures.push(`undo ${where} refused ${decision.code}`)
+        continue
+      }
+      const actual = laterPicture(decision.register)
+      const expected = laterExpected(target)
+      if (!same(actual, expected)) {
+        failures.push(`undo ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
+      } else replayed += 1
+      continue
+    }
     if (edge.action === "Done") {
       const changed = changedKeys(source, target, [])
       if (changed.length > 0) failures.push(`undo stutter ${where} changed ${changed.join(", ")}`)
@@ -497,7 +610,15 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
 function runRegister(spec: Spec): Register {
   const rows: NodeRegister["landed"][number][] = []
   if (num(spec, "writes") === 1) rows.push({ actor: "agent", value: "agent", visible: true })
+  if (num(spec, "landed") === 1 && num(spec, "writes") === 0) {
+    rows.push({ actor: "agent", value: "agent", visible: false })
+  }
   const stored = text(spec, "runId")
+  const owner = text(spec, "owner")
+  const tag = owner === "none" ? stored : owner
+  if (tag !== "none") {
+    for (const row of rows) Object.assign(row, { runId: tag })
+  }
   return {
     ...openRegister("floor", "slide"),
     landed: rows,
@@ -559,6 +680,61 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
     const register = runRegister(source)
     const stored = text(source, "runId")
     const offer = offeredRead(edge.action)
+    if (edge.action === "StartNext") {
+      const decision = decide(register, { command: "start", runId: text(target, "runId") })
+      const owner = text(source, "owner")
+      const visible =
+        decision.decision === "apply"
+          ? decision.register.landed.filter((row) => row.actor === "agent" && row.visible)
+          : []
+      const owned = owner === "none" ? visible.length === 0 : visible.every((row) => row.runId === owner)
+      const held =
+        decision.decision === "apply" &&
+        owned &&
+        decision.register.guarded === false &&
+        decision.register.claimed === null &&
+        same(runPicture(decision.register), runExpected(target))
+      if (!held) failures.push(`run ${where} did not open the next run`)
+      else replayed += 1
+      continue
+    }
+    if (edge.action === "StartReuse") {
+      const decision = decide(register, { command: "start", runId: text(source, "owner") })
+      const held =
+        decision.decision === "refuse" &&
+        decision.code === "run-fenced" &&
+        same(runExpected(source), runExpected(target))
+      if (!held) failures.push(`run ${where} reused a run that already has a row`)
+      else replayed += 1
+      continue
+    }
+    if (edge.action === "UndoEarlier") {
+      const decision = decide(register, { command: "undo", runId: text(source, "owner") })
+      const hidden =
+        decision.decision === "apply" &&
+        decision.register.landed.some(
+          (row) => row.actor === "agent" && row.runId === text(source, "owner") && !row.visible,
+        )
+      const held =
+        decision.decision === "apply" &&
+        hidden &&
+        decision.register.phase === text(source, "phase") &&
+        decision.register.runId === stored &&
+        same(runPicture(decision.register), runExpected(target))
+      if (!held) failures.push(`run ${where} hid the later run`)
+      else replayed += 1
+      continue
+    }
+    if (edge.action === "UndoEarlierLive" || edge.action === "UndoEarlierAgain") {
+      const decision = decide(register, { command: "undo", runId: text(source, "owner") })
+      const held =
+        decision.decision === "refuse" &&
+        decision.code === "run-fenced" &&
+        same(runExpected(source), runExpected(target))
+      if (!held) failures.push(`run ${where} undid the earlier run`)
+      else replayed += 1
+      continue
+    }
     if (edge.action === "StartAgain") {
       const repeat = decide(register, { command: "start", runId: stored })
       const other = decide(register, { command: "start", runId: otherRun(stored) })

@@ -131,7 +131,9 @@ describe("createServer", () => {
       expect(first.isError).not.toBe(true)
       expect(session.deck).not.toBe(before)
       expect(session.deck.revision).toBe(1)
-      expect(nodeBody(session.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(nodeBody(session.deck.register).landed).toEqual([
+        { actor: "agent", value: "21", visible: true, runId: "run" },
+      ])
       expect(before.revision).toBe(0)
       expect(nodeBody(before.register).landed).toEqual([])
 
@@ -183,7 +185,9 @@ describe("createServer", () => {
       expect(landed.isError).not.toBe(true)
       expect(session.deck).not.toBe(deck)
       expect(session.deck.revision).toBe(1)
-      expect(nodeBody(session.deck.register).landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(nodeBody(session.deck.register).landed).toEqual([
+        { actor: "agent", value: "21", visible: true, runId: "run" },
+      ])
       expect(deck.revision).toBe(0)
       expect(session.log.events).toHaveLength(31)
     })
