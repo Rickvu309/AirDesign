@@ -4,10 +4,12 @@ import { readPackage, readShapes } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
-import { commitEdit, elementNode, exportedParts, nodeA, ThinDeck } from "./thin-deck"
+import { commitEdit, elementNode, exportedParts, nodeA, saveDeck, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
-  const sent: { value: string; node?: string }[] = []
+  const sent: { deck: string; value: string; node?: string }[] = []
+  const saved: { deck: string; parts: ReadonlyMap<string, Uint8Array>; nodes: unknown }[] = []
+  const reads: string[] = []
   const state: {
     parts:
       | {
@@ -26,9 +28,13 @@ const live = vi.hoisted(() => {
   }
   return {
     sent,
+    saved,
+    reads,
     state,
     reset() {
       sent.length = 0
+      reads.length = 0
+      saved.length = 0
       counts.openDeck = 0
       counts.flush = 0
       waiters = []
@@ -39,10 +45,20 @@ const live = vi.hoisted(() => {
         waiters.push({ kind, count, resolve })
       })
     },
-    getParts: async () => state.parts,
+    getParts: async (deck: string) => {
+      reads.push(deck)
+      return state.parts
+    },
+    putParts: async (
+      deck: string,
+      stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; nodes: unknown },
+    ) => {
+      saved.push({ deck, parts: stored.parts, nodes: stored.nodes })
+      return { ok: true, ...stored }
+    },
     connect: () => ({
-      async enqueue(_deck: string, value: string, node?: string) {
-        sent.push({ value, node })
+      async enqueue(deck: string, value: string, node?: string) {
+        sent.push({ deck, value, node })
         return { ok: true, painted: "" }
       },
       async flush() {
@@ -62,7 +78,9 @@ vi.mock("@airdesign/live", async () => {
   return {
     ...actual,
     connect: () => live.connect(),
-    getParts: () => live.getParts(),
+    getParts: (deck: string) => live.getParts(deck),
+    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; nodes: unknown }) =>
+      live.putParts(deck, stored),
   }
 })
 
@@ -97,20 +115,20 @@ afterEach(async () => {
   vi.unstubAllGlobals()
 })
 
-async function postsCommit(remote: Remote, node: string): Promise<boolean> {
+async function postsCommit(remote: Remote, deck: string, node: string): Promise<boolean> {
   const seen: string[] = []
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
     seen.push(String(url))
     expect(String(init.method)).toBe("POST")
     expect(String(init.credentials)).toBe("same-origin")
-    expect(JSON.parse(String(init.body))).toEqual({ deck: "clean", batch: [{ value: "Hello!", node }] })
-    return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
+    expect(JSON.parse(String(init.body))).toEqual({ deck, batch: [{ value: "Hello!", node }] })
+    return new Response(JSON.stringify({ ok: true, deck, revision: 1, key: `${deck}:1` }))
   })
-  await remote.commit({ deck: "clean", batch: [{ value: "Hello!", node: elementId(node) }] })
+  await remote.commit({ deck, batch: [{ value: "Hello!", node: elementId(node) }] })
   return seen[0] === "/decks/commit"
 }
 
-it("flushes the http remote for deck clean after Hello! on node a", async () => {
+it("flushes the http remote for the given deck after Hello! on node a", async () => {
   const node = await editedId
   const calls: { op: "enqueue" | "flush"; remote: Remote; deck: string; value?: string; node?: string }[] = []
   await commitEdit(
@@ -126,17 +144,18 @@ it("flushes the http remote for deck clean after Hello! on node a", async () => 
         },
       }
     },
+    "different-deck",
     "Hello!",
     node,
   )
   const enqueued = calls[0]
   const flushed = calls[1]
   expect(calls.map((call) => call.op)).toEqual(["enqueue", "flush"])
-  expect(enqueued).toMatchObject({ deck: "clean", value: "Hello!", node })
-  expect(flushed).toMatchObject({ deck: "clean" })
+  expect(enqueued).toMatchObject({ deck: "different-deck", value: "Hello!", node })
+  expect(flushed).toMatchObject({ deck: "different-deck" })
   if (enqueued === undefined || flushed === undefined) return
-  expect(await postsCommit(enqueued.remote, node)).toBe(false)
-  expect(await postsCommit(flushed.remote, node)).toBe(true)
+  expect(await postsCommit(enqueued.remote, "different-deck", node)).toBe(false)
+  expect(await postsCommit(flushed.remote, "different-deck", node)).toBe(true)
 })
 
 function xml(text: string): Uint8Array {
@@ -170,6 +189,7 @@ async function committedNodes(
   parts: ReadonlyMap<string, Uint8Array>,
   from: string,
   values: readonly string[],
+  deck = "opened-deck",
 ): Promise<readonly (string | undefined)[]> {
   live.reset()
   live.state.parts = { ok: true, parts, nodes: { a: nodeA } }
@@ -213,7 +233,7 @@ async function committedNodes(
   })
   const opened = live.reached("openDeck", 1)
   await act(async () => {
-    root.render(<ThinDeck />)
+    root.render(<ThinDeck id={deck} />)
   })
   await act(async () => {
     await opened
@@ -269,6 +289,7 @@ it("paints before the commit is sent", async () => {
         },
       }
     },
+    "any-deck",
     "Hello!",
     "256.2",
     () => {
@@ -299,4 +320,25 @@ it("an export with no stored edit applies no route and keeps the stored parts", 
   expect([...next.keys()]).toEqual([...parts.keys()])
   expect(next.get("ppt/presentation.xml")).toBe(parts.get("ppt/presentation.xml"))
   expect(parts.get(node.part)).toBe(slide)
+})
+
+it("saves every edit under the deck id in the address", async () => {
+  await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "address-deck")
+  expect(live.sent.map((edit) => edit.deck)).toEqual(["address-deck", "address-deck"])
+  expect(live.reads).toContain("address-deck")
+})
+
+it("saves two opened files under distinct valid deck ids", async () => {
+  live.reset()
+  const firstParts = new Map([["first", new Uint8Array([1])]])
+  const secondParts = new Map([["second", new Uint8Array([2])]])
+  const first = await saveDeck(firstParts, new Uint8Array([1]))
+  const second = await saveDeck(secondParts, new Uint8Array([2]))
+  expect(first).toMatch(/^[A-Za-z0-9_-]{1,64}$/)
+  expect(second).toMatch(/^[A-Za-z0-9_-]{1,64}$/)
+  expect(first).not.toBe(second)
+  expect(live.saved).toEqual([
+    { deck: first, parts: firstParts, nodes: { a: nodeA } },
+    { deck: second, parts: secondParts, nodes: { a: nodeA } },
+  ])
 })

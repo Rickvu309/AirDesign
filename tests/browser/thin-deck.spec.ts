@@ -39,9 +39,19 @@ async function changedParts(before: string, after: string): Promise<string[]> {
   return [...original].filter(([name, bytes]) => saved.get(name)?.equals(bytes) !== true).map(([name]) => name)
 }
 
-async function open(page: Page, file: string): Promise<void> {
-  await page.goto("/thin")
+const deckAddress = /\/thin\/[A-Za-z0-9_-]{1,64}$/
+
+async function choose(page: Page, file: string): Promise<string> {
+  const before = page.url()
   await page.locator("input[type=file]").setInputFiles(file)
+  await expect.poll(() => page.url()).not.toBe(before)
+  await expect(page).toHaveURL(deckAddress)
+  return page.url()
+}
+
+async function open(page: Page, file: string): Promise<string> {
+  await page.goto("/thin")
+  return choose(page, file)
 }
 
 async function stored(page: Page, value: string): Promise<void> {
@@ -78,7 +88,7 @@ test.use({ viewport: { width: 1600, height: 1000 } })
 test("an edit to Hello! survives reload and exports", async ({ page }, testInfo) => {
   await rm(exported, { force: true })
   const download = testInfo.outputPath("exported-deck.pptx")
-  await open(page, fixture)
+  const address = await open(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveText("Hello")
   await editor.click()
@@ -87,12 +97,59 @@ test("an edit to Hello! survives reload and exports", async ({ page }, testInfo)
   await expect(editor).toHaveText("Hello!")
   await stored(page, "Hello!")
   await page.reload()
+  expect(page.url()).toBe(address)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
   await saveExport(page, download)
   expect(await changedParts(fixture, download)).toEqual([slide])
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
   expect(saved.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
   await copyFile(download, exported)
+})
+
+test("a page with no deck id shows no slide", async ({ page }) => {
+  await page.goto("/thin")
+  await expect(page.locator("input[type=file]")).toHaveCount(1)
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
+})
+
+test("a second browser context gets a different deck id", async ({ page, browser }) => {
+  const address = await open(page, fixture)
+  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  try {
+    expect(await open(await other.newPage(), fixture)).not.toBe(address)
+  } finally {
+    await other.close()
+  }
+})
+
+async function everyPartLacks(file: string, marker: string): Promise<void> {
+  const parts = await partsOf(file)
+  expect(parts.size).toBeGreaterThan(0)
+  for (const [name, bytes] of parts) {
+    expect(bytes.includes(marker), name).toBe(false)
+  }
+}
+
+test("a second deck does not carry the first deck's edit", async ({ page }, testInfo) => {
+  const marker = "MARKER4471"
+  const saved = testInfo.outputPath("second-deck.pptx")
+  const first = await open(page, fixture)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  await editor.click()
+  await page.keyboard.press("End")
+  await editor.pressSequentially(marker, { delay: 50 })
+  await expect(editor).toHaveText(`Hello${marker}`)
+  await stored(page, `Hello${marker}`)
+  const second = await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
+  expect(second).not.toBe(first)
+  await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
+  await page.reload()
+  expect(page.url()).toBe(second)
+  await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
+  await expect(page.getByText(marker)).toHaveCount(0)
+  await saveExport(page, saved)
+  await everyPartLacks(saved, marker)
 })
 
 test("typing key by key keeps the order of the letters", async ({ page }) => {

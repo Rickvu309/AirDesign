@@ -7,7 +7,6 @@ import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { galleryDeck } from "@/editor/gallery-deck"
-const deckId = "clean"
 export const nodeA = { part: "ppt/slides/slide1.xml", shape: "2" }
 
 export function elementNode(
@@ -73,6 +72,7 @@ type EditLink = {
 
 export async function commitEdit(
   open: (remote: Remote) => EditLink,
+  deckId: string,
   value: string,
   node: string,
   paint?: () => void,
@@ -94,13 +94,21 @@ export function exportedParts(
   return applyRoute(parts, { name: "text", part: node.part, shape: node.shape, text: currentValue(register) })
 }
 
-export function ThinDeck() {
+export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uint8Array): Promise<string | null> {
+  const deckId = crypto.randomUUID()
+  const saved = await putParts(deckId, { parts, file, nodes: { a: nodeA } })
+  return saved.ok ? deckId : null
+}
+
+export function ThinDeck({ id }: { id?: string }) {
   const store = useRef(paintStore())
   const nodes = useRef(nodeA)
   const edited = useRef<string | undefined>(undefined)
+  const [deckId, setDeckId] = useState(id)
   const [ids, setIds] = useState<readonly ElementId[]>([])
 
   useEffect(() => {
+    if (deckId === undefined) return
     let live = true
     void (async () => {
       await ensureMarkup()
@@ -117,15 +125,17 @@ export function ThinDeck() {
     return () => {
       live = false
     }
-  }, [])
+  }, [deckId])
 
   async function openFile(file: File) {
     await ensureMarkup()
     const bytes = new Uint8Array(await file.arrayBuffer())
     const read = await readPackage(bytes)
     if (!read.ok) return
-    const saved = await putParts(deckId, { parts: read.parts, file: bytes, nodes: { a: nodeA } })
-    if (!saved.ok) return
+    const nextId = await saveDeck(read.parts, bytes)
+    if (nextId === null) return
+    window.history.replaceState(null, "", `/thin/${nextId}`)
+    setDeckId(nextId)
     nodes.current = nodeA
     const painted = paint(store.current, read.parts, nodeA, null)
     edited.current = painted.node
@@ -134,8 +144,8 @@ export function ThinDeck() {
 
   async function onEdit(value: string) {
     const node = edited.current
-    if (node === undefined) return
-    await commitEdit(connect, value, node, () => {
+    if (node === undefined || deckId === undefined) return
+    await commitEdit(connect, deckId, value, node, () => {
       const id = linkedId(nodes.current)
       const record = store.current.getElement(id)
       if (record !== null) {
@@ -145,6 +155,7 @@ export function ThinDeck() {
   }
 
   async function onExport() {
+    if (deckId === undefined) return
     await ensureMarkup()
     const stored = await getParts(deckId)
     if (!stored.ok) return
