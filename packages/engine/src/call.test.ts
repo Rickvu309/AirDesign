@@ -141,6 +141,40 @@ describe("call", () => {
     ])
   })
 
+  it("refuses an agent batch after a person commit in the same run", () => {
+    const started = running()
+    const readAt = version(started.register)
+    const agentLanded = call(
+      "edit_deck",
+      started,
+      { actor: "agent", runId: "run", readAt },
+      { deck: "deck", base: started.revision, changes: [{ value: "one" }] },
+    )
+    expect(agentLanded.ok).toBe(true)
+    if (!agentLanded.ok) {
+      return
+    }
+    const personLanded = call("commit_edits", agentLanded.deck, person, {
+      deck: "deck",
+      batch: [{ value: "mine" }],
+    })
+    expect(personLanded.ok).toBe(true)
+    if (!personLanded.ok) {
+      return
+    }
+    const register = personLanded.deck.register
+    expect(
+      call(
+        "edit_deck",
+        personLanded.deck,
+        { actor: "agent", runId: "run", readAt: version(personLanded.deck.register) },
+        { deck: "deck", base: personLanded.deck.revision, changes: [{ value: "two" }, { value: "three" }] },
+      ),
+    ).toEqual({ ok: false, refusal: "person-protected" })
+    expect(personLanded.deck.register).toBe(register)
+    expect(personLanded.deck.revision).toBe(2)
+  })
+
   it("refuses an edit from a different run id after the batch", () => {
     const deck = running()
     const readAt = version(deck.register)
