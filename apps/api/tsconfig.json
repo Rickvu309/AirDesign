@@ -12,6 +12,7 @@
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
+  "exclude": ["src/source-hooks.ts"],
   "references": [
     { "path": "../../packages/catalog" },
     { "path": "../../packages/engine" },

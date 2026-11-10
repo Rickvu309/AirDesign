@@ -251,6 +251,22 @@ describe("start entry", () => {
     }
   })
 
+  it("exits with one line naming a setting that has a value", async () => {
+    const info = await postgresInfo()
+    child = spawnEntry(
+      childEnv({
+        PORT: "abc",
+        SESSION_DATABASE_URL: info.session,
+        DECK_DATABASE_URL: info.deck,
+        LISTEN_DATABASE_URL: info.listen,
+      }),
+    )
+    const result = await stopped(child)
+    child = undefined
+    expect(result.code).toBe(1)
+    expect(result.stderr).toBe("PORT\n")
+  })
+
   it("exits on SIGINT", async () => {
     const info = await postgresInfo()
     const port = await freePort()
