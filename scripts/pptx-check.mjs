@@ -25,9 +25,9 @@ import {
   checkFails,
   committedArgs,
   corpusDecision,
-  corpusFolder,
   corpusInputs,
   corpusResult,
+  validatorList,
 } from "./pptx-corpus.mjs"
 import {
   committedBlobs,
@@ -68,7 +68,7 @@ const validatorLists = async (files) => {
   for (const line of output.split("\n")) {
     if (!line.startsWith("{")) continue
     const row = JSON.parse(line)
-    lists.set(row.file, row.opened === "ok" ? row.list : [`open: ${row.opened}`])
+    lists.set(row.file, validatorList(row))
   }
   return lists
 }
@@ -103,10 +103,8 @@ cases.push({
   pages: true,
 })
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const fixturePath = (name) => {
-  if (name === browserExportName) return browserExportPath
-  return path.join(inputs.listed.includes(name) ? corpusFolder(root) : fixtures, name)
-}
+const fixturePath = (name) =>
+  name === browserExportName ? browserExportPath : path.join(root, decision.deckPath(name))
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
@@ -116,9 +114,9 @@ const renderNext = async () => {
     try {
       rendered.set(render, await renders.pages({ file, bytes, use: renderUse({ render, bytes, committed }) }))
     } catch (error) {
-      if (!decision.added.includes(render)) throw error
-      console.log(`corpus render ${render}: ${error.message}`)
-      rendered.set(render, [])
+      const failure = decision.renderFailure(render, error)
+      console.log(failure.line)
+      rendered.set(render, failure.pages)
     }
   }
 }
@@ -284,14 +282,12 @@ for (const row of cases) {
     console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
   }
 }
-const checkSeconds = decision.timed
-  ? timeMetric(root, "pptx-check-duration", checkStarted)
-  : { line: "the corpus check has no duration limit", over: undefined, fails: false }
+const checkSeconds = decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))
 console.log(checkSeconds.line)
 if (checkSeconds.over !== undefined) console.log(checkSeconds.over)
 const routeFailures = []
 const seen = new Map()
-for (const deck of writtenDecks.filter((written) => decision.hardDecks.includes(written.name))) {
+for (const deck of decision.hardOf(writtenDecks)) {
   const beforeErrors = lists.get(deck.name) ?? []
   for (const item of deck.written) {
     const operation = item.run.operation

@@ -18,6 +18,7 @@ import {
   rendersOf,
   rotatingDecks,
   rotatingSubset,
+  validatorList,
 } from "./pptx-corpus.mjs"
 import { committedBlobs, gitBlobId, renderUse } from "./pptx-render.mjs"
 
@@ -77,7 +78,6 @@ same("a pull request decides from the last seed, and judges the subset without r
   hardDecks: ["census.pptx", "real.pptx"],
   renders: caseRenders,
   rendersAdded: false,
-  timed: true,
   excusable: true,
   announce: "corpus rotating 2 of 5 decks, seed 1, replay with JUDGE_SEED=1 pnpm check:pptx",
 })
@@ -89,11 +89,67 @@ same("the corpus path judges and renders every deck once, and excuses nothing", 
   hardDecks: ["census.pptx", "real.pptx"],
   renders: [...caseRenders, ...names],
   rendersAdded: true,
-  timed: false,
   excusable: false,
   announce: "corpus every deck, 6 decks",
 })
 same("a replayed seed is not excused", decide([], [{ seed: 1, fresh: false }]).excusable, false)
+
+const pullDecision = decide([], seedRows)
+const corpusRun = decide(["--corpus"], seedRows)
+const renderBroke = new Error("soffice broke")
+const thrownBy = (run) => {
+  try {
+    run()
+    return undefined
+  } catch (error) {
+    return error
+  }
+}
+same("a render failure on an added deck is a miss on the corpus path", corpusRun.renderFailure("b.pptx", renderBroke), {
+  pages: [],
+  line: "corpus render b.pptx: soffice broke",
+})
+same(
+  "a render failure on a case deck crashes on the corpus path",
+  thrownBy(() => corpusRun.renderFailure("real.pptx", renderBroke)) === renderBroke,
+  true,
+)
+same(
+  "a second render failure on a case deck crashes",
+  thrownBy(() => corpusRun.renderFailure("real.pptx again", renderBroke)) === renderBroke,
+  true,
+)
+same(
+  "a render failure on a case deck crashes on a pull request",
+  thrownBy(() => pullDecision.renderFailure("real.pptx", renderBroke)) === renderBroke,
+  true,
+)
+same(
+  "a pull request has no render of an added deck to excuse",
+  thrownBy(() => pullDecision.renderFailure("b.pptx", renderBroke)) === renderBroke,
+  true,
+)
+same("a listed deck is in the corpus folder", corpusRun.deckPath("b.pptx"), "scripts/pptx-fixtures/corpus/b.pptx")
+same("a case deck is in the fixtures folder", corpusRun.deckPath("real.pptx"), "scripts/pptx-fixtures/real.pptx")
+const measured = { line: "measured", fails: true }
+same(
+  "a pull request is timed",
+  pullDecision.duration(() => measured),
+  measured,
+)
+same(
+  "the corpus path has no duration limit",
+  corpusRun.duration(() => measured),
+  {
+    line: "the corpus check has no duration limit",
+    fails: false,
+  },
+)
+same(
+  "only the fixed decks are scored as hard",
+  corpusRun.hardOf([{ name: "real.pptx" }, { name: "b.pptx" }, { name: "census.pptx" }]),
+  [{ name: "real.pptx" }, { name: "census.pptx" }],
+)
 if (rotatingDecks < 1) throw new Error("the rotating subset is empty")
 
 const packageScripts = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")).scripts
@@ -112,8 +168,12 @@ for (const follows of [
   "const waiting = [...decision.renders]",
   'committedArgs("HEAD")',
   "for (const name of decision.routeDecks)",
-  "decision.hardDecks.includes(written.name)",
-  "decision.timed",
+  "for (const deck of decision.hardOf(writtenDecks))",
+  'decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))',
+  "decision.renderFailure(render, error)",
+  "rendered.set(render, failure.pages)",
+  "decision.deckPath(name)",
+  "lists.set(row.file, validatorList(row))",
   "corpusResult({ decision, pptx, decks: writtenDecks, lists, rendered, freshFails })",
   "checkFails({ failed, routeFailures, duration: checkSeconds, corpus })",
 ]) {
@@ -230,7 +290,10 @@ if (!caught.settled.lines[0].includes("pnpm check:pptx:corpus")) throw new Error
 const renderedNothing = {
   pptx,
   decks: [written("a.pptx")],
-  lists: new Map([["a.pptx-text", []]]),
+  lists: new Map([
+    ["a.pptx", []],
+    ["a.pptx-text", []],
+  ]),
   rendered: new Map([["a.pptx", []]]),
 }
 same(
@@ -265,11 +328,67 @@ same(
         ],
       },
     ],
-    lists: new Map(),
+    lists: new Map([["a.pptx", []]]),
     rendered: new Map([["a.pptx", ["page"]]]),
     rendersAdded: true,
   }),
   [{ deck: "a.pptx", operation: "text", error: "slides" }],
+)
+
+const unopenedLine = validatorList({ file: "a.pptx", opened: "UriFormatException: bad uri" })
+same("a deck the validator cannot open has one open line", unopenedLine, ["open: UriFormatException: bad uri"])
+same("an opened deck keeps its list", validatorList({ file: "a.pptx", opened: "ok", list: ["kept"] }), ["kept"])
+const opening = (lists) => ({
+  pptx,
+  decks: [written("a.pptx")],
+  lists: new Map(lists),
+  rendered: new Map([["a.pptx", ["page"]]]),
+  rendersAdded: true,
+})
+same(
+  "a listed deck the validator cannot open is a miss before any comparison",
+  corpusMisses(
+    opening([
+      ["a.pptx", unopenedLine],
+      ["a.pptx-text", unopenedLine],
+    ]),
+  ),
+  [{ deck: "a.pptx", validator: "open: UriFormatException: bad uri" }],
+)
+same(
+  "a listed deck the validator cannot open is not compared with its writes",
+  corpusMisses(
+    opening([
+      ["a.pptx", unopenedLine],
+      ["a.pptx-text", ["a new error"]],
+    ]),
+  ),
+  [{ deck: "a.pptx", validator: "open: UriFormatException: bad uri" }],
+)
+same("a listed deck with no validator row is a miss", corpusMisses(opening([["a.pptx-text", []]])), [
+  { deck: "a.pptx", validator: "no row" },
+])
+same(
+  "a write the validator cannot open is a miss when its deck opened",
+  corpusMisses(
+    opening([
+      ["a.pptx", []],
+      ["a.pptx-text", unopenedLine],
+    ]),
+  ),
+  [{ deck: "a.pptx", operation: "text", errors: 1, dupes: 0, parts: true, firstError: unopenedLine[0] }],
+)
+same(
+  "a deck the validator cannot open fails the corpus path",
+  corpusResult({
+    decision: { added: ["a.pptx"], full: true, seed: 1, rendersAdded: true, excusable: false },
+    ...opening([
+      ["a.pptx", unopenedLine],
+      ["a.pptx-text", unopenedLine],
+    ]),
+    freshFails: false,
+  }).failed,
+  1,
 )
 
 same("every listed deck matches its sha256", corpusHashFailures(repoRoot), [])
@@ -351,6 +470,13 @@ same(
   "corpus.json cannot list only-in-cases.pptx. A listed name must be new and appear once.",
 )
 fs.writeFileSync(casesFile, casesText)
+for (const name of ["exported-deck.pptx", "exported-paragraphs.pptx"]) {
+  same(
+    `the browser export ${name} is refused`,
+    refusedList([entry(name)]),
+    `corpus.json cannot list ${name}. A listed name must be new and appear once.`,
+  )
+}
 same("new names are accepted", refusedList([entry("x.pptx"), entry("y.pptx")]), undefined)
 
 execFileSync("git", ["init", "-q"], { cwd: fake })

@@ -10,7 +10,11 @@ export const rotatingDecks = 2
 const realDeckBytes = 100_000
 const fixturesOf = (root) => path.join(root, "scripts/pptx-fixtures")
 
-export const corpusFolder = (root) => path.join(fixturesOf(root), "corpus")
+const corpusFolder = (root) => path.join(fixturesOf(root), "corpus")
+const browserExports = ["exported-deck.pptx", "exported-paragraphs.pptx"]
+const notOpened = "open: "
+
+export const validatorList = (row) => (row.opened === "ok" ? row.list : [`${notOpened}${row.opened}`])
 
 const caseNames = (root) => {
   const cases = JSON.parse(fs.readFileSync(path.join(fixturesOf(root), "cases.json"), "utf8"))
@@ -34,7 +38,7 @@ export const readCorpus = (root) => {
   const file = path.join(fixturesOf(root), "corpus.json")
   if (!fs.existsSync(file)) return []
   const entries = JSON.parse(fs.readFileSync(file, "utf8"))
-  const refused = refusedEntries({ entries, taken: [...caseNames(root), ...topLevelDecks(root)] })
+  const refused = refusedEntries({ entries, taken: [...caseNames(root), ...topLevelDecks(root), ...browserExports] })
   if (refused.length > 0) {
     throw new Error(`corpus.json cannot list ${refused.join(", ")}. A listed name must be new and appear once.`)
   }
@@ -79,15 +83,22 @@ export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, brows
   const chosen = full ? every : rotatingSubset({ names: listed, size, seed })
   const added = chosen.filter((name) => listed.includes(name))
   const routeDecks = [...new Set([...fixed, ...chosen])]
+  const hardDecks = routeDecks.filter((name) => !listed.includes(name))
   return {
     full,
     seed,
     routeDecks,
     added,
-    hardDecks: routeDecks.filter((name) => !listed.includes(name)),
+    hardDecks,
+    hardOf: (decks) => decks.filter((deck) => hardDecks.includes(deck.name)),
+    deckPath: (name) => path.join("scripts/pptx-fixtures", listed.includes(name) ? "corpus" : "", name),
+    renderFailure: (render, error) => {
+      if (!full || !added.includes(render)) throw error
+      return { pages: [], line: `corpus render ${render}: ${error.message}` }
+    },
+    duration: (measure) => (full ? { line: "the corpus check has no duration limit", fails: false } : measure()),
     renders: rendersOf({ cases, added: full ? added : [] }).filter((render) => renderName(render) !== browser),
     rendersAdded: full,
-    timed: !full,
     excusable: !full && fresh,
     announce: full
       ? `corpus every deck, ${every.length} decks`
@@ -95,14 +106,21 @@ export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, brows
   }
 }
 
+const unopened = (list) => list === undefined || list.some((line) => line.startsWith(notOpened))
+
+const writeMisses = ({ pptx, deck, lists }) =>
+  deck.written.flatMap((item) => {
+    const after = item.file === null ? undefined : lists.get(path.basename(item.file))
+    const failure = scoreWrittenRoute(pptx, deck.deckParts, lists.get(deck.name), item, after)
+    return failure === null ? [] : [{ deck: deck.name, ...failure }]
+  })
+
 export const corpusMisses = ({ pptx, decks, lists, rendered, rendersAdded }) =>
   decks.flatMap((deck) => [
     ...(!rendersAdded || rendered.get(deck.name)?.length > 0 ? [] : [{ deck: deck.name, render: "no pages" }]),
-    ...deck.written.flatMap((item) => {
-      const after = item.file === null ? undefined : lists.get(path.basename(item.file))
-      const failure = scoreWrittenRoute(pptx, deck.deckParts, lists.get(deck.name) ?? [], item, after)
-      return failure === null ? [] : [{ deck: deck.name, ...failure }]
-    }),
+    ...(unopened(lists.get(deck.name))
+      ? [{ deck: deck.name, validator: lists.get(deck.name)?.[0] ?? "no row" }]
+      : writeMisses({ pptx, deck, lists })),
   ])
 
 export const corpusLines = ({ misses, full, seed }) =>
