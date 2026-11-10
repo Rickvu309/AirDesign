@@ -173,6 +173,44 @@ export function writeRows(
   )
 }
 
+export type RowChange<Result> = {
+  readonly puts: readonly { readonly key: string; readonly row: StoredRow }[]
+  readonly result: Result
+}
+
+export function changeRows<Result>(deck: string, change: (rows: StoredRow[]) => RowChange<Result>): Promise<Result> {
+  return openDatabase().then(
+    (database) =>
+      new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, "readwrite")
+        const store = transaction.objectStore(storeName)
+        const request = store.getAll(IDBKeyRange.bound(`${deck}\u0000`, `${deck}\u0000\uffff`))
+        let changed: RowChange<Result> | undefined
+        request.onsuccess = () => {
+          changed = change(request.result as StoredRow[])
+          for (const put of changed.puts) store.put(put.row, put.key)
+        }
+        request.onerror = () => {
+          database.close()
+          reject(request.error)
+        }
+        transaction.oncomplete = () => {
+          database.close()
+          if (changed === undefined) reject(new Error("rows were not read"))
+          else resolve(changed.result)
+        }
+        transaction.onerror = () => {
+          database.close()
+          reject(transaction.error)
+        }
+        transaction.onabort = () => {
+          database.close()
+          reject(transaction.error)
+        }
+      }),
+  )
+}
+
 export function readSlot(key: string): Promise<unknown> {
   return openDatabase().then(
     (database) =>
