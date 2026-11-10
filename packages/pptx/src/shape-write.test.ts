@@ -24,6 +24,12 @@ describe("addTextShape", () => {
     expect(addTextShape(slide, "😀", box)).toContain("<a:t>😀</a:t>")
   })
 
+  it("writes the id it was given", () => {
+    const xml = addTextShape(slide, "A", box, 9)
+    expect(xml).toContain(`<p:cNvPr id="9" name="Shape 9"/>`)
+    expect(() => addTextShape(slide, "A", box, 0)).toThrow(/shape id/)
+  })
+
   it("refuses a slide with no shape tree and a box that is not an integer", () => {
     expect(() => addTextShape("<p:sld></p:sld>", "A", box)).toThrow(/p:spTree/)
     expect(() => addTextShape(slide, "A", { ...box, cx: 1.5 })).toThrow(/emu/)

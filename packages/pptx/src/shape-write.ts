@@ -71,9 +71,11 @@ function shapeProperties(box: ShapeBox): string {
   return xml
 }
 
-export function addTextShape(slideXml: string, text: string, box: ShapeBox): string {
-  const id = nextShapeId(slideXml)
-  const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
+export function addTextShape(slideXml: string, text: string, box: ShapeBox, id?: number): string {
+  const shapeId = id ?? nextShapeId(slideXml)
+  if (!Number.isInteger(shapeId) || shapeId < 1 || shapeId > 4294967295) throw new Error("shape id")
+  const idText = String(shapeId)
+  const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const bytes = encodeUtf8(slideXml)
   const document = markupDocument(bytes)
   const tree = document.elements.find((element) => element.kind === "p:spTree")
