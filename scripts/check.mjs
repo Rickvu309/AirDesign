@@ -8,11 +8,11 @@ const steps = [
   ["format", "pnpm", ["exec", "oxfmt", "--check"]],
   ["lint", "pnpm", ["lint"]],
   ["actionlint", "node", ["scripts/actionlint.mjs"]],
+  ["test", "pnpm", ["test"]],
   ["typecheck", "pnpm", ["typecheck"]],
   ["boundaries", "pnpm", ["check:boundaries"]],
   ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
   ["specs", "pnpm", ["check:specs"]],
-  ["test", "pnpm", ["test"]],
   ["browser", "pnpm", ["test:browser"]],
   ["build", "pnpm", ["build"]],
 ]
