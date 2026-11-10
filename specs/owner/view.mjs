@@ -15,7 +15,7 @@ const steps = {
 const grant = (code, generation, revoked) => `${code} ${generation} ${revoked === true ? "revoked" : "live"}`
 
 export const state = (v) =>
-  `a ${grant(v.codeA, v.generationA, v.revokedA)}, b ${grant(v.codeB, v.generationB, v.revokedB)}, call ${v.callAccount} on ${v.callDeck} ${v.callOutcome}`
+  `a ${grant(v.codeA, v.generationA, v.revokedA)}, b ${grant(v.codeB, v.generationB, v.revokedB)}, call by ${v.callHolder} claiming ${v.callClaim} as ${v.callAccount} on ${v.callDeck} ${v.callOutcome}`
 
 export const step = (action) => steps[action] ?? null
 
@@ -31,4 +31,4 @@ export const colors = {
   Refused: "gray",
 }
 
-export const title = "Only a deck's owner can act on it through a tool call"
+export const title = "Only a deck's owner can act on it through a tool call, whatever account the caller claims"

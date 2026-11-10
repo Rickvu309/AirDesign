@@ -18,6 +18,9 @@ const invalidToken = 'Bearer error="invalid_token"'
 type Pair = { readonly access: string; readonly refresh: string }
 type Stored = { readonly revision: number; readonly register: unknown; readonly owner: string }
 type Called = { readonly status: number; readonly text: string; readonly challenge: string | null }
+type Credential = { readonly cookie: string } | { readonly bearer: string; readonly scheme?: string }
+type Claim = { readonly headers?: Record<string, string>; readonly args?: Record<string, string> }
+const claimFields = ["account", "email", "principal", "sub"] as const
 type Value = boolean | number | string
 type SpecState = Record<string, Value>
 type Graph = {
@@ -223,19 +226,35 @@ describe("only a deck's owner acts on it", () => {
     return result.rows[0]
   }
 
+  function claimOf(email: string): Claim {
+    return {
+      headers: { "x-airdesign-account": email },
+      args: Object.fromEntries(claimFields.map((field) => [field, email])),
+    }
+  }
+
   async function call(
-    credential: { readonly cookie: string } | { readonly bearer: string },
+    credential: Credential,
     name: string,
     args: Record<string, unknown>,
+    claim: Claim = {},
   ): Promise<Called> {
     const response = await fetch(`${base}/mcp`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         accept: "application/json, text/event-stream",
-        ...("cookie" in credential ? { cookie: credential.cookie } : { authorization: `Bearer ${credential.bearer}` }),
+        ...claim.headers,
+        ...("cookie" in credential
+          ? { cookie: credential.cookie }
+          : { authorization: `${credential.scheme ?? "Bearer"} ${credential.bearer}` }),
       },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } }),
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name, arguments: { ...claim.args, ...args } },
+      }),
     })
     const body = await response.text()
     const challenge = response.headers.get("www-authenticate")
@@ -248,17 +267,22 @@ describe("only a deck's owner acts on it", () => {
     return { status: response.status, text: parsed.result?.content?.[0]?.text ?? body, challenge }
   }
 
-  async function edit(credential: { readonly cookie: string } | { readonly bearer: string }, id: string) {
+  async function edit(credential: Credential, id: string, claim: Claim = {}) {
     const revision = (await row(id))?.revision ?? 0
-    return call(credential, "airdesign_edit_deck", {
-      deck: id,
-      base: revision,
-      changes: [{ value: `v${String(revision + 1)}`, node: element, readAt: revision }],
-    })
+    return call(
+      credential,
+      "airdesign_edit_deck",
+      {
+        deck: id,
+        base: revision,
+        changes: [{ value: `v${String(revision + 1)}`, node: element, readAt: revision }],
+      },
+      claim,
+    )
   }
 
-  function capture(credential: { readonly cookie: string } | { readonly bearer: string }, id: string) {
-    return call(credential, "airdesign_capture_slide", { deck: id })
+  function capture(credential: Credential, id: string, claim: Claim = {}) {
+    return call(credential, "airdesign_capture_slide", { deck: id }, claim)
   }
 
   describe("a credential of one account on another account's deck", () => {
@@ -297,6 +321,41 @@ describe("only a deck's owner acts on it", () => {
       expect((await capture({ bearer: a.pair.access }, id)).text).toBe("deck")
       expect((await edit({ cookie: a.cookie }, id)).text).toBe("deck")
       expect(await row(id)).toBeUndefined()
+    })
+  })
+
+  describe("an account the caller claims", () => {
+    it("acts as the account behind A's token, not one claimed in a header or an argument, on B's deck", async () => {
+      const a = await connection(address("claima"))
+      const bEmail = address("claimb")
+      const b = await sign(bEmail)
+      const id = await opened(b)
+      const before = await row(id)
+      const whole = claimOf(bEmail)
+      const claims: Claim[] = [
+        { headers: whole.headers ?? {} },
+        ...claimFields.map((field) => ({ args: { [field]: bEmail } })),
+        whole,
+      ]
+      for (const claim of claims) {
+        expect((await edit({ bearer: a.pair.access }, id, claim)).text).toBe("owner")
+        expect((await capture({ bearer: a.pair.access }, id, claim)).text).toBe("owner")
+        expect((await edit({ cookie: a.cookie }, id, claim)).text).toBe("owner")
+      }
+      expect(await row(id)).toEqual(before)
+    })
+  })
+
+  describe("the bearer scheme", () => {
+    it("accepts bearer and BEARER as the scheme", async () => {
+      const a = await connection(address("scheme"))
+      const own = await opened(a.cookie)
+      const other = await opened(await sign(address("schemeb")))
+      const before = await row(other)
+      expect((await edit({ bearer: a.pair.access, scheme: "bearer" }, own)).text).toBe("Landed revision 1.")
+      expect((await edit({ bearer: a.pair.access, scheme: "BEARER" }, own)).text).toBe("Landed revision 2.")
+      expect((await edit({ bearer: a.pair.access, scheme: "BEARER" }, other)).text).toBe("owner")
+      expect(await row(other)).toEqual(before)
     })
   })
 
@@ -363,12 +422,20 @@ describe("only a deck's owner acts on it", () => {
     type Step =
       | { readonly action: "Register" | "Approve" | "Exchange" | "ExchangeAgain"; readonly account: Account }
       | { readonly action: "Rotate" | "ReplayRotated" | "Revoke"; readonly account: Account }
-      | { readonly action: "CookieCall"; readonly account: Account; readonly deck: string }
+      | {
+          readonly action: "CookieCall"
+          readonly account: Account
+          readonly deck: string
+          readonly claim?: Account
+          readonly tool?: "capture"
+        }
       | {
           readonly action: "TokenCall" | "TokenRefused"
           readonly account: Account
           readonly generation: number
           readonly deck: string
+          readonly claim?: Account
+          readonly tool?: "capture"
         }
       | { readonly action: "RefreshAsBearer"; readonly account: Account; readonly generation: number }
 
@@ -383,18 +450,32 @@ describe("only a deck's owner acts on it", () => {
         [`revoked${suffix}`]: values.revoked,
       })
       const owner = (deck: string) => (deck === "deckA" ? "a" : deck === "deckB" ? "b" : "nobody")
-      const called = (deck: string) => ({
+      const called = (deck: string, claim: Account) => {
+        const outcome = deck === "unmade" ? "deck" : owner(deck) === step.account ? "landed" : "owner"
+        const landed = outcome === "landed"
+        return {
+          ...state,
+          callHolder: landed ? step.account : "nobody",
+          callClaim: landed ? claim : "nobody",
+          callAccount: landed ? step.account : "nobody",
+          callDeck: deck,
+          callOutcome: outcome,
+        }
+      }
+      const refused = {
         ...state,
-        callAccount: step.account,
-        callDeck: deck,
-        callOutcome: deck === "unmade" ? "deck" : owner(deck) === step.account ? "landed" : "owner",
-      })
-      const refused = { ...state, callAccount: "nobody", callDeck: "none", callOutcome: "invalid" }
+        callHolder: "nobody",
+        callClaim: "nobody",
+        callAccount: "nobody",
+        callDeck: "none",
+        callOutcome: "invalid",
+      }
       if (step.action === "Register") return grant({ code: "client", generation: 0, revoked: false })
       if (step.action === "Approve") return grant({ code: "open", generation: 0, revoked: false })
       if (step.action === "Exchange") return grant({ code: "used", generation: 1, revoked: false })
       if (step.action === "Rotate") return grant({ code: "used", generation: generation + 1, revoked: false })
-      if (step.action === "CookieCall" || step.action === "TokenCall") return called(step.deck)
+      if (step.action === "CookieCall" || step.action === "TokenCall")
+        return called(step.deck, step.claim ?? step.account)
       if (step.action === "TokenRefused" || step.action === "RefreshAsBearer") return refused
       if (typeof code !== "string") throw new Error("code")
       return grant({ code, generation, revoked: true })
@@ -416,6 +497,9 @@ describe("only a deck's owner acts on it", () => {
           { action: "Exchange", account: "a" },
           { action: "TokenCall", account: "a", generation: 1, deck: "deckA" },
           { action: "TokenCall", account: "a", generation: 1, deck: "deckB" },
+          { action: "TokenCall", account: "a", generation: 1, deck: "deckB", claim: "b" },
+          { action: "CookieCall", account: "a", deck: "deckB", claim: "b", tool: "capture" },
+          { action: "TokenCall", account: "a", generation: 1, deck: "deckA", claim: "b", tool: "capture" },
           { action: "TokenCall", account: "a", generation: 1, deck: "unmade" },
           { action: "RefreshAsBearer", account: "a", generation: 1 },
           { action: "Rotate", account: "a" },
@@ -426,6 +510,7 @@ describe("only a deck's owner acts on it", () => {
           { action: "Exchange", account: "b" },
           { action: "TokenCall", account: "b", generation: 1, deck: "deckA" },
           { action: "TokenCall", account: "b", generation: 1, deck: "deckB" },
+          { action: "TokenCall", account: "b", generation: 1, deck: "deckB", claim: "a" },
           { action: "ReplayRotated", account: "a" },
           { action: "TokenRefused", account: "a", generation: 2, deck: "deckA" },
           { action: "CookieCall", account: "a", deck: "deckA" },
@@ -476,7 +561,8 @@ describe("only a deck's owner acts on it", () => {
           if (outcome !== undefined && outcome !== expected.callOutcome) {
             failures.push(`${where} answered ${outcome}, the spec says ${String(expected.callOutcome)}`)
           }
-          const landedOn = outcome === "landed" && "deck" in step ? decks[step.deck] : undefined
+          const edited = !("tool" in step && step.tool === "capture")
+          const landedOn = outcome === "landed" && edited && "deck" in step ? decks[step.deck] : undefined
           for (const [position, value] of Object.values(decks).entries()) {
             const was = rows[position]
             const now = after[position]
@@ -495,6 +581,13 @@ describe("only a deck's owner acts on it", () => {
       }
       expect(failures).toEqual([])
     }, 20_000)
+
+    function claimFor(parties: Record<Account, Party>, step: Step): Claim {
+      if (!("claim" in step) || step.claim === undefined) return {}
+      const whole = claimOf(parties[step.claim].email)
+      const own = step.deck === (step.account === "a" ? "deckA" : "deckB")
+      return own ? { headers: whole.headers ?? {} } : whole
+    }
 
     async function act(
       parties: Record<Account, Party>,
@@ -544,10 +637,14 @@ describe("only a deck's owner acts on it", () => {
               bearer:
                 (step.action === "RefreshAsBearer" ? party.refresh : party.access).get(step.generation) ?? "unknown",
             }
-      const answer = await edit(credential, target)
+      const claimed = claimFor(parties, step)
+      const answer =
+        "tool" in step && step.tool === "capture"
+          ? await capture(credential, target, claimed)
+          : await edit(credential, target, claimed)
       if (answer.status === 401)
         return answer.challenge === invalidToken ? "invalid" : `401 ${String(answer.challenge)}`
-      if (answer.text.startsWith("Landed revision")) return "landed"
+      if (answer.text.startsWith("Landed revision") || answer.text === captureNext) return "landed"
       return answer.text
     }
 

@@ -152,7 +152,7 @@ async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerRe
   return email
 }
 
-const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/
+const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/i
 
 async function caller(
   options: ApiOptions,
