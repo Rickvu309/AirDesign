@@ -1,37 +1,153 @@
+import { writeTextValue, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
 import { useLayoutEffect, useRef } from "react"
 import type { ElementId } from "./brand.js"
 import { useElement } from "./element-view.js"
+import {
+  cutValue,
+  insertLines,
+  joinParagraph,
+  paragraphText,
+  splitParagraph,
+  textValue,
+  type Caret,
+} from "./paragraph-edit.js"
 import type { PaintStore } from "./store.js"
 
-function caretOffsets(box: HTMLElement): readonly [number, number] | null {
-  const selection = box.ownerDocument.getSelection()
-  if (selection === null || selection.rangeCount === 0) return null
-  const caret = selection.getRangeAt(0)
-  if (!box.contains(caret.startContainer) || !box.contains(caret.endContainer)) return null
-  const before = box.ownerDocument.createRange()
-  before.selectNodeContents(box)
-  before.setEnd(caret.startContainer, caret.startOffset)
-  const start = before.toString().length
-  before.setEnd(caret.endContainer, caret.endOffset)
-  return [start, before.toString().length]
+type ReadBox = { readonly value: TextValue; readonly units: readonly (readonly Node[])[] }
+type Carets = { readonly start: Caret; readonly end: Caret }
+
+function isText(node: Node): node is Text {
+  return node.nodeType === node.TEXT_NODE
 }
 
-function showText(box: HTMLElement, text: string): void {
-  const caret = caretOffsets(box)
-  box.textContent = text
-  if (caret === null) return
+function isElement(node: Node): node is HTMLElement {
+  return node.nodeType === node.ELEMENT_NODE
+}
+
+function textNodes(node: Node): Text[] {
+  if (isText(node)) return [node]
+  return [...node.childNodes].flatMap(textNodes)
+}
+
+const lineBreak = /\r\n|[\r\n\u2028\u2029\u0085\v\f]/
+
+function collectRuns(nodes: NodeListOf<ChildNode> | readonly Node[], from: number, runs: TextRun[]): void {
+  let loose = false
+  for (const node of nodes) {
+    if (isText(node)) {
+      if (node.data === "") continue
+      const last = runs.at(-1)
+      if (loose && last !== undefined) runs[runs.length - 1] = { from: -1, text: last.text + node.data }
+      else runs.push({ from: -1, text: node.data })
+      loose = true
+      continue
+    }
+    loose = false
+    if (!isElement(node) || node.tagName === "BR") continue
+    const source = node.dataset.run
+    if (source === undefined) {
+      collectRuns(node.childNodes, from, runs)
+      continue
+    }
+    const [paragraph, run] = source.split(".").map(Number)
+    runs.push({ from: paragraph === from && run !== undefined ? run : -1, text: node.textContent ?? "" })
+  }
+}
+
+function readBox(box: HTMLElement): ReadBox {
+  const paragraphs: { from: number; runs: TextRun[] }[] = []
+  const units: Node[][] = []
+  let loose: Node[] | null = null
+  for (const child of box.childNodes) {
+    const from = isElement(child) ? child.dataset.paragraph : undefined
+    if (from !== undefined) {
+      const runs: TextRun[] = []
+      collectRuns(child.childNodes, Number(from), runs)
+      paragraphs.push({ from: Number(from), runs })
+      units.push([child])
+      loose = null
+      continue
+    }
+    if (loose === null) {
+      loose = []
+      units.push(loose)
+      paragraphs.push({ from: paragraphs.at(-1)?.from ?? 0, runs: [] })
+    }
+    loose.push(child)
+  }
+  units.forEach((unit, index) => {
+    const paragraph = paragraphs[index]
+    if (paragraph !== undefined && !(unit[0] !== undefined && isElement(unit[0]) && unit[0].dataset.paragraph !== undefined)) {
+      collectRuns(unit, paragraph.from, paragraph.runs)
+    }
+  })
+  return { value: paragraphs, units }
+}
+
+function caretOf(box: HTMLElement, units: ReadBox["units"], node: Node, offset: number): Caret | null {
+  const target = node === box ? (box.childNodes[offset] ?? box.lastChild) : node
+  if (target === null) return { paragraph: 0, offset: 0 }
+  const paragraph = units.findIndex((unit) => unit.some((part) => part === target || part.contains(target)))
+  const first = units[paragraph]?.[0]
+  if (first === undefined) return null
+  const before = box.ownerDocument.createRange()
+  before.setStartBefore(first)
+  if (node === box) before.setEnd(box, offset)
+  else before.setEnd(node, offset)
+  return { paragraph, offset: before.toString().length }
+}
+
+function selectionCarets(box: HTMLElement, units: ReadBox["units"]): Carets | null {
+  const selection = box.ownerDocument.getSelection()
+  if (selection === null || selection.rangeCount === 0) return null
+  const range = selection.getRangeAt(0)
+  if (!box.contains(range.startContainer) || !box.contains(range.endContainer)) return null
+  const start = caretOf(box, units, range.startContainer, range.startOffset)
+  const end = caretOf(box, units, range.endContainer, range.endOffset)
+  return start === null || end === null ? null : { start, end }
+}
+
+function pointAt(box: HTMLElement, caret: Caret): readonly [Node, number] {
+  const paragraphs = box.children
+  const paragraph = paragraphs[Math.min(caret.paragraph, paragraphs.length - 1)]
+  if (paragraph === undefined) return [box, 0]
+  let left = caret.offset
+  let last: Text | null = null
+  for (const node of textNodes(paragraph)) {
+    if (left <= node.data.length) return [node, left]
+    left -= node.data.length
+    last = node
+  }
+  return last === null ? [paragraph, 0] : [last, last.data.length]
+}
+
+function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElement {
+  const block = document.createElement("div")
+  block.dataset.paragraph = String(paragraph.from)
+  for (const run of paragraph.runs) {
+    const span = document.createElement("span")
+    span.dataset.run = `${paragraph.from}.${run.from}`
+    if (run.text !== "") span.append(run.text)
+    block.append(span)
+  }
+  if (paragraphText(paragraph) === "") block.append(document.createElement("br"))
+  return block
+}
+
+function showValue(box: HTMLElement, value: TextValue, carets: Carets | null): void {
+  box.replaceChildren(...value.map((paragraph) => paragraphNode(box.ownerDocument, paragraph)))
+  if (carets === null) return
   const selection = box.ownerDocument.getSelection()
   if (selection === null) return
-  const node = box.firstChild ?? box
   const kept = box.ownerDocument.createRange()
-  kept.setStart(node, Math.min(caret[0], text.length))
-  kept.setEnd(node, Math.min(caret[1], text.length))
+  kept.setStart(...pointAt(box, carets.start))
+  kept.setEnd(...pointAt(box, carets.end))
   selection.removeAllRanges()
   selection.addRange(kept)
 }
 
-function pastedLine(data: DataTransfer): string {
-  return data.getData("text/plain").replace(/\s*[\r\n\u2028\u2029\u0085\v\f]+\s*/g, " ")
+function sameCaret(carets: Carets): boolean {
+  return carets.start.paragraph === carets.end.paragraph && carets.start.offset === carets.end.offset
 }
 
 export function Passage(props: {
@@ -43,7 +159,7 @@ export function Passage(props: {
   const text = record === null ? "" : record.text
   const box = useRef<HTMLDivElement>(null)
   const composing = useRef(false)
-  const reported = useRef(text)
+  const reported = useRef(writeTextValue(textValue(text)))
   const pending = useRef<string[]>([])
   useLayoutEffect(() => {
     const shown = box.current
@@ -54,8 +170,10 @@ export function Passage(props: {
       return
     }
     pending.current.length = 0
-    reported.current = text
-    if (shown.textContent !== text) showText(shown, text)
+    const value = textValue(text)
+    reported.current = writeTextValue(value)
+    const read = readBox(shown)
+    if (writeTextValue(read.value) !== reported.current) showValue(shown, value, selectionCarets(shown, read.units))
   }, [record, text])
   function report(value: string) {
     if (value === reported.current) return
@@ -64,18 +182,88 @@ export function Passage(props: {
     pending.current.push(value)
     props.onEdit(value)
   }
+  function edit(shown: HTMLElement, value: TextValue, caret: Caret) {
+    showValue(shown, value, { start: caret, end: caret })
+    report(writeTextValue(value))
+  }
+  useLayoutEffect(() => {
+    const shown = box.current
+    if (shown === null) return
+    function replace(event: InputEvent) {
+      if (shown === null || composing.current || event.isComposing) return
+      if (event.inputType !== "insertText" || event.data === null) return
+      const read = readBox(shown)
+      const at = selectionCarets(shown, read.units)
+      if (at === null || sameCaret(at)) return
+      event.preventDefault()
+      const [value, caret] = insertLines(cutValue(read.value, at.start, at.end), at.start, event.data.split(lineBreak))
+      edit(shown, value, caret)
+    }
+    shown.addEventListener("beforeinput", replace)
+    return () => {
+      shown.removeEventListener("beforeinput", replace)
+    }
+  })
   return (
     <div
       ref={box}
       contentEditable={props.onEdit !== undefined}
       style={{ whiteSpace: "pre-wrap" }}
       onKeyDown={(event) => {
-        if (event.key === "Enter" && !composing.current && !event.nativeEvent.isComposing) event.preventDefault()
+        if (composing.current || event.nativeEvent.isComposing) return
+        const shown = event.currentTarget
+        if (event.key === "Enter") {
+          event.preventDefault()
+          const read = readBox(shown)
+          const at = selectionCarets(shown, read.units)
+          if (at === null) return
+          const kept = sameCaret(at) ? read.value : cutValue(read.value, at.start, at.end)
+          edit(shown, splitParagraph(kept, at.start), { paragraph: at.start.paragraph + 1, offset: 0 })
+          return
+        }
+        if (event.key !== "Backspace" && event.key !== "Delete") return
+        const read = readBox(shown)
+        const at = selectionCarets(shown, read.units)
+        if (at === null) return
+        if (!sameCaret(at)) {
+          if (at.start.paragraph === at.end.paragraph) return
+          event.preventDefault()
+          edit(shown, cutValue(read.value, at.start, at.end), at.start)
+          return
+        }
+        const paragraph = at.start.paragraph
+        const before = read.value[paragraph - 1]
+        if (event.key === "Backspace" && at.start.offset === 0 && before !== undefined) {
+          event.preventDefault()
+          edit(shown, joinParagraph(read.value, paragraph), {
+            paragraph: paragraph - 1,
+            offset: paragraphText(before).length,
+          })
+          return
+        }
+        const current = read.value[paragraph]
+        const atEnd = current !== undefined && at.start.offset === paragraphText(current).length
+        if (event.key === "Delete" && atEnd && paragraph + 1 < read.value.length) {
+          event.preventDefault()
+          edit(shown, joinParagraph(read.value, paragraph + 1), at.start)
+        }
       }}
       onPaste={(event) => {
         event.preventDefault()
-        const line = pastedLine(event.clipboardData)
-        if (line !== "") event.currentTarget.ownerDocument.execCommand("insertText", false, line)
+        const data = event.clipboardData.getData("text/plain")
+        if (data === "") return
+        const lines = data.split(lineBreak)
+        const shown = event.currentTarget
+        if (lines.length === 1) {
+          shown.ownerDocument.execCommand("insertText", false, data)
+          return
+        }
+        const read = readBox(shown)
+        const at = selectionCarets(shown, read.units)
+        if (at === null) return
+        const kept = sameCaret(at) ? read.value : cutValue(read.value, at.start, at.end)
+        const [value, caret] = insertLines(kept, at.start, lines)
+        edit(shown, value, caret)
       }}
       onDrop={(event) => {
         event.preventDefault()
@@ -85,16 +273,16 @@ export function Passage(props: {
         props.store.beginComposition(props.id)
       }}
       onCompositionEnd={(event) => {
-        const value = event.currentTarget.textContent ?? ""
-        pending.current.push(event.data)
-        props.store.endComposition(props.id, event.data)
+        const value = writeTextValue(readBox(event.currentTarget).value)
+        pending.current.push(value)
+        props.store.endComposition(props.id, value)
         report(value)
         composing.current = false
       }}
       onInput={(event) => {
         const native = event.nativeEvent
         if (composing.current || (native instanceof InputEvent && native.isComposing)) return
-        report(event.currentTarget.textContent ?? "")
+        report(writeTextValue(readBox(event.currentTarget).value))
       }}
     />
   )
