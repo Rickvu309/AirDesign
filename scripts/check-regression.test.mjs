@@ -22,6 +22,7 @@ import {
   unprovedLines,
   verdict,
 } from "./check-regression.mjs"
+import { withLoopback } from "./check-regression.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -632,6 +633,12 @@ same(
     ...cleared,
   ],
 )
+same(
+  "a proof in CI gets a working loopback inside its empty network, before it drops to nobody",
+  withLoopback(sandboxed({ env, command, runsInCi: true })).slice(0, 10),
+  ["sudo", "-n", "unshare", "--net", "--", "sh", "-c", 'ip link set lo up && exec "$@"', "sh", "setpriv"],
+)
+same("a local proof is left as it is", withLoopback(cleared), cleared)
 same(
   "locally only a proof that differs from main runs again",
   localProofs(["scripts/a.test.mjs", "scripts/b.test.mjs"], ["scripts/b.test.mjs", "scripts/b.mjs"]),
