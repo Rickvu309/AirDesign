@@ -290,6 +290,18 @@ describe("carryPackage refuses a container it cannot reproduce", () => {
     await rejects(file, "disk")
   })
 
+  it("an end record whose central size does not reach it", async () => {
+    const file = (await tinyZip()).slice()
+    view(file).setUint32(endOf(file) + 12, view(file).getUint32(endOf(file) + 12, true) - 1, true)
+    await rejects(file, "unaccounted")
+  })
+
+  it("an end record with start disk 1", async () => {
+    const file = (await tinyZip()).slice()
+    view(file).setUint16(endOf(file) + 6, 1, true)
+    await rejects(file, "disk")
+  })
+
   it("a central record on another disk", async () => {
     const file = (await tinyZip()).slice()
     view(file).setUint16(centralAt(file) + 34, 1, true)
