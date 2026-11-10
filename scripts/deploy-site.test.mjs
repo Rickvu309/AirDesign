@@ -77,8 +77,14 @@ same(
 same("a secret is never echoed", /echo[^\n]*(CLOUDFLARE|secrets\.)/.test(workflow), false)
 same(
   "the alarm is a deploy-red issue with its own title",
-  workflow.includes('gh issue create --title "$title" --label deploy-red --body') &&
+  workflow.includes('gh issue create --title "$title" --label site-deploy-red --body') &&
     workflow.includes('title="Site deploy is red"'),
+  true,
+)
+same("the alarm never uses the smoke label", /--label deploy-red/.test(workflow), false)
+same(
+  "the alarm finds its issue by its own label",
+  workflow.includes("gh issue list --label site-deploy-red --state open"),
   true,
 )
 same("the alarm never uses the smoke title", workflow.includes("Deploy or smoke check is red"), false)
