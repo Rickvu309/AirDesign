@@ -1,6 +1,17 @@
 export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolContent, type ToolResult } from "./call-tool.js"
+export {
+  editLanded,
+  editRefusal,
+  heldElements,
+  namedNodes,
+  type EditAnswer,
+  type EditElement,
+  type EditResult,
+} from "./edit-answer.js"
+export { editCodes, editNext, editSentence, type EditCode } from "./edit-next.js"
 export { afterWrite, agentCaller, openRun } from "./run.js"
+export { textProblem, type TextProblem } from "./text-from.js"
 export {
   capture,
   edit,

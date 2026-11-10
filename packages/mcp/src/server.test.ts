@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { decide, elementId, version, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { createServer, emptyLog, type CallerLog, type Session } from "./index.js"
+import { createServer, editNext, emptyLog, type CallerLog, type Session } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -116,6 +116,9 @@ describe("createServer", () => {
       }))
       const estimate = Math.ceil(utf8Size(JSON.stringify(advertised)) / 4)
       expect(estimate).toBeLessThanOrEqual(8000)
+      const listed = await client.listTools()
+      expect(Math.ceil(utf8Size(JSON.stringify(listed)) / 4)).toBeLessThanOrEqual(8000)
+      expect(tools.every((tool) => !Object.hasOwn(tool, "outputSchema"))).toBe(true)
     })
   })
 
@@ -127,7 +130,12 @@ describe("createServer", () => {
         arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }], actor: "person" },
       })
       expect(result.isError).toBe(true)
-      expect(result.content).toEqual([{ type: "text", text: "field" }])
+      const answer = { ok: false, revision: 0, refusal: "field", elements: [] }
+      expect(result.content).toEqual([
+        { type: "text", text: editNext.field },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(result.structuredContent).toEqual(answer)
       expect(deck.revision).toBe(0)
       expect(deck.register.landed).toEqual([])
     })
@@ -217,7 +225,12 @@ describe("createServer", () => {
         arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(result.isError).not.toBe(true)
-      expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
+      const answer = { ok: true, revision: 1, elements: [{ node: "258.7", value: "21", version: 1 }] }
+      expect(result.content).toEqual([
+        { type: "text", text: "Landed revision 1." },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(result.structuredContent).toEqual(answer)
       expect(session.deck.revision).toBe(1)
       const body = nodeBody(session.deck.register)
       expect(body.phase).toBe("running")
@@ -225,6 +238,76 @@ describe("createServer", () => {
       expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
       expect(before.register.phase).toBe("idle")
       expect(before.register.landed).toEqual([])
+    })
+  })
+
+  it("tells the agent the next step when an edit is stale", async () => {
+    const before = opened()
+    const session = sessionFor(before)
+    await withClient(session, async (client) => {
+      for (const [readAt, value] of [
+        [0, "21"],
+        [1, "22"],
+      ] as const) {
+        const landed = await client.callTool({
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base: readAt, changes: [{ value, node: "258.7", readAt }] },
+        })
+        expect(landed.isError).not.toBe(true)
+      }
+      const stale = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 2, changes: [{ value: "late", node: "258.7", readAt: 0 }] },
+      })
+      expect(stale.isError).toBe(true)
+      const block = { ok: false, revision: 2, refusal: "stale", elements: [{ node: "258.7", value: "22", version: 2 }] }
+      expect(stale.content).toEqual([
+        { type: "text", text: editNext.stale },
+        { type: "text", text: JSON.stringify(block) },
+      ])
+      expect(stale.structuredContent).toEqual(block)
+      expect(session.deck.revision).toBe(2)
+      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
+      const sent = block.elements[0]
+      if (sent === undefined) throw new Error("missing element")
+      const resent = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: {
+          deck: "deck",
+          base: block.revision,
+          changes: [{ value: "late", node: sent.node, readAt: sent.version }],
+        },
+      })
+      expect(resent.isError).not.toBe(true)
+      expect(resent.structuredContent).toEqual({
+        ok: true,
+        revision: 3,
+        elements: [{ node: "258.7", value: "late", version: 3 }],
+      })
+      expect(session.deck.revision).toBe(3)
+      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22", "late"])
+    })
+  })
+
+  it("lands two edits in a row, each at the version the previous answer carried", async () => {
+    const session = sessionFor(opened())
+    await withClient(session, async (client) => {
+      let readAt = 0
+      let base = 0
+      for (const value of ["21", "22"]) {
+        const result = await client.callTool({
+          name: "airdesign_edit_deck",
+          arguments: { deck: "deck", base, changes: [{ value, node: "258.7", readAt }] },
+        })
+        expect(result.isError).not.toBe(true)
+        const answer = result.structuredContent as { revision: number; elements: { version: number }[] }
+        expect(result.content.at(-1)).toEqual({ type: "text", text: JSON.stringify(answer) })
+        readAt = answer.elements[0]?.version ?? -1
+        base = answer.revision
+      }
+      expect(readAt).toBe(2)
+      expect(session.deck.revision).toBe(2)
+      expect(nodeBody(session.deck.register).landed.map((row) => row.value)).toEqual(["21", "22"])
     })
   })
 

@@ -1,0 +1,38 @@
+import type { readAgentEdit } from "@airdesign/catalog"
+import { limits, type Refusal } from "@airdesign/document"
+import type { call } from "@airdesign/engine"
+
+type Refused<Result> = Result extends { readonly ok: false; readonly refusal: infer Code } ? Code : never
+
+export type ReadCode = Refused<ReturnType<typeof readAgentEdit>>
+
+export type EditCode = ReadCode | Refused<ReturnType<typeof call>> | Refusal | "text-from" | "owner" | "store"
+
+const valueBytes = limits.valueBytes.toLocaleString("en-US")
+
+export const editNext = {
+  stale: "The element changed since it was read. Use the value and version in this answer and send the change again.",
+  "person-protected":
+    "A person edited this element during this run. It is closed to this run. Do not send this change again.",
+  "run-fenced":
+    "This call names elements held by different runs, or an element this run already ended. Send each element's change in its own call; an element this run ended stays closed to it.",
+  limit: `The value is over ${valueBytes} bytes, or the deck is at its size, element or slide limit. Send a shorter value, or tell the person the deck is full.`,
+  dead: "The deck has no element with this id. Check the element id.",
+  present: "This element is already in the deck. Check the element id.",
+  deck: "This session can reach no deck with this id. Check the deck id.",
+  owner: "This deck belongs to another account. Work only on decks this account owns.",
+  base: "The base is missing or not a whole number. Send the revision from your last answer as base.",
+  batch: "The changes are missing or not a list of one to one hundred changes. Send one to one hundred changes.",
+  payload: "The deck's next revision could not be named for storage, and nothing landed. Tell the person.",
+  field:
+    "A field is missing or has the wrong form. Send only the fields the input schema lists, each in its described form.",
+  "text-from":
+    "A from index in this value is not one the file has, and nothing landed. Use an index listed next, or -1 for a new run.",
+  store: "The deck could not be reached, and nothing landed. Try again later.",
+} as const satisfies Record<EditCode, string>
+
+export const editCodes = Object.keys(editNext) as EditCode[]
+
+export function editSentence(code: EditCode): string {
+  return editNext[code]
+}

@@ -1,8 +1,10 @@
-import { catalog, projectTools, readCapture } from "@airdesign/catalog"
+import { catalog, projectTools, readAgentEdit, readCapture } from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog } from "./admit.js"
+import { editLanded, editRefusal, namedNodes, type EditAnswer } from "./edit-answer.js"
 import { openRun } from "./run.js"
+import { textProblem } from "./text-from.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -24,6 +26,7 @@ export type ToolResult =
       readonly ok: true
       readonly deck: Deck
       readonly content: readonly ToolContent[]
+      readonly answer?: EditAnswer
     }
   | {
       readonly ok: false
@@ -31,6 +34,7 @@ export type ToolResult =
       readonly deck: Deck
       readonly content: readonly ToolContent[]
       readonly next?: string
+      readonly answer?: EditAnswer
     }
 
 const nextStep = {
@@ -52,16 +56,19 @@ function reached(deck: Deck, refusal: string, next: string): ToolResult {
 }
 
 function editDeck(raw: unknown, session: Session): ToolResult {
-  const opened = openRun(session.deck.register, raw, () => session.caller.runId)
-  if (!opened.ok) return refused(session.deck, opened.refusal)
-  const deck = { id: session.deck.id, revision: session.deck.revision, register: opened.register }
+  const before = session.deck
+  const parsed = readAgentEdit(raw)
+  if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
+  if (parsed.deck !== before.id) return editRefusal(before, "deck", [])
+  const nodes = namedNodes(parsed.changes)
+  const problem = textProblem(before.register, parsed.changes)
+  if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
+  const opened = openRun(before.register, raw, () => session.caller.runId)
+  if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
+  const deck = { id: before.id, revision: before.revision, register: opened.register }
   const result = call("edit_deck", deck, opened.caller, raw)
-  if (!result.ok) return refused(session.deck, result.refusal)
-  return {
-    ok: true,
-    deck: result.deck,
-    content: [{ type: "text", text: `Landed revision ${String(result.deck.revision)}.` }],
-  }
+  if (!result.ok) return editRefusal(before, result.refusal, nodes)
+  return editLanded(result.deck, nodes)
 }
 
 function captureSlide(raw: unknown, session: Session): ToolResult {

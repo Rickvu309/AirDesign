@@ -3,6 +3,8 @@ import { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod/v4"
 import { admit } from "./admit.js"
 import { callTool, type Session, type ToolResult } from "./call-tool.js"
+import { editRefusal } from "./edit-answer.js"
+import { editSentence, type EditCode } from "./edit-next.js"
 
 const editInput = z.looseObject({
   deck: z.string().describe("Deck id."),
@@ -10,11 +12,17 @@ const editInput = z.looseObject({
   changes: z
     .array(
       z.looseObject({
-        value: z.string().describe("Text to write."),
-        node: z.string().describe("Element id, <slide>.<shape>."),
+        value: z
+          .string()
+          .describe(
+            "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run.",
+          ),
+        node: z.string().describe("Element id, <slide>.<shape>, such as 258.7."),
         readAt: z
           .number()
-          .describe("Version of that element from your last read. 0 only for an element nobody has changed."),
+          .describe(
+            "Version of that element from your last read. Every answer carries each named element's value and version. 0 for an element nobody has changed.",
+          ),
       }),
     )
     .describe("Edits to land."),
@@ -32,8 +40,9 @@ function inputSchema(op: string) {
 
 function mcpResult(result: ToolResult) {
   const content = result.content.map((block) => ({ type: "text" as const, text: block.text }))
-  if (result.ok) return { content }
-  return { content, isError: true as const }
+  const structured = result.answer === undefined ? {} : { structuredContent: result.answer }
+  if (result.ok) return { content, ...structured }
+  return { content, isError: true as const, ...structured }
 }
 
 export type Host = {
@@ -41,7 +50,7 @@ export type Host = {
     name: string,
     raw: unknown,
     session: Session,
-  ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: string }>
+  ) => Promise<{ readonly ok: true } | { readonly ok: false; readonly refusal: EditCode }>
   commit?: (result: ToolResult, session: Session) => Promise<ToolResult>
 }
 
@@ -75,11 +84,12 @@ export function createServer(session: Session, host?: Host): McpServer {
         if (host?.prepare) {
           const prepared = await host.prepare(tool.name, args, session)
           if (!prepared.ok) {
+            if (tool.op === "edit_deck") return mcpResult(editRefusal(session.deck, prepared.refusal, []))
             return mcpResult({
               ok: false,
               refusal: prepared.refusal,
               deck: session.deck,
-              content: [{ type: "text", text: prepared.refusal }],
+              content: [{ type: "text", text: editSentence(prepared.refusal) }],
             })
           }
         }

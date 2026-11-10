@@ -6,8 +6,10 @@ import {
   afterWrite,
   agentCaller,
   createServer,
+  editRefusal,
   emptyLog,
   type CallerLog,
+  type EditCode,
   type Host,
   type Session,
   type ToolResult,
@@ -28,21 +30,15 @@ export type McpHost = {
   readonly bodyCap: number
 }
 
-const storeFailure = "The deck could not be reached."
-
 function namedDeck(
   raw: unknown,
-): { readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: "field" | "deck" } {
+): { readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: EditCode } {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false, refusal: "field" }
   const body = raw as Record<string, unknown>
   if (!Object.hasOwn(body, "deck")) return { ok: false, refusal: "field" }
   const parsed = readDeckId(body.deck)
   if (!parsed.ok) return { ok: false, refusal: "deck" }
   return { ok: true, deck: parsed.deck }
-}
-
-function refused(deck: Deck, refusal: string): ToolResult {
-  return { ok: false, refusal, deck, content: [{ type: "text", text: refusal }] }
 }
 
 function mcpRequest(req: IncomingMessage) {
@@ -82,7 +78,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       try {
         saved = await readSaved(host.deck, named.deck)
       } catch {
-        return { ok: false, refusal: storeFailure }
+        return { ok: false, refusal: "store" }
       }
       if (saved === undefined) return { ok: false, refusal: "deck" }
       if (saved.owner !== host.email) return { ok: false, refusal: "owner" }
@@ -102,8 +98,9 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
 
 async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult> {
   if (!result.ok) return result
+  const nodes = (result.answer?.elements ?? []).map((element) => element.node)
   const key = notifyKey(result.deck.id, result.deck.revision)
-  if (!key.ok) return refused(loaded, "payload")
+  if (!key.ok) return editRefusal(loaded, "payload", nodes)
   let wrote = false
   try {
     wrote = await writeRevision(db, {
@@ -114,7 +111,15 @@ async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<To
       key: key.key,
     })
   } catch {
-    return refused(loaded, storeFailure)
+    return editRefusal(loaded, "store", nodes)
   }
-  return afterWrite(wrote, result, loaded)
+  if (wrote) return result
+  let saved: Awaited<ReturnType<typeof readSaved>>
+  try {
+    saved = await readSaved(db, loaded.id)
+  } catch {
+    return editRefusal(loaded, "store", nodes)
+  }
+  if (saved === undefined) return editRefusal(loaded, "deck", [])
+  return afterWrite(false, result, { id: loaded.id, revision: saved.revision, register: saved.register })
 }
