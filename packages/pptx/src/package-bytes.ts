@@ -95,6 +95,21 @@ function encodeUtf8(text: string): Uint8Array {
   return Uint8Array.from(units)
 }
 
+export function decodeLatin1(bytes: Uint8Array): string {
+  let text = ""
+  for (let index = 0; index < bytes.length; index += 4096) {
+    const codes: number[] = []
+    const end = Math.min(index + 4096, bytes.length)
+    for (let cursor = index; cursor < end; cursor += 1) {
+      const byte = bytes[cursor]
+      if (byte === undefined) throw new Error("byte")
+      codes.push(byte)
+    }
+    text += String.fromCharCode(...codes)
+  }
+  return text
+}
+
 function decodeUtf8(bytes: Uint8Array): string {
   let text = ""
   for (let index = 0; index < bytes.length;) {

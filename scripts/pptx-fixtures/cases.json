@@ -1,0 +1,72 @@
+[
+  {
+    "name": "nasa-1d-cnn",
+    "before": "nasa-1d-cnn.pptx",
+    "after": "nasa-1d-cnn.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "doe-heat-pumps",
+    "before": "doe-heat-pumps.pptx",
+    "after": "doe-heat-pumps.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "visible-noop",
+    "before": "clean.pptx",
+    "after": "clean.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": false
+  },
+  {
+    "name": "text-page",
+    "before": "clean.pptx",
+    "after": "text.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "text-other-page",
+    "before": "clean.pptx",
+    "after": "text.pptx",
+    "visible": true,
+    "targeted": [2],
+    "errors": 0,
+    "dupes": 0,
+    "pages": false
+  },
+  {
+    "name": "child-order",
+    "before": "clean.pptx",
+    "after": "broken-order.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 1,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "duplicate-id",
+    "before": "clean.pptx",
+    "after": "duplicate-id.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 1,
+    "pages": true
+  }
+]
