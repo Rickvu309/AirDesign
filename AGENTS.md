@@ -71,3 +71,4 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A stick moves only toward its goal, and the files that decide the gate change only with the owner's approval | the `owner gate` check, run from `main` |
 | A bug you find and do not fix is an `it.fails` test. A failing-expected, skipped or todo test counts as a known fault | `scripts/sticks.mjs`: the count must match `sticks.json` |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
+
