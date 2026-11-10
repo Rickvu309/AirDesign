@@ -42,7 +42,7 @@ function requireMarkup(bytes: Uint8Array): MarkupDocument {
   return document
 }
 
-function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
+export function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
   for (const mark of elements) {
     if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
     let parent = mark.parent
