@@ -141,6 +141,7 @@ function walk(): void {
   expect(limits.decks).toBe(null)
   expect(limits.slides).toBe(50)
   expect(limits.bytes).toBe(70_000_000)
+  expect(limits.valueBytes).toBe(8_000)
   const seen = new Set<string>()
   visitInside("decks", seen)
   visitInside("opened", seen)

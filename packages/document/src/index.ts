@@ -21,3 +21,4 @@ export {
 } from "./decide.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralAction, type StructuralRoute } from "./structure.js"
+export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"
