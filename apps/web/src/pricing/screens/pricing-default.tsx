@@ -36,7 +36,7 @@ export function PricingDefault() {
           <a href="" className="text-[length:var(--type-dense)] leading-[1.31] font-normal text-muted-foreground">
             {pricingCopy.signIn}
           </a>
-          <Button variant="brand" className="h-8 px-3 text-[length:var(--type-dense)] leading-[1.31]" type="button">
+          <Button variant="outline" className="h-8 px-3 text-[length:var(--type-dense)] leading-[1.31]" type="button">
             {pricingCopy.startFree}
           </Button>
         </nav>
@@ -67,7 +67,7 @@ export function PricingDefault() {
             ))}
           </ul>
           <Button
-            variant="brand"
+            variant="default"
             className="h-11 w-full rounded-[var(--shape-card)] text-[length:var(--type-section)] leading-[1.33]"
             type="button"
           >

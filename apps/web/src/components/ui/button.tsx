@@ -7,7 +7,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/80",
+        default: "bg-primary text-primary-foreground hover:bg-primary/80 active:translate-y-0",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
@@ -17,11 +17,6 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
-        brand:
-          "h-9 gap-2 border-0 bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] px-3.5 text-sm text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--primary-strong),0_1px_2px_0_rgb(0_0_0/12%)] hover:bg-[linear-gradient(180deg,var(--primary-top),var(--primary))] hover:brightness-105 active:translate-y-0",
-        ink: "h-8 gap-2 border-0 bg-foreground px-3.5 text-[length:var(--type-dense)] text-white hover:bg-foreground hover:brightness-110 active:translate-y-0",
-        danger:
-          "h-9 gap-2 border-0 bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] px-3.5 text-sm text-white shadow-[0_1px_0_0_rgb(255_255_255/35%),0_0_0_1px_var(--danger-edge),0_1px_2px_0_rgb(0_0_0/12%)] hover:brightness-105 active:translate-y-0",
       },
       size: {
         default: "h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",

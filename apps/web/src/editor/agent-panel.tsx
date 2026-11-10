@@ -1,6 +1,7 @@
 import { useEffect, type CSSProperties } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { StatusPill } from "@/components/ui/status-pill"
 import { Toaster } from "@/components/ui/sonner"
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation"
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
@@ -119,11 +120,8 @@ function AgentTurn({ run }: { run: SidebarRun }) {
           <span className="flex items-center gap-2">
             <Button
               type="button"
-              variant="brand"
-              className={cn(
-                "h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0",
-                brandShadow,
-              )}
+              variant="outline"
+              className="h-8 rounded-lg px-3 text-[length:var(--type-dense)] font-medium active:translate-y-0"
             >
               Resume
             </Button>
@@ -314,10 +312,7 @@ export function EditorToast({
   useEffect(() => {
     toast.custom(
       () => (
-        <div
-          className="flex h-10 items-center gap-2.5 rounded-[var(--shape-card)] bg-foreground pr-4 pl-3.5 text-[length:var(--type-dense)] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]"
-          style={{ width }}
-        >
+        <StatusPill className="gap-2.5 pr-4 pl-3.5" style={{ width }}>
           {kind === "success" ? (
             <span className="relative block size-4 shrink-0">
               <svg
@@ -340,7 +335,7 @@ export function EditorToast({
           ) : null}
           <span className="min-w-0 flex-1 truncate">{text}</span>
           {action ? <span className="text-[length:var(--type-dense)] font-medium">{action}</span> : null}
-        </div>
+        </StatusPill>
       ),
       {
         id: "editor-status",

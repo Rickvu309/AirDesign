@@ -1,6 +1,7 @@
 import { useEffect, type CSSProperties, type ReactElement } from "react"
 import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
+import { StatusPill } from "@/components/ui/status-pill"
 import { exportCopy } from "@/export/export-options"
 
 const downloadedPlace = "!transform-none ![left:540.56px] ![top:12px]"
@@ -51,10 +52,10 @@ export function DownloadedToast() {
   useEffect(() => {
     showToast(
       "export-downloaded",
-      <div className="flex h-10 w-[276.89px] items-center gap-2.5 rounded-[var(--shape-card)] bg-foreground pr-4 pl-3.5 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
+      <StatusPill className="w-[276.89px] gap-2.5 pr-4 pl-3.5 leading-[17px]">
         <CheckMark />
         <span className="whitespace-nowrap">{exportCopy.downloaded}</span>
-      </div>,
+      </StatusPill>,
       "276.89px",
     )
   }, [])
@@ -73,7 +74,7 @@ export function FailedToast() {
   useEffect(() => {
     showToast(
       "export-failed",
-      <div className="flex h-10 w-[381.78px] items-center rounded-[var(--shape-card)] bg-foreground pr-1.5 pl-3.5 text-[length:var(--type-dense)] leading-[17px] text-white shadow-[0_8px_24px_rgb(0_0_0/20%)]">
+      <StatusPill className="w-[381.78px] pr-1.5 pl-3.5 leading-[17px]">
         <ErrorMark />
         <span className="ml-2.5 whitespace-nowrap">{exportCopy.failed}</span>
         <button
@@ -82,7 +83,7 @@ export function FailedToast() {
         >
           {exportCopy.tryAgain}
         </button>
-      </div>,
+      </StatusPill>,
       "381.78px",
     )
   }, [])

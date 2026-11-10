@@ -93,7 +93,7 @@ export function ApproveAgent({
           </Button>
           <Button
             type="button"
-            variant="brand"
+            variant="default"
             className={`h-10 w-[176px] rounded-[var(--shape-card)] px-0 text-sm font-medium active:scale-[0.97] ${trimmed}`}
           >
             Allow

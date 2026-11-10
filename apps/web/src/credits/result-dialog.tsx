@@ -1,7 +1,9 @@
 import type { ReactNode } from "react"
+import { Dialog as BaseDialog } from "@base-ui/react/dialog"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogOverlay, DialogPortal } from "@/components/ui/dialog"
 import { productCopy } from "@/copy/product-copy"
-import { CloseGlyph, DialogButton } from "@/credits/dialog-button"
-import { ScrimDialog } from "@/credits/scrim-dialog"
+import { CloseGlyph } from "@/credits/dialog-glyphs"
 
 export function ResultDialog({
   icon,
@@ -17,26 +19,48 @@ export function ResultDialog({
   primary: string
 }) {
   return (
-    <ScrimDialog className="flex h-[207.5px] w-[400px] flex-col gap-4 p-6">
-      <div className="flex h-10 items-start justify-between">
-        {icon}
-        <button
-          type="button"
-          aria-label={productCopy.close}
-          className="flex size-7 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-canvas"
+    <Dialog open>
+      <DialogPortal>
+        <DialogOverlay className="bg-black/25 duration-0 data-open:animate-none" style={{ backdropFilter: "none" }} />
+        <BaseDialog.Popup
+          initialFocus={false}
+          className="fixed top-1/2 left-1/2 z-50 flex h-[207.5px] w-[400px] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-3xl bg-white p-6 shadow-[inset_0_0_0_1px_rgb(0_0_0/8%),0_24px_48px_rgb(0_0_0/16%)] outline-none data-open:animate-none"
         >
-          <CloseGlyph />
-        </button>
-      </div>
-      <div className="h-[var(--space-48)]">
-        <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">{title}</h2>
-        <p className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">{body}</p>
-      </div>
-      <div className="flex h-10 items-end justify-end gap-2">
-        {secondary ? <DialogButton tone="quiet">{secondary}</DialogButton> : null}
-        <DialogButton tone="brand">{primary}</DialogButton>
-      </div>
-    </ScrimDialog>
+          <div className="flex h-10 items-start justify-between">
+            {icon}
+            <button
+              type="button"
+              aria-label={productCopy.close}
+              className="flex size-7 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:bg-canvas"
+            >
+              <CloseGlyph />
+            </button>
+          </div>
+          <div className="h-[var(--space-48)]">
+            <h2 className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">{title}</h2>
+            <p className="mt-1.5 text-[length:var(--type-dense)] leading-[19.5px] text-muted-foreground">{body}</p>
+          </div>
+          <div className="flex h-10 items-end justify-end gap-2">
+            {secondary ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 rounded-lg px-4 text-[length:var(--type-body)] leading-[18px]"
+              >
+                {secondary}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="default"
+              className="h-9 rounded-lg px-4 text-[length:var(--type-body)] leading-[18px]"
+            >
+              {primary}
+            </Button>
+          </div>
+        </BaseDialog.Popup>
+      </DialogPortal>
+    </Dialog>
   )
 }
 

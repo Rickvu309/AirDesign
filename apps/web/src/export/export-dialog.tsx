@@ -83,7 +83,7 @@ export function ExportDialog({ format }: { format: ExportFormat }) {
             <div className="flex h-[60px] items-center justify-end px-5">
               <Button
                 type="button"
-                variant="brand"
+                variant="default"
                 className="h-9 w-[73.25px] rounded-lg px-0 text-[length:var(--type-dense)] leading-[17px] font-medium"
               >
                 {exportCopy.action}
