@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { shapeById } from "./slide-route.js"
+import { newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
 import { applyStructuralRoute } from "./structural-route.js"
 
 function text(value: string): Uint8Array {
@@ -52,6 +53,15 @@ function frameMarks(bytes: Uint8Array): { id: string | null; name: string | null
       const name = mark?.attributes.find((item) => item.name === "name")?.value ?? null
       return { id: mark?.id ?? null, name }
     })
+}
+
+function sectionIds(parts: ReadonlyMap<string, Uint8Array>): string[] {
+  const bytes = parts.get("ppt/presentation.xml")
+  if (bytes === undefined) throw new Error("part")
+  return markupDocument(bytes)
+    .elements.filter((element) => element.kind === "p14:section" && element.id !== null)
+    .sort((left, right) => left.start - right.start)
+    .flatMap((element) => (element.id === null ? [] : [element.id]))
 }
 
 function inside(elements: readonly MarkupElement[], child: MarkupElement, ancestor: MarkupElement): boolean {
@@ -128,6 +138,18 @@ describe("applyStructuralRoute", () => {
     const back = applyStructuralRoute(cloned, { name: "spTree.remove", part: "ppt/slides/slide1.xml", shape: "4" })
     expect(back.get("ppt/slides/slide1.xml")).toEqual(parts.get("ppt/slides/slide1.xml"))
     expect(back.get("ppt/media/keep.bin")).toBe(parts.get("ppt/media/keep.bin"))
+  })
+
+  it("gives every shape in a cloned group its own id", () => {
+    const group = `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr><p:grpSp><p:nvGrpSpPr><p:cNvPr id="10" name="G"/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:sp><p:nvSpPr><p:cNvPr id="11" name="A"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr></p:sp><p:sp><p:nvSpPr><p:cNvPr id="12" name="B"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr></p:sp></p:grpSp></p:spTree></p:cSld></p:sld>`
+    const parts = deck(group)
+    const cloned = applyStructuralRoute(parts, { name: "spTree.clone", part: "ppt/slides/slide1.xml", shape: "10" })
+    expect(newDuplicateShapeIds(shapeIdCounts(parts), shapeIdCounts(cloned))).toEqual([])
+    const ids = shapeIdCounts(cloned)
+      .filter((row) => row.part === "ppt/slides/slide1.xml")
+      .map((row) => row.id)
+    expect(ids).toEqual(expect.arrayContaining(["1", "10", "11", "12"]))
+    expect(ids).toHaveLength(7)
   })
 
   it("adds a text shape through spTree.add and remove restores the part", () => {
@@ -231,8 +253,13 @@ describe("applyStructuralRoute", () => {
     const added = applyStructuralRoute(parts, { name: "sectionLst.add", title: 'A & "B"' })
     const addedXml = xml(added, "ppt/presentation.xml")
     expect(addedXml).toContain('name="A &amp; &quot;B&quot;"')
-    expect(addedXml).toContain("<p:sectionLst><p:section ")
-    const back = applyStructuralRoute(added, { name: "sectionLst.remove", section: "1" })
+    expect(addedXml).toContain(
+      '<p:ext uri="{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"><p14:sectionLst xmlns:p14="http://schemas.microsoft.com/office/powerpoint/2010/main"><p14:section ',
+    )
+    expect(addedXml).not.toContain("<p:sectionLst>")
+    const id = sectionIds(added)[0]
+    if (id === undefined) throw new Error("section")
+    const back = applyStructuralRoute(added, { name: "sectionLst.remove", section: id })
     expect(back.get("ppt/presentation.xml")).toEqual(parts.get("ppt/presentation.xml"))
     expect(back.get("ppt/media/keep.bin")).toBe(parts.get("ppt/media/keep.bin"))
   })
@@ -241,10 +268,17 @@ describe("applyStructuralRoute", () => {
     const parts = deck()
     const first = applyStructuralRoute(parts, { name: "sectionLst.add", title: "One" })
     const second = applyStructuralRoute(first, { name: "sectionLst.add", title: "Two" })
-    const moved = applyStructuralRoute(second, { name: "sectionLst.order", section: "2", before: "1" })
+    const secondXml = xml(second, "ppt/presentation.xml")
+    expect(secondXml.match(/<p14:sectionLst/g)?.length).toBe(1)
+    expect(secondXml).not.toContain("<p:sectionLst>")
+    const ids = sectionIds(second)
+    const later = ids[1]
+    const earlier = ids[0]
+    if (later === undefined || earlier === undefined) throw new Error("section")
+    const moved = applyStructuralRoute(second, { name: "sectionLst.order", section: later, before: earlier })
     const movedXml = xml(moved, "ppt/presentation.xml")
     expect(movedXml.indexOf('name="Two"')).toBeLessThan(movedXml.indexOf('name="One"'))
-    const back = applyStructuralRoute(moved, { name: "sectionLst.order", section: "1", before: "2" })
+    const back = applyStructuralRoute(moved, { name: "sectionLst.order", section: earlier, before: later })
     expect(back.get("ppt/presentation.xml")).toEqual(second.get("ppt/presentation.xml"))
   })
 
