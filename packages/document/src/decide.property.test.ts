@@ -1,6 +1,16 @@
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { currentValue, decide, history, openRegister, type Command, type ElementId, type Register } from "./index.js"
+import {
+  currentValue,
+  decide,
+  history,
+  openRegister,
+  version,
+  type Command,
+  type ElementId,
+  type NodeRegister,
+  type Register,
+} from "./index.js"
 import { elementId, shapeOf } from "./element-id.js"
 
 const ids = [elementId("a"), elementId("258.7"), elementId("258.n4k2j9x0q1zab")] as const
@@ -23,6 +33,19 @@ function picture(register: Register, id: ElementId): string {
     })
   }
   return JSON.stringify(register.elements[id] ?? null)
+}
+
+function bodyOf(register: Register, id: ElementId): NodeRegister {
+  if (id === elementId("a")) return register
+  const body = register.elements[id]
+  if (body === undefined) throw new Error("missing body")
+  return body
+}
+
+function aimed(register: Register, kind: (typeof kinds)[number], id: ElementId): Command {
+  const command = commandFor(kind, id)
+  if (command.command !== "agent" || !register.nodes.includes(id)) return command
+  return { ...command, readAt: version(bodyOf(register, id)) }
 }
 
 function three(): Register {
@@ -284,7 +307,7 @@ it("leaves every other element unchanged after any sequence", () => {
           const touched = kind === "add" ? elementId("258.8") : target
           const before = watched.map((id) => picture(register, id))
           const nodesBefore = register.nodes.filter((id) => id !== touched)
-          const decision = decide(register, commandFor(kind, target))
+          const decision = decide(register, aimed(register, kind, target))
           if (decision.decision === "apply") register = decision.register
           const unchanged = watched.every((id, index) => id === touched || before[index] === picture(register, id))
           const sameNodes =
@@ -294,5 +317,41 @@ it("leaves every other element unchanged after any sequence", () => {
         return true
       },
     ),
+    { numRuns: 400 },
   )
+})
+
+it("keeps another element's claim when one element is edited", () => {
+  let register = three()
+  const left = elementId("258.7")
+  const right = elementId("258.n4k2j9x0q1zab")
+  for (const node of [left, right]) {
+    const started = decide(register, { command: "start", node, runId: "run" })
+    if (started.decision !== "apply") throw new Error("start")
+    register = started.register
+  }
+  const first = decide(register, { command: "agent", node: left, runId: "run", readAt: 0, value: "one" })
+  if (first.decision !== "apply") throw new Error("first")
+  register = first.register
+  const elsewhere = decide(register, { command: "agent", node: right, runId: "run", readAt: 0, value: "two" })
+  if (elsewhere.decision !== "apply") throw new Error("elsewhere")
+  register = elsewhere.register
+  const person = decide(register, { command: "person", node: right, value: "typed" })
+  if (person.decision !== "apply") throw new Error("person")
+  register = person.register
+  const second = decide(register, { command: "agent", node: left, runId: "run", readAt: 0, value: "three" })
+  expect(second.decision).toBe("apply")
+  if (second.decision !== "apply") return
+  expect(history(bodyOf(second.register, left))).toEqual(["one", "three"])
+})
+
+it("re-adds a removed element with its own route", () => {
+  const node = elementId("258.7")
+  const removed = decide(three(), { command: "remove", node })
+  if (removed.decision !== "apply") throw new Error("remove")
+  const again = decide(removed.register, { command: "add", node, floor: "other", route: "elsewhere" })
+  expect(again).toMatchObject({ decision: "apply", route: "slide" })
+  if (again.decision !== "apply") return
+  expect(bodyOf(again.register, node).route).toBe("slide")
+  expect(bodyOf(again.register, node).floor).toBe(node)
 })
