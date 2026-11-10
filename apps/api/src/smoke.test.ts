@@ -36,8 +36,13 @@ function bearer(token: string): { readonly authorization: string } {
   return { authorization: `Bearer ${token}` }
 }
 
-async function smokePost(base: string, headers: Record<string, string>): Promise<Awaited<ReturnType<typeof ask>>> {
-  const url = new URL("/smoke/session", base)
+async function smokePost(
+  base: string,
+  headers: Record<string, string>,
+  route = "/smoke/session",
+  payload?: Buffer,
+): Promise<Awaited<ReturnType<typeof ask>>> {
+  const url = new URL(route, base)
   return new Promise((resolve, reject) => {
     const req = request(
       { method: "POST", hostname: "127.0.0.1", port: url.port, path: url.pathname, headers },
@@ -58,7 +63,7 @@ async function smokePost(base: string, headers: Record<string, string>): Promise
       },
     )
     req.on("error", reject)
-    req.end()
+    req.end(payload)
   })
 }
 
@@ -130,6 +135,37 @@ describe("POST /smoke/session", () => {
   it("answers 404 to a token of a different length", async () => {
     const api = await start({ smokeToken })
     expect((await smokePost(api.base, bearer("s"))).status).toBe(404)
+  })
+
+  it("answers 404 to an empty bearer", async () => {
+    const api = await start({ smokeToken })
+    const reply = await smokePost(api.base, { authorization: "Bearer " })
+    expect(reply.status).toBe(404)
+    expect(reply.headers["set-cookie"]).toBeUndefined()
+  })
+
+  it("answers a wrong token exactly as it answers an unknown path", async () => {
+    const api = await start({ smokeToken })
+    const wrong = await smokePost(api.base, bearer("wrong"))
+    const unknown = await smokePost(api.base, bearer("wrong"), "/smoke/elsewhere")
+    expect(wrong.status).toBe(unknown.status)
+    expect(wrong.text).toBe(unknown.text)
+    expect(Object.keys(wrong.headers).sort()).toEqual(Object.keys(unknown.headers).sort())
+  })
+
+  it("opens a session for the smoke account even when the body names another", async () => {
+    const api = await start({ smokeToken })
+    const other = `other${randomBytes(4).toString("hex")}@example.com`
+    const named = Buffer.from(JSON.stringify({ email: other }))
+    const reply = await smokePost(
+      api.base,
+      { ...bearer(smokeToken), "content-type": "application/json", "content-length": String(named.length) },
+      "/smoke/session",
+      named,
+    )
+    expect(reply.status).toBe(200)
+    expect(await accountCount(other)).toBe(0)
+    expect(await accountCount("smoke@airdesign.app")).toBe(1)
   })
 
   it("answers 404 to a missing header", async () => {

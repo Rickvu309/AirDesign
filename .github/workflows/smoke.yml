@@ -1,16 +1,13 @@
 name: smoke
 
 on:
-  workflow_run:
-    workflows:
-      - ci
-    types:
-      - completed
-    branches:
-      - main
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: smoke
@@ -19,18 +16,39 @@ concurrency:
 jobs:
   smoke:
     name: smoke
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
         with:
           node-version-file: .node-version
-      - env:
+      - id: smoke
+        continue-on-error: true
+        env:
           SMOKE_TOKEN: ${{ secrets.SMOKE_TOKEN }}
-          COMMIT: ${{ github.event.workflow_run.head_sha }}
-        run: node scripts/smoke.mjs https://api-production-f919c062.up.railway.app "$COMMIT"
+        run: |
+          node scripts/smoke.mjs https://api-production-f919c062.up.railway.app > "$RUNNER_TEMP/smoke-line.txt" || status=$?
+          cat "$RUNNER_TEMP/smoke-line.txt"
+          exit "${status:-0}"
+      - if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+        run: |
+          line=$(cat "$RUNNER_TEMP/smoke-line.txt" 2>/dev/null || echo "smoke wrote no line")
+          open=$(gh issue list --label deploy-red --state open --json number --jq '.[0].number // empty')
+          if [ "$SMOKE_OUTCOME" = "success" ]; then
+            if [ -n "$open" ]; then
+              gh issue close "$open" --comment "$line"
+            fi
+          elif [ -n "$open" ]; then
+            gh issue comment "$open" --body "$line"
+          else
+            gh label create deploy-red --description "A deploy or the smoke check is red" --color B60205 --force
+            gh issue create --title "Deploy or smoke check is red" --label deploy-red --body "$line"
+          fi
