@@ -1,0 +1,54 @@
+import { memo, useSyncExternalStore } from "react"
+import type { ElementId, SlideId } from "./brand.js"
+import type { ElementRecord } from "./record.js"
+import type { PaintStore } from "./store.js"
+
+export function useElement(store: PaintStore, id: ElementId): ElementRecord | null {
+  return useSyncExternalStore(
+    store.elementSubscribe(id),
+    () => store.getElement(id),
+    () => store.getElement(id),
+  )
+}
+
+function useSlide(store: PaintStore, id: SlideId) {
+  return useSyncExternalStore(
+    store.slideSubscribe(id),
+    () => store.getSlide(id),
+    () => store.getSlide(id),
+  )
+}
+
+type ElementViewProps = {
+  readonly store: PaintStore
+  readonly id: ElementId
+  readonly onPaint?: ((id: ElementId) => void) | undefined
+}
+
+export const ElementView = memo(function ElementView(props: ElementViewProps) {
+  const record = useElement(props.store, props.id)
+  props.onPaint?.(props.id)
+  return <span data-element={props.id}>{record === null ? "" : record.text}</span>
+})
+
+type OpenSlideProps = {
+  readonly store: PaintStore
+  readonly id: SlideId
+  readonly label?: string | undefined
+  readonly onPaint?: (() => void) | undefined
+  readonly onElementPaint?: ((id: ElementId) => void) | undefined
+}
+
+export function OpenSlide(props: OpenSlideProps) {
+  const slide = useSlide(props.store, props.id)
+  props.onPaint?.()
+  const elements = slide === null ? [] : slide.elements
+  return (
+    <section data-slide={props.id}>
+      {props.label ?? ""}
+      {elements.map((id) => (
+        <ElementView key={id} store={props.store} id={id} onPaint={props.onElementPaint} />
+      ))}
+    </section>
+  )
+}
