@@ -1,4 +1,4 @@
-const vague = new Set(["utils", "helpers", "common"])
+const vague = new Set(["utils", "helpers", "common", "misc"])
 
 export const nameFindings = (relative) =>
   relative
