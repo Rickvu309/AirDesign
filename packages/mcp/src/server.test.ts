@@ -99,15 +99,31 @@ describe("createServer", () => {
   })
 
   it("lands an edit on the wire", async () => {
-    const deck = running()
-    await withClient(sessionFor(deck), async (client) => {
-      const result = await client.callTool({
+    const before = running()
+    const caller = { actor: "agent" as const, runId: "run", readAt: version(before.register) }
+    const session: Session = { caller, deck: before }
+    await withClient(session, async (client) => {
+      const first = await client.callTool({
         name: "airdesign_edit_deck",
         arguments: { deck: "deck", base: 0, changes: [{ value: "21" }] },
       })
-      expect(result.isError).not.toBe(true)
-      expect(result.content).toEqual([{ type: "text", text: "Landed revision 1." }])
-      expect(deck.revision).toBe(0)
+      expect(first.isError).not.toBe(true)
+      expect(session.deck).not.toBe(before)
+      expect(session.deck.revision).toBe(1)
+      expect(session.deck.register.landed).toEqual([{ actor: "agent", value: "21", visible: true }])
+      expect(before.revision).toBe(0)
+      expect(before.register.landed).toEqual([])
+
+      caller.readAt = version(session.deck.register)
+      const second = await client.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: "deck", base: 1, changes: [{ value: "22" }] },
+      })
+      expect(second.isError).toBe(true)
+      expect(second.content).toEqual([{ type: "text", text: "run-fenced" }])
+      expect(session.deck.revision).toBe(1)
+      expect(session.deck.register.landed.map((row) => row.value)).toEqual(["21"])
+      expect(before.revision).toBe(0)
     })
   })
 })

@@ -6,7 +6,7 @@ export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
 export type Session = {
   readonly caller: AgentCaller
-  readonly deck: Deck
+  deck: Deck
   readonly tab?: Tab
 }
 
