@@ -197,11 +197,11 @@ function agentEdit(register: NodeRegister, runId: string, readAt: number, value:
   if (register.phase !== "running" || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
-  if (readAt !== version(register) && readAt !== register.claimed) {
-    return { decision: "refuse", code: "stale" }
-  }
   if (register.guarded) {
     return { decision: "refuse", code: "person-protected" }
+  }
+  if (readAt !== version(register) && readAt !== register.claimed) {
+    return { decision: "refuse", code: "stale" }
   }
   const landed = [...register.landed, { actor: "agent" as const, value, visible: true, runId }]
   return { decision: "apply", body: { ...register, landed, claimed: readAt } }

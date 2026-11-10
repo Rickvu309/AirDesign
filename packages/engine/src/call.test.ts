@@ -214,6 +214,35 @@ describe("call", () => {
     expect(currentValue(nodeBody(personLanded.deck.register, left))).toBe("mine")
   })
 
+  it("refuses a stale batch on a guarded element as person-protected", () => {
+    const started = running()
+    const readAt = version(nodeBody(started.register, left))
+    const agentLanded = call("edit_deck", started, agent, {
+      deck: "deck",
+      base: started.revision,
+      changes: [{ value: "one", node: "258.7", readAt }],
+    })
+    expect(agentLanded.ok).toBe(true)
+    if (!agentLanded.ok) return
+    const personLanded = call("commit_edits", agentLanded.deck, person, {
+      deck: "deck",
+      batch: [{ value: "mine", node: "258.7" }],
+    })
+    expect(personLanded.ok).toBe(true)
+    if (!personLanded.ok) return
+    const register = personLanded.deck.register
+    expect(
+      call("edit_deck", personLanded.deck, agent, {
+        deck: "deck",
+        base: personLanded.deck.revision,
+        changes: [{ value: "two", node: "258.7", readAt }],
+      }),
+    ).toEqual({ ok: false, refusal: "person-protected" })
+    expect(personLanded.deck.register).toBe(register)
+    expect(personLanded.deck.revision).toBe(2)
+    expect(currentValue(nodeBody(personLanded.deck.register, left))).toBe("mine")
+  })
+
   it("refuses an edit from a different run id after the batch", () => {
     const deck = running()
     const readAt = version(nodeBody(deck.register, left))

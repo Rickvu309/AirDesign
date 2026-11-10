@@ -29,6 +29,12 @@ PersonCan ==
   \/ agent = 1 /\ personAfter = 0
   \/ agent = 0 /\ personBefore = 0
 
+\* The refusal an agent edit of the running run meets for its read. The guard is checked before the read.
+AgentRefusal(read) ==
+  IF guarded THEN "protected"
+  ELSE IF read # Version /\ read # claims THEN "stale"
+  ELSE "none"
+
 TypeOK ==
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ personBefore \in {0, 1}
@@ -130,14 +136,10 @@ AgentKeepsClaim ==
   /\ sawSecond' = readAt
   /\ UNCHANGED <<phase, personBefore, personAfter, readAt, guarded, claims, sawFirst, atFirst, guardedAt, stoppedAt, beforeFrozen, laterFrozen, refused>>
 
-\* A read after a person row during the run does not land.
+\* A guarded run's agent edit does not land and is refused as protected, whatever its read.
 AgentRefusesProtected ==
   /\ phase = "running"
-  /\ agent = 1
-  /\ personAfter = 1
-  /\ guarded = TRUE
-  /\ \/ readAt = claims
-     \/ readAt = Version
+  /\ AgentRefusal(readAt) = "protected"
   /\ UNCHANGED vars
 
 RunStops ==
@@ -164,6 +166,9 @@ Next ==
   PersonWrites \/ RunStarts \/ AgentRereads \/ AgentWrites \/ AgentWritesAgain \/ AgentKeepsClaim \/ AgentRefusesProtected \/ RunStops \/ RunUndoes \/ Done
 
 Spec == Init /\ [][Next]_vars
+
+\* A guarded run's agent edit is refused as protected, whatever its read.
+GuardedRunRefusesAsProtected == (phase = "running" /\ guarded) => AgentRefusal(readAt) = "protected"
 
 \* The person write is never refused.
 PersonAlwaysLands == refused = 0

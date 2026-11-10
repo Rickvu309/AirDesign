@@ -404,7 +404,8 @@ export const suite: readonly SuiteRow[] = [
       id: "person-after-agent-row",
       prompt:
         "Earlier you set the title of deck typed-over to First, and a teammate has typed over it since. Set the title to Second.",
-      deck: () => fixture("typed-over", [{ element: "title", agent: ["First"], during: ["Teammate"] }]),
+      deck: () =>
+        fixture("typed-over", [{ element: "title", agent: ["First"], during: ["Teammate"] }, { element: "body" }]),
       want: {
         calls: 1,
         steps: [{ name: "edit_deck", outcome: "person-protected" }],
@@ -412,7 +413,7 @@ export const suite: readonly SuiteRow[] = [
       },
     },
     reference: one("typed-over", "title", "Second", 2),
-    wrong: { attempt: one("typed-over", "title", "Second", 1), reason: "tool" },
+    wrong: { attempt: one("typed-over", "body", "Second", 0), reason: "tool" },
   },
   {
     task: {
