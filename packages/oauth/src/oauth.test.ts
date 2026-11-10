@@ -3,41 +3,35 @@ import { describe, expect, it } from "vitest"
 import { oauth, openGrant, type Command, type Grant } from "./index.js"
 
 const principal = "ada@studio"
-const deck = "258.7"
-const other = "258.8"
 
-function exchanged(who = principal, home = deck): Grant {
-  const open = openGrant(who, home)
-  const result = oauth(open, { command: "exchange", deck: home })
+function exchanged(who = principal): Grant {
+  const open = openGrant(who)
+  const result = oauth(open, { command: "exchange" })
   expect(result.accepted).toBe(true)
   expect(result.grant.code).toBe("used")
   expect(result.grant.generation).toBe(1)
   expect(result.grant.principal).toBe(who)
-  expect(result.grant.deck).toBe(home)
   return result.grant
 }
 
 describe("oauth", () => {
   it("a code works once", () => {
-    const open = openGrant(principal, deck)
-    const wrong = oauth(open, { command: "exchange", deck: other })
-    expect(wrong.accepted).toBe(false)
-    expect(wrong.grant).toBe(open)
-    const first = oauth(open, { command: "exchange", deck })
+    const open = openGrant(principal)
+    const first = oauth(open, { command: "exchange" })
     expect(first.accepted).toBe(true)
     expect(first.grant.code).toBe("used")
     expect(first.grant.generation).toBe(1)
-    const second = oauth(first.grant, { command: "exchange", deck })
+    const second = oauth(first.grant, { command: "exchange" })
     expect(second.accepted).toBe(false)
     expect(second.grant).toBe(first.grant)
-    expect(() => oauth(first.grant, { command: "exchange", deck })).not.toThrow()
+    expect(() => oauth(first.grant, { command: "exchange" })).not.toThrow()
   })
 
   it("a rotated refresh token never works again", () => {
     const current = oauth(exchanged(), { command: "rotate", generation: 1 })
     expect(current.accepted).toBe(true)
     expect(current.grant.generation).toBe(2)
-    const call = oauth(current.grant, { command: "call", deck, generation: 1 })
+    const call = oauth(current.grant, { command: "call", generation: 1 })
     expect(call.accepted).toBe(false)
     expect(call.grant).toBe(current.grant)
     const again = oauth(current.grant, { command: "rotate", generation: 1 })
@@ -55,7 +49,7 @@ describe("oauth", () => {
     expect(reused.grant.revoked).toBe(true)
     expect(reused.grant.principal).toBe(principal)
     expect(reused.grant.generation).toBe(2)
-    const later = oauth(reused.grant, { command: "call", deck, generation: 2 })
+    const later = oauth(reused.grant, { command: "call", generation: 2 })
     expect(later.accepted).toBe(false)
     expect(later.grant).toBe(reused.grant)
   })
@@ -65,7 +59,7 @@ describe("oauth", () => {
     const revoked = oauth(live, { command: "revoke" })
     expect(revoked.accepted).toBe(true)
     expect(revoked.grant.revoked).toBe(true)
-    const call = oauth(revoked.grant, { command: "call", deck, generation: 1 })
+    const call = oauth(revoked.grant, { command: "call", generation: 1 })
     expect(call.accepted).toBe(false)
     expect(call.grant).toBe(revoked.grant)
     const rotate = oauth(revoked.grant, { command: "rotate", generation: 1 })
@@ -74,33 +68,19 @@ describe("oauth", () => {
     const again = oauth(revoked.grant, { command: "revoke" })
     expect(again.accepted).toBe(false)
     expect(again.grant).toBe(revoked.grant)
-    expect(() => oauth(revoked.grant, { command: "call", deck, generation: 1 })).not.toThrow()
+    expect(() => oauth(revoked.grant, { command: "call", generation: 1 })).not.toThrow()
     expect(() => oauth(revoked.grant, { command: "rotate", generation: 1 })).not.toThrow()
   })
 
   it("the identity is the stored one", () => {
-    const grant = exchanged("agent@studio", deck)
-    const call = oauth(grant, { command: "call", deck, generation: 1 })
+    const grant = exchanged("agent@studio")
+    const call = oauth(grant, { command: "call", generation: 1 })
     expect(call.accepted).toBe(true)
     expect(call.grant).toBe(grant)
     expect(call.grant.principal).toBe("agent@studio")
-    const person = exchanged(principal, deck)
+    const person = exchanged(principal)
     expect(person.principal).toBe(principal)
     expect(person.principal).not.toBe(grant.principal)
-  })
-
-  it("a token for one deck does not authorize another", () => {
-    const open = openGrant(principal, deck)
-    const exchange = oauth(open, { command: "exchange", deck: other })
-    expect(exchange.accepted).toBe(false)
-    expect(exchange.grant).toBe(open)
-    const grant = exchanged()
-    const call = oauth(grant, { command: "call", deck: other, generation: 1 })
-    expect(call.accepted).toBe(false)
-    expect(call.grant).toBe(grant)
-    const home = oauth(grant, { command: "call", deck, generation: 1 })
-    expect(home.accepted).toBe(true)
-    expect(home.grant.deck).toBe(deck)
   })
 
   it("rotates five times in a row and only the newest generation calls", () => {
@@ -113,11 +93,11 @@ describe("oauth", () => {
     }
     expect(grant.generation).toBe(6)
     for (let generation = 1; generation <= 5; generation += 1) {
-      const call = oauth(grant, { command: "call", deck, generation })
+      const call = oauth(grant, { command: "call", generation })
       expect(call.accepted).toBe(false)
       expect(call.grant).toBe(grant)
     }
-    const newest = oauth(grant, { command: "call", deck, generation: 6 })
+    const newest = oauth(grant, { command: "call", generation: 6 })
     expect(newest.accepted).toBe(true)
     expect(newest.grant).toBe(grant)
     expect(newest.grant.principal).toBe(principal)
@@ -126,10 +106,10 @@ describe("oauth", () => {
   it("a call with the previous generation fails after a rotation", () => {
     const rotated = oauth(exchanged(), { command: "rotate", generation: 1 })
     expect(rotated.accepted).toBe(true)
-    const previous = oauth(rotated.grant, { command: "call", deck, generation: 1 })
+    const previous = oauth(rotated.grant, { command: "call", generation: 1 })
     expect(previous.accepted).toBe(false)
     expect(previous.grant).toBe(rotated.grant)
-    const current = oauth(rotated.grant, { command: "call", deck, generation: 2 })
+    const current = oauth(rotated.grant, { command: "call", generation: 2 })
     expect(current.accepted).toBe(true)
     expect(current.grant).toBe(rotated.grant)
   })
@@ -155,14 +135,13 @@ describe("oauth", () => {
   })
 
   it("a fresh grant accepts no call and no rotation", () => {
-    const grant = openGrant(principal, deck)
+    const grant = openGrant(principal)
     expect(grant.principal).toBe(principal)
-    expect(grant.deck).toBe(deck)
     expect(grant.code).toBe("open")
     expect(grant.generation).toBe(0)
     expect(grant.revoked).toBe(false)
     for (const generation of [0, 1]) {
-      const call = oauth(grant, { command: "call", deck, generation })
+      const call = oauth(grant, { command: "call", generation })
       expect(call.accepted).toBe(false)
       expect(call.grant).toBe(grant)
       const rotate = oauth(grant, { command: "rotate", generation })
@@ -187,11 +166,11 @@ describe("oauth", () => {
     const rotated = oauth(exchanged(), { command: "rotate", generation: 1 })
     expect(rotated.grant.generation).toBe(2)
     for (const generation of [1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      const call = oauth(rotated.grant, { command: "call", deck, generation })
+      const call = oauth(rotated.grant, { command: "call", generation })
       expect(call.accepted).toBe(false)
       expect(call.grant).toBe(rotated.grant)
       expect(call.grant.revoked).toBe(false)
-      expect(() => oauth(rotated.grant, { command: "call", deck, generation })).not.toThrow()
+      expect(() => oauth(rotated.grant, { command: "call", generation })).not.toThrow()
     }
   })
 
@@ -233,7 +212,7 @@ describe("oauth", () => {
 
   it("an extra principal key is ignored", () => {
     const grant = exchanged()
-    const plain = { command: "call" as const, deck, generation: 1 }
+    const plain = { command: "call" as const, generation: 1 }
     const extra = { ...plain, principal: "intruder", actor: "intruder" }
     const clean = oauth(grant, plain)
     const dirty = oauth(grant, extra)
@@ -244,61 +223,65 @@ describe("oauth", () => {
     expect(dirty.grant).toEqual(clean.grant)
   })
 
+  it("an extra deck key is ignored", () => {
+    const grant = exchanged()
+    const plain = { command: "call" as const, generation: 1 }
+    const extra = { ...plain, deck: "258.8" }
+    const clean = oauth(grant, plain)
+    const dirty = oauth(grant, extra)
+    expect(clean.accepted).toBe(true)
+    expect(dirty.accepted).toBe(true)
+    expect(dirty.grant).toBe(grant)
+    expect(dirty.grant).toEqual(clean.grant)
+    const named = { command: "exchange" as const, deck: "258.8" }
+    const exchange = oauth(openGrant(principal), named)
+    expect(exchange.accepted).toBe(true)
+    expect(exchange.grant.generation).toBe(1)
+  })
+
   it("accepts at most one generation and nothing after revocation", () => {
-    const decks = [deck, other, "deck-9"]
     const generation = fc.oneof(fc.integer({ min: -1, max: 8 }), fc.constant(1.5), fc.constant(Number.NaN))
     const step: fc.Arbitrary<Command> = fc.oneof(
-      fc.record({ command: fc.constant("exchange" as const), deck: fc.constantFrom(...decks) }),
-      fc.record({
-        command: fc.constant("call" as const),
-        deck: fc.constantFrom(...decks),
-        generation,
-      }),
+      fc.constant({ command: "exchange" as const }),
+      fc.record({ command: fc.constant("call" as const), generation }),
       fc.record({ command: fc.constant("rotate" as const), generation }),
       fc.constant({ command: "revoke" as const }),
     )
     fc.assert(
-      fc.property(
-        fc.constantFrom(principal, "agent@studio"),
-        fc.constantFrom(...decks),
-        fc.array(step, { maxLength: 12 }),
-        (who, home, steps) => {
-          let grant = openGrant(who, home)
-          for (const command of steps) {
-            const before = grant
-            const result = oauth(grant, command)
-            if (before.revoked) {
-              expect(result.accepted).toBe(false)
-              expect(result.grant).toBe(before)
-            }
-            if (!result.accepted && result.grant !== before) {
-              expect(before.revoked).toBe(false)
-              expect(result.grant.revoked).toBe(true)
-              expect(command.command).toBe("rotate")
-              if (command.command === "rotate") {
-                expect(Number.isInteger(command.generation)).toBe(true)
-                expect(command.generation).toBeGreaterThanOrEqual(1)
-                expect(command.generation).toBeLessThan(before.generation)
-              }
-            }
-            grant = result.grant
-            let accepted = 0
-            for (let age = 0; age <= grant.generation + 1; age += 1) {
-              if (oauth(grant, { command: "call", deck: grant.deck, generation: age }).accepted) accepted += 1
-            }
-            expect(accepted).toBeLessThanOrEqual(1)
-            if (grant.revoked) {
-              expect(oauth(grant, { command: "exchange", deck: grant.deck }).accepted).toBe(false)
-              expect(oauth(grant, { command: "call", deck: grant.deck, generation: grant.generation }).accepted).toBe(
-                false,
-              )
-              expect(oauth(grant, { command: "rotate", generation: grant.generation }).accepted).toBe(false)
-              expect(oauth(grant, { command: "revoke" }).accepted).toBe(false)
+      fc.property(fc.constantFrom(principal, "agent@studio"), fc.array(step, { maxLength: 12 }), (who, steps) => {
+        let grant = openGrant(who)
+        for (const command of steps) {
+          const before = grant
+          const result = oauth(grant, command)
+          if (before.revoked) {
+            expect(result.accepted).toBe(false)
+            expect(result.grant).toBe(before)
+          }
+          if (!result.accepted && result.grant !== before) {
+            expect(before.revoked).toBe(false)
+            expect(result.grant.revoked).toBe(true)
+            expect(command.command).toBe("rotate")
+            if (command.command === "rotate") {
+              expect(Number.isInteger(command.generation)).toBe(true)
+              expect(command.generation).toBeGreaterThanOrEqual(1)
+              expect(command.generation).toBeLessThan(before.generation)
             }
           }
-          expect(grant.principal).toBe(who)
-        },
-      ),
+          grant = result.grant
+          let accepted = 0
+          for (let age = 0; age <= grant.generation + 1; age += 1) {
+            if (oauth(grant, { command: "call", generation: age }).accepted) accepted += 1
+          }
+          expect(accepted).toBeLessThanOrEqual(1)
+          if (grant.revoked) {
+            expect(oauth(grant, { command: "exchange" }).accepted).toBe(false)
+            expect(oauth(grant, { command: "call", generation: grant.generation }).accepted).toBe(false)
+            expect(oauth(grant, { command: "rotate", generation: grant.generation }).accepted).toBe(false)
+            expect(oauth(grant, { command: "revoke" }).accepted).toBe(false)
+          }
+        }
+        expect(grant.principal).toBe(who)
+      }),
     )
   })
 })

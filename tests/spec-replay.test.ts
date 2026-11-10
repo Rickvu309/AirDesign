@@ -832,7 +832,6 @@ function oauthGrant(spec: Spec): Grant {
   if (code !== "open" && code !== "used") throw new Error(`bad oauth code ${code}`)
   return {
     principal: text(spec, "principal"),
-    deck: text(spec, "deck"),
     code,
     generation: num(spec, "generation"),
     revoked: flag(spec, "revoked"),
@@ -842,7 +841,6 @@ function oauthGrant(spec: Spec): Grant {
 function oauthPicture(grant: Grant) {
   return {
     principal: grant.principal,
-    deck: grant.deck,
     code: grant.code,
     generation: grant.generation,
     revoked: grant.revoked,
@@ -850,32 +848,23 @@ function oauthPicture(grant: Grant) {
 }
 
 function oauthEdge(action: string): { command: OauthCommand; accepted: boolean } | null {
-  const call = (deck: "home" | "other", generation: number, accepted: boolean) => ({
-    command: { command: "call" as const, deck, generation },
+  const call = (generation: number, accepted: boolean) => ({
+    command: { command: "call" as const, generation },
     accepted,
   })
   const rotate = (generation: number, accepted: boolean) => ({
     command: { command: "rotate" as const, generation },
     accepted,
   })
-  if (action === "ExchangeHome") return { command: { command: "exchange", deck: "home" }, accepted: true }
-  if (action === "ExchangeHomeRefused") return { command: { command: "exchange", deck: "home" }, accepted: false }
-  if (action === "ExchangeOther") return { command: { command: "exchange", deck: "other" }, accepted: true }
-  if (action === "ExchangeOtherRefused") return { command: { command: "exchange", deck: "other" }, accepted: false }
-  if (action === "CallHome0Refused") return call("home", 0, false)
-  if (action === "CallOther0Refused") return call("other", 0, false)
-  if (action === "CallHome1") return call("home", 1, true)
-  if (action === "CallHome1Refused") return call("home", 1, false)
-  if (action === "CallHome2") return call("home", 2, true)
-  if (action === "CallHome2Refused") return call("home", 2, false)
-  if (action === "CallHome3") return call("home", 3, true)
-  if (action === "CallHome3Refused") return call("home", 3, false)
-  if (action === "CallOther1") return call("other", 1, true)
-  if (action === "CallOther1Refused") return call("other", 1, false)
-  if (action === "CallOther2") return call("other", 2, true)
-  if (action === "CallOther2Refused") return call("other", 2, false)
-  if (action === "CallOther3") return call("other", 3, true)
-  if (action === "CallOther3Refused") return call("other", 3, false)
+  if (action === "Exchange") return { command: { command: "exchange" }, accepted: true }
+  if (action === "ExchangeRefused") return { command: { command: "exchange" }, accepted: false }
+  if (action === "Call0Refused") return call(0, false)
+  if (action === "Call1") return call(1, true)
+  if (action === "Call1Refused") return call(1, false)
+  if (action === "Call2") return call(2, true)
+  if (action === "Call2Refused") return call(2, false)
+  if (action === "Call3") return call(3, true)
+  if (action === "Call3Refused") return call(3, false)
   if (action === "Rotate0") return rotate(0, false)
   if (action === "Rotate1") return rotate(1, true)
   if (action === "Rotate1Reuse") return rotate(1, false)

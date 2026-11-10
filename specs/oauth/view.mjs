@@ -1,22 +1,13 @@
 const steps = {
-  ExchangeHome: "exchange the code for its deck",
-  ExchangeHomeRefused: "refuse the code",
-  ExchangeOther: "exchange the code for the other deck",
-  ExchangeOtherRefused: "refuse the code for the other deck",
-  CallHome0Refused: "refuse generation 0 on home",
-  CallOther0Refused: "refuse generation 0 on the other deck",
-  CallHome1: "call generation 1 on its deck",
-  CallHome1Refused: "refuse generation 1 on home",
-  CallHome2: "call generation 2 on its deck",
-  CallHome2Refused: "refuse generation 2 on home",
-  CallHome3: "call generation 3 on its deck",
-  CallHome3Refused: "refuse generation 3 on home",
-  CallOther1: "call generation 1 on the other deck",
-  CallOther1Refused: "refuse generation 1 on the other deck",
-  CallOther2: "call generation 2 on the other deck",
-  CallOther2Refused: "refuse generation 2 on the other deck",
-  CallOther3: "call generation 3 on the other deck",
-  CallOther3Refused: "refuse generation 3 on the other deck",
+  Exchange: "exchange the code",
+  ExchangeRefused: "refuse the code",
+  Call0Refused: "refuse generation 0",
+  Call1: "call generation 1",
+  Call1Refused: "refuse generation 1",
+  Call2: "call generation 2",
+  Call2Refused: "refuse generation 2",
+  Call3: "call generation 3",
+  Call3Refused: "refuse generation 3",
   Rotate0: "refuse generation 0",
   Rotate1: "rotate generation 1",
   Rotate1Reuse: "reuse generation 1",
@@ -34,7 +25,7 @@ export const state = (v) => {
   const revoked = v.revoked === true ? "revoked" : "live"
   const reused = v.reused === true ? "reused" : "fresh"
   const after = v.acceptedAfter === true ? "accepted-after" : "quiet"
-  return `${v.principal} ${v.deck} code ${v.code} generation ${v.generation} ${revoked} ${reused} exchanges ${v.exchanges} call ${v.callNamed} at ${v.callAt} on ${v.callDeck} rotate ${v.rotateNamed} at ${v.rotateAt} exchange ${v.exchangeDeck} ${after}`
+  return `${v.principal} code ${v.code} generation ${v.generation} ${revoked} ${reused} exchanges ${v.exchanges} call ${v.callNamed} at ${v.callAt} rotate ${v.rotateNamed} at ${v.rotateAt} ${after}`
 }
 
 export const step = (action) => steps[action] ?? null

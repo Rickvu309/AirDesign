@@ -1,14 +1,13 @@
 export type Grant = {
   readonly principal: string
-  readonly deck: string
   readonly code: "open" | "used"
   readonly generation: number
   readonly revoked: boolean
 }
 
 export type Command =
-  | { readonly command: "exchange"; readonly deck: string }
-  | { readonly command: "call"; readonly deck: string; readonly generation: number }
+  | { readonly command: "exchange" }
+  | { readonly command: "call"; readonly generation: number }
   | { readonly command: "rotate"; readonly generation: number }
   | { readonly command: "revoke" }
 
@@ -17,8 +16,8 @@ export type OauthResult = {
   readonly accepted: boolean
 }
 
-export function openGrant(principal: string, deck: string): Grant {
-  return { principal, deck, code: "open", generation: 0, revoked: false }
+export function openGrant(principal: string): Grant {
+  return { principal, code: "open", generation: 0, revoked: false }
 }
 
 function refused(grant: Grant): OauthResult {
@@ -32,18 +31,11 @@ function accepted(grant: Grant): OauthResult {
 export function oauth(grant: Grant, command: Command): OauthResult {
   if (typeof command !== "object" || command === null) return refused(grant)
   if (command.command === "exchange") {
-    if (grant.code === "used" || command.deck !== grant.deck || grant.revoked) return refused(grant)
+    if (grant.code === "used" || grant.revoked) return refused(grant)
     return accepted({ ...grant, code: "used", generation: 1 })
   }
   if (command.command === "call") {
-    if (
-      grant.revoked ||
-      grant.generation < 1 ||
-      command.generation !== grant.generation ||
-      command.deck !== grant.deck
-    ) {
-      return refused(grant)
-    }
+    if (grant.revoked || grant.generation < 1 || command.generation !== grant.generation) return refused(grant)
     return accepted(grant)
   }
   if (command.command === "rotate") {
