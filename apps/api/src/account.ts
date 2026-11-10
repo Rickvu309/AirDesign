@@ -7,7 +7,7 @@ import type { Sql } from "./pool.js"
 const emailPattern = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i
 const codePattern = /^\d{6}$/
 
-const issueSql = `
+const reserveSql = `
 with recent as (
   select count(*)::int as total
   from session.sent
@@ -15,25 +15,39 @@ with recent as (
 ), allowed as (
   select $1::text as email
   where (select total from recent) < 5
-), account as (
-  insert into session.account (email)
-  select email from allowed
-  on conflict (email) do nothing
-  returning email
-), code as (
-  insert into session.code (email, code, token, issued, misses)
-  select allowed.email, $2, $3, now(), 0
-  from allowed
-  where (select count(*) from account) >= 0
-  on conflict (email) do update
-  set code = excluded.code, token = excluded.token, issued = excluded.issued, misses = 0
-  returning email
 ), sent as (
-  insert into session.sent (email, issued)
-  select email, now() from code
+  insert into session.sent (email, code, token, issued)
+  select allowed.email, $2, $3, now()
+  from allowed
   returning id
 )
 select id::text as id from sent
+`
+
+const promoteSql = `
+with mine as (
+  select id, email, code, token, issued
+  from session.sent
+  where id = $1::bigint
+), newer as (
+  select sent.id
+  from session.sent sent
+  join mine on sent.email = mine.email and sent.id > mine.id
+  join session.code code on code.email = sent.email and code.token = sent.token
+), account as (
+  insert into session.account (email)
+  select mine.email from mine
+  where not exists (select 1 from newer)
+  on conflict (email) do nothing
+  returning email
+)
+insert into session.code (email, code, token, issued, misses)
+select mine.email, mine.code, mine.token, mine.issued, 0
+from mine
+where not exists (select 1 from newer)
+  and (select count(*) from account) >= 0
+on conflict (email) do update
+set code = excluded.code, token = excluded.token, issued = excluded.issued, misses = 0
 `
 
 const acceptCodeSql = `
@@ -144,56 +158,29 @@ async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Prom
   }
 }
 
-type Placed = {
-  readonly id: string
-  readonly code: string | null
-  readonly token: string | null
-  readonly issued: Date | null
-  readonly misses: number | null
-}
-
-async function undoSend(db: Sql, email: string, placed: Placed, link: string): Promise<void> {
+async function dropSend(db: Sql, email: string, id: string): Promise<void> {
   await withAddress(db, email, async (client) => {
-    await client.query("delete from session.sent where id = $1::bigint", [placed.id])
-    if (placed.token === null) {
-      await client.query("delete from session.code where email = $1 and token = $2", [email, link])
-      return
-    }
-    await client.query(
-      "update session.code set code = $3, token = $4, issued = $5, misses = $6 where email = $1 and token = $2",
-      [email, link, placed.code, placed.token, placed.issued, placed.misses],
-    )
+    await client.query("delete from session.sent where id = $1::bigint", [id])
   })
 }
 
 export async function issueMail(db: Sql, email: string, publicOrigin: string, send: Sender): Promise<void> {
   const code = newCode()
   const token = newToken()
-  const link = digest(token)
-  const placed = await withAddress(db, email, async (client) => {
-    const earlier = await client.query<{ code: string; token: string; issued: Date; misses: number }>(
-      "select code, token, issued, misses from session.code where email = $1",
-      [email],
-    )
-    const stored = await client.query<{ id: string }>(issueSql, [email, digest(code), link])
-    const row = stored.rows[0]
-    if (row === undefined) return undefined
-    const previous = earlier.rows[0]
-    return {
-      id: row.id,
-      code: previous?.code ?? null,
-      token: previous?.token ?? null,
-      issued: previous?.issued ?? null,
-      misses: previous?.misses ?? null,
-    }
+  const reserved = await withAddress(db, email, async (client) => {
+    const stored = await client.query<{ id: string }>(reserveSql, [email, digest(code), digest(token)])
+    return stored.rows[0]?.id
   })
-  if (placed === undefined) return
+  if (reserved === undefined) return
   try {
     await send({ to: email, text: mailText(publicOrigin, token, code) })
   } catch (error) {
-    await undoSend(db, email, placed, link)
+    await dropSend(db, email, reserved)
     throw error
   }
+  await withAddress(db, email, async (client) => {
+    await client.query(promoteSql, [reserved])
+  })
 }
 
 export async function acceptCode(db: Sql, email: string, code: string): Promise<string | undefined> {
