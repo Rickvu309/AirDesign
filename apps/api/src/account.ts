@@ -33,7 +33,11 @@ with mine as (
   select sent.id
   from session.sent sent
   join mine on sent.email = mine.email and sent.id > mine.id
-  join session.code code on code.email = sent.email and code.token = sent.token
+  where sent.delivered
+), marked as (
+  update session.sent
+  set delivered = true
+  where id = $1::bigint and not exists (select 1 from newer)
 ), account as (
   insert into session.account (email)
   select mine.email from mine

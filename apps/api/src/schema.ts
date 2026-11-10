@@ -25,7 +25,8 @@ create table session.sent (
   email text not null,
   code text not null,
   token text not null,
-  issued timestamptz not null
+  issued timestamptz not null,
+  delivered boolean not null default false
 );
 create table deck.saved (
   id text primary key,
