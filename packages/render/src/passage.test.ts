@@ -1,5 +1,6 @@
 import { act, createElement, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
+import { readTextValue, writeTextValue } from "@airdesign/document"
 import { afterEach, describe, expect, it } from "vitest"
 import { Passage, elementId, paintStore } from "./index.js"
 
@@ -36,6 +37,13 @@ function editorIn(host: HTMLElement): HTMLElement {
 function textIn(editor: HTMLElement): Text {
   const node = editor.firstChild
   if (!(node instanceof Text)) throw new Error("missing text")
+  return node
+}
+
+function runText(editor: HTMLElement, index: number): Text {
+  const run = editor.querySelectorAll("[data-run]")[index]
+  const node = run?.firstChild
+  if (!(node instanceof Text)) throw new Error("missing run")
   return node
 }
 
@@ -299,5 +307,31 @@ describe("Passage", () => {
       editor.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
     })
     expect(pressEnter(false)).toBe(false)
+  })
+})
+
+describe("Passage paragraphs", () => {
+  it("Enter splits the paragraph at the caret and the new one keeps the run's from", async () => {
+    const sent: string[] = []
+    const store = paintStore()
+    const id = elementId("body")
+    const value = [{ from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "world" }] }]
+    await show(store, id, writeTextValue(value))
+    const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))
+    const editor = editorIn(host)
+    const world = runText(editor, 1)
+    caretAt(world, 2)
+    const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })
+    await act(async () => {
+      editor.dispatchEvent(event)
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(sent.map((text) => readTextValue(text))).toEqual([
+      [
+        { from: 0, runs: [{ from: 0, text: "Hello " }, { from: 1, text: "wo" }] },
+        { from: 0, runs: [{ from: 1, text: "rld" }] },
+      ],
+    ])
+    expect(editor.querySelectorAll("[data-paragraph]").length).toBe(2)
   })
 })
