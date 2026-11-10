@@ -9,5 +9,6 @@ export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } f
 export { addTextShape, type ShapeBox } from "./shape-write.js"
 export { applyRoute, type SlideRoute } from "./slide-route.js"
 export { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
+export { rssCapBytes, runSandboxed, type SandboxProcess, type SandboxResult } from "./sandbox-worker.js"
 export { newValidatorErrors } from "./validator-error.js"
 export { writtenRoutes } from "./written-routes.js"
