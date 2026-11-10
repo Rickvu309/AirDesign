@@ -241,7 +241,20 @@ same("the deck id follows the token", deckIdFor(token) === deckIdFor("another-to
 same("the deck id is stable", deckIdFor(token), deckIdFor(token))
 
 const workflow = fs.readFileSync(path.join(root, ".github/workflows/smoke.yml"), "utf8")
-same("the workflow runs on a schedule", /^ {2}schedule:\n {4}- cron: "\*\/10 \* \* \* \*"$/m.test(workflow), true)
+same(
+  "the workflow runs once an hour at minute 17",
+  /^ {2}schedule:\n {4}- cron: "17 \* \* \* \*"$/m.test(workflow),
+  true,
+)
+same("the job stops itself after five minutes", /^ {4}timeout-minutes: 5$/m.test(workflow), true)
+const steps = workflow
+  .split(/^ {4}steps:\n/m)[1]
+  .split(/^ {6}- /m)
+  .slice(1)
+same("the job has steps", steps.length > 0, true)
+for (const step of steps) {
+  same(`the step cannot fail the job: ${step.split("\n")[0]}`, step.includes("continue-on-error: true"), true)
+}
 same("the workflow can be started by hand", /^ {2}workflow_dispatch:$/m.test(workflow), true)
 same("the workflow does not run after another workflow", workflow.includes("workflow_run"), false)
 same("the workflow does not run on a pull request", workflow.includes("pull_request"), false)
