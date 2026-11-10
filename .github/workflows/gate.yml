@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   group: gate-${{ github.event.pull_request.number || github.sha }}
@@ -58,3 +59,7 @@ jobs:
           key: pptx-tools-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
       - if: steps.pptx.outputs.changed != '0'
         run: pnpm check:pptx
+      - if: failure() && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --repo "$GITHUB_REPOSITORY" --title "main is red at ${GITHUB_SHA::7}" --body "gate failed on main. $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
