@@ -20,7 +20,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
 
-`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. `main` only merges a PR that contains the latest `main`, so when yours falls behind, run `gh pr update-branch --rebase`. The `owner gate` check fails a PR that lowers the bar: a raised limit, a moved goal, a removed stick, a stick moved away from its goal, or a changed PowerPoint case or deck the check already judges. Undo that part. A PR that changes what the gate checks is labelled `touched the bar` for the owner to read and is not held. After it merges, remove its local worktree and branch if nothing else uses them.
+`main` only accepts commits that passed the `gate` check, so every change goes through a PR. After opening one, run `gh pr merge --auto --rebase`. It merges when `gate` passes, and rebase keeps commit authorship. `main` only merges a PR that contains the latest `main`, so when yours falls behind, run `gh pr update-branch --rebase`. The `owner gate` check fails a PR that lowers the bar: a raised limit, a moved goal, a removed stick, a stick moved away from its goal, or a changed PowerPoint case or deck the check already judges. Undo that part. The `old proofs` check runs the check tests as they are on `main` against the checks in the PR, and fails when an old case no longer holds: restore the behaviour that case expects, or, when the check is meant to change, ask the owner to approve the PR. A PR that changes what the gate checks is labelled `touched the bar` for the owner to read and is not held. After it merges, remove its local worktree and branch if nothing else uses them.
 
 ## Ways to hurt yourself
 
@@ -69,6 +69,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a gated commit that contains the latest `main` | branch protection |
 | A stick moves only toward its goal, and a PowerPoint case or deck already judged does not change | the `owner gate` check, run from `main` |
+| A check keeps every case its tests on `main` prove, even when the PR edits or deletes those tests | the `old proofs` check, run from `main`. Only the owner's approval of the commit lets a broken case through |
 | A change to what the gate checks is seen by the owner | the `owner gate` check labels the PR `touched the bar`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known fault, and the number of tests cannot fall | `scripts/sticks.mjs`: both counts must match `sticks.json` |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
