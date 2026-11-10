@@ -21,6 +21,9 @@
     },
     {
       "path": "./packages/device"
+    },
+    {
+      "path": "./apps/api"
     }
   ]
 }
