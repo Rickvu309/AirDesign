@@ -10,6 +10,7 @@ on:
       - reopened
       - ready_for_review
       - edited
+      - pull_request_review
 
 concurrency:
   group: owner-gate-${{ github.event.pull_request.number }}

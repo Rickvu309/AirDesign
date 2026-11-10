@@ -28,7 +28,7 @@ const record = (faults, tests = 2) => {
       "known faults": { now: faults, goal: 0 },
       tests: { floor: tests },
       "real decks in the PowerPoint check": { now: 1, goal: 20 },
-      "routes pptx writes": { now: 2, goal: 3 },
+      "routes pptx writes": { now: 2, goal: 50 },
       "planted breaks the judge catches": { now: 1, goal: 2 },
       "check seconds": { limit: 40 },
       "PowerPoint check seconds": { limit: 90 },
@@ -68,7 +68,7 @@ if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
   throw new Error("a limit stick was not listed")
 
 const capabilities = steady.rows.find((row) => row.name === "routes pptx writes")
-if (capabilities?.now !== 2 || capabilities.goal !== 3)
+if (capabilities?.now !== 2 || capabilities.goal !== 50)
   throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
 
 const planted = steady.rows.find((row) => row.name === "planted breaks the judge catches")
@@ -140,10 +140,12 @@ write(
     "nobody times": { limit: 5 },
   }),
 )
-const loose = (await readSticks(root)).drift.join("\n")
+const looseRead = await readSticks(root)
+const loose = looseRead.drift.join("\n")
 if (!loose.includes("routes pptx writes is 2 and sticks.json says 1. Record 2 in sticks.json.")) throw new Error(loose)
-if (!loose.includes("routes pptx writes has goal 3 and sticks.json says 4. Record goal 3 in sticks.json."))
-  throw new Error(loose)
+if (looseRead.rows.find((row) => row.name === "routes pptx writes")?.goal !== 4)
+  throw new Error(`the recorded goal was replaced\n${loose}`)
+if (loose.includes("routes pptx writes has goal")) throw new Error(loose)
 if (!loose.includes("nobody times has a limit in sticks.json and no runner times it.")) throw new Error(loose)
 if (!loose.includes("check seconds is timed by scripts/check.mjs and has no limit in sticks.json."))
   throw new Error(loose)

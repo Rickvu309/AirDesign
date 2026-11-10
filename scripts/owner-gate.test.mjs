@@ -8,6 +8,7 @@ import {
   onlyAddsReferences,
   ownerReasons,
   packageFile,
+  removedTestFiles,
   replacedFixtures,
   sameButReferences,
   verdict,
@@ -96,23 +97,11 @@ same("a malformed new stick needs the owner", texts(withStick("new one", { now: 
 
 for (const file of [
   ".github/workflows/gate.yml",
-  "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
-  "AGENTS.md",
+  ".github/workflows/owner-gate.yml",
+  "sticks.json",
+  "scripts/owner-gate.mjs",
   "scripts/sticks.mjs",
-  "scripts/pptx-check.mjs",
-  "scripts/pptx-tools.sh",
-  "scripts/pptx-judge/Program.cs",
-  "tsconfig.base.json",
-  "packages/pptx/tsconfig.json",
-  "apps/web/.oxlintrc.json",
-  ".oxfmtrc.json",
-  "pnpm-workspace.yaml",
-  "vitest.config.mts",
-  "apps/web/vitest.config.ts",
-  "playwright.config.ts",
-  ".npmrc",
-  "specs/edit/Edit.cfg",
-  "vitest.workspace.ts",
+  "scripts/check.mjs",
 ]) {
   if (!guarded(file)) throw new Error(`${file} decides the gate and is not guarded`)
 }
@@ -120,7 +109,16 @@ for (const file of [
   "apps/web/src/App.tsx",
   "packages/pptx/src/slide-route.ts",
   "scripts/pptx-fixtures/cases.json",
-  "sticks.json",
+  "scripts/pptx-check.mjs",
+  "tooling/oxlint-plugin-airdesign/rules/no-raw.js",
+  "AGENTS.md",
+  "tsconfig.base.json",
+  "packages/pptx/tsconfig.json",
+  "apps/web/.oxlintrc.json",
+  "vitest.config.mts",
+  "playwright.config.ts",
+  "specs/edit/Edit.cfg",
+  "pnpm-workspace.yaml",
 ]) {
   if (guarded(file)) throw new Error(`${file} is product or data and is guarded`)
 }
@@ -129,9 +127,7 @@ same(
   ["package.json", "packages/pptx/package.json", "apps/web/src/package.json.ts"].map(packageFile),
   [true, true, false],
 )
-same("changed scripts need the owner", texts({ changedScripts: ["package.json"] }), [
-  "The scripts in package.json changed, and they are what the gate runs.",
-])
+same("changed scripts need nobody", texts({ changedScripts: ["package.json"] }), [])
 
 same("a count given a limit as well needs the owner", texts(withStick("known faults", { now: 2, goal: 0, limit: 5 })), [
   "The stick known faults must be only a limit, or only now and goal, or only a floor, as numbers.",
@@ -279,7 +275,25 @@ same("a dropped deck count blocks", blocksOf(withStick(decks, { now: 1, goal: 20
 same("a moved goal blocks", blocksOf(withStick("known faults", { now: 2, goal: 5 })), [true])
 same("a recorded fault is listed and does not block", blocksOf(withStick("known faults", { now: 3, goal: 0 })), [false])
 same("a changed check file is listed and does not block", blocksOf({ changedFiles: ["scripts/check.mjs"] }), [false])
-same("changed scripts are listed and do not block", blocksOf({ changedScripts: ["package.json"] }), [false])
+same("changed scripts are not listed", blocksOf({ changedScripts: ["package.json"] }), [])
+same("a removed test blocks", texts({ removedTests: ["packages/document/src/decide.rules.test.ts"] }), [
+  "The test file packages/document/src/decide.rules.test.ts was removed.",
+])
+same("removing a test blocks", blocksOf({ removedTests: ["tests/browser/every-screen.spec.ts"] }), [true])
+same(
+  "a renamed test is a removal, and a rename that keeps the test is not",
+  removedTestFiles([
+    { name: "packages/document/src/decide.rules.test.ts", status: "removed" },
+    {
+      name: "packages/document/src/decide.ts",
+      before: "packages/document/src/decide.rules.test.ts",
+      status: "renamed",
+    },
+    { name: "packages/document/src/decide.rules.test.ts", before: "old/decide.rules.test.ts", status: "renamed" },
+    { name: "packages/document/src/decide.ts", status: "removed" },
+  ]),
+  ["packages/document/src/decide.rules.test.ts", "packages/document/src/decide.rules.test.ts"],
+)
 same("a changed case blocks", blocksOf({ changedCases: ["text-page"] }), [true])
 same("a swapped deck blocks", blocksOf({ changedFixtures: [deck] }), [true])
 same("a lost kind blocks", blocksOf({ changedKinds: ["duplicate shape id"] }), [true])

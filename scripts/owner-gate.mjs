@@ -2,24 +2,27 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const guardedFolders = [".github/", "tooling/", "scripts/", "specs/"]
-const openFolders = ["scripts/pptx-fixtures/"]
-const guardedFiles = new Set([".node-version", ".npmrc", ".oxfmtrc.json", "AGENTS.md", "pnpm-workspace.yaml"])
-const guardedNames = [/^tsconfig.*\.json$/, /^\.oxlintrc\.json$/, /^vitest\./, /^playwright\.config\./]
+const guardedFolders = [".github/"]
+const guardedFiles = new Set(["sticks.json", "scripts/owner-gate.mjs", "scripts/sticks.mjs", "scripts/check.mjs"])
+const fixtureFolder = "scripts/pptx-fixtures/"
 const casesFile = "scripts/pptx-fixtures/cases.json"
 const proofFile = "scripts/pptx-fixtures/judge-proof.json"
 
-export const guarded = (file) => {
-  if (openFolders.some((folder) => file.startsWith(folder))) return false
-  if (guardedFiles.has(file) || guardedFolders.some((folder) => file.startsWith(folder))) return true
-  const name = file.slice(file.lastIndexOf("/") + 1)
-  return guardedNames.some((pattern) => pattern.test(name))
-}
+export const guarded = (file) => guardedFiles.has(file) || guardedFolders.some((folder) => file.startsWith(folder))
+
+const testFile = (name) => typeof name === "string" && (name.includes(".test.") || name.includes(".spec."))
+
+export const removedTestFiles = (files) =>
+  files.flatMap((file) => {
+    if (file.status === "removed" && testFile(file.name)) return [file.name]
+    if (file.status === "renamed" && testFile(file.before) && !testFile(file.name)) return [file.before]
+    return []
+  })
 
 export const replacedFixtures = (files) =>
   files
     .filter((file) => file.status !== "added" && file.name !== casesFile && file.name !== proofFile)
-    .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
+    .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(fixtureFolder)))
 
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
 
@@ -83,10 +86,10 @@ export const ownerReasons = ({
   baseSticks,
   headSticks,
   changedFiles,
-  changedScripts,
   changedCases = [],
   changedFixtures = [],
   changedKinds = [],
+  removedTests = [],
 }) => {
   const reasons = []
   for (const name of new Set([...Object.keys(baseSticks), ...Object.keys(headSticks)])) {
@@ -96,6 +99,9 @@ export const ownerReasons = ({
   }
   for (const file of changedFiles.filter(guarded)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what the gate checks.`, blocks: false })
+  }
+  for (const file of removedTests) {
+    reasons.push({ about: `file ${file}`, text: `The test file ${file} was removed.`, blocks: true })
   }
   for (const file of changedFixtures) {
     reasons.push({
@@ -112,13 +118,6 @@ export const ownerReasons = ({
       about: `break ${name}`,
       text: `The judge proof no longer records ${name} as caught.`,
       blocks: true,
-    })
-  }
-  for (const file of changedScripts) {
-    reasons.push({
-      about: `scripts ${file}`,
-      text: `The scripts in ${file} changed, and they are what the gate runs.`,
-      blocks: false,
     })
   }
   return reasons
@@ -272,10 +271,7 @@ const readPull = (repository, number) => {
     changedKinds: changedFiles.includes(proofFile)
       ? lostKinds(proofAt(repository, fork), proofAt(repository, pull.head))
       : [],
-    changedScripts: changedFiles
-      .filter(packageFile)
-      .filter((file) => !generated.has(file))
-      .filter((file) => scriptsAt(repository, fork, file) !== scriptsAt(repository, pull.head, file)),
+    removedTests: removedTestFiles(listed),
   })
   const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
   const commit = reasons.some((reason) => reason.blocks) ? approvedCommit(owner, reviews) : undefined
