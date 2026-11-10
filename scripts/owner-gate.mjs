@@ -21,6 +21,15 @@ export const replacedFixtures = (files) =>
     .filter((file) => file.status !== "added" && file.name !== casesFile && file.name !== proofFile)
     .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
 
+const testFile = (name) => typeof name === "string" && (name.includes(".test.") || name.includes(".spec."))
+
+export const removedTestFiles = (files) =>
+  files.flatMap((file) => {
+    if (file.status === "removed" && testFile(file.name)) return [file.name]
+    if (file.status === "renamed" && testFile(file.before) && !testFile(file.name)) return [file.before]
+    return []
+  })
+
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
 
 export const sameButReferences = (left, right) =>
@@ -86,6 +95,7 @@ export const ownerReasons = ({
   changedScripts,
   changedCases = [],
   changedFixtures = [],
+  removedTests = [],
   changedKinds = [],
 }) => {
   const reasons = []
@@ -96,6 +106,9 @@ export const ownerReasons = ({
   }
   for (const file of changedFiles.filter(guarded)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what the gate checks.`, blocks: false })
+  }
+  for (const file of removedTests) {
+    reasons.push({ about: `file ${file}`, text: `The test file ${file} was removed.`, blocks: true })
   }
   for (const file of changedFixtures) {
     reasons.push({
@@ -266,6 +279,7 @@ const readPull = (repository, number) => {
     headSticks: jsonAt(repository, pull.head, "sticks.json") ?? {},
     changedFiles: changedFiles.filter((file) => !generated.has(file)),
     changedFixtures: replacedFixtures(listed),
+    removedTests: removedTestFiles(listed),
     changedCases: changedFiles.includes(casesFile)
       ? lostCases(casesAt(repository, fork), casesAt(repository, pull.head))
       : [],
