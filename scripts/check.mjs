@@ -19,6 +19,7 @@ export const stages = [
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
+    ["worktrees", "node", ["scripts/worktrees.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
@@ -46,7 +47,7 @@ export const stagesFor = (part) =>
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
-const showOnSuccess = new Set(["bug-rule", "metrics", "specs"])
+const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees"])
 const all = process.argv.includes("--all")
 const failed = []
 
