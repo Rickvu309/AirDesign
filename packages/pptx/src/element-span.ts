@@ -3,6 +3,8 @@ import { SAXParser, SaxEventType, type Tag, type Text } from "sax-wasm"
 const events = SaxEventType.OpenTag | SaxEventType.CloseTag | SaxEventType.Text | SaxEventType.Doctype
 const pageBytes = 65536
 const chunkBytes = 64 * 1024
+const cdataOpen = "<![CDATA["
+const cdataClose = "]]>"
 
 export type MarkupAttribute = {
   readonly name: string
@@ -37,6 +39,12 @@ export type ByteEdit = {
   readonly start: number
   readonly end: number
   readonly next: Uint8Array
+}
+
+export type ContentSpan = {
+  readonly start: number
+  readonly end: number
+  readonly literal: boolean
 }
 
 type MarkupSlot = {
@@ -154,6 +162,12 @@ function fit(memory: WasmMemory, bytes: number): void {
   const have = memory.buffer.byteLength
   if (have >= bytes) return
   memory.grow(Math.ceil((bytes - have) / pageBytes))
+}
+
+function commentOrInstructionEnd(bytes: Uint8Array, at: number, limit: number): number | null {
+  if (markerAt(bytes, at, "<!--")) return afterMarker(bytes, at + 4, limit, "-->")
+  if (markerAt(bytes, at, "<?")) return afterMarker(bytes, at + 2, limit, "?>")
+  return null
 }
 
 function closeStart(bytes: Uint8Array, end: number, kind: string): number {
@@ -310,6 +324,49 @@ function readMarkup(bytes: Uint8Array, full: boolean): MarkupDocument {
   }
   if ((full ? stack.length : names.length) !== 0) wellFormed = false
   return { elements, depth, attributes, nodes, wellFormed }
+}
+
+function markerAt(bytes: Uint8Array, at: number, marker: string): boolean {
+  for (let index = 0; index < marker.length; index += 1) {
+    if (bytes[at + index] !== marker.charCodeAt(index)) return false
+  }
+  return true
+}
+
+function afterMarker(bytes: Uint8Array, from: number, limit: number, marker: string): number {
+  for (let at = from; at + marker.length <= limit; at += 1) {
+    if (markerAt(bytes, at, marker)) return at + marker.length
+  }
+  return limit
+}
+
+export function contentSpans(bytes: Uint8Array, element: MarkupElement): readonly ContentSpan[] {
+  if (element.selfClosing) return []
+  const spans: ContentSpan[] = []
+  const limit = element.closeStart
+  let textStart = element.openEnd
+  let at = textStart
+  const closeText = () => {
+    if (at > textStart) spans.push({ start: textStart, end: at, literal: false })
+  }
+  while (at < limit) {
+    const skipped = commentOrInstructionEnd(bytes, at, limit)
+    if (skipped !== null) {
+      closeText()
+      at = skipped
+      textStart = at
+    } else if (markerAt(bytes, at, cdataOpen)) {
+      closeText()
+      const end = afterMarker(bytes, at + cdataOpen.length, limit, cdataClose)
+      spans.push({ start: at + cdataOpen.length, end: end - cdataClose.length, literal: true })
+      at = end
+      textStart = at
+    } else {
+      at += 1
+    }
+  }
+  closeText()
+  return spans
 }
 
 export function markupDocument(bytes: Uint8Array): MarkupDocument {

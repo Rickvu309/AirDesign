@@ -469,6 +469,50 @@ describe("applyRoute text values", () => {
     )
   })
 
+  it("refuses a newline in a kept run of a rebuilt paragraph", () => {
+    refused(paragraphs(twoRuns), [{ from: 0, runs: [{ from: 0, text: "a\nb" }] }], /text-break/)
+  })
+
+  it("renames an a:endParaRPr that has children for a new run", () => {
+    const end = `<a:endParaRPr lang="en-US"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:endParaRPr>`
+    const value = [{ from: 0, runs: [{ from: -1, text: "First" }] }]
+    expect(edited(paragraphs(`<a:p>${end}</a:p>`), { name: "text", part, shape: "2", value })).toBe(
+      `<p:spTree>${paragraphs(
+        `<a:p><a:r><a:rPr lang="en-US"><a:solidFill><a:schemeClr val="tx1"/></a:solidFill></a:rPr><a:t>First</a:t></a:r>${end}</a:p>`,
+      )}</p:spTree>`,
+    )
+  })
+
+  it("writes paragraphs in the order the value gives when their from is out of order", () => {
+    const line = (text: string) => `<a:p><a:r><a:rPr sz="${text.length}"/><a:t>${text}</a:t></a:r></a:p>`
+    const body = paragraphs(line("a") + line("bb") + line("ccc"))
+    const value = [
+      { from: 2, runs: [{ from: 0, text: "ccc" }] },
+      { from: 0, runs: [{ from: 0, text: "a" }] },
+      { from: 1, runs: [{ from: 0, text: "bb" }] },
+    ]
+    expect(edited(body, { name: "text", part, shape: "2", value })).toBe(
+      `<p:spTree>${paragraphs(line("ccc") + line("a") + line("bb"))}</p:spTree>`,
+    )
+  })
+
+  it("rebuilds a same-length reorder of runs so each text keeps its own format", () => {
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 1, text: "plain first" },
+          { from: 0, text: "bold second" },
+        ],
+      },
+    ]
+    expect(edited(paragraphs(twoRuns), { name: "text", part, shape: "2", value })).toBe(
+      `<p:spTree>${paragraphs(
+        `<a:p><a:pPr algn="ctr"/><a:r><a:rPr lang="en-US"/><a:t>plain first</a:t></a:r><a:r><a:rPr b="1"/><a:t>bold second</a:t></a:r><a:endParaRPr lang="en-US"/></a:p>`,
+      )}</p:spTree>`,
+    )
+  })
+
   it("reads a numeric reference and leaves it alone when the text is unchanged", () => {
     const body = paragraphs(`<a:p><a:r><a:t>&#65;&#x42;&amp;</a:t></a:r></a:p>`)
     expect(edited(body, { name: "text", part, shape: "2", value: oneRun("AB&") })).toBe(`<p:spTree>${body}</p:spTree>`)

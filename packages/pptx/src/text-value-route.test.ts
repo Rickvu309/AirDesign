@@ -6,7 +6,7 @@ import { decodeUtf8, encodeUtf8, readParts } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
 import { applyRoute, shapeById } from "./slide-route.js"
-import { decodedXmlText, markupChildren, shapeTextValue } from "./text-value-route.js"
+import { decodedXmlText, markupChildren, oneRunValue, shapeTextValue } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string
@@ -342,6 +342,112 @@ describe("text value write-back", () => {
       ),
       { numRuns: 300 },
     )
+  })
+})
+
+const boxOf = (body: string): Uint8Array =>
+  encodeUtf8(
+    `<p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:txBody><a:bodyPr/><a:lstStyle/>${body}</p:txBody></p:sp></p:spTree>`,
+  )
+const cdataRun = `<a:r><a:rPr b="1"/><a:t><![CDATA[a<b & c]]></a:t></a:r>`
+const plainRun = `<a:r><a:rPr i="1"/><a:t>next</a:t></a:r>`
+
+describe("text inside CDATA and comments", () => {
+  it("reads CDATA and a comment as the shown text", () => {
+    const box = boxOf(`<a:p><a:r><a:t>x &amp; <![CDATA[a<b &amp;]]><!--note--><?pi ?>y</a:t></a:r></a:p>`)
+    expect(readValue(box)).toEqual([{ from: 0, runs: [{ from: 0, text: "x & a<b &amp;y" }] }])
+  })
+
+  it("writes the value it read from a CDATA run as zero changed bytes", () => {
+    const box = boxOf(`<a:p>${cdataRun}${plainRun}</a:p>`)
+    expect(readValue(box)[0]?.runs[0]?.text).toBe("a<b & c")
+    expect(edited(box, readValue(box))).toBe(box)
+  })
+
+  it("rebuilds a CDATA run as escaped text", () => {
+    const box = boxOf(`<a:p>${cdataRun}</a:p>`)
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "a<b & c" },
+          { from: -1, text: "more" },
+        ],
+      },
+    ]
+    expect(edited(box, value)).toEqual(
+      boxOf(`<a:p><a:r><a:rPr b="1"/><a:t>a&lt;b &amp; c</a:t></a:r><a:r><a:t>more</a:t></a:r></a:p>`),
+    )
+  })
+
+  it("replaces the content of a retyped CDATA run", () => {
+    const box = boxOf(`<a:p>${cdataRun}</a:p>`)
+    expect(edited(box, [{ from: 0, runs: [{ from: 0, text: "x<y" }] }])).toEqual(
+      boxOf(`<a:p><a:r><a:rPr b="1"/><a:t>x&lt;y</a:t></a:r></a:p>`),
+    )
+  })
+
+  it("keeps a CDATA run byte for byte when the run beside it is edited", () => {
+    const box = boxOf(`<a:p>${cdataRun}${plainRun}</a:p>`)
+    const value = [
+      {
+        from: 0,
+        runs: [
+          { from: 0, text: "a<b & c" },
+          { from: 1, text: "changed" },
+        ],
+      },
+    ]
+    expect(edited(box, value)).toEqual(boxOf(`<a:p>${cdataRun}<a:r><a:rPr i="1"/><a:t>changed</a:t></a:r></a:p>`))
+  })
+})
+
+describe("oneRunValue", () => {
+  const nineParagraphs = Array.from({ length: 9 }, (_, index) => `<a:p><a:r><a:t>Line ${index}</a:t></a:r></a:p>`).join(
+    "",
+  )
+
+  it("puts the text in the one run of a one-run box and keeps its from", () => {
+    expect(oneRunValue([{ from: 3, runs: [{ from: 1, text: "Old" }] }], "New")).toEqual([
+      { from: 3, runs: [{ from: 1, text: "New" }] },
+    ])
+  })
+
+  it("throws text-shape for anything but one paragraph with one non-empty run", () => {
+    const refusedValues: readonly TextValue[] = [
+      [],
+      [{ from: 0, runs: [] }],
+      [{ from: 0, runs: [{ from: 0, text: "" }] }],
+      [{ from: 0, runs: [{ from: 0, text: "\n" }] }],
+      [
+        {
+          from: 0,
+          runs: [
+            { from: 0, text: "One" },
+            { from: 1, text: "Two" },
+          ],
+        },
+      ],
+      [
+        { from: 0, runs: [{ from: 0, text: "One" }] },
+        { from: 1, runs: [{ from: 0, text: "Two" }] },
+      ],
+    ]
+    for (const value of refusedValues) expect(() => oneRunValue(value, "New")).toThrow(/text-shape/)
+  })
+
+  it("keeps a box with several paragraphs from reaching the route with one string", () => {
+    const box = boxOf(nineParagraphs)
+    const saved = Uint8Array.from(box)
+    expect(() => edited(box, oneRunValue(readValue(box), "typed"))).toThrow(/text-shape/)
+    expect(box).toEqual(saved)
+  })
+
+  it("leaves a field box to be refused by the route with its bytes unchanged", () => {
+    const box = boxOf(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>7</a:t></a:fld></a:p>`)
+    const saved = Uint8Array.from(box)
+    expect(() => edited(box, oneRunValue(readValue(box), "8"))).toThrow(/text-carried/)
+    expect(box).toEqual(saved)
   })
 })
 

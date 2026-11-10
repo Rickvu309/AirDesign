@@ -1,5 +1,5 @@
 import type { TextParagraph, TextRun, TextValue } from "@airdesign/document"
-import type { ByteEdit, MarkupElement } from "./element-span.js"
+import { contentSpans, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { xmlText } from "./shape-write.js"
 
@@ -89,8 +89,13 @@ function childrenOf(children: MarkupChildren, parent: MarkupElement): readonly M
 }
 
 function holderText(bytes: Uint8Array, holder: MarkupElement | undefined): string {
-  if (holder === undefined || holder.selfClosing) return ""
-  return decodedXmlText(decodeUtf8(bytes.subarray(holder.openEnd, holder.closeStart)))
+  if (holder === undefined) return ""
+  return contentSpans(bytes, holder)
+    .map((span) => {
+      const text = decodeUtf8(bytes.subarray(span.start, span.end))
+      return span.literal ? text : decodedXmlText(text)
+    })
+    .join("")
 }
 
 function sourceInline(children: MarkupChildren, bytes: Uint8Array, element: MarkupElement): SourceInline {
@@ -132,6 +137,14 @@ export function shapeTextValue(children: MarkupChildren, bytes: Uint8Array, shap
     from,
     runs: paragraph.inlines.map((inline, run) => ({ from: run, text: inline.text })),
   }))
+}
+
+export function oneRunValue(value: TextValue, text: string): TextValue {
+  const paragraph = value[0]
+  const run = paragraph?.runs[0]
+  if (value.length !== 1 || paragraph === undefined || paragraph.runs.length !== 1) throw new Error("text-shape")
+  if (run === undefined || run.text === "" || run.text === "\n") throw new Error("text-shape")
+  return [{ from: paragraph.from, runs: [{ from: run.from, text }] }]
 }
 
 function refuseBreak(text: string): void {
