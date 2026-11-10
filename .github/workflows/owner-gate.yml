@@ -10,7 +10,10 @@ on:
       - reopened
       - ready_for_review
       - edited
-      - pull_request_review
+  pull_request_review:
+    types:
+      - submitted
+      - dismissed
 
 concurrency:
   group: owner-gate-${{ github.event.pull_request.number }}
@@ -19,6 +22,7 @@ concurrency:
 jobs:
   owner-gate:
     name: owner gate
+    if: github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -27,6 +31,8 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
       - env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/owner-gate.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
