@@ -231,11 +231,14 @@ describe("call", () => {
     expect(personLanded.ok).toBe(true)
     if (!personLanded.ok) return
     const register = personLanded.deck.register
+    const staleRead = version(nodeBody(agentLanded.deck.register, left))
+    expect(staleRead).not.toBe(readAt)
+    expect(staleRead).not.toBe(version(nodeBody(register, left)))
     expect(
       call("edit_deck", personLanded.deck, agent, {
         deck: "deck",
         base: personLanded.deck.revision,
-        changes: [{ value: "two", node: "258.7", readAt }],
+        changes: [{ value: "two", node: "258.7", readAt: staleRead }],
       }),
     ).toEqual({ ok: false, refusal: "person-protected" })
     expect(personLanded.deck.register).toBe(register)
