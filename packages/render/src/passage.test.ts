@@ -281,4 +281,23 @@ describe("Passage", () => {
     const stored = await render(createElement(Passage, { store, id, onEdit: () => undefined }))
     expect(editorIn(stored.host).getAttribute("contenteditable")).toBe("true")
   })
+
+  it("refuses Enter only outside a composition", async () => {
+    const store = paintStore()
+    const id = elementId("body")
+    expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
+    const { host } = await render(createElement(Passage, { store, id, onEdit: () => undefined }))
+    const editor = editorIn(host)
+    function pressEnter(isComposing: boolean): boolean {
+      const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true, isComposing })
+      editor.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect(pressEnter(false)).toBe(true)
+    expect(pressEnter(true)).toBe(false)
+    await act(async () => {
+      editor.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }))
+    })
+    expect(pressEnter(false)).toBe(false)
+  })
 })

@@ -31,12 +31,7 @@ function showText(box: HTMLElement, text: string): void {
 }
 
 function pastedLine(data: DataTransfer): string {
-  const plain = data.getData("text/plain")
-  const text =
-    plain !== ""
-      ? plain
-      : (new DOMParser().parseFromString(data.getData("text/html"), "text/html").body.textContent ?? "")
-  return text.replace(/\s*[\r\n]+\s*/g, " ")
+  return data.getData("text/plain").replace(/\s*[\r\n\u2028\u2029\u0085\v\f]+\s*/g, " ")
 }
 
 export function Passage(props: {
@@ -79,7 +74,8 @@ export function Passage(props: {
       }}
       onPaste={(event) => {
         event.preventDefault()
-        event.currentTarget.ownerDocument.execCommand("insertText", false, pastedLine(event.clipboardData))
+        const line = pastedLine(event.clipboardData)
+        if (line !== "") event.currentTarget.ownerDocument.execCommand("insertText", false, line)
       }}
       onDrop={(event) => {
         event.preventDefault()
