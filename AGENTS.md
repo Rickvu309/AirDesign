@@ -15,7 +15,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - `pnpm check` is the gate CI runs on every PR. Run it after your last edit, before every push. Never `--no-verify`. `pnpm check --all` keeps going and lists every failing step.
 - `pnpm check:pptx` is the extra step CI runs when a PR touches `packages/pptx` or the PowerPoint check. It uses LibreOffice and poppler when the machine has both, or installs them into `~/.cache/pptx-tools` on first use. It needs the .NET 8 SDK.
-- `pnpm check` prints the sticks, the numbers we want moved. Each has a goal or a limit in `sticks.json`. Pick one and move it.
+- `pnpm check` prints the sticks, the numbers we want moved. Each has a goal, a floor or a limit in `sticks.json`. Pick one and move it. A PR does not write the test count or the known fault count: `tests` only has to stay at or above its floor, and `known faults` is measured on each run.
 - `pnpm new:package <name>` creates a workspace package. Do not build one by hand.
 - `pnpm dev` inside `apps/web` or `apps/site` starts that app.
 - `pnpm run deploy` inside `apps/site` publishes the site. Merging to `main` deploys nothing.
@@ -71,5 +71,5 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A stick moves only toward its goal, a test file is not removed, and a PowerPoint case or deck already judged does not change | the `owner gate` check, run from `main` |
 | A rule or script under `tooling/` or `scripts/` that has tests on `main` still passes those tests, as `main` has them, and those tests lose no line | the `old proofs` check, run from `main`. Only the owner's approval of the commit, and a rerun of the check after it, lets a broken one through |
 | A change to what the gate checks is seen by the owner | the `owner gate` check labels the PR `touched the bar`. It does not block |
-| A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known fault, and the number of tests cannot fall | `scripts/sticks.mjs`: both counts must match `sticks.json` |
+| A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known fault, and the number of tests cannot fall | `scripts/sticks.mjs` prints both counts on every run and fails when `tests` is under its floor. A known fault is shown, never blocked. Tests deleted from a file that still exists are caught only in review until a per-file count exists |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
