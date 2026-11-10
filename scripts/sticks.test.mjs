@@ -2,7 +2,10 @@ import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
+import { fileURLToPath } from "node:url"
 import { overLimit, readSticks, timeStick } from "./sticks.mjs"
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-sticks-"))
 process.on("exit", () => fs.rmSync(root, { recursive: true, force: true }))
@@ -12,11 +15,18 @@ const write = (relative, source) => {
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, source)
 }
-const record = (faults) =>
+const cache = (tests, faults) => {
+  const file = path.join(root, "node_modules/.cache/vitest-sticks.json")
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, `${JSON.stringify({ tests, faults })}\n`)
+}
+const record = (faults, tests = 2) => {
+  cache(tests, faults)
   write(
     "sticks.json",
     JSON.stringify({
       "known faults": { now: faults, goal: 0 },
+      tests: { floor: tests },
       "real decks in the PowerPoint check": { now: 1, goal: 20 },
       "routes pptx writes": { now: 2, goal: 3 },
       "planted breaks the judge catches": { now: 1, goal: 2 },
@@ -24,9 +34,9 @@ const record = (faults) =>
       "PowerPoint check seconds": { limit: 90 },
     }),
   )
-const faultCall = `it${".fails"}(`
+}
 
-write("packages/a/src/a.test.ts", `${faultCall}"one", () => {})\nit("two", () => {})\n`)
+write("packages/a/src/a.test.ts", 'it("one", () => {})\nit("two", () => {})\n')
 write(
   "scripts/pptx-fixtures/cases.json",
   JSON.stringify([
@@ -53,7 +63,7 @@ if (steady.drift.length !== 0) throw new Error(`a matching record drifted\n${ste
 if (steady.rows.find((row) => row.name === "known faults")?.now !== 1)
   throw new Error("one known fault was not counted")
 
-write("packages/a/src/a.test.ts", `${faultCall}"one", () => {})\n${faultCall}"two", () => {})\n`)
+cache(2, 2)
 if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
   throw new Error("a limit stick was not listed")
 
@@ -103,24 +113,7 @@ if (added.length !== 1 || added[0] !== "known faults is 2 and sticks.json says 1
   throw new Error(`a new known fault must be recorded\n${added.join("\n")}`)
 }
 
-for (const hidden of [
-  'it.skip("one", () => {})',
-  'it.todo("one")',
-  'it("one", { fails: true }, () => {})',
-  'it.fails.each([1])("one", () => {})',
-  'test.fixme("one", async () => {})',
-  'test.describe.fixme("one", () => {})',
-  'test.fail("one", async () => {})',
-  "test.fail()",
-]) {
-  write("packages/a/src/a.spec.js", `${hidden}\n`)
-  execFileSync("git", ["add", "-A"], { cwd: root })
-  const seen = (await readSticks(root)).rows.find((row) => row.name === "known faults")?.now
-  if (seen !== 3) throw new Error(`a hidden fault was not counted: ${hidden}`)
-}
-fs.rmSync(path.join(root, "packages/a/src/a.spec.js"))
-execFileSync("git", ["add", "-A"], { cwd: root })
-
+cache(2, 0)
 write("packages/a/src/a.test.ts", 'it("one", () => {})\nit("two", () => {})\n')
 const fixed = (await readSticks(root)).drift
 if (fixed.length !== 1 || !fixed[0].startsWith("known faults is 0")) {
@@ -131,6 +124,12 @@ write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(fa
 execFileSync("git", ["add", "-A"], { cwd: root })
 if ((await readSticks(root)).rows.find((row) => row.name === "known faults")?.now !== 0)
   throw new Error("a passing test was counted as a known fault")
+cache(1, 0)
+const fewer = (await readSticks(root)).drift
+if (!fewer.includes("tests is 1 and sticks.json says 2. Record 1 in sticks.json.")) {
+  throw new Error(`a deleted test must lower the count\n${fewer.join("\n")}`)
+}
+cache(2, 0)
 
 write(
   "sticks.json",
@@ -151,5 +150,75 @@ if (!loose.includes("check seconds is timed by scripts/check.mjs and has no limi
 if (!loose.includes("nobody measures is in sticks.json and nothing measures it.")) throw new Error(loose)
 if (!loose.includes("real decks in the PowerPoint check is measured and missing from sticks.json."))
   throw new Error(loose)
+
+const proveVitest = () => {
+  const probe = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-vitest-sticks-"))
+  const reported = path.join(probe, "result.json")
+  try {
+    fs.writeFileSync(
+      path.join(probe, "sample.test.ts"),
+      [
+        'import fc from "fast-check"',
+        'import { describe, expect, it, test } from "vitest"',
+        'it("plain", () => { expect(1).toBe(1) })',
+        'it("property", () => { fc.assert(fc.property(fc.integer(), (value) => value === value)) })',
+        'it("none", () => {})',
+        'it("early", () => { return })',
+        'it.skip("skipped", () => {})',
+        'it.skipIf(true)("skip if", () => {})',
+        'it.runIf(false)("run if", () => {})',
+        'it.fails("expected", () => { expect(1).toBe(2) })',
+        'it("option", { fails: true }, () => { expect(1).toBe(2) })',
+        'test.todo("todo")',
+        'it["skip"]("bracket", () => {})',
+        'describe.skip("block", () => { it("inside", () => {}) })',
+        'it("reads skip", () => { expect({ skip: true }.skip).toBe(true) })',
+        'it("ctx", (ctx) => { ctx.skip() })',
+        "",
+      ].join("\n"),
+    )
+    fs.writeFileSync(
+      path.join(probe, "vitest.config.mts"),
+      [
+        'import { defineConfig } from "vitest/config"',
+        "export default defineConfig({",
+        "  resolve: {",
+        "    alias: [{",
+        "      find: /^fast-check$/,",
+        `      replacement: ${JSON.stringify(path.join(repoRoot, "scripts/property-count.mjs"))},`,
+        "    }],",
+        "  },",
+        "  test: {",
+        '    include: ["sample.test.ts"],',
+        `    setupFiles: [${JSON.stringify(path.join(repoRoot, "scripts/vitest-assertions.mjs"))}],`,
+        `    reporters: ["default", ${JSON.stringify(path.join(repoRoot, "scripts/vitest-sticks.mjs"))}],`,
+        "  },",
+        "})",
+        "",
+      ].join("\n"),
+    )
+    fs.symlinkSync(path.join(repoRoot, "node_modules"), path.join(probe, "node_modules"), "dir")
+    try {
+      execFileSync(process.execPath, [path.join(repoRoot, "node_modules/vitest/vitest.mjs"), "run"], {
+        cwd: probe,
+        env: { ...process.env, AIRDESIGN_VITEST_STICKS: reported },
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      })
+    } catch (error) {
+      const failed = error
+      throw new Error(`${failed.stdout ?? ""}\n${failed.stderr ?? failed.message}`)
+    }
+    const counted = JSON.parse(fs.readFileSync(reported, "utf8"))
+    if (counted.tests !== 14 || counted.faults !== 11) {
+      throw new Error(`vitest counted ${JSON.stringify(counted)}, expected 14 tests and 11 faults`)
+    }
+  } finally {
+    fs.rmSync(path.join(probe, "node_modules"), { force: true })
+    fs.rmSync(probe, { recursive: true, force: true })
+  }
+}
+
+proveVitest()
 
 console.log("sticks tests passed")
