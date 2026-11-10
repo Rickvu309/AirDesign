@@ -96,7 +96,7 @@ same(
 const traded = [sample("first", true), sample("second", false), sample("third", true)]
 same("a kind gained does not hide a kind lost", proofFailures({ recorded, judged: traded, seed: 5 }), [
   `The judge missed first, recorded caught: a.pptx, slide 2. ${again}`,
-  `The judge now catches second and judge-proof.json says missed. Record caught there and in sticks.json. ${again}`,
+  `The judge now catches second and judge-proof.json says missed. Record caught there and in metrics.json. ${again}`,
 ])
 same(
   "a kind without a record is named",

@@ -45,30 +45,52 @@ export const newPackageFile = (file, name) =>
 export const packageFile = (file) => file === "package.json" || file.endsWith("/package.json")
 
 const finite = (value) => typeof value === "number" && Number.isFinite(value)
-const keysOf = (stick) =>
-  stick !== null && typeof stick === "object" && !Array.isArray(stick) ? Object.keys(stick).sort().join() : ""
-const timed = (stick) => keysOf(stick) === "limit" && finite(stick.limit)
-const counted = (stick) => keysOf(stick) === "goal,now" && finite(stick.now) && finite(stick.goal)
-const floored = (stick) => keysOf(stick) === "floor" && finite(stick.floor)
+const keysOf = (metric) =>
+  metric !== null && typeof metric === "object" && !Array.isArray(metric) ? Object.keys(metric).sort().join() : ""
+const timed = (metric) => keysOf(metric) === "limit" && finite(metric.limit)
+const counted = (metric) => keysOf(metric) === "goal,now" && finite(metric.now) && finite(metric.goal)
+const floored = (metric) => keysOf(metric) === "floor" && finite(metric.floor)
 
-const recordsFaults = new Set(["known faults"])
-const countsProof = new Set(["planted breaks the judge catches"])
+const metricsFile = "metrics.json"
+export const oldMetricsFile = "sticks.json"
 
-const stickReason = (name, before, after) => {
-  if (after === undefined) return `The stick ${name} was removed.`
+export const oldMetricNames = {
+  "known faults": "known-failures",
+  tests: "test-count",
+  "real decks in the PowerPoint check": "corpus-size",
+  "planted breaks the judge catches": "fault-detection",
+  "routes pptx writes": "export-coverage",
+  "route writes that pass": "export-verified",
+  "check seconds": "ci-duration",
+  "PowerPoint check seconds": "pptx-check-duration",
+}
+
+export const metricsFrom = (read) => {
+  const metrics = read(metricsFile)
+  if (metrics !== undefined) return metrics
+  const old = read(oldMetricsFile)
+  if (old === undefined) return undefined
+  return Object.fromEntries(Object.entries(old).map(([name, metric]) => [oldMetricNames[name] ?? name, metric]))
+}
+
+const recordsFaults = new Set(["known-failures"])
+const countsProof = new Set(["fault-detection"])
+
+const metricReason = (name, before, after) => {
+  if (after === undefined) return `The metric ${name} was removed.`
   if (!timed(after) && !counted(after) && !floored(after)) {
-    return `The stick ${name} must be only a limit, or only now and goal, or only a floor, as numbers.`
+    return `The metric ${name} must be only a limit, or only now and goal, or only a floor, as numbers.`
   }
   if (before === undefined) return undefined
   if (timed(before)) {
-    if (!timed(after)) return `The stick ${name} stopped being a limit.`
+    if (!timed(after)) return `The metric ${name} stopped being a limit.`
     return after.limit <= before.limit ? undefined : `The limit of ${name} went from ${before.limit} to ${after.limit}.`
   }
   if (floored(before)) {
-    if (!floored(after)) return `The stick ${name} stopped being a floor.`
+    if (!floored(after)) return `The metric ${name} stopped being a floor.`
     return after.floor >= before.floor ? undefined : `The floor of ${name} went from ${before.floor} to ${after.floor}.`
   }
-  if (!counted(after)) return `The stick ${name} stopped being a count with a goal.`
+  if (!counted(after)) return `The metric ${name} stopped being a count with a goal.`
   if (countsProof.has(name)) return undefined
   const ahead = before.goal - before.now
   const harder = ahead * (after.goal - before.goal) > 0
@@ -96,8 +118,8 @@ export const lostKinds = (baseProof, headProof) =>
   )
 
 export const ownerReasons = ({
-  baseSticks,
-  headSticks,
+  baseMetrics,
+  headMetrics,
   changedFiles,
   changedScripts,
   changedCases = [],
@@ -106,13 +128,13 @@ export const ownerReasons = ({
   changedKinds = [],
 }) => {
   const reasons = []
-  for (const name of new Set([...Object.keys(baseSticks), ...Object.keys(headSticks)])) {
-    const text = stickReason(name, baseSticks[name], headSticks[name])
+  for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
+    const text = metricReason(name, baseMetrics[name], headMetrics[name])
     const recorded = recordsFaults.has(name) && text?.includes("away from its goal")
-    if (text !== undefined) reasons.push({ about: `stick ${name}`, text, blocks: !recorded })
+    if (text !== undefined) reasons.push({ about: `metric ${name}`, text, blocks: !recorded })
   }
   for (const file of changedFiles.filter(guarded)) {
-    reasons.push({ about: `file ${file}`, text: `${file} decides what the gate checks.`, blocks: false })
+    reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, blocks: false })
   }
   for (const file of removedTests) {
     reasons.push({ about: `file ${file}`, text: `The test file ${file} was removed.`, blocks: true })
@@ -137,7 +159,7 @@ export const ownerReasons = ({
   for (const file of changedScripts) {
     reasons.push({
       about: `scripts ${file}`,
-      text: `The scripts in ${file} changed, and they are what the gate runs.`,
+      text: `The scripts in ${file} changed, and they are what ci runs.`,
       blocks: false,
     })
   }
@@ -226,15 +248,17 @@ const proofAt = (repository, sha) => {
   return proof !== null && typeof proof === "object" && !Array.isArray(proof) ? proof : {}
 }
 
+const metricsAt = (repository, sha) => metricsFrom((file) => jsonAt(repository, sha, file))
+
 const printsAt = (repository, sha, reasons) => {
-  const sticks = jsonAt(repository, sha, "sticks.json") ?? {}
+  const metrics = metricsAt(repository, sha) ?? {}
   const cases = casesAt(repository, sha)
   const proof = proofAt(repository, sha)
   const prints = {}
   for (const { about } of reasons) {
     const [kind, ...rest] = about.split(" ")
     const subject = rest.join(" ")
-    if (kind === "stick") prints[about] = JSON.stringify(sticks[subject])
+    if (kind === "metric") prints[about] = JSON.stringify(metrics[subject])
     if (kind === "file") prints[about] = blobAt(repository, sha, subject)
     if (kind === "scripts") prints[about] = scriptsAt(repository, sha, subject)
     if (kind === "break") prints[about] = JSON.stringify(proof[subject])
@@ -254,8 +278,8 @@ const readPull = (repository, number) => {
     throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
   }
   const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
-  const baseSticks = jsonAt(repository, fork, "sticks.json")
-  if (baseSticks === undefined) throw new Error("sticks.json could not be read where this branch left main.")
+  const baseMetrics = metricsAt(repository, fork)
+  if (baseMetrics === undefined) throw new Error("metrics.json could not be read where this branch left main.")
   const owner = repository.split("/")[0]
   const modelPackage = "packages/document"
   const generated = new Set()
@@ -282,8 +306,8 @@ const readPull = (repository, number) => {
     }
   }
   const reasons = ownerReasons({
-    baseSticks,
-    headSticks: jsonAt(repository, pull.head, "sticks.json") ?? {},
+    baseMetrics,
+    headMetrics: metricsAt(repository, pull.head) ?? {},
     changedFiles: changedFiles.filter((file) => !generated.has(file)),
     changedFixtures: replacedFixtures(listed),
     removedTests: removedTestFiles(listed),
@@ -318,7 +342,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
     for (const line of result.lines) console.log(line)
     if (result.listed && process.argv.includes("--label")) {
       try {
-        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", "labels[]=touched the bar"])
+        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", "labels[]=changes-ci"])
       } catch (error) {
         console.log(`The label could not be added: ${String(error.stderr ?? error.message).trim()}`)
       }

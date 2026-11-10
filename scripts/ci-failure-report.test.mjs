@@ -1,11 +1,11 @@
-import { audit, failureClass, report } from "./failure-audit.mjs"
+import { audit, failureClass, report } from "./ci-failure-report.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     throw new Error(`${name}\n${JSON.stringify(actual)}\n${JSON.stringify(expected)}`)
   }
 }
-const line = (step, text) => `gate\t${step}\t2026-11-10T03:12:40.1Z ${text}`
+const line = (step, text) => `ci\t${step}\t2026-11-10T03:12:40.1Z ${text}`
 
 same("a failed check step", failureClass(line("Run pnpm check", "fail lint 3.5s")), "pnpm check: lint")
 same("a failed typecheck", failureClass(line("Run pnpm check", "fail typecheck 0.4s")), "pnpm check: typecheck")
@@ -26,13 +26,13 @@ same(
 )
 same(
   "a slow run",
-  failureClass(line("Run pnpm check", "check seconds is 41.2 and its limit is 40. Make it faster.")),
-  "a timed stick went over its limit",
+  failureClass(line("Run pnpm check", "ci-duration is 41.2 and its limit is 40. Make it faster.")),
+  "a timed metric went over its limit",
 )
 same(
   "a pull waiting for the owner",
-  failureClass(line("Run node scripts/owner-gate.mjs", "Only Rickvu309 can accept this. Ask for a review.")),
-  "owner gate: waiting for the owner",
+  failureClass(line("Run node scripts/ratchet.mjs", "Only Rickvu309 can accept this. Ask for a review.")),
+  "ratchet: waiting for the owner",
 )
 same(
   "an install that broke",
@@ -68,4 +68,4 @@ const lines = report(result, "owner/repo")
 if (!lines.includes("| 2 | pnpm check: lint | https://github.com/owner/repo/actions/runs/2 |"))
   throw new Error(lines.join("\n"))
 
-console.log("failure-audit tests passed")
+console.log("ci-failure-report tests passed")

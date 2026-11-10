@@ -3,11 +3,11 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { overLimit, readSticks, timeStick } from "./sticks.mjs"
+import { overLimit, readMetrics, timeMetric } from "./metrics.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-sticks-"))
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-metrics-"))
 process.on("exit", () => fs.rmSync(root, { recursive: true, force: true }))
 
 const write = (relative, source) => {
@@ -16,22 +16,22 @@ const write = (relative, source) => {
   fs.writeFileSync(file, source)
 }
 const cache = (tests, faults) => {
-  const file = path.join(root, "node_modules/.cache/vitest-sticks.json")
+  const file = path.join(root, "node_modules/.cache/vitest-metrics.json")
   fs.mkdirSync(path.dirname(file), { recursive: true })
   fs.writeFileSync(file, `${JSON.stringify({ tests, faults })}\n`)
 }
 const record = (faults, tests = 2) => {
   cache(tests, faults)
   write(
-    "sticks.json",
+    "metrics.json",
     JSON.stringify({
-      "known faults": { now: faults, goal: 0 },
-      tests: { floor: tests },
-      "real decks in the PowerPoint check": { now: 1, goal: 20 },
-      "routes pptx writes": { now: 2, goal: 3 },
-      "planted breaks the judge catches": { now: 1, goal: 2 },
-      "check seconds": { limit: 40 },
-      "PowerPoint check seconds": { limit: 90 },
+      "known-failures": { now: faults, goal: 0 },
+      "test-count": { floor: tests },
+      "corpus-size": { now: 1, goal: 20 },
+      "export-coverage": { now: 2, goal: 3 },
+      "fault-detection": { now: 1, goal: 2 },
+      "ci-duration": { limit: 40 },
+      "pptx-check-duration": { limit: 90 },
     }),
   )
 }
@@ -58,32 +58,32 @@ record(1)
 execFileSync("git", ["init", "-q"], { cwd: root })
 execFileSync("git", ["add", "-A"], { cwd: root })
 
-const steady = await readSticks(root)
+const steady = await readMetrics(root)
 if (steady.drift.length !== 0) throw new Error(`a matching record drifted\n${steady.drift.join("\n")}`)
-if (steady.rows.find((row) => row.name === "known faults")?.now !== 1)
+if (steady.rows.find((row) => row.name === "known-failures")?.now !== 1)
   throw new Error("one known fault was not counted")
 
 cache(2, 2)
-if (steady.rows.find((row) => row.name === "check seconds")?.limit !== 40)
-  throw new Error("a limit stick was not listed")
+if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
+  throw new Error("a limit metric was not listed")
 
-const capabilities = steady.rows.find((row) => row.name === "routes pptx writes")
+const capabilities = steady.rows.find((row) => row.name === "export-coverage")
 if (capabilities?.now !== 2 || capabilities.goal !== 3)
   throw new Error(`distinct routes were not counted: ${JSON.stringify(capabilities)}`)
 
-const planted = steady.rows.find((row) => row.name === "planted breaks the judge catches")
+const planted = steady.rows.find((row) => row.name === "fault-detection")
 if (planted?.now !== 1 || planted.goal !== 2)
   throw new Error(`caught kinds were not counted: ${JSON.stringify(planted)}`)
 
-const slow = overLimit({ name: "check seconds", now: 41.2, limit: 40 })
-if (slow !== "check seconds is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
-if (overLimit({ name: "check seconds", now: 40, limit: 40 }) !== undefined)
+const slow = overLimit({ name: "ci-duration", now: 41.2, limit: 40 })
+if (slow !== "ci-duration is 41.2 and its limit is 40. Make it faster.") throw new Error(`${slow}`)
+if (overLimit({ name: "ci-duration", now: 40, limit: 40 }) !== undefined)
   throw new Error("a time at the limit was reported")
-const timed = timeStick(root, "check seconds", Date.now() - 41_200)
-if (!/^stick check seconds  now 41\.\d  limit 40$/.test(timed.line)) throw new Error(timed.line)
-if (!timed.over?.startsWith("check seconds is 41.")) throw new Error(`${timed.over}`)
-if (timeStick(root, "check seconds", Date.now()).over !== undefined) throw new Error("a fast run was reported")
-const gate = process.env.CI
+const timed = timeMetric(root, "ci-duration", Date.now() - 41_200)
+if (!/^metric ci-duration  now 41\.\d  limit 40$/.test(timed.line)) throw new Error(timed.line)
+if (!timed.over?.startsWith("ci-duration is 41.")) throw new Error(`${timed.over}`)
+if (timeMetric(root, "ci-duration", Date.now()).over !== undefined) throw new Error("a fast run was reported")
+const ciBefore = process.env.CI
 for (const [value, fails] of [
   ["true", true],
   ["1", true],
@@ -91,68 +91,67 @@ for (const [value, fails] of [
   ["false", false],
 ]) {
   process.env.CI = value
-  if (timeStick(root, "check seconds", Date.now() - 81_200).fails !== fails) {
+  if (timeMetric(root, "ci-duration", Date.now() - 81_200).fails !== fails) {
     throw new Error(`a time over twice its limit with CI=${value} should ${fails ? "fail" : "pass"}`)
   }
-  if (timeStick(root, "check seconds", Date.now() - 48_400).fails) {
+  if (timeMetric(root, "ci-duration", Date.now() - 48_400).fails) {
     throw new Error(`a time over its limit and under twice it must only warn, with CI=${value}`)
   }
 }
-if (gate === undefined) delete process.env.CI
-else process.env.CI = gate
+if (ciBefore === undefined) delete process.env.CI
+else process.env.CI = ciBefore
 let unlimited = ""
 try {
-  timeStick(root, "nobody limits", Date.now())
+  timeMetric(root, "nobody limits", Date.now())
 } catch (error) {
   unlimited = error.message
 }
-if (unlimited !== "nobody limits has no limit in sticks.json.") throw new Error(`a missing limit passed: ${unlimited}`)
+if (unlimited !== "nobody limits has no limit in metrics.json.") throw new Error(`a missing limit passed: ${unlimited}`)
 
-const added = (await readSticks(root)).drift
+const added = (await readMetrics(root)).drift
 if (added.length !== 0) {
   throw new Error(`a new known fault must need no record\n${added.join("\n")}`)
 }
 
 cache(2, 0)
 write("packages/a/src/a.test.ts", 'it("one", () => {})\nit("two", () => {})\n')
-const fixed = (await readSticks(root)).drift
+const fixed = (await readMetrics(root)).drift
 if (fixed.length !== 0) {
   throw new Error(`a fixed fault must need no record\n${fixed.join("\n")}`)
 }
 
 write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(failure).toBeDefined()\n")
 execFileSync("git", ["add", "-A"], { cwd: root })
-if ((await readSticks(root)).rows.find((row) => row.name === "known faults")?.now !== 0)
+if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("a passing test was counted as a known fault")
 cache(1, 0)
-const fewer = (await readSticks(root)).drift
-if (!fewer.includes("tests is 1 and its floor is 2. Put back the tests that are gone.")) {
+const fewer = (await readMetrics(root)).drift
+if (!fewer.includes("test-count is 1 and its floor is 2. Put back the tests that are gone.")) {
   throw new Error(`a deleted test must lower the count\n${fewer.join("\n")}`)
 }
 cache(2, 0)
 
 write(
-  "sticks.json",
+  "metrics.json",
   JSON.stringify({
-    "known faults": { now: 0, goal: 0 },
-    "routes pptx writes": { now: 1, goal: 4 },
+    "known-failures": { now: 0, goal: 0 },
+    "export-coverage": { now: 1, goal: 4 },
     "nobody measures": { now: 1, goal: 0 },
     "nobody times": { limit: 5 },
   }),
 )
-const loose = (await readSticks(root)).drift.join("\n")
-if (!loose.includes("routes pptx writes is 2 and sticks.json says 1. Record 2 in sticks.json.")) throw new Error(loose)
-if (!loose.includes("routes pptx writes has goal 3 and sticks.json says 4. Record goal 3 in sticks.json."))
+const loose = (await readMetrics(root)).drift.join("\n")
+if (!loose.includes("export-coverage is 2 and metrics.json says 1. Record 2 in metrics.json.")) throw new Error(loose)
+if (!loose.includes("export-coverage has goal 3 and metrics.json says 4. Record goal 3 in metrics.json."))
   throw new Error(loose)
-if (!loose.includes("nobody times has a limit in sticks.json and no runner times it.")) throw new Error(loose)
-if (!loose.includes("check seconds is timed by scripts/check.mjs and has no limit in sticks.json."))
+if (!loose.includes("nobody times has a limit in metrics.json and no runner times it.")) throw new Error(loose)
+if (!loose.includes("ci-duration is timed by scripts/check.mjs and has no limit in metrics.json."))
   throw new Error(loose)
-if (!loose.includes("nobody measures is in sticks.json and nothing measures it.")) throw new Error(loose)
-if (!loose.includes("real decks in the PowerPoint check is measured and missing from sticks.json."))
-  throw new Error(loose)
+if (!loose.includes("nobody measures is in metrics.json and nothing measures it.")) throw new Error(loose)
+if (!loose.includes("corpus-size is measured and missing from metrics.json.")) throw new Error(loose)
 
 const proveVitest = () => {
-  const probe = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-vitest-sticks-"))
+  const probe = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-vitest-metrics-"))
   const reported = path.join(probe, "result.json")
   try {
     fs.writeFileSync(
@@ -191,7 +190,7 @@ const proveVitest = () => {
         "  test: {",
         '    include: ["sample.test.ts"],',
         `    setupFiles: [${JSON.stringify(path.join(repoRoot, "scripts/vitest-assertions.mjs"))}],`,
-        `    reporters: ["default", ${JSON.stringify(path.join(repoRoot, "scripts/vitest-sticks.mjs"))}],`,
+        `    reporters: ["default", ${JSON.stringify(path.join(repoRoot, "scripts/vitest-metrics.mjs"))}],`,
         "  },",
         "})",
         "",
@@ -201,7 +200,7 @@ const proveVitest = () => {
     try {
       execFileSync(process.execPath, [path.join(repoRoot, "node_modules/vitest/vitest.mjs"), "run"], {
         cwd: probe,
-        env: { ...process.env, AIRDESIGN_VITEST_STICKS: reported },
+        env: { ...process.env, AIRDESIGN_VITEST_METRICS: reported },
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
       })
@@ -221,26 +220,26 @@ const proveVitest = () => {
 
 proveVitest()
 
-const { stickLines } = await import("./sticks.mjs")
+const { metricLines } = await import("./metrics.mjs")
 record(1, 2)
 cache(3, 1)
-const more = await readSticks(root)
+const more = await readMetrics(root)
 if (more.drift.length !== 0) throw new Error(`a new test must need no record\n${more.drift.join("\n")}`)
-const moreLines = stickLines(more.rows).map((line) => line.replace(/ {2,}/g, "  "))
-if (!moreLines.includes("stick tests  now 3  floor 2")) throw new Error(moreLines.join("\n"))
-if (moreLines.some((line) => line.includes("seconds"))) throw new Error("a limit stick was printed as a count")
+const moreLines = metricLines(more.rows).map((line) => line.replace(/ {2,}/g, "  "))
+if (!moreLines.includes("metric test-count  now 3  floor 2")) throw new Error(moreLines.join("\n"))
+if (moreLines.some((line) => line.includes("duration"))) throw new Error("a limit metric was printed as a count")
 
 cache(2, 5)
-const faulty = await readSticks(root)
-if (faulty.drift.length !== 0) throw new Error(`four new known faults must not fail\n${faulty.drift.join("\n")}`)
-const faultyLines = stickLines(faulty.rows).map((line) => line.replace(/ {2,}/g, "  "))
-if (!faultyLines.includes("stick known faults  now 5  goal 0")) throw new Error(faultyLines.join("\n"))
+const faulty = await readMetrics(root)
+if (faulty.drift.length !== 0) throw new Error(`four new known failures must not fail\n${faulty.drift.join("\n")}`)
+const faultyLines = metricLines(faulty.rows).map((line) => line.replace(/ {2,}/g, "  "))
+if (!faultyLines.includes("metric known-failures  now 5  goal 0")) throw new Error(faultyLines.join("\n"))
 
 cache(1, 1)
-const under = (await readSticks(root)).drift
-if (under.length !== 1 || under[0] !== "tests is 1 and its floor is 2. Put back the tests that are gone.") {
+const under = (await readMetrics(root)).drift
+if (under.length !== 1 || under[0] !== "test-count is 1 and its floor is 2. Put back the tests that are gone.") {
   throw new Error(`a count under the floor must fail and name both numbers\n${under.join("\n")}`)
 }
 if (under.some((line) => line.includes("Record"))) throw new Error("nobody is told to record a test count")
 
-console.log("sticks tests passed")
+console.log("metrics tests passed")

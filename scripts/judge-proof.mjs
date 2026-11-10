@@ -381,7 +381,7 @@ export const proofFailures = ({ recorded, judged, seed }) => {
     }
     if (record === "missed" && verdict === "caught") {
       lines.push(
-        `The judge now catches ${kind} and judge-proof.json says missed. Record caught there and in sticks.json. ${again}`,
+        `The judge now catches ${kind} and judge-proof.json says missed. Record caught there and in metrics.json. ${again}`,
       )
     }
   }

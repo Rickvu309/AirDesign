@@ -13,7 +13,7 @@ const requiredSteps = [
   "typecheck",
   "boundaries",
   "build",
-  "sticks",
+  "metrics",
 ]
 const stageOf = (name) => stages.findIndex((stage) => stage.some(([step]) => step === name))
 

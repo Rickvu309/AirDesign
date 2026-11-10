@@ -20,7 +20,7 @@ import {
   sandboxed,
   unprovedLines,
   verdict,
-} from "./old-proofs.mjs"
+} from "./check-regression.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -39,8 +39,8 @@ const refusal = (run) => {
 
 const baseFiles = [
   "packages/document/src/order.test.ts",
-  "scripts/sticks.mjs",
-  "scripts/sticks.test.mjs",
+  "scripts/metrics.mjs",
+  "scripts/metrics.test.mjs",
   "scripts/pptx-judge/judge.test.mjs",
   "scripts/typed.test.ts",
   "tests/browser/every-screen.spec.ts",
@@ -52,8 +52,8 @@ const baseFiles = [
 ]
 
 same("a proof is a check test on the base", proofFiles(baseFiles), [
+  "scripts/metrics.test.mjs",
   "scripts/pptx-judge/judge.test.mjs",
-  "scripts/sticks.test.mjs",
   "scripts/typed.test.ts",
   "tests/theme-tokens.test.ts",
   "tooling/oxlint-plugin-airdesign/rules/no-raw.test.js",
@@ -62,25 +62,25 @@ same("a proof is a check test on the base", proofFiles(baseFiles), [
 same("a tooling proof runs on plain Node", proofRunner("tooling/a/b/c.test.js"), "node")
 same("a root test runs on Vitest", proofRunner("tests/new-package.test.ts"), "vitest")
 same("a typed check test runs on Vitest", proofRunner("scripts/typed.test.ts"), "vitest")
-same("the check code is not a proof", proofRunner("scripts/sticks.mjs"), undefined)
+same("the check code is not a proof", proofRunner("scripts/metrics.mjs"), undefined)
 same("a product test is not a proof", proofRunner("packages/document/src/order.test.ts"), undefined)
 
 same("the harness is proof support", proofSupport("tooling/oxlint-plugin-airdesign/harness.js"), true)
 same("the test runner is proof support", proofSupport("tooling/oxlint-plugin-airdesign/run-tests.js"), true)
-same("the proof run is proof support", proofSupport("scripts/old-proofs-run.mjs"), true)
+same("the proof run is proof support", proofSupport("scripts/check-regression-run.mjs"), true)
 same("a harness outside the check folders is product code", proofSupport("packages/pptx/src/harness.js"), false)
 
 same("a rule is a check file", checkFile("tooling/oxlint-plugin-airdesign/rules/no-raw.js"), true)
-same("a check script is a check file", checkFile("scripts/sticks.mjs"), true)
+same("a check script is a check file", checkFile("scripts/metrics.mjs"), true)
 same(
   "nothing else is a check file",
   [
-    "scripts/sticks.test.mjs",
+    "scripts/metrics.test.mjs",
     "scripts/typed.test.ts",
     "tooling/oxlint-plugin-airdesign/rules/no-raw.test.js",
     "tooling/oxlint-plugin-airdesign/harness.js",
     "tooling/oxlint-plugin-airdesign/run-tests.js",
-    "scripts/old-proofs-run.mjs",
+    "scripts/check-regression-run.mjs",
     "package.json",
     "pnpm-lock.yaml",
     "vitest.config.mts",
@@ -92,7 +92,7 @@ same(
     "tooling/.hidden/rule.js",
     "scripts/node_modules/vitest/index.js",
     "scripts/../package.json",
-    "scripts//sticks.mjs",
+    "scripts//metrics.mjs",
   ].filter(checkFile),
   [],
 )
@@ -100,8 +100,8 @@ same(
 const mergeTree = new Map([
   ["apps/web/src/main.tsx", "100644 a"],
   ["package.json", "100644 p"],
-  ["scripts/sticks.mjs", "100644 b"],
-  ["scripts/sticks.test.mjs", "100644 c"],
+  ["scripts/metrics.mjs", "100644 b"],
+  ["scripts/metrics.test.mjs", "100644 c"],
   ["scripts/gone.mjs", "100644 d"],
   ["tests/theme-tokens.test.ts", "100644 e"],
   ["vitest.config.mts", "100644 f"],
@@ -116,15 +116,15 @@ same(
     headWith([
       ["apps/web/src/main.tsx", "100644 z"],
       ["apps/web/src/new.tsx", "100644 n"],
-      ["scripts/sticks.mjs", undefined],
+      ["scripts/metrics.mjs", undefined],
     ]),
   ),
-  ["apps/web/src/main.tsx", "apps/web/src/new.tsx", "scripts/sticks.mjs"],
+  ["apps/web/src/main.tsx", "apps/web/src/new.tsx", "scripts/metrics.mjs"],
 )
 same("product code alone changes no check", changesBy([["apps/web/src/main.tsx", "100644 z"]]), [])
 same("nothing changed changes no check", changesBy([]), [])
-same("an edited check script is laid in", changesBy([["scripts/sticks.mjs", "100644 z"]]), [
-  { file: "scripts/sticks.mjs", entry: "100644 z" },
+same("an edited check script is laid in", changesBy([["scripts/metrics.mjs", "100644 z"]]), [
+  { file: "scripts/metrics.mjs", entry: "100644 z" },
 ])
 same("a new rule is laid in", changesBy([["tooling/rules/new.js", "100755 n"]]), [
   { file: "tooling/rules/new.js", entry: "100755 n" },
@@ -146,11 +146,11 @@ same(
 same(
   "the head's proofs, package file, lockfile and configs are never laid in",
   changesBy([
-    ["scripts/sticks.test.mjs", "100644 soft"],
+    ["scripts/metrics.test.mjs", "100644 soft"],
     ["scripts/added.test.mjs", "100644 new"],
     ["tests/theme-tokens.test.ts", undefined],
     ["tooling/oxlint-plugin-airdesign/harness.js", "100644 soft"],
-    ["scripts/old-proofs-run.mjs", "100644 soft"],
+    ["scripts/check-regression-run.mjs", "100644 soft"],
     ["package.json", "100644 soft"],
     ["pnpm-lock.yaml", "100644 soft"],
     ["vitest.config.mts", "100644 soft"],
@@ -171,7 +171,7 @@ same(
       ["package.json", "100644 soft"],
       ["pnpm-lock.yaml", "100644 soft"],
       ["apps/web/src/main.tsx", "100644 z"],
-      ["scripts/sticks.mjs", "100644 z"],
+      ["scripts/metrics.mjs", "100644 z"],
     ]),
   ),
   [
@@ -190,7 +190,7 @@ same(
     mergeTree,
     headWith([
       ["scripts/new.test.mjs", "100644 n"],
-      ["scripts/sticks.mjs", "100644 x"],
+      ["scripts/metrics.mjs", "100644 x"],
     ]),
   ),
   [],
@@ -200,14 +200,14 @@ same(
   changedProofs(
     mergeTree,
     headWith([
-      ["scripts/sticks.test.mjs", undefined],
+      ["scripts/metrics.test.mjs", undefined],
       ["tests/theme-tokens.test.ts", "100644 x"],
     ]),
   ),
-  ["scripts/sticks.test.mjs", "tests/theme-tokens.test.ts"],
+  ["scripts/metrics.test.mjs", "tests/theme-tokens.test.ts"],
 )
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-old-proofs-"))
+const root = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-check-regression-"))
 process.on("exit", () => fs.rmSync(root, { recursive: true, force: true }))
 const base = path.join(root, "base")
 const write = (file, text) => {
@@ -235,7 +235,7 @@ for (const file of [
   "scripts/added-lines.test.mjs",
   "tests/typed.test.ts",
   "tooling/rules/harness.js",
-  "scripts/sticks.mjs",
+  "scripts/metrics.mjs",
   "apps/web/src/main.test.ts",
 ]) {
   lossFile(file, cases)
@@ -251,7 +251,7 @@ lossFile("scripts/added-lines.test.mjs", `case zero\n${cases}case four\n`)
 lossFile("scripts/new.test.mjs", cases)
 lossFile("tests/typed.test.ts", "")
 lossFile("tooling/rules/harness.js", "case one\ncase two\n")
-lossFile("scripts/sticks.mjs", "")
+lossFile("scripts/metrics.mjs", "")
 lossFile("apps/web/src/main.test.ts", "")
 lossGit("add", "--all")
 const lossHead = lossGit("write-tree")
@@ -273,15 +273,15 @@ same("the owner's approval lets a lost line through", verdict({ results: losses,
 
 write("base/package.json", "main package")
 write("base/vitest.config.mts", "main config")
-write("base/scripts/sticks.mjs", "main check")
-write("base/scripts/sticks.test.mjs", "old cases")
+write("base/scripts/metrics.mjs", "main check")
+write("base/scripts/metrics.test.mjs", "old cases")
 write("base/scripts/gone.mjs", "main check")
 write("base/tooling/rules/gone/deep.js", "main check")
 
 layIn(
   base,
   [
-    { file: "scripts/sticks.mjs", entry: "100644 softer" },
+    { file: "scripts/metrics.mjs", entry: "100644 softer" },
     { file: "scripts/gone.mjs", entry: undefined },
     { file: "scripts/never-there.mjs", entry: undefined },
     { file: "tooling/rules/gone/deep.js", entry: undefined },
@@ -289,7 +289,7 @@ layIn(
   ],
   headContent,
 )
-same("a changed check file has the head's content", baseText("scripts/sticks.mjs"), "head softer")
+same("a changed check file has the head's content", baseText("scripts/metrics.mjs"), "head softer")
 same("a new check file is laid in under a new folder", baseText("tooling/rules/new/rule.js"), "head added")
 same(
   "a check file keeps its executable bit",
@@ -298,10 +298,10 @@ same(
 )
 same("a deleted check file is removed from the base", inBase("scripts/gone.mjs"), false)
 same("a deleted check file in a folder is removed from the base", inBase("tooling/rules/gone/deep.js"), false)
-same("the base proof keeps its old cases", baseText("scripts/sticks.test.mjs"), "old cases")
+same("the base proof keeps its old cases", baseText("scripts/metrics.test.mjs"), "old cases")
 
 for (const file of [
-  "scripts/sticks.test.mjs",
+  "scripts/metrics.test.mjs",
   "package.json",
   "vitest.config.mts",
   "tooling/harness.js",
@@ -313,7 +313,7 @@ for (const file of [
     `${file} is not a check file, so it is not taken from the pull request.`,
   )
 }
-same("the base proof still has its old cases", baseText("scripts/sticks.test.mjs"), "old cases")
+same("the base proof still has its old cases", baseText("scripts/metrics.test.mjs"), "old cases")
 same("the base package file is main's", baseText("package.json"), "main package")
 same("the base config is main's", baseText("vitest.config.mts"), "main config")
 
@@ -413,13 +413,16 @@ same(
 )
 
 fs.mkdirSync(path.join(base, "scripts"), { recursive: true })
-fs.copyFileSync(path.join(import.meta.dirname, "old-proofs-run.mjs"), path.join(base, "scripts/old-proofs-run.mjs"))
-write("base/scripts/exits.mjs", 'if (process.argv[1].endsWith("old-proofs-run.mjs")) process.exit(0)\n')
+fs.copyFileSync(
+  path.join(import.meta.dirname, "check-regression-run.mjs"),
+  path.join(base, "scripts/check-regression-run.mjs"),
+)
+write("base/scripts/exits.mjs", 'if (process.argv[1].endsWith("check-regression-run.mjs")) process.exit(0)\n')
 write("base/scripts/exits.test.mjs", 'import "./exits.mjs"\nthrow new Error("the softened check was caught")\n')
 write("base/scripts/exits-later.test.mjs", "setTimeout(() => process.exit(0), 10)\n")
 write("base/scripts/echo.test.mjs", "console.log(process.argv.join(), JSON.stringify(process.env))\nprocess.exit(0)\n")
 write("base/scripts/holds.test.mjs", 'console.log("case one")\n')
-write("base/scripts/throws.test.mjs", 'throw new Error("sticks rejects a raised limit")\n')
+write("base/scripts/throws.test.mjs", 'throw new Error("metrics rejects a raised limit")\n')
 write("base/scripts/swallows.test.mjs", 'process.on("uncaughtException", () => {})\nthrow new Error("swallowed")\n')
 write(
   "base/scripts/hangs.test.mjs",
@@ -471,7 +474,7 @@ same("the token is not in the arguments or the environment", ran("scripts/echo.t
 same("a thrown case is broken and named", ran("scripts/throws.test.mjs"), {
   file: "scripts/throws.test.mjs",
   state: "broken",
-  message: "sticks rejects a raised limit",
+  message: "metrics rejects a raised limit",
 })
 same("a swallowed failure is broken", ran("scripts/swallows.test.mjs").state, "broken")
 
@@ -493,9 +496,9 @@ same(
   "a missing check names the failure",
   firstFailure({
     status: 1,
-    output: "node:internal\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/work/base/scripts/sticks.mjs'",
+    output: "node:internal\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '/work/base/scripts/metrics.mjs'",
   }),
-  "Cannot find module '/work/base/scripts/sticks.mjs'",
+  "Cannot find module '/work/base/scripts/metrics.mjs'",
 )
 same("a silent failure names its exit", firstFailure({ status: 3, output: "\n" }), "exit 3")
 same("a proof that ran out of time is broken", proofState({ runner: "node", status: 124, stdout: "", token: "t" }), {
@@ -506,20 +509,20 @@ same("a proof that ran out of time is broken", proofState({ runner: "node", stat
 const advice =
   "Restore the behaviour each broken case expects and the lines each proof lost. If the check is meant to change, ask the repo owner to approve the pull request, then run this check again."
 const results = [
-  { file: "scripts/sticks.test.mjs", state: "kept" },
+  { file: "scripts/metrics.test.mjs", state: "kept" },
   { file: "tooling/rules/no-raw.test.js", state: "broken", message: "no-raw rejects a hex color" },
   { file: "scripts/check-specs.test.mjs", state: "not proved", message: "this machine has no Java 21" },
 ]
 same(
   "a broken proof with its own sentence is printed as that sentence",
   verdict({
-    results: [{ file: "scripts/sticks.test.mjs", state: "broken", said: "did not finish in 300 s" }],
+    results: [{ file: "scripts/metrics.test.mjs", state: "broken", said: "did not finish in 300 s" }],
     approved: true,
   }).lines[0],
-  "broken: scripts/sticks.test.mjs did not finish in 300 s",
+  "broken: scripts/metrics.test.mjs did not finish in 300 s",
 )
 const brokenLines = [
-  "kept scripts/sticks.test.mjs",
+  "kept scripts/metrics.test.mjs",
   "broken tooling/rules/no-raw.test.js: no-raw rejects a hex color",
   "not proved here scripts/check-specs.test.mjs: this machine has no Java 21",
 ]
@@ -554,24 +557,24 @@ same(
   missingNeeds("scripts/check-specs.test.mjs", (need) => need !== "Java 21"),
   ["Java 21"],
 )
-same("a proof without git is not proved here", runProof(base, "scripts/sticks.test.mjs", { has: () => false }), {
-  file: "scripts/sticks.test.mjs",
+same("a proof without git is not proved here", runProof(base, "scripts/metrics.test.mjs", { has: () => false }), {
+  file: "scripts/metrics.test.mjs",
   state: "not proved",
   message: "this machine has no git",
 })
-const unprovedInCi = runProof(base, "scripts/sticks.test.mjs", { has: () => false, runsInCi: true })
+const unprovedInCi = runProof(base, "scripts/metrics.test.mjs", { has: () => false, runsInCi: true })
 same("a proof without git is broken in CI", unprovedInCi, {
-  file: "scripts/sticks.test.mjs",
+  file: "scripts/metrics.test.mjs",
   state: "broken",
   said: "could not be proved here: this machine has no git",
 })
 same("a proof that could not be proved fails in CI", verdict({ results: [unprovedInCi], approved: false }), {
   pass: false,
-  lines: ["broken: scripts/sticks.test.mjs could not be proved here: this machine has no git", advice],
+  lines: ["broken: scripts/metrics.test.mjs could not be proved here: this machine has no git", advice],
 })
 same(
   "a plain proof needs nothing",
-  missingNeeds("scripts/failure-audit.test.mjs", () => false),
+  missingNeeds("scripts/ci-failure-report.test.mjs", () => false),
   [],
 )
 
@@ -586,14 +589,14 @@ same("a proof sees only a path, a scratch home and its tools", env, {
   JAVA: "/jdk/bin/java",
 })
 same(
-  "a proof sees the gate's environment, in CI and locally",
+  "a proof sees the environment of ci, in CI and locally",
   [
     proofEnv({ home: "/scratch", nodeFolder: "/node/bin" }).CI,
     proofEnv({ home: "/s", nodeFolder: "/n" }).GITHUB_ACTIONS,
   ],
   ["true", "true"],
 )
-const command = ["/node/bin/node", "scripts/old-proofs-run.mjs", "scripts/sticks.test.mjs"]
+const command = ["/node/bin/node", "scripts/check-regression-run.mjs", "scripts/metrics.test.mjs"]
 const cleared = [
   "env",
   "-i",

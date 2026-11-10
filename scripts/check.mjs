@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { timeStick } from "./sticks.mjs"
+import { timeMetric } from "./metrics.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const checkStarted = Date.now()
@@ -24,10 +24,10 @@ export const stages = [
     ["boundaries", "pnpm", ["check:boundaries"]],
     ["build", "pnpm", ["--filter", "!@airdesign/site", "-r", "--if-present", "run", "build"]],
   ],
-  [["sticks", "node", ["scripts/sticks.mjs"]]],
+  [["metrics", "node", ["scripts/metrics.mjs"]]],
 ]
 
-const showOnSuccess = new Set(["bug-rule", "sticks", "specs"])
+const showOnSuccess = new Set(["bug-rule", "metrics", "specs"])
 const all = process.argv.includes("--all")
 const failed = []
 
@@ -64,10 +64,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (failed.length > 0 && !all) break
   }
 
-  const checkSeconds = timeStick(root, "check seconds", checkStarted)
+  const checkSeconds = timeMetric(root, "ci-duration", checkStarted)
   console.log(checkSeconds.line)
   if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
-  if (checkSeconds.fails) failed.push("check seconds")
+  if (checkSeconds.fails) failed.push("ci-duration")
 
   if (failed.length > 0) {
     console.error(`failed: ${failed.join(", ")}`)

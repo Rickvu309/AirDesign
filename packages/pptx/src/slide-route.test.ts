@@ -149,7 +149,7 @@ function shownText(slideXml: string): string {
   return [...slideXml.matchAll(/<a:t(?: [^>]*)?>([^<]*)<\/a:t>/g)].map((match) => match[1]).join("")
 }
 
-describe("applyRoute known faults", () => {
+describe("applyRoute known failures", () => {
   it("removes the picture it was asked to remove, not the shape before it", () => {
     const next = edited(shape("2", run("Keep")) + picture("3"), { name: "remove", part, shape: "3" })
     expect(next).toContain('<p:cNvPr id="2"')
