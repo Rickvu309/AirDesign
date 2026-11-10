@@ -108,13 +108,13 @@ export function ThinDeck({ id }: { id?: string }) {
   const [ids, setIds] = useState<readonly ElementId[]>([])
 
   useEffect(() => {
-    if (deckId === undefined) return
+    if (id === undefined) return
     let live = true
     void (async () => {
       await ensureMarkup()
-      const stored = await getParts(deckId)
+      const stored = await getParts(id)
       if (!stored.ok || !live) return
-      const opened = await connect(memoryRemote()).openDeck(deckId)
+      const opened = await connect(memoryRemote()).openDeck(id)
       const text = opened.ok && opened.register.landed.length > 0 ? currentValue(opened.register) : null
       if (!live) return
       nodes.current = stored.nodes.a
@@ -125,7 +125,7 @@ export function ThinDeck({ id }: { id?: string }) {
     return () => {
       live = false
     }
-  }, [deckId])
+  }, [id])
 
   async function openFile(file: File) {
     await ensureMarkup()
