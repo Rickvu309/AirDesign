@@ -734,6 +734,7 @@ describe("live cache", () => {
         [copy, shared],
         [notes, other],
       ]),
+      file: shared,
       nodes,
     })
     expect(saved.ok).toBe(true)
@@ -781,6 +782,7 @@ describe("live cache", () => {
     const blank = "ppt/media/blank.bin"
     const stale = await putParts("other", {
       parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
+      file: new Uint8Array([1]),
       nodes: cleanNodes,
     })
     const clean = await putParts("clean", {
@@ -788,6 +790,7 @@ describe("live cache", () => {
         [slide, new Uint8Array([9, 8, 7])],
         [layout, new Uint8Array([3])],
       ]),
+      file: new Uint8Array([2]),
       nodes: cleanNodes,
     })
     const other = await putParts("other", {
@@ -796,6 +799,7 @@ describe("live cache", () => {
         [notes, new Uint8Array([6])],
         [blank, new Uint8Array()],
       ]),
+      file: new Uint8Array([3]),
       nodes: otherNodes,
     })
     expect(clean.ok).toBe(true)
@@ -823,9 +827,15 @@ describe("live cache", () => {
   it("answers absent for parts after the database is deleted", async () => {
     installParts()
     const nodes = { a: { part: "ppt/slides/slide1.xml", shape: "2" } }
-    const saved = await putParts("clean", { parts: new Map([[nodes.a.part, new Uint8Array([9, 8, 7])]]), nodes })
+    const saved = await putParts("clean", {
+      parts: new Map([[nodes.a.part, new Uint8Array([9, 8, 7])]]),
+      file: new Uint8Array([1]),
+      nodes,
+    })
     expect(saved.ok).toBe(true)
     await deleteDatabase()
+    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
+  })
 
   it("reads a deck's opened file back after a new connect", async () => {
     installParts()
