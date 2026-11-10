@@ -823,4 +823,62 @@ describe("live cache", () => {
     await deleteDatabase()
     expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
+
+  it("stops at a refused batch and sends no later batch", async () => {
+    const real = memoryRemote()
+    const sizes: number[] = []
+    const remote: Remote = {
+      open: (body) => real.open(body),
+      watch: (body) => real.watch(body),
+      commit: async (body) => {
+        sizes.push(body.batch.length)
+        if (sizes.length === 2) return { ok: false, refusal: "session" }
+        return real.commit(body)
+      },
+    }
+    const cache = connect(remote)
+    for (let index = 0; index < 201; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
+    expect(sizes).toEqual([100, 100])
+    expect(await cache.pending("deck")).toHaveLength(101)
+  })
+
+  it("keeps the second batch pending when its commit key does not match", async () => {
+    const real = memoryRemote()
+    let calls = 0
+    const remote: Remote = {
+      open: (body) => real.open(body),
+      watch: (body) => real.watch(body),
+      commit: async (body) => {
+        calls += 1
+        const answer = await real.commit(body)
+        if (calls === 2 && answer.ok) return { ...answer, key: "deck:9" } as CommitResult
+        return answer
+      },
+    }
+    const cache = connect(remote)
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "payload" })
+    expect((await cache.rows("deck")).filter((row) => row.kind === "confirmed")).toHaveLength(100)
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["v100"])
+  })
+
+  it("returns the answer of the last batch", async () => {
+    const real = memoryRemote()
+    const answers: CommitResult[] = []
+    const remote: Remote = {
+      open: (body) => real.open(body),
+      watch: (body) => real.watch(body),
+      commit: async (body) => {
+        const answer = await real.commit(body)
+        answers.push(answer)
+        return answer
+      },
+    }
+    const cache = connect(remote)
+    for (let index = 0; index < 101; index += 1) await cache.enqueue("deck", `v${index}`, "258.7")
+    const result = await cache.flush("deck")
+    expect(answers).toHaveLength(2)
+    expect(result).toEqual(answers[1])
+  })
 })
