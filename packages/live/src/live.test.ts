@@ -667,10 +667,14 @@ describe("live cache", () => {
     installParts()
     const slide = "ppt/slides/slide1.xml"
     const notes = "ppt/notesSlides/notesSlide1.xml"
+    const layout = "ppt/slideLayouts/slideLayout1.xml"
     const cleanNodes = { a: { part: slide, shape: "2" } }
     const otherNodes = { a: { part: slide, shape: "5" } }
     const clean = await putParts("clean", {
-      parts: new Map<string, Uint8Array>([[slide, new Uint8Array([9, 8, 7])]]),
+      parts: new Map<string, Uint8Array>([
+        [slide, new Uint8Array([9, 8, 7])],
+        [layout, new Uint8Array([3])],
+      ]),
       nodes: cleanNodes,
     })
     const other = await putParts("other", {
@@ -690,8 +694,9 @@ describe("live cache", () => {
     expect(readClean.ok).toBe(true)
     expect(readOther.ok).toBe(true)
     if (!readClean.ok || !readOther.ok) return
-    expect([...readClean.parts.keys()]).toEqual([slide])
+    expect([...readClean.parts.keys()]).toEqual([slide, layout])
     expect(Array.from(readClean.parts.get(slide) ?? [])).toEqual([9, 8, 7])
+    expect(Array.from(readClean.parts.get(layout) ?? [])).toEqual([3])
     expect(readClean.nodes).toEqual(cleanNodes)
     expect([...readOther.parts.keys()]).toEqual([slide, notes])
     expect(Array.from(readOther.parts.get(slide) ?? [])).toEqual([4, 5])
