@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
+import { handKeptMessage, references } from "../scripts/reference-order.mjs"
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const generator = path.join(repoRoot, "scripts/new-package.mjs")
@@ -31,10 +32,7 @@ function writeCopy(dir: string): void {
   for (const fileName of ["pnpm-workspace.yaml", "tsconfig.base.json", ".oxfmtrc.json"]) {
     writeFileSync(path.join(dir, fileName), readFileSync(path.join(repoRoot, fileName)))
   }
-  writeFileSync(
-    path.join(dir, "tsconfig.json"),
-    `${JSON.stringify({ files: [], references: [{ path: "./packages/document" }] }, null, 2)}\n`,
-  )
+  writeFileSync(path.join(dir, "tsconfig.json"), `${JSON.stringify({ files: [] }, null, 2)}\n`)
 }
 
 describe("new:package", () => {
@@ -48,8 +46,8 @@ describe("new:package", () => {
       const packageJson = JSON.parse(readFileSync(path.join(dir, "packages/probe/package.json"), "utf8"))
       expect(packageJson.name).toBe("@airdesign/probe")
       expect(Object.keys(packageJson.exports)).toEqual(["."])
-      const rootTsconfig = JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))
-      expect(rootTsconfig.references.map((item: { path: string }) => item.path)).toContain("./packages/probe")
+      expect(references(dir)).toContain("./packages/probe")
+      expect(JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))).toEqual({ files: [] })
 
       const typecheck = run([tsc, "-b", "packages/probe", "--pretty", "false"], dir)
       expect(typecheck.status, `${typecheck.stdout}\n${typecheck.stderr}`).toBe(0)
@@ -106,17 +104,14 @@ describe("new:package", () => {
     const dir = mkdtempSync(path.join(tmpdir(), "airdesign-new-package-order-"))
     try {
       writeCopy(dir)
+      mkdirSync(path.join(dir, "packages/theme"), { recursive: true })
       writeFileSync(
-        path.join(dir, "tsconfig.json"),
-        `${JSON.stringify({ files: [], references: [{ path: "./packages/theme" }] }, null, 2)}\n`,
+        path.join(dir, "packages/theme/tsconfig.json"),
+        `${JSON.stringify({ compilerOptions: { composite: true } }, null, 2)}\n`,
       )
       const created = run([generator, "probe"], dir)
       expect(created.status, `${created.stdout}\n${created.stderr}`).toBe(0)
-      const rootTsconfig = JSON.parse(readFileSync(path.join(dir, "tsconfig.json"), "utf8"))
-      expect(rootTsconfig.references.map((item: { path: string }) => item.path)).toEqual([
-        "./packages/probe",
-        "./packages/theme",
-      ])
+      expect(references(dir)).toEqual(["./packages/probe", "./packages/theme"])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
@@ -138,6 +133,7 @@ describe("new:package", () => {
       const unsorted = run([checker], dir)
       expect(unsorted.status).not.toBe(0)
       expect(unsorted.stderr).toContain("Sort the references in tsconfig.json by path.")
+      expect(unsorted.stderr).toContain(handKeptMessage)
 
       writeFileSync(
         path.join(dir, "tsconfig.json"),
@@ -148,7 +144,13 @@ describe("new:package", () => {
         )}\n`,
       )
       const sorted = run([checker], dir)
-      expect(sorted.status, `${sorted.stdout}\n${sorted.stderr}`).toBe(0)
+      expect(sorted.status).not.toBe(0)
+      expect(sorted.stderr).toContain(handKeptMessage)
+      expect(sorted.stderr).toContain("pnpm typecheck")
+
+      writeCopy(dir)
+      const derived = run([checker], dir)
+      expect(derived.status, `${derived.stdout}\n${derived.stderr}`).toBe(0)
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
