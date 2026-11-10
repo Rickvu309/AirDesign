@@ -29,6 +29,17 @@ function password(): string {
   return randomBytes(18).toString("base64url")
 }
 
+function distinctive(name: string): string {
+  return `${name}Secret${randomBytes(24).toString("hex")}`
+}
+
+type Secrets = Record<"admin" | Role, string>
+
+function expectNoSecrets(outcome: Outcome, secrets: Secrets): void {
+  const everything = `${outcome.stdout.join("\n")}\n${outcome.stderr.join("\n")}`
+  for (const secret of Object.values(secrets)) expect(everything).not.toContain(secret)
+}
+
 function openClient(url: string): Promise<Client> {
   const client = new Client({ connectionString: url })
   return client.connect().then(() => client)
@@ -70,17 +81,24 @@ describe("database setup", () => {
     }
   }
 
-  async function freshDatabase(): Promise<{ urls: Urls; database: string }> {
+  async function freshDatabase(): Promise<{ urls: Urls; database: string; secrets: Secrets }> {
     counter += 1
     const database = `setup_${String(counter)}`
     await asSuperuser("postgres", (client) => client.query(`create database ${database}`))
+    const secrets: Secrets = {
+      admin: distinctive("admin"),
+      session: distinctive("session"),
+      deck: distinctive("deck"),
+      listen: distinctive("listen"),
+    }
     return {
       database,
+      secrets,
       urls: {
-        admin: superUrl(database),
-        session: roleUrl("session", password(), database),
-        deck: roleUrl("deck", password(), database),
-        listen: roleUrl("listen", password(), database),
+        admin: `postgres://postgres:${secrets.admin}@127.0.0.1:${String(cluster.port)}/${database}`,
+        session: roleUrl("session", secrets.session, database),
+        deck: roleUrl("deck", secrets.deck, database),
+        listen: roleUrl("listen", secrets.listen, database),
       },
     }
   }
@@ -218,7 +236,7 @@ describe("database setup", () => {
   })
 
   it("exits 1 with one line and no url when the admin password is wrong", async () => {
-    const { urls, database } = await freshDatabase()
+    const { urls, database, secrets } = await freshDatabase()
     const bossSecret = password()
     await asSuperuser("postgres", (client) => client.query(`create role boss login superuser password '${bossSecret}'`))
     const wrongSecret = password()
@@ -245,6 +263,7 @@ describe("database setup", () => {
     ]) {
       expect(everything).not.toContain(secret)
     }
+    expectNoSecrets(outcome, secrets)
     const roleRows = await asSuperuser("postgres", (client) =>
       client.query("select 1 from pg_roles where rolname in ('session', 'deck', 'listen')"),
     )
@@ -252,7 +271,7 @@ describe("database setup", () => {
   })
 
   it("exits when a role url has no password", async () => {
-    const { urls, database } = await freshDatabase()
+    const { urls, database, secrets } = await freshDatabase()
     await run(environmentOf(urls))
     const base = `127.0.0.1:${String(cluster.port)}/${database}`
     for (const role of roles) {
@@ -267,6 +286,7 @@ describe("database setup", () => {
         expect(outcome.stderr).toHaveLength(1)
         expect(outcome.stderr[0]).toContain(variableOf[role])
         expect(outcome.stderr[0]).not.toContain("postgres://")
+        expectNoSecrets(outcome, secrets)
         const stillConnects = await openClient(urls[role])
         await stillConnects.end()
       }
@@ -274,6 +294,16 @@ describe("database setup", () => {
   })
 
   it("leaves no role and no schema when the third role fails", async () => {
+    const colliding = await freshDatabase()
+    await asSuperuser(colliding.database, (client) => client.query("create schema deck"))
+    const collided = await run(environmentOf(colliding.urls))
+    expect(collided.code).toBe(1)
+    expect(collided.stdout).toEqual([])
+    expect(collided.stderr).toHaveLength(1)
+    expectNoSecrets(collided, colliding.secrets)
+    expect(await flagsOfRoles()).toEqual([])
+    expect(await schemasIn(colliding.database)).toEqual(["deck"])
+
     const empty = await freshDatabase()
     const failed = await run(
       environmentOf({
@@ -283,6 +313,8 @@ describe("database setup", () => {
     )
     expect(failed.code).toBe(1)
     expect(failed.stderr).toHaveLength(1)
+    expectNoSecrets(failed, empty.secrets)
+    expect(failed.stderr.join("\n")).not.toContain("abc")
     expect(await flagsOfRoles()).toEqual([])
     expect(await schemasIn(empty.database)).toEqual([])
 
@@ -301,6 +333,8 @@ describe("database setup", () => {
       }),
     )
     expect(failedAgain.code).toBe(1)
+    expectNoSecrets(failedAgain, later.secrets)
+    expect(failedAgain.stderr.join("\n")).not.toContain("abc")
     const after = await asSuperuser("postgres", (client) =>
       client.query(
         "select rolname, rolpassword from pg_authid where rolname in ('session', 'deck', 'listen') order by rolname",
@@ -340,7 +374,7 @@ describe("database setup", () => {
   })
 
   it("prints one line when the connection is lost", async () => {
-    const { urls, database } = await freshDatabase()
+    const { urls, database, secrets } = await freshDatabase()
     const uncaught: unknown[] = []
     const record = (error: unknown): void => {
       uncaught.push(error)
@@ -370,6 +404,7 @@ describe("database setup", () => {
       expect(outcome.stdout).toEqual([])
       expect(outcome.stderr).toHaveLength(1)
       expect(outcome.stderr[0]).toMatch(/^setup: failed \w+$/)
+      expectNoSecrets(outcome, secrets)
     } finally {
       process.off("uncaughtException", record)
       await holder.end()
