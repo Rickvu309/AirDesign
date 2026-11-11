@@ -8,16 +8,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import {
-  connect,
-  fetchOriginal,
-  getParts,
-  httpRemote,
-  memoryRemote,
-  putParts,
-  sendOriginal,
-  type Remote,
-} from "@airdesign/live"
+import { connect, fetchOriginal, getParts, memoryRemote, putParts, sendOriginal } from "@airdesign/live"
 import {
   applyRoute,
   exportPackage,
@@ -37,9 +28,8 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
+import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
-
-export type TextBox = { readonly id: ElementId; readonly file: string }
 
 let markup: Promise<void> | null = null
 
@@ -163,46 +153,6 @@ function paint(
     ),
   }))
   return { count: read.length, canvases: slideCanvases(paintReader(parts), sources), boxes, shapes: rows }
-}
-
-type EditLink = {
-  enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
-  flush(deck: string): Promise<unknown>
-}
-
-const server = httpRemote()
-
-export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept"
-
-export type CommitOutcome = FlushOutcome | "refused"
-
-export async function flushPending(open: (remote: Remote) => EditLink, deckId: string): Promise<FlushOutcome> {
-  try {
-    const flushed = await open(server).flush(deckId)
-    if (typeof flushed !== "object" || flushed === null) return "kept"
-    if ("ok" in flushed && flushed.ok === true) return "sent"
-    if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
-    return "kept"
-  } catch (error) {
-    return error instanceof TypeError ? "offline" : "kept"
-  }
-}
-
-export async function commitEdit(
-  open: (remote: Remote) => EditLink,
-  deckId: string,
-  value: string,
-  box: TextBox,
-  paint?: () => void,
-  refused?: () => Promise<void> | void,
-): Promise<CommitOutcome> {
-  const result = await open(memoryRemote()).enqueue(deckId, value, box.id, box.file)
-  if (!result.ok) {
-    await refused?.()
-    return "refused"
-  }
-  paint?.()
-  return flushPending(open, deckId)
 }
 
 export async function saveDeck(
