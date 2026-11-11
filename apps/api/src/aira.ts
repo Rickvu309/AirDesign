@@ -343,7 +343,7 @@ export async function airaTurn(
 ): Promise<AiraAnswer> {
   const settings = host.settings
   if (settings === undefined || !settings.on || settings.key === undefined || settings.secret === undefined) {
-    return refuse(503, "off")
+    return refuse(403, "off")
   }
   if (typeof country !== "string" || !supportedCountries.has(country.toUpperCase())) return refuse(403, "country")
   const parsed = readTurn(raw)
@@ -386,6 +386,6 @@ export async function airaTurn(
     `aira turn ${id} account ${user} request ${opened.request ?? "none"} outcome ${played.kind}`,
   )
   if (played.kind === "settled") return { status: 200, body: { ok: true, text: played.text, usage: weekUsage(ledger) } }
-  if (played.kind === "dropped") return refuse(502, "dropped", { usage: weekUsage(ledger) })
-  return refuse(503, "unavailable", { usage: weekUsage(ledger) })
+  if (played.kind === "dropped") return refuse(200, "dropped", { usage: weekUsage(ledger) })
+  return refuse(200, "unavailable", { usage: weekUsage(ledger) })
 }
