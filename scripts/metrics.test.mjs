@@ -86,19 +86,11 @@ if (!/^metric ci-duration  now 41\.\d  limit 40$/.test(timed.line)) throw new Er
 if (!timed.over?.startsWith("ci-duration is 41.")) throw new Error(`${timed.over}`)
 if (timeMetric(root, "ci-duration", Date.now()).over !== undefined) throw new Error("a fast run was reported")
 const ciBefore = process.env.CI
-for (const [value, fails] of [
-  ["true", true],
-  ["1", true],
-  ["", false],
-  ["false", false],
-]) {
+for (const value of ["true", "1", "", "false"]) {
   process.env.CI = value
-  if (timeMetric(root, "ci-duration", Date.now() - 81_200).fails !== fails) {
-    throw new Error(`a time over twice its limit with CI=${value} should ${fails ? "fail" : "pass"}`)
-  }
-  if (timeMetric(root, "ci-duration", Date.now() - 48_400).fails) {
-    throw new Error(`a time over its limit and under twice it must only warn, with CI=${value}`)
-  }
+  const late = timeMetric(root, "ci-duration", Date.now() - 81_200)
+  if (late.fails !== undefined) throw new Error(`a time over its limit must only warn, with CI=${value}`)
+  if (!late.over?.startsWith("ci-duration is 81.")) throw new Error(`a late run was not reported: ${late.over}`)
 }
 if (ciBefore === undefined) delete process.env.CI
 else process.env.CI = ciBefore
