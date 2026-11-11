@@ -35,13 +35,7 @@ jobs:
           key: playwright-chromium-shell-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
       - if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm exec playwright install --only-shell chromium
-      - name: Install PostgreSQL 18
-        run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo install -m 644 .github/postgresql-archive.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get -o Acquire::Retries=5 update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y --no-install-recommends postgresql-18
+      - uses: ./.github/actions/postgres
       - run: pnpm test:journeys
         env:
           JOURNEYS_REPORT: ${{ runner.temp }}/journeys.json

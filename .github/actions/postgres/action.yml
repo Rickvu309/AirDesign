@@ -1,0 +1,13 @@
+name: postgres
+description: Puts PostgreSQL 18 where the tests look for it.
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      id: postgres
+      with:
+        path: ~/.local/pgsql-18
+        key: postgres-18-${{ runner.os }}-${{ hashFiles('scripts/postgres.sh') }}
+    - if: steps.postgres.outputs.cache-hit != 'true'
+      shell: bash
+      run: bash scripts/postgres.sh
