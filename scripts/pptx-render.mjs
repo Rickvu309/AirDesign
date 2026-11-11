@@ -19,7 +19,7 @@ export const renderSettings = {
     "{out}",
     "{deck}",
   ],
-  pdftoppm: ["-png", "-r", "150", "{pdf}", "{page}"],
+  pdftoppm: ["-png", "-r", "150", "-aa", "no", "{pdf}", "{page}"],
 }
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")

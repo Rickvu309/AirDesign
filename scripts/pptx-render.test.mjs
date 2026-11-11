@@ -89,6 +89,13 @@ for (const tool of ["soffice", "pdftoppm"]) {
 same(renderKey({ ...base, deck: Buffer.from(deck) }), key, "the key is not stable")
 
 const self = fs.readFileSync(fileURLToPath(new URL("./pptx-render.mjs", import.meta.url)))
+const antialiasing = renderSettings.pdftoppm.indexOf("-aa")
+same(
+  renderSettings.pdftoppm[antialiasing + 1],
+  "no",
+  "pdftoppm anti-aliases text, so a wider glyph elsewhere moves untouched pages",
+)
+
 same(renderCode(), createHash("sha256").update(self).digest("hex"), "the render code hash is not the module bytes")
 
 same(
