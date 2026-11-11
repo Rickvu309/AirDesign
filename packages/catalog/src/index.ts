@@ -15,6 +15,7 @@ export {
   readDecks,
   readEdit,
   readEmail,
+  readHost,
   readLinkToken,
   readNamedDeck,
   readNoFields,

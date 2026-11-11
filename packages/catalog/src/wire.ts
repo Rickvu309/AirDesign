@@ -59,6 +59,8 @@ const codePattern = /^\d{6}$/
 const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/i
 const challengePattern = /^[A-Za-z0-9_-]{43}$/
 const formType = "application/x-www-form-urlencoded"
+const hostPattern = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::([0-9]{1,5}))?$/
+const portCap = 65_535
 
 export const sessionCookieName = "airdesign.session"
 
@@ -394,6 +396,13 @@ export function readSessionCookie(header: unknown): string | undefined {
 export function readBearer(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined
   return bearerPattern.exec(raw)?.[1]
+}
+
+export function readHost(raw: unknown): string | undefined {
+  if (typeof raw !== "string") return undefined
+  const matched = hostPattern.exec(raw)
+  if (matched === null || Number(matched[1] ?? 0) > portCap) return undefined
+  return raw
 }
 
 export function readLinkToken(raw: unknown): string | undefined {

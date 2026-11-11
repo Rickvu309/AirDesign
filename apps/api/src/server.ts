@@ -10,6 +10,7 @@ import {
   readCommit,
   readDecks,
   readEmail,
+  readHost,
   readLinkToken,
   readNoFields,
   readRename,
@@ -82,6 +83,7 @@ export const formCap = 16_384
 const localBase = "http://127.0.0.1"
 const unreadTarget = "The request target could not be read."
 const unservedMethod = "This address does not answer that method."
+const unreadHost = "The request host could not be read."
 const mcpMethods = ["GET", "POST", "DELETE"]
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
@@ -402,6 +404,11 @@ async function mcpRoute(visit: Visit): Promise<void> {
     await visit.body()
     res.setHeader("allow", mcpMethods.join(", "))
     sendJson(res, 405, { ok: false, refusal: unservedMethod })
+    return
+  }
+  if (readHost(req.headers.host) === undefined) {
+    await visit.body()
+    sendJson(res, 400, { ok: false, refusal: unreadHost })
     return
   }
   const email = await caller(visit)
