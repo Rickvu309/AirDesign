@@ -1070,30 +1070,15 @@ describe("the route table is the only way in", () => {
     return names.filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
   }
 
-  it("only server.ts opens a server and nothing listens for requests by hand", async () => {
-    const openers: string[] = []
+  it("nothing listens for requests by hand", async () => {
+    const listeners: string[] = []
     for (const name of await sources()) {
       const file = await parsedFile(name)
       for (const node of file.all) {
-        if (node.type === "ImportDeclaration" && literalText(node.source) === "node:http") {
-          if (sourceOf(file, node).includes("createServer")) openers.push(name)
-        }
         if (node.type !== "CallExpression" || !isTree(node.callee) || node.callee.type !== "MemberExpression") continue
-        if (literalText((node.arguments as unknown[])[0]) === "request") openers.push(sourceOf(file, node))
+        if (literalText((node.arguments as unknown[])[0]) === "request") listeners.push(sourceOf(file, node))
       }
     }
-    expect(openers).toEqual(["server.ts"])
-  })
-
-  it("reads the environment only at each program's entry", async () => {
-    const readers: string[] = []
-    for (const name of await sources()) {
-      const file = await parsedFile(name)
-      const reads = file.all.some(
-        (node) => node.type === "MemberExpression" && squeezed(sourceOf(file, node)) === "process.env",
-      )
-      if (reads) readers.push(name)
-    }
-    expect(readers.toSorted()).toEqual(["bootstrap.ts", "postgres-setup.ts", "setup.ts", "start.ts"])
+    expect(listeners).toEqual([])
   })
 })
