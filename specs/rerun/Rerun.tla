@@ -1,7 +1,7 @@
 ---- MODULE Rerun ----
 \* This model follows two runs on one property of one deck: the guard, the claim and the stop mark of each run.
 \* The second run starts from a stopped or undone first run. Undo of an earlier run while a later run is live is in the run and undo models.
-\* Version is how many landed writes the property shows.
+\* Version rises by one on each landed write and by one for each row an undo hides. It never falls.
 EXTENDS Integers
 
 VARIABLES
@@ -21,13 +21,20 @@ VARIABLES
   keptFirst,
   keptPerson,
   wroteAfterStop,
-  secondEditRows
+  secondEditRows,
+  hidden,
+  reused
 
 secondVars == <<secondRows, secondPerson, keptFirst, keptPerson, secondEditRows>>
 
-vars == <<phase, run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
+vars == <<phase, run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop, hidden, reused>>
 
-Version == firstRows + person + secondRows + secondPerson
+Version == firstRows + person + secondRows + secondPerson + 2 * hidden
+
+Shown == <<firstRows, person, secondRows, secondPerson>>
+
+\* Marks a step that lowers the version, or changes what the property shows and keeps the same version.
+Track == reused' = (reused \/ Version' < Version \/ (Version' = Version /\ Shown' # Shown))
 
 RunRows == IF run = 1 THEN firstRows ELSE secondRows
 
@@ -45,16 +52,18 @@ TypeOK ==
   /\ person \in {0, 1}
   /\ secondRows \in {0, 1, 2}
   /\ secondPerson \in {0, 1}
-  /\ readAt \in -1..5
+  /\ readAt \in -1..6
   /\ guarded \in BOOLEAN
   /\ guardedAt \in {-1, 0, 1, 2}
   /\ secondEditRows \in {-1, 0, 1, 2}
-  /\ claims \in -1..5
+  /\ claims \in -1..6
   /\ claimRun \in {0, 1, 2}
-  /\ stoppedAt \in -1..5
+  /\ stoppedAt \in -1..6
   /\ keptFirst \in {-1, 0, 1}
   /\ keptPerson \in {-1, 0, 1, 2}
   /\ wroteAfterStop \in BOOLEAN
+  /\ hidden \in {0, 1, 2, 3}
+  /\ reused \in BOOLEAN
 
 Init ==
   /\ phase = "idle"
@@ -74,6 +83,8 @@ Init ==
   /\ keptFirst = -1
   /\ keptPerson = -1
   /\ wroteAfterStop = FALSE
+  /\ hidden = 0
+  /\ reused = FALSE
 
 \* A person edit during a live first run sets the guard, whether or not that run has landed a row.
 PersonWrites ==
@@ -82,7 +93,8 @@ PersonWrites ==
   /\ person' = 1
   /\ guarded' = IF phase = "running" THEN TRUE ELSE guarded
   /\ guardedAt' = IF phase = "running" /\ guarded = FALSE THEN firstRows ELSE guardedAt
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, readAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
+  /\ UNCHANGED <<phase, run, firstRows, firstLanded, readAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop, hidden>>
+  /\ Track
 
 \* A person edit in the second run lands the same way. While that run is live it sets the guard, before or after the run has landed a row.
 PersonWritesSecond ==
@@ -92,14 +104,16 @@ PersonWritesSecond ==
   /\ guarded' = IF phase = "running" THEN TRUE ELSE guarded
   /\ guardedAt' = IF phase = "running" /\ guarded = FALSE THEN secondRows ELSE guardedAt
   /\ secondEditRows' = IF phase = "running" THEN secondRows ELSE secondEditRows
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, readAt, claims, claimRun, stoppedAt, secondRows, keptFirst, keptPerson, wroteAfterStop>>
+  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, readAt, claims, claimRun, stoppedAt, secondRows, keptFirst, keptPerson, wroteAfterStop, hidden>>
+  /\ Track
 
 \* The first run reads the current version.
 RunStarts ==
   /\ phase = "idle"
   /\ phase' = "running"
   /\ readAt' = Version
-  /\ UNCHANGED <<run, firstRows, firstLanded, person, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
+  /\ UNCHANGED <<run, firstRows, firstLanded, person, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop, hidden>>
+  /\ Track
 
 \* A new run starts from a stopped or undone run. It reads the current version and clears the guard, the claim and the stop mark.
 StartNext ==
@@ -114,7 +128,8 @@ StartNext ==
   /\ claimRun' = 0
   /\ stoppedAt' = -1
   /\ keptFirst' = firstRows
-  /\ UNCHANGED <<secondEditRows, firstRows, firstLanded, person, secondRows, secondPerson, keptPerson, wroteAfterStop>>
+  /\ UNCHANGED <<secondEditRows, firstRows, firstLanded, person, secondRows, secondPerson, keptPerson, wroteAfterStop, hidden>>
+  /\ Track
 
 \* Reading again names the current version, including after the run's first row. It does not clear a guard.
 AgentRereads ==
@@ -122,7 +137,8 @@ AgentRereads ==
   /\ RunRows \in {0, 1}
   /\ readAt # Version
   /\ readAt' = Version
-  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
+  /\ UNCHANGED <<phase, run, firstRows, firstLanded, person, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop, hidden>>
+  /\ Track
 
 \* The first run lands its row on the version it names, while it is open and unguarded.
 FirstWrites ==
@@ -137,7 +153,8 @@ FirstWrites ==
   /\ claims' = readAt
   /\ claimRun' = 1
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<phase, run, person, readAt, guarded, guardedAt, stoppedAt, secondVars>>
+  /\ UNCHANGED <<phase, run, person, readAt, guarded, guardedAt, stoppedAt, secondVars, hidden>>
+  /\ Track
 
 \* The first row of the second run lands on the version the run names, while the run is open and unguarded.
 SecondWrites ==
@@ -150,7 +167,8 @@ SecondWrites ==
   /\ claims' = readAt
   /\ claimRun' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson, hidden>>
+  /\ Track
 
 \* A later row of the second run lands on a fresh read.
 SecondWritesAgain ==
@@ -163,7 +181,8 @@ SecondWritesAgain ==
   /\ claims' = readAt
   /\ claimRun' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, stoppedAt, keptFirst, keptPerson, hidden>>
+  /\ Track
 
 \* A later row of the second run lands on that run's own claim.
 SecondKeepsClaim ==
@@ -175,7 +194,8 @@ SecondKeepsClaim ==
   /\ readAt # Version
   /\ secondRows' = 2
   /\ wroteAfterStop' = (wroteAfterStop \/ phase = "stopped")
-  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, keptFirst, keptPerson>>
+  /\ UNCHANGED <<secondEditRows, phase, run, firstRows, firstLanded, person, secondPerson, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, keptFirst, keptPerson, hidden>>
+  /\ Track
 
 \* An agent edit of a guarded second run does not land and is refused as protected, whatever its read, before or after that run has landed a row.
 SecondRefusesProtected ==
@@ -189,7 +209,8 @@ RunStops ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ stoppedAt' = Version
-  /\ UNCHANGED <<run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, secondVars, wroteAfterStop>>
+  /\ UNCHANGED <<run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, secondVars, wroteAfterStop, hidden>>
+  /\ Track
 
 \* Undo of the first run hides its row and leaves the person row.
 RunUndoes ==
@@ -197,7 +218,9 @@ RunUndoes ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
   /\ firstRows' = 0
+  /\ hidden' = hidden + firstRows
   /\ UNCHANGED <<run, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondVars, wroteAfterStop>>
+  /\ Track
 
 \* Undo of the second run hides only that run's rows. The first run's row and every person row stay.
 SecondUndoes ==
@@ -205,8 +228,10 @@ SecondUndoes ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
   /\ secondRows' = 0
+  /\ hidden' = hidden + secondRows
   /\ keptPerson' = person + secondPerson
   /\ UNCHANGED <<secondEditRows, run, firstRows, firstLanded, person, readAt, guarded, guardedAt, claims, claimRun, stoppedAt, secondPerson, keptFirst, wroteAfterStop>>
+  /\ Track
 
 Done ==
   /\ phase = "undone"
@@ -245,5 +270,8 @@ SecondUndoKeepsOtherRows ==
   phase # "undone"
   \/ run = 1
   \/ (secondRows = 0 /\ firstRows = keptFirst /\ person + secondPerson >= keptPerson)
+
+\* A version is never reused for different text. It never falls, and each change to what the property shows raises it.
+VersionNeverReused == reused = FALSE
 
 ====

@@ -631,7 +631,7 @@ export const suite: readonly SuiteRow[] = [
       deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }, { element: "body" }]),
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
     },
-    reference: one("undone", "title", "Again", 0),
+    reference: one("undone", "title", "Again", 2),
     wrong: { attempt: one("undone", "body", "Again", 0), reason: "touched" },
   },
 ]

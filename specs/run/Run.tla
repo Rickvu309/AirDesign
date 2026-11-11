@@ -28,6 +28,9 @@ ghost == <<startedLive, liveId, earlierLive>>
 
 vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
+\* The one row counts once when it lands and once more when an undo hides it. The number never falls.
+Version == writes + IF landed = 1 /\ writes = 0 THEN 2 ELSE 0
+
 \* The offered id has to equal the id stored on the node. The letter s is not special.
 accepted(readId) == readId = runId /\ phase \in {"stopped", "undone"}
 
@@ -35,8 +38,8 @@ TypeOK ==
   /\ phase \in {"idle", "running", "stopped", "undone"}
   /\ runId \in {"none", "s", "t"}
   /\ writes \in {0, 1}
-  /\ readAt \in {-1, 0, 1}
-  /\ mark \in {-1, 0, 1}
+  /\ readAt \in {-1, 0, 1, 2}
+  /\ mark \in {-1, 0, 1, 2}
   /\ didRead \in BOOLEAN
   /\ seen \in {"none", "stopped", "undone"}
   /\ seenId \in {"none", "s", "t"}
@@ -76,7 +79,7 @@ Start ==
   /\ phase = "idle"
   /\ phase' = "running"
   /\ runId' \in {"s", "t"}
-  /\ readAt' = writes
+  /\ readAt' = Version
   /\ opened' = TRUE
   /\ generation' = generation + 1
   /\ startedLive' = (startedLive \/ phase = "running")
@@ -95,7 +98,7 @@ StartNext ==
   /\ runId' \in {"s", "t"}
   /\ (runId' # owner \/ owner = "none")
   /\ phase' = "running"
-  /\ readAt' = writes
+  /\ readAt' = Version
   /\ mark' = -1
   /\ generation' = generation + 1
   /\ foreign' = IF (writes = 1 /\ owner # "none" /\ owner # runId') THEN 1 ELSE foreign
@@ -114,7 +117,7 @@ StartReuse ==
 AgentWrites ==
   \/ /\ phase = "running"
      /\ owner = "none"
-     /\ readAt = writes
+     /\ readAt = Version
      /\ writes = 0
      /\ writes' = 1
      /\ landed' = 1
@@ -133,7 +136,7 @@ AgentMiss ==
 Stop ==
   /\ phase = "running"
   /\ phase' = "stopped"
-  /\ mark' = writes
+  /\ mark' = Version
   /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Stop applies only while the stored id is running.
@@ -145,7 +148,7 @@ StopMiss ==
 Limit ==
   /\ phase = "running"
   /\ phase' = "stopped"
-  /\ mark' = writes
+  /\ mark' = Version
   /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Resume continues the same run. It does not start a second run on the deck.

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import {
   decide,
   openRegister,
+  history,
   version,
   type Command,
   type NodeRegister,
@@ -595,7 +596,9 @@ function keepRegister(register: Register): boolean {
   if (runIds(register) < 2) {
     return true
   }
-  return visiblePeople(register) === 0 && version(register) <= 2 && !register.guarded && register.phase !== "undone"
+  return (
+    visiblePeople(register) === 0 && history(register).length <= 2 && !register.guarded && register.phase !== "undone"
+  )
 }
 
 function identity(register: Register): string {
@@ -621,6 +624,7 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
       return {
         ...register,
         landed: [...register.landed, { actor: "person", value: command.value, visible: true }],
+        version: version(register) + 1,
         guarded: effect.guarded === "set" ? true : register.guarded,
       }
     }
@@ -648,10 +652,11 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
       const landed = register.landed.map((row) =>
         row.actor === "agent" && row.runId === command.runId ? { ...row, visible: false } : row,
       )
+      const hidden = register.landed.filter((row) => row.visible && row.runId === command.runId).length
       if (effect.outcome === "undo-run") {
-        return { ...register, landed }
+        return { ...register, landed, version: version(register) + hidden }
       }
-      return { ...register, phase: "undone", landed }
+      return { ...register, phase: "undone", landed, version: version(register) + hidden }
     }
     case "agent": {
       if (command.command !== "agent") {
@@ -660,6 +665,7 @@ function nextRegister(register: Register, command: Command, effect: Effect): Reg
       return {
         ...register,
         landed: [...register.landed, { actor: "agent", value: command.value, visible: true, runId: command.runId }],
+        version: version(register) + 1,
         claimed: command.readAt,
       }
     }
@@ -684,6 +690,7 @@ function bodyOf(register: Register, target: ElementId | null): NodeRegister {
     route: source.route,
     floor: source.floor,
     landed: source.landed,
+    version: version(source),
     phase: source.phase,
     runId: source.runId,
     readAt: source.readAt,
@@ -735,7 +742,7 @@ function walkOnce(target: ElementId | null): {
     commands: (register) => commands(viewOf(register, target)).map((command) => aimedAt(command, target)),
     keep: (register) => keepRegister(viewOf(register, target)),
     cap: (dequeued, register) => {
-      if (version(viewOf(register, target)) > 4 || dequeued > 400) {
+      if (history(viewOf(register, target)).length > 4 || dequeued > 400) {
         throw new Error("state cap hit")
       }
     },
@@ -806,6 +813,7 @@ function setsGuardAfterAgent(name: string): void {
     register: {
       ...register,
       landed: [...register.landed, { actor: "person", value: "kept", visible: true }],
+      version: 2,
       guarded: true,
     },
   })
@@ -890,6 +898,7 @@ describe("decide", () => {
       register: {
         ...register,
         phase: "undone",
+        version: 4,
         landed: [
           { actor: "agent", value: "one", visible: false, runId: "run" },
           { actor: "agent", value: "two", visible: false, runId: "run" },
@@ -975,6 +984,7 @@ describe("decide", () => {
       route: register.route,
       register: {
         ...register,
+        version: 1,
         landed: [...register.landed, { actor: "person", value, visible: true }],
       },
     })
