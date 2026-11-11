@@ -1,5 +1,5 @@
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
-import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
+import { Client, InMemoryTransport, fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/client"
 import { decide, elementId, version, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
@@ -140,6 +140,90 @@ describe("createServer", () => {
       expect(deck.revision).toBe(0)
       expect(deck.register.landed).toEqual([])
     })
+  })
+
+  it("advertises exactly what every tool reader accepts", async () => {
+    const change = { value: "21", node: "258.7", readAt: 0 }
+    const edit = { deck: "deck", base: 0, changes: [change] }
+    const inputs: unknown[] = [
+      null,
+      [],
+      "deck",
+      7,
+      {},
+      { deck: "deck" },
+      { deck: "bad id" },
+      { deck: 7 },
+      { deck: "deck", actor: "agent" },
+      { deck: "deck", runId: "run" },
+      { deck: "deck", runId: 7 },
+      { deck: "deck", runId: "bad id" },
+      { deck: "deck", runId: "run", extra: true },
+      edit,
+      { ...edit, extra: true },
+      { ...edit, deck: 7 },
+      { base: 0, changes: [change] },
+      { ...edit, base: -1 },
+      { ...edit, base: 0.5 },
+      { ...edit, base: Number.MAX_SAFE_INTEGER + 1 },
+      { ...edit, changes: "21" },
+      { ...edit, changes: [] },
+      { ...edit, changes: Array.from({ length: 101 }, () => change) },
+      ...[
+        { ...change, value: 7 },
+        { ...change, value: "\u0000" },
+        { ...change, value: "\ud800" },
+        { ...change, value: "😀" },
+        { ...change, floor: "old" },
+        { ...change, floor: 7 },
+        { ...change, actor: "person" },
+        { ...change, node: "a" },
+        { ...change, node: "258.7\n" },
+        { ...change, readAt: -1 },
+        { ...change, readAt: 0.5 },
+      ].map((item) => ({ ...edit, changes: [item] })),
+    ]
+    await withClient(sessionFor(opened()), async (client) => {
+      const { tools } = await client.listTools()
+      for (const tool of projectTools(catalog)) {
+        const advertised = tools.find((item) => item.name === tool.name)
+        if (advertised === undefined) throw new Error("missing tool")
+        const schema = fromJsonSchema(advertised.inputSchema as JsonSchemaType)
+        for (const input of inputs) {
+          const checked = await schema["~standard"].validate(input)
+          expect(!checked.issues?.length, `${tool.name}: ${JSON.stringify(input)}`).toBe(
+            catalog[tool.op].read(input).ok,
+          )
+        }
+      }
+    })
+  })
+
+  it("returns our sentences and structured refusals for SDK validation failures", async () => {
+    const change = { value: "21", node: "258.7", readAt: 0 }
+    for (const [name, arguments_, refusal] of [
+      ["airdesign_edit_deck", { deck: "deck", base: 0, changes: [{ ...change, value: 7 }] }, "field"],
+      ["airdesign_edit_deck", { deck: "deck", base: 0, changes: "21" }, "batch"],
+      ["airdesign_edit_deck", { base: 0, changes: [change] }, "field"],
+      ["airdesign_stop_run", { deck: "deck", runId: 7 }, "field"],
+      ["airdesign_stop_run", { runId: "run" }, "field"],
+      ["airdesign_capture_slide", {}, "field"],
+      ["airdesign_capture_slide", { deck: 7 }, "deck"],
+    ] as const) {
+      const session = sessionFor(opened())
+      const before = session.deck
+      await withClient(session, async (client) => {
+        const result = await client.callTool({ name, arguments: arguments_ })
+        const answer = { ok: false, revision: 0, refusal, elements: [] }
+        expect(result.isError).toBe(true)
+        expect(result.content).toEqual([
+          { type: "text", text: editNext[refusal] },
+          { type: "text", text: JSON.stringify(answer) },
+        ])
+        expect(result.structuredContent).toEqual(answer)
+        expect(session.deck).toBe(before)
+      })
+    }
   })
 
   it("lands an edit on the wire", async () => {

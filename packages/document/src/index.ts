@@ -1,5 +1,6 @@
 export {
   elementId,
+  elementPattern,
   legacyElement,
   readElementId,
   rootElement,

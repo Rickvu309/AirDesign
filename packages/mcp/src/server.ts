@@ -7,42 +7,16 @@ import { editRefusal, runRefusal } from "./edit-answer.js"
 import { editSentence, type EditCode } from "./edit-next.js"
 import { settleTurn } from "./turn.js"
 
-const editInput = z.looseObject({
-  deck: z.string().describe("Deck id."),
-  base: z.number().describe("Revision the edit was read from."),
-  changes: z
-    .array(
-      z.looseObject({
-        value: z
-          .string()
-          .describe(
-            "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run.",
-          ),
-        node: z.string().describe("Element id, <slide>.<shape>, such as 258.7."),
-        readAt: z
-          .number()
-          .describe(
-            "Version of that element from your last read. Every answer carries each named element's value and version. 0 for an element nobody has changed.",
-          ),
-      }),
-    )
-    .describe("Edits to land."),
-})
-
-const captureInput = z.looseObject({
-  deck: z.string().describe("Deck id."),
-})
-
-const runInput = z.looseObject({
-  deck: z.string().describe("Deck id."),
-  runId: z.string().describe("The runId your edit answers carried."),
-})
-
-function inputSchema(op: string) {
-  if (op === "edit_deck") return editInput
-  if (op === "stop_run") return runInput
-  if (op === "capture_slide") return captureInput
-  return z.looseObject({})
+function inputSchema(input: z.ZodType) {
+  const json = z.toJSONSchema(input, { io: "input" })
+  return {
+    "~standard": {
+      version: 1 as const,
+      vendor: "airdesign",
+      validate: (value: unknown) => ({ value }),
+      jsonSchema: { input: () => json, output: () => json },
+    },
+  }
 }
 
 function mcpResult(result: ToolResult) {
@@ -68,7 +42,7 @@ export function createServer(session: Session, host?: Host): McpServer {
       tool.name,
       {
         description: tool.description,
-        inputSchema: inputSchema(tool.op),
+        inputSchema: inputSchema(catalog[tool.op].read.input),
         annotations: {
           readOnlyHint: tool.readOnlyHint,
           destructiveHint: tool.destructiveHint,
