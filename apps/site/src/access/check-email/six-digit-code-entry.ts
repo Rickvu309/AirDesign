@@ -1,5 +1,4 @@
-import { readPendingEmail, readPendingNext } from "../pending-sign-in-email"
-import { submitSignInCode } from "../sign-in-requests"
+import { submitPendingCode } from "../sign-in-requests"
 
 const codeLength = 6
 
@@ -23,18 +22,11 @@ export function connectSixDigitCodeEntry(entry: Element): void {
 
   let submitting = false
   const submitWhenComplete = async () => {
-    const email = readPendingEmail()
-    if (submitting || input.value.length !== codeLength || email === null) {
+    if (submitting || input.value.length !== codeLength) {
       return
     }
     submitting = true
-    const destination = await submitSignInCode(
-      "",
-      import.meta.env.PUBLIC_APP_ORIGIN,
-      email,
-      input.value,
-      readPendingNext(),
-    )
+    const destination = await submitPendingCode("", input.value)
     submitting = false
     if (destination !== null) {
       location.assign(destination)

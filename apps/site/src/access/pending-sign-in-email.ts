@@ -37,3 +37,7 @@ export function readPendingNext(): string | null {
     return null
   }
 }
+
+export function rememberNextFromSearch(search: string): void {
+  rememberPendingNext(new URLSearchParams(search).get("next"))
+}

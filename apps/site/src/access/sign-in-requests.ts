@@ -1,4 +1,5 @@
 import { appDestination } from "./app-destination"
+import { readPendingEmail, readPendingNext, rememberPendingEmail } from "./pending-sign-in-email"
 
 const checkPath = "/sign-in/check"
 
@@ -29,4 +30,30 @@ export async function submitSignInCode(
 ): Promise<string | null> {
   const response = await postJson(apiBase, "/sign-in/code", { email, code })
   return response?.status === 200 ? appDestination(appOrigin, next) : null
+}
+
+let emailInFlight = false
+
+export async function startEmailSignIn(apiBase: string, email: string, go: (path: string) => void): Promise<void> {
+  if (emailInFlight) {
+    return
+  }
+  emailInFlight = true
+  try {
+    const destination = await requestSignInEmail(apiBase, email)
+    if (destination !== null) {
+      rememberPendingEmail(email)
+      go(destination)
+    }
+  } finally {
+    emailInFlight = false
+  }
+}
+
+export async function submitPendingCode(apiBase: string, code: string): Promise<string | null> {
+  const email = readPendingEmail()
+  if (email === null) {
+    return null
+  }
+  return submitSignInCode(apiBase, import.meta.env.PUBLIC_APP_ORIGIN, email, code, readPendingNext())
 }
