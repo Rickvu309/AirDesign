@@ -99,6 +99,12 @@ const slideByPart = (parts: ReadonlyMap<string, Uint8Array>): ReadonlyMap<string
   return slides
 }
 
+export type ReadSlide = { readonly slide: string; readonly part: string }
+
+export function readSlides(parts: ReadonlyMap<string, Uint8Array>): readonly ReadSlide[] {
+  return [...slideByPart(parts)].map(([part, slide]) => ({ slide, part }))
+}
+
 export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly ReadShape[] {
   const slides = slideByPart(parts)
   const rows: ReadShape[] = []

@@ -8,8 +8,31 @@ export type SidebarRun = "working" | "done" | "own" | "compose" | "failed" | "of
 
 const thumbWidth = 180
 
-export function SlideSidebar({ run, title }: { run: SidebarRun; title: string }) {
+export type SlideStrip = {
+  readonly count: number
+  readonly current: number
+  readonly onSelect: (index: number) => void
+}
+
+export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: string; strip?: SlideStrip }) {
   const queuedFrom = run === "working" ? 4 : 0
+  if (strip !== undefined) {
+    return (
+      <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
+        <SidebarHead title={title} />
+        <div className="flex flex-col gap-1 overflow-y-auto px-2 pb-2" data-slide-list>
+          {Array.from({ length: strip.count }, (_, index) => (
+            <OpenedItem
+              key={index}
+              index={index + 1}
+              active={index === strip.current}
+              onSelect={() => strip.onSelect(index)}
+            />
+          ))}
+        </div>
+      </aside>
+    )
+  }
   return (
     <aside className="flex h-full w-[248px] shrink-0 flex-col border-r border-line bg-white">
       <SidebarHead title={title} />
@@ -48,6 +71,28 @@ export function SlideSidebar({ run, title }: { run: SidebarRun; title: string })
         </div>
       </div>
     </aside>
+  )
+}
+
+function OpenedItem({ index, active, onSelect }: { index: number; active: boolean; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-current={active ? "true" : undefined}
+      data-slide-entry={index}
+      onClick={onSelect}
+      className={cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2 text-left", active && "bg-[var(--row)]")}
+    >
+      <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
+        <span className={cn("text-xs", active ? "font-medium text-[var(--primary-strong)]" : "text-faint")}>
+          {index}
+        </span>
+      </span>
+      <span
+        className="block shrink-0 rounded-[2px] bg-canvas shadow-[inset_0px_0px_0px_1px_var(--field-edge)]"
+        style={{ width: thumbWidth, height: Math.round((thumbWidth * 9) / 16) }}
+      />
+    </button>
   )
 }
 

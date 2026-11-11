@@ -3,7 +3,7 @@ import { AgentPanel } from "@/editor/agent-panel"
 import { DesignPanel } from "@/editor/design-panel"
 import { EditorToolbar, type EditorTool } from "@/editor/editor-toolbar"
 import { RevenueSlide } from "@/editor/revenue-slide"
-import { SlideSidebar, type SidebarRun } from "@/editor/slide-sidebar"
+import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import {
   ActionsMenu,
   ImagesPanel,
@@ -32,6 +32,7 @@ export type EditorShellProps = {
   toast?: ReactNode
   overlay?: ReactNode
   slide?: ReactNode
+  slides?: SlideStrip
   onExport?: () => void
 }
 
@@ -51,13 +52,16 @@ export function EditorShell({
   toast,
   overlay,
   slide,
+  slides,
   onExport,
 }: EditorShellProps) {
   const width = rail === "slides" ? 800 : 720
   const working = run === "working" || run === "own"
   return (
     <div className="relative flex h-full min-h-0">
-      {rail === "slides" ? <SlideSidebar run={run} title={title} /> : null}
+      {rail === "slides" ? (
+        <SlideSidebar run={run} title={title} {...(slides === undefined ? {} : { strip: slides })} />
+      ) : null}
       {rail === "images" ? (
         <>
           <ImagesPanel title={title} />

@@ -4,11 +4,13 @@ import { readSlot, rowCap, writeSlot } from "./store.js"
 export type DeckParts = {
   readonly parts: ReadonlyMap<string, Uint8Array>
   readonly file: Uint8Array
+  readonly name?: string
 }
 
 type PartRow = {
   readonly names: Readonly<Record<string, string>>
   readonly file: string
+  readonly name?: string
 }
 
 export type PartsResult =
@@ -16,6 +18,7 @@ export type PartsResult =
       readonly ok: true
       readonly parts: Map<string, Uint8Array>
       readonly file: Uint8Array
+      readonly name?: string
     }
   | { readonly ok: false; readonly refusal: "deck" | "absent" | "limit" }
 
@@ -29,10 +32,10 @@ function jsonBytes(value: unknown): number {
 
 function isPartRow(value: unknown): value is PartRow {
   if (typeof value !== "object" || value === null) return false
-  const row = value as { names?: unknown; file?: unknown }
+  const row = value as { names?: unknown; file?: unknown; name?: unknown }
   const names = row.names
   if (typeof names !== "object" || names === null || Array.isArray(names)) return false
-  return typeof row.file === "string"
+  return typeof row.file === "string" && (row.name === undefined || typeof row.name === "string")
 }
 
 export async function putParts(deck: string, parts: DeckParts): Promise<PartsResult> {
@@ -40,10 +43,19 @@ export async function putParts(deck: string, parts: DeckParts): Promise<PartsRes
   if (!parsed.ok) return parsed
   const names: Record<string, string> = {}
   for (const [name, bytes] of parts.parts) names[name] = await putPart(bytes)
-  const row: PartRow = { names, file: await putPart(parts.file) }
+  const row: PartRow = {
+    names,
+    file: await putPart(parts.file),
+    ...(parts.name === undefined ? {} : { name: parts.name }),
+  }
   if (jsonBytes(row) >= rowCap) return { ok: false, refusal: "limit" }
   await writeSlot(partKey(parsed.deck), row)
-  return { ok: true, parts: new Map(parts.parts), file: parts.file }
+  return {
+    ok: true,
+    parts: new Map(parts.parts),
+    file: parts.file,
+    ...(parts.name === undefined ? {} : { name: parts.name }),
+  }
 }
 
 export async function getParts(deck: string): Promise<PartsResult> {
@@ -56,7 +68,8 @@ export async function getParts(deck: string): Promise<PartsResult> {
     if (typeof hash !== "string") return { ok: false, refusal: "absent" }
     parts.set(name, await getPart(hash))
   }
-  return { ok: true, parts, file: await getPart(stored.file) }
+  const file = await getPart(stored.file)
+  return { ok: true, parts, file, ...(stored.name === undefined ? {} : { name: stored.name }) }
 }
 
 function hex(buffer: ArrayBuffer): string {

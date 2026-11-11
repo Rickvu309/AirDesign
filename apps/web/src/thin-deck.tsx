@@ -16,6 +16,7 @@ import {
   prepareMarkup,
   readPackage,
   readShapes,
+  readSlides,
   type ReadShape,
   type ShapeKind,
 } from "@airdesign/pptx"
@@ -24,7 +25,6 @@ import { useEffect, useRef, useState } from "react"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
-import { galleryDeck } from "@/editor/gallery-deck"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
 
@@ -111,12 +111,16 @@ export function shownValue(register: Register | null, id: ElementId, file: strin
   return body === undefined ? file : currentValue(body)
 }
 
+export function deckName(fileName: string): string {
+  return fileName.replace(/\.pptx$/i, "")
+}
+
 function paint(
   store: PaintStore,
   parts: ReadonlyMap<string, Uint8Array>,
   register: Register | null,
 ): {
-  readonly ids: readonly ElementId[]
+  readonly slides: readonly (readonly ElementId[])[]
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
 } {
@@ -135,8 +139,12 @@ function paint(
     boxes.set(id, { id, file })
     rows.set(id, shape)
   }
-  store.setSlides([{ id: slideId("1"), elements: [...ids] }])
-  return { ids, boxes, shapes: rows }
+  const slides = readSlides(parts).map(({ slide }) => ({
+    id: slideId(slide),
+    elements: named.filter((each) => each.shape.slide === slide).map((each) => each.id),
+  }))
+  store.setSlides(slides)
+  return { slides: slides.map((each) => each.elements), boxes, shapes: rows }
 }
 
 type EditLink = {
@@ -189,9 +197,13 @@ export function exportedParts(
   return next
 }
 
-export async function saveDeck(parts: ReadonlyMap<string, Uint8Array>, file: Uint8Array): Promise<string | null> {
+export async function saveDeck(
+  parts: ReadonlyMap<string, Uint8Array>,
+  file: Uint8Array,
+  name?: string,
+): Promise<string | null> {
   const deckId = crypto.randomUUID()
-  const saved = await putParts(deckId, { parts, file })
+  const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
   return saved.ok ? deckId : null
 }
 
@@ -201,7 +213,9 @@ export function ThinDeck({ id }: { id?: string }) {
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const [deckId, setDeckId] = useState(id)
-  const [ids, setIds] = useState<readonly ElementId[]>([])
+  const [slides, setSlides] = useState<readonly (readonly ElementId[])[]>([])
+  const [current, setCurrent] = useState(0)
+  const [title, setTitle] = useState("")
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const shownDeck = useRef(id)
 
@@ -219,7 +233,9 @@ export function ThinDeck({ id }: { id?: string }) {
       boxes.current = painted.boxes
       shapes.current = painted.shapes
       shownParts.current = stored.parts
-      setIds(painted.ids)
+      setSlides(painted.slides)
+      setCurrent(0)
+      setTitle(stored.name ?? "")
       setPaintedDeck(id)
       await sendPending(connect, id)
     })()
@@ -256,7 +272,8 @@ export function ThinDeck({ id }: { id?: string }) {
     const bytes = new Uint8Array(await file.arrayBuffer())
     const read = await readPackage(bytes)
     if (!read.ok) return
-    const nextId = await saveDeck(read.parts, bytes)
+    const name = deckName(file.name)
+    const nextId = await saveDeck(read.parts, bytes, name)
     if (nextId === null) return
     window.history.replaceState(null, "", `/thin/${nextId}`)
     shownDeck.current = nextId
@@ -265,7 +282,9 @@ export function ThinDeck({ id }: { id?: string }) {
     boxes.current = painted.boxes
     shapes.current = painted.shapes
     shownParts.current = read.parts
-    setIds(painted.ids)
+    setSlides(painted.slides)
+    setCurrent(0)
+    setTitle(name)
     setPaintedDeck(nextId)
   }
 
@@ -324,11 +343,12 @@ export function ThinDeck({ id }: { id?: string }) {
         }
       >
         <EditorShell
-          notes={galleryDeck.notes}
+          notes=""
           onExport={() => void onExport()}
+          slides={{ count: slides.length, current, onSelect: setCurrent }}
           slide={
             <div>
-              {ids.map((id) =>
+              {(slides[current] ?? []).map((id) =>
                 boxes.current.has(id) ? (
                   <Passage key={id} id={id} onEdit={(value) => void onEdit(id, value)} store={store.current} />
                 ) : (
@@ -337,8 +357,8 @@ export function ThinDeck({ id }: { id?: string }) {
               )}
             </div>
           }
-          slideLabel={galleryDeck.slideLabel}
-          title={galleryDeck.title}
+          slideLabel={String(current + 1)}
+          title={title}
         />
       </EditorFrame>
     </div>

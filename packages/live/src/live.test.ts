@@ -821,6 +821,18 @@ describe("live cache", () => {
     expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
   })
 
+  it("keeps the name stored with a deck", async () => {
+    installParts()
+    const slide = "ppt/slides/slide1.xml"
+    await putParts("named", {
+      parts: new Map([[slide, new Uint8Array([9])]]),
+      file: new Uint8Array([5]),
+      name: "Board deck",
+    })
+    const read = await getParts("named")
+    expect(read.ok && read.name).toBe("Board deck")
+  })
+
   it("reads an old part row that still carries a node table", async () => {
     installParts()
     const slide = "ppt/slides/slide1.xml"
