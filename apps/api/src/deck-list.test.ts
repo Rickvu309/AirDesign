@@ -498,7 +498,7 @@ describe("deck list and trash", () => {
     await holder.connect()
     try {
       await holder.query("begin")
-      await holder.query("update deck.saved set revision = revision where id = $1", [named])
+      await holder.query("select 1 from deck.saved where id = $1 for update", [named])
       const commit = ask(
         base,
         "POST",
