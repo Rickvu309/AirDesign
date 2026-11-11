@@ -325,15 +325,9 @@ async function apiCall(run, name, bodyText, cookie) {
   process.stdout.write(`${JSON.stringify({ status: answer.status, file })}\n`)
 }
 
-async function journey(run, name) {
+export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const file = path.join(skill, "journeys", `${name}.mjs`)
-  if (!existsSync(file)) fail(`no journey ${name} in ${path.join(skill, "journeys")}`)
-  const { chromium } = await import(pathToFileURL(path.join(repo, "node_modules/@playwright/test/index.mjs")).href)
   const { deckRoutes, signInRoutes } = await catalog()
-  const browser = await chromium.launch()
-  const context = await browser.newContext({ baseURL: state.origin, viewport: { width: 1600, height: 1000 } })
-  const page = await context.newPage()
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   let step = 0
@@ -380,6 +374,30 @@ async function journey(run, name) {
       proof(run, `- ${name}: ${line}`)
     },
   }
+  return { kit, out }
+}
+
+export function journeyFile(name) {
+  return path.join(skill, "journeys", `${name}.mjs`)
+}
+
+export function originOf(run) {
+  return readState(run).origin
+}
+
+export function recordJourney(run, name, passed, out) {
+  proof(run, `- ${name}: ${passed ? "PASSED" : "FAILED"}, artifacts ${out}`)
+}
+
+async function journey(run, name) {
+  const state = readState(run)
+  const file = journeyFile(name)
+  if (!existsSync(file)) fail(`no journey ${name} in ${path.join(skill, "journeys")}`)
+  const { chromium } = await import(pathToFileURL(path.join(repo, "node_modules/@playwright/test/index.mjs")).href)
+  const browser = await chromium.launch()
+  const context = await browser.newContext({ baseURL: state.origin, viewport: { width: 1600, height: 1000 } })
+  const page = await context.newPage()
+  const { kit, out } = await journeyKit({ run, name, page, context })
   const { default: drive } = await import(pathToFileURL(file).href)
   let passed = false
   try {
@@ -391,7 +409,7 @@ async function journey(run, name) {
   } finally {
     await browser.close()
   }
-  proof(run, `- ${name}: ${passed ? "PASSED" : "FAILED"}, artifacts ${out}`)
+  recordJourney(run, name, passed, out)
   process.stdout.write(`${JSON.stringify({ journey: name, passed, evidence: out })}\n`)
   if (!passed) process.exit(1)
 }
@@ -428,7 +446,8 @@ async function stop(run) {
   )
 }
 
-const [command, ...rest] = process.argv.slice(2)
+const invoked = process.argv[1] !== undefined && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+const [command, ...rest] = invoked ? process.argv.slice(2) : ["library"]
 const flag = (name) => {
   const at = rest.indexOf(name)
   return at === -1 ? undefined : rest[at + 1]
@@ -442,7 +461,7 @@ else if (command === "sign-in")
 else if (command === "api") await apiCall(rest[0], rest[1], rest[2], flag("--cookie"))
 else if (command === "journey") await journey(rest[0], rest[1])
 else if (command === "stop") await stop(rest[0])
-else {
+else if (command !== "library") {
   process.stdout.write(
     [
       "verify-airdesign launch [--no-build]        start web + api + postgres on free ports; prints run id",

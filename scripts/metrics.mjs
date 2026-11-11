@@ -10,7 +10,22 @@ const seedListFile = (root) => path.join(root, "scripts/pptx-fixtures/judge-seed
 const listedMisses = (root) =>
   fs.existsSync(seedListFile(root)) ? readSeedList(fs.readFileSync(seedListFile(root), "utf8")).known.length : 0
 
-const knownFailures = (root) => readRun(root).faults + listedMisses(root)
+const browserSpecs = (root) => {
+  const tests = path.join(root, "tests")
+  if (!fs.existsSync(tests)) return []
+  return fs
+    .readdirSync(tests, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".spec.ts"))
+    .map((entry) => path.join(entry.parentPath, entry.name))
+}
+
+export const browserFaults = (root) =>
+  browserSpecs(root).reduce(
+    (sum, file) => sum + (fs.readFileSync(file, "utf8").match(/\btest\.(fail|fixme|skip)\(/g) ?? []).length,
+    0,
+  )
+
+const knownFailures = (root) => readRun(root).faults + listedMisses(root) + browserFaults(root)
 
 const testCount = (root) => readRun(root).tests
 

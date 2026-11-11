@@ -1,0 +1,58 @@
+import path from "node:path"
+import { expect } from "@playwright/test"
+
+const typed = "Kept on the server"
+
+function textsIn(register) {
+  return Object.values(register?.elements ?? {}).flatMap((element) => {
+    const last = element.landed.filter((landed) => landed.visible).at(-1)
+    if (last === undefined) return []
+    return [
+      JSON.parse(last.value)
+        .map((paragraph) => paragraph.runs.map((run) => run.text).join(""))
+        .join("\n"),
+    ]
+  })
+}
+
+async function clearBrowser(page) {
+  await page.evaluate(async () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    for (const database of await indexedDB.databases()) {
+      await new Promise((resolve, reject) => {
+        const request = indexedDB.deleteDatabase(database.name)
+        request.onsuccess = () => resolve()
+        request.onerror = () => reject(request.error)
+        request.onblocked = () => reject(new Error(`${database.name} is still open`))
+      })
+    }
+    const directory = await navigator.storage?.getDirectory?.()
+    if (directory !== undefined)
+      for await (const name of directory.keys()) await directory.removeEntry(name, { recursive: true })
+  })
+}
+
+export default async function drive({ repo, page, signIn, post, capture, note, deckRoutes }) {
+  const { cookie } = await signIn()
+  await page.goto("/")
+  await page.locator("input[type=file]").setInputFiles(path.join(repo, "scripts/pptx-fixtures/clean.pptx"))
+  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
+  const deck = page.url().split("/").at(-1)
+  const editor = page.locator('[contenteditable="true"]')
+  await expect(editor).toHaveText("Hello")
+  const painted = await page.locator("[data-canvas-element]").count()
+  await editor.click()
+  await page.keyboard.press("ControlOrMeta+a")
+  await editor.pressSequentially(typed, { delay: 20 })
+  await expect.poll(async () => textsIn((await post(deckRoutes.open, { deck }, cookie)).json.register)).toEqual([typed])
+  note(`deck ${deck} paints ${String(painted)} elements and the server reads "${typed}"`)
+  const deckUrl = page.url()
+  await page.goto("/version")
+  await clearBrowser(page)
+  await page.goto(deckUrl)
+  await capture("reopened-cleared")
+  await expect(page.locator('[contenteditable="true"]')).toHaveText(typed)
+  await expect(page.locator("[data-canvas-element]")).toHaveCount(painted)
+  note("after clearing IndexedDB, local storage and site files, the reopened slide shows its text and every element")
+}
