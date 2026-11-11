@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 import { decide, decideUndo, openRegister, type NodeRegister, type Register } from "./decide.js"
 import { legacyElement, type ElementId } from "./element-id.js"
 import { bytesOf, limits, overLimit } from "./limits.js"
+import { openedBody, withOpened } from "./decide.walk.js"
 
 type InsideRow = {
   readonly decision: "inside"
@@ -42,20 +43,13 @@ function rowOf(name: string): LimitRow {
 }
 
 function counted(slides: number, bytes: number): Register {
-  return { ...openRegister("floor", "slide"), slides, bytes }
+  return withOpened({ ...openRegister("floor", "slide"), slides, bytes }, { slides, bytes })
 }
 
 function copyRegister(register: Register): Register {
   return {
     route: register.route,
     floor: register.floor,
-    landed: register.landed.map((row) => ({ actor: row.actor, value: row.value, visible: row.visible })),
-    phase: register.phase,
-    runId: register.runId,
-    readAt: register.readAt,
-    guarded: register.guarded,
-    claimed: register.claimed,
-    stoppedAt: register.stoppedAt,
     slides: register.slides,
     bytes: register.bytes,
     nodes: [...register.nodes],
@@ -65,10 +59,10 @@ function copyRegister(register: Register): Register {
 }
 
 function copyElements(elements: Register["elements"]): Register["elements"] {
-  const copy: { [id: string]: NodeRegister | undefined } = {}
+  const copy: Record<ElementId, NodeRegister> = {}
   for (const [id, body] of Object.entries(elements)) {
     if (body === undefined) continue
-    copy[id] = {
+    copy[id as ElementId] = {
       route: body.route,
       floor: body.floor,
       landed: body.landed.map((row) => ({
@@ -123,7 +117,7 @@ function visitOutside(name: string, seen: Set<string>): void {
   const before = copyRegister(register)
   const decision =
     row.call === "direct"
-      ? decideUndo(register, "r")
+      ? decideUndo(openedBody(register), "r")
       : decide(
           register,
           row.call === "person"

@@ -1,4 +1,4 @@
-import type { Refusal, Register } from "@airdesign/document"
+import { foldRegister, type Refusal, type Register, type StoredRegister } from "@airdesign/document"
 import {
   readCapture,
   readCommit,
@@ -97,8 +97,13 @@ function isWireRefusal(raw: string): raw is WireRefusal {
   return Object.hasOwn(wireRefusals, raw)
 }
 
-function openAnswer(raw: unknown): raw is RevisionAnswer & { readonly register: Register } {
+function openAnswer(raw: unknown): raw is RevisionAnswer & { readonly register: StoredRegister } {
   return revisionAnswer(raw) && isRegister(raw.register)
+}
+
+function decodeOpen(raw: unknown): OpenResult {
+  const result = decode(openAnswer)(raw)
+  return result.ok ? { ...result, register: foldRegister(result.register) } : result
 }
 
 function commitAnswer(raw: unknown): raw is RevisionAnswer & { readonly key: string } {
@@ -180,7 +185,7 @@ function originalAnswer(raw: unknown): raw is Signed & { readonly bytes: number;
 }
 
 export const deckRoutes = {
-  open: { path: "/decks/open", read: readCapture, result: decode(openAnswer) },
+  open: { path: "/decks/open", read: readCapture, result: decodeOpen },
   commit: { path: "/decks/commit", read: readCommit, result: decode(commitAnswer) },
   watch: { path: "/decks/watch", read: readWatch, result: decode(revisionAnswer) },
   list: { path: "/decks/list", read: readNoFields, result: decode(listAnswer) },

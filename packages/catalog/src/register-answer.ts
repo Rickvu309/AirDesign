@@ -5,7 +5,7 @@ import {
   type ElementId,
   type Landed,
   type NodeRegister,
-  type Register,
+  type StoredRegister,
 } from "@airdesign/document"
 
 function record(raw: unknown): raw is Record<string, unknown> {
@@ -53,15 +53,25 @@ function node(raw: unknown): raw is NodeRegister & Record<string, unknown> {
   )
 }
 
-export function isRegister(raw: unknown): raw is Register {
+function deck(raw: unknown): raw is Record<string, unknown> {
   return (
-    node(raw) &&
     record(raw) &&
+    typeof raw.route === "string" &&
+    typeof raw.floor === "string" &&
+    whole(raw.slides) &&
+    whole(raw.bytes) &&
     Array.isArray(raw.nodes) &&
     raw.nodes.every(element) &&
     (raw.readNodes === null || (Array.isArray(raw.readNodes) && raw.readNodes.every(element))) &&
     record(raw.elements) &&
-    Object.entries(raw.elements).every(([id, body]) => element(id) && node(body)) &&
-    (raw.b === undefined || raw.b === null || node(raw.b))
+    Object.entries(raw.elements).every(([id, body]) => element(id) && node(body))
   )
+}
+
+const rootFields = ["landed", "version", "phase", "runId", "readAt", "guarded", "claimed", "stoppedAt", "b"] as const
+
+export function isRegister(raw: unknown): raw is StoredRegister {
+  if (!deck(raw)) return false
+  if (!rootFields.some((field) => Object.hasOwn(raw, field))) return true
+  return node(raw) && (raw.b === undefined || raw.b === null || node(raw.b))
 }

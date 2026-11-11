@@ -574,7 +574,7 @@ describe("deck routes", () => {
         `${named.deck}:9`,
       ])
       const before = await readSaved(writer, named.deck)
-      if (before === undefined) throw new Error("no row")
+      if (!before?.register) throw new Error("no row")
       await expect(
         writeRevision(writer, {
           id: named.deck,

@@ -11,7 +11,9 @@ import {
   type Refusal,
 } from "./decide.js"
 import { elementId, rootElement, type ElementId } from "./element-id.js"
-import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
+import { bodyFrom, copyRegister, freezeRegister, openedBody, walkRegisters, withOpened } from "./decide.walk.js"
+
+type View = NodeRegister & { readonly nodes: readonly ElementId[]; readonly readNodes: readonly ElementId[] | null }
 
 type RunState = "match" | "miss"
 type ReadState = "equal" | "stale" | "claimed" | "interrupted"
@@ -364,7 +366,7 @@ const rules: readonly Rule[] = [
   ...rulesOf("read"),
 ]
 
-function agentState(register: Register): AgentState {
+function agentState(register: View): AgentState {
   if (register.landed.some((row) => row.actor === "agent" && row.visible)) {
     return "visible"
   }
@@ -374,11 +376,11 @@ function agentState(register: Register): AgentState {
   return "none"
 }
 
-function runState(register: Register, runId: string): RunState {
+function runState(register: View, runId: string): RunState {
   return register.runId === runId ? "match" : "miss"
 }
 
-function namedRows(register: Register, runId: string | null): { named: NamedRows; prior: PriorRows } {
+function namedRows(register: View, runId: string | null): { named: NamedRows; prior: PriorRows } {
   let named: NamedRows = "none"
   let prior: PriorRows = "none"
   for (const row of register.landed) {
@@ -393,7 +395,7 @@ function namedRows(register: Register, runId: string | null): { named: NamedRows
   return { named, prior }
 }
 
-function readState(readAt: number, register: Register): ReadState {
+function readState(readAt: number, register: View): ReadState {
   if (readAt === version(register)) {
     return "equal"
   }
@@ -411,7 +413,7 @@ function readState(readAt: number, register: Register): ReadState {
   return "stale"
 }
 
-function situation(register: Register, command: Command): Situation | null {
+function situation(register: View, command: Command): Situation | null {
   switch (command.command) {
     case "person":
       return {
@@ -465,7 +467,7 @@ function situation(register: Register, command: Command): Situation | null {
   }
 }
 
-function commands(register: Register): readonly Command[] {
+function commands(register: View): readonly Command[] {
   const current = version(register)
   const below = current === 0 ? -1 : current - 1
   const list: Command[] = []
@@ -531,7 +533,7 @@ function commands(register: Register): readonly Command[] {
   return list
 }
 
-function visiblePeople(register: Register): number {
+function visiblePeople(register: View): number {
   let count = 0
   for (const row of register.landed) {
     if (row.actor === "person" && row.visible) {
@@ -541,7 +543,7 @@ function visiblePeople(register: Register): number {
   return count
 }
 
-function visibleAgents(register: Register): number {
+function visibleAgents(register: View): number {
   let count = 0
   for (const row of register.landed) {
     if (row.actor === "agent" && row.visible) {
@@ -551,7 +553,7 @@ function visibleAgents(register: Register): number {
   return count
 }
 
-function agentRows(register: Register): number {
+function agentRows(register: View): number {
   let count = 0
   for (const row of register.landed) {
     if (row.actor === "agent") {
@@ -561,11 +563,11 @@ function agentRows(register: Register): number {
   return count
 }
 
-function runIds(register: Register): number {
+function runIds(register: View): number {
   return runIdSet(register).size
 }
 
-function runIdSet(register: Register): Set<string> {
+function runIdSet(register: View): Set<string> {
   const ids = new Set<string>()
   if (register.runId !== null) ids.add(register.runId)
   for (const row of register.landed) {
@@ -574,16 +576,16 @@ function runIdSet(register: Register): Set<string> {
   return ids
 }
 
-function usesStoredRun(register: Register): boolean {
+function usesStoredRun(register: View): boolean {
   return runIdSet(register).has(storedRun)
 }
 
-function usesPairRun(register: Register): boolean {
+function usesPairRun(register: View): boolean {
   const ids = runIdSet(register)
   return ids.has("r") || ids.has("s")
 }
 
-function keepRegister(register: Register): boolean {
+function keepRegister(register: View): boolean {
   if (visiblePeople(register) > 2 || visibleAgents(register) > 2) {
     return false
   }
@@ -601,7 +603,7 @@ function keepRegister(register: Register): boolean {
   )
 }
 
-function identity(register: Register): string {
+function identity(register: View): string {
   return JSON.stringify({
     phase: register.phase,
     runId: register.runId,
@@ -613,7 +615,7 @@ function identity(register: Register): string {
   })
 }
 
-function nextRegister(register: Register, command: Command, effect: Effect): Register {
+function nextRegister(register: View, command: Command, effect: Effect): View {
   switch (effect.outcome) {
     case "refuse":
       throw new Error(effect.outcome)
@@ -684,37 +686,21 @@ function sameText(left: unknown, right: unknown): boolean {
 }
 
 function bodyOf(register: Register, target: ElementId | null): NodeRegister {
-  const source = target === null ? register : register.elements[target]
+  const source = register.elements[target ?? rootElement]
   if (source === undefined) throw new Error("missing element")
-  return {
-    route: source.route,
-    floor: source.floor,
-    landed: source.landed,
-    version: version(source),
-    phase: source.phase,
-    runId: source.runId,
-    readAt: source.readAt,
-    guarded: source.guarded,
-    claimed: source.claimed,
-    stoppedAt: source.stoppedAt,
-    slides: source.slides,
-    bytes: source.bytes,
-  }
+  return bodyFrom(source)
 }
 
-function viewOf(register: Register, target: ElementId | null): Register {
-  if (target === null) return register
-  return {
-    ...bodyOf(register, target),
-    nodes: register.nodes,
-    readNodes: register.readNodes,
-    elements: register.elements,
-  }
+function viewOf(register: Register, target: ElementId | null): View {
+  return { ...bodyOf(register, target), nodes: register.nodes, readNodes: register.readNodes }
 }
 
-function writtenBack(register: Register, view: Register, target: ElementId | null): Register {
-  if (target === null) return view
-  return { ...register, readNodes: view.readNodes, elements: { ...register.elements, [target]: bodyOf(view, null) } }
+function writtenBack(register: Register, view: View, target: ElementId | null): Register {
+  return {
+    ...register,
+    readNodes: view.readNodes,
+    elements: { ...register.elements, [target ?? rootElement]: bodyFrom(view) },
+  }
 }
 
 function walkStart(target: ElementId | null): Register {
@@ -796,26 +782,26 @@ function walkAll(): ReturnType<typeof walkOnce> {
 }
 
 function setsGuardAfterAgent(name: string): void {
-  const register = freezeRegister({
-    ...openRegister("floor", "slide"),
-    phase: "running",
-    runId: "r",
-    readAt: 1,
-    guarded: false,
-    landed: [{ actor: "agent", value: "wrote", visible: true }],
-  })
+  const register = freezeRegister(
+    withOpened(openRegister("floor", "slide"), {
+      phase: "running",
+      runId: "r",
+      readAt: 1,
+      guarded: false,
+      landed: [{ actor: "agent", value: "wrote", visible: true }],
+    }),
+  )
   const before = copyRegister(register)
   const decision = decide(register, { command: "person", value: "kept" })
   expect(register, name).toEqual(before)
   expect(decision, name).toEqual({
     decision: "apply",
-    route: register.route,
-    register: {
-      ...register,
-      landed: [...register.landed, { actor: "person", value: "kept", visible: true }],
+    route: openedBody(register).route,
+    register: withOpened(register, {
+      landed: [...openedBody(register).landed, { actor: "person", value: "kept", visible: true }],
       version: 2,
       guarded: true,
-    },
+    }),
   })
 }
 
@@ -878,42 +864,43 @@ describe("decide", () => {
   })
 
   it("An undo hides both rows of one run", () => {
-    const register = freezeRegister({
-      ...openRegister("floor", "slide"),
-      phase: "running",
-      runId: "run",
-      readAt: 0,
-      claimed: 0,
-      landed: [
-        { actor: "agent", value: "one", visible: true, runId: "run" },
-        { actor: "agent", value: "two", visible: true, runId: "run" },
-      ],
-    })
+    const register = freezeRegister(
+      withOpened(openRegister("floor", "slide"), {
+        phase: "running",
+        runId: "run",
+        readAt: 0,
+        claimed: 0,
+        landed: [
+          { actor: "agent", value: "one", visible: true, runId: "run" },
+          { actor: "agent", value: "two", visible: true, runId: "run" },
+        ],
+      }),
+    )
     const before = copyRegister(register)
     const decision = decide(register, { command: "undo", runId: "run" })
     expect(register).toEqual(before)
     expect(decision).toEqual({
       decision: "apply",
-      route: register.route,
-      register: {
-        ...register,
+      route: openedBody(register).route,
+      register: withOpened(register, {
         phase: "undone",
         version: 4,
         landed: [
           { actor: "agent", value: "one", visible: false, runId: "run" },
           { actor: "agent", value: "two", visible: false, runId: "run" },
         ],
-      },
+      }),
     })
   })
 
   it("An undo of a run whose rows are already hidden stays fenced", () => {
-    const register = freezeRegister({
-      ...openRegister("floor", "slide"),
-      phase: "stopped",
-      runId: "run",
-      landed: [{ actor: "agent", value: "one", visible: false, runId: "run" }],
-    })
+    const register = freezeRegister(
+      withOpened(openRegister("floor", "slide"), {
+        phase: "stopped",
+        runId: "run",
+        landed: [{ actor: "agent", value: "one", visible: false, runId: "run" }],
+      }),
+    )
     const before = copyRegister(register)
     expect(decide(register, { command: "undo", runId: "run" })).toEqual({ decision: "refuse", code: "run-fenced" })
     expect(register).toEqual(before)
@@ -929,7 +916,7 @@ describe("decide", () => {
     expect(started.decision).toBe("apply")
     if (started.decision !== "apply") return
     register = started.register
-    const claim = version(register)
+    const claim = version(openedBody(register))
     const wrote = decide(register, { command: "agent", runId: "first", readAt: claim, value: "one" })
     expect(wrote.decision).toBe("apply")
     if (wrote.decision !== "apply") return
@@ -946,13 +933,13 @@ describe("decide", () => {
     expect(next.decision).toBe("apply")
     if (next.decision !== "apply") return
     register = next.register
-    expect(register.claimed).toBeNull()
-    expect(register.guarded).toBe(false)
+    expect(openedBody(register).claimed).toBeNull()
+    expect(openedBody(register).guarded).toBe(false)
     expect(decide(register, { command: "agent", runId: "second", readAt: claim, value: "old" })).toEqual({
       decision: "refuse",
       code: "stale",
     })
-    const read = version(register)
+    const read = version(openedBody(register))
     const firstRow = decide(register, { command: "agent", runId: "second", readAt: read, value: "two" })
     expect(firstRow.decision).toBe("apply")
     if (firstRow.decision !== "apply") return
@@ -964,9 +951,11 @@ describe("decide", () => {
     })
     expect(secondRow.decision).toBe("apply")
     if (secondRow.decision !== "apply") return
-    expect(secondRow.register.claimed).toBe(read)
+    expect(openedBody(secondRow.register).claimed).toBe(read)
     expect(
-      secondRow.register.landed.filter((row) => row.actor === "agent" && row.visible && row.runId === "second"),
+      openedBody(secondRow.register).landed.filter(
+        (row) => row.actor === "agent" && row.visible && row.runId === "second",
+      ),
     ).toEqual([
       { actor: "agent", value: "two", visible: true, runId: "second" },
       { actor: "agent", value: "three", visible: true, runId: "second" },
@@ -981,12 +970,11 @@ describe("decide", () => {
     expect(register, "A person value is not trimmed").toEqual(before)
     expect(decision, "A person value is not trimmed").toEqual({
       decision: "apply",
-      route: register.route,
-      register: {
-        ...register,
+      route: openedBody(register).route,
+      register: withOpened(register, {
         version: 1,
-        landed: [...register.landed, { actor: "person", value, visible: true }],
-      },
+        landed: [...openedBody(register).landed, { actor: "person", value, visible: true }],
+      }),
     })
   })
 })

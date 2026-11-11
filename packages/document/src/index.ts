@@ -18,6 +18,7 @@ export {
   currentValue,
   decide,
   decideUndo,
+  foldRegister,
   history,
   openRegister,
   version,
@@ -27,6 +28,8 @@ export {
   type NodeRegister,
   type Phase,
   type Register,
+  type RootRegister,
+  type StoredRegister,
   type Refusal,
 } from "./decide.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"

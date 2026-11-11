@@ -1,9 +1,23 @@
 import { readDeckId } from "@airdesign/catalog"
 import { openTab, type Tab } from "@airdesign/device"
-import { decide, elementId, version, type ElementId, type Register } from "@airdesign/document"
+import {
+  decide,
+  elementId,
+  rootElement,
+  version,
+  type ElementId,
+  type NodeRegister,
+  type Register,
+} from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { callTool, editNext, emptyLog, memoryTurns, type AgentCaller, type Session, type Turns } from "./index.js"
+
+function firstOf(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -123,7 +137,7 @@ describe("callTool", () => {
       expect(result.refusal, key).toBe("field")
       expect(result.deck, key).toBe(deck)
       expect(deck.register, key).toBe(register)
-      expect(deck.register.landed, key).toEqual([])
+      expect(firstOf(deck.register).landed, key).toEqual([])
     }
   })
 
@@ -138,7 +152,7 @@ describe("callTool", () => {
     if (result.ok) return
     expect(result.refusal).toBe("field")
     expect(result.deck).toBe(deck)
-    expect(deck.register.landed).toEqual([])
+    expect(firstOf(deck.register).landed).toEqual([])
   })
 
   it("lands an edit whose base is behind the revision", () => {
@@ -186,7 +200,7 @@ describe("callTool", () => {
     expect(body.phase).toBe("running")
     expect(body.runId).toBe("host-run")
     expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "host-run" }])
-    expect(deck.register.elements).toEqual({})
+    expect(Object.keys(deck.register.elements)).toEqual([rootElement])
   })
 
   it("keeps the running element's run id when the session supplies another", () => {
@@ -499,7 +513,7 @@ describe("callTool", () => {
     expect(result.next).toBeUndefined()
     expect(result.content).toEqual([{ type: "text", text: "deck" }])
     expect(result.deck).toBe(deck)
-    expect(deck.register.landed).toEqual([])
+    expect(firstOf(deck.register).landed).toEqual([])
   })
 
   it("refuses a capture argument the catalog does not read", () => {
@@ -513,6 +527,6 @@ describe("callTool", () => {
     expect(other.ok).toBe(false)
     if (other.ok) return
     expect(other.refusal).toBe("deck")
-    expect(deck.register.landed).toEqual([])
+    expect(firstOf(deck.register).landed).toEqual([])
   })
 })

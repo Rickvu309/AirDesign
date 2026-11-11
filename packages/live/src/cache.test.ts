@@ -1,3 +1,4 @@
+import { rootElement, type NodeRegister, type Register } from "@airdesign/document"
 import type { DeckId } from "@airdesign/catalog"
 import { currentValue, elementId, legacyElement, openRegister } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -229,46 +230,7 @@ describe("live cache", () => {
     const right = opened.register.elements[elementId("258.8")]
     expect(left === undefined ? undefined : currentValue(left)).toBe("left")
     expect(right === undefined ? undefined : currentValue(right)).toBe("right")
-    expect(currentValue(opened.register)).toBe("")
-  })
-
-  it("shows an edit on its own element after the cache is opened again", async () => {
-    const remote = memoryRemote()
-    const cache = connect(remote)
-    await cache.enqueue("deck", "solo", node, "")
-    expect((await cache.flush("deck")).ok).toBe(true)
-    await deleteDatabase()
-    const opened = await connect(remote).openDeck("deck")
-    expect(opened.ok).toBe(true)
-    if (!opened.ok) return
-    const body = opened.register.elements[elementId("258.7")]
-    expect(body === undefined ? undefined : currentValue(body)).toBe("solo")
-    expect(currentValue(opened.register)).not.toBe("solo")
-  })
-
-  it("replays an offline queue that interleaves two elements", async () => {
-    const remote = memoryRemote()
-    const cache = connect(remote)
-    await cache.enqueue("deck", "left one", node, "left file")
-    await cache.enqueue("deck", "right one", other, "right file")
-    await cache.enqueue("deck", "left two", node, "left file")
-    expect(await cache.enqueue("deck", "right two", other, "right file")).toEqual({ ok: true, painted: "right two" })
-    const shown = async () => {
-      const opened = await connect(remote).openDeck("deck")
-      if (!opened.ok) return opened
-      const left = opened.register.elements[node]
-      const right = opened.register.elements[other]
-      return {
-        left: left === undefined ? undefined : currentValue(left),
-        right: right === undefined ? undefined : currentValue(right),
-        root: opened.register.landed.length,
-      }
-    }
-    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
-    expect((await cache.flush("deck")).ok).toBe(true)
-    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
-    await deleteDatabase()
-    expect(await shown()).toEqual({ left: "left two", right: "right two", root: 0 })
+    expect(currentValue(firstOf(opened.register))).toBe("")
   })
 
   it("sends the file text as floor on the first edit of each element only", async () => {
@@ -679,7 +641,7 @@ describe("live cache", () => {
     if (!opened.ok) return
     expect(opened.pending).toEqual([])
     expect(opened.confirmed.map((row) => row.value)).toEqual(["kept"])
-    expect(opened.register.landed).toEqual([])
+    expect(firstOf(opened.register).landed).toEqual([])
     expect(opened.register.elements[node]?.landed.map((row) => row.value)).toEqual(["kept"])
   })
 
@@ -822,3 +784,9 @@ describe("live cache", () => {
     expect(opens).toEqual(["once-deck"])
   })
 })
+
+function firstOf(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}

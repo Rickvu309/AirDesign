@@ -1,3 +1,4 @@
+import { opened, viewed, personSplit } from "./spec-register.js"
 import { spawn } from "node:child_process"
 import { readdirSync } from "node:fs"
 import path from "node:path"
@@ -167,22 +168,6 @@ function nodeRegister(spec: Spec): Register {
   }
 }
 
-function personSplit(register: NodeRegister): { personBefore: number; personAfter: number } {
-  let personBefore = 0
-  let personAfter = 0
-  let seenAgent = false
-  for (const row of register.landed) {
-    if (row.actor === "agent") {
-      seenAgent = true
-      continue
-    }
-    if (!row.visible) continue
-    if (seenAgent) personAfter += 1
-    else personBefore += 1
-  }
-  return { personBefore, personAfter }
-}
-
 function editPicture(register: Register, positional: boolean) {
   const split = personSplit(register)
   const person = split.personBefore + split.personAfter
@@ -295,7 +280,7 @@ function replayEdit(graph: Graph, view: View, failures: string[]) {
       continue
     }
     if (next) {
-      const actual = editPicture(next, positional)
+      const actual = editPicture(opened(next), positional)
       const expected = editExpected(target, positional)
       if (!same(actual, expected))
         failures.push(`edit ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
@@ -440,7 +425,7 @@ function undoStepped(action: string, source: Spec, register: Register): NodeRegi
         : action === "Undo"
           ? decide(register, { command: "undo", runId: run })
           : null
-  return decision?.decision === "apply" ? decision.register : null
+  return decision?.decision === "apply" ? opened(decision.register) : null
 }
 
 function replayUndo(graph: Graph, view: View, failures: string[]) {
@@ -491,10 +476,10 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
         failures.push(`undo ${where} refused ${decision.code}`)
         continue
       }
-      const actual = laterPicture(decision.register)
+      const actual = laterPicture(opened(decision.register))
       const expected = laterExpected(target)
-      if (version(decision.register) !== undoVersion(target)) {
-        failures.push(`undo ${where} version ${version(decision.register)} expected ${undoVersion(target)}`)
+      if (version(opened(decision.register)) !== undoVersion(target)) {
+        failures.push(`undo ${where} version ${version(opened(decision.register))} expected ${undoVersion(target)}`)
       }
       if (actual.laterHidden > num(source, "laterHidden") && text(target, "hiddenBy") !== undoHider(edge.action)) {
         failures.push(`undo ${where} hid the later row with the wrong undo`)
@@ -522,7 +507,7 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
     if (edge.action === "PersonWrites") {
       const decision = decide(register, { command: "person", value: "person" })
       if (decision.decision !== "apply") failures.push(`undo ${where} refused ${decision.code}`)
-      else picture = undoPicture(decision.register)
+      else picture = undoPicture(opened(decision.register))
     } else if (edge.action === "AgentWrites") {
       const decision = decide(register, {
         command: "agent",
@@ -531,7 +516,7 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
         value: "agent",
       })
       if (decision.decision !== "apply") failures.push(`undo ${where} refused ${decision.code}`)
-      else picture = undoPicture(decision.register)
+      else picture = undoPicture(opened(decision.register))
     } else if (edge.action === "GiveHorizon") {
       picture = undoPicture(compactChain(register, false))
     } else if (edge.action === "Undo") {
@@ -644,7 +629,7 @@ function replayStructure(graph: Graph, view: View, failures: string[]) {
       failures.push(`structure ${where} refused ${decision.code}`)
       continue
     }
-    const actual = structurePicture(decision.register)
+    const actual = structurePicture(viewed(decision.register))
     const expected = {
       nodes: nodeNames(flag(target, "nodeA"), flag(target, "nodeB")),
       readNodes: flag(target, "didRead") ? nodeNames(flag(target, "storedA"), flag(target, "storedB")) : null,
@@ -733,7 +718,7 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
         failures.push(`run ${where} recorded the wrong phase for the start`)
       }
       const started = decide(runRegister(source), { command: "start", runId: text(target, "runId") })
-      if (started.decision !== "apply" || started.register.runId !== text(target, "liveId")) {
+      if (started.decision !== "apply" || opened(started.register).runId !== text(target, "liveId")) {
         failures.push(`run ${where} did not start the live id`)
       }
     }
@@ -752,15 +737,15 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
       const owner = text(source, "owner")
       const visible =
         decision.decision === "apply"
-          ? decision.register.landed.filter((row) => row.actor === "agent" && row.visible)
+          ? opened(decision.register).landed.filter((row) => row.actor === "agent" && row.visible)
           : []
       const owned = owner === "none" ? visible.length === 0 : visible.every((row) => row.runId === owner)
       const held =
         decision.decision === "apply" &&
         owned &&
-        decision.register.guarded === false &&
-        decision.register.claimed === null &&
-        same(runPicture(decision.register), runExpected(target))
+        opened(decision.register).guarded === false &&
+        opened(decision.register).claimed === null &&
+        same(runPicture(viewed(decision.register)), runExpected(target))
       if (!held) failures.push(`run ${where} did not open the next run`)
       else replayed += 1
       continue
@@ -779,15 +764,15 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
       const decision = decide(register, { command: "undo", runId: text(source, "owner") })
       const hidden =
         decision.decision === "apply" &&
-        decision.register.landed.some(
+        opened(decision.register).landed.some(
           (row) => row.actor === "agent" && row.runId === text(source, "owner") && !row.visible,
         )
       const held =
         decision.decision === "apply" &&
         hidden &&
-        decision.register.phase === text(source, "phase") &&
-        decision.register.runId === stored &&
-        same(runPicture(decision.register), runExpected(target))
+        opened(decision.register).phase === text(source, "phase") &&
+        opened(decision.register).runId === stored &&
+        same(runPicture(viewed(decision.register)), runExpected(target))
       if (!held) failures.push(`run ${where} hid the later run`)
       else replayed += 1
       continue
@@ -856,7 +841,7 @@ function replayRun(graph: Graph, view: View, failures: string[]) {
       failures.push(`run ${where} refused ${decision.code}`)
       continue
     }
-    const actual = runPicture(decision.register)
+    const actual = runPicture(viewed(decision.register))
     const expected = runExpected(target)
     if (!same(actual, expected)) {
       failures.push(`run ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
@@ -963,7 +948,7 @@ function replayOffline(graph: Graph, view: View, failures: string[]) {
             ? pending.filter((item) => item.value === "two").slice(0, 1)
             : pending.filter((item) => item.value === "stale")
       const next = replay(offlineRegister(source), picked)
-      const actual = { version: version(next), history: history(next) }
+      const actual = { version: version(opened(next)), history: history(opened(next)) }
       const expected = { version: num(target, "version"), history: landedHistory(target) }
       if (!same(actual, expected)) {
         failures.push(`offline ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)
@@ -1294,7 +1279,7 @@ function replayRerun(graph: Graph, view: View, failures: string[]) {
       failures.push(`rerun ${where} refused ${decision.code}`)
       continue
     }
-    const actual = rerunPicture(decision.register)
+    const actual = rerunPicture(opened(decision.register))
     const expected = rerunExpected(target)
     if (!same(actual, expected)) {
       failures.push(`rerun ${where}\n  actual ${JSON.stringify(actual)}\n  expected ${JSON.stringify(expected)}`)

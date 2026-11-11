@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { currentValue, decide, history, openRegister, version, type Register } from "./decide.js"
 import { elementId, rootElement } from "./element-id.js"
+import { openedBody } from "./decide.walk.js"
 import { replay, unsent, type Queued } from "./replay.js"
 
 type ReplayRow = {
@@ -106,7 +107,7 @@ function picture(register: Register): string {
 function prepared(earlier: readonly string[]): Register {
   let register = openRegister("floor", "slide")
   for (const value of earlier) {
-    register = replay(register, [{ base: version(register), value }])
+    register = replay(register, [{ base: version(openedBody(register)), value }])
   }
   return register
 }
@@ -119,8 +120,8 @@ function visit(name: string, seen: Set<string>): void {
   expect(pending, name).toEqual(row.pending)
   const after = replay(register, pending)
   expect(picture(register), name).toBe(before)
-  expect(history(after), name).toEqual(row.history)
-  expect(version(after), name).toBe(row.version)
+  expect(history(openedBody(after)), name).toEqual(row.history)
+  expect(version(openedBody(after)), name).toBe(row.version)
   if (row.pending.length === 0) {
     expect(picture(after), name).toBe(before)
   }
@@ -163,8 +164,8 @@ describe("replay", () => {
       { base: 0, value: "one", node: rootElement },
       { base: 0, value: "two", node: right },
     ])
-    expect(history(next)).toEqual(["one"])
-    expect(currentValue(next)).toBe("one")
+    expect(history(openedBody(next))).toEqual(["one"])
+    expect(currentValue(openedBody(next))).toBe("one")
     const other = next.elements[right]
     if (other === undefined) throw new Error("missing element")
     expect(history(other)).toEqual(["two"])

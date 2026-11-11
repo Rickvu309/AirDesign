@@ -127,7 +127,6 @@ function reportsCapturedFile(result: ToolResult): boolean {
 }
 
 function bodyOf(register: Register, id: ElementId): NodeRegister | null {
-  if (id === elements.opened) return register
   return register.elements[id] ?? null
 }
 
@@ -140,7 +139,7 @@ function picture(register: Register, id: ElementId): string {
     runId: body.runId,
     guarded: body.guarded,
     slides: body.slides,
-    bytes: id === elements.opened ? null : body.bytes,
+    bytes: body.bytes,
     landed: body.landed.map((row) => [row.actor, row.value, row.visible]),
   })
 }

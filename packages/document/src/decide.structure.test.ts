@@ -12,7 +12,7 @@ import {
   type Refusal,
 } from "./decide.js"
 import { legacyElement, rootElement, type ElementId } from "./element-id.js"
-import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
+import { copyRegister, freezeRegister, openedBody, walkRegisters } from "./decide.walk.js"
 
 type Effect = "add" | "remove" | "read"
 
@@ -96,7 +96,7 @@ function second(register: Register): NodeRegister | null {
 
 function bodyOf(register: Register, node: ElementId): NodeRegister | null {
   if (node === opened) {
-    return register
+    return openedBody(register)
   }
   return second(register)
 }
@@ -147,7 +147,7 @@ function visiblePeople(node: NodeRegister): number {
 }
 
 function tooManyPeople(register: Register): boolean {
-  if (visiblePeople(register) > 1) {
+  if (visiblePeople(openedBody(register)) > 1) {
     return true
   }
   const other = second(register)
@@ -221,7 +221,7 @@ function expectTarget(before: Register, after: Register, command: Command, rule:
     } else {
       unchangedBody(afterBody, beforeBody, key)
     }
-    unchangedBody(after, before, key)
+    unchangedBody(openedBody(after), openedBody(before), key)
     return
   }
   const beforeBody = bodyOf(before, node)
@@ -276,7 +276,7 @@ function noteVisit(register: Register, command: Command, decision: Decision, see
   if (
     (command.command === "add" || command.command === "remove") &&
     decision.decision === "apply" &&
-    register.phase === "stopped" &&
+    openedBody(register).phase === "stopped" &&
     register.readNodes !== null &&
     sameIds(register.readNodes, register.nodes) &&
     sameIds(decision.register.readNodes, register.readNodes) &&
@@ -305,7 +305,7 @@ function identity(register: Register): string {
   return JSON.stringify({
     nodes: register.nodes,
     readNodes: register.readNodes,
-    a: node(register),
+    a: node(openedBody(register)),
     b: node(second(register)),
   })
 }
@@ -360,7 +360,8 @@ function walk(): void {
     start: freezeRegister(openRegister("floor", "slide")),
     identity,
     commands: () => commands(),
-    keep: (register) => !tooManyPeople(register) && !(register.phase === "running" && register.readNodes !== null),
+    keep: (register) =>
+      !tooManyPeople(register) && !(openedBody(register).phase === "running" && register.readNodes !== null),
     cap: (dequeued) => {
       if (dequeued > 80) {
         throw new Error("state cap hit")

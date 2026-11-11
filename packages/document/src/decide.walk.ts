@@ -1,4 +1,5 @@
 import { version, type Command, type NodeRegister, type Register } from "./decide.js"
+import { rootElement } from "./element-id.js"
 
 export function copyNode(node: NodeRegister): NodeRegister {
   return {
@@ -27,9 +28,13 @@ function copyElements(elements: Register["elements"]): Register["elements"] {
   )
 }
 
+function deckOf(register: Register): Omit<Register, "nodes" | "readNodes" | "elements"> {
+  return { route: register.route, floor: register.floor, slides: register.slides, bytes: register.bytes }
+}
+
 export function copyRegister(register: Register): Register {
   return {
-    ...copyNode(register),
+    ...deckOf(register),
     nodes: [...register.nodes],
     readNodes: register.readNodes === null ? null : [...register.readNodes],
     elements: copyElements(register.elements),
@@ -54,9 +59,8 @@ function freezeElements(elements: Register["elements"]): Register["elements"] {
 }
 
 export function freezeRegister(register: Register): Register {
-  const node = freezeNode(register)
   const frozen: Register = {
-    ...node,
+    ...deckOf(register),
     nodes: [...register.nodes],
     readNodes: register.readNodes === null ? null : [...register.readNodes],
     elements: freezeElements(register.elements),
@@ -99,5 +103,34 @@ export function walkRegisters(input: {
       visited.add(id)
       queue.push(successor)
     }
+  }
+}
+
+export function openedBody(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) {
+    throw new Error("missing node")
+  }
+  return body
+}
+
+export function withOpened(register: Register, fields: Partial<NodeRegister>): Register {
+  return { ...register, elements: { ...register.elements, [rootElement]: { ...openedBody(register), ...fields } } }
+}
+
+export function bodyFrom(source: NodeRegister): NodeRegister {
+  return {
+    route: source.route,
+    floor: source.floor,
+    landed: source.landed,
+    version: version(source),
+    phase: source.phase,
+    runId: source.runId,
+    readAt: source.readAt,
+    guarded: source.guarded,
+    claimed: source.claimed,
+    stoppedAt: source.stoppedAt,
+    slides: source.slides,
+    bytes: source.bytes,
   }
 }
