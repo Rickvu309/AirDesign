@@ -51,6 +51,7 @@ expectWords("scripts/check.mjs", `${oldMetric}s and ${oldMetric}`, [
   instead("scripts/check.mjs", 1, "metric", oldMetric),
   instead("scripts/check.mjs", 1, "metric", oldMetric),
 ])
+expectWords("apps/api/src/deleted.test.ts", `function ${oldCi}(match) {\n  const ${oldCi} = held\n}`, [])
 expectWords("apps/web/src/gated.ts", `export const ${oldCi}d = ${oldMetric}er + investigate + oldMetricsFile`, [])
 const barLine = glossary.allowed[0].text
 expectWords("scripts/bar.mjs", `  ${barLine}`, [])

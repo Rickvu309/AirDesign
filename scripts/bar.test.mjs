@@ -15,7 +15,6 @@ import {
   oldMetricNames,
   oldMetricsFile,
   onlyAddsReferences,
-  ownerOf,
   ownerReasons,
   packageFile,
   readLocal,
@@ -282,15 +281,15 @@ same("a swapped deck lowers the bar", lowersOf({ changedFixtures: [deck] }), [tr
 same("a lost kind lowers the bar", lowersOf({ changedKinds: ["duplicate shape id"] }), [true])
 
 const listedOnly = verdict({
-  owner: "owner",
   reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", lowers: false }],
 })
 same("a pull that only touches the checks is listed", [listedOnly.listed, listedOnly.lowers], [true, false])
-same("its line names the owner", listedOnly.lines, ["Listed for owner: AGENTS.md decides what ci checks."])
-const untouched = verdict({ owner: "owner", reasons: [] })
+same("its line names the owner and no account", listedOnly.lines, [
+  "Listed for the owner: AGENTS.md decides what ci checks.",
+])
+const untouched = verdict({ reasons: [] })
 same("a pull that touches nothing is not listed", [untouched.listed, untouched.lowers], [false, false])
 const lowering = verdict({
-  owner: "owner",
   reasons: [
     { about: "metric ci-duration", text: "The limit of ci-duration went from 40 to 60.", lowers: true },
     { about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", lowers: false },
@@ -299,7 +298,7 @@ const lowering = verdict({
 same("a pull that lowers the bar is listed as lowering it", [lowering.listed, lowering.lowers], [true, true])
 same("what lowers the bar comes first and nothing asks for an approval", lowering.lines, [
   "Lowers the bar: The limit of ci-duration went from 40 to 60.",
-  "Listed for owner: AGENTS.md decides what ci checks.",
+  "Listed for the owner: AGENTS.md decides what ci checks.",
 ])
 same("no verdict stops a pull request", "pass" in lowering, false)
 same(
@@ -392,9 +391,6 @@ same(
     { name: "new.ts", status: "added" },
   ],
 )
-same("the owner is read from an https remote", ownerOf("https://github.com/Rickvu309/AirDesign.git"), "Rickvu309")
-same("the owner is read from an ssh remote", ownerOf("git@github.com:Rickvu309/AirDesign.git"), "Rickvu309")
-same("no remote names the repo owner", ownerOf(undefined), "the repo owner")
 same(
   "a test file split into two and removed needs nobody",
   readReasons({
@@ -466,7 +462,7 @@ same("the local verdict says what ci says", localVerdict.lines, [
   "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
   "Lowers the bar: The corpus deck a.pptx was removed or its sha256 changed.",
   "Lowers the bar: The corpus deck b.pptx was removed or its sha256 changed.",
-  "Listed for Rickvu309: scripts/new-check.mjs decides what ci checks.",
+  "Listed for the owner: scripts/new-check.mjs decides what ci checks.",
 ])
 const localStep = () => {
   try {

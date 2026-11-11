@@ -22,6 +22,10 @@ _Avoid_: shard, job, matrix
 The one result a pull request needs to merge. It passes when every part passes.
 _Avoid_: gate, pipeline, build
 
+**owner**:
+The person who owns this repository and reads what the checks list.
+_Avoid_: the organization's name, admin, maintainer
+
 **journey**:
 A scripted walk through the real app, done the way a user does it.
 _Avoid_: end-to-end test, scenario, flow

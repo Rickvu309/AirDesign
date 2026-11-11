@@ -165,7 +165,7 @@ export const ownerReasons = ({
   return reasons
 }
 
-export const verdict = ({ owner, reasons }) => {
+export const verdict = ({ reasons }) => {
   if (reasons.length === 0) return { listed: false, lowers: false, lines: ["Nothing here touches the bar."] }
   const lowering = reasons.filter((reason) => reason.lowers)
   return {
@@ -173,7 +173,7 @@ export const verdict = ({ owner, reasons }) => {
     lowers: lowering.length > 0,
     lines: [
       ...lowering.map((reason) => `Lowers the bar: ${reason.text}`),
-      ...reasons.filter((reason) => !reason.lowers).map((reason) => `Listed for ${owner}: ${reason.text}`),
+      ...reasons.filter((reason) => !reason.lowers).map((reason) => `Listed for the owner: ${reason.text}`),
     ],
   }
 }
@@ -278,9 +278,8 @@ const readPull = (repository, number) => {
   if (listed.length !== pull.files) {
     throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
   }
-  const owner = repository.split("/")[0]
   const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
-  return { owner, reasons }
+  return { reasons }
 }
 
 const localGit = (root, args, env = process.env) =>
@@ -322,21 +321,11 @@ export const listedFiles = (nameStatus) => {
   return listed
 }
 
-export const ownerOf = (remote) => /github\.com[:/]([^/]+)\//.exec(remote ?? "")?.[1] ?? "the repo owner"
-
 const localJson = (root) => (tree, file) => {
   try {
     return JSON.parse(localGit(root, ["show", `${tree}:${file}`]))
   } catch {
     return undefined
-  }
-}
-
-export const localOwner = (root) => {
-  try {
-    return ownerOf(localGit(root, ["config", "--get", "remote.origin.url"]).trim())
-  } catch {
-    return ownerOf(undefined)
   }
 }
 
@@ -346,7 +335,6 @@ export const readLocal = (root) => {
   const head = workingTree(root)
   const listed = listedFiles(localGit(root, ["diff", "--name-status", "-z", "-M", fork, head]))
   return {
-    owner: localOwner(root),
     reasons: readReasons({ json: localJson(root), fork, head, listed }),
   }
 }

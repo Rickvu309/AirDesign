@@ -2,7 +2,6 @@
   "words": {
     "known fault": "known failure",
     "stick": "metric",
-    "gate": "ci",
     "owner gate": "bar"
   },
   "allowed": [
