@@ -89,3 +89,15 @@ for (const name of [
   if (mayPush(["test", name], true)) throw new Error(`${name} failing next to test must still stop a push`)
 }
 if (mayPush([], false)) throw new Error("a check that stopped early saw too little to allow a push")
+
+import { ciOnlySteps, stepsToRun } from "./check.mjs"
+
+const ranWhen = (part, ci) => stepsToRun(stagesFor(part, ci), ci).flatMap((stage) => stage.map(([name]) => name))
+if (ranWhen("all", false).includes("browser")) throw new Error("a local check runs the browser tests")
+if (!ranWhen("all", true).includes("browser")) throw new Error("ci lost the browser tests")
+if (!ranWhen("side", true).includes("browser")) throw new Error("the side part on ci lost the browser tests")
+if (!ciOnlySteps.has("browser")) throw new Error("the browser tests are not marked as ci only")
+for (const name of everyStep.filter((step) => !ciOnlySteps.has(step))) {
+  if (!ranWhen("all", false).includes(name)) throw new Error(`a local check skips ${name}`)
+}
+if (stepsToRun([[["browser"]], [["lint"]]], false).length !== 1) throw new Error("an emptied stage was kept")
