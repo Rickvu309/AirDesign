@@ -74,7 +74,7 @@ describe("committed text", () => {
         { deck: named.deck, batch: [{ value: text, node: "258.7" }] },
       )
       if (!landed.ok) throw new Error(landed.refusal)
-      const stored = landed.deck.register.elements["258.7"]
+      const stored = Object.entries(landed.deck.register.elements).find(([key]) => key === "258.7")?.[1]
       expect(stored?.landed).toEqual([{ actor: "person", value: text, visible: true }])
       expect(again.json).toEqual({
         ok: true,

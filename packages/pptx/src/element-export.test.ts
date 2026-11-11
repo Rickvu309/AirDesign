@@ -1,5 +1,6 @@
 import { Uint8ArrayReader, Uint8ArrayWriter, ZipWriter } from "@zip.js/zip.js"
 import fc from "fast-check"
+import { elementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import { exportElements, idFields, type ElementEdit, type IdRole } from "./element-export.js"
 import { exportPackage } from "./export-package.js"
@@ -57,7 +58,7 @@ function wideDeck(): Map<string, Uint8Array> {
 }
 
 function add(id: string, value: string): ElementEdit {
-  return { id, name: "add", text: value, ...box }
+  return { id: elementId(id), name: "add", text: value, ...box }
 }
 
 function slideAdd(token: string, after = "256"): ElementEdit {
@@ -65,7 +66,7 @@ function slideAdd(token: string, after = "256"): ElementEdit {
 }
 
 function setText(id: string, value: string): ElementEdit {
-  return { id, name: "text", text: value }
+  return { id: elementId(id), name: "text", text: value }
 }
 
 function sameBytes(left: Uint8Array | undefined, right: Uint8Array | undefined): boolean {
@@ -102,11 +103,11 @@ function expectRefused(edits: readonly ElementEdit[], error: RegExp, make: () =>
 }
 
 const samples: { readonly [Name in ElementEdit["name"]]: Extract<ElementEdit, { readonly name: Name }> } = {
-  text: { name: "text", id: "256.2", text: "T" },
-  move: { name: "move", id: "256.2", x: 1, y: 2 },
-  resize: { name: "resize", id: "256.2", cx: 1, cy: 2 },
-  remove: { name: "remove", id: "256.2" },
-  add: { name: "add", id: `256.${shapeA}`, text: "T", ...box },
+  text: { name: "text", id: elementId("256.2"), text: "T" },
+  move: { name: "move", id: elementId("256.2"), x: 1, y: 2 },
+  resize: { name: "resize", id: elementId("256.2"), cx: 1, cy: 2 },
+  remove: { name: "remove", id: elementId("256.2") },
+  add: { name: "add", id: elementId(`256.${shapeA}`), text: "T", ...box },
   "sldIdLst.add": { name: "sldIdLst.add", slide: slideA, after: "256" },
 }
 
@@ -189,7 +190,7 @@ describe("the id resolver", () => {
   })
 
   it("refuses an edit kind the table does not list", () => {
-    expectRefused([{ name: "spTree.clone", id: "256.2" } as unknown as ElementEdit], /edit/)
+    expectRefused([{ name: "spTree.clone", id: elementId("256.2") } as unknown as ElementEdit], /edit/)
   })
 
   it("refuses a created slide after a number this run wrote, in either array order", () => {
@@ -211,7 +212,7 @@ describe("the id resolver", () => {
   })
 
   it("refuses a numeric shape this run would create", () => {
-    expectRefused([add(`256.${shapeA}`, "X"), { id: "256.3", name: "remove" }], /shape/)
+    expectRefused([add(`256.${shapeA}`, "X"), { id: elementId("256.3"), name: "remove" }], /shape/)
   })
 
   it("refuses two creates for one id with different content", () => {
@@ -328,7 +329,7 @@ describe("exportElements", () => {
       slideAdd(slideA),
       add(`${slideA}.${shapeA}`, "ALPHA"),
       setText("256.2", "FIRST"),
-      { id: "256.2", name: "move", x: 5, y: 6 } as const,
+      { id: elementId("256.2"), name: "move", x: 5, y: 6 } as const,
     ]
     const original = await zipped(deck())
     const once = await exportPackage(original, exportElements(deck(), edits).parts)
@@ -350,7 +351,7 @@ describe("exportElements", () => {
       setText("256.2", "FIRST"),
       setText(`${slideA}.${shapeA}`, "ALPHA2"),
       setText("256.2", "SECOND"),
-      { id: `256.${shapeA}`, name: "move", x: 5, y: 6 },
+      { id: elementId(`256.${shapeA}`), name: "move", x: 5, y: 6 },
     ]
     const expected = exportElements(deck(), [...creates, ...others])
     fc.assert(
@@ -380,7 +381,7 @@ describe("exportElements", () => {
   })
 
   it("Text then remove is a different list from remove then text; the document's commit order orders them", () => {
-    const remove: ElementEdit = { id: "256.2", name: "remove" }
+    const remove: ElementEdit = { id: elementId("256.2"), name: "remove" }
     const written = exportElements(deck(), [setText("256.2", "AAA"), remove])
     expect(rowsFor(written.parts, "AAA")).toHaveLength(0)
     const parts = deck()
@@ -432,6 +433,6 @@ it("refuses a text edit of a box with several paragraphs and writes nothing", ()
   const lines = "<a:p><a:r><a:t>One</a:t></a:r></a:p><a:p><a:r><a:t>Two</a:t></a:r></a:p>"
   parts.set("ppt/slides/slide1.xml", text(original.replace("<a:p><a:r><a:t>One</a:t></a:r></a:p>", lines)))
   const saved = new Map(parts)
-  expect(() => exportElements(parts, [{ id: "256.2", name: "text", text: "typed" }])).toThrow(/text-shape/)
+  expect(() => exportElements(parts, [{ id: elementId("256.2"), name: "text", text: "typed" }])).toThrow(/text-shape/)
   expect(parts).toEqual(saved)
 })

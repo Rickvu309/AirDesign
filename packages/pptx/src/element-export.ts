@@ -1,20 +1,20 @@
+import { readElementId, shapeOf, type ElementId } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { oneRunValue, writeRoute, type SlideRoute } from "./slide-route.js"
 import { writeStructuralRoute } from "./structural-route.js"
 
-const elementId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const slideId = /^(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const createdId = /^n[0-9a-z]{12}$/
 const presentationPart = "ppt/presentation.xml"
 const presentationRels = "ppt/_rels/presentation.xml.rels"
 
 export type ElementEdit =
-  | { readonly id: string; readonly name: "text"; readonly text: string }
-  | { readonly id: string; readonly name: "move"; readonly x: number; readonly y: number }
-  | { readonly id: string; readonly name: "resize"; readonly cx: number; readonly cy: number }
-  | { readonly id: string; readonly name: "remove" }
+  | { readonly id: ElementId; readonly name: "text"; readonly text: string }
+  | { readonly id: ElementId; readonly name: "move"; readonly x: number; readonly y: number }
+  | { readonly id: ElementId; readonly name: "resize"; readonly cx: number; readonly cy: number }
+  | { readonly id: ElementId; readonly name: "remove" }
   | {
-      readonly id: string
+      readonly id: ElementId
       readonly name: "add"
       readonly text: string
       readonly x: number
@@ -102,19 +102,9 @@ function isCreated(value: string): boolean {
 }
 
 function splitId(id: string): { readonly slide: string; readonly shape: string } {
-  if (!elementId.test(id)) throw new Error("element id")
-  let slide = ""
-  let shape = ""
-  let dotted = false
-  for (const char of id) {
-    if (char === ".") {
-      dotted = true
-      continue
-    }
-    if (dotted) shape += char
-    else slide += char
-  }
-  return { slide, shape }
+  const read = readElementId(id)
+  if (read === undefined) throw new Error("element id")
+  return shapeOf(read)
 }
 
 function attribute(element: MarkupElement, name: string): string | null {

@@ -1,19 +1,19 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
-import { history, type NodeRegister, type Register } from "@airdesign/document"
+import { elementId, history, rootElement, type ElementId, type NodeRegister, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { emptyLog } from "./admit.js"
 import { callTool, type ToolResult } from "./call-tool.js"
 
-export const elements = {
-  opened: "a",
-  title: "258.7",
-  body: "258.8",
-  note: "259.1",
-  footer: "259.2",
-} as const
+export type ElementName = "opened" | "title" | "body" | "note" | "footer"
 
-export type ElementName = keyof typeof elements
+export const elements: Readonly<Record<ElementName, ElementId>> = {
+  opened: rootElement,
+  title: elementId("258.7"),
+  body: elementId("258.8"),
+  note: elementId("259.1"),
+  footer: elementId("259.2"),
+}
 
 export type EditableName = Exclude<ElementName, "opened">
 
@@ -123,12 +123,12 @@ function reportsCapturedFile(result: ToolResult): boolean {
   return result.content.some((block) => /captured file|file was captured|image\/png|\.png\b|\.pptx\b/i.test(block.text))
 }
 
-function bodyOf(register: Register, id: string): NodeRegister | null {
+function bodyOf(register: Register, id: ElementId): NodeRegister | null {
   if (id === elements.opened) return register
   return register.elements[id] ?? null
 }
 
-function picture(register: Register, id: string): string {
+function picture(register: Register, id: ElementId): string {
   const body = bodyOf(register, id)
   if (body === null) return "missing"
   return JSON.stringify({
@@ -143,7 +143,7 @@ function picture(register: Register, id: string): string {
 }
 
 function touched(start: Deck, end: Deck, named: Task["want"]["elements"]): boolean {
-  const unnamed = new Set<string>([...start.register.nodes, ...end.register.nodes])
+  const unnamed = new Set<ElementId>([...start.register.nodes, ...end.register.nodes])
   for (const [name, id] of Object.entries(elements)) {
     if (Object.hasOwn(named, name)) unnamed.delete(id)
     else unnamed.add(id)
