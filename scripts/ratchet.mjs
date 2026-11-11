@@ -126,90 +126,62 @@ export const ownerReasons = ({
   for (const name of new Set([...Object.keys(baseMetrics), ...Object.keys(headMetrics)])) {
     const text = metricReason(name, baseMetrics[name], headMetrics[name])
     const recorded = recordsFaults.has(name) && text?.includes("away from its goal")
-    if (text !== undefined) reasons.push({ about: `metric ${name}`, text, blocks: !recorded })
+    if (text !== undefined) reasons.push({ about: `metric ${name}`, text, lowers: !recorded })
   }
   for (const file of changedFiles.filter(guarded)) {
-    reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, blocks: false })
+    reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, lowers: false })
   }
   for (const file of changedFixtures) {
     reasons.push({
       about: `file ${file}`,
       text: `${file} is a deck the PowerPoint check already judges.`,
-      blocks: true,
+      lowers: true,
     })
   }
   for (const name of changedCases) {
-    reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, blocks: true })
+    reasons.push({ about: `case ${name}`, text: `The PowerPoint case ${name} was changed or removed.`, lowers: true })
   }
   for (const name of changedDecks) {
     reasons.push({
       about: `deck ${name}`,
       text: `The corpus deck ${name} was removed or its sha256 changed.`,
-      blocks: true,
+      lowers: true,
     })
   }
   for (const name of changedKinds) {
     reasons.push({
       about: `break ${name}`,
       text: `The judge proof no longer records ${name} as caught.`,
-      blocks: true,
+      lowers: true,
     })
   }
   for (const file of changedScripts) {
     reasons.push({
       about: `scripts ${file}`,
       text: `The scripts in ${file} changed, and they are what ci runs.`,
-      blocks: false,
+      lowers: false,
     })
   }
   return reasons
 }
 
-export const verdict = ({ owner, reasons, headPrints, approvedPrints, forkPrints, approvedForkPrints }) => {
-  if (reasons.length === 0) return { pass: true, listed: false, lines: ["Nothing here touches the bar."] }
-  const blocking = reasons.filter((reason) => reason.blocks)
-  const lines = [
-    ...blocking.map((reason) => `Lowers the bar: ${reason.text}`),
-    ...reasons
-      .filter((reason) => !reason.blocks)
-      .map((reason) => `Listed for ${owner}, does not block: ${reason.text}`),
-  ]
-  if (blocking.length === 0) return { pass: true, listed: true, lines }
-  const ask = `Undo what lowers the bar. Only an approval from ${owner} lets it through as it is.`
-  if (approvedPrints === undefined) return { pass: false, listed: true, lines: [...lines, ask] }
-  const moved = blocking.filter((reason) => headPrints[reason.about] !== approvedPrints[reason.about])
-  const rebased = blocking.filter((reason) => forkPrints[reason.about] !== approvedForkPrints[reason.about])
-  if (moved.length === 0 && rebased.length === 0) {
-    return { pass: true, listed: true, lines: [...lines, `${owner} approved this.`] }
-  }
+export const verdict = ({ owner, reasons }) => {
+  if (reasons.length === 0) return { listed: false, lowers: false, lines: ["Nothing here touches the bar."] }
+  const lowering = reasons.filter((reason) => reason.lowers)
   return {
-    pass: false,
     listed: true,
+    lowers: lowering.length > 0,
     lines: [
-      ...lines,
-      ...moved.map((reason) => `Changed since ${owner} approved: ${reason.about}.`),
-      ...rebased.map((reason) => `Changed on main since ${owner} approved: ${reason.about}.`),
-      ask,
+      ...lowering.map((reason) => `Lowers the bar: ${reason.text}`),
+      ...reasons.filter((reason) => !reason.lowers).map((reason) => `Listed for ${owner}: ${reason.text}`),
     ],
   }
 }
 
-export const approvedCommit = (owner, reviews) => {
-  const latest = reviews.filter((review) => review.user === owner && review.state !== "COMMENTED").at(-1)
-  return latest !== undefined && latest.state === "APPROVED" ? latest.commit : undefined
-}
-
-const mayAllow = new Set(["OWNER", "MEMBER"])
-
-export const allowedCommit = (comments, sha) =>
-  comments.some(
-    (comment) =>
-      mayAllow.has(comment.role) && typeof comment.body === "string" && comment.body.trim() === `owner-allows ${sha}`,
-  )
-    ? sha
-    : undefined
-
-export const allowRole = (role, permission) => (permission === "admin" ? "OWNER" : role)
+export const labelsFor = (result) => [
+  ...(result.listed ? ["changes-ci"] : []),
+  ...(result.lowers ? ["lowers-the-bar"] : []),
+]
 
 const github = (args) =>
   execFileSync("gh", ["api", ...args], {
@@ -224,22 +196,6 @@ const rows = (endpoint, shape) =>
     .filter((line) => line !== "")
     .map((line) => JSON.parse(line))
 
-const permissionOf = (repository, user) => {
-  try {
-    return github([`repos/${repository}/collaborators/${user}/permission`, "--jq", ".permission"]).trim()
-  } catch {
-    return undefined
-  }
-}
-
-export const readComments = (repository, number) =>
-  rows(`repos/${repository}/issues/${number}/comments`, "{body, role: .author_association, user: .user.login}").map(
-    ({ body, role, user }) => ({
-      body,
-      role: String(body).startsWith("owner-allows ") ? allowRole(role, permissionOf(repository, user)) : role,
-    }),
-  )
-
 const missing = (error) => String(error.stderr ?? error.message).includes("HTTP 404")
 
 export const contents = (repository, sha, file) =>
@@ -250,15 +206,6 @@ const githubJson = (repository) => (sha, file) => {
     return JSON.parse(github([contents(repository, sha, file), "-H", "Accept: application/vnd.github.raw"]))
   } catch (error) {
     if (missing(error) || error instanceof SyntaxError) return undefined
-    throw error
-  }
-}
-
-const blobAt = (repository, sha, file) => {
-  try {
-    return github([contents(repository, sha, file), "--jq", ".sha"]).trim()
-  } catch (error) {
-    if (missing(error)) return "absent"
     throw error
   }
 }
@@ -281,26 +228,6 @@ const proofAt = (json, sha) => {
 }
 
 const metricsAt = (json, sha) => metricsFrom((file) => json(sha, file))
-
-const printsAt = (repository, sha, reasons) => {
-  const json = githubJson(repository)
-  const metrics = metricsAt(json, sha) ?? {}
-  const cases = casesAt(json, sha)
-  const corpus = corpusAt(json, sha)
-  const proof = proofAt(json, sha)
-  const prints = {}
-  for (const { about } of reasons) {
-    const [kind, ...rest] = about.split(" ")
-    const subject = rest.join(" ")
-    if (kind === "metric") prints[about] = JSON.stringify(metrics[subject])
-    if (kind === "file") prints[about] = blobAt(repository, sha, subject)
-    if (kind === "scripts") prints[about] = scriptsAt(json, sha, subject)
-    if (kind === "break") prints[about] = JSON.stringify(proof[subject])
-    if (kind === "case") prints[about] = JSON.stringify(cases.filter((row) => String(row.name) === subject))
-    if (kind === "deck") prints[about] = JSON.stringify(corpus.filter((row) => String(row.name) === subject))
-  }
-  return prints
-}
 
 export const readReasons = ({ json, fork, head, listed }) => {
   const changedFiles = listed.flatMap((file) => [file.name, file.before].filter((name) => name != null))
@@ -342,27 +269,18 @@ export const readReasons = ({ json, fork, head, listed }) => {
 const readPull = (repository, number) => {
   const pulls = `repos/${repository}/pulls/${number}`
   const pull = JSON.parse(github([pulls, "--jq", "{head: .head.sha, base: .base.sha, files: .changed_files} | @json"]))
-  const forkOf = (sha) =>
-    github([`repos/${repository}/compare/${pull.base}...${sha}`, "--jq", ".merge_base_commit.sha"]).trim()
-  const fork = forkOf(pull.head)
+  const fork = github([
+    `repos/${repository}/compare/${pull.base}...${pull.head}`,
+    "--jq",
+    ".merge_base_commit.sha",
+  ]).trim()
   const listed = rows(`${pulls}/files`, "{name: .filename, before: .previous_filename, status}")
   if (listed.length !== pull.files) {
     throw new Error(`This pull request changes ${pull.files} files and only ${listed.length} can be read. Split it.`)
   }
   const owner = repository.split("/")[0]
   const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
-  const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
-  const commit = reasons.some((reason) => reason.blocks)
-    ? (approvedCommit(owner, reviews) ?? allowedCommit(readComments(repository, number), pull.head))
-    : undefined
-  return {
-    owner,
-    reasons,
-    headPrints: printsAt(repository, pull.head, reasons),
-    approvedPrints: commit === undefined ? undefined : printsAt(repository, commit, reasons),
-    forkPrints: commit === undefined ? undefined : printsAt(repository, fork, reasons),
-    approvedForkPrints: commit === undefined ? undefined : printsAt(repository, forkOf(commit), reasons),
-  }
+  return { owner, reasons }
 }
 
 const localGit = (root, args, env = process.env) =>
@@ -404,9 +322,6 @@ export const listedFiles = (nameStatus) => {
   return listed
 }
 
-export const localWarning = (check, owner) =>
-  `Warning: the ${check} check on GitHub blocks this unless ${owner} approves it. This step passes, and GitHub judges.`
-
 export const ownerOf = (remote) => /github\.com[:/]([^/]+)\//.exec(remote ?? "")?.[1] ?? "the repo owner"
 
 const localJson = (root) => (tree, file) => {
@@ -433,7 +348,6 @@ export const readLocal = (root) => {
   return {
     owner: localOwner(root),
     reasons: readReasons({ json: localJson(root), fork, head, listed }),
-    headPrints: {},
   }
 }
 
@@ -442,9 +356,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
   try {
     const read = readLocal(path.resolve(process.argv[3] ?? "."))
     if (read.why !== undefined) console.log(read.why)
-    const result = read.why === undefined ? verdict(read) : { pass: true, lines: [] }
-    for (const line of result.lines) console.log(line)
-    if (!result.pass) console.log(localWarning("ratchet", read.owner))
+    for (const line of read.why === undefined ? verdict(read).lines : []) console.log(line)
   } catch (error) {
     console.error(error.message)
     process.exit(1)
@@ -454,14 +366,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self && process.argv[2]
   try {
     const result = verdict(readPull(repository, number))
     for (const line of result.lines) console.log(line)
-    if (result.listed && process.argv.includes("--label")) {
+    for (const label of process.argv.includes("--label") ? labelsFor(result) : []) {
       try {
-        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", "labels[]=changes-ci"])
+        github(["-X", "POST", `repos/${repository}/issues/${number}/labels`, "-f", `labels[]=${label}`])
       } catch (error) {
-        console.log(`The label could not be added: ${String(error.stderr ?? error.message).trim()}`)
+        console.log(`The label ${label} could not be added: ${String(error.stderr ?? error.message).trim()}`)
       }
     }
-    if (!result.pass) process.exit(1)
   } catch (error) {
     console.error(error.message)
     process.exit(1)

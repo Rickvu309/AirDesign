@@ -62,7 +62,7 @@ execFileSync("git", ["add", "-A"], { cwd: root })
 const steady = await readMetrics(root)
 if (steady.drift.length !== 0) throw new Error(`a matching record drifted\n${steady.drift.join("\n")}`)
 if (steady.rows.find((row) => row.name === "known-failures")?.now !== 1)
-  throw new Error("one known fault was not counted")
+  throw new Error("one known failure was not counted")
 
 cache(2, 2)
 if (steady.rows.find((row) => row.name === "ci-duration")?.limit !== 40)
@@ -103,7 +103,7 @@ if (unlimited !== "nobody limits has no limit in metrics.json.") throw new Error
 
 const added = (await readMetrics(root)).drift
 if (added.length !== 0) {
-  throw new Error(`a new known fault must need no record\n${added.join("\n")}`)
+  throw new Error(`a new known failure must need no record\n${added.join("\n")}`)
 }
 
 cache(2, 0)
@@ -116,7 +116,7 @@ if (fixed.length !== 0) {
 write("packages/a/src/a.spec.js", "expect(result.failed).toBe(1)\nexpect.soft(failure).toBeDefined()\n")
 execFileSync("git", ["add", "-A"], { cwd: root })
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
-  throw new Error("a passing test was counted as a known fault")
+  throw new Error("a passing test was counted as a known failure")
 seedList([{ seed: 1, kind: "one kind", deck: "a.pptx", what: "slide 1" }])
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 1)
   throw new Error("a listed miss must show in the known-failures metric")

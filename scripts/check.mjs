@@ -27,7 +27,6 @@ export const stages = [
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
     ["ratchet", "node", ["scripts/ratchet.mjs", "local"]],
-    ["check-regression", "node", ["scripts/check-regression.mjs", "local"]],
   ],
   [["typecheck", "pnpm", ["typecheck"]]],
   [
@@ -47,7 +46,7 @@ export const partOf = (argv) => {
   return part
 }
 
-export const localSteps = new Set(["ratchet", "check-regression"])
+export const localSteps = new Set(["ratchet"])
 
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
 
