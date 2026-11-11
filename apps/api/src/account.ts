@@ -102,7 +102,7 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex")
 }
 
-async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Promise<T>): Promise<T> {
+export async function withAddress<T>(db: Sql, email: string, run: (client: Sql) => Promise<T>): Promise<T> {
   const owned = db instanceof Pool ? await db.connect() : undefined
   const client = owned ?? db
   let broken: Error | undefined

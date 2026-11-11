@@ -120,4 +120,31 @@ alter table deck.saved
 revoke delete on deck.saved from deck;
 `,
   },
+  {
+    id: 4,
+    sql: `
+create table session.aira_ledger (
+  email text primary key,
+  spent bigint not null default 0,
+  hold bigint not null default 0,
+  turn text,
+  week integer not null default 0,
+  outside integer not null default 0,
+  monday timestamptz not null
+);
+create table session.aira_turn (
+  id text primary key,
+  email text not null,
+  outcome text not null check (outcome in ('open', 'settled', 'released', 'dropped')),
+  input integer not null,
+  ceiling bigint not null,
+  charged bigint,
+  request text,
+  started timestamptz not null,
+  ended timestamptz
+);
+create index aira_turn_email on session.aira_turn (email, started);
+grant select, insert, update on session.aira_ledger, session.aira_turn to session;
+`,
+  },
 ]

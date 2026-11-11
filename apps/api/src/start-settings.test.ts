@@ -82,6 +82,7 @@ describe("readStartSettings", () => {
       resendKey: good.RESEND_API_KEY,
       resendFrom: good.RESEND_FROM,
       r2: undefined,
+      aira: { on: false, key: undefined, secret: undefined },
     })
   })
 
@@ -237,5 +238,34 @@ describe("readStartSettings", () => {
     expect(refused({ PUBLIC_ORIGIN: "app", SITE_ORIGIN: "app" })).toBe("PUBLIC_ORIGIN")
     expect(refused({ SITE_ORIGIN: "app", MCP_RESOURCE: "app" })).toBe("SITE_ORIGIN")
     expect(refused({ MCP_RESOURCE: "app", COOKIE_DOMAIN: "a b" })).toBe("MCP_RESOURCE")
+  })
+})
+
+describe("readStartSettings for Aira", () => {
+  const secret = "s".repeat(32)
+
+  it("turns Aira off when no key is set or AIRA is off", () => {
+    expect(readStartSettings(good)).toMatchObject({ aira: { on: false, key: undefined } })
+    expect(
+      readStartSettings({ ...good, AIRA: "off", AIRA_ANTHROPIC_KEY: "test-key-not-real", AIRA_USER_SECRET: secret }),
+    ).toMatchObject({ aira: { on: false, key: "test-key-not-real" } })
+    expect(readStartSettings({ ...good, AIRA: "off", AIRA_ANTHROPIC_KEY: "test-key-not-real" })).toMatchObject({
+      aira: { on: false },
+    })
+  })
+
+  it("turns Aira on with a key and a secret", () => {
+    expect(
+      readStartSettings({ ...good, AIRA_ANTHROPIC_KEY: "test-key-not-real", AIRA_USER_SECRET: secret }),
+    ).toMatchObject({ aira: { on: true, key: "test-key-not-real", secret } })
+    expect(
+      readStartSettings({ ...good, AIRA: "on", AIRA_ANTHROPIC_KEY: "test-key-not-real", AIRA_USER_SECRET: secret }),
+    ).toMatchObject({ aira: { on: true } })
+  })
+
+  it("refuses an unknown AIRA value and a missing or short secret when Aira is on", () => {
+    expect(refused({ AIRA: "yes" })).toBe("AIRA")
+    expect(refused({ AIRA_ANTHROPIC_KEY: "test-key-not-real" })).toBe("AIRA_USER_SECRET")
+    expect(refused({ AIRA_ANTHROPIC_KEY: "test-key-not-real", AIRA_USER_SECRET: "short" })).toBe("AIRA_USER_SECRET")
   })
 })
