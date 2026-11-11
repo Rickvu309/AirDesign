@@ -4,6 +4,7 @@ export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedP
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
 export type { PaintColor, PaintFill } from "./paint-color.js"
+export type { PaintLine } from "./paint-shape.js"
 export {
   paintReader,
   PaintPartError,

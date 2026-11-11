@@ -68,7 +68,7 @@ describe("paint backgrounds", () => {
       background(partsOf([scheme("bg1")], ["<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>", override("dk1")])),
     ).toEqual(expected("000000"))
     expect(background(partsOf([scheme("tx1")], [override("accent1")]))).toBeNull()
-    expect(background(partsOf([scheme("accent1")], [override("dk1")]))).toEqual(expected("FF0000"))
+    expect(background(partsOf([scheme("accent1")], [override("dk1")]))).toEqual(expected("000000"))
   })
 
   it("uses only the theme related to this master", () => {

@@ -15,6 +15,26 @@ const color = (xml: string) => {
 }
 
 describe("paint colors", () => {
+  it("sends a theme slot name through the color map before the theme", () => {
+    const { elements } = markupDocument(
+      encodeUtf8(
+        '<x><a:schemeClr val="accent1"/><a:accent1><a:srgbClr val="111111"/></a:accent1><a:accent2><a:srgbClr val="222222"/></a:accent2></x>',
+      ),
+    )
+    const slot = (kind: string) => elements.find((element) => element.kind === kind)!
+    const children = markupChildren(elements)
+    const palette = {
+      children,
+      slots: new Map([
+        ["accent1", slot("a:accent1")],
+        ["accent2", slot("a:accent2")],
+      ]),
+      mapping: new Map([["accent1", "accent2"]]),
+      placeholder: null,
+    }
+    expect(paintColor(slot("a:schemeClr"), children, palette)).toEqual({ hex: "222222", alpha: 1 })
+  })
+
   it.each([
     ['<a:srgbClr val="abcdef"/>', "ABCDEF"],
     ['<a:sysClr val="window" lastClr="123456"/>', "123456"],
@@ -25,21 +45,32 @@ describe("paint colors", () => {
     ['<a:hslClr hue="21600000" sat="0" lum="50000"/>', "808080"],
   ])("resolves %s", (xml, hex) => expect(color(xml)).toEqual({ hex, alpha: 1 }))
 
-  it.each([
-    ["lumMod", "50000", "FF0000", "800000"],
-    ["lumOff", "25000", "FF0000", "FF8080"],
-    ["tint", "25000", "336699", "E1E4EA"],
-    ["shade", "25000", "336699", "1B3753"],
-    ["satMod", "50000", "FF0000", "BF4040"],
-    ["satOff", "-50000", "FF0000", "BF4040"],
-    ["hueMod", "200000", "00FF00", "0000FF"],
-    ["hueOff", "7200000", "FF0000", "00FF00"],
-    ["comp", null, "FF0000", "00FFFF"],
-    ["inv", null, "FF8000", "007FFF"],
-    ["gray", null, "FF0000", "383838"],
-    ["gamma", null, "808080", "BCBCBC"],
-    ["invGamma", null, "808080", "373737"],
-  ])("applies %s with hand-checked arithmetic", (name, value, input, hex) => {
+  it.each(
+    [
+      ["lumMod", "50000", "FF0000", "800000"],
+      ["lumOff", "25000", "FF0000", "FF8080"],
+      ["tint", "25000", "336699", "E1E4EA"],
+      ["shade", "25000", "336699", "1B3753"],
+      ["satMod", "50000", "FF0000", "BF4040"],
+      ["satOff", "-50000", "FF0000", "BF4040"],
+      ["hueMod", "200000", "00FF00", "0000FF"],
+      ["hueOff", "7200000", "FF0000", "00FF00"],
+      ["comp", null, "FF0000", "00FFFF"],
+      ["inv", null, "FF8000", "007FFF"],
+      ["gray", null, "FF0000", "383838"],
+      ["gamma", null, "808080", "BCBCBC"],
+      ["invGamma", null, "808080", "373737"],
+    ].map(([name, value, input, hex]) => ({
+      name,
+      value,
+      input,
+      hex,
+      title:
+        name === "tint" || name === "shade"
+          ? `${name} follows LibreOffice's linear-light model, not checked against PowerPoint`
+          : `applies ${name} with hand-checked arithmetic`,
+    })),
+  )("$title", ({ name, value, input, hex }) => {
     expect(
       color(`<a:srgbClr val="${input}"><a:${name}${value === null ? "" : ` val="${value}"`}/></a:srgbClr>`),
     ).toEqual({ hex, alpha: 1 })

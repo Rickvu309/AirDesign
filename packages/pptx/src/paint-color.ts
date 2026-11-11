@@ -111,7 +111,7 @@ const baseColor = (
     }
     case "a:schemeClr": {
       if (value === "phClr") return palette.placeholder
-      const slot = palette.slots.get(value ?? "") ?? palette.slots.get(palette.mapping.get(value ?? "") ?? "")
+      const slot = palette.slots.get(palette.mapping.get(value ?? "") ?? value ?? "")
       const color = slot === undefined ? undefined : palette.children[slot.index]?.[0]
       return color === undefined ? null : paintColor(color, palette.children, palette, seen)
     }
