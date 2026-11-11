@@ -15,6 +15,10 @@ type ZipEntry = {
 }
 
 type ZipLibrary = {
+  readonly ZipWriter: new (writer: unknown) => {
+    add(name: string, reader: unknown): Promise<unknown>
+    close(): Promise<Uint8Array>
+  }
   readonly ZipReader: new (reader: unknown) => {
     getEntries(): Promise<ZipEntry[]>
     close(): Promise<void>
@@ -884,4 +888,21 @@ test("after a failed import a good file keeps each box's edit on its own box", a
   await expect(editors.filter({ hasText: /^Same technology as:$/ })).toHaveCount(1)
   await expect(editors.filter({ hasText: /^Winter: Pumps heat from the outside to the inside$/ })).toHaveCount(1)
   expect([...new Set((await rowsOf(page)).map((row) => row.node))]).toEqual(["2727.2"])
+})
+
+test("a file the device store refuses shows the import words and keeps the address", async ({ page }, testInfo) => {
+  const crowded = testInfo.outputPath("crowded.pptx")
+  const writer = new zip.ZipWriter(new zip.Uint8ArrayWriter())
+  for (const [name, bytes] of await partsOf(fixture))
+    await writer.add(name, new zip.Uint8ArrayReader(new Uint8Array(bytes)))
+  const longName = "x".repeat(240)
+  for (let part = 0; part < 300; part += 1) {
+    await writer.add(`ppt/media/${longName}${part}.bin`, new zip.Uint8ArrayReader(new Uint8Array([1])))
+  }
+  await writeFile(crowded, await writer.close())
+  await page.goto("/thin")
+  await page.locator("input[type=file]").setInputFiles(crowded)
+  await expect(page.getByText(importFailedWords)).toBeVisible()
+  expect(new URL(page.url()).pathname).toBe("/thin")
+  await expect(page.locator('[contenteditable="true"]')).toHaveCount(0)
 })
