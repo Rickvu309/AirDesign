@@ -8,7 +8,8 @@ import { productCopy } from "./copy/product-copy"
 import { signInAddress } from "./thin-notice"
 import { editedRegister, fallbackSlide, xml } from "./slide-fixtures"
 import { commitEdit } from "./commit-edit"
-import { deckName, elementIds, saveDeck, ThinDeck } from "./thin-deck"
+import { saveDeck } from "./import-deck"
+import { elementIds, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
   const sent: { deck: string; value: string; node: string; floor: string }[] = []
@@ -647,12 +648,6 @@ it("shows an empty title for a deck stored without a name", async () => {
   const window = await renderedDeck(shapedParts())
   const text = window.document.body.textContent ?? ""
   expect(text).not.toContain("Q3 Investor Update")
-})
-
-it("saves the file name without .pptx with the deck", async () => {
-  live.reset()
-  await saveDeck(new Map([["first", new Uint8Array([1])]]), new Uint8Array([1]), deckName("Board deck.PPTX"))
-  expect(live.saved[0]?.name).toBe("Board deck")
 })
 
 it("sends a signed-out person to sign in with the current path and query as next", () => {

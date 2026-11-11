@@ -12,7 +12,7 @@ import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/dec
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
-import { importDeck, nameImportedDeck } from "@/thin-deck"
+import { importDeck, nameImportedDeck } from "@/import-deck"
 import { signInAddress } from "@/thin-notice"
 
 type Deck = { deck: string; name: string; edited: string; created: string; trashed?: string }
@@ -82,7 +82,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
     try {
       const imported = await importDeck(file)
       if (imported === null) throw new Error("import-failed")
-      await nameImportedDeck(imported.id, file.name)
+      await nameImportedDeck(imported)
       await sendOriginal(imported.id, imported.file)
       window.location.assign(`/deck/${imported.id}`)
     } catch {

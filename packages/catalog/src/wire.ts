@@ -1,6 +1,7 @@
 import { bytesOf, elementPattern, limits, readElementId, type ElementId } from "@airdesign/document"
 import * as z from "zod/v4"
 
+import { readDeckName } from "./deck-name.js"
 import { storableText, unstorable } from "./storable-text.js"
 
 declare const deckIdBrand: unique symbol
@@ -311,14 +312,6 @@ export function readNoFields(raw: unknown): { ok: true } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || Object.keys(body).length > 0) return fieldRefusal
   return { ok: true }
-}
-
-function readDeckName(raw: unknown): string | undefined {
-  if (!storableText(raw)) return undefined
-  const name = raw.trim()
-  const size = [...name].length
-  if (size < 1 || size > limits.name) return undefined
-  return name
 }
 
 export function readRename(raw: unknown): { ok: true; deck: DeckId; name: string } | FieldRefusal | DeckRefusal {
