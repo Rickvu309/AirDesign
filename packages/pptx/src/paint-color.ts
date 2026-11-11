@@ -1,5 +1,6 @@
 import type { MarkupElement } from "./element-span.js"
 import type { MarkupChildren } from "./text-value-route.js"
+import type { PaintImage } from "./paint-image.js"
 
 export type PaintColor = { hex: string; alpha: number }
 
@@ -8,7 +9,7 @@ export type PaintFill =
   | { type: "solid"; color: PaintColor }
   | { type: "gradient"; stops: readonly { position: number; color: PaintColor }[]; angle: number | null }
   | { type: "pattern"; preset: string; foreground: PaintColor; background: PaintColor }
-  | { type: "picture"; part: string }
+  | ({ type: "picture" } & PaintImage)
 
 export type PaintPalette = {
   children: MarkupChildren

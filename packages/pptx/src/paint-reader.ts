@@ -10,6 +10,7 @@ import {
   type PaintTextScope,
 } from "./paint-text.js"
 import { paintShape, type PaintLine, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
+import { paintContentType, paintImage, paintPictureFill, type PaintImage, type PaintPicture } from "./paint-image.js"
 import type { ShapeKind } from "./read-shapes.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 
@@ -28,6 +29,7 @@ export type PaintElement = {
   shape: string
   from: "slide" | "layout" | "master"
   kind: ShapeKind
+  image: PaintImage | null
   box: PaintBox | null
   group: string | null
   placeholder: { type: string; index: number | null } | null
@@ -402,12 +404,17 @@ const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
 const shownAbove = (sheet: Sheet): readonly Drawn[] =>
   sheet.drawn.filter((item) => !item.hidden && item.placeholder === null)
 
-const paintedAbove = (sheet: Sheet, from: "layout" | "master"): readonly Omit<PaintElement, keyof ShapePaint>[] =>
+const paintedAbove = (
+  sheet: Sheet,
+  from: "layout" | "master",
+  image: (sheet: Sheet, item: Drawn) => PaintImage | null,
+): readonly Omit<PaintElement, keyof ShapePaint>[] =>
   shownAbove(sheet).map((item) => ({
     part: sheet.part,
     shape: item.shape,
     from,
     kind: item.kind,
+    image: image(sheet, item),
     box: boxOf(finalPlacement(item)),
     group: item.group,
     placeholder: null,
@@ -441,6 +448,7 @@ const textOf = (
 }
 
 export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader {
+  const contentType = paintContentType(parts)
   const relationships = new Map<string, ReadonlyMap<string, string>>()
   const above = new Map<string, Above | null>()
   const themes = new Map<string, Sheet | null>()
@@ -488,6 +496,16 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
     return targets
   }
 
+  const picture = (part: string, id: string): ReturnType<PaintPicture> => {
+    const target = relationshipsOf(part).get(`id:${id}`)
+    return target !== undefined && parts.has(target) ? { part: target, contentType: contentType(target) } : null
+  }
+
+  const imageOf = (sheet: Sheet, item: Drawn): PaintImage | null =>
+    paintImage(paintPictureFill(item.element, sheet.elements, sheet.children), sheet.children, (id) =>
+      picture(sheet.part, id),
+    )
+
   const sheetAbove = (source: string, type: "slideLayout" | "slideMaster"): Above | null => {
     const part = relationshipsOf(source).get(type)
     if (part === undefined) return null
@@ -496,7 +514,9 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
     const bytes = parts.get(part)
     const sheet = bytes === undefined ? null : sheetFrom(part, bytes)
     const read =
-      sheet === null ? null : { sheet, painted: paintedAbove(sheet, type === "slideLayout" ? "layout" : "master") }
+      sheet === null
+        ? null
+        : { sheet, painted: paintedAbove(sheet, type === "slideLayout" ? "layout" : "master", imageOf) }
     above.set(part, read)
     return read
   }
@@ -547,11 +567,6 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
       })
     }
     return { theme: theme ?? null, palette }
-  }
-
-  const picture = (part: string, id: string): string | null => {
-    const target = relationshipsOf(part).get(`id:${id}`)
-    return target !== undefined && parts.has(target) ? target : null
   }
 
   const backgroundOf = (
@@ -687,6 +702,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
           shape: item.shape,
           from: "slide",
           kind: item.kind,
+          image: imageOf(sheet, item),
           box: boxOf(slidePlacement(item, layout?.sheet ?? null, master?.sheet ?? null)),
           group: item.group,
           placeholder: item.placeholder,

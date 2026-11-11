@@ -5,6 +5,7 @@ export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
 export type { PaintColor, PaintFill } from "./paint-color.js"
 export type { PaintLine } from "./paint-shape.js"
+export type { PaintCrop, PaintImage } from "./paint-image.js"
 export {
   paintReader,
   PaintPartError,

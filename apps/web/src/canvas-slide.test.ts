@@ -21,6 +21,7 @@ function row(overrides: Partial<PaintElement> = {}): PaintElement {
     fill: null,
     line: null,
     geometry: null,
+    image: null,
     ...overrides,
   }
 }
@@ -67,7 +68,17 @@ it.each<[string, PaintFill | null, boolean]>([
   ],
   ["a clear pattern", { type: "pattern", preset: "pct5", foreground: clear, background: clear }, false],
   ["a pattern", { type: "pattern", preset: "pct5", foreground: clear, background: seen }, true],
-  ["a picture", { type: "picture", part: "ppt/media/image1.png" }, true],
+  [
+    "a picture",
+    {
+      type: "picture",
+      part: "ppt/media/image1.png",
+      contentType: "image/png",
+      crop: { left: 0, top: 0, right: 0, bottom: 0 },
+      tile: false,
+    },
+    true,
+  ],
 ])("reads whether %s is a visible fill", (_name, fill, filled) => {
   const canvas = slideCanvases(reader({ ...size, elements: [row({ fill })] }), [source])(0)
   expect(canvas?.elements[0]?.filled).toBe(filled)
