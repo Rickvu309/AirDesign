@@ -1,9 +1,15 @@
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport, fromJsonSchema, type JsonSchemaType } from "@modelcontextprotocol/client"
-import { decide, elementId, version, type Register } from "@airdesign/document"
+import { decide, elementId, rootElement, version, type NodeRegister, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import { createServer, editNext, emptyLog, memoryTurns, type CallerLog, type Session } from "./index.js"
+
+function firstOf(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -138,7 +144,7 @@ describe("createServer", () => {
       ])
       expect(result.structuredContent).toEqual(answer)
       expect(deck.revision).toBe(0)
-      expect(deck.register.landed).toEqual([])
+      expect(firstOf(deck.register).landed).toEqual([])
     })
   })
 
@@ -281,7 +287,7 @@ describe("createServer", () => {
       ])
       expect(session.deck).toBe(deck)
       expect(session.deck.revision).toBe(0)
-      expect(session.deck.register.landed).toEqual([])
+      expect(firstOf(session.deck.register).landed).toEqual([])
       expect(session.log.events).toHaveLength(30)
 
       session.now = 300_000
@@ -302,7 +308,7 @@ describe("createServer", () => {
 
   it("lands an edit on a deck that no test started a run on", async () => {
     const before = opened()
-    expect(before.register.phase).toBe("idle")
+    expect(firstOf(before.register).phase).toBe("idle")
     const session = sessionFor(before)
     await withClient(session, async (client) => {
       const result = await client.callTool({
@@ -321,8 +327,8 @@ describe("createServer", () => {
       expect(body.phase).toBe("running")
       expect(body.runId).toBe("run")
       expect(body.landed).toEqual([{ actor: "agent", value: "21", visible: true, runId: "run" }])
-      expect(before.register.phase).toBe("idle")
-      expect(before.register.landed).toEqual([])
+      expect(firstOf(before.register).phase).toBe("idle")
+      expect(firstOf(before.register).landed).toEqual([])
     })
   })
 
@@ -432,10 +438,10 @@ describe("createServer", () => {
         { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 300 seconds." },
       ])
       expect(second.deck).toBe(secondDeck)
-      expect(secondDeck.register.landed).toEqual([])
+      expect(firstOf(secondDeck.register).landed).toEqual([])
     })
     expect(holder.log.events).toHaveLength(30)
-    expect(firstDeck.register.landed).toEqual([])
+    expect(firstOf(firstDeck.register).landed).toEqual([])
   })
 
   it("says when the limit resets in seconds", async () => {
@@ -459,7 +465,7 @@ describe("createServer", () => {
         { type: "text", text: "Thirty tool calls in five minutes. The next tool call can run in 2 seconds." },
       ])
       expect(session.deck).toBe(deck)
-      expect(deck.register.landed).toEqual([])
+      expect(firstOf(deck.register).landed).toEqual([])
     })
   })
 })

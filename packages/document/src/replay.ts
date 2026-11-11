@@ -1,4 +1,4 @@
-import { decide, version, type Register } from "./decide.js"
+import { decide, foldRegister, version, type Register, type StoredRegister } from "./decide.js"
 import { rootElement, type ElementId } from "./element-id.js"
 
 export type Queued = {
@@ -12,16 +12,15 @@ export function unsent<Item>(queue: readonly Item[], acknowledged: number): read
 }
 
 function versionAt(register: Register, node: ElementId | undefined): number {
-  if (node === undefined || node === rootElement) return version(register)
-  const body = register.elements[node]
+  const body = register.elements[node ?? rootElement]
   if (body === undefined) {
     throw new Error("missing node")
   }
   return version(body)
 }
 
-export function replay(register: Register, pending: readonly Queued[]): Register {
-  let current = register
+export function replay(register: StoredRegister, pending: readonly Queued[]): Register {
+  let current = foldRegister(register)
   for (const edit of pending) {
     if (edit.base !== versionAt(current, edit.node)) {
       continue

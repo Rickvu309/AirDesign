@@ -1,3 +1,4 @@
+import { rootElement, type NodeRegister, type Register } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { installIndexedDb, node } from "./browser-fixtures.js"
 import { deleteDatabase, memoryRemote } from "./index.js"
@@ -23,7 +24,7 @@ describe("live cache", () => {
     expect(opened.ok).toBe(true)
     if (!opened.ok) return
     expect(opened.revision).toBe(0)
-    expect(opened.register.landed).toEqual([])
+    expect(firstOf(opened.register).landed).toEqual([])
   })
 
   it("raises revision by one commit", async () => {
@@ -87,3 +88,9 @@ describe("live cache", () => {
     expect(await waiting).toEqual({ ok: true, deck: "deck", revision: 0 })
   })
 })
+
+function firstOf(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}

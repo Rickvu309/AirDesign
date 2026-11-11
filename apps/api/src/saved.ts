@@ -1,4 +1,5 @@
 import { notifyKey, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
+import { foldRegister, type StoredRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
@@ -49,10 +50,11 @@ from noted
 type Saved = {
   readonly id: string
   readonly revision: number
-  readonly register: Deck["register"]
   readonly owner: string
-  readonly deleted: boolean
-}
+} & (
+  | { readonly deleted: false; readonly register: Deck["register"] }
+  | { readonly deleted: true; readonly register: null }
+)
 
 export type RevisionWrite = {
   readonly id: string
@@ -80,13 +82,23 @@ async function readStoredOnce(db: Sql, email: string, deck: string, once: string
   return result.rows[0]
 }
 
-function savedFrom(row: Saved | undefined): Saved | undefined {
+type StoredSaved = Omit<Saved, "register" | "deleted"> &
+  ({ readonly deleted: false; readonly register: StoredRegister } | { readonly deleted: true; readonly register: null })
+
+function savedFrom(row: StoredSaved | undefined): Saved | undefined {
   if (row === undefined) return undefined
-  return { id: row.id, revision: row.revision, register: row.register, owner: row.owner, deleted: row.deleted }
+  if (row.deleted) return row
+  return {
+    id: row.id,
+    revision: row.revision,
+    register: foldRegister(row.register),
+    owner: row.owner,
+    deleted: row.deleted,
+  }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
-  const result = await db.query<Saved>(readSql, [id])
+  const result = await db.query<StoredSaved>(readSql, [id])
   return savedFrom(result.rows[0])
 }
 
@@ -122,7 +134,7 @@ export async function openSaved(
   const opened = openDeck(parsed.deck)
   const key = notifyKey(opened.id, opened.revision)
   if (!key.ok) return { ok: false, refusal: "deck" }
-  const inserted = await db.query<Saved>(insertSql, [
+  const inserted = await db.query<StoredSaved>(insertSql, [
     opened.id,
     opened.revision,
     JSON.stringify(opened.register),

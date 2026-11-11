@@ -1,3 +1,4 @@
+import { nodeBody, include } from "./call-fixtures.js"
 import { parseNotifyKey, readDeckId } from "@airdesign/catalog"
 import {
   bytesOf,
@@ -7,6 +8,7 @@ import {
   elementId,
   history,
   limits,
+  rootElement,
   version,
   type ElementId,
   type Register,
@@ -22,19 +24,6 @@ function opened(): Deck {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error(id.refusal)
   return openDeck(id.deck)
-}
-
-function nodeBody(register: Register, id: ElementId) {
-  const body = register.elements[id]
-  if (body === undefined) throw new Error("missing node")
-  return body
-}
-
-function include(register: Register, id: ElementId): Register {
-  if (register.nodes.includes(id)) return register
-  const added = decide(register, { command: "add", node: id, floor: register.floor, route: register.route })
-  if (added.decision !== "apply") throw new Error(added.code)
-  return added.register
 }
 
 function runOn(register: Register, id: ElementId): Register {
@@ -125,7 +114,7 @@ describe("call", () => {
       refusal: "field",
     })
     expect(deck.revision).toBe(0)
-    expect(deck.register.landed).toEqual([])
+    expect(nodeBody(deck.register, rootElement).landed).toEqual([])
   })
 
   it("does not land a commit from an agent caller", () => {
@@ -135,7 +124,7 @@ describe("call", () => {
       refusal: "field",
     })
     expect(deck.revision).toBe(0)
-    expect(deck.register.landed).toEqual([])
+    expect(nodeBody(deck.register, rootElement).landed).toEqual([])
   })
 
   it("does not land an edit from a person caller", () => {
@@ -151,7 +140,7 @@ describe("call", () => {
       refusal: "field",
     })
     expect(deck.revision).toBe(0)
-    expect(deck.register.landed).toEqual([])
+    expect(nodeBody(deck.register, rootElement).landed).toEqual([])
   })
 
   it("lands an edit whose base is behind the revision", () => {
@@ -353,7 +342,7 @@ describe("call", () => {
       }),
     ).toEqual({ ok: false, refusal: "limit" })
     expect(near).toEqual(before)
-    expect(history(near.register)).toEqual([])
+    expect(history(nodeBody(near.register, rootElement))).toEqual([])
   })
 
   it("counts the bytes a commit lands", () => {
@@ -628,7 +617,7 @@ describe("call", () => {
         }),
       ).toEqual({ ok: false, refusal: "limit" })
       expect(deck.register).toBe(before)
-      expect(history(deck.register)).toEqual([])
+      expect(history(nodeBody(deck.register, rootElement))).toEqual([])
       const prepared = running()
       const agentBefore = prepared.register
       expect(
@@ -698,7 +687,7 @@ describe("call", () => {
       }),
     ).toEqual({ ok: false, refusal: "limit" })
     expect(deck.register).toBe(before)
-    expect(history(deck.register)).toEqual([])
+    expect(history(nodeBody(deck.register, rootElement))).toEqual([])
     let register = include(deck.register, left)
     register = include(register, right)
     register = runOn(register, left)
@@ -929,8 +918,12 @@ describe("run operations", () => {
     const deck = floorsReady()
     const body = nodeBody(deck.register, left)
     const ids = Array.from({ length: limits.elements - 2 }, (_, index) => elementId(`${String(index)}.1`))
-    const elements = Object.fromEntries([left, ...ids].map((id) => [id, body]))
-    return { ...deck, register: { ...deck.register, nodes: [deck.register.nodes[0]!, left, ...ids], elements } }
+    const first = deck.register.nodes[0]!
+    const elements = Object.fromEntries([
+      [first, nodeBody(deck.register, first)],
+      ...[left, ...ids].map((id) => [id, body] as const),
+    ])
+    return { ...deck, register: { ...deck.register, nodes: [first, left, ...ids], elements } }
   }
 
   describe("undo_run", () => {

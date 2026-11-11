@@ -109,7 +109,9 @@ function everyElement(register: Register): readonly ElementId[] {
 }
 
 function bodyOf(register: Register, node: ElementId): NodeRegister {
-  return register.elements[node] ?? register
+  const body = register.elements[node]
+  if (body === undefined) throw new Error("missing node")
+  return body
 }
 
 function holdsRun(body: NodeRegister, runId: string): boolean {

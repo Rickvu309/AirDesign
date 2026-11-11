@@ -1,11 +1,12 @@
 import { readDeckId } from "@airdesign/catalog"
+import { foldRegister, openRegister, rootElement, type RootRegister } from "@airdesign/document"
 import { openDeck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 
 import { wireCommit } from "./harness.js"
 
 import type { Sql } from "./pool.js"
-import { commitEdits } from "./saved.js"
+import { commitEdits, readSaved } from "./saved.js"
 
 const readSql = "select id, revision, register, owner, deleted is not null as deleted from deck.saved where id = $1"
 
@@ -43,5 +44,32 @@ describe("saved", () => {
       refusal: "deck",
     })
     expect(statements).toEqual([readSql])
+  })
+
+  it("folds a register stored in the root shape into the element map when it reads the row", async () => {
+    const first = openRegister("", "deck").elements[rootElement]
+    if (first === undefined) throw new Error("missing node")
+    const stored: RootRegister = {
+      ...first,
+      landed: [
+        { actor: "person", value: "kept", visible: true },
+        { actor: "agent", value: "hidden", visible: false, runId: "run" },
+      ],
+      phase: "undone",
+      runId: "run",
+      nodes: [rootElement],
+      readNodes: null,
+      elements: {},
+      b: { ...first, floor: "legacy" },
+    }
+    const db = {
+      async query() {
+        return { rows: [{ id: "deck", revision: 4, register: stored, owner: "owner@example.com" }] }
+      },
+    } as unknown as Sql
+    const saved = await readSaved(db, "deck")
+    expect(saved).toEqual({ id: "deck", revision: 4, register: foldRegister(stored), owner: "owner@example.com" })
+    expect(saved?.register?.elements[rootElement]?.landed).toEqual(stored.landed)
+    expect(Object.hasOwn(saved?.register ?? {}, "landed")).toBe(false)
   })
 })

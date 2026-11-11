@@ -12,7 +12,6 @@ import {
   unsent,
   version,
   type ElementId,
-  type NodeRegister,
   type Queued,
   type Register,
 } from "@airdesign/document"
@@ -46,36 +45,16 @@ export type OpenDeckResult =
 
 export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: WireRefusal }
 
-function pairedBody(register: Register): NodeRegister | null {
-  const stored = register.elements[legacyElement]
-  if (stored !== undefined) return stored
-  if (!Object.hasOwn(register, "b")) return null
-  const body = (register as { readonly b?: NodeRegister | null }).b
-  if (body === undefined || body === null) return null
-  return body
-}
-
 function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
   const into: ConfirmedRow[] = []
   let revision = 0
-  for (const landed of register.landed) {
-    if (!landed.visible) continue
-    revision = fitConfirmed(deck, revision, landed.value, undefined, into)
-  }
   for (const id of register.nodes) {
-    if (id === rootElement || id === legacyElement) continue
     const body = register.elements[id]
     if (body === undefined) continue
+    const node = id === rootElement ? undefined : id
     for (const landed of body.landed) {
       if (!landed.visible) continue
-      revision = fitConfirmed(deck, revision, landed.value, id, into)
-    }
-  }
-  const paired = pairedBody(register)
-  if (paired !== null) {
-    for (const landed of paired.landed) {
-      if (!landed.visible) continue
-      revision = fitConfirmed(deck, revision, landed.value, legacyElement, into)
+      revision = fitConfirmed(deck, revision, landed.value, node, into)
     }
   }
   return into

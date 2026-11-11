@@ -1,7 +1,9 @@
+import { landedAnswer, landedContent } from "./mcp-answers.js"
 import { randomBytes } from "node:crypto"
 import { request as httpRequest } from "node:http"
 
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
+import { rootElement } from "@airdesign/document"
 import { type CallerLog, editNext, runNext } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
@@ -54,25 +56,6 @@ function secondEdit(deck: string) {
 
 function otherEdit(deck: string) {
   return { deck, base: 1, changes: [{ value: "no", node: element, readAt: 1 }] }
-}
-
-function landedAnswer(
-  revision: number,
-  elements: readonly { node: string; value: string; version: number }[],
-  runId: unknown = expect.any(String),
-) {
-  return { ok: true, revision, runId, elements }
-}
-
-function landedContent(
-  revision: number,
-  elements: readonly { node: string; value: string; version: number }[],
-  runId: string,
-) {
-  return [
-    { type: "text", text: `Landed revision ${String(revision)}.` },
-    { type: "text", text: JSON.stringify(landedAnswer(revision, elements, runId)) },
-  ]
 }
 
 function editCall(deck: string) {
@@ -1690,7 +1673,7 @@ describe("mcp route", () => {
     })
     const kept = await row(named.deck)
     expect(kept?.revision).toBe(0)
-    expect(kept?.register.elements).toEqual({})
+    expect(Object.keys(kept?.register.elements ?? {})).toEqual([rootElement])
     const again = await sign(email)
     await withMcp(again, async (client) => {
       const blocked = await client.callTool({

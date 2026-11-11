@@ -1,10 +1,26 @@
-import { decide, elementId, openRegister, rootElement, legacyElement, type Command } from "@airdesign/document"
+import {
+  decide,
+  elementId,
+  foldRegister,
+  openRegister,
+  rootElement,
+  legacyElement,
+  type Command,
+  type NodeRegister,
+  type Register,
+} from "@airdesign/document"
 import { expect, it } from "vitest"
 import { deckRoutes } from "./index.js"
 
 const payload = { ok: false, refusal: "payload" }
 const revision = { ok: true, deck: "deck", revision: 0 }
 const opened = { ...revision, register: openRegister("", "") }
+
+function firstOf(register: Register): NodeRegister {
+  const body = register.elements[rootElement]
+  if (body === undefined) throw new Error("missing node")
+  return body
+}
 
 it("checks each list, rename and original field independently", () => {
   const row = { deck: "deck", name: "", edited: "2026-11-11", created: "2026-11-10" }
@@ -73,11 +89,11 @@ it("decodes stored registers with agent, hidden, running, stopped and read rows"
     const answer = JSON.parse(JSON.stringify({ ...revision, register }))
     expect(deckRoutes.open.result(answer)).toEqual(answer)
   }
-  expect(register.landed).toEqual([
+  expect(firstOf(register).landed).toEqual([
     { actor: "person", value: "person", visible: true },
     { actor: "agent", value: "agent", visible: false, runId: "run" },
   ])
-  expect(register.readAt).toBe(1)
+  expect(firstOf(register).readAt).toBe(1)
   expect(register.readNodes).toEqual([rootElement])
 })
 
@@ -93,7 +109,7 @@ function stored(commands: Command[]) {
 
 it("decodes a stored register whose landed value is empty", () => {
   const register = stored([{ command: "person", value: "" }])
-  expect(register.landed).toEqual([{ actor: "person", value: "", visible: true }])
+  expect(firstOf(register).landed).toEqual([{ actor: "person", value: "", visible: true }])
   const answer = JSON.parse(JSON.stringify({ ...revision, register }))
   expect(deckRoutes.open.result(answer)).toEqual(answer)
 })
@@ -103,7 +119,7 @@ it("decodes a stored register guarded by a person edit during a run", () => {
     { command: "start", runId: "run" },
     { command: "person", value: "person" },
   ])
-  expect(register.guarded).toBe(true)
+  expect(firstOf(register).guarded).toBe(true)
   const answer = JSON.parse(JSON.stringify({ ...revision, register }))
   expect(deckRoutes.open.result(answer)).toEqual(answer)
 })
@@ -171,7 +187,8 @@ it("refuses missing and malformed success fields for every deck route", () => {
 })
 
 it("checks every register field and nested landed row before opening", () => {
-  const register = opened.register
+  const register = { ...opened.register, ...firstOf(opened.register) }
+  expect(deckRoutes.open.result({ ...opened, register })).toEqual({ ...opened, register: foldRegister(register) })
   const bad = {
     route: null,
     floor: 1,
@@ -206,14 +223,27 @@ it("checks every register field and nested landed row before opening", () => {
   ).toEqual(payload)
 })
 
-it("accepts root, legacy, removed and current register elements without changing them", () => {
+it("accepts root, legacy, removed and current register elements and folds the root ones into the map", () => {
+  const first = firstOf(openRegister("", ""))
+  const kept = firstOf(openRegister("floor", "route"))
+  const legacy = firstOf(openRegister("legacy", ""))
   const register = {
     ...openRegister("", ""),
+    ...first,
     nodes: [rootElement, legacyElement, elementId("258.7")],
     readNodes: [rootElement],
-    elements: { "258.7": openRegister("floor", "route"), "258.8": openRegister("", "") },
-    b: openRegister("legacy", ""),
+    elements: { "258.7": kept, "258.8": first },
+    b: legacy,
   }
   const answer = { ...revision, register }
-  expect(deckRoutes.open.result(answer)).toEqual(answer)
+  expect(deckRoutes.open.result(answer)).toEqual({ ...revision, register: foldRegister(register) })
+  expect(foldRegister(register).elements).toEqual({
+    "258.7": kept,
+    "258.8": first,
+    [legacyElement]: legacy,
+    [rootElement]: { ...first, version: 0 },
+  })
+  const current = foldRegister(register)
+  expect(deckRoutes.open.result({ ...revision, register: current })).toEqual({ ...revision, register: current })
+  expect(deckRoutes.open.result({ ...revision, register: { ...current, b: legacy } })).toEqual(payload)
 })

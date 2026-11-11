@@ -12,6 +12,7 @@ import {
   type Register,
 } from "./decide.js"
 import { elementId, rootElement, type ElementId } from "./element-id.js"
+import { openedBody, withOpened } from "./decide.walk.js"
 import { replay } from "./replay.js"
 
 function applied(register: Register, command: Command): Register {
@@ -32,7 +33,7 @@ const agentRun: readonly Command[] = [
 describe("version", () => {
   it("refuses as stale an agent edit whose read came before an undo and a person edit", () => {
     const edited = played(agentRun)
-    const read = version(edited)
+    const read = version(openedBody(edited))
     expect(read).toBe(1)
     const undone = applied(edited, { command: "undo", runId: "first" })
     const typed = applied(undone, { command: "person", value: "person never read" })
@@ -42,26 +43,31 @@ describe("version", () => {
       code: "stale",
     })
     expect(
-      decide(started, { command: "agent", runId: "second", readAt: version(started), value: "after a read" }).decision,
+      decide(started, {
+        command: "agent",
+        runId: "second",
+        readAt: version(openedBody(started)),
+        value: "after a read",
+      }).decision,
     ).toBe("apply")
   })
 
   it("skips a queued person edit whose base came before an undo and a person edit", () => {
     const edited = played(agentRun)
-    const queued = { base: version(edited), value: "queued offline" }
+    const queued = { base: version(openedBody(edited)), value: "queued offline" }
     const undone = applied(edited, { command: "undo", runId: "first" })
     const typed = applied(undone, { command: "person", value: "typed since" })
     const after = replay(typed, [queued])
     expect(after).toBe(typed)
-    expect(currentValue(after)).toBe("typed since")
-    expect(history(after)).toEqual(["typed since"])
+    expect(currentValue(openedBody(after))).toBe("typed since")
+    expect(history(openedBody(after))).toEqual(["typed since"])
   })
 
   it("refuses as stale an agent that read while its row showed, after an undo", () => {
     const edited = played(agentRun)
-    const read = version(edited)
+    const read = version(openedBody(edited))
     const undone = applied(edited, { command: "undo", runId: "first" })
-    expect(currentValue(undone)).toBe("floor")
+    expect(currentValue(openedBody(undone))).toBe("floor")
     const started = applied(undone, { command: "start", runId: "second" })
     expect(decide(started, { command: "agent", runId: "second", readAt: read, value: "stale" })).toEqual({
       decision: "refuse",
@@ -76,9 +82,9 @@ describe("version", () => {
       { command: "start", runId: "second" },
       { command: "stop", runId: "second" },
     ])
-    const read = version(later)
+    const read = version(openedBody(later))
     const undone = applied(later, { command: "undo", runId: "first" })
-    expect(version(undone)).toBe(read + 1)
+    expect(version(openedBody(undone))).toBe(read + 1)
     const started = applied(undone, { command: "start", runId: "third" })
     expect(decide(started, { command: "agent", runId: "third", readAt: read, value: "stale" })).toEqual({
       decision: "refuse",
@@ -88,8 +94,8 @@ describe("version", () => {
 
   it("rises by one for each row an undo hides", () => {
     const edited = played([...agentRun, { command: "agent", runId: "first", readAt: 0, value: "more" }])
-    expect(version(edited)).toBe(2)
-    expect(version(applied(edited, { command: "undo", runId: "first" }))).toBe(4)
+    expect(version(openedBody(edited))).toBe(2)
+    expect(version(openedBody(applied(edited, { command: "undo", runId: "first" })))).toBe(4)
   })
 
   it("keeps the number on an undo that hides no row", () => {
@@ -98,43 +104,48 @@ describe("version", () => {
       { command: "start", runId: "first" },
     ])
     const undone = applied(started, { command: "undo", runId: "first" })
-    expect(version(undone)).toBe(version(started))
-    expect(currentValue(undone)).toBe("kept")
+    expect(version(openedBody(undone))).toBe(version(openedBody(started)))
+    expect(currentValue(openedBody(undone))).toBe("kept")
   })
 
   it("keeps the number through compaction, so a later edit gets a new one", () => {
     const undone = applied(played(agentRun), { command: "undo", runId: "first" })
-    const compacted = compactChain(undone, true)
+    const compacted = compactChain(openedBody(undone), true)
     expect(compacted.landed).toEqual([])
-    expect(version(compacted)).toBe(version(undone))
+    expect(version(compacted)).toBe(version(openedBody(undone)))
     const typed = applied({ ...undone, ...compacted }, { command: "person", value: "typed" })
-    expect(version(typed)).toBe(version(undone) + 1)
+    expect(version(openedBody(typed))).toBe(version(openedBody(undone)) + 1)
   })
 
   it("raises an agent edit from the stored number after a compaction", () => {
     const undone = applied(played(agentRun), { command: "undo", runId: "first" })
-    const compacted = { ...undone, ...compactChain(undone, true) }
-    expect(compacted.landed).toEqual([])
-    const before = version(compacted)
+    const compacted = withOpened(undone, compactChain(openedBody(undone), true))
+    expect(openedBody(compacted).landed).toEqual([])
+    const before = version(openedBody(compacted))
     expect(before).toBe(2)
     const started = applied(compacted, { command: "start", runId: "second" })
     const landed = applied(started, { command: "agent", runId: "second", readAt: before, value: "again" })
-    expect(version(landed)).toBe(before + 1)
+    expect(version(openedBody(landed))).toBe(before + 1)
   })
 
   it("raises an undo from the stored number after a compaction", () => {
     const undone = applied(played(agentRun), { command: "undo", runId: "first" })
-    const compacted = { ...undone, ...compactChain(undone, true) }
+    const compacted = withOpened(undone, compactChain(openedBody(undone), true))
     const started = applied(compacted, { command: "start", runId: "second" })
-    const landed = applied(started, { command: "agent", runId: "second", readAt: version(compacted), value: "again" })
-    const before = version(landed)
+    const landed = applied(started, {
+      command: "agent",
+      runId: "second",
+      readAt: version(openedBody(compacted)),
+      value: "again",
+    })
+    const before = version(openedBody(landed))
     const again = applied(landed, { command: "undo", runId: "second" })
-    expect(version(again)).toBe(before + 1)
+    expect(version(openedBody(again))).toBe(before + 1)
   })
 
   it("reads a register stored without the number as its landed rows plus its hidden rows", () => {
     const stored: NodeRegister = {
-      ...openRegister("floor", "slide"),
+      ...openedBody(openRegister("floor", "slide")),
       landed: [
         { actor: "person", value: "kept", visible: true },
         { actor: "agent", value: "gone", visible: false, runId: "first" },
@@ -148,9 +159,12 @@ describe("version", () => {
 
   it("gives a register stored without the number the same reading as one that kept it", () => {
     const kept = applied(played(agentRun), { command: "undo", runId: "first" })
-    const { version: dropped, ...stored } = kept
-    expect(version(stored)).toBe(dropped)
-    expect(version(applied(stored, { command: "person", value: "typed" }))).toBe(version(kept) + 1)
+    const { version: dropped, ...body } = openedBody(kept)
+    expect(version(body)).toBe(dropped)
+    const stored = { ...kept, elements: { ...kept.elements, [rootElement]: body } }
+    expect(version(openedBody(applied(stored, { command: "person", value: "typed" })))).toBe(
+      version(openedBody(kept)) + 1,
+    )
   })
 
   it("lands a batch of two on the read it started from", () => {
@@ -158,12 +172,12 @@ describe("version", () => {
       { command: "person", value: "before" },
       { command: "start", runId: "first" },
     ])
-    const read = version(started)
+    const read = version(openedBody(started))
     const one = applied(started, { command: "agent", runId: "first", readAt: read, value: "one" })
     const two = applied(one, { command: "agent", runId: "first", readAt: read, value: "two" })
-    expect(two.claimed).toBe(read)
-    expect(version(two)).toBe(read + 2)
-    expect(history(two)).toEqual(["before", "one", "two"])
+    expect(openedBody(two).claimed).toBe(read)
+    expect(version(openedBody(two))).toBe(read + 2)
+    expect(history(openedBody(two))).toEqual(["before", "one", "two"])
   })
 
   const kinds = ["person", "start", "agent", "stop", "undo", "compact"] as const
@@ -171,7 +185,7 @@ describe("version", () => {
   const steps = fc.array(fc.tuple(fc.constantFrom(...kinds), fc.constantFrom(...runs)), { maxLength: 40, size: "max" })
 
   function bodyOf(register: Register, node: ElementId): NodeRegister {
-    if (node === rootElement) return register
+    if (node === rootElement) return openedBody(register)
     const body = register.elements[node]
     if (body === undefined) throw new Error("missing node")
     return body

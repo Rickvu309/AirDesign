@@ -27,13 +27,24 @@ export type NodeRegister = {
   readonly bytes: number
 }
 
-type ElementMap = Readonly<Partial<Record<ElementId, NodeRegister>>>
-
-export type Register = NodeRegister & {
+export type Register = {
+  readonly route: string
+  readonly floor: string
+  readonly slides: number
+  readonly bytes: number
   readonly nodes: readonly ElementId[]
   readonly readNodes: readonly ElementId[] | null
-  readonly elements: ElementMap
+  readonly elements: Readonly<Record<ElementId, NodeRegister>>
 }
+
+export type RootRegister = NodeRegister & {
+  readonly nodes: readonly ElementId[]
+  readonly readNodes: readonly ElementId[] | null
+  readonly elements: Readonly<Partial<Record<ElementId, NodeRegister>>>
+  readonly b?: NodeRegister | null
+}
+
+export type StoredRegister = Register | RootRegister
 
 export type Command =
   | { readonly command: "person"; readonly value: string; readonly node?: ElementId }
@@ -61,8 +72,6 @@ type Edited =
   | { readonly decision: "apply"; readonly body: NodeRegister }
   | { readonly decision: "refuse"; readonly code: Refusal }
 
-const openedElement = rootElement
-
 function openNode(floor: string, route: string): NodeRegister {
   return {
     route,
@@ -81,10 +90,13 @@ function openNode(floor: string, route: string): NodeRegister {
 
 export function openRegister(floor: string, route: string): Register {
   return {
-    ...openNode(floor, route),
-    nodes: [openedElement],
+    route,
+    floor,
+    slides: 1,
+    bytes: 0,
+    nodes: [rootElement],
     readNodes: null,
-    elements: {},
+    elements: { [rootElement]: openNode(floor, route) },
   }
 }
 
@@ -109,7 +121,7 @@ export function history(register: NodeRegister): readonly string[] {
   return visibleRows(register).map((row) => row.value)
 }
 
-function nodeOf(register: Register): NodeRegister {
+function nodeOf(register: NodeRegister): NodeRegister {
   return {
     route: register.route,
     floor: register.floor,
@@ -126,6 +138,36 @@ function nodeOf(register: Register): NodeRegister {
   }
 }
 
+function legacyBody(stored: RootRegister): readonly (readonly [ElementId, NodeRegister])[] {
+  if (Object.hasOwn(stored.elements, legacyElement) || !Object.hasOwn(stored, "b")) return []
+  const body = stored.b
+  if (body === undefined || body === null) return []
+  return [[legacyElement, body]]
+}
+
+const rootFields = ["landed", "version", "phase", "runId", "readAt", "guarded", "claimed", "stoppedAt", "b"] as const
+
+function rooted(stored: StoredRegister): stored is RootRegister {
+  return rootFields.some((field) => Object.hasOwn(stored, field))
+}
+
+export function foldRegister(stored: StoredRegister): Register {
+  if (!rooted(stored)) return stored
+  const kept = Object.entries(stored.elements).flatMap(([id, body]) =>
+    body === undefined ? [] : [[id as ElementId, body] as const],
+  )
+  const first = nodeOf({ ...stored.elements[rootElement], ...stored })
+  return {
+    route: stored.route,
+    floor: stored.floor,
+    slides: stored.slides,
+    bytes: stored.bytes,
+    nodes: stored.nodes,
+    readNodes: stored.readNodes,
+    elements: Object.fromEntries([...kept, ...legacyBody(stored), [rootElement, first]]),
+  }
+}
+
 function apply(register: Register, route: string): Decision {
   return { decision: "apply", register, route }
 }
@@ -134,45 +176,13 @@ function refuse(code: Refusal): Decision {
   return { decision: "refuse", code }
 }
 
-function pairedBody(register: Register): NodeRegister | null {
-  if (!Object.hasOwn(register, "b")) return null
-  const body = (register as { readonly b?: NodeRegister | null }).b
-  if (body === undefined || body === null) return null
-  return body
-}
-
-function ownBody(elements: ElementMap, id: ElementId): NodeRegister | null {
-  if (!Object.hasOwn(elements, id)) return null
-  return elements[id] ?? null
-}
-
-function elementsOf(register: Register, id: ElementId): ElementMap {
-  if (ownBody(register.elements, id) !== null) return register.elements
-  if (id !== legacyElement) return register.elements
-  const paired = pairedBody(register)
-  if (paired === null) return register.elements
-  return { ...register.elements, [id]: paired }
-}
-
 function storedBody(register: Register, id: ElementId): NodeRegister | null {
-  if (id === openedElement) return nodeOf(register)
-  return ownBody(elementsOf(register, id), id)
+  if (!Object.hasOwn(register.elements, id)) return null
+  return register.elements[id] ?? null
 }
 
 function place(register: Register, id: ElementId, body: NodeRegister): Decision {
-  if (id === openedElement) {
-    return apply(
-      {
-        ...register,
-        ...body,
-        nodes: register.nodes,
-        readNodes: register.readNodes,
-        elements: register.elements,
-      },
-      body.route,
-    )
-  }
-  return apply({ ...register, elements: { ...elementsOf(register, id), [id]: body } }, body.route)
+  return apply({ ...register, elements: { ...register.elements, [id]: body } }, body.route)
 }
 
 function personEdit(register: NodeRegister, value: string): NodeRegister {
@@ -251,16 +261,17 @@ export function compactChain(register: NodeRegister, eligible: boolean): NodeReg
 }
 
 function addNode(register: Register, id: ElementId, floor: string, route: string): Decision {
-  if (id === openedElement || register.nodes.includes(id)) {
+  if (id === rootElement || register.nodes.includes(id)) {
     return refuse("present")
   }
   if (register.nodes.length >= limits.elements) {
     return refuse("limit")
   }
-  const elements = elementsOf(register, id)
-  const kept = ownBody(elements, id)
-  const body = kept ?? openNode(floor, route)
-  return apply({ ...register, nodes: [...register.nodes, id], elements: { ...elements, [id]: body } }, body.route)
+  const body = storedBody(register, id) ?? openNode(floor, route)
+  return apply(
+    { ...register, nodes: [...register.nodes, id], elements: { ...register.elements, [id]: body } },
+    body.route,
+  )
 }
 
 function removeNode(register: Register, id: ElementId): Decision {
@@ -268,14 +279,7 @@ function removeNode(register: Register, id: ElementId): Decision {
   if (body === null) {
     throw new Error("missing node")
   }
-  return apply(
-    {
-      ...register,
-      nodes: register.nodes.filter((node) => node !== id),
-      elements: elementsOf(register, id),
-    },
-    body.route,
-  )
+  return apply({ ...register, nodes: register.nodes.filter((node) => node !== id) }, body.route)
 }
 
 function readNodes(register: Register, id: ElementId, runId: string): Decision {
@@ -316,7 +320,8 @@ function editNode(register: Register, id: ElementId, command: Command): Decision
   return place(register, id, edited.body)
 }
 
-export function decide(register: Register, command: Command): Decision {
+export function decide(stored: StoredRegister, command: Command): Decision {
+  const register = foldRegister(stored)
   if (overLimit({ decks: 1, slides: register.slides, bytes: register.bytes })) {
     return refuse("limit")
   }
@@ -324,7 +329,7 @@ export function decide(register: Register, command: Command): Decision {
     const supplied = command as { readonly node: ElementId; readonly floor?: string; readonly route?: string }
     return addNode(register, supplied.node, supplied.floor ?? register.floor, supplied.route ?? register.route)
   }
-  const node = command.node ?? openedElement
+  const node = command.node ?? rootElement
   if (!register.nodes.includes(node)) {
     return refuse("dead")
   }

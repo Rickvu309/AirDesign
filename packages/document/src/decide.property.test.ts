@@ -11,6 +11,7 @@ import {
   type NodeRegister,
   type Register,
 } from "./index.js"
+import { openedBody } from "./decide.walk.js"
 import { elementId, rootElement, shapeOf } from "./element-id.js"
 
 const ids = [rootElement, elementId("258.7"), elementId("258.n4k2j9x0q1zab")] as const
@@ -19,24 +20,24 @@ const kinds = ["person", "start", "stop", "undo", "agent", "remove", "read", "ad
 function picture(register: Register, id: ElementId): string {
   if (id === rootElement) {
     return JSON.stringify({
-      route: register.route,
-      floor: register.floor,
-      landed: register.landed,
-      phase: register.phase,
-      runId: register.runId,
-      readAt: register.readAt,
-      guarded: register.guarded,
-      claimed: register.claimed,
-      stoppedAt: register.stoppedAt,
-      slides: register.slides,
-      bytes: register.bytes,
+      route: openedBody(register).route,
+      floor: openedBody(register).floor,
+      landed: openedBody(register).landed,
+      phase: openedBody(register).phase,
+      runId: openedBody(register).runId,
+      readAt: openedBody(register).readAt,
+      guarded: openedBody(register).guarded,
+      claimed: openedBody(register).claimed,
+      stoppedAt: openedBody(register).stoppedAt,
+      slides: openedBody(register).slides,
+      bytes: openedBody(register).bytes,
     })
   }
   return JSON.stringify(register.elements[id] ?? null)
 }
 
 function bodyOf(register: Register, id: ElementId): NodeRegister {
-  if (id === rootElement) return register
+  if (id === rootElement) return openedBody(register)
   const body = register.elements[id]
   if (body === undefined) throw new Error("missing body")
   return body
@@ -119,7 +120,7 @@ it("adds any id except the one openRegister created", () => {
   if (added.decision !== "apply") throw new Error("add")
   const edited = decide(added.register, { command: "person", node: first, value: "kept" })
   if (edited.decision !== "apply") throw new Error("edit")
-  expect(history(edited.register)).toEqual([])
+  expect(history(openedBody(edited.register))).toEqual([])
   const dropped = decide(edited.register, { command: "remove", node: first })
   if (dropped.decision !== "apply") throw new Error("drop")
   expect(dropped.register.nodes.includes(first)).toBe(false)
@@ -136,7 +137,7 @@ it("adds any id except the one openRegister created", () => {
   expect(present).toEqual({ decision: "refuse", code: "present" })
   const other = third.register.elements[second]
   if (other === undefined) throw new Error("missing element")
-  expect(history(edited.register)).toEqual([])
+  expect(history(openedBody(edited.register))).toEqual([])
   expect(history(other)).toEqual([])
   expect(currentValue(other)).toBe("two")
 })
@@ -145,17 +146,17 @@ const methodNames = ["toString", "constructor", "__proto__", "hasOwnProperty", "
 
 function rootPicture(register: Register): string {
   return JSON.stringify({
-    route: register.route,
-    floor: register.floor,
-    landed: register.landed,
-    phase: register.phase,
-    runId: register.runId,
-    readAt: register.readAt,
-    guarded: register.guarded,
-    claimed: register.claimed,
-    stoppedAt: register.stoppedAt,
-    slides: register.slides,
-    bytes: register.bytes,
+    route: openedBody(register).route,
+    floor: openedBody(register).floor,
+    landed: openedBody(register).landed,
+    phase: openedBody(register).phase,
+    runId: openedBody(register).runId,
+    readAt: openedBody(register).readAt,
+    guarded: openedBody(register).guarded,
+    claimed: openedBody(register).claimed,
+    stoppedAt: openedBody(register).stoppedAt,
+    slides: openedBody(register).slides,
+    bytes: openedBody(register).bytes,
   })
 }
 
@@ -247,16 +248,20 @@ it("undoes each element of a run on its own", () => {
   const firstUndone = decide(secondWrote.register, { command: "undo", runId: run })
   expect(firstUndone.decision).toBe("apply")
   if (firstUndone.decision !== "apply") return
-  expect(firstUndone.register.phase).toBe("undone")
-  expect(firstUndone.register.landed).toEqual([{ actor: "agent", value: "left", visible: false, runId: run }])
+  expect(openedBody(firstUndone.register).phase).toBe("undone")
+  expect(openedBody(firstUndone.register).landed).toEqual([
+    { actor: "agent", value: "left", visible: false, runId: run },
+  ])
   const kept = firstUndone.register.elements[other]
   expect(kept?.phase).toBe("running")
   expect(kept?.landed).toEqual([{ actor: "agent", value: "right", visible: true, runId: run }])
   const secondUndone = decide(firstUndone.register, { command: "undo", runId: run, node: other })
   expect(secondUndone.decision).toBe("apply")
   if (secondUndone.decision !== "apply") return
-  expect(secondUndone.register.phase).toBe("undone")
-  expect(secondUndone.register.landed).toEqual([{ actor: "agent", value: "left", visible: false, runId: run }])
+  expect(openedBody(secondUndone.register).phase).toBe("undone")
+  expect(openedBody(secondUndone.register).landed).toEqual([
+    { actor: "agent", value: "left", visible: false, runId: run },
+  ])
   const hidden = secondUndone.register.elements[other]
   expect(hidden?.phase).toBe("undone")
   expect(hidden?.landed).toEqual([{ actor: "agent", value: "right", visible: false, runId: run }])
