@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
+import { Home } from "./decks/home"
 
 type ScreenRegistry = { screens: Record<string, ComponentType> }
 
@@ -33,6 +34,13 @@ function ScreenIndex() {
 
 export default function App() {
   const path = window.location.pathname.replace(/\/$/, "") || "/"
+  if (path === "/" || path === "/trash") return <Home trash={path === "/trash"} />
+  if (path === "/deck") {
+    window.location.replace("/")
+    return null
+  }
+  const deck = /^\/deck\/([A-Za-z0-9_-]{1,64})$/.exec(path)
+  if (deck?.[1] !== undefined) return <ThinDeck id={deck[1]} route="deck" />
   if (path === "/live-proof") {
     return <LiveProof />
   }

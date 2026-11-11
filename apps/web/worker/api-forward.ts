@@ -3,7 +3,19 @@ type Env = {
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
-const apiPaths = ["/sign-in/email", "/sign-in/code", "/sign-in/link", "/decks/open", "/decks/commit", "/decks/watch"]
+const apiPaths = [
+  "/sign-in/email",
+  "/sign-in/code",
+  "/sign-in/link",
+  "/decks/open",
+  "/decks/commit",
+  "/decks/watch",
+  "/decks/list",
+  "/decks/rename",
+  "/decks/trash",
+  "/decks/restore",
+  "/decks/delete",
+]
 
 export default {
   fetch(request: Request, env: Env): Promise<Response> | Response {

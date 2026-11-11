@@ -1,16 +1,22 @@
-export function NewDeckMenu() {
+export function NewDeckMenu({ onImport }: { onImport?: () => void }) {
   return (
     <div className="absolute top-[calc(100%+4.5px)] right-0 z-20 w-[180px] rounded-[var(--shape-card)] bg-background p-1 shadow-[inset_0_0_0_1px_var(--sheet),0_12px_32px_rgb(0_0_0/12%)]">
-      <div className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground">
-        <svg width="13" height="14" viewBox="8 9 13 14" aria-hidden="true">
-          <path
-            d="M16.69,9.16 L20.83,12.93 C20.95,13.04 21,13.17 21,13.31 L21,21.92 C21,22.52 20.47,23 19.82,23 L9.18,23 C8.53,23 8,22.52 8,21.92 L8,10.08 C8,9.48 8.53,9 9.18,9 L16.28,9 C16.43,9 16.57,9.05 16.69,9.16 Z M16.86,10.84 L18.98,12.77 L16.86,12.77 L16.86,10.84 Z M19.82,21.92 L9.18,21.92 L9.18,10.08 L15.68,10.08 L15.68,13.31 C15.68,13.61 15.95,13.85 16.28,13.85 L19.82,13.85 L19.82,21.92 Z"
-            fill="var(--muted-foreground)"
-          />
-        </svg>
-        Blank deck
-      </div>
-      <div className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground">
+      {!onImport && (
+        <div className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground">
+          <svg width="13" height="14" viewBox="8 9 13 14" aria-hidden="true">
+            <path
+              d="M16.69,9.16 L20.83,12.93 C20.95,13.04 21,13.17 21,13.31 L21,21.92 C21,22.52 20.47,23 19.82,23 L9.18,23 C8.53,23 8,22.52 8,21.92 L8,10.08 C8,9.48 8.53,9 9.18,9 L16.28,9 C16.43,9 16.57,9.05 16.69,9.16 Z M16.86,10.84 L18.98,12.77 L16.86,12.77 L16.86,10.84 Z M19.82,21.92 L9.18,21.92 L9.18,10.08 L15.68,10.08 L15.68,13.31 C15.68,13.61 15.95,13.85 16.28,13.85 L19.82,13.85 L19.82,21.92 Z"
+              fill="var(--muted-foreground)"
+            />
+          </svg>
+          Blank deck
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={onImport}
+        className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground"
+      >
         <svg width="14" height="14" viewBox="8 9 14 14" aria-hidden="true">
           <path
             d="M22,17.76 L22,22.42 C22,22.74 21.73,23 21.41,23 L8.59,23 C8.27,23 8,22.74 8,22.42 L8,17.76 C8,17.44 8.27,17.17 8.59,17.17 C8.91,17.17 9.16,17.44 9.16,17.76 L9.16,21.84 L20.84,21.84 L20.84,17.76 C20.84,17.44 21.09,17.17 21.41,17.17 C21.73,17.17 22,17.44 22,17.76 Z"
@@ -22,7 +28,7 @@ export function NewDeckMenu() {
           />
         </svg>
         Import PowerPoint
-      </div>
+      </button>
     </div>
   )
 }

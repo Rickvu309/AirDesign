@@ -31,11 +31,15 @@ export function DeckRow({
   edited,
   created,
   preview,
+  href,
+  action,
 }: {
   name: string
   edited: string
   created?: string
   preview?: ReactNode
+  href?: string
+  action?: ReactNode
 }) {
   return (
     <article className="border-b border-line">
@@ -45,7 +49,8 @@ export function DeckRow({
           className="truncate pl-4 text-[length:var(--type-body)] leading-[18px] font-medium text-foreground"
           style={trimmed}
         >
-          {name}
+          {href ? <a href={href}>{name}</a> : name}
+          {action}
         </h2>
         <p className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground" style={trimmed}>
           {edited}

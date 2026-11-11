@@ -110,7 +110,17 @@ describe("API forwarding", () => {
     expect(assets).toEqual([])
   })
 
-  it.each(["/sign-in/email", "/sign-in/code", "/decks/open", "/decks/watch"])("forwards %s", async (path) => {
+  it.each([
+    "/sign-in/email",
+    "/sign-in/code",
+    "/decks/open",
+    "/decks/watch",
+    "/decks/list",
+    "/decks/rename",
+    "/decks/trash",
+    "/decks/restore",
+    "/decks/delete",
+  ])("forwards %s", async (path) => {
     await worker.fetch(new Request(`https://example.com${path}`), env())
     expect(seen[0]?.url).toBe(path)
     expect(assets).toEqual([])
