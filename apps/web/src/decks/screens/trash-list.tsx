@@ -12,10 +12,11 @@ import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { trashDeckCards } from "@/decks/sample-decks"
 
-function RestoreButton() {
+export function RestoreButton({ onClick }: { onClick?: () => void }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="flex h-7 items-center rounded-md bg-background px-2.5 text-[length:var(--type-caption)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
     >
       Restore
@@ -23,9 +24,24 @@ function RestoreButton() {
   )
 }
 
-function EmptyTrashDialog() {
+export function EmptyTrashDialog({
+  count = 3,
+  busy = false,
+  onCancel,
+  onConfirm,
+}: {
+  count?: number
+  busy?: boolean
+  onCancel?: () => void
+  onConfirm?: () => void
+}) {
   return (
-    <Dialog open>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onCancel?.()
+      }}
+    >
       <DialogPortal>
         <DialogOverlay className="bg-black/25 duration-0 data-open:animate-none" style={{ backdropFilter: "none" }} />
         <BaseDialog.Popup
@@ -60,7 +76,7 @@ function EmptyTrashDialog() {
           </DialogClose>
           <div className="px-6 pt-20">
             <DialogTitle className="text-[length:var(--type-section)] leading-[22px] font-semibold text-foreground">
-              Delete 3 decks for good?
+              Delete {count} {count === 1 ? "deck" : "decks"} for good?
             </DialogTitle>
             <DialogDescription className="mt-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] text-muted-foreground">
               This can't be undone.
@@ -69,12 +85,16 @@ function EmptyTrashDialog() {
               <Button
                 type="button"
                 variant="outline"
+                disabled={busy}
+                onClick={onCancel}
                 className="h-9 border-0 bg-background px-4 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
               >
                 Cancel
               </Button>
               <Button
                 type="button"
+                disabled={busy}
+                onClick={onConfirm}
                 className="h-9 border-0 bg-destructive px-4 text-sm font-medium text-white shadow-[inset_0_0_0_1px_var(--danger-edge)] hover:bg-destructive"
               >
                 Delete for good
@@ -87,21 +107,27 @@ function EmptyTrashDialog() {
   )
 }
 
+export function EmptyTrashButton({ disabled, onClick }: { disabled?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="h-9 rounded-lg bg-background px-3.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)] disabled:opacity-50"
+    >
+      Empty Trash
+    </button>
+  )
+}
+
+export function TrashNote() {
+  return <p className="mt-6 text-sm leading-[18px] text-faint">Decks here are removed for good after 30 days.</p>
+}
+
 export function TrashList({ confirm = false }: { confirm?: boolean }) {
   return (
-    <DeckBrowser
-      title="Trash"
-      active="trash"
-      trailing={
-        <button
-          type="button"
-          className="h-9 rounded-lg bg-background px-3.5 text-sm font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge)]"
-        >
-          Empty Trash
-        </button>
-      }
-    >
-      <p className="mt-6 text-sm leading-[18px] text-faint">Decks here are removed for good after 30 days.</p>
+    <DeckBrowser title="Trash" active="trash" trailing={<EmptyTrashButton />}>
+      <TrashNote />
       <DeckGrid className="mt-6">
         {trashDeckCards.map((deck) => (
           <DeckCard

@@ -1,14 +1,13 @@
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Toaster } from "@/components/ui/sonner"
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
 import { DeckRow } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { NewDeckMenu } from "@/decks/new-deck-menu"
-import { ViewSwitch } from "@/decks/view-switch"
+import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
+import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { starterDeckCards } from "@/decks/sample-decks"
 import { deckTime } from "@/decks/deck-time"
 import { importDeck, nameImportedDeck } from "@/thin-deck"
@@ -30,6 +29,7 @@ async function post(path: string, body: object) {
 
 export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?: () => number }) {
   const [listing, setListing] = useState<Listing | null>(null)
+  const [unavailable, setUnavailable] = useState(false)
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState<Deck[] | null>(null)
   const [busy, setBusy] = useState(false)
@@ -39,8 +39,13 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
   async function refresh() {
     try {
       const result = await post("list", {})
-      if (result.ok) setListing(result)
-    } catch {}
+      if (result.ok) {
+        setListing(result)
+        setUnavailable(false)
+      } else setUnavailable(true)
+    } catch {
+      setUnavailable(true)
+    }
   }
   useEffect(() => {
     void refresh()
@@ -58,20 +63,14 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
     await refresh()
     toast.custom(
       (id) => (
-        <div className="flex h-10 items-center gap-4 rounded-lg bg-foreground px-4 text-sm text-background">
-          <span>{deck.name} moved to Trash</span>
-          <button
-            type="button"
-            className="font-medium"
-            onClick={() => {
-              void restore(deck).then(() => toast.dismiss(id))
-            }}
-          >
-            Undo
-          </button>
-        </div>
+        <MovedToast
+          name={deck.name}
+          onUndo={() => {
+            void restore(deck).then(() => toast.dismiss(id))
+          }}
+        />
       ),
-      { duration: Infinity },
+      movedToastOptions,
     )
   }
 
@@ -88,31 +87,24 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
     }
   }
 
-  if (listing === null) return null
-  const decks = trash ? listing.trash : listing.decks
-  const firstVisit = !trash && decks.length === 0 && importing === null
-  const trailing = trash ? (
-    <Button variant="outline" disabled={decks.length === 0} onClick={() => setDeleting([...decks])}>
-      Empty Trash
-    </Button>
-  ) : (
-    <div className="flex items-center gap-2">
-      <div className="relative">
-        <Button onClick={() => setMenu(!menu)} aria-expanded={menu}>
-          New deck
-        </Button>
-        {menu && <NewDeckMenu onImport={() => picker.current?.click()} />}
-      </div>
-      <ViewSwitch active={listView ? "list" : "grid"} home />
-    </div>
-  )
+  if (listing === null && !unavailable) return null
+  const decks = (trash ? listing?.trash : listing?.decks) ?? []
+  const firstVisit =
+    listing !== null && !trash && decks.length === 0 && listing.trash.length === 0 && importing === null
   return (
     <DeckBrowser
       title={trash ? "Trash" : "Recents"}
       active={trash ? "trash" : "recents"}
-      account={listing.account}
+      account={listing?.account ?? { email: "" }}
       firstVisit={firstVisit}
-      trailing={trailing}
+      view={listView ? "list" : "grid"}
+      home
+      menu={menu && <NewDeckMenu onImport={() => picker.current?.click()} />}
+      menuOpen={menu}
+      onNewDeck={() => setMenu(!menu)}
+      trailing={
+        trash ? <EmptyTrashButton disabled={decks.length === 0} onClick={() => setDeleting([...decks])} /> : undefined
+      }
     >
       <input
         className="hidden"
@@ -125,8 +117,8 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
           if (file) void choose(file)
         }}
       />
-      {trash && <p className="my-6 text-sm text-muted-foreground">Decks here are removed for good after 30 days.</p>}
-      <DeckGrid>
+      {trash && <TrashNote />}
+      <DeckGrid className={trash ? "mt-6" : undefined}>
         {importing && (
           <DeckCard
             name={importing.name}
@@ -148,10 +140,15 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
                 name={deck.name}
                 edited={trash ? deckTime(deck.trashed ?? deck.edited, now()).trash : deckTime(deck.edited, now()).card}
                 href={`/deck/${deck.deck}`}
+                previewClassName={trash ? "h-[180px]" : undefined}
                 action={
-                  <Button variant="outline" size="sm" onClick={() => void (trash ? restore(deck) : move(deck))}>
-                    {trash ? "Restore" : "Move to Trash"}
-                  </Button>
+                  trash ? (
+                    <RestoreButton onClick={() => void restore(deck)} />
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => void move(deck)}>
+                      Move to Trash
+                    </Button>
+                  )
                 }
               />
             ))
@@ -173,41 +170,27 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
             }
           />
         ))}
-      <Dialog
-        open={deleting !== null}
-        onOpenChange={(open) => {
-          if (!open && !busy) setDeleting(null)
-        }}
-      >
-        <DialogContent>
-          <DialogTitle>Delete {deleting?.length} decks for good?</DialogTitle>
-          <DialogDescription>This can't be undone.</DialogDescription>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" disabled={busy} onClick={() => setDeleting(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={busy}
-              onClick={() => {
-                if (!deleting) return
-                setBusy(true)
-                void post("delete", { decks: deleting.map((deck) => deck.deck) })
-                  .then(async (result) => {
-                    if (result.ok) {
-                      setDeleting(null)
-                      await refresh()
-                    }
-                  })
-                  .finally(() => setBusy(false))
-              }}
-            >
-              Delete for good
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Toaster position="top-center" />
+      {deleting && (
+        <EmptyTrashDialog
+          count={deleting.length}
+          busy={busy}
+          onCancel={() => {
+            if (!busy) setDeleting(null)
+          }}
+          onConfirm={() => {
+            setBusy(true)
+            void post("delete", { decks: deleting.map((deck) => deck.deck) })
+              .then(async (result) => {
+                if (result.ok) {
+                  setDeleting(null)
+                  await refresh()
+                }
+              })
+              .finally(() => setBusy(false))
+          }}
+        />
+      )}
+      <MovedToaster />
     </DeckBrowser>
   )
 }

@@ -13,6 +13,9 @@ export function DeckBrowser({
   trailing,
   children,
   account,
+  home,
+  onNewDeck,
+  menuOpen,
 }: {
   title: string
   active: DeckSection
@@ -23,12 +26,25 @@ export function DeckBrowser({
   trailing?: ReactNode
   children: ReactNode
   account?: { email: string }
+  home?: boolean
+  onNewDeck?: () => void
+  menuOpen?: boolean
 }) {
   return (
     <div className="screen-frame">
       <div className="h-full bg-canvas">
         <DecksShell active={active} firstVisit={firstVisit} account={account}>
-          <BrowseHeader title={title} view={view} scope={scope} menu={menu} trailing={trailing} compact={firstVisit} />
+          <BrowseHeader
+            title={title}
+            view={view}
+            scope={scope}
+            menu={menu}
+            trailing={trailing}
+            compact={firstVisit}
+            home={home}
+            onNewDeck={onNewDeck}
+            menuOpen={menuOpen}
+          />
           {children}
         </DecksShell>
       </div>
