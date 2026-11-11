@@ -12,3 +12,4 @@ scripts/pptx-judge/obj/
 
 .stryker-tmp/
 tests/browser/exported-deck.pptx
+.wrangler
