@@ -6,6 +6,7 @@ import type { Pool } from "pg"
 import { parseSync } from "oxc-parser"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
+import { Replay } from "./aira-replay.js"
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
@@ -342,6 +343,13 @@ describe("hostile input over every route", () => {
       send: async (mail) => {
         mails.push(mail)
       },
+      aira: {
+        on: true,
+        key: "test-key-not-real",
+        secret: "fuzz-user-secret-not-real-0123456789abcdef",
+        transport: new Replay().transport,
+        log: () => undefined,
+      },
     })
     const broken = { query: () => Promise.reject(thrown) } as unknown as Pool
     const brokenListen = new DeckListen(info.listen)
@@ -459,6 +467,9 @@ describe("hostile input over every route", () => {
         },
       ],
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
+      "POST /aira/turn": [
+        { shape: "json", answers: 200, says: '"ok":true', headers: ["cf-ipcountry: VN"], fields: { text: "Fuzz" } },
+      ],
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
       "GET /sign-in/link": [{ shape: "query", answers: 302, fields: { token: "t" } }],

@@ -224,7 +224,7 @@ describe("POST /aira/turn settles a model turn once", () => {
     replay.play({ name: "dropped.sse" })
     const reply = await turn(account)
     const ceiling = String(heldCeiling(words))
-    expect(reply.status).toBe(502)
+    expect(reply.status).toBe(200)
     expect(reply.json).toMatchObject({ ok: false, refusal: "dropped", usage: { used: heldCeiling(words) / nano } })
     expect(await ledgerOf(account.email)).toMatchObject({ spent: ceiling, hold: "0", turn: null })
     expect(await turnsOf(account.email)).toMatchObject([{ outcome: "dropped", charged: ceiling, ceiling }])
@@ -257,7 +257,7 @@ describe("POST /aira/turn answers unavailable and charges nothing", () => {
       const account = await signIn()
       replay.play({ name })
       const reply = await turn(account)
-      expect(reply.status).toBe(503)
+      expect(reply.status).toBe(200)
       expect(reply.json).toEqual({
         ok: false,
         refusal: "unavailable",
@@ -292,8 +292,8 @@ describe("POST /aira/turn refuses before it reserves or calls the model", () => 
 
   it("refuses when Aira is off and when no key is configured", async () => {
     const account = await signIn()
-    await refusedWith(account, turn(account, { text: words }, vietnam, off), 503, "off")
-    await refusedWith(account, turn(account, { text: words }, vietnam, keyless), 503, "off")
+    await refusedWith(account, turn(account, { text: words }, vietnam, off), 403, "off")
+    await refusedWith(account, turn(account, { text: words }, vietnam, keyless), 403, "off")
     expect(await ledgerOf(account.email)).toBeUndefined()
   })
 
