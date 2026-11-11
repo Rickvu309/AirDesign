@@ -1,4 +1,5 @@
 import { deckRoutes } from "@airdesign/catalog"
+import { sendOriginal } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -82,6 +83,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
       const imported = await importDeck(file)
       if (imported === null) throw new Error("import-failed")
       await nameImportedDeck(imported.id, file.name)
+      await sendOriginal(imported.id, imported.file)
       window.location.assign(`/deck/${imported.id}`)
     } catch {
       setImporting({ name: file.name, failed: true })

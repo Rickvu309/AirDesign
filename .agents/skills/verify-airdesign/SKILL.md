@@ -71,7 +71,7 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, and `cleared-browser` (a known failure today: a deck reopened in a cleared browser shows an empty slide). Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, and `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps). Each feature file in `features/` names its journey and steps.
 
 ## Every journey after every merge
 
@@ -122,7 +122,7 @@ Proof standards:
 - Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
 - Capture the action and the result, not only the last screen.
 - Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
-- The only stand-in is the mail sender (writes a file instead of calling Resend) and the original store (in memory instead of R2). Both sit behind production seams.
+- The only stand-in is the mail sender (writes a file instead of calling Resend) and the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`). Both sit behind production seams.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
 ## Cleanup

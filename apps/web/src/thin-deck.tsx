@@ -9,7 +9,16 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
+import {
+  connect,
+  fetchOriginal,
+  getParts,
+  httpRemote,
+  memoryRemote,
+  putParts,
+  sendOriginal,
+  type Remote,
+} from "@airdesign/live"
 import {
   applyRoute,
   exportPackage,
@@ -235,7 +244,37 @@ export async function importDeck(file: File) {
   if (!read.ok) return null
   const name = deckName(file.name)
   const id = await saveDeck(read.parts, bytes, name)
-  return id === null ? null : { id, name, parts: read.parts }
+  return id === null ? null : { id, name, parts: read.parts, file: bytes }
+}
+
+async function listedName(deck: string): Promise<string | undefined> {
+  try {
+    const response = await fetch(deckRoutes.list.path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    })
+    const listed = deckRoutes.list.result(await response.json())
+    return listed.ok ? listed.decks.find((each) => each.deck === deck)?.name : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export async function deckParts(deck: string) {
+  const stored = await getParts(deck)
+  if (stored.ok) return stored
+  const original = await fetchOriginal(deck)
+  if (!original.ok) return null
+  const read = await readPackage(original.file)
+  if (!read.ok) return null
+  const name = await listedName(deck)
+  const saved = await putParts(deck, {
+    parts: read.parts,
+    file: original.file,
+    ...(name === undefined ? {} : { name }),
+  })
+  return saved.ok ? saved : null
 }
 
 export async function nameImportedDeck(deck: string, name: string) {
@@ -280,8 +319,12 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
     setPaintedDeck(undefined)
     void (async () => {
       await ensureMarkup()
-      const stored = await getParts(id)
-      if (!stored.ok || !live) return
+      const stored = await deckParts(id)
+      if (!live) return
+      if (stored === null) {
+        setFailure("import-failed")
+        return
+      }
       const opened = await connect(server)
         .openDeck(id)
         .catch(() => null)
@@ -339,7 +382,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       }
       const { id: nextId, name, parts } = imported
       window.history.replaceState(null, "", `/${route}/${nextId}`)
-      void nameImportedDeck(nextId, file.name)
+      void nameImportedDeck(nextId, file.name).then(() => sendOriginal(nextId, imported.file))
       shownDeck.current = nextId
       setDeckId(nextId)
       setPending(false)

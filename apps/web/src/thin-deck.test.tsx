@@ -4,6 +4,7 @@ import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
+import { productCopy } from "./copy/product-copy"
 import { signInAddress } from "./thin-notice"
 import { commitEdit, deckName, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
 
@@ -17,8 +18,16 @@ const live = vi.hoisted(() => {
     opened: { ok: true; register: unknown } | { ok: false; refusal: "deck" }
     refuse: boolean
     gate: Promise<void> | null
-  } = { parts: { ok: false, refusal: "absent" }, opened: { ok: false, refusal: "deck" }, refuse: false, gate: null }
-  const counts = { openDeck: 0, flush: 0, putParts: 0 }
+    original: { ok: true; file: Uint8Array } | { ok: false; refusal: "missing" }
+  } = {
+    parts: { ok: false, refusal: "absent" },
+    opened: { ok: false, refusal: "deck" },
+    refuse: false,
+    gate: null,
+    original: { ok: false, refusal: "missing" },
+  }
+  const uploaded: { deck: string; file: Uint8Array }[] = []
+  const counts = { openDeck: 0, flush: 0, putParts: 0, fetchOriginal: 0, sendOriginal: 0 }
   type Counted = keyof typeof counts
   let waiters: { kind: Counted; count: number; resolve: () => void }[] = []
   function happened(kind: Counted) {
@@ -32,7 +41,12 @@ const live = vi.hoisted(() => {
     reads,
     flushed,
     state,
+    uploaded,
     reset() {
+      uploaded.length = 0
+      counts.fetchOriginal = 0
+      counts.sendOriginal = 0
+      state.original = { ok: false, refusal: "missing" }
       sent.length = 0
       reads.length = 0
       saved.length = 0
@@ -65,6 +79,16 @@ const live = vi.hoisted(() => {
       happened("putParts")
       return { ok: true, ...stored }
     },
+    fetchOriginal: async (deck: string) => {
+      reads.push(deck)
+      happened("fetchOriginal")
+      return state.original
+    },
+    sendOriginal: async (deck: string, file: Uint8Array) => {
+      uploaded.push({ deck, file })
+      happened("sendOriginal")
+      return { ok: true }
+    },
     connect: () => ({
       async enqueue(deck: string, value: string, node: string, floor: string) {
         if (state.refuse) return { ok: false, refusal: "limit" }
@@ -80,6 +104,9 @@ const live = vi.hoisted(() => {
         happened("openDeck")
         return state.opened
       },
+      async open() {
+        return { ok: true }
+      },
     }),
   }
 })
@@ -92,6 +119,8 @@ vi.mock("@airdesign/live", async () => {
     getParts: (deck: string) => live.getParts(deck),
     putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string }) =>
       live.putParts(deck, stored),
+    fetchOriginal: (deck: string) => live.fetchOriginal(deck),
+    sendOriginal: (deck: string, file: Uint8Array) => live.sendOriginal(deck, file),
   }
 })
 
@@ -214,13 +243,14 @@ async function wasmBytes(): Promise<Uint8Array> {
 }
 
 async function renderedDeck(
-  parts: ReadonlyMap<string, Uint8Array>,
+  parts: ReadonlyMap<string, Uint8Array> | Uint8Array | null,
   deck: string | undefined = "opened-deck",
   register: Register | null = null,
   name?: string,
 ) {
   live.reset()
-  live.state.parts = { ok: true, parts, ...(name === undefined ? {} : { name }) }
+  if (parts instanceof Uint8Array) live.state.original = { ok: true, file: parts }
+  else if (parts !== null) live.state.parts = { ok: true, parts, ...(name === undefined ? {} : { name }) }
   if (register !== null) live.state.opened = { ok: true, register }
   if (jsdom === undefined) throw new Error("jsdom")
   const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
@@ -237,7 +267,11 @@ async function renderedDeck(
     ["InputEvent", window.InputEvent],
     ["Event", window.Event],
     ["IS_REACT_ACT_ENVIRONMENT", true],
+    ["requestAnimationFrame", (step: () => void) => setTimeout(step, 0)],
+    ["cancelAnimationFrame", (handle: number) => clearTimeout(handle)],
   ]
+  window.matchMedia = () =>
+    ({ matches: false, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList
   const previous = defined.map(([name]) => [name, globals[name]] as const)
   for (const [name, value] of defined) {
     Object.defineProperty(globalThis, name, { value, configurable: true, writable: true })
@@ -266,7 +300,7 @@ async function renderedDeck(
     })
     return window
   }
-  const sentOnOpen = live.reached("flush", 1)
+  const sentOnOpen = parts === null ? live.reached("fetchOriginal", 1) : live.reached("flush", 1)
   await act(async () => {
     root.render(<ThinDeck id={deck} />)
   })
@@ -591,6 +625,40 @@ it("paints each element's stored value after a reload and the file text elsewher
   )
   expect(await editableTexts(window, 2)).toEqual(["First", "Keep", "Stored last"])
   expect(await editableTexts(window, 1)).toEqual(["Stored other"])
+})
+
+it("rebuilds a deck this device lost from the server's original and paints the saved edits", async () => {
+  const file = await cleanFile()
+  const window = await renderedDeck(file, "cleared-deck", editedRegister([[await editedId, "Kept on the server"]]))
+  expect(window.document.querySelector('[contenteditable="true"]')?.textContent).toBe("Kept on the server")
+  expect(window.document.querySelector("[data-deck-ready]")?.getAttribute("data-deck-ready")).toBe("cleared-deck")
+  expect(live.saved.map((each) => [each.deck, each.file])).toEqual([["cleared-deck", file]])
+})
+
+it("shows the import notice and no slide when neither the device nor the server has the original", async () => {
+  const window = await renderedDeck(null, "lost-deck")
+  await act(async () => {})
+  await act(async () => {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0)
+    })
+  })
+  expect(window.document.querySelector("[data-slide-paint]")).toBeNull()
+  expect(window.document.body.textContent).toContain(productCopy.importFailedTitle)
+})
+
+it("sends the imported file to the server as the deck's original", async () => {
+  const window = await renderedDeck(await cleanParts(), undefined)
+  const file = await cleanFile()
+  const input = window.document.querySelector("input[type=file]")
+  if (input === null) throw new Error("input")
+  Object.defineProperty(input, "files", { value: [new File([Uint8Array.from(file)], "clean.pptx")] })
+  const sent = live.reached("sendOriginal", 1)
+  await act(async () => {
+    input.dispatchEvent(new window.Event("change", { bubbles: true }))
+    await sent
+  })
+  expect(live.uploaded.map((each) => [each.deck, [...each.file]])).toEqual([[live.saved[0]?.deck, [...file]]])
 })
 
 it("sends what is pending when a deck opens", async () => {
