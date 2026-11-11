@@ -1,6 +1,7 @@
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintColor, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
+import { defaultColor, highlightOf } from "./text-color.js"
 import { sourceBody, type MarkupChildren, type SourceParagraph } from "./text-value-route.js"
 
 export type PaintRunStyle = {
@@ -179,19 +180,6 @@ const colorOf = (layer: PaintTextHolder, scope: PaintTextScope): PaintColor | nu
   if (fill.type === "solid") return fill.color
   if (fill.type === "gradient") return fill.stops[0]?.color ?? null
   return fill.type === "pattern" ? fill.foreground : null
-}
-
-const highlightOf = (layer: PaintTextHolder, scope: PaintTextScope): PaintColor | null | undefined => {
-  const highlight = held(layer, "a:highlight")
-  if (highlight === undefined) return undefined
-  const color = inside(highlight)[0]
-  return color === undefined ? null : paintColor(color, highlight.children, scope.palette)
-}
-
-const defaultColor = (scope: PaintTextScope): PaintColor | null => {
-  const slot = scope.palette.slots.get(scope.palette.mapping.get("tx1") ?? "dk1")
-  const color = slot === undefined ? undefined : scope.palette.children[slot.index]?.[0]
-  return color === undefined ? null : paintColor(color, scope.palette.children, scope.palette)
 }
 
 const fontOf = (layer: PaintTextHolder, scope: PaintTextScope): string | undefined => {
