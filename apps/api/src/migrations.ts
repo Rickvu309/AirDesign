@@ -103,4 +103,21 @@ create index original_delete_attempted on deck.original_delete (attempted, key);
 grant select, insert, update, delete on deck.original_delete to deck;
 `,
   },
+  {
+    id: 3,
+    sql: `
+alter table deck.saved
+  add column deleted timestamptz,
+  alter column register drop not null;
+alter table deck.saved
+  add constraint saved_live_register check (deleted is not null or register is not null),
+  add constraint saved_deleted_empty check (
+    deleted is null or (
+      register is null and name = '' and trashed is null and original_key is null and original_bytes is null
+      and original_sha256 is null and not original_stored and original_until is null
+    )
+  );
+revoke delete on deck.saved from deck;
+`,
+  },
 ]

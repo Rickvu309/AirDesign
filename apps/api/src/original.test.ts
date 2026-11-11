@@ -225,7 +225,7 @@ it("delete for good removes the object", async () => {
   await post("/decks/trash", { deck: id })
   expect((await post("/decks/delete", { decks: [id] })).json).toEqual({ ok: true, deleted: [id] })
   expect(await store.size(object)).toBeUndefined()
-  expect((await admin.query("select id from deck.saved where id = $1", [id])).rows).toEqual([])
+  expect((await admin.query("select id from deck.saved where id = $1 and deleted is null", [id])).rows).toEqual([])
 })
 
 it("a purge survives storage being down and keeps the key for retry", async () => {
@@ -238,7 +238,7 @@ it("a purge survives storage being down and keeps the key for retry", async () =
     const reply = await post("/decks/list", {})
     expect(reply.status).toBe(200)
     expect(reply.json).toMatchObject({ ok: true })
-    expect((await admin.query("select id from deck.saved where id = $1", [id])).rows).toEqual([])
+    expect((await admin.query("select id from deck.saved where id = $1 and deleted is null", [id])).rows).toEqual([])
     expect((await admin.query("select key from deck.original_delete where key = $1", [object])).rows).toEqual([
       { key: object },
     ])
@@ -320,14 +320,15 @@ it("a reopened deck cannot be damaged by an earlier upload or deletion retry", a
   const oldKey = await key(id)
   await post("/decks/trash", { deck: id })
   await post("/decks/delete", { decks: [id] })
-  await post("/decks/open", { deck: id })
-  const current = await upload(id)
-  store.put(current.url, bytes, current.headers)
+  expect((await post("/decks/open", { deck: id })).json).toEqual({ ok: false, refusal: "deleted" })
+  expect((await post("/decks/original/upload", { deck: id, bytes: bytes.length, sha256 })).json).toEqual({
+    ok: false,
+    refusal: "deleted",
+  })
   store.put(old.url, bytes, old.headers)
-  expect(await key(id)).not.toBe(oldKey)
   await post("/decks/list", {})
   expect(await store.size(oldKey)).toBeUndefined()
-  expect((await post("/decks/original/done", { deck: id })).json).toEqual({ ok: true })
+  expect((await post("/decks/original/done", { deck: id })).json).toEqual({ ok: false, refusal: "deleted" })
 })
 
 it("deletes a newly trashed original despite an unexpired retry backlog", async () => {
@@ -407,17 +408,18 @@ it("scopes each original key to its account and deck", async () => {
   await post("/decks/trash", { deck: shared })
   await post("/decks/delete", { decks: [shared] })
   const other = await sign("scope-other@example.com")
-  await post("/decks/open", { deck: shared }, other)
+  const theirs = `${shared}x`
+  await post("/decks/open", { deck: theirs }, other)
   expect(
-    (await post("/decks/original/upload", { deck: shared, bytes: bytes.length, sha256 }, other)).json,
+    (await post("/decks/original/upload", { deck: theirs, bytes: bytes.length, sha256 }, other)).json,
   ).toMatchObject({ ok: true })
-  const second = await key(shared)
+  const second = await key(theirs)
   const one = await deck()
   const two = await deck()
   await upload(one)
   await upload(two)
   expect(first.startsWith(`originals/${account("original@example.com")}/${shared}/`)).toBe(true)
-  expect(second.startsWith(`originals/${account("scope-other@example.com")}/${shared}/`)).toBe(true)
+  expect(second.startsWith(`originals/${account("scope-other@example.com")}/${theirs}/`)).toBe(true)
   expect((await key(one)).startsWith(`originals/${account("original@example.com")}/${one}/`)).toBe(true)
   expect((await key(two)).startsWith(`originals/${account("original@example.com")}/${two}/`)).toBe(true)
   expect(new Set([first, second, await key(one), await key(two)]).size).toBe(4)

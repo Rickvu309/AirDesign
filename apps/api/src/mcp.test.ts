@@ -1161,24 +1161,75 @@ describe("mcp route", () => {
           await ask(base, "POST", "/decks/trash", { deck: id }, cookie)
           await ask(base, "POST", "/decks/delete", { decks: [id] }, cookie)
           const reopened = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
-          expect(reopened.json).toMatchObject({ ok: true, revision: 0 })
+          expect(reopened.json).toEqual({ ok: false, refusal: "deleted" })
           clock += 600_000
+          const deletedRow = await row(id)
+          expect(deletedRow).toMatchObject({ register: null })
           const first = await editAnswer(client, firstEdit(id))
-          expect(first).toMatchObject({ ok: true, revision: 1 })
-          await typed(id, cookie, "typed", 2)
-          const closedRow = await row(id)
+          expect(first).toMatchObject({ ok: false, refusal: "deleted" })
           const closed = await editAnswer(client, {
             deck: id,
-            base: 2,
+            base: 3,
             changes: [{ value: "overwrite", node: element, readAt: 2 }],
           })
-          expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
-          expect(await row(id)).toEqual(closedRow)
+          expect(closed).toMatchObject({ ok: false, refusal: "deleted" })
+          expect(await row(id)).toEqual(deletedRow)
         },
         served.base,
       )
     } finally {
       await served.close()
+    }
+  })
+
+  it("refuses an agent edit on a deck deleted for good with deleted and changes nothing", async () => {
+    const { id, cookie } = await openedDeck("deletedagent")
+    await withMcp(cookie, async (client) => {
+      expect(await editAnswer(client, firstEdit(id))).toMatchObject({ ok: true, revision: 1 })
+      await ask(base, "POST", "/decks/trash", { deck: id }, cookie)
+      await ask(base, "POST", "/decks/delete", { decks: [id] }, cookie)
+      const before = await row(id)
+      expect(before).toMatchObject({ register: null })
+      expect(await editAnswer(client, secondEdit(id))).toMatchObject({ ok: false, refusal: "deleted" })
+      expect(await row(id)).toEqual(before)
+    })
+  })
+
+  it("refuses an agent edit with deleted when the delete for good lands between its read and its write", async () => {
+    const info = await postgresInfo()
+    const stored = openPool(info.deck, "mcp-deletedrace")
+    let racing = false
+    const racer = new Proxy(stored, {
+      get(target, prop, receiver) {
+        if (prop !== "query") return Reflect.get(target, prop, receiver)
+        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
+        return async (sql: unknown, params?: unknown[]) => {
+          if (racing && typeof sql === "string" && sql.includes("update deck.saved")) {
+            racing = false
+            await query(
+              "update deck.saved set deleted = now(), register = null, name = '', trashed = null where id = $1",
+              [params?.[0]],
+            )
+          }
+          return query(sql, params)
+        }
+      },
+    }) as Sql
+    const served = await ownServer("deletedrace", { deck: racer, now: () => 1_000_000 })
+    try {
+      const { id, cookie } = await openedDeck("deletedrace")
+      await withMcp(
+        cookie,
+        async (client) => {
+          racing = true
+          expect(await editAnswer(client, firstEdit(id))).toMatchObject({ ok: false, refusal: "deleted" })
+          expect(await row(id)).toMatchObject({ register: null })
+        },
+        served.base,
+      )
+    } finally {
+      await served.close()
+      await stored.end()
     }
   })
 

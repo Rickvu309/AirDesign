@@ -94,7 +94,7 @@ const test = base.extend<object, { stack: Stack }>({
         emailOf: async (cookie) => owners.get(cookie) ?? "",
         async saved(id) {
           const found = await admin.query<{ owner: string; register: SavedRegister }>(
-            "select owner, register from deck.saved where id = $1",
+            "select owner, register from deck.saved where id = $1 and deleted is null",
             [id],
           )
           return found.rows[0]

@@ -228,13 +228,14 @@ async function hold(
   cursor: number | null,
   email: string,
   signal: AbortSignal,
-): Promise<number | "owner" | undefined> {
+): Promise<number | "owner" | "deleted" | undefined> {
   for (;;) {
     if (signal.aborted) return undefined
     await options.listen.ready()
     if (signal.aborted) return undefined
     const saved = await readSaved(options.deck, deck)
     if (saved !== undefined && saved.owner !== email) return "owner"
+    if (saved?.deleted === true) return "deleted"
     const revision = chosenRevision(cursor, saved?.revision)
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
@@ -341,8 +342,8 @@ async function watchRoute(visit: Visit): Promise<void> {
   const signal = gone(res)
   const revision = await hold(options, parsed.deck, parsed.cursor, email, signal)
   if (revision === undefined || signal.aborted || res.writableEnded || res.destroyed) return
-  if (revision === "owner") {
-    sendJson(res, 200, { ok: false, refusal: "owner" })
+  if (revision === "owner" || revision === "deleted") {
+    sendJson(res, 200, { ok: false, refusal: revision })
     return
   }
   sendJson(res, 200, { ok: true, deck: parsed.deck, revision })

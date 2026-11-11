@@ -165,7 +165,7 @@ describe("database migrations", () => {
     expect(grants.rows).toEqual([
       { grantee: "deck", name: "deck.once", rights: full },
       { grantee: "deck", name: "deck.original_delete", rights: full },
-      { grantee: "deck", name: "deck.saved", rights: full },
+      { grantee: "deck", name: "deck.saved", rights: noDelete },
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       { grantee: "session", name: "session.access", rights: full },
       { grantee: "session", name: "session.account", rights: full },
@@ -235,12 +235,43 @@ describe("database migrations", () => {
         original_sha256: null,
         original_stored: false,
         original_until: null,
+        deleted: null,
       },
     ])
     const deck = await open(roleUrl("deck", database))
     await expect(
       deck.query("insert into deck.original_delete (key, owner) values ('retry', 'kept@example.com')"),
     ).resolves.toMatchObject({ rowCount: 1 })
+  })
+
+  it("marks deleted decks in a database at migration 2 and keeps every deck as it was", async () => {
+    const database = await bootstrappedDatabase()
+    const migrator = await open(roleUrl("migrator", database))
+    await applySchema(migrator, migrations.slice(0, 2))
+    await migrator.query(
+      `insert into deck.saved (id, revision, register, owner, name, trashed, original_key, original_bytes, original_sha256, original_stored)
+       values ('live', 3, '{"live":true}', 'kept@example.com', 'Plan', null, null, null, null, false),
+              ('binned', 7, '{"binned":true}', 'kept@example.com', '', now(), 'originals/k', 21, 'ab', true)`,
+    )
+    await migrator.query(
+      "insert into deck.once (email, deck, once, revision, notify) values ('kept@example.com', 'live', 'k', 3, 'live:3')",
+    )
+    const before = await migrator.query("select * from deck.saved order by id")
+    const onceBefore = await migrator.query("select * from deck.once")
+    expect(await applySchema(migrator)).toEqual({ applied: latest - 2, at: latest })
+    const after = await migrator.query("select * from deck.saved order by id")
+    expect(after.rows).toEqual(before.rows.map((row: Record<string, unknown>) => ({ ...row, deleted: null })))
+    expect((await migrator.query("select * from deck.once")).rows).toEqual(onceBefore.rows)
+    const deck = await open(roleUrl("deck", database))
+    await expect(deck.query("delete from deck.saved where id = 'live'")).rejects.toThrow(/permission denied/)
+    await expect(deck.query("update deck.saved set deleted = now() where id = 'live'")).rejects.toThrow(
+      /saved_deleted_empty/,
+    )
+    await expect(
+      deck.query(
+        "insert into deck.saved (id, revision, register, owner) values ('blank', 0, null, 'kept@example.com')",
+      ),
+    ).rejects.toThrow(/saved_live_register/)
   })
 
   it("rolls a failed migration back, records nothing, and applies it on the next run", async () => {
