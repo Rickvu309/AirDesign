@@ -28,7 +28,13 @@ export function connectSixDigitCodeEntry(entry: Element): void {
       return
     }
     submitting = true
-    const destination = await submitSignInCode("", import.meta.env.PUBLIC_APP_ORIGIN, email, input.value, readPendingNext())
+    const destination = await submitSignInCode(
+      "",
+      import.meta.env.PUBLIC_APP_ORIGIN,
+      email,
+      input.value,
+      readPendingNext(),
+    )
     submitting = false
     if (destination !== null) {
       location.assign(destination)
