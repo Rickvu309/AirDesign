@@ -55,6 +55,13 @@ export const stagesFor = (part, ci = onCi(process.env)) =>
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
+export const ciOnlySteps = new Set(["browser"])
+
+export const stepsToRun = (chosen, ci) =>
+  ci
+    ? chosen
+    : chosen.map((stage) => stage.filter(([name]) => !ciOnlySteps.has(name))).filter((stage) => stage.length > 0)
+
 export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
@@ -99,7 +106,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   process.env.TMPDIR = ownTemp
 
   let ranSteps = true
-  const chosen = stagesFor(part)
+  const chosen = stepsToRun(stagesFor(part), onCi(process.env))
   for (const [index, stage] of chosen.entries()) {
     await Promise.all(stage.map(run))
     if (failed.length > 0 && !all && !mayPush(failed, true)) {
