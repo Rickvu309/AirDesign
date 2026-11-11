@@ -64,13 +64,54 @@ const stoppedRuns = (runs) => {
   )
 }
 
+const headMovedAfter = (runs, queueRun) => {
+  const ordered = [...runs].sort((left, right) => left.id - right.id)
+  const head = ordered.filter((run) => run.id < queueRun.id).at(-1)
+  return ordered.some((run) => run.id > queueRun.id && run.sha !== head?.sha)
+}
+
+const droppedRuns = ({ runs, queueRuns = [] }) =>
+  queueRuns.filter((run) => failedConclusions.has(run.conclusion) && !headMovedAfter(runs, run))
+
+export const queueNumber = (branch) => Number(/^gh-readonly-queue\/main\/pr-(\d+)-/.exec(branch)?.[1])
+
 export const falseStops = (pulls) => {
   const read = lastMerged(pulls)
   const stops = read
-    .map((pull) => ({ number: pull.number, runs: stoppedRuns(pull.runs) }))
+    .map((pull) => {
+      const stopped = stoppedRuns(pull.runs)
+      const dropped = droppedRuns(pull)
+      return { number: pull.number, stopped, dropped, runs: [...stopped, ...dropped] }
+    })
     .filter((stop) => stop.runs.length > 0)
   return { read: read.length, count: stops.length, stops }
 }
+
+export const stopLine = ({ number, stopped, dropped }) => {
+  const parts = [
+    ...(stopped.length > 0 ? [`${stopped.length} failed on ${stopped[0].sha.slice(0, 7)}, then passed`] : []),
+    ...(dropped.length > 0
+      ? [`${dropped.length} dropped from the queue by run ${dropped[0].id}, then merged on the same head`]
+      : []),
+  ]
+  return `- #${number}: ${parts.join("; ")}`
+}
+
+export const repeatRebases = (pulls) => {
+  const read = lastMerged(pulls)
+  const repeats = read
+    .map((pull) => ({
+      number: pull.number,
+      pushes: pull.events.filter((event) => event === "head_ref_force_pushed").length,
+    }))
+    .filter((repeat) => repeat.pushes > 1)
+  return { read: read.length, count: repeats.length, repeats }
+}
+
+export const repeatRebaseLines = ({ count, read, repeats }) => [
+  `Repeat rebases: ${count} of the last ${read} merged PRs.`,
+  ...repeats.map((repeat) => `- #${repeat.number}: ${repeat.pushes} force pushes`),
+]
 
 export const falseStopLine = ({ count, read }) =>
   `False stops: ${count} of the last ${read} merged PRs. Budget: ${falseStopBudget}.`
@@ -93,7 +134,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const repository = process.argv[2]
   const gh = (args) =>
     execFileSync("gh", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
-  const fields = "{id, attempt: .run_attempt, sha: .head_sha, conclusion, createdAt: .created_at}"
+  const fields = "{id, attempt: .run_attempt, sha: .head_sha, conclusion, createdAt: .created_at, branch: .head_branch}"
   const earlierAttempts = (run) =>
     Array.from({ length: run.attempt - 1 }, (_, index) =>
       JSON.parse(gh(["api", `repos/${repository}/actions/runs/${run.id}/attempts/${index + 1}`, "--jq", fields])),
@@ -123,7 +164,31 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
       "number,headRefName,createdAt,mergedAt",
     ]),
   )
-  const result = falseStops(lastMerged(merged).map((pull) => ({ ...pull, runs: runsOf(pull) })))
+  const read = lastMerged(merged)
+  const oldest = read.at(-1).createdAt
+  const queueRuns = gh([
+    "api",
+    `repos/${repository}/actions/workflows/ci.yml/runs?event=merge_group&per_page=100&created=${encodeURIComponent(`>=${oldest}`)}`,
+    "--paginate",
+    "--jq",
+    `.workflow_runs[] | ${fields}`,
+  ])
+    .split("\n")
+    .filter(Boolean)
+    .map((text) => JSON.parse(text))
+  const eventsOf = (pull) =>
+    gh(["api", `repos/${repository}/issues/${pull.number}/timeline?per_page=100`, "--paginate", "--jq", ".[] | .event"])
+      .split("\n")
+      .filter(Boolean)
+  const pulls = read.map((pull) => ({
+    ...pull,
+    runs: runsOf(pull),
+    queueRuns: queueRuns
+      .filter((run) => queueNumber(run.branch) === pull.number)
+      .flatMap((run) => [...earlierAttempts(run), run]),
+    events: eventsOf(pull),
+  }))
+  const result = falseStops(pulls)
   const stopped = result.stops.flatMap((stop) => stop.runs).slice(0, logLimit)
   const logs = new Map()
   for (const run of stopped) {
@@ -144,9 +209,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const lines = [
     line,
     "",
-    ...result.stops.map(
-      (stop) => `- #${stop.number}: ${stop.runs.length} failed on ${stop.runs[0].sha.slice(0, 7)}, then passed`,
-    ),
+    ...result.stops.map(stopLine),
+    "",
+    ...repeatRebaseLines(repeatRebases(pulls)),
     "",
     ...report(classes, repository),
   ]

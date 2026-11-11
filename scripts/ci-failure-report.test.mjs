@@ -1,6 +1,7 @@
 import { audit, failureClass, report } from "./ci-failure-report.mjs"
 import { alarmAction, attemptId, countIn, falseStopBudget, falseStopLine } from "./ci-failure-report.mjs"
 import { falseStops, lastMerged, mergedLimit } from "./ci-failure-report.mjs"
+import { queueNumber, repeatRebaseLines, repeatRebases, stopLine } from "./ci-failure-report.mjs"
 
 const same = (name, actual, expected) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -145,5 +146,98 @@ same(
 )
 same("an issue with no number", countIn(["nothing here"]), undefined)
 same("the line", falseStopLine({ count: 2, read: 20 }), "False stops: 2 of the last 20 merged PRs. Budget: 1.")
+
+const queued = (number, runs, queueRuns) => ({ ...pull(number, runs), queueRuns })
+const passedHead = (id, sha) => run(id, 1, sha, "success")
+
+same(
+  "a failed queue run then a merge on the same head counts",
+  counted([queued(230, [passedHead(10, "a")], [run(11, 1, "q", "failure")])]),
+  [230],
+)
+same(
+  "a failed queue run then a requeue that passes on the same head counts",
+  counted([queued(230, [passedHead(10, "a")], [run(11, 1, "q", "failure"), run(12, 1, "r", "success")])]),
+  [230],
+)
+same(
+  "a failed queue run followed by a new head commit does not count",
+  counted([queued(1, [passedHead(10, "a"), passedHead(12, "b")], [run(11, 1, "q", "failure")])]),
+  [],
+)
+same(
+  "a new head commit before the failed queue run does not hide it",
+  counted([queued(1, [passedHead(10, "a"), passedHead(11, "b")], [run(12, 1, "q", "failure")])]),
+  [1],
+)
+same(
+  "a later run on the same head is not a new head commit",
+  counted([queued(1, [passedHead(10, "a"), passedHead(12, "a")], [run(11, 1, "q", "failure")])]),
+  [1],
+)
+same(
+  "head runs are read in order whatever order they arrive in",
+  counted([queued(1, [passedHead(12, "b"), passedHead(10, "a")], [run(11, 1, "q", "failure")])]),
+  [],
+)
+same(
+  "a cancelled queue run is not a drop",
+  counted([queued(1, [passedHead(10, "a")], [run(11, 1, "q", "cancelled")])]),
+  [],
+)
+same("a passed queue run is not a drop", counted([queued(1, [passedHead(10, "a")], [run(11, 1, "q", "success")])]), [])
+const twice = falseStops([
+  queued(
+    1,
+    [run(10, 1, "a", "failure"), run(10, 2, "a", "success")],
+    [run(11, 1, "q", "failure"), run(12, 1, "r", "failure")],
+  ),
+])
+same("a PR counts once however it was stopped", twice.count, 1)
+same("each failed run is kept for its class", twice.stops[0].runs.map(attemptId), [
+  "10/attempts/1",
+  "11/attempts/1",
+  "12/attempts/1",
+])
+same(
+  "a stop names both ways it was stopped",
+  stopLine(twice.stops[0]),
+  "- #1: 1 failed on a, then passed; 2 dropped from the queue by run 11, then merged on the same head",
+)
+same(
+  "a stop on the head alone",
+  stopLine(falseStops([pull(1, [run(10, 1, "abcdefghij", "failure"), run(10, 2, "abcdefghij", "success")])]).stops[0]),
+  "- #1: 1 failed on abcdefg, then passed",
+)
+same(
+  "a drop alone",
+  stopLine(falseStops([queued(23, [passedHead(10, "a")], [run(42937916435, 1, "q", "failure")])]).stops[0]),
+  "- #23: 1 dropped from the queue by run 42937916435, then merged on the same head",
+)
+same("the queue branch names its PR", queueNumber("gh-readonly-queue/main/pr-230-2d07863458846be7"), 230)
+same("a branch that is not the queue", queueNumber("pr-230-fix"), NaN)
+same("another base is not this queue", queueNumber("gh-readonly-queue/next/pr-230-2d07"), NaN)
+
+const pushed = (number, events) => ({ ...pull(number, []), events })
+const force = "head_ref_force_pushed"
+same(
+  "more than one force push is a repeat rebase",
+  repeatRebases([pushed(1, [force, "committed", force]), pushed(2, [force]), pushed(3, ["committed"])]),
+  { read: 3, count: 1, repeats: [{ number: 1, pushes: 2 }] },
+)
+same(
+  "repeat rebases read only the last 20 merged PRs",
+  repeatRebases(Array.from({ length: mergedLimit + 1 }, (_, index) => pushed(index + 1, [force, force]))).count,
+  20,
+)
+same("the repeat rebase lines", repeatRebaseLines({ count: 1, read: 20, repeats: [{ number: 7, pushes: 3 }] }), [
+  "Repeat rebases: 1 of the last 20 merged PRs.",
+  "- #7: 3 force pushes",
+])
+same(
+  "repeat rebases never read as a false stop count",
+  countIn(repeatRebaseLines({ count: 9, read: 20, repeats: [] })),
+  undefined,
+)
 
 console.log("ci-failure-report tests passed")
