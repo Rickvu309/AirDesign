@@ -74,6 +74,12 @@ async function reload(page: Page): Promise<void> {
   await settled(page)
 }
 
+async function showSlide(page: Page, number: number): Promise<void> {
+  const entry = page.locator(`[data-slide-entry="${number}"]`)
+  await entry.click()
+  await expect(entry).toHaveAttribute("aria-current", "true")
+}
+
 async function open(page: Page, file: string): Promise<string> {
   await page.goto("/thin")
   return choose(page, file)
@@ -344,10 +350,16 @@ test("a box that cannot keep an edit is not editable", async ({ page }) => {
   await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
   await expect(page.getByText(/1D-Convolutional/).first()).toBeVisible()
   await expect(page.locator('[contenteditable="true"]').filter({ hasText: /1D-Convolutional/ })).toHaveCount(1)
-  const slideNumber = page.locator("[contenteditable]").nth(44)
-  await expect(slideNumber).toHaveText("10")
-  await expect(slideNumber).toHaveAttribute("contenteditable", "false")
-  await expect(page.locator('[contenteditable="true"]')).toHaveCount(35)
+  await showSlide(page, 10)
+  const slideNumber = page.locator('[contenteditable="false"]').filter({ hasText: /^10$/ })
+  await expect(slideNumber).toHaveCount(1)
+  let editable = 0
+  const slideCount = await page.locator("[data-slide-entry]").count()
+  for (let number = 1; number <= slideCount; number += 1) {
+    await showSlide(page, number)
+    editable += await page.locator('[contenteditable="true"]').count()
+  }
+  expect(editable).toBe(35)
   await choose(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveCount(1)
@@ -410,6 +422,7 @@ test("two text boxes keep their own edits after reload and both export", async (
   const deck = join(fixtures, "doe-heat-pumps.pptx")
   const download = testInfo.outputPath("two-boxes.pptx")
   const address = await open(page, deck)
+  await showSlide(page, 4)
   const title = page.locator('[contenteditable="true"]').filter({ hasText: /^What is a heat pump\?$/ })
   const body = page.locator('[contenteditable="true"]').filter({ hasText: /^Same technology as:$/ })
   await title.click()
@@ -422,6 +435,7 @@ test("two text boxes keep their own edits after reload and both export", async (
   await stored(page, "Same technology as: Beta")
   await reload(page)
   expect(page.url()).toBe(address)
+  await showSlide(page, 4)
   const editors = page.locator('[contenteditable="true"]')
   await expect(editors.filter({ hasText: /^What is a heat pump\? Alpha$/ })).toHaveCount(1)
   await expect(editors.filter({ hasText: /^Same technology as: Beta$/ })).toHaveCount(1)
@@ -485,6 +499,7 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
   const download = testInfo.outputPath("paragraphs.pptx")
   const part = "ppt/slides/slide7.xml"
   await open(page, deck)
+  await showSlide(page, 7)
   const box = page.locator('[contenteditable="true"]').filter({ hasText: /^Vapor Compression CyclePumped refrigerant/ })
   await expect(box).toHaveCount(1)
   const second = box.locator("[data-run]").nth(3)
@@ -507,6 +522,7 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
   ]
   await stored(page, shown.join("\n"))
   await reload(page)
+  await showSlide(page, 7)
   await expect.poll(() => paragraphsOf(page, box)).toEqual(shown)
   await saveExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
@@ -548,6 +564,7 @@ test("a replaced run and a new paragraph export for the PowerPoint check", async
   const download = testInfo.outputPath("exported-paragraphs.pptx")
   const part = "ppt/slides/slide7.xml"
   await open(page, deck)
+  await showSlide(page, 7)
   const box = page.locator('[contenteditable="true"]').filter({ hasText: /^Vapor Compression CyclePumped refrigerant/ })
   await expect(box).toHaveCount(1)
   const bold = box.locator("[data-run]").nth(3)
@@ -629,4 +646,43 @@ test("an empty box takes typed text, keeps it after reload and exports it", asyn
   const written = shapeIn(after, "4")
   expect(after.replace(written, "")).toBe(before.replace(shapeIn(before, "4"), ""))
   expect(written).toContain("<a:t>Typed here</a:t>")
+})
+
+test("the page names the opened file, not the sample deck", async ({ page }) => {
+  const sample = ["Q3 Investor Update", "New slide", "Opening", "Performance", "Outlook"]
+  await open(page, join(fixtures, "nasa-1d-cnn.pptx"))
+  const sidebar = page.locator("aside").first()
+  for (const reading of [0, 1]) {
+    if (reading === 1) await reload(page)
+    await expect(sidebar).toContainText("nasa-1d-cnn")
+    const body = (await page.locator("body").textContent()) ?? ""
+    for (const word of sample) expect(body).not.toContain(word)
+  }
+})
+
+test("one slide shows at a time", async ({ page }, testInfo) => {
+  const deck = join(fixtures, "doe-heat-pumps.pptx")
+  const download = testInfo.outputPath("one-slide.pptx")
+  const part = "ppt/slides/slide7.xml"
+  await open(page, deck)
+  const editors = page.locator('[contenteditable="true"]')
+  const first = editors.filter({ hasText: "Introduction to Heat Pumps" })
+  const seventh = editors.filter({ hasText: /^How do heat pumps work\?/ })
+  await expect(first).toHaveCount(1)
+  await expect(seventh).toHaveCount(0)
+  await expect(page.locator("[data-slide-entry]").nth(6)).toHaveAttribute("data-slide-entry", "7")
+  await showSlide(page, 7)
+  await expect(seventh).toHaveCount(1)
+  await expect(first).toHaveCount(0)
+  await seventh.click()
+  await page.keyboard.press("End")
+  await seventh.pressSequentially(" Seven", { delay: 50 })
+  await stored(page, "How do heat pumps work? Seven")
+  await showSlide(page, 1)
+  await expect(seventh).toHaveCount(0)
+  await showSlide(page, 7)
+  await expect(seventh).toContainText("How do heat pumps work? Seven")
+  await saveExport(page, download)
+  expect(await changedParts(deck, download)).toEqual([part])
+  expect((await partsOf(download)).get(part)?.toString("utf8") ?? "").toContain("How do heat pumps work? Seven")
 })
