@@ -12,7 +12,7 @@ import {
   paragraphsExportName,
   validatorFiles,
 } from "./paragraph-export.mjs"
-import { judge } from "./judge.mjs"
+import { judgeParts } from "./judge.mjs"
 import {
   changedSinceArgs,
   freshMissFails,
@@ -235,25 +235,17 @@ console.log((await renderCacheReady).line())
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const references = new Map([...parts].map(([name, packageParts]) => [name, pptx.danglingShapeReferences(packageParts)]))
+const judgedBefore = (name) => ({
+  list: lists.get(name),
+  ids: ids.get(name),
+  orders: orders.get(name),
+  references: references.get(name),
+})
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
 let failed = 0
 for (const run of runs) {
   const judgedSamples = run.planted.map((sample, index) => {
-    const judged = judge(
-      pptx,
-      {
-        list: lists.get(sample.deck),
-        ids: ids.get(sample.deck),
-        orders: orders.get(sample.deck),
-        references: references.get(sample.deck),
-      },
-      {
-        list: lists.get(sampleFile(run.seed, index)),
-        ids: pptx.shapeIdCounts(sample.parts),
-        orders: pptx.branchOrderErrors(sample.parts),
-        references: pptx.danglingShapeReferences(sample.parts),
-      },
-    )
+    const judged = judgeParts(pptx, judgedBefore(sample.deck), lists.get(sampleFile(run.seed, index)), sample.parts)
     const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0] ?? judged.dangling[0])
     return { ...sample, accepted: judged.accepted, reason }
   })
@@ -297,21 +289,7 @@ if (!spec.ok) {
   }
 }
 for (const row of cases) {
-  const { errors, dupes } = judge(
-    pptx,
-    {
-      list: lists.get(row.before),
-      ids: ids.get(row.before),
-      orders: orders.get(row.before),
-      references: references.get(row.before),
-    },
-    {
-      list: lists.get(row.after),
-      ids: ids.get(row.after),
-      orders: orders.get(row.after),
-      references: references.get(row.after),
-    },
-  )
+  const { errors, dupes } = judgeParts(pptx, judgedBefore(row.before), lists.get(row.after), parts.get(row.after))
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),
     after: rendered.get(afterRender(row)),

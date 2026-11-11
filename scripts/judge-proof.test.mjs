@@ -1,5 +1,6 @@
 import fs from "node:fs"
 import { judge } from "./judge.mjs"
+import { judgeParts } from "./judge.mjs"
 import { scoreWrittenRoute } from "./pptx-route-judge.mjs"
 import {
   changedSinceArgs,
@@ -250,32 +251,46 @@ same(
 const countingPptx = {
   newValidatorErrors: (before, after) => after.filter((line) => !before.includes(line)),
   newDuplicateShapeIds: () => [],
-  newDanglingShapeReferences: (before = [], after = []) => after.filter((row) => !before.includes(row)),
 }
 const dangling = "ppt/slides/slide1.xml p:spTgt 9"
 same(
-  "the judge rejects a new dangling shape reference",
-  judge(
-    countingPptx,
-    { list: [], ids: [], orders: [], references: [] },
-    { list: [], ids: [], orders: [], references: [dangling] },
-  ).accepted,
+  "the judge rejects a dangling shape reference passed to it",
+  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [], dangling: [dangling] })
+    .accepted,
   false,
 )
 same(
-  "the judge does not blame a dangling shape reference the deck already had",
-  judge(
-    countingPptx,
-    { list: [], ids: [], orders: [], references: [dangling] },
-    { list: [], ids: [], orders: [], references: [dangling] },
-  ).accepted,
+  "an old caller that passes no dangling data is still accepted",
+  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [] }).accepted,
   true,
 )
-const routePptx = {
+const partsPptx = {
   ...countingPptx,
   shapeIdCounts: () => [],
-  touchMatches: () => true,
+  branchOrderErrors: () => [],
   danglingShapeReferences: (parts) => parts,
+  newDanglingShapeReferences: (before, after) => after.filter((row) => !before.includes(row)),
+}
+const judgedDeck = (references) => ({ list: [], ids: [], orders: [], references })
+same(
+  "the path pptx-check uses rejects a planted dangling shape reference",
+  judgeParts(partsPptx, judgedDeck([]), [], [dangling]).accepted,
+  false,
+)
+same(
+  "the path pptx-check uses does not blame a dangling shape reference the deck already had",
+  judgeParts(partsPptx, judgedDeck([dangling]), [], [dangling]).accepted,
+  true,
+)
+const checkSource = fs.readFileSync(new URL("./pptx-check.mjs", import.meta.url), "utf8")
+same(
+  "pptx-check judges only through judgeParts, which always supplies the dangling data",
+  [checkSource.includes('import { judgeParts } from "./judge.mjs"'), /\bjudge\(/.test(checkSource)],
+  [true, false],
+)
+const routePptx = {
+  ...partsPptx,
+  touchMatches: () => true,
 }
 const writtenRoute = (back) => ({
   run: { operation: "spTree.remove", error: null, touch: {} },
