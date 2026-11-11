@@ -9,6 +9,7 @@ export function DeckCard({
   titleClassName,
   editedClassName,
   previewClassName,
+  href,
 }: {
   name: string
   edited: string
@@ -17,6 +18,7 @@ export function DeckCard({
   titleClassName?: string
   editedClassName?: string
   previewClassName?: string
+  href?: string
 }) {
   return (
     <article className="relative rounded-[var(--shape-dialog)] bg-background p-1.5">
@@ -28,7 +30,7 @@ export function DeckCard({
             action && "pr-16",
           )}
         >
-          {name}
+          {href ? <a href={href}>{name}</a> : name}
         </h2>
         <p
           className={cn(

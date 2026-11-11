@@ -225,7 +225,33 @@ export async function saveDeck(
   return saved.ok ? deckId : null
 }
 
-export function ThinDeck({ id }: { id?: string }) {
+export async function importDeck(file: File) {
+  await ensureMarkup()
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const read = await readPackage(bytes)
+  if (!read.ok) return null
+  const name = deckName(file.name)
+  const id = await saveDeck(read.parts, bytes, name)
+  return id === null ? null : { id, name, parts: read.parts }
+}
+
+export async function nameImportedDeck(deck: string, name: string) {
+  try {
+    const opened = await fetch("/decks/open", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deck }),
+    })
+    if (!opened.ok) return
+    await fetch("/decks/rename", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deck, name: name.slice(0, 200) }),
+    })
+  } catch {}
+}
+
+export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" | "deck" }) {
   const store = useRef(paintStore())
   const boxes = useRef<ReadonlyMap<ElementId, TextBox>>(new Map())
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
@@ -305,28 +331,22 @@ export function ThinDeck({ id }: { id?: string }) {
   async function openFile(file: File) {
     setPaintedDeck(undefined)
     try {
-      await ensureMarkup()
-      const bytes = new Uint8Array(await file.arrayBuffer())
-      const read = await readPackage(bytes)
-      if (!read.ok) {
+      const imported = await importDeck(file)
+      if (imported === null) {
         setFailure("import-failed")
         return
       }
-      const name = deckName(file.name)
-      const nextId = await saveDeck(read.parts, bytes, name)
-      if (nextId === null) {
-        setFailure("import-failed")
-        return
-      }
-      window.history.replaceState(null, "", `/thin/${nextId}`)
+      const { id: nextId, name, parts } = imported
+      window.history.replaceState(null, "", `/${route}/${nextId}`)
+      void nameImportedDeck(nextId, file.name)
       shownDeck.current = nextId
       setDeckId(nextId)
       setPending(false)
       setFailure(null)
-      const painted = paint(store.current, read.parts, null)
+      const painted = paint(store.current, parts, null)
       boxes.current = painted.boxes
       shapes.current = painted.shapes
-      shownParts.current = read.parts
+      shownParts.current = parts
       setSlides(painted.slides)
       setCurrent(0)
       setTitle(name)

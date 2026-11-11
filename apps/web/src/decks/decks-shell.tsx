@@ -23,13 +23,20 @@ export function DecksShell({
   active,
   children,
   firstVisit = false,
+  account: realAccount,
 }: {
   active: DeckSection
   children: ReactNode
   firstVisit?: boolean
+  account?: { email: string }
 }) {
-  const primary = sections[0]
-  const rest = sections.slice(1)
+  const primary = { ...sections[0], href: realAccount ? "/" : sections[0].href }
+  const rest = realAccount
+    ? [
+        { ...sections[1], href: "/" },
+        { ...sections[2], href: "/trash" },
+      ]
+    : sections.slice(1)
   return (
     <div className="flex h-full w-full">
       <aside className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
@@ -38,10 +45,10 @@ export function DecksShell({
           className="flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
-            {account.initials}
+            {realAccount ? realAccount.email.charAt(0).toUpperCase() : account.initials}
           </span>
           <span className="text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground">
-            {account.name}
+            {realAccount?.email ?? account.name}
           </span>
           <span className="text-faint">
             <DeckGlyph name="chevron" size={14} />
@@ -88,34 +95,36 @@ export function DecksShell({
             ))}
           </div>
         </nav>
-        <div className="mt-6 flex flex-col gap-0.5">
-          <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground">
-            <span className="text-faint">
-              <DeckGlyph name="chevron" size={12} />
-            </span>
-            Starred
+        {!realAccount && (
+          <div className="mt-6 flex flex-col gap-0.5">
+            <div className="flex h-8 items-center gap-1.5 pr-2.5 pl-2.5 text-[length:var(--type-caption)] leading-[var(--leading-body)] font-medium text-muted-foreground">
+              <span className="text-faint">
+                <DeckGlyph name="chevron" size={12} />
+              </span>
+              Starred
+            </div>
+            {firstVisit ? (
+              <p className="px-2.5 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
+                Star a deck to keep it here.
+              </p>
+            ) : (
+              starredFolders.map((folder) => (
+                <button
+                  key={folder}
+                  type="button"
+                  className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  <span className="text-muted-foreground">
+                    <DeckGlyph name="folder" size={15} />
+                  </span>
+                  <span className="truncate">{folder}</span>
+                </button>
+              ))
+            )}
           </div>
-          {firstVisit ? (
-            <p className="px-2.5 pt-1 text-[length:var(--type-dense)] leading-[1.45] text-muted-foreground">
-              Star a deck to keep it here.
-            </p>
-          ) : (
-            starredFolders.map((folder) => (
-              <button
-                key={folder}
-                type="button"
-                className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                <span className="text-muted-foreground">
-                  <DeckGlyph name="folder" size={15} />
-                </span>
-                <span className="truncate">{folder}</span>
-              </button>
-            ))
-          )}
-        </div>
+        )}
         <div className="mt-auto">
-          {firstVisit ? (
+          {realAccount ? null : firstVisit ? (
             <a
               href={deckRoutes.connectAgent}
               className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[length:var(--type-dense)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"

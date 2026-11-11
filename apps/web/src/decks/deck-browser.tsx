@@ -12,6 +12,7 @@ export function DeckBrowser({
   menu,
   trailing,
   children,
+  account,
 }: {
   title: string
   active: DeckSection
@@ -21,11 +22,12 @@ export function DeckBrowser({
   menu?: ReactNode
   trailing?: ReactNode
   children: ReactNode
+  account?: { email: string }
 }) {
   return (
     <div className="screen-frame">
       <div className="h-full bg-canvas">
-        <DecksShell active={active} firstVisit={firstVisit}>
+        <DecksShell active={active} firstVisit={firstVisit} account={account}>
           <BrowseHeader title={title} view={view} scope={scope} menu={menu} trailing={trailing} compact={firstVisit} />
           {children}
         </DecksShell>

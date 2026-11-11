@@ -2,9 +2,17 @@ import { cn } from "@/lib/class-names"
 import { deckRoutes } from "@/decks/deck-routes"
 import { DeckGlyph } from "@/decks/deck-glyph"
 
-export function ViewSwitch({ active, scope = "recents" }: { active: "grid" | "list"; scope?: "recents" | "all" }) {
-  const gridHref = scope === "recents" ? deckRoutes.recentsGrid : deckRoutes.allDecksGrid
-  const listHref = scope === "recents" ? deckRoutes.recentsList : deckRoutes.allDecksList
+export function ViewSwitch({
+  active,
+  scope = "recents",
+  home = false,
+}: {
+  active: "grid" | "list"
+  scope?: "recents" | "all"
+  home?: boolean
+}) {
+  const gridHref = home ? "/" : scope === "recents" ? deckRoutes.recentsGrid : deckRoutes.allDecksGrid
+  const listHref = home ? "/?view=list" : scope === "recents" ? deckRoutes.recentsList : deckRoutes.allDecksList
   return (
     <div
       className="flex h-9 w-[66px] items-center gap-0.5 rounded-lg bg-background p-1 shadow-[inset_0_0_0_1px_var(--line)]"
