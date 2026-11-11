@@ -20,6 +20,7 @@ export const stages = [
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
+    ["interface-width", "node", ["scripts/interface-width.mjs"]],
     ["worktrees", "node", ["scripts/worktrees.mjs"]],
     ["commit-authors", "node", ["scripts/commit-authors.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
@@ -67,7 +68,7 @@ export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
 
-export const warnSteps = new Set()
+export const warnSteps = new Set(["interface-width"])
 
 export const recordFailure = (failed, name, warned = warnSteps) => {
   if (warned.has(name)) return "warn"

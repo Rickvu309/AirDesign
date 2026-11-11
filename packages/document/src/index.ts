@@ -10,7 +10,7 @@ export {
   type ElementId,
   type SlideId,
 } from "./element-id.js"
-export { orderKeyBetween, type OrderKey } from "./order-key.js"
+export { orderKeyBetween } from "./order-key.js"
 export { replay, unsent, type Queued } from "./replay.js"
 export { bytesOf, limits, overLimit } from "./limits.js"
 export {
@@ -21,7 +21,6 @@ export {
   history,
   openRegister,
   version,
-  type Actor,
   type Command,
   type Decision,
   type Landed,
@@ -31,5 +30,5 @@ export {
   type Refusal,
 } from "./decide.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
-export { structure, type StructuralAction, type StructuralRoute } from "./structure.js"
+export { structure, type StructuralRoute } from "./structure.js"
 export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"

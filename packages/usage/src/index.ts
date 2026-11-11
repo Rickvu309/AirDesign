@@ -44,7 +44,7 @@ export type Command =
   | { readonly command: "monday" }
   | { readonly command: "outside" }
 
-export type UsageResult = {
+type UsageResult = {
   readonly ledger: Ledger
   readonly accepted: boolean
 }
