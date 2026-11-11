@@ -480,6 +480,16 @@ describe("hostile input over every route", () => {
       "POST /decks/trash": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
       "POST /decks/restore": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
       "POST /decks/delete": [{ shape: "json", answers: 200, says: '"ok":true', fields: { decks: ["fuzzmissing"] } }],
+      "POST /decks/original/upload": [
+        {
+          shape: "json",
+          answers: 200,
+          says: '"refusal":"storage"',
+          fields: { deck, bytes: 4, sha256: "a".repeat(64) },
+        },
+      ],
+      "POST /decks/original/done": [{ shape: "json", answers: 200, says: '"refusal":"storage"', fields: { deck } }],
+      "POST /decks/original": [{ shape: "json", answers: 200, says: '"refusal":"storage"', fields: { deck } }],
     }
   })
 

@@ -306,6 +306,20 @@ export function readNamedDeck(raw: unknown): { ok: true; deck: DeckId } | FieldR
   return { ok: true, deck: deck.deck }
 }
 
+export function readOriginalUpload(
+  raw: unknown,
+): { ok: true; deck: DeckId; bytes: number; sha256: string } | FieldRefusal | DeckRefusal {
+  const body = recordOf(raw)
+  if (body === undefined || !knownKeys(body, ["deck", "bytes", "sha256"]) || !Object.hasOwn(body, "deck"))
+    return fieldRefusal
+  const deck = readDeckId(body.deck)
+  if (!deck.ok) return deckRefusal
+  const bytes = whole(body.bytes)
+  if (bytes === undefined || typeof body.sha256 !== "string" || !/^[0-9a-fA-F]{64}$/.test(body.sha256))
+    return fieldRefusal
+  return { ok: true, deck: deck.deck, bytes, sha256: body.sha256.toLowerCase() }
+}
+
 export function readNoFields(raw: unknown): { ok: true } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || Object.keys(body).length > 0) return fieldRefusal

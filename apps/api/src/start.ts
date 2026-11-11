@@ -5,6 +5,7 @@ import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
 import { createApi } from "./server.js"
 import { readStartSettings } from "./start-settings.js"
+import { R2OriginalStore } from "./r2-original-store.js"
 
 const settings = readStartSettings(process.env)
 
@@ -27,6 +28,7 @@ const {
   smokeToken,
   resendKey,
   resendFrom,
+  r2,
 } = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
@@ -40,6 +42,7 @@ const server = createApi({
   publicOrigin,
   siteOrigin,
   resource,
+  ...(r2 === undefined ? {} : { originals: new R2OriginalStore(r2) }),
   ...(cookieDomain === undefined ? {} : { cookieDomain }),
   send: (mail) => sendWithResend(mail, { key: resendKey, from: resendFrom }),
   ...(hosts === undefined ? {} : { hosts }),

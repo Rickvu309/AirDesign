@@ -13,6 +13,7 @@ import {
   readHost,
   readLinkToken,
   readNoFields,
+  readOriginalUpload,
   readRename,
   readRevokeRequest,
   readSessionCookie,
@@ -32,6 +33,8 @@ import { DeckListen } from "./listen.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
+import { downloadOriginal, finishOriginal, uploadOriginal } from "./original.js"
+import type { OriginalStore } from "./original-store.js"
 import { checkedResource, readUrl } from "./resource.js"
 import { chosenRevision, commitEdits, openSaved, readSaved } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
@@ -51,6 +54,7 @@ export type ApiOptions = {
   readonly resource: string
   readonly commit?: string
   readonly smokeToken?: string
+  readonly originals?: OriginalStore
 }
 
 type ServedOptions = ApiOptions & { readonly turns: Map<string, Turns> }
@@ -308,14 +312,24 @@ async function linkRoute({ options, query, res }: Visit): Promise<void> {
 
 function deckRoute<Read extends Reader>(
   read: Read,
-  answer: (db: Sql, parsed: Accepted<Read>, email: string) => Promise<unknown>,
+  answer: (
+    db: Sql,
+    parsed: Accepted<Read>,
+    email: string,
+    store: OriginalStore | undefined,
+    mint: () => string,
+  ) => Promise<unknown>,
 ): Serve {
   return async (visit) => {
     const email = await signedIn(visit)
     if (email === undefined) return
     const parsed = await readJson(visit, read)
     if (parsed === undefined) return
-    sendJson(visit.res, 200, accepted(parsed) ? await answer(visit.options.deck, parsed, email) : parsed)
+    sendJson(
+      visit.res,
+      200,
+      accepted(parsed) ? await answer(visit.options.deck, parsed, email, visit.options.originals, visit.mint) : parsed,
+    )
   }
 }
 
@@ -462,11 +476,26 @@ export const routes: readonly Route[] = [
   { method: "POST", path: "/decks/open", serve: deckRoute(readCapture, openSaved) },
   { method: "POST", path: "/decks/commit", serve: deckRoute(readCommit, commitEdits) },
   { method: "POST", path: "/decks/watch", serve: watchRoute },
-  { method: "POST", path: "/decks/list", serve: deckRoute(readNoFields, (db, _, email) => listDecks(db, email)) },
+  {
+    method: "POST",
+    path: "/decks/list",
+    serve: deckRoute(readNoFields, (db, _, email, store) => listDecks(db, email, store)),
+  },
   { method: "POST", path: "/decks/rename", serve: deckRoute(readRename, renameDeck) },
   { method: "POST", path: "/decks/trash", serve: deckRoute(readCapture, trashDeck) },
   { method: "POST", path: "/decks/restore", serve: deckRoute(readCapture, restoreDeck) },
   { method: "POST", path: "/decks/delete", serve: deckRoute(readDecks, deleteDecks) },
+  { method: "POST", path: "/decks/original/upload", serve: deckRoute(readOriginalUpload, uploadOriginal) },
+  {
+    method: "POST",
+    path: "/decks/original/done",
+    serve: deckRoute(readCapture, (db, parsed, email, store) => finishOriginal(db, parsed.deck, email, store)),
+  },
+  {
+    method: "POST",
+    path: "/decks/original",
+    serve: deckRoute(readCapture, (db, parsed, email, store) => downloadOriginal(db, parsed.deck, email, store)),
+  },
 ]
 
 function causedByInput(error: unknown): boolean {
