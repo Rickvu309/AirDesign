@@ -68,5 +68,25 @@
     "errors": 0,
     "dupes": 1,
     "pages": true
+  },
+  {
+    "name": "tall-glyph-text",
+    "before": "tall-glyph-before.pptx",
+    "after": "tall-glyph-after.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "one-letter-other-page",
+    "before": "tall-glyph-before.pptx",
+    "after": "tall-glyph-letter.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": false
   }
 ]
