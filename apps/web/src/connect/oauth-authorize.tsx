@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
 import { claudeCodeConnect, claudeConnect, codexConnect, otherConnect, refusedConnect } from "@/connect/connect-copy"
-import { authorizationError, oauthErrorRedirect } from "@/connect/oauth-request"
+import { authorizationError, navigableAddress, oauthErrorRedirect } from "@/connect/oauth-request"
 
 type Agent = "claude" | "codex" | null
 type Screen = "claude" | "claude-code" | "codex" | "other"
@@ -173,6 +173,21 @@ async function consentRequest(): Promise<
   }
 }
 
+function leave(address: string, setView: (view: View) => void, connected?: Consent) {
+  const destination = navigableAddress(address)
+  if (destination === null) {
+    setView({ kind: "refused" })
+    return
+  }
+  const go = () => window.location.assign(destination)
+  if (connected === undefined) {
+    go()
+    return
+  }
+  setView({ kind: "connected", consent: connected })
+  window.setTimeout(go, 700)
+}
+
 export function OAuthAuthorize() {
   const started = useRef(false)
   const approving = useRef(false)
@@ -184,7 +199,7 @@ export function OAuthAuthorize() {
     started.current = true
     void consentRequest().then((answer) => {
       if (answer.kind === "redirect") {
-        window.location.assign(answer.address)
+        leave(answer.address, setView)
         return
       }
       if (answer.kind === "refused") {
@@ -197,7 +212,7 @@ export function OAuthAuthorize() {
 
   function deny(consent: Consent) {
     try {
-      window.location.assign(oauthErrorRedirect(consent.redirectUri, "access_denied", consent.state))
+      leave(oauthErrorRedirect(consent.redirectUri, "access_denied", consent.state), setView)
     } catch {
       setView({ kind: "refused" })
     }
@@ -236,9 +251,7 @@ export function OAuthAuthorize() {
       return
     }
 
-    const redirect = answer.body.redirect
-    setView({ kind: "connected", consent })
-    window.setTimeout(() => window.location.assign(redirect), 700)
+    leave(answer.body.redirect, setView, consent)
   }
 
   if (view.kind === "loading") return null

@@ -23,6 +23,15 @@ function authorizePath(overrides: Record<string, string | null> = {}) {
   return `/oauth/authorize?${new URLSearchParams(fields)}`
 }
 
+const refusedWords = "This app can't connect to AirDesign."
+
+async function expectRefusedInPlace(page: Page) {
+  await expect(page.getByText(refusedWords, { exact: true })).toBeVisible()
+  await expect(page.locator("button")).toHaveCount(0)
+  await expect(page).toHaveURL(/\/oauth\/authorize/)
+  expect(await page.evaluate(() => Reflect.get(window, "__pwn"))).toBeUndefined()
+}
+
 async function answerClient(page: Page, payload: Record<string, unknown>, status = 200) {
   await page.route("**/oauth/client", async (route) => {
     await route.fulfill({ status, json: payload })
@@ -136,7 +145,7 @@ test("client check and account lookup send only their agreed bodies", async ({ p
     accountBody = route.request().postDataJSON()
     await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
   })
-  await page.goto(authorizePath({ resource: "https://api.example/resource" }))
+  await page.goto(authorizePath({ scope: "everything", resource: "https://api.example/resource" }))
   await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
 
   expect(clientBody).toEqual({
@@ -154,12 +163,14 @@ for (const refusal of ["client", "redirect", "resource", "field"]) {
 
     await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
     await expect(page.getByRole("button", { name: "Allow", exact: true })).toHaveCount(0)
+    await expect(page.locator("button")).toHaveCount(0)
     await expect(page).toHaveURL(/\/oauth\/authorize/)
   })
 }
 
 test("a signed-out account goes to sign-in with the intact authorization address", async ({ page }) => {
   await answerClient(page, { ok: false, refusal: "session" }, 401)
+  await page.route("**/sign-in**", (route) => route.fulfill({ contentType: "text/html", body: "<p>sign in</p>" }))
   await page.goto(authorizePath({ resource: "https://api.example/resource" }))
 
   await expect(page).toHaveURL((url) => {
@@ -193,7 +204,7 @@ test("Allow sends only the agreed fields and follows the answered redirect", asy
       screen: "claude",
       redirect_host: "claude.ai",
     },
-    authorizePath({ resource: "https://api.example/resource" }),
+    authorizePath({ scope: "everything", resource: "https://api.example/resource" }),
   )
   await page.route("**/oauth/approve", async (route) => {
     posts += 1
@@ -275,6 +286,7 @@ test("an approve refusal shows the refused words and does not navigate", async (
   await page.getByRole("button", { name: "Allow", exact: true }).click()
 
   await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
+  await expect(page.locator("button")).toHaveCount(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)
 })
 
@@ -350,3 +362,75 @@ test("nothing is posted to approve before Allow", async ({ page }) => {
   expect(approvePosts).toBe(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)
 })
+
+test("nothing paints and nothing can be clicked while the client rule is held", async ({ page }) => {
+  let release = () => {}
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await page.route("**/oauth/client", async (route) => {
+    await held
+    await route.fulfill({
+      json: { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" },
+    })
+  })
+  await page.route("**/decks/list", async (route) => {
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  })
+  const asked = page.waitForRequest("**/oauth/client")
+  await page.goto(authorizePath())
+  await asked
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve))))
+
+  await expect(page.locator("button")).toHaveCount(0)
+  await expect(page.locator("body")).toHaveText("", { useInnerText: true })
+
+  release()
+
+  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+  await expect(page.getByRole("button", { name: "Cancel", exact: true })).toBeVisible()
+})
+
+const hostileAddress = "javascript:window.__pwn=1"
+
+test("an approve answer that is not http or https shows the refused words and goes nowhere", async ({ page }) => {
+  await page.clock.install()
+  await openConsent(page)
+  await page.route("**/oauth/approve", async (route) => {
+    await route.fulfill({ json: { ok: true, redirect: hostileAddress } })
+  })
+
+  await page.getByRole("button", { name: "Allow", exact: true }).click()
+
+  await expectRefusedInPlace(page)
+  await expect(page.getByRole("heading", { name: "Connected", exact: true })).toHaveCount(0)
+  await page.clock.runFor(2000)
+  await expectRefusedInPlace(page)
+})
+
+test("Deny with a cleared address that is not http or https shows the refused words and goes nowhere", async ({
+  page,
+}) => {
+  await openConsent(
+    page,
+    { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" },
+    authorizePath({ redirect_uri: `${hostileAddress};//` }),
+  )
+
+  await page.getByRole("button", { name: "Cancel", exact: true }).click()
+
+  await expectRefusedInPlace(page)
+})
+
+for (const invalid of [
+  { name: "an unsupported response type", query: { response_type: "token" } },
+  { name: "a missing challenge", query: { code_challenge: null } },
+]) {
+  test(`${invalid.name} with a cleared address that is not http or https goes nowhere`, async ({ page }) => {
+    await answerClient(page, { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" })
+
+    await page.goto(authorizePath({ ...invalid.query, redirect_uri: `${hostileAddress};//` }))
+
+    await expectRefusedInPlace(page)
+  })
+}

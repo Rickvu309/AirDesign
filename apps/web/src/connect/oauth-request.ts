@@ -13,3 +13,9 @@ export function oauthErrorRedirect(redirectUri: string, error: OAuthError, state
   if (state !== null) redirect.searchParams.set("state", state)
   return redirect.href
 }
+
+export function navigableAddress(address: string): string | null {
+  if (!URL.canParse(address)) return null
+  const destination = new URL(address)
+  return destination.protocol === "http:" || destination.protocol === "https:" ? destination.href : null
+}
