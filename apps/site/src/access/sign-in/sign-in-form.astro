@@ -14,14 +14,21 @@
 </form>
 
 <script>
-  import { rememberPendingEmail } from "../pending-sign-in-email";
+  import { rememberPendingEmail, rememberPendingNext } from "../pending-sign-in-email";
+  import { requestSignInEmail } from "../sign-in-requests";
 
-  document.querySelector<HTMLFormElement>("[data-sign-in-form]")?.addEventListener("submit", (event) => {
+  rememberPendingNext(new URLSearchParams(location.search).get("next"));
+
+  document.querySelector<HTMLFormElement>("[data-sign-in-form]")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const email = new FormData(event.currentTarget as HTMLFormElement).get("email");
-    if (typeof email === "string") {
+    if (typeof email !== "string") {
+      return;
+    }
+    const destination = await requestSignInEmail("", email);
+    if (destination !== null) {
       rememberPendingEmail(email);
-      location.assign("/sign-in/check");
+      location.assign(destination);
     }
   });
 </script>
