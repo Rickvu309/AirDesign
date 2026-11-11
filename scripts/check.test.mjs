@@ -116,3 +116,6 @@ for (const name of warnSteps) {
 for (const name of [...requiredSteps, ...localSteps]) {
   if (warnSteps.has(name)) throw new Error(`${name} already blocks and cannot go back to warnSteps`)
 }
+if (!namesIn("main").includes("commit-authors")) throw new Error("the main part must run commit-authors")
+if (!stepsWhen(true).includes("commit-authors")) throw new Error("ci must run commit-authors")
+if (warnSteps.has("commit-authors")) throw new Error("commit-authors blocks from the start")

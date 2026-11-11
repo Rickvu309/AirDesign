@@ -33,10 +33,23 @@ export const treeOf = (root, commit) => git(root, ["rev-parse", `${commit}^{tree
 
 export const isChecked = (root, commit) => fs.existsSync(path.join(stampFolder(root), treeOf(root, commit)))
 
-export const uncheckedPushes = (root, pushed) =>
+export const knowsMain = (root) => {
+  try {
+    git(root, ["rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"])
+    return true
+  } catch {
+    return false
+  }
+}
+
+export const pushedRefs = (pushed) =>
   pushed
     .split("\n")
     .map((line) => line.trim().split(/\s+/))
     .filter((words) => words.length >= 2 && /^[0-9a-f]{40}$/.test(words[1]) && !/^0+$/.test(words[1]))
-    .filter(([, commit]) => !isChecked(root, commit))
-    .map(([ref, commit]) => ({ ref, commit }))
+    .map(([ref, commit, , remote]) => ({ ref, commit, remote: /^0*$/.test(remote ?? "") ? undefined : remote }))
+
+export const uncheckedPushes = (root, pushed) =>
+  pushedRefs(pushed)
+    .filter(({ commit }) => !isChecked(root, commit))
+    .map(({ ref, commit }) => ({ ref, commit }))
