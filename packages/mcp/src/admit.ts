@@ -4,9 +4,14 @@ export type CallerLog = {
   readonly events: readonly { readonly kind: LimitKind; readonly at: number }[]
 }
 
+export type AdmissionText =
+  | `Five decks in one minute. The next deck can open in ${string} seconds.`
+  | `Thirty tool calls in five minutes. The next tool call can run in ${string} seconds.`
+  | `Twenty turns in five minutes. The next turn can start in ${string} seconds.`
+
 export type Admission =
   | { readonly ok: true; readonly log: CallerLog }
-  | { readonly ok: false; readonly log: CallerLog; readonly text: string; readonly resetsAt: number }
+  | { readonly ok: false; readonly log: CallerLog; readonly text: AdmissionText; readonly resetsAt: number }
 
 const limitOf = {
   deck: 5,
@@ -30,7 +35,7 @@ function wholeSeconds(now: number, resetsAt: number): number {
   return seconds
 }
 
-function sentence(kind: LimitKind, now: number, resetsAt: number): string {
+function sentence(kind: LimitKind, now: number, resetsAt: number): AdmissionText {
   const seconds = String(wholeSeconds(now, resetsAt))
   if (kind === "deck") return `Five decks in one minute. The next deck can open in ${seconds} seconds.`
   if (kind === "tool") return `Thirty tool calls in five minutes. The next tool call can run in ${seconds} seconds.`

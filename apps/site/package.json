@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build",
+    "build": "pnpm --filter @airdesign/site^... run build && astro check && astro build",
     "preview": "astro preview",
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {
+    "@airdesign/catalog": "workspace:*",
     "@airdesign/theme": "workspace:*",
     "@fontsource-variable/geist": "5.3.0",
     "@fontsource-variable/geist-mono": "5.3.0",

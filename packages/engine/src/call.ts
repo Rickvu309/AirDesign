@@ -8,7 +8,6 @@ import {
   type ElementId,
   type NodeRegister,
   type Register,
-  type Refusal,
 } from "@airdesign/document"
 import {
   notifyKey,
@@ -16,6 +15,7 @@ import {
   readCommit,
   readRun,
   readRunStart,
+  type CallRefusal,
   type DeckId,
   type WireChange,
   type WireEdit,
@@ -29,8 +29,6 @@ export type Deck = {
 }
 
 export type Caller = { readonly actor: "person" } | { readonly actor: "agent"; readonly runId: string }
-
-type CallRefusal = "field" | "deck" | "batch" | "base" | "stale" | "payload" | Refusal
 
 type CallResult =
   | { readonly ok: true; readonly deck: Deck; readonly key: string }

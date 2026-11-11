@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs"
 import { createServer, type Server } from "node:http"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import worker from "./api-forward.js"
+import { deckPaths, deckRoutes, oauthPaths, oauthRoutes, signInPaths, signInRoutes } from "@airdesign/catalog"
 
 type Seen = {
   method: string | undefined
@@ -62,6 +64,39 @@ function env() {
 }
 
 describe("API forwarding", () => {
+  it("forwards every catalog deck and sign-in path instead of serving assets", async () => {
+    for (const route of [...Object.values(deckRoutes), ...Object.values(signInRoutes)]) {
+      const method = "method" in route ? route.method : "POST"
+      const response = await worker.fetch(new Request(`https://example.com${route.path}`, { method }), env())
+      expect(seen.at(-1)?.url).toBe(route.path)
+      expect(response.status).toBe(route.path === signInRoutes.link.path ? 302 : 201)
+    }
+    expect(assets).toEqual([])
+  })
+  it("forwards every catalog oauth path instead of serving assets", async () => {
+    for (const route of Object.values(oauthRoutes)) {
+      const response = await worker.fetch(
+        new Request(`https://example.com${route.path}`, { method: route.method }),
+        env(),
+      )
+      expect(seen.at(-1)?.url).toBe(route.path)
+      expect(response.status).toBe(201)
+    }
+    expect(assets).toEqual([])
+  })
+
+  it("routes every catalog path to the Worker before assets", () => {
+    const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")
+    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as { assets: { run_worker_first: string[] } }
+    const entries = config.assets.run_worker_first
+    const matches = (entry: string, path: string) =>
+      entry.endsWith("/*") ? path.startsWith(entry.slice(0, -1)) : path === entry
+    const routed = (path: string) =>
+      entries.some((entry) => !entry.startsWith("!") && matches(entry, path)) &&
+      !entries.some((entry) => entry.startsWith("!") && matches(entry.slice(1), path))
+    expect([...signInPaths, ...deckPaths, ...oauthPaths].filter((path) => !routed(path))).toEqual([])
+  })
+
   it("forwards the commit request and returns the API response", async () => {
     const body = '{"edits":["é"]}'
     const response = await worker.fetch(

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import oldDeployment from "./old-deployment-passthrough.js"
 import worker from "./sign-in-forward.js"
+import { signInRoutes } from "@airdesign/catalog"
 
 type Seen = {
   method: string | undefined
@@ -49,6 +50,15 @@ afterEach(async () => {
 })
 
 describe("sign-in forwarding", () => {
+  it("forwards every catalog sign-in path", async () => {
+    for (const route of Object.values(signInRoutes)) {
+      await worker.fetch(new Request(`https://airdesign.app${route.path}`, { method: route.method }), {
+        API_ORIGIN: origin,
+      })
+      expect(seen.at(-1)?.url).toBe(route.path)
+      expect(seen.at(-1)?.method).toBe(route.method)
+    }
+  })
   it.each(["/sign-in/email", "/sign-in/code"])("forwards POST %s and returns the API response", async (path) => {
     const body = '{"email":"é@example.com"}'
     const response = await worker.fetch(

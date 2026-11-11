@@ -1,4 +1,4 @@
-import { readDeckId, type DeckId, type WireEdit } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
 import {
   currentValue,
   decide,
@@ -44,9 +44,9 @@ export type OpenDeckResult =
       readonly pending: readonly PendingRow[]
       readonly confirmed: readonly ConfirmedRow[]
     }
-  | { ok: false; readonly refusal: "field" | "deck" | "session" | "owner" }
+  | { ok: false; readonly refusal: WireRefusal }
 
-export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: string }
+export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: WireRefusal }
 
 function pairedBody(register: Register): NodeRegister | null {
   const stored = register.elements[legacyElement]

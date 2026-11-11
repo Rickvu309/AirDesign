@@ -1,7 +1,7 @@
-import { catalog, projectTools, readAgentEdit, readCapture, readRun } from "@airdesign/catalog"
+import { catalog, projectTools, readAgentEdit, readCapture, readRun, type WireRefusal } from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
-import type { CallerLog } from "./admit.js"
+import type { CallerLog, AdmissionText } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
 import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
@@ -33,7 +33,7 @@ export type ToolResult =
     }
   | {
       readonly ok: false
-      readonly refusal: string
+      readonly refusal: WireRefusal | AdmissionText
       readonly deck: Deck
       readonly content: readonly ToolContent[]
       readonly next?: string
@@ -50,11 +50,11 @@ const nextStep = {
 
 const absentTab: Tab = { presence: "absent" }
 
-function refused(deck: Deck, refusal: string): ToolResult {
+function refused(deck: Deck, refusal: WireRefusal): ToolResult {
   return { ok: false, refusal, deck, content: [{ type: "text", text: refusal }] }
 }
 
-function reached(deck: Deck, refusal: string, next: string): ToolResult {
+function reached(deck: Deck, refusal: WireRefusal, next: string): ToolResult {
   return { ok: false, refusal, deck, next, content: [{ type: "text", text: next }] }
 }
 

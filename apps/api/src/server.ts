@@ -2,23 +2,19 @@ import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 
 import {
+  deckRoutes,
+  signInRoutes,
   readApprovalRequest,
+  oauthRoutes,
   readBearer,
-  readCapture,
   readClientRequest,
   readCode,
-  readCommit,
-  readDecks,
   readEmail,
   readHost,
   readLinkToken,
-  readNoFields,
-  readOriginalUpload,
-  readRename,
   readRevokeRequest,
   readSessionCookie,
   readTokenRequest,
-  readWatch,
   sessionCookieName,
   type DeckId,
   type FormPairs,
@@ -337,7 +333,7 @@ async function watchRoute(visit: Visit): Promise<void> {
   const { options, res } = visit
   const email = await signedIn(visit)
   if (email === undefined) return
-  const parsed = await readJson(visit, readWatch)
+  const parsed = await readJson(visit, deckRoutes.watch.read)
   if (parsed === undefined) return
   if (!parsed.ok) {
     sendJson(res, 200, parsed)
@@ -466,35 +462,43 @@ export const routes: readonly Route[] = [
   { method: "POST", path: "/smoke/session", serve: smokeRoute },
   { method: "any", path: "/mcp", serve: mcpRoute },
   { method: "POST", path: "/oauth/register", serve: registerRoute },
-  { method: "POST", path: "/oauth/client", serve: clientRoute },
-  { method: "POST", path: "/oauth/approve", serve: approveRoute },
+  { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
+  { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },
   { method: "POST", path: "/oauth/token", serve: tokenRoute, cap: formCap },
   { method: "POST", path: "/oauth/revoke", serve: revokeRoute, cap: formCap },
-  { method: "POST", path: "/sign-in/email", serve: emailRoute },
-  { method: "POST", path: "/sign-in/code", serve: codeRoute },
-  { method: "GET", path: "/sign-in/link", serve: linkRoute },
-  { method: "POST", path: "/decks/open", serve: deckRoute(readCapture, openSaved) },
-  { method: "POST", path: "/decks/commit", serve: deckRoute(readCommit, commitEdits) },
-  { method: "POST", path: "/decks/watch", serve: watchRoute },
+  { method: "POST", path: signInRoutes.email.path, serve: emailRoute },
+  { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
+  { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
+  { method: "POST", path: deckRoutes.open.path, serve: deckRoute(deckRoutes.open.read, openSaved) },
+  { method: "POST", path: deckRoutes.commit.path, serve: deckRoute(deckRoutes.commit.read, commitEdits) },
+  { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
   {
     method: "POST",
-    path: "/decks/list",
-    serve: deckRoute(readNoFields, (db, _, email, store) => listDecks(db, email, store)),
+    path: deckRoutes.list.path,
+    serve: deckRoute(deckRoutes.list.read, (db, _, email, store) => listDecks(db, email, store)),
   },
-  { method: "POST", path: "/decks/rename", serve: deckRoute(readRename, renameDeck) },
-  { method: "POST", path: "/decks/trash", serve: deckRoute(readCapture, trashDeck) },
-  { method: "POST", path: "/decks/restore", serve: deckRoute(readCapture, restoreDeck) },
-  { method: "POST", path: "/decks/delete", serve: deckRoute(readDecks, deleteDecks) },
-  { method: "POST", path: "/decks/original/upload", serve: deckRoute(readOriginalUpload, uploadOriginal) },
+  { method: "POST", path: deckRoutes.rename.path, serve: deckRoute(deckRoutes.rename.read, renameDeck) },
+  { method: "POST", path: deckRoutes.trash.path, serve: deckRoute(deckRoutes.trash.read, trashDeck) },
+  { method: "POST", path: deckRoutes.restore.path, serve: deckRoute(deckRoutes.restore.read, restoreDeck) },
+  { method: "POST", path: deckRoutes.delete.path, serve: deckRoute(deckRoutes.delete.read, deleteDecks) },
   {
     method: "POST",
-    path: "/decks/original/done",
-    serve: deckRoute(readCapture, (db, parsed, email, store) => finishOriginal(db, parsed.deck, email, store)),
+    path: deckRoutes.originalUpload.path,
+    serve: deckRoute(deckRoutes.originalUpload.read, uploadOriginal),
   },
   {
     method: "POST",
-    path: "/decks/original",
-    serve: deckRoute(readCapture, (db, parsed, email, store) => downloadOriginal(db, parsed.deck, email, store)),
+    path: deckRoutes.originalDone.path,
+    serve: deckRoute(deckRoutes.originalDone.read, (db, parsed, email, store) =>
+      finishOriginal(db, parsed.deck, email, store),
+    ),
+  },
+  {
+    method: "POST",
+    path: deckRoutes.original.path,
+    serve: deckRoute(deckRoutes.original.read, (db, parsed, email, store) =>
+      downloadOriginal(db, parsed.deck, email, store),
+    ),
   },
 ]
 

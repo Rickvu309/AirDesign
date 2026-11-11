@@ -1,31 +1,16 @@
-import { readCommit, readDeckId, readWatch, type DeckId, type WireEdit } from "@airdesign/catalog"
+import {
+  deckRoutes,
+  readCapture,
+  readCommit,
+  readWatch,
+  type WireEdit,
+  type OpenResult,
+  type CommitResult,
+  type WatchResult,
+} from "@airdesign/catalog"
 import { decide, openRegister, type Register } from "@airdesign/document"
 
-export type OpenResult =
-  | { ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Register }
-  | { ok: false; readonly refusal: "field" | "deck" | "session" | "owner" }
-
-export type CommitRefusal =
-  | "field"
-  | "deck"
-  | "batch"
-  | "payload"
-  | "stale"
-  | "person-protected"
-  | "run-fenced"
-  | "dead"
-  | "present"
-  | "limit"
-  | "session"
-  | "owner"
-
-export type CommitResult =
-  | { ok: true; readonly deck: DeckId; readonly revision: number; readonly key: string }
-  | { ok: false; readonly refusal: CommitRefusal }
-
-export type WatchResult =
-  | { ok: true; readonly deck: DeckId; readonly revision: number }
-  | { ok: false; readonly refusal: "field" | "deck" | "cursor" | "session" | "owner" }
+export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
 
 export type Remote = {
   open(body: { readonly deck: string }): Promise<OpenResult>
@@ -36,22 +21,6 @@ export type Remote = {
 type StoredDeck = { readonly revision: number; readonly register: Register }
 
 type Waiter = { readonly cursor: number | null; readonly resolve: (revision: number) => void }
-
-const openPath = "/decks/open"
-const commitPath = "/decks/commit"
-const watchPath = "/decks/watch"
-
-function readOpen(raw: unknown): { ok: true; deck: DeckId } | { ok: false; refusal: "field" | "deck" } {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false, refusal: "field" }
-  const body = raw as Record<string, unknown>
-  for (const key of Object.keys(body)) {
-    if (key !== "deck") return { ok: false, refusal: "field" }
-  }
-  if (!Object.hasOwn(body, "deck")) return { ok: false, refusal: "field" }
-  const deck = readDeckId(body.deck)
-  if (!deck.ok) return { ok: false, refusal: "deck" }
-  return { ok: true, deck: deck.deck }
-}
 
 function readyRevision(stored: StoredDeck | undefined, cursor: number | null): number | undefined {
   if (stored === undefined) return undefined
@@ -78,7 +47,7 @@ export function memoryRemote(): Remote {
 
   return {
     async open(body) {
-      const parsed = readOpen(body)
+      const parsed = readCapture(body)
       if (!parsed.ok) return parsed
       const stored = decks.get(parsed.deck)
       if (stored === undefined) {
@@ -141,7 +110,7 @@ export function ownerRemote(): Remote {
   }
 }
 
-async function post(path: typeof openPath | typeof commitPath | typeof watchPath, body: unknown): Promise<unknown> {
+async function post(path: string, body: unknown): Promise<unknown> {
   const response = await fetch(path, {
     method: "POST",
     credentials: "same-origin",
@@ -150,14 +119,13 @@ async function post(path: typeof openPath | typeof commitPath | typeof watchPath
   })
   if (response.status === 401) return { ok: false, refusal: "session" }
   const answer: unknown = await response.json().catch(() => null)
-  if (typeof answer !== "object" || answer === null || Array.isArray(answer)) return { ok: false, refusal: "payload" }
   return answer
 }
 
 export function httpRemote(): Remote {
   return {
-    open: (body) => post(openPath, body) as Promise<OpenResult>,
-    commit: (body) => post(commitPath, body) as Promise<CommitResult>,
-    watch: (body) => post(watchPath, body) as Promise<WatchResult>,
+    open: async (body) => deckRoutes.open.result(await post(deckRoutes.open.path, body)),
+    commit: async (body) => deckRoutes.commit.result(await post(deckRoutes.commit.path, body)),
+    watch: async (body) => deckRoutes.watch.result(await post(deckRoutes.watch.path, body)),
   }
 }
