@@ -13,7 +13,6 @@ import {
   applyRoute,
   exportPackage,
   paintReader,
-  prepareMarkup,
   readPackage,
   readShapes,
   readSlides,
@@ -23,29 +22,14 @@ import { paintStore, SlideCanvas, textValue, type PaintStore } from "@airdesign/
 import { useCallback, useEffect, useRef, useState } from "react"
 import { paintKind, slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
-import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
 import { commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
 import { exportedParts } from "@/exported-parts"
-
-let markup: Promise<void> | null = null
-
-function ensureMarkup(): Promise<void> {
-  if (markup === null) {
-    markup = fetch(wasmUrl)
-      .then(async (response) => {
-        await prepareMarkup(new Uint8Array(await response.arrayBuffer()))
-      })
-      .catch((error: unknown) => {
-        markup = null
-        throw error
-      })
-  }
-  return markup
-}
+import { importDeck, nameImportedDeck } from "@/import-deck"
+import { ensureMarkup } from "@/markup"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -111,10 +95,6 @@ export function shownValue(register: Register | null, id: ElementId, file: strin
   return body === undefined ? file : currentValue(body)
 }
 
-export function deckName(fileName: string): string {
-  return fileName.replace(/\.pptx$/i, "")
-}
-
 function paint(
   store: PaintStore,
   parts: ReadonlyMap<string, Uint8Array>,
@@ -155,26 +135,6 @@ function paint(
   return { count: read.length, canvases: slideCanvases(paintReader(parts), sources), boxes, shapes: rows }
 }
 
-export async function saveDeck(
-  parts: ReadonlyMap<string, Uint8Array>,
-  file: Uint8Array,
-  name?: string,
-): Promise<string | null> {
-  const deckId = crypto.randomUUID()
-  const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
-  return saved.ok ? deckId : null
-}
-
-export async function importDeck(file: File) {
-  await ensureMarkup()
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  const read = await readPackage(bytes)
-  if (!read.ok) return null
-  const name = deckName(file.name)
-  const id = await saveDeck(read.parts, bytes, name)
-  return id === null ? null : { id, name, parts: read.parts, file: bytes }
-}
-
 async function listedName(deck: string): Promise<string | undefined> {
   try {
     const response = await fetch(deckRoutes.list.path, {
@@ -203,18 +163,6 @@ export async function deckParts(deck: string) {
     ...(name === undefined ? {} : { name }),
   })
   return saved.ok ? saved : null
-}
-
-export async function nameImportedDeck(deck: string, name: string) {
-  try {
-    const opened = await connect(server).open(deck)
-    if (!opened.ok) return
-    await fetch(deckRoutes.rename.path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ deck, name: name.slice(0, 200) }),
-    })
-  } catch {}
 }
 
 export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" | "deck" }) {
@@ -310,7 +258,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       }
       const { id: nextId, name, parts } = imported
       window.history.replaceState(null, "", `/${route}/${nextId}`)
-      void nameImportedDeck(nextId, file.name).then(() => sendOriginal(nextId, imported.file))
+      void nameImportedDeck(imported).then(() => sendOriginal(nextId, imported.file))
       shownDeck.current = nextId
       setDeckId(nextId)
       setPending(false)

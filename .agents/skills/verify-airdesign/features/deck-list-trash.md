@@ -27,10 +27,10 @@ Preconditions:
 - The person owns at least one deck. The journey imports `clean.pptx` to make one.
 
 - **Run it.** `$V journey <run> deck-list-trash`. Prints `"passed":true`.
-- **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean.pptx`.
-- **Listed.** Open `/`. `heading "clean.pptx"` is visible. Evidence `NN-home-lists-deck`.
-- **Move to Trash.** Click `button "Move to Trash"`. The text `clean.pptx moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
-- **Trash.** Open `/trash`. `heading "clean.pptx"` is visible. Evidence `NN-trash-lists-deck`.
+- **Make a deck.** Import `clean.pptx` from Home. Poll `post(deckRoutes.list, {})` until the deck's name is `clean`, the file name without `.pptx`.
+- **Listed.** Open `/`. `heading "clean"` is visible. Evidence `NN-home-lists-deck`.
+- **Move to Trash.** Click `button "Move to Trash"`. The text `clean moved to Trash` appears. `deckRoutes.list` shows the deck under `trash`. Evidence `NN-moved-to-trash`, `NN-api-decks-list.json`.
+- **Trash.** Open `/trash`. `heading "clean"` is visible. Evidence `NN-trash-lists-deck`.
 - **Restore.** Click `button "Restore"`. The heading leaves Trash, `deckRoutes.list` lists the deck under `decks`, and Home shows it again. Evidence `NN-restored`.
 - **Empty Trash.** Not in the journey. In a scratch journey: move to Trash, open `/trash`, click `Empty Trash`, then `Delete for good`. `deckRoutes.list` no longer has the deck anywhere and `deckRoutes.open` refuses it.
 - **Signed out.** Not in the journey. Open `/` without `signIn()`. The page goes to `/sign-in?next=%2F`, which this stack does not serve (see `sign-in.md`).

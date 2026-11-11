@@ -98,7 +98,7 @@ test("choosing a file opens its deck and posts the filename rename", async ({ pa
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   expect(calls.find((call) => call.path === "rename")?.body).toEqual({
     deck: page.url().split("/").at(-1),
-    name: "clean.pptx",
+    name: "clean",
   })
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello")
 })

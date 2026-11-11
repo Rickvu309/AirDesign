@@ -5,7 +5,7 @@ A signed-in person chooses a PowerPoint file on Home. AirDesign opens it as a ne
 ## Sub-features
 
 - `import-open` choosing a `.pptx` on Home opens it at `/deck/<id>` and shows its text.
-- `import-name` the new deck takes the file name (`clean.pptx`) through `deckRoutes.rename`.
+- `import-name` the new deck takes the file name without `.pptx` (`clean` for `clean.pptx`) through `deckRoutes.rename`, the same name the editor shows.
 - `edit-text` typing replaces the text box's text on screen.
 - `edit-save` the edit lands on the server: `deckRoutes.open` returns the typed text.
 - `edit-reopen` with the local edit rows gone, opening the deck again shows the server's text.
