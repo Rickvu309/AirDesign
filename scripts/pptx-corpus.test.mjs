@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url"
 import { seedFrom, settleRun } from "./judge-proof.mjs"
 import {
   afterRender,
+  browserExports,
   checkFails,
   committedArgs,
   corpusDecision,
@@ -14,6 +15,7 @@ import {
   corpusMisses,
   corpusResult,
   judgedDecks,
+  lateRenders,
   readCorpus,
   rendersOf,
   rotatingDecks,
@@ -92,6 +94,30 @@ same("the corpus path judges and renders every deck once, and excuses nothing", 
   excusable: false,
   announce: "corpus every deck, 6 decks",
 })
+const twoExports = ["browser.pptx", "paragraphs.pptx"]
+const exportCases = [...decisionCases, { before: "doe.pptx", after: "paragraphs.pptx" }]
+const twoExportDecision = corpusDecision({
+  argv: ["node", "pptx-check.mjs"],
+  seeds: seedRows,
+  listed: names,
+  every: ["real.pptx", ...names],
+  fixed: ["census.pptx", "real.pptx"],
+  cases: exportCases,
+  browser: twoExports,
+  size: 2,
+})
+same("no browser export is rendered before the spec has written it", twoExportDecision.renders, [
+  ...caseRenders,
+  "doe.pptx",
+])
+same(
+  "every browser export a case renders waits for the spec",
+  lateRenders({ cases: exportCases, browser: twoExports }),
+  ["browser.pptx", "paragraphs.pptx"],
+)
+same("an export no case renders is not rendered at all", lateRenders({ cases: decisionCases, browser: twoExports }), [
+  "browser.pptx",
+])
 same("a replayed seed is not excused", decide([], [{ seed: 1, fresh: false }]).excusable, false)
 
 const pullDecision = decide([], seedRows)
@@ -163,10 +189,15 @@ for (const follows of [
   seeds: proofSeeds,
   ...inputs,
   cases,
-  browser: browserExportName,
+  browser: browserExports,
 })`,
   "const waiting = [...decision.renders]",
   'committedArgs("HEAD")',
+  "for (const name of browserExports) committed.delete(name)",
+  "waiting.push(...lateRenders({ cases, browser: browserExports }))",
+  "const exportPaths = new Map(browserExports.map((name) => [name, exportPath(name)]))",
+  "const fixturePath = (name) => exportPaths.get(name) ?? path.join(root, decision.deckPath(name))",
+  "if (browserExports.includes(name)) continue",
   "for (const name of decision.routeDecks)",
   "for (const deck of decision.hardOf(writtenDecks))",
   'decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))',
