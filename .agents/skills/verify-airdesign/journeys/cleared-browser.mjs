@@ -47,6 +47,8 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await editor.pressSequentially(typed, { delay: 20 })
   await expect.poll(async () => textsIn((await post(deckRoutes.open, { deck }, cookie)).json.register)).toEqual([typed])
   note(`deck ${deck} paints ${String(painted)} elements and the server reads "${typed}"`)
+  await expect.poll(async () => (await post(deckRoutes.original, { deck }, cookie)).json.ok).toBe(true)
+  note(`the server keeps the original file of deck ${deck}`)
   const deckUrl = page.url()
   await page.goto("/version")
   await clearBrowser(page)
@@ -54,5 +56,6 @@ export default async function drive({ repo, page, signIn, post, capture, note, d
   await capture("reopened-cleared")
   await expect(page.locator('[contenteditable="true"]')).toHaveText(typed)
   await expect(page.locator("[data-canvas-element]")).toHaveCount(painted)
+  await capture("reopened-painted")
   note("after clearing IndexedDB, local storage and site files, the reopened slide shows its text and every element")
 }

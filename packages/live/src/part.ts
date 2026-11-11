@@ -69,13 +69,13 @@ export async function getParts(deck: string): Promise<PartsResult> {
   return { ok: true, parts, file, ...(stored.name === undefined ? {} : { name: stored.name }) }
 }
 
-function hex(buffer: ArrayBuffer): string {
+export function hex(buffer: ArrayBuffer): string {
   let text = ""
   for (const byte of new Uint8Array(buffer)) text += byte.toString(16).padStart(2, "0")
   return text
 }
 
-function owned(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+export function owned(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const copy = new Uint8Array(new ArrayBuffer(bytes.byteLength))
   copy.set(bytes)
   return copy

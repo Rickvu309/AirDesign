@@ -170,6 +170,26 @@ function serveFile(pathname, res) {
   createReadStream(file).pipe(res)
 }
 
+const originalBase = "/verify-original"
+
+function serveOriginal(originals, pathname, req, res) {
+  const chunks = []
+  req.on("data", (chunk) => chunks.push(chunk))
+  req.on("end", () => {
+    try {
+      if (req.method === "PUT") {
+        originals.put(pathname, new Uint8Array(Buffer.concat(chunks)), req.headers)
+        res.writeHead(200).end()
+        return
+      }
+      const bytes = originals.get(pathname)
+      res.writeHead(200, { "content-type": "application/octet-stream" }).end(Buffer.from(bytes))
+    } catch (error) {
+      res.writeHead(req.method === "PUT" ? 412 : 404).end(String(error.message ?? error))
+    }
+  })
+}
+
 async function serve(run) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
@@ -207,6 +227,7 @@ async function serve(run) {
   const deck = openPool(environment.DECK_DATABASE_URL, "verify-deck")
   const listen = new DeckListen(environment.LISTEN_DATABASE_URL)
   const mailFile = path.join(scratchDir(run), "mail.jsonl")
+  const originals = new LocalOriginalStore(Date.now, originalBase)
   const api = createApi({
     session,
     deck,
@@ -215,7 +236,7 @@ async function serve(run) {
     siteOrigin: "https://site.example",
     resource: "https://mcp.example.test/mcp",
     commit: state.commit,
-    originals: new LocalOriginalStore(),
+    originals,
     send: async (mail) => {
       appendFileSync(mailFile, `${JSON.stringify(mail)}\n`)
     },
@@ -225,6 +246,10 @@ async function serve(run) {
   const apiPaths = new Set(routes.map((route) => route.path))
   const front = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", "http://front").pathname
+    if (pathname.startsWith(`${originalBase}/`)) {
+      serveOriginal(originals, pathname, req, res)
+      return
+    }
     if (apiPaths.has(pathname) && !(req.method === "GET" && pathname.startsWith("/oauth/authorize"))) {
       forward(req, res, apiPort)
       return

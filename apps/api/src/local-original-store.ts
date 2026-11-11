@@ -19,14 +19,16 @@ export class LocalOriginalStore implements OriginalStore {
   private next = 0
 
   private readonly now: () => number
+  private readonly base: string
 
-  constructor(now: () => number = Date.now) {
+  constructor(now: () => number = Date.now, base = "https://original.test") {
     this.now = now
+    this.base = base
   }
 
   private signed(key: string, method: "PUT" | "GET", headers: Readonly<Record<string, string>>): OriginalUpload {
     const until = this.now() + originalLifetime
-    const url = `https://original.test/${String(++this.next)}`
+    const url = `${this.base}/${String(++this.next)}`
     this.permits.set(url, { key, method, until, headers })
     return { url, headers, expires: new Date(until).toISOString() }
   }

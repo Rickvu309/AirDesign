@@ -110,7 +110,7 @@ export function ownerRemote(): Remote {
   }
 }
 
-async function post(path: string, body: unknown): Promise<unknown> {
+export async function post(path: string, body: unknown): Promise<unknown> {
   const response = await fetch(path, {
     method: "POST",
     credentials: "same-origin",
