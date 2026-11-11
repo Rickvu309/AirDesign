@@ -68,10 +68,8 @@ export function editLanded(deck: Deck, nodes: readonly ElementId[]): EditResult 
 
 export function editRefusal(deck: Deck, code: EditCode, nodes: readonly ElementId[], detail?: string): EditResult {
   const elements = heldElements(deck.register, nodes)
-  const closed = elements.some((element) => element.closed === true)
-  const refusal = code === "stale" && closed ? "person-protected" : code
-  const answer: EditAnswer = { ok: false, revision: deck.revision, refusal, elements }
-  const lead = { type: "text" as const, text: editSentence(refusal) }
+  const answer: EditAnswer = { ok: false, revision: deck.revision, refusal: code, elements }
+  const lead = { type: "text" as const, text: editSentence(code) }
   const content = detail === undefined ? [lead] : [lead, { type: "text" as const, text: detail }]
-  return { ok: false, refusal, deck, answer, content: [...content, answerBlock(answer)] }
+  return { ok: false, refusal: code, deck, answer, content: [...content, answerBlock(answer)] }
 }
