@@ -6,9 +6,12 @@ describe("safeNextPath", () => {
     expect(safeNextPath("/thin/abc?x=1")).toBe("/thin/abc?x=1")
   })
 
-  it.each(["//evil.example", "https://evil.example", "/\\evil", "", null, undefined])("falls back to the root for %s", (value) => {
-    expect(safeNextPath(value)).toBe("/")
-  })
+  it.each(["//evil.example", "https://evil.example", "/\\evil", "", null, undefined])(
+    "falls back to the root for %s",
+    (value) => {
+      expect(safeNextPath(value)).toBe("/")
+    },
+  )
 })
 
 describe("appDestination", () => {
