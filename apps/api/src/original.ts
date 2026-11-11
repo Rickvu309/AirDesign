@@ -55,9 +55,18 @@ export async function uploadOriginal(
   )
   const row = result.rows[0]
   if (row?.original_key === undefined || row.original_key === null) return refused("present")
-  return { ok: true, ...(await store.upload(row.original_key, parsed.bytes)) }
+  const signed = await store.upload(row.original_key, parsed.bytes)
+  await db.query(
+    `with kept as (
+       update deck.saved set original_until = greatest(original_until, $2::timestamptz + interval '1 minute')
+       where original_key = $1 returning original_until
+     )
+     update deck.original_delete set expires = greatest(expires, $2::timestamptz + interval '1 minute')
+     where key = $1`,
+    [row.original_key, signed.expires],
+  )
+  return { ok: true, ...signed }
 }
-
 export async function finishOriginal(db: Sql, deck: DeckId, email: string, store?: OriginalStore): Promise<unknown> {
   const row = await owned(db, deck, email)
   if (row === undefined) return refused("owner")
