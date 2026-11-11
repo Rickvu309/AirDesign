@@ -67,15 +67,23 @@ export function DeckRow({
   )
 }
 
-export function DeckTable({ rows }: { rows: DeckRowData[] }) {
+export function DeckTableHeader() {
   return (
-    <div className="mt-8">
+    <>
       <div className="grid h-[var(--space-24)] grid-cols-[minmax(0,1fr)_150px_150px] items-start px-3 text-[length:var(--type-dense)] leading-[17px] text-faint">
         <SortLabel>Name</SortLabel>
         <SortLabel>Edited</SortLabel>
         <SortLabel>Created</SortLabel>
       </div>
       <div className="h-px bg-line" />
+    </>
+  )
+}
+
+export function DeckTable({ rows }: { rows: DeckRowData[] }) {
+  return (
+    <div className="mt-8">
+      <DeckTableHeader />
       {rows.map((deck) => (
         <DeckRow key={deck.name} name={deck.name} edited={deck.edited} created={deck.created} />
       ))}

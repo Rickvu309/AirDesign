@@ -3,7 +3,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { DeckBrowser } from "@/decks/deck-browser"
 import { DeckCard, DeckGrid } from "@/decks/deck-card"
-import { DeckRow } from "@/decks/deck-row"
+import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { NewDeckMenu } from "@/decks/new-deck-menu"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
@@ -154,22 +154,25 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
             ))
           : null}
       </DeckGrid>
-      {listView &&
-        !trash &&
-        decks.map((deck) => (
-          <DeckRow
-            key={deck.deck}
-            name={deck.name}
-            edited={deckTime(deck.edited, now()).row}
-            created={deckTime(deck.created, now()).created}
-            href={`/deck/${deck.deck}`}
-            action={
-              <Button variant="ghost" size="sm" onClick={() => void move(deck)}>
-                Move to Trash
-              </Button>
-            }
-          />
-        ))}
+      {listView && !trash && (
+        <div className="mt-8">
+          <DeckTableHeader />
+          {decks.map((deck) => (
+            <DeckRow
+              key={deck.deck}
+              name={deck.name}
+              edited={deckTime(deck.edited, now()).row}
+              created={deckTime(deck.created, now()).created}
+              href={`/deck/${deck.deck}`}
+              action={
+                <Button variant="ghost" size="sm" onClick={() => void move(deck)}>
+                  Move to Trash
+                </Button>
+              }
+            />
+          ))}
+        </div>
+      )}
       {deleting && (
         <EmptyTrashDialog
           count={deleting.length}
