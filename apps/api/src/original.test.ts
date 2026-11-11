@@ -422,3 +422,23 @@ it("scopes each original key to its account and deck", async () => {
   expect((await key(two)).startsWith(`originals/${account("original@example.com")}/${two}/`)).toBe(true)
   expect(new Set([first, second, await key(one), await key(two)]).size).toBe(4)
 })
+
+it("keeps a deleted key until its actual signed upload expires", async () => {
+  const id = await deck()
+  const late = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+  const real = store.upload.bind(store)
+  const signing = vi.spyOn(store, "upload").mockImplementation(async (object, size) => ({
+    ...(await real(object, size)),
+    expires: late,
+  }))
+  try {
+    await upload(id)
+  } finally {
+    signing.mockRestore()
+  }
+  const object = await key(id)
+  await post("/decks/trash", { deck: id })
+  await post("/decks/delete", { decks: [id] })
+  const kept = await admin.query<{ expires: Date }>("select expires from deck.original_delete where key = $1", [object])
+  expect(kept.rows[0]?.expires.getTime()).toBeGreaterThanOrEqual(Date.parse(late) + 60 * 1000)
+})
