@@ -309,7 +309,9 @@ function slideNumber(parts: ReadonlyMap<string, string>, slide: string): number 
     (each) => each[0].includes(`Target="${target}"`),
   )
   const id = relationship === undefined ? undefined : /Id="([^"]+)"/.exec(relationship[0])?.[1]
-  const order = [...part(parts, "ppt/presentation.xml").matchAll(/<p:sldId\s[^>]*r:id="([^"]+)"/g)].map((each) => each[1])
+  const order = [...part(parts, "ppt/presentation.xml").matchAll(/<p:sldId\s[^>]*r:id="([^"]+)"/g)].map(
+    (each) => each[1],
+  )
   if (id === undefined || !order.includes(id)) throw new Error(`no order for ${slide}`)
   return order.indexOf(id) + 1
 }
@@ -421,7 +423,9 @@ test("a shape paints its own fill and its own line", async ({ page }) => {
   const lineStyle = /<a:lnRef idx="(\d+)"/.exec(shape)?.[1]
   if (fill === null || line === undefined || lineStyle === undefined) throw new Error("no fill or line")
   const master = relationshipTarget(parts, relationshipTarget(parts, slide, "slideLayout"), "slideMaster")
-  const styles = /<a:lnStyleLst>(.*?)<\/a:lnStyleLst>/s.exec(part(parts, relationshipTarget(parts, master, "theme")))?.[1]
+  const styles = /<a:lnStyleLst>(.*?)<\/a:lnStyleLst>/s.exec(
+    part(parts, relationshipTarget(parts, master, "theme")),
+  )?.[1]
   const widths = [...(styles ?? "").matchAll(/<a:ln\s[^>]*w="(\d+)"/g)].map((each) => Number(each[1]))
   const width = widths[Number(lineStyle) - 1]
   if (width === undefined) throw new Error("no line width")
@@ -429,7 +433,9 @@ test("a shape paints its own fill and its own line", async ({ page }) => {
   await showSlide(page, slideNumber(parts, slide))
   const scale = await canvasScale(page, parts)
   const element = page.locator(`[data-canvas-element="${slide}#6"]`)
-  const opaque = rgb(fill[1] ?? "").replace("rgb(", "rgba(").replace(")", "")
+  const opaque = rgb(fill[1] ?? "")
+    .replace("rgb(", "rgba(")
+    .replace(")", "")
   await expect(element).toHaveCSS("background-color", `${opaque}, ${Number(fill[2]) / 100_000})`)
   const stroke = element.locator("[data-canvas-line] rect")
   await expect(stroke).toHaveCSS("stroke", rgb(line))
@@ -544,21 +550,26 @@ async function caretIn(box: Locator, run: string, offset: number): Promise<void>
 }
 
 async function runStyles(box: Locator): Promise<Record<string, Computed & { text: string }>> {
-  return box.locator("[data-run]").evaluateAll((nodes, names) => {
-    const shown: Record<string, unknown> = {}
-    for (const node of nodes) {
-      const style = getComputedStyle(node)
-      shown[node.getAttribute("data-run") ?? ""] = {
-        text: node.textContent,
-        ...Object.fromEntries(names.map((name) => [name, style.getPropertyValue(name)])),
+  return box.locator("[data-run]").evaluateAll(
+    (nodes, names) => {
+      const shown: Record<string, unknown> = {}
+      for (const node of nodes) {
+        const style = getComputedStyle(node)
+        shown[node.getAttribute("data-run") ?? ""] = {
+          text: node.textContent,
+          ...Object.fromEntries(names.map((name) => [name, style.getPropertyValue(name)])),
+        }
       }
-    }
-    return shown as Record<string, Computed & { text: string }>
-  }, [...styleNames])
+      return shown as Record<string, Computed & { text: string }>
+    },
+    [...styleNames],
+  )
 }
 
 async function storedBox(page: Page, box: Locator): Promise<void> {
-  const text = await box.locator("[data-paragraph]").evaluateAll((nodes) => nodes.map((node) => node.textContent).join("\n"))
+  const text = await box
+    .locator("[data-paragraph]")
+    .evaluateAll((nodes) => nodes.map((node) => node.textContent).join("\n"))
   await page.waitForFunction(async (expected) => {
     const rows = await new Promise<unknown[]>((resolve, reject) => {
       const request = indexedDB.open("airdesign")
@@ -646,9 +657,9 @@ test("typing keeps each run's style on its own words through a reload and the ex
   const original = await allPartsOf(nesc)
   const written = await allPartsOf(file)
   expect([...written.keys()]).toEqual([...original.keys()])
-  expect([...original].filter(([name, bytes]) => written.get(name)?.equals(bytes) !== true).map(([name]) => name)).toEqual([
-    nescSlide,
-  ])
+  expect(
+    [...original].filter(([name, bytes]) => written.get(name)?.equals(bytes) !== true).map(([name]) => name),
+  ).toEqual([nescSlide])
   const inlines = inlinesIn(paragraphsIn(shapeXml(part(saved, nescSlide), "3"))[1] ?? "")
   expect(textOf(inlines[bold.at] ?? "")).toBe(typedBold)
   expect(textOf(inlines[next.at] ?? "")).toBe(typedNext)

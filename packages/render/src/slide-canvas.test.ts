@@ -403,9 +403,20 @@ describe("SlideCanvas style", () => {
   it("falls back to the page's font and colour when a run has none", async () => {
     const plain: CanvasText = {
       ...twoRuns,
-      paragraphs: [{ from: 0, align: "left", runs: [{ from: 0, text: "a", ...styled(1, null, null) }], endStyle: styled(1, null, null) }],
+      paragraphs: [
+        {
+          from: 0,
+          align: "left",
+          runs: [{ from: 0, text: "a", ...styled(1, null, null) }],
+          endStyle: styled(1, null, null),
+        },
+      ],
     }
-    const host = await canvas({ ...wide, elements: [written(id, { text: plain })] }, 800, value([{ from: 0, text: "a" }]))
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: plain })] },
+      800,
+      value([{ from: 0, text: "a" }]),
+    )
     expect(runNode(host, "0.0").style.color).toBe("black")
     expect(runNode(host, "0.0").style.fontFamily).toBe("var(--font-sans)")
   })
