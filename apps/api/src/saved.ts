@@ -1,3 +1,4 @@
+import type { DeckAnswers } from "./deck-answer.js"
 import { notifyKey, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
 import { foldRegister, type StoredRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
@@ -222,3 +223,8 @@ export async function commitEdits(
   }
   return { ok: false, refusal: "stale" }
 }
+
+export const savedAnswers = {
+  open: openSaved,
+  commit: commitEdits,
+} satisfies Partial<DeckAnswers>

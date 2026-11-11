@@ -1,3 +1,4 @@
+import type { DeckAnswers } from "./deck-answer.js"
 import type { DeckId } from "@airdesign/catalog"
 
 import type { Sql } from "./pool.js"
@@ -173,3 +174,11 @@ export async function deleteDecks(
   const gone = new Set(await removeDecks(db, deleteSql, [email, parsed.decks], store))
   return { ok: true, deleted: parsed.decks.filter((deck) => gone.has(deck)) }
 }
+
+export const deckListAnswers = {
+  list: (db, _, email, store) => listDecks(db, email, store),
+  rename: renameDeck,
+  trash: trashDeck,
+  restore: restoreDeck,
+  delete: deleteDecks,
+} satisfies Partial<DeckAnswers>

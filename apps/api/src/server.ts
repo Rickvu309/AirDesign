@@ -25,17 +25,18 @@ import type { CallerLog, Turns } from "@airdesign/mcp"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { type AiraSettings } from "./aira.js"
 import { airaRoute } from "./aira-route.js"
-import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
+import { deckListAnswers } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
 import { DeckListen } from "./listen.js"
+import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
-import { downloadOriginal, finishOriginal, uploadOriginal } from "./original.js"
+import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import { checkedResource, readUrl } from "./resource.js"
-import { chosenRevision, commitEdits, openSaved, readSaved } from "./saved.js"
+import { chosenRevision, savedAnswers, readSaved } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 
 export type ApiOptions = {
@@ -459,6 +460,12 @@ async function versionRoute({ options, res }: Visit): Promise<void> {
   sendJson(res, 200, { commit: options.commit ?? "unknown" })
 }
 
+export const deckAnswers: DeckAnswers = {
+  ...savedAnswers,
+  ...deckListAnswers,
+  ...originalAnswers,
+}
+
 export const routes: readonly Route[] = [
   { method: "GET", path: "/health", serve: healthRoute },
   { method: "GET", path: "/version", serve: versionRoute },
@@ -473,37 +480,8 @@ export const routes: readonly Route[] = [
   { method: "POST", path: signInRoutes.email.path, serve: emailRoute },
   { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
-  { method: "POST", path: deckRoutes.open.path, serve: deckRoute(deckRoutes.open.read, openSaved) },
-  { method: "POST", path: deckRoutes.commit.path, serve: deckRoute(deckRoutes.commit.read, commitEdits) },
+  ...answeredDeckRoutes(deckAnswers, deckRoute),
   { method: "POST", path: deckRoutes.watch.path, serve: watchRoute },
-  {
-    method: "POST",
-    path: deckRoutes.list.path,
-    serve: deckRoute(deckRoutes.list.read, (db, _, email, store) => listDecks(db, email, store)),
-  },
-  { method: "POST", path: deckRoutes.rename.path, serve: deckRoute(deckRoutes.rename.read, renameDeck) },
-  { method: "POST", path: deckRoutes.trash.path, serve: deckRoute(deckRoutes.trash.read, trashDeck) },
-  { method: "POST", path: deckRoutes.restore.path, serve: deckRoute(deckRoutes.restore.read, restoreDeck) },
-  { method: "POST", path: deckRoutes.delete.path, serve: deckRoute(deckRoutes.delete.read, deleteDecks) },
-  {
-    method: "POST",
-    path: deckRoutes.originalUpload.path,
-    serve: deckRoute(deckRoutes.originalUpload.read, uploadOriginal),
-  },
-  {
-    method: "POST",
-    path: deckRoutes.originalDone.path,
-    serve: deckRoute(deckRoutes.originalDone.read, (db, parsed, email, store) =>
-      finishOriginal(db, parsed.deck, email, store),
-    ),
-  },
-  {
-    method: "POST",
-    path: deckRoutes.original.path,
-    serve: deckRoute(deckRoutes.original.read, (db, parsed, email, store) =>
-      downloadOriginal(db, parsed.deck, email, store),
-    ),
-  },
 ]
 
 function causedByInput(error: unknown): boolean {

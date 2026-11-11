@@ -1,3 +1,4 @@
+import type { DeckAnswers } from "./deck-answer.js"
 import { createHash } from "node:crypto"
 import type { DeckId, WireRefusal } from "@airdesign/catalog"
 import { limits } from "@airdesign/document"
@@ -144,3 +145,9 @@ export async function drainOriginals(
     process.stderr.write("api original drain failed\n")
   }
 }
+
+export const originalAnswers = {
+  originalUpload: uploadOriginal,
+  originalDone: (db, parsed, email, store) => finishOriginal(db, parsed.deck, email, store),
+  original: (db, parsed, email, store) => downloadOriginal(db, parsed.deck, email, store),
+} satisfies Partial<DeckAnswers>
