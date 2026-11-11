@@ -175,14 +175,19 @@ export function connect(remote: Remote) {
   const openedDecks = openedByRemote.get(remote) ?? new Set<DeckId>()
   openedByRemote.set(remote, openedDecks)
 
+  async function openOnce(deck: DeckId): Promise<{ ok: true } | Extract<OpenResult, { ok: false }>> {
+    if (openedDecks.has(deck)) return { ok: true }
+    const opened = await remote.open({ deck })
+    if (!opened.ok) return opened
+    openedDecks.add(deck)
+    return { ok: true }
+  }
+
   async function sendRows(deck: DeckId): Promise<CommitResult> {
     const { confirmed, pending } = split(await readDeck(deck))
     if (pending.length === 0) return { ok: false, refusal: "batch" }
-    if (!openedDecks.has(deck)) {
-      const opened = await remote.open({ deck })
-      if (!opened.ok) return opened
-      openedDecks.add(deck)
-    }
+    const opened = await openOnce(deck)
+    if (!opened.ok) return opened
     const sending = unsent(pending, 0)
     let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
@@ -232,6 +237,11 @@ export function connect(remote: Remote) {
           result: { ok: true, painted: body === undefined ? value : currentValue(body) },
         }
       })
+    },
+    async open(deck: string): Promise<{ ok: true } | Extract<OpenResult, { ok: false }>> {
+      const parsed = readDeckId(deck)
+      if (!parsed.ok) return parsed
+      return openOnce(parsed.deck)
     },
     async flush(deck: string): Promise<CommitResult> {
       const parsed = readDeckId(deck)
