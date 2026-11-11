@@ -967,8 +967,7 @@ function usageLedger(spec: Spec): Ledger {
   const turn = text(spec, "turn")
   return {
     spent: num(spec, "spent"),
-    hold: num(spec, "hold"),
-    turn: turn === "none" ? null : turn,
+    open: turn === "none" ? null : { turn, hold: num(spec, "hold") },
     week: num(spec, "week"),
     outside: num(spec, "outside"),
   }
@@ -977,8 +976,8 @@ function usageLedger(spec: Spec): Ledger {
 function usagePicture(ledger: Ledger) {
   return {
     spent: ledger.spent,
-    hold: ledger.hold,
-    turn: ledger.turn === null ? "none" : ledger.turn,
+    hold: ledger.open?.hold ?? 0,
+    turn: ledger.open?.turn ?? "none",
     week: ledger.week,
     outside: ledger.outside,
   }

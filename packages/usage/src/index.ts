@@ -9,10 +9,14 @@ const listPrice = {
   read: 100,
 } as const
 
+type OpenTurn = {
+  readonly turn: string
+  readonly hold: number
+}
+
 export type Ledger = {
   readonly spent: number
-  readonly hold: number
-  readonly turn: string | null
+  readonly open: OpenTurn | null
   readonly week: number
   readonly outside: number
 }
@@ -50,7 +54,7 @@ type UsageResult = {
 }
 
 export function openLedger(): Ledger {
-  return { spent: 0, hold: 0, turn: null, week: 0, outside: 0 }
+  return { spent: 0, open: null, week: 0, outside: 0 }
 }
 
 function inference(tokens: number, usOnly: boolean): number {
@@ -89,21 +93,21 @@ function accepted(ledger: Ledger): UsageResult {
 
 export function usage(ledger: Ledger, command: Command): UsageResult {
   if (command.command === "reserve") {
-    if (ledger.turn !== null) return refused(ledger)
+    if (ledger.open !== null) return refused(ledger)
     const ceiling = reserveCeiling(command)
     if (ceiling === 0 || ledger.spent + ceiling > allowance) return refused(ledger)
-    return accepted({ ...ledger, turn: command.id, hold: ceiling })
+    return accepted({ ...ledger, open: { turn: command.id, hold: ceiling } })
   }
   if (command.command === "settle") {
-    if (ledger.turn !== command.id) return refused(ledger)
-    return accepted({ ...ledger, spent: ledger.spent + settleCharge(command), hold: 0, turn: null })
+    if (ledger.open?.turn !== command.id) return refused(ledger)
+    return accepted({ ...ledger, spent: ledger.spent + settleCharge(command), open: null })
   }
   if (command.command === "release") {
-    if (ledger.turn !== command.id) return refused(ledger)
-    return accepted({ ...ledger, hold: 0, turn: null })
+    if (ledger.open?.turn !== command.id) return refused(ledger)
+    return accepted({ ...ledger, open: null })
   }
   if (command.command === "monday") {
-    if (ledger.turn !== null) return refused(ledger)
+    if (ledger.open !== null) return refused(ledger)
     return accepted({ ...ledger, spent: 0, week: ledger.week + 1 })
   }
   return accepted({ ...ledger, outside: ledger.outside + 1 })
