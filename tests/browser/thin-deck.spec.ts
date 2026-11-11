@@ -445,7 +445,7 @@ test("two text boxes keep their own edits after reload and both export", async (
   await title.pressSequentially(" Alpha", { delay: 50 })
   await stored(page, "What is a heat pump? Alpha")
   await body.click()
-  await page.keyboard.press("End")
+  await page.keyboard.press("Control+End")
   await body.pressSequentially(" Beta", { delay: 50 })
   await stored(page, "Same technology as: Beta")
   await reload(page)
