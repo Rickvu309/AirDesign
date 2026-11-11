@@ -1,6 +1,7 @@
 import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import type { MarkupChildren } from "./text-value-route.js"
+import { paintImage, type PaintPicture } from "./paint-image.js"
 
 export const paintChild = (
   children: MarkupChildren,
@@ -13,7 +14,7 @@ export const paintFill = (
   holder: MarkupElement,
   children: MarkupChildren,
   palette: PaintPalette,
-  picture: (id: string) => string | null,
+  picture: PaintPicture,
   direct = false,
 ): PaintFill | null => {
   const fill = direct
@@ -32,10 +33,8 @@ export const paintFill = (
     return color === null ? null : { type: "solid", color }
   }
   if (fill.kind === "a:blipFill") {
-    const blip = paintChild(children, fill, "a:blip")
-    const id = blip === undefined ? null : paintAttribute(blip, "r:embed")
-    const part = id === null ? null : picture(id)
-    return part === null ? null : { type: "picture", part }
+    const image = paintImage(fill, children, picture)
+    return image === null ? null : { type: "picture", ...image }
   }
   if (fill.kind === "a:pattFill") {
     const preset = paintAttribute(fill, "prst")

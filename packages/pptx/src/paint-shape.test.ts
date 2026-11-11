@@ -199,7 +199,13 @@ describe("shape paint", () => {
       ),
     )
     parts.set("ppt/media/paint.png", new Uint8Array())
-    expect(own(parts).fill).toEqual({ type: "picture", part: "ppt/media/paint.png" })
+    expect(own(parts).fill).toEqual({
+      type: "picture",
+      part: "ppt/media/paint.png",
+      contentType: null,
+      crop: { left: 0, top: 0, right: 0, bottom: 0 },
+      tile: false,
+    })
     parts.delete("ppt/media/paint.png")
     expect(own(parts).fill).toBeNull()
   })

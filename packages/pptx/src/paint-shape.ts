@@ -2,6 +2,7 @@ import type { MarkupElement } from "./element-span.js"
 import { paintAttribute, paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
 import { paintChild, paintFill } from "./paint-fill.js"
 import type { MarkupChildren } from "./text-value-route.js"
+import type { PaintPicture } from "./paint-image.js"
 
 export type PaintLine = {
   fill: PaintFill
@@ -52,7 +53,7 @@ export const paintShape = (
   sources: readonly PaintSource[],
   styles: PaintStyles | null,
   palette: PaintPalette,
-  picture: (part: string, id: string) => string | null,
+  picture: (part: string, id: string) => ReturnType<PaintPicture>,
 ): ShapePaint => {
   const own = sources[0]
   if (own === undefined || own.element.kind === "p:graphicFrame") return { fill: null, line: null, geometry: null }

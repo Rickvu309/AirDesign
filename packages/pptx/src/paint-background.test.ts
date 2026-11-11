@@ -155,7 +155,7 @@ describe("paint backgrounds", () => {
   })
 
   it.each([0, 1, 2, 3])("resolves pictures using their owning part at level %s", (level) => {
-    const fill = '<a:blipFill><a:blip r:embed="image"/></a:blipFill>'
+    const fill = '<a:blipFill><a:blip r:embed="image"/><a:srcRect l="25000" b="-5000"/><a:tile/></a:blipFill>'
     const levels = ["", "", ""]
     if (level < 3) levels[level] = `<p:bg><p:bgPr>${fill}</p:bgPr></p:bg>`
     else levels[0] = '<p:bg><p:bgRef idx="1001"><a:srgbClr val="FFFFFF"/></p:bgRef></p:bg>'
@@ -177,7 +177,14 @@ describe("paint backgrounds", () => {
       ),
     )
     parts.set("ppt/media/picture.png", new Uint8Array())
-    expect(background(parts)).toEqual({ type: "picture", part: "ppt/media/picture.png" })
+    parts.set("[Content_Types].xml", encodeUtf8('<Types><Default Extension="png" ContentType="image/png"/></Types>'))
+    expect(background(parts)).toEqual({
+      type: "picture",
+      part: "ppt/media/picture.png",
+      contentType: "image/png",
+      crop: { left: 0.25, top: 0, right: 0, bottom: -0.05 },
+      tile: true,
+    })
     parts.delete("ppt/media/picture.png")
     expect(background(parts)).toBeNull()
   })

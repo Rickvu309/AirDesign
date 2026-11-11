@@ -764,7 +764,7 @@ const paintedParts =
 const markupParts = (path: string): ReadonlyMap<string, Uint8Array> =>
   new Map(
     readContainer(new Uint8Array(readFileSync(path)))
-      .filter((record) => paintedParts.test(record.name))
+      .filter((record) => record.name === "[Content_Types].xml" || paintedParts.test(record.name))
       .map((record) => [record.name, record.method === stored ? record.stream : inflateRawSync(record.stream)]),
   )
 
@@ -803,7 +803,10 @@ describe("paintReader on the real decks", () => {
       for (const { part } of readSlides(parts)) {
         const bytes = parts.get(part)
         if (bytes !== undefined && mayHide(bytes)) for (const id of hiddenRows(bytes)) add(`${part}#${id}`, -1)
-        for (const element of reader.slide(part).elements) {
+        const paint = reader.slide(part)
+        if (paint.background?.type === "picture") expect(parts.has(paint.background.part)).toBe(true)
+        for (const element of paint.elements) {
+          if (element.image !== null) expect(parts.has(element.image.part)).toBe(true)
           total += 1
           if (element.from === "slide") add(`${element.part}#${element.shape}`, -1)
         }
