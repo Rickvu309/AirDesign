@@ -1,6 +1,7 @@
 import { createServer, type Server } from "node:http"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import oldDeployment from "./old-deployment-passthrough.js"
 import worker from "./sign-in-forward.js"
 
 type Seen = {
@@ -109,4 +110,15 @@ describe("sign-in forwarding", () => {
     await worker.fetch(new Request(`${origin}/pricing`), {})
     expect(seen.map((entry) => entry.url)).toEqual(["/pricing"])
   })
+
+  it.each(["/sign-in/email", "/sign-in/code", "/sign-in/link"])(
+    "never calls the old deployment for %s",
+    async (path) => {
+      const passthrough = vi.spyOn(oldDeployment, "fetch")
+      await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), { API_ORIGIN: origin })
+      await worker.fetch(new Request(`https://airdesign.app${path}`, { method: "POST" }), {})
+      expect(passthrough).not.toHaveBeenCalled()
+      passthrough.mockRestore()
+    },
+  )
 })
