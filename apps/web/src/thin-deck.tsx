@@ -1,3 +1,4 @@
+import { deckRoutes } from "@airdesign/catalog"
 import {
   currentValue,
   history,
@@ -241,7 +242,7 @@ export async function nameImportedDeck(deck: string, name: string) {
   try {
     const opened = await connect(server).open(deck)
     if (!opened.ok) return
-    await fetch("/decks/rename", {
+    await fetch(deckRoutes.rename.path, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ deck, name: name.slice(0, 200) }),

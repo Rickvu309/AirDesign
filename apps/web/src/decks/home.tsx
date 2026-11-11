@@ -1,3 +1,4 @@
+import { deckRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,7 @@ type Deck = { deck: string; name: string; edited: string; created: string; trash
 type Listing = { ok: true; account: { email: string }; decks: Deck[]; trash: Deck[] }
 
 async function post(path: string, body: object) {
-  const response = await fetch(`/decks/${path}`, {
+  const response = await fetch(path, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -38,7 +39,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
   const listView = new URLSearchParams(window.location.search).get("view") === "list"
   async function refresh() {
     try {
-      const result = await post("list", {})
+      const result = await post(deckRoutes.list.path, {})
       if (result.ok) {
         setListing(result)
         setUnavailable(false)
@@ -55,11 +56,11 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
   }, [])
 
   async function restore(deck: Deck) {
-    if ((await post("restore", { deck: deck.deck })).ok) await refresh()
+    if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) await refresh()
   }
 
   async function move(deck: Deck) {
-    if (!(await post("trash", { deck: deck.deck })).ok) return
+    if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
     await refresh()
     toast.custom(
       (id) => (
@@ -182,7 +183,7 @@ export function Home({ trash = false, now = Date.now }: { trash?: boolean; now?:
           }}
           onConfirm={() => {
             setBusy(true)
-            void post("delete", { decks: deleting.map((deck) => deck.deck) })
+            void post(deckRoutes.delete.path, { decks: deleting.map((deck) => deck.deck) })
               .then(async (result) => {
                 if (result.ok) {
                   setDeleting(null)

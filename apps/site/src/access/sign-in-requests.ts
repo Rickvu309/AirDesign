@@ -1,3 +1,4 @@
+import { signInRoutes } from "@airdesign/catalog"
 import { appDestination } from "./app-destination"
 import { readPendingEmail, readPendingNext, rememberPendingEmail } from "./pending-sign-in-email"
 
@@ -17,7 +18,7 @@ async function postJson(apiBase: string, path: string, body: object): Promise<Re
 }
 
 export async function requestSignInEmail(apiBase: string, email: string): Promise<string | null> {
-  const response = await postJson(apiBase, "/sign-in/email", { email })
+  const response = await postJson(apiBase, signInRoutes.email.path, { email })
   return response?.status === 202 ? checkPath : null
 }
 
@@ -28,7 +29,7 @@ export async function submitSignInCode(
   code: string,
   next: string | null,
 ): Promise<string | null> {
-  const response = await postJson(apiBase, "/sign-in/code", { email, code })
+  const response = await postJson(apiBase, signInRoutes.code.path, { email, code })
   return response?.status === 200 ? appDestination(appOrigin, next) : null
 }
 

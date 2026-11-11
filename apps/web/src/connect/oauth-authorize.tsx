@@ -1,3 +1,4 @@
+import { deckRoutes, oauthRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { ApproveAgent } from "@/connect/approve-agent"
 import { ClaudeConnected } from "@/connect/screens/claude-connected"
@@ -122,7 +123,7 @@ async function consentRequest(): Promise<
     redirect_uri: query.get("redirect_uri") ?? "",
   }
   if (resource !== undefined) clientBody.resource = resource
-  const clientReply = await post("/oauth/client", clientBody)
+  const clientReply = await post(oauthRoutes.client.path, clientBody)
   if (clientReply === null) return { kind: "refused" }
   const clientRefusal = refusal(clientReply.body)
   if (clientReply.response.status === 401) {
@@ -147,7 +148,7 @@ async function consentRequest(): Promise<
     }
   }
 
-  const listReply = await post("/decks/list", {})
+  const listReply = await post(deckRoutes.list.path, {})
   if (listReply === null) return { kind: "refused" }
   if (listReply.response.status === 401) return { kind: "redirect", address: signInAddress() }
   if (!listReply.response.ok || !isRecord(listReply.body) || listReply.body.ok !== true) return { kind: "refused" }
@@ -231,7 +232,7 @@ export function OAuthAuthorize() {
     if (consent.state !== null) body.state = consent.state
     if (consent.resource !== undefined) body.resource = consent.resource
 
-    const answer = await post("/oauth/approve", body)
+    const answer = await post(oauthRoutes.approve.path, body)
     if (answer === null) {
       setView({ kind: "refused" })
       return
