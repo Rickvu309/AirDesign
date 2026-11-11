@@ -3,8 +3,11 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { knowsMain, pushedRefs } from "./checked.mjs"
 
-const ownerName = "rickvu"
-const ownerEmail = "minhquanvu3902@gmail.com"
+const owners = [
+  { name: "rickvu", email: "minhquanvu3902@gmail.com" },
+  { name: "Quan Vu", email: "193299474+quanvu309@users.noreply.github.com" },
+]
+const ownerNames = owners.map(({ name, email }) => `${name} <${email}>`).join(" or ")
 const coAuthorTrailer = /^[ \t]*co-authored-by[ \t]*:/im
 const generatedLine =
   /^[^\w\n]*generated[ \t-]+(?:with|by)\b[^\w\n]*(?:claude|anthropic|codex|openai|chatgpt|gpt|grok|copilot|gemini|aider|devin|droid)\b/im
@@ -16,9 +19,9 @@ export const commitFix =
   "Amend or rebase with the repo's git config and drop the trailer: git commit --amend --reset-author, or git rebase origin/main --exec 'git commit --amend --no-edit --reset-author'."
 
 export const commitFaults = ({ authorName, authorEmail, message }) => [
-  ...(authorName === ownerName && authorEmail === ownerEmail
+  ...(owners.some(({ name, email }) => authorName === name && authorEmail === email)
     ? []
-    : [`the author is ${authorName} <${authorEmail}>, and every commit is authored by ${ownerName} <${ownerEmail}>`]),
+    : [`the author is ${authorName} <${authorEmail}>, and every commit is authored by ${ownerNames}`]),
   ...(coAuthorTrailer.test(message) ? ["the message has a Co-authored-by trailer"] : []),
   ...(generatedLine.test(message) || attributionBot.test(message) ? ["the message has an AI attribution line"] : []),
 ]

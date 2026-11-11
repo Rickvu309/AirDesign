@@ -16,6 +16,13 @@ const owner = { authorName: "rickvu", authorEmail: "minhquanvu3902@gmail.com" }
 const faultCount = (message) => commitFaults({ ...owner, message }).length
 
 same("the owner with a plain message passes", commitFaults({ ...owner, message: "Add the deck list.\n" }), [])
+const second = { authorName: "Quan Vu", authorEmail: "193299474+quanvu309@users.noreply.github.com" }
+same("the owner under the second identity passes", commitFaults({ ...second, message: "Add the deck list.\n" }), [])
+same(
+  "one identity with the email of the other is refused",
+  commitFaults({ ...second, authorEmail: owner.authorEmail, message: "A." }).length,
+  1,
+)
 same("another author name is refused", commitFaults({ ...owner, authorName: "Rick", message: "A." }).length, 1)
 same("another author email is refused", commitFaults({ ...owner, authorEmail: "a@b.c", message: "A." }).length, 1)
 same(
