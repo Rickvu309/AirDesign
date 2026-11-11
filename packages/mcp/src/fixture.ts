@@ -1,13 +1,5 @@
 import { readDeckId } from "@airdesign/catalog"
-import {
-  decide,
-  elementId,
-  openRegister,
-  version,
-  type Command,
-  type ElementId,
-  type Register,
-} from "@airdesign/document"
+import { decide, openRegister, version, type Command, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import { elements, type EditableName } from "./score.js"
 
@@ -34,7 +26,7 @@ function readAtOf(register: Register, node: ElementId): number {
 }
 
 function seeded(register: Register, seed: Seed): Register {
-  const node = elementId(elements[seed.element])
+  const node = elements[seed.element]
   let next = applied(register, { command: "add", node, floor: register.floor, route: register.route })
   for (const value of seed.before ?? []) next = applied(next, { command: "person", value, node })
   next = applied(next, { command: "start", runId, node })

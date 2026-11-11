@@ -79,6 +79,14 @@ describe("the named elements", () => {
   })
 
   it("list every stored key of a register as an element id", () => {
-    expect(storedElements({ elements: { [rootElement]: 1, "258.7": 2 } })).toEqual(["a", "258.7"])
+    expect(storedElements({ elements: { [rootElement]: 1, [legacyElement]: 2, "258.7": 3 } })).toEqual([
+      "a",
+      "b",
+      "258.7",
+    ])
+  })
+
+  it("drops a stored key that is not an element id", () => {
+    expect(storedElements({ elements: { toString: 1, "258.": 2, "258.7": 3 } })).toEqual(["258.7"])
   })
 })

@@ -26,7 +26,7 @@ export type NodeRegister = {
   readonly bytes: number
 }
 
-type ElementMap = { readonly [id: string]: NodeRegister | undefined }
+type ElementMap = Readonly<Partial<Record<ElementId, NodeRegister>>>
 
 export type Register = NodeRegister & {
   readonly nodes: readonly ElementId[]

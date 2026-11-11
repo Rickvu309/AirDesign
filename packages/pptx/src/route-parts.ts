@@ -1,4 +1,4 @@
-import type { TextValue } from "@airdesign/document"
+import { elementId, type TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { readShapes } from "./read-shapes.js"
@@ -667,13 +667,13 @@ export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly Rout
           { name: "sldIdLst.add", slide: createdSlideA, after: added.after },
           { name: "sldIdLst.add", slide: createdSlideB, after: added.after },
           {
-            id: `${createdSlideA}.${createdShapeA}`,
+            id: elementId(`${createdSlideA}.${createdShapeA}`),
             name: "add",
             text: createdTextA,
             ...box,
           },
           {
-            id: `${createdSlideB}.${createdShapeB}`,
+            id: elementId(`${createdSlideB}.${createdShapeB}`),
             name: "add",
             text: createdTextB,
             ...box,

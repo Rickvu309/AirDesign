@@ -114,7 +114,10 @@ function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: reado
 }
 
 function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending: WiredRow[] } {
-  const confirmed = rows.filter(isConfirmed).sort((left, right) => left.revision - right.revision)
+  const confirmed = rows
+    .filter(isConfirmed)
+    .filter(readable)
+    .sort((left, right) => left.revision - right.revision)
   const pending = rows
     .filter(isPending)
     .filter(wired)
@@ -122,15 +125,24 @@ function split(rows: readonly StoredRow[]): { confirmed: ConfirmedRow[]; pending
   return { confirmed, pending }
 }
 
+function readable(row: StoredRow): boolean {
+  if (isPending(row)) return wired(row)
+  return row.node === undefined || row.node === legacyElement || readElementId(row.node) !== undefined
+}
+
+function storedKey(deck: DeckId, row: StoredRow): string {
+  return isPending(row) ? rowKey(deck, "pending", row.order) : rowKey(deck, "confirmed", row.revision)
+}
+
 async function readDeck(deck: DeckId): Promise<StoredRow[]> {
   const rows = await readRows(deck)
-  const dropped = rows.filter(isPending).filter((row) => !wired(row))
+  const dropped = rows.filter((row) => !readable(row))
   if (dropped.length === 0) return rows
   await writeRows(
     [],
-    dropped.map((row) => rowKey(deck, "pending", row.order)),
+    dropped.map((row) => storedKey(deck, row)),
   )
-  return rows.filter((row) => !isPending(row) || wired(row))
+  return rows.filter(readable)
 }
 
 function wireOf(row: WiredRow): WireEdit {

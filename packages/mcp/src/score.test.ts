@@ -1,4 +1,3 @@
-import { elementId } from "@airdesign/document"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import type { Session, ToolResult } from "./call-tool.js"
 import { fixture } from "./fixture.js"
@@ -34,7 +33,7 @@ afterEach(() => {
   replaced.run = null
 })
 
-const title = elementId(elements.title)
+const title = elements.title
 
 const toolNames = { edit_deck: edit("deck", []).name, capture_slide: capture("deck").name } as const
 

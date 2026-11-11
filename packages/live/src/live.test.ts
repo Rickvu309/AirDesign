@@ -14,7 +14,7 @@ import {
   type CommitResult,
   type Remote,
 } from "./index.js"
-import { rowKey, writeRows, writeSlot } from "./store.js"
+import { readRows, rowKey, writeRows, writeSlot } from "./store.js"
 
 const node = elementId("258.7")
 const other = elementId("258.8")
@@ -361,6 +361,25 @@ describe("live cache", () => {
     expect(commits).toEqual([["named"]])
     expect(await cache.rows("deck")).toEqual([expect.objectContaining({ kind: "confirmed", value: "named", node })])
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "batch" })
+  })
+
+  it("drops a stored confirmed row with a malformed node and keeps the legacy node row", async () => {
+    const cache = connect(memoryRemote())
+    await writeRows(
+      [
+        {
+          key: rowKey("deck", "confirmed", 1),
+          row: { kind: "confirmed", deck: "deck" as DeckId, revision: 1, value: "kept", node: legacyElement },
+        },
+        {
+          key: rowKey("deck", "confirmed", 2),
+          row: { kind: "confirmed", deck: "deck" as DeckId, revision: 2, value: "bad", node: "toString" as never },
+        },
+      ],
+      [],
+    )
+    expect((await cache.rows("deck")).map((row) => row.value)).toEqual(["kept"])
+    expect((await readRows("deck")).map((row) => row.value)).toEqual(["kept"])
   })
 
   it("refuses to enqueue a malformed element id and writes no row", async () => {

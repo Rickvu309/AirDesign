@@ -26,10 +26,21 @@ export function slideId(value: string): SlideId {
   return value as SlideId
 }
 
-export function storedElements(register: {
-  readonly elements: Readonly<Record<string, unknown>>
-}): readonly ElementId[] {
-  return Object.keys(register.elements) as ElementId[]
+export function storedElements(register: { readonly elements: object }): readonly ElementId[] {
+  const stored: ElementId[] = []
+  for (const key of Object.keys(register.elements)) {
+    if (key === rootElement) {
+      stored.push(rootElement)
+      continue
+    }
+    if (key === legacyElement) {
+      stored.push(legacyElement)
+      continue
+    }
+    const read = readElementId(key)
+    if (read !== undefined) stored.push(read)
+  }
+  return stored
 }
 
 export function shapeOf(id: ElementId): { readonly slide: string; readonly shape: string } {
