@@ -74,7 +74,7 @@ export const recordFailure = (failed, name, warned = warnSteps) => {
   return "fail"
 }
 
-const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees", ...localSteps])
+const showOnSuccess = new Set(["bug-rule", "lint", "metrics", "specs", "worktrees", ...localSteps])
 const all = process.argv.includes("--all")
 const failed = []
 

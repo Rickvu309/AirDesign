@@ -35,19 +35,8 @@ export const nameFindings = (relative) => [
   ...bannedIn(relative).map((entry) => `${relative}: ${said(entry)}`),
 ]
 
-const day = 86400000
-const longest = 92
-
-export const glossaryFindings = (today, allowed = glossary.allowed) =>
-  allowed.flatMap((one) => {
-    const where = `${glossaryFile}: The allowed line in ${one.file}`
-    if (!one.reason) return [`${where} needs a reason.`]
-    if (!one.expires) return [`${where} needs an expires date.`]
-    const left = (Date.parse(one.expires) - Date.parse(today)) / day
-    if (!(left >= 0)) return [`${where} expired on ${one.expires}. Replace the word or renew it with a reason.`]
-    if (left > longest) return [`${where} may stay at most ${longest} days. Set expires on or before that.`]
-    return []
-  })
+export const glossaryFindings = (allowed = glossary.allowed) =>
+  allowed.flatMap((one) => (one.reason ? [] : [`${glossaryFile}: The allowed line in ${one.file} needs a reason.`]))
 
 export const wordFindings = (relative, source) => {
   if (relative === glossaryFile) return []

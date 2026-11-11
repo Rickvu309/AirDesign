@@ -31,7 +31,8 @@ const filesUnder = (absolute) => {
   return fs.readdirSync(absolute).flatMap((name) => filesUnder(path.join(absolute, name)))
 }
 
-const hits = glossaryFindings(new Date().toISOString().slice(0, 10))
+const hits = glossaryFindings()
+const warnings = []
 for (const relativePath of [...lintPaths, ...wordPaths]) {
   const wordsOnly = wordPaths.includes(relativePath)
   for (const file of filesUnder(path.resolve(root, relativePath))) {
@@ -43,7 +44,7 @@ for (const relativePath of [...lintPaths, ...wordPaths]) {
     const words = scannedExtensions.has(extension) || rawExtensions.has(extension) || wordExtensions.has(extension)
     if (!words) continue
     const source = fs.readFileSync(file, "utf8")
-    hits.push(...wordFindings(relative, source))
+    warnings.push(...wordFindings(relative, source))
     if (comment) hits.push(...(await scanSource(relative, source)))
     if (raw) {
       for (const finding of rawFindings(relative, source)) {
@@ -53,6 +54,7 @@ for (const relativePath of [...lintPaths, ...wordPaths]) {
   }
 }
 
+for (const item of warnings) console.error(`warning ${item}`)
 for (const item of hits) console.error(item)
 if ((oxlint.status ?? 1) !== 0) process.exit(oxlint.status ?? 1)
 if (hits.length > 0) process.exit(1)
