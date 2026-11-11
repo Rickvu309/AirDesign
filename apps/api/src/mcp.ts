@@ -79,6 +79,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       }
       if (saved === undefined) return { ok: false, refusal: "deck" }
       if (saved.owner !== host.email) return { ok: false, refusal: "owner" }
+      if (saved.deleted) return { ok: false, refusal: "deleted" }
       loaded = { id: named.deck, revision: saved.revision, register: saved.register }
       session.deck = loaded
       dropGoneTurn(session, seen)
@@ -126,5 +127,6 @@ async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<To
     return editRefusal(loaded, "store", nodes)
   }
   if (saved === undefined) return editRefusal(loaded, "deck", [])
+  if (saved.deleted) return editRefusal(loaded, "deleted", [])
   return afterWrite(false, result, { id: loaded.id, revision: saved.revision, register: saved.register })
 }

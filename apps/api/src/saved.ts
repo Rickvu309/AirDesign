@@ -3,16 +3,16 @@ import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
 
-const readSql = "select id, revision, register, owner from deck.saved where id = $1"
+const readSql = "select id, revision, register, owner, deleted is not null as deleted from deck.saved where id = $1"
 
 const insertSql = `
 with inserted as (
   insert into deck.saved (id, revision, register, owner)
   values ($1, $2, $3::jsonb, $4)
   on conflict (id) do nothing
-  returning id, revision, register, owner
+  returning id, revision, register, owner, false as deleted
 )
-select inserted.id, inserted.revision, inserted.register, inserted.owner, pg_notify('deck', $5) as notified
+select inserted.id, inserted.revision, inserted.register, inserted.owner, inserted.deleted, pg_notify('deck', $5) as notified
 from inserted
 `
 
@@ -20,7 +20,7 @@ const revisionSql = `
 with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb, edited = now()
-  where id = $1 and revision = $4
+  where id = $1 and revision = $4 and deleted is null
   returning id, revision, register
 )
 select updated.id, updated.revision, updated.register, pg_notify('deck', $5) as notified
@@ -33,7 +33,7 @@ const revisionOnceSql = `
 with updated as (
   update deck.saved
   set revision = $2, register = $3::jsonb, edited = now()
-  where id = $1 and revision = $4
+  where id = $1 and revision = $4 and deleted is null
   returning id, revision, register
 ),
 noted as (
@@ -51,6 +51,7 @@ type Saved = {
   readonly revision: number
   readonly register: Deck["register"]
   readonly owner: string
+  readonly deleted: boolean
 }
 
 export type RevisionWrite = {
@@ -81,7 +82,7 @@ async function readStoredOnce(db: Sql, email: string, deck: string, once: string
 
 function savedFrom(row: Saved | undefined): Saved | undefined {
   if (row === undefined) return undefined
-  return { id: row.id, revision: row.revision, register: row.register, owner: row.owner }
+  return { id: row.id, revision: row.revision, register: row.register, owner: row.owner, deleted: row.deleted }
 }
 
 export async function readSaved(db: Sql, id: string): Promise<Saved | undefined> {
@@ -102,8 +103,9 @@ function openedRow(
   owner: string,
 ):
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "owner" } {
+  | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
   if (saved.owner !== owner) return { ok: false, refusal: "owner" }
+  if (saved.deleted) return { ok: false, refusal: "deleted" }
   return { ok: true, deck, revision: saved.revision, register: saved.register }
 }
 
@@ -113,7 +115,7 @@ export async function openSaved(
   owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "deck" | "owner" }
+  | { readonly ok: false; readonly refusal: "deck" | "owner" | "deleted" }
 > {
   const existing = await readSaved(db, parsed.deck)
   if (existing !== undefined) return openedRow(parsed.deck, existing, owner)
@@ -180,6 +182,7 @@ export async function commitEdits(
     const saved = await readSaved(db, parsed.deck)
     if (saved === undefined) return { ok: false, refusal: "deck" }
     if (saved.owner !== owner) return { ok: false, refusal: "owner" }
+    if (saved.deleted) return { ok: false, refusal: "deleted" }
     if (parsed.once !== undefined) {
       const prior = await readStoredOnce(db, owner, parsed.deck, parsed.once)
       if (prior !== undefined) {

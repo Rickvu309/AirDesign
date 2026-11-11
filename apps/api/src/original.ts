@@ -10,6 +10,7 @@ type OriginalRow = {
   readonly original_bytes: number | null
   readonly original_sha256: string | null
   readonly original_stored: boolean
+  readonly deleted: boolean
 }
 
 type OriginalRequest = { readonly deck: DeckId; readonly bytes: number; readonly sha256: string }
@@ -18,10 +19,16 @@ const refused = (refusal: WireRefusal) => ({ ok: false as const, refusal })
 
 async function owned(db: Sql, deck: DeckId, email: string): Promise<OriginalRow | undefined> {
   const result = await db.query<OriginalRow>(
-    "select original_key, original_bytes, original_sha256, original_stored from deck.saved where id = $1 and owner = $2",
+    "select original_key, original_bytes, original_sha256, original_stored, deleted is not null as deleted from deck.saved where id = $1 and owner = $2",
     [deck, email],
   )
   return result.rows[0]
+}
+
+function unowned(row: OriginalRow | undefined): ReturnType<typeof refused> | undefined {
+  if (row === undefined) return refused("owner")
+  if (row.deleted) return refused("deleted")
+  return undefined
 }
 
 export async function uploadOriginal(
@@ -31,14 +38,15 @@ export async function uploadOriginal(
   store: OriginalStore | undefined,
   mint: () => string,
 ): Promise<unknown> {
-  if ((await owned(db, parsed.deck, email)) === undefined) return refused("owner")
+  const missing = unowned(await owned(db, parsed.deck, email))
+  if (missing !== undefined) return missing
   if (store === undefined) return refused("storage")
   if (parsed.bytes >= limits.bytes) return refused("limit")
   const account = createHash("sha256").update(email).digest("hex")
   const key = `originals/${account}/${parsed.deck}/${mint()}`
   const result = await db.query<OriginalRow>(
     `with prior as (
-       select id, original_key, original_until from deck.saved where id = $1 and owner = $2 and not original_stored for update
+       select id, original_key, original_until from deck.saved where id = $1 and owner = $2 and not original_stored and deleted is null for update
      ), updated as (
        update deck.saved set original_key = $3, original_bytes = $4, original_sha256 = $5,
          original_until = now() + interval '15 minutes'
@@ -54,7 +62,7 @@ export async function uploadOriginal(
     [parsed.deck, email, key, parsed.bytes, parsed.sha256],
   )
   const row = result.rows[0]
-  if (row?.original_key === undefined || row.original_key === null) return refused("present")
+  if (row?.original_key === undefined || row.original_key === null) return refusedUpload(db, parsed.deck, email)
   const signed = await store.upload(row.original_key, parsed.bytes)
   await db.query(
     `with kept as (
@@ -67,22 +75,26 @@ export async function uploadOriginal(
   )
   return { ok: true, ...signed }
 }
+async function refusedUpload(db: Sql, deck: DeckId, email: string): Promise<ReturnType<typeof refused>> {
+  return unowned(await owned(db, deck, email)) ?? refused("present")
+}
+
 export async function finishOriginal(db: Sql, deck: DeckId, email: string, store?: OriginalStore): Promise<unknown> {
   const row = await owned(db, deck, email)
-  if (row === undefined) return refused("owner")
+  if (row === undefined || row.deleted) return unowned(row)
   if (store === undefined) return refused("storage")
   if (row.original_key === null || (await store.size(row.original_key)) !== row.original_bytes)
     return refused("missing")
   const result = await db.query(
-    "update deck.saved set original_stored = true where id = $1 and owner = $2 and original_key = $3 returning id",
+    "update deck.saved set original_stored = true where id = $1 and owner = $2 and original_key = $3 and deleted is null returning id",
     [deck, email, row.original_key],
   )
-  return result.rows.length === 0 ? refused("owner") : { ok: true }
+  return result.rows.length === 0 ? (unowned(await owned(db, deck, email)) ?? refused("owner")) : { ok: true }
 }
 
 export async function downloadOriginal(db: Sql, deck: DeckId, email: string, store?: OriginalStore): Promise<unknown> {
   const row = await owned(db, deck, email)
-  if (row === undefined) return refused("owner")
+  if (row === undefined || row.deleted) return unowned(row)
   if (store === undefined) return refused("storage")
   if (!row.original_stored || row.original_key === null) return refused("missing")
   return {

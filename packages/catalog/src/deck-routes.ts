@@ -15,7 +15,7 @@ type Refused<Result> = Result extends { ok: false; refusal: infer Code } ? Code 
 
 export type CallRefusal = Refusal | Refused<ReturnType<typeof readCommit>> | "base" | "payload"
 
-export type EditRefusal = CallRefusal | "text-from" | "owner" | "store"
+export type EditRefusal = CallRefusal | "text-from" | "owner" | "deleted" | "store"
 
 export type WireRefusal =
   | EditRefusal
@@ -47,6 +47,7 @@ const wireRefusals = {
   cursor: true,
   session: true,
   owner: true,
+  deleted: true,
   storage: true,
   missing: true,
   size: true,

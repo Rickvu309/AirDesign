@@ -85,6 +85,11 @@ describe("deck list and trash", () => {
     return found.rows[0] as Record<string, unknown> | undefined
   }
 
+  async function deletedMark(deck: string): Promise<boolean> {
+    const stored = await row(deck)
+    return stored !== undefined && stored.deleted instanceof Date && stored.register === null
+  }
+
   async function onceCount(deck: string): Promise<number> {
     const found = await admin.query("select count(*)::int as count from deck.once where deck = $1", [deck])
     return found.rows[0]?.count as number
@@ -283,10 +288,10 @@ describe("deck list and trash", () => {
     const deleted = await ask(base, "POST", "/decks/delete", { decks: [named] }, cookie)
     expect(deleted.status).toBe(200)
     expect(deleted.json).toEqual({ ok: true, deleted: [named] })
-    expect(await row(named)).toBeUndefined()
+    expect(await deletedMark(named)).toBe(true)
     expect(await onceCount(named)).toBe(0)
     const reopened = await ask(base, "POST", "/decks/open", { deck: named }, cookie)
-    expect(reopened.json).toMatchObject({ ok: true, deck: named, revision: 0 })
+    expect(reopened.json).toEqual({ ok: false, refusal: "deleted" })
     const replay = await ask(
       base,
       "POST",
@@ -294,10 +299,8 @@ describe("deck list and trash", () => {
       { deck: named, batch: [{ value: "second", node: "258.7" }], once: "keep" },
       cookie,
     )
-    expect(replay.json).toEqual({ ok: true, deck: named, revision: 1, key: `${named}:1` })
-    const read = await ask(base, "POST", "/decks/open", { deck: named }, cookie)
-    const register = (read.json as { register: { elements: Record<string, { landed: { value: string }[] }> } }).register
-    expect(register.elements["258.7"]?.landed.map((one) => one.value)).toEqual(["second"])
+    expect(replay.json).toEqual({ ok: false, refusal: "deleted" })
+    expect(await deletedMark(named)).toBe(true)
   })
 
   it("keeps a deck that is not in Trash when it is asked to delete it", async () => {
@@ -309,7 +312,7 @@ describe("deck list and trash", () => {
     const deleted = await ask(base, "POST", "/decks/delete", { decks: [live, binned] }, cookie)
     expect(deleted.json).toEqual({ ok: true, deleted: [binned] })
     expect(await row(live)).toBeDefined()
-    expect(await row(binned)).toBeUndefined()
+    expect(await deletedMark(binned)).toBe(true)
   })
 
   it("answers only the ids it deleted and skips another account's deck and a missing one", async () => {
@@ -366,7 +369,7 @@ describe("deck list and trash", () => {
     const listed = await list()
     expect(listed.trash.map((entry) => entry.deck)).toContain(recent)
     expect(listed.trash.map((entry) => entry.deck)).not.toContain(old)
-    expect(await row(old)).toBeUndefined()
+    expect(await deletedMark(old)).toBe(true)
     expect(await onceCount(old)).toBe(0)
   })
 
@@ -483,7 +486,7 @@ describe("deck list and trash", () => {
     const listed = await list()
     expect(listed.trash.map((entry) => entry.deck)).toContain(kept)
     expect(listed.trash.map((entry) => entry.deck)).not.toContain(gone)
-    expect(await row(gone)).toBeUndefined()
+    expect(await deletedMark(gone)).toBe(true)
   })
 
   it("deletes a deck for good while a commit with once is landing", async () => {
@@ -514,7 +517,10 @@ describe("deck list and trash", () => {
       await holder.end()
     }
     expect(await onceCount(named)).toBe(0)
-    await open(named)
+    expect((await ask(base, "POST", "/decks/open", { deck: named }, cookie)).json).toEqual({
+      ok: false,
+      refusal: "deleted",
+    })
     const again = await ask(
       base,
       "POST",
@@ -522,10 +528,8 @@ describe("deck list and trash", () => {
       { deck: named, batch: [{ value: "second", node: "258.7" }], once: "race" },
       cookie,
     )
-    expect(again.json).toEqual({ ok: true, deck: named, revision: 1, key: `${named}:1` })
-    const read = await ask(base, "POST", "/decks/open", { deck: named }, cookie)
-    const register = (read.json as { register: { elements: Record<string, { landed: { value: string }[] }> } }).register
-    expect(register.elements["258.7"]?.landed.map((one) => one.value)).toEqual(["second"])
+    expect(again.json).toEqual({ ok: false, refusal: "deleted" })
+    expect(await deletedMark(named)).toBe(true)
   })
 
   it("lets the listen role read the list columns and nothing else", async () => {

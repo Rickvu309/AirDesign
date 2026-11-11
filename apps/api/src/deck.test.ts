@@ -16,7 +16,7 @@ async function untilParked(observer: Client, since: Date): Promise<void> {
   for (;;) {
     const found = await observer.query(
       `select pid from pg_stat_activity
-       where application_name = 'deck-handler' and state = 'idle' and query like 'select id, revision, register, owner from deck.saved%' and state_change > $1`,
+       where application_name = 'deck-handler' and state = 'idle' and query like 'select id, revision, register, owner, deleted is not null as deleted from deck.saved%' and state_change > $1`,
       [since],
     )
     if (found.rows.length > 0) return

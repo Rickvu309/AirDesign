@@ -21,6 +21,7 @@ export const refusalHandlers = {
   cursor: true,
   session: true,
   owner: true,
+  deleted: true,
   storage: true,
   missing: true,
   size: true,

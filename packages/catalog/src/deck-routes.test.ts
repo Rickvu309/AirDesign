@@ -122,6 +122,25 @@ it("refuses malformed answer envelopes for every deck route", () => {
   }
 })
 
+it("decodes deleted on every deck route", () => {
+  for (const route of Object.values(deckRoutes)) {
+    expect(route.result({ ok: false, refusal: "deleted" })).toEqual({ ok: false, refusal: "deleted" })
+  }
+  expect(Object.keys(deckRoutes)).toEqual([
+    "open",
+    "commit",
+    "watch",
+    "list",
+    "rename",
+    "trash",
+    "restore",
+    "delete",
+    "originalUpload",
+    "originalDone",
+    "original",
+  ])
+})
+
 it("refuses missing and malformed success fields for every deck route", () => {
   const wrong = {
     open: [{ ...revision }, { ...opened, register: null }],

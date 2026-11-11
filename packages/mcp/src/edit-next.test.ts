@@ -20,6 +20,7 @@ describe("editNext", () => {
       "limit",
       "text-from",
       "owner",
+      "deleted",
       "store",
     ]
     expect([...editCodes].sort()).toEqual([...reached].sort())
