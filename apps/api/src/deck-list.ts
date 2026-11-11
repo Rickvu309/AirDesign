@@ -1,7 +1,7 @@
 import type { DeckId } from "@airdesign/catalog"
 
 import type { Sql } from "./pool.js"
-import { removeOriginals } from "./original.js"
+import { discardOriginals, drainOriginals } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 
 type Listed = {
@@ -26,10 +26,13 @@ type Refusal = "owner"
 const expireSql = `
 with removed as (delete from deck.saved
 where owner = $1 and trashed is not null and trashed < now() - interval '30 days'
-returning original_key, owner)
-insert into deck.original_delete (key, owner)
-select original_key, owner from removed where original_key is not null
-on conflict (key) do nothing
+returning original_key, original_until, owner),
+queued as (
+  insert into deck.original_delete (key, owner, expires)
+  select original_key, owner, coalesce(original_until, now()) from removed where original_key is not null
+  on conflict (key) do nothing
+)
+select original_key from removed where original_key is not null
 `
 
 const listSql = `
@@ -52,13 +55,13 @@ const restoreSql = "update deck.saved set trashed = null where id = $1 and owner
 const deleteSql = `
 with removed as (delete from deck.saved
 where owner = $1 and id = any($2::text[]) and trashed is not null
-returning id, original_key, owner),
+returning id, original_key, original_until, owner),
 queued as (
-  insert into deck.original_delete (key, owner)
-  select original_key, owner from removed where original_key is not null
+  insert into deck.original_delete (key, owner, expires)
+  select original_key, owner, coalesce(original_until, now()) from removed where original_key is not null
   on conflict (key) do nothing
 )
-select id from removed
+select id, original_key from removed
 `
 
 function listed(row: ListRow): Listed {
@@ -80,8 +83,13 @@ export async function listDecks(
   readonly decks: Listed[]
   readonly trash: ListedTrash[]
 }> {
-  await db.query(expireSql, [email])
-  await removeOriginals(db, email, store)
+  const expired = await db.query<{ original_key: string }>(expireSql, [email])
+  await discardOriginals(
+    db,
+    expired.rows.map((row) => row.original_key),
+    store,
+  )
+  await drainOriginals(db, store, { owner: email })
   const result = await db.query<ListRow>(listSql, [email])
   const decks: Listed[] = []
   const trash: ListedTrash[] = []
@@ -136,8 +144,12 @@ export async function deleteDecks(
   email: string,
   store?: OriginalStore,
 ): Promise<{ readonly ok: true; readonly deleted: string[] }> {
-  const result = await db.query<{ id: string }>(deleteSql, [email, parsed.decks])
-  await removeOriginals(db, email, store)
+  const result = await db.query<{ id: string; original_key: string | null }>(deleteSql, [email, parsed.decks])
+  await discardOriginals(
+    db,
+    result.rows.flatMap((row) => (row.original_key === null ? [] : [row.original_key])),
+    store,
+  )
   const gone = new Set(result.rows.map((row) => row.id))
   return { ok: true, deleted: parsed.decks.filter((deck) => gone.has(deck)) }
 }

@@ -5,6 +5,7 @@ import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
 import { createApi } from "./server.js"
 import { readStartSettings } from "./start-settings.js"
+import { drainOriginals } from "./original.js"
 import { R2OriginalStore } from "./r2-original-store.js"
 
 const settings = readStartSettings(process.env)
@@ -35,6 +36,7 @@ const deck = openPool(deckUrl, "api-deck")
 session.on("error", () => undefined)
 deck.on("error", () => undefined)
 const listen = new DeckListen(listenUrl)
+const originals = r2 === undefined ? undefined : new R2OriginalStore(r2)
 const server = createApi({
   session,
   deck,
@@ -42,7 +44,7 @@ const server = createApi({
   publicOrigin,
   siteOrigin,
   resource,
-  ...(r2 === undefined ? {} : { originals: new R2OriginalStore(r2) }),
+  ...(originals === undefined ? {} : { originals }),
   ...(cookieDomain === undefined ? {} : { cookieDomain }),
   send: (mail) => sendWithResend(mail, { key: resendKey, from: resendFrom }),
   ...(hosts === undefined ? {} : { hosts }),
@@ -57,10 +59,19 @@ server.on("connection", (socket) => {
   })
 })
 
+function drain(): void {
+  void drainOriginals(deck, originals)
+}
+
+drain()
+const drainTimer = setInterval(drain, 3_600_000)
+drainTimer.unref()
+
 let stopping = false
 function stop(): void {
   if (stopping) return
   stopping = true
+  clearInterval(drainTimer)
   const force = setTimeout(() => {
     process.exit(0)
   }, 5000)

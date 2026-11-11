@@ -14,6 +14,7 @@ export {
   type RevisionWrite,
 } from "./saved.js"
 export { applySchema } from "./schema.js"
+export { discardOriginals, downloadOriginal, drainOriginals, finishOriginal, uploadOriginal } from "./original.js"
 export { LocalOriginalStore } from "./local-original-store.js"
 export { R2OriginalStore, type R2Settings } from "./r2-original-store.js"
 export type { OriginalStore, OriginalUpload, SignedOriginal } from "./original-store.js"
