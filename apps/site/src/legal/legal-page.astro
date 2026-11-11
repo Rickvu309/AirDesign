@@ -1,0 +1,39 @@
+---
+import AirdesignMark from "../site/airdesign-mark.astro";
+import SiteDocument from "../site/site-document.astro";
+import { legalFacts } from "./legal-facts";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const links = [
+  { label: "Privacy", href: "/privacy" },
+  { label: "Terms", href: "/terms" },
+  { label: "Sign in", href: "/sign-in" },
+];
+---
+
+<SiteDocument title={`${title} · AirDesign`}>
+  <div class="flex min-h-dvh flex-col bg-background">
+    <header class="page-column flex h-16 items-center">
+      <a class="flex items-center gap-2.5" href="/">
+        <AirdesignMark size={20} />
+        <span class="text-[length:var(--type-body)] font-semibold">AirDesign</span>
+      </a>
+    </header>
+    <main class="page-column pt-12 pb-24">
+      <article class="legal-text">
+        <h1>{title}</h1>
+        <p class="legal-updated">Last updated: {legalFacts.effectiveDate}</p>
+        <slot />
+      </article>
+    </main>
+    <footer class="mt-auto border-t border-border">
+      <nav class="page-column flex flex-wrap items-center gap-x-7 gap-y-2 py-6" aria-label="Footer">
+        {links.map((link) => <a href={link.href} class="text-link text-[length:var(--type-dense)] text-muted-foreground">{link.label}</a>)}
+      </nav>
+    </footer>
+  </div>
+</SiteDocument>

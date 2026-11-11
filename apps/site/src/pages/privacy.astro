@@ -1,0 +1,134 @@
+---
+import { legalFacts } from "../legal/legal-facts";
+import LegalPage from "../legal/legal-page.astro";
+---
+
+<LegalPage title="Privacy Policy">
+  <h2>Who we are</h2>
+  <p>
+    {legalFacts.legalName} ("AirDesign", "we") is the controller of the personal information described here. Our address is {legalFacts.address}. Privacy contact: {legalFacts.privacyEmail}.
+  </p>
+  <p>This policy covers the AirDesign site, the editor, and Aira. It does not cover an agent you connect yourself. That agent has its own policy.</p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li>The email address you type to sign in. The same address creates the account. We send the sign-in link and code to it.</li>
+    <li>Decks, uploaded files, and the text you type or an agent writes into a deck.</li>
+    <li>The Aira transcript for a turn you start: your message, the tool results, and the reply.</li>
+    <li>An opaque id made from your account id, sent to Anthropic with each Aira turn so abuse can be traced to one account. It does not contain your name or email.</li>
+    <li>Your country, from your network address, to check that Aira is offered where you are.</li>
+    <li>Account events we need to run the service, such as a sign-in, a deleted deck, and an abuse signal.</li>
+    <li>The ordinary technical data a host logs to deliver a page, such as an IP address and a time.</li>
+  </ul>
+  <p>We do not ask for a card. We do not take payment at launch.</p>
+  <p>
+    We do not ask you to send health data, government identity numbers, or similar sensitive information. Do not put that in a deck if you do not want it stored and, if you use Aira, sent to the model.
+  </p>
+
+  <h2>Why we use it</h2>
+  <div class="legal-table">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Purpose</th>
+          <th scope="col">Information</th>
+          <th scope="col">Legal basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Create the account, send the sign-in email, store and show your decks, import and export</td>
+          <td>Email, decks, files</td>
+          <td>Contract with you</td>
+        </tr>
+        <tr>
+          <td>Run Aira when you ask</td>
+          <td>The turn and the deck material it needs, the opaque id, your country</td>
+          <td>Contract with you</td>
+        </tr>
+        <tr>
+          <td>Keep the service up, stop abuse, and fix a break</td>
+          <td>Email, account events, host logs, the opaque id</td>
+          <td>Legitimate interest in running a service that is not abused</td>
+        </tr>
+        <tr>
+          <td>Keep a record the law requires</td>
+          <td>Whatever the request names</td>
+          <td>Legal duty</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    We do not use your email, decks, files, or Aira prompts to train a model. We do not send marketing. We do not sell personal information, and we do not share it for cross-context advertising. Those are the CCPA meanings of "sell" and "share".
+  </p>
+  <p>Aira does not make a decision that has a legal effect on you. It drafts slides. You choose what to keep.</p>
+
+  <h2>Who else processes it</h2>
+  <p>We use these subprocessors.</p>
+  <div class="legal-table">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Who</th>
+          <th scope="col">What for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cloudflare</td>
+          <td>Deliver the site and the product</td>
+        </tr>
+        <tr>
+          <td>Railway</td>
+          <td>Run the application and the database</td>
+        </tr>
+        <tr>
+          <td>Resend</td>
+          <td>Send the sign-in email</td>
+        </tr>
+        <tr>
+          <td>Anthropic</td>
+          <td>Run Aira, only when you use it. Anthropic acts as our processor under its Data Processing Addendum</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    Anthropic's commercial terms say Anthropic may not train models on customer content from the API. Anthropic says API inputs and outputs are deleted within 30 days, except where the law requires, their Usage Policy flags the turn (then up to 2 years for the content, and up to 7 years for a safety score), you use a product with a longer hold, or a contract says otherwise. We have not agreed a longer or a shorter hold. If Anthropic asks us about a turn to enforce its Usage Policy, we may give them the account's Aira records for that turn.
+  </p>
+  <p>When you connect your own agent, the tool result goes to that agent. From there, their policy applies, not this one.</p>
+  <p>
+    People in the EEA, the UK, or Switzerland should assume a transfer to the country where the subprocessor hosts the data. For those transfers we rely on {legalFacts.transferTool}.
+  </p>
+
+  <h2>How long we keep it</h2>
+  <p>
+    We keep the account, the decks, and the Aira transcript until you delete them. Deleting the account removes the account rows, the stored files, and the agent connections. A backup may keep a deleted deck for up to {legalFacts.backupWindow}.
+  </p>
+  <p>Anthropic's copy of an Aira turn follows the 30-day rule above, including the longer hold if they flag it.</p>
+  <p>Host logs are kept for {legalFacts.logWindow}.</p>
+
+  <h2>Your rights</h2>
+  <p>If the GDPR or the UK GDPR applies, you can ask us to:</p>
+  <ul>
+    <li>tell you what we hold and give you a copy</li>
+    <li>correct it</li>
+    <li>delete it</li>
+    <li>limit how we use it</li>
+    <li>give you a portable copy</li>
+    <li>object where we rely on legitimate interest</li>
+  </ul>
+  <p>You can complain to your supervisory authority. The EEA list is on the European Data Protection Board's site. The UK authority is the ICO.</p>
+  <p>
+    If the CCPA applies, you can ask us to know, delete, or correct personal information, and you can opt out of sale or sharing. We do not sell or share, so that opt-out has nothing to act on today. We will not treat you differently for asking. An authorized agent may ask for you.
+  </p>
+  <p>To ask, email {legalFacts.privacyEmail}. We may need to confirm the inbox before we act.</p>
+
+  <h2>Children</h2>
+  <p>AirDesign is for people 18 and older. We do not knowingly collect data from anyone younger. If we learn that we have, we delete the account.</p>
+
+  <h2>Changes and contact</h2>
+  <p>We will post a change on this page. If a change is material, we will email the account before it takes effect.</p>
+  <p>{legalFacts.legalName}, {legalFacts.address}, {legalFacts.privacyEmail}.</p>
+</LegalPage>
