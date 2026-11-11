@@ -5,7 +5,7 @@ import type { CallerLog } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
 import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
-import { dropGoneTurn, liveTurn, type Turns } from "./turn.js"
+import { liveTurn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -113,7 +113,6 @@ function captureSlide(raw: unknown, session: Session): ToolResult {
 }
 
 export function callTool(name: string, raw: unknown, session: Session): ToolResult {
-  dropGoneTurn(session)
   const tool = projectTools(catalog).find((item) => item.name === name)
   if (tool === undefined) return refused(session.deck, "field")
   if (tool.op === "edit_deck" && tool.runsOn === "server") return editDeck(raw, session)

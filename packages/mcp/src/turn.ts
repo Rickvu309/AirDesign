@@ -33,10 +33,10 @@ export function liveTurn(session: Session, deck: DeckId): LiveTurn | undefined {
   return { ...turn, runId: turn.runId }
 }
 
-export function dropGoneTurn(session: Session): void {
+export function dropGoneTurn(session: Session, seen: Turn | undefined): void {
   const { deck } = session
-  const held = session.turns.read(deck.id)
-  if (held === undefined || deck.revision >= held.revision) return
+  if (seen === undefined || deck.revision >= seen.revision) return
+  if (session.turns.read(deck.id)?.revision !== seen.revision) return
   session.turns.write(deck.id, { runId: null, lastCall: session.now, revision: deck.revision })
 }
 
