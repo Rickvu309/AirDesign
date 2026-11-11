@@ -1310,8 +1310,8 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const replayedByApi = "owner"
-    const found = every.filter((topic) => topic.name !== replayedByApi)
+    const replayedByApi = ["owner", "turn"]
+    const found = every.filter((topic) => !replayedByApi.includes(topic.name))
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
     const views: Record<string, View> = {
@@ -1324,7 +1324,7 @@ describe("spec replay", () => {
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
     }
-    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => name !== replayedByApi))
+    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => !replayedByApi.includes(name)))
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)

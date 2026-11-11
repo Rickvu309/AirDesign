@@ -464,6 +464,7 @@ describe("projectTools", () => {
     expect(tools.map((tool) => tool.runsOn)).toEqual(["device", "server", "server", "server"])
     expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
     expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
+    expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("closing elements")
     expect(tools.find((tool) => tool.op === "undo_run")?.destructiveHint).toBe(true)
     expect(tools.every((tool) => tool.openWorldHint === false)).toBe(true)
     const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
@@ -471,7 +472,8 @@ describe("projectTools", () => {
     expect(edit).toEqual({
       name: "airdesign_edit_deck",
       op: "edit_deck",
-      description: "Write values on one deck. The server names the actor.",
+      description:
+        "Write values on one deck. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,

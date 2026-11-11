@@ -1,6 +1,6 @@
 import { readAgentEdit, type WireChange, type WireRunElement } from "@airdesign/catalog"
 import type { ElementId, Register } from "@airdesign/document"
-import { call, type Deck } from "@airdesign/engine"
+import { call, liveRuns, type Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
 import { editRefusal, heldElements, runRefusal } from "./edit-answer.js"
 import type { EditCode } from "./edit-next.js"
@@ -71,16 +71,24 @@ export function joinRun(register: Register, raw: unknown, runId: string): Opened
   return underRun(startRun(request.deck, request.elements, runId))
 }
 
+export function stopLiveRuns(
+  deck: Deck,
+): { readonly ok: true; readonly deck: Deck } | { readonly ok: false; readonly refusal: EditCode } {
+  let current = deck
+  for (const runId of liveRuns(deck)) {
+    const stopped = call("stop_run", current, agentCaller(runId), { deck: deck.id, runId })
+    if (!stopped.ok) return stopped
+    current = stopped.deck
+  }
+  return { ok: true, deck: current }
+}
+
 export function openRun(register: Register, raw: unknown, mint: () => string): Opened {
   const request = runRequest(register, raw)
   if (!request.ok) return request
-  const candidate = mint()
-  const first = startRun(request.deck, request.elements, candidate)
-  if (!first.ok || first.runId === candidate) return underRun(first)
-  const older = first.runId
-  const stopped = call("stop_run", request.deck, agentCaller(older), { deck: request.deck.id, runId: older })
+  const stopped = stopLiveRuns(request.deck)
   if (!stopped.ok) return stopped
-  return underRun(startRun(stopped.deck, request.elements, candidate))
+  return underRun(startRun(stopped.deck, request.elements, mint()))
 }
 
 export function afterWrite(wrote: boolean, result: ToolResult, stored: Deck): ToolResult {

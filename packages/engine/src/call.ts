@@ -167,12 +167,22 @@ function endOnTouched(
   return landed(deck, register)
 }
 
+function runLiveOn(register: Register, node: ElementId): string | null {
+  const runId = register.elements[node]?.runId ?? null
+  return runId !== null && isLive(register, node, runId) ? runId : null
+}
+
 function liveRun(register: Register, elements: readonly WireRunElement[]): string | null {
   for (const { node } of elements) {
-    const runId = register.elements[node]?.runId ?? null
-    if (runId !== null && isLive(register, node, runId)) return runId
+    const runId = runLiveOn(register, node)
+    if (runId !== null) return runId
   }
   return null
+}
+
+export function liveRuns(deck: Deck): readonly string[] {
+  const runs = everyElement(deck.register).map((node) => runLiveOn(deck.register, node))
+  return [...new Set(runs.filter((runId) => runId !== null))]
 }
 
 function startRun(deck: Deck, requested: string, elements: readonly WireRunElement[]): StartResult {

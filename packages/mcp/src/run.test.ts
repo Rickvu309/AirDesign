@@ -191,9 +191,40 @@ describe("openRun", () => {
       ],
     }
     expect(joinRun(both.register, edit, "first")).toEqual({ ok: false, refusal: "run-fenced" })
-    expect(openRun(both.register, edit, () => "fresh")).toEqual({ ok: false, refusal: "run-fenced" })
     expect(bodyOf(both.register).runId).toBe("first")
     expect(bodyOf(both.register, sibling).runId).toBe("second")
+  })
+
+  it("ends every live run when a new turn opens, on elements the call names and on others", () => {
+    const opened = openRegister("", "")
+    const third = elementId("258.9")
+    let register = opened
+    for (const command of [
+      { command: "add", node, floor: "", route: "" },
+      { command: "add", node: sibling, floor: "", route: "" },
+      { command: "add", node: third, floor: "", route: "" },
+      { command: "start", runId: "first", node },
+      { command: "start", runId: "second", node: sibling },
+      { command: "start", runId: "third", node: third },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    const edit = {
+      deck: "deck",
+      base: 0,
+      changes: [
+        { value: "a", node, readAt: 0 },
+        { value: "b", node: sibling, readAt: 0 },
+      ],
+    }
+    const result = openRun(register, edit, () => "fresh")
+    if (!result.ok) throw new Error(result.refusal)
+    expect(result.caller.runId).toBe("fresh")
+    expect(bodyOf(result.register).runId).toBe("fresh")
+    expect(bodyOf(result.register, sibling).runId).toBe("fresh")
+    expect(bodyOf(result.register, third).phase).toBe("stopped")
   })
 
   it("stops an older run live on a named element, then starts the candidate and clears the guard", () => {
