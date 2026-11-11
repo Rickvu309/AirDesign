@@ -682,6 +682,7 @@ test("one slide shows at a time", async ({ page }, testInfo) => {
   await expect(seventh).toHaveCount(0)
   await showSlide(page, 7)
   await expect(seventh).toContainText("How do heat pumps work? Seven")
+  await showSlide(page, 1)
   await saveExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
   expect((await partsOf(download)).get(part)?.toString("utf8") ?? "").toContain("How do heat pumps work? Seven")
