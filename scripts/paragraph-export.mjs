@@ -1,7 +1,7 @@
 import { freshBrowserExport } from "./browser-export.mjs"
 import { judge } from "./judge.mjs"
-import { browserExports, paragraphsExportName } from "./pptx-corpus.mjs"
 
+export const paragraphsExportName = "exported-paragraphs.pptx"
 export const paragraphsOriginalName = "doe-heat-pumps.pptx"
 export const paragraphsExpected = {
   part: "ppt/slides/slide7.xml",
@@ -31,7 +31,7 @@ export const paragraphsExpected = {
 
 export const freshExports = ({ deck, paragraphs, run }) => freshBrowserExport({ file: deck, also: [paragraphs], run })
 
-export const judgedExportNames = (spec) => (spec.ok ? browserExports : [])
+export const judgedExportNames = (spec) => (spec.ok ? [paragraphsExportName] : [])
 
 export const validatorFiles = ({ names, fixturePath, others }) => [...[...names].map(fixturePath), ...others]
 
