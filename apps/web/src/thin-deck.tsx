@@ -74,7 +74,10 @@ function trialValue(value: TextValue): TextValue | null {
       if (found === undefined || found.text === "\n") continue
       return value.map((each, index) =>
         index === paragraph
-          ? { from: each.from, runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)) }
+          ? {
+              from: each.from,
+              runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)),
+            }
           : each,
       )
     }
@@ -91,7 +94,12 @@ export function valueStorable(
 ): boolean {
   if (value === null) return false
   try {
-    applyRoute(parts, { name: "text", part: shape.part, shape: shape.shape, value })
+    applyRoute(parts, {
+      name: "text",
+      part: shape.part,
+      shape: shape.shape,
+      value,
+    })
     return true
   } catch {
     return false
@@ -194,11 +202,13 @@ export function ThinDeck({ id }: { id?: string }) {
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const [deckId, setDeckId] = useState(id)
   const [ids, setIds] = useState<readonly ElementId[]>([])
+  const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const shownDeck = useRef(id)
 
   useEffect(() => {
     if (id === undefined) return
     let live = true
+    setPaintedDeck(undefined)
     void (async () => {
       await ensureMarkup()
       const stored = await getParts(id)
@@ -210,6 +220,7 @@ export function ThinDeck({ id }: { id?: string }) {
       shapes.current = painted.shapes
       shownParts.current = stored.parts
       setIds(painted.ids)
+      setPaintedDeck(id)
       await sendPending(connect, id)
     })()
     return () => {
@@ -230,10 +241,17 @@ export function ThinDeck({ id }: { id?: string }) {
 
   function show(target: ElementId, text: string) {
     const record = store.current.getElement(target)
-    if (record !== null) store.current.publish({ id: record.id, kind: record.kind, text, picture: record.picture })
+    if (record !== null)
+      store.current.publish({
+        id: record.id,
+        kind: record.kind,
+        text,
+        picture: record.picture,
+      })
   }
 
   async function openFile(file: File) {
+    setPaintedDeck(undefined)
     await ensureMarkup()
     const bytes = new Uint8Array(await file.arrayBuffer())
     const read = await readPackage(bytes)
@@ -248,6 +266,7 @@ export function ThinDeck({ id }: { id?: string }) {
     shapes.current = painted.shapes
     shownParts.current = read.parts
     setIds(painted.ids)
+    setPaintedDeck(nextId)
   }
 
   async function onEdit(target: ElementId, value: string) {
@@ -288,7 +307,7 @@ export function ThinDeck({ id }: { id?: string }) {
   }
 
   return (
-    <div className="thin-page">
+    <div className="thin-page" data-deck-ready={paintedDeck}>
       <EditorFrame
         top={
           <div className="flex items-center gap-4 px-4 py-2">
