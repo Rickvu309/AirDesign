@@ -10,7 +10,7 @@ const solid = (hex: string) => `<a:solidFill><a:srgbClr val="${hex}"/></a:solidF
 const expected = (hex: string) => ({ type: "solid", color: { hex, alpha: 1 } })
 const ph = (type = "title", index = "1") => `<p:ph type="${type}" idx="${index}"/>`
 const sp = (properties = "", placeholder = "", style = "", id = "2", kind = "sp") => {
-  const nv = kind === "pic" ? "Pic" : kind === "graphicFrame" ? "GraphicFrame" : "Sp"
+  const nv = kind === "pic" ? "Pic" : kind === "graphicFrame" ? "GraphicFrame" : kind === "cxnSp" ? "CxnSp" : "Sp"
   return `<p:${kind}><p:nv${nv}Pr><p:cNvPr id="${id}"/><p:nvPr>${placeholder}</p:nvPr></p:nv${nv}Pr><p:spPr>${properties}</p:spPr>${style}</p:${kind}>`
 }
 const group = (properties: string, inside: string, id = "3") =>
@@ -128,6 +128,43 @@ describe("shape paint", () => {
     expect(shape.fill).toEqual(kind === "graphicFrame" ? null : expected("123456"))
     expect(shape.line).toEqual(kind === "graphicFrame" ? null : line)
     expect(shape.geometry).toBe(kind === "graphicFrame" ? null : "ellipse")
+  })
+
+  it.each([
+    ["sp", '<a:prstGeom prst="ellipse"/>', '<a:prstGeom prst="rect"/>', "<a:custGeom/>", "ellipse"],
+    ["sp", "", '<a:prstGeom prst="rect"/>', "<a:custGeom/>", "rect"],
+    ["sp", "", "", "<a:custGeom/>", "custom"],
+    ["pic", "", '<a:prstGeom prst="rect"/>', "", "rect"],
+    ["pic", "", "", '<a:prstGeom prst="ellipse"/>', "ellipse"],
+  ])("takes %s placeholder geometry %j first, then the layout's, then the master's", (kind, a, b, c, geometry) => {
+    expect(own(partsOf(sp(a, ph(), "", "2", kind), sp(b, ph()), sp(c, ph()))).geometry).toBe(geometry)
+  })
+
+  it("keeps a direct noFill over a fillRef", () => {
+    expect(own(partsOf(sp("<a:noFill/>", "", ref("fill", "1")), "", "", solid("FFFFFF"))).fill).toEqual({
+      type: "none",
+    })
+  })
+
+  it("keeps the lnRef color under a line that gives only a width", () => {
+    const style = ln('<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>', "9525")
+    expect(own(partsOf(sp(ln("", "25400"), "", ref("ln", "1")), "", "", "", style)).line).toEqual({
+      ...line,
+      fill: expected("336699"),
+      width: 25400,
+    })
+  })
+
+  it("reads a connector's fill, line and geometry", () => {
+    const properties = `${solid("123456")}<a:prstGeom prst="straightConnector1"/>`
+    const shape = own(
+      partsOf(sp(properties, "", ref("ln", "1"), "2", "cxnSp"), "", "", "", ln(solid("2C567A"), "6350")),
+    )
+    expect([shape.fill, shape.line, shape.geometry]).toEqual([
+      expected("123456"),
+      { ...line, fill: expected("2C567A"), width: 6350 },
+      "straightConnector1",
+    ])
   })
 
   it("reports custom geometry without a path and absent geometry", () => {
