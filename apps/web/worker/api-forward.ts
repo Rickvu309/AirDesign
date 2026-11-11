@@ -1,23 +1,11 @@
+import { deckPaths, oauthPaths, signInPaths } from "@airdesign/catalog"
+
 type Env = {
   API_ORIGIN?: string
   ASSETS: { fetch(request: Request): Promise<Response> }
 }
 
-const apiPaths = [
-  "/sign-in/email",
-  "/sign-in/code",
-  "/sign-in/link",
-  "/decks/open",
-  "/decks/commit",
-  "/decks/watch",
-  "/decks/list",
-  "/decks/rename",
-  "/decks/trash",
-  "/decks/restore",
-  "/decks/delete",
-  "/oauth/client",
-  "/oauth/approve",
-]
+const apiPaths = [...signInPaths, ...deckPaths, ...oauthPaths]
 
 export default {
   fetch(request: Request, env: Env): Promise<Response> | Response {

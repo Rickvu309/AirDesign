@@ -2,6 +2,7 @@ import { copyFile, readFile, rm, writeFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { openRegister } from "../../packages/document/src/index.ts"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const fixture = join(fixtures, "clean.pptx")
@@ -403,7 +404,7 @@ async function answerOpens(page: Page): Promise<void> {
     const body = route.request().postDataJSON() as { deck: string }
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ ok: true, deck: body.deck, revision: 0 }),
+      body: JSON.stringify({ ok: true, deck: body.deck, revision: 0, register: openRegister("", "") }),
     })
   })
 }

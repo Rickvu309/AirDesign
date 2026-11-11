@@ -1,0 +1,67 @@
+import {
+  legacyElement,
+  readElementId,
+  rootElement,
+  type ElementId,
+  type Landed,
+  type NodeRegister,
+  type Register,
+} from "@airdesign/document"
+
+function record(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw)
+}
+
+function whole(raw: unknown): raw is number {
+  return typeof raw === "number" && Number.isSafeInteger(raw) && raw >= 0
+}
+
+function nullableWhole(raw: unknown): boolean {
+  return raw === null || whole(raw)
+}
+
+function element(raw: unknown): raw is ElementId {
+  return raw === rootElement || raw === legacyElement || readElementId(raw) !== undefined
+}
+
+function landed(raw: unknown): raw is Landed {
+  return (
+    record(raw) &&
+    (raw.actor === "person" || raw.actor === "agent") &&
+    typeof raw.value === "string" &&
+    typeof raw.visible === "boolean" &&
+    (raw.runId === undefined || typeof raw.runId === "string")
+  )
+}
+
+function node(raw: unknown): raw is NodeRegister & Record<string, unknown> {
+  return (
+    record(raw) &&
+    typeof raw.route === "string" &&
+    typeof raw.floor === "string" &&
+    Array.isArray(raw.landed) &&
+    raw.landed.every(landed) &&
+    (raw.version === undefined || whole(raw.version)) &&
+    (raw.phase === "idle" || raw.phase === "running" || raw.phase === "stopped" || raw.phase === "undone") &&
+    (raw.runId === null || typeof raw.runId === "string") &&
+    nullableWhole(raw.readAt) &&
+    typeof raw.guarded === "boolean" &&
+    nullableWhole(raw.claimed) &&
+    nullableWhole(raw.stoppedAt) &&
+    whole(raw.slides) &&
+    whole(raw.bytes)
+  )
+}
+
+export function isRegister(raw: unknown): raw is Register {
+  return (
+    node(raw) &&
+    record(raw) &&
+    Array.isArray(raw.nodes) &&
+    raw.nodes.every(element) &&
+    (raw.readNodes === null || (Array.isArray(raw.readNodes) && raw.readNodes.every(element))) &&
+    record(raw.elements) &&
+    Object.entries(raw.elements).every(([id, body]) => element(id) && node(body)) &&
+    (raw.b === undefined || raw.b === null || node(raw.b))
+  )
+}

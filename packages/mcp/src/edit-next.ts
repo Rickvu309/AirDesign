@@ -1,12 +1,11 @@
-import type { readAgentEdit } from "@airdesign/catalog"
-import { limits, type Refusal } from "@airdesign/document"
-import type { call } from "@airdesign/engine"
+import type { readAgentEdit, EditRefusal } from "@airdesign/catalog"
+import { limits } from "@airdesign/document"
 
 type Refused<Result> = Result extends { readonly ok: false; readonly refusal: infer Code } ? Code : never
 
 export type ReadCode = Refused<ReturnType<typeof readAgentEdit>>
 
-export type EditCode = ReadCode | Refused<ReturnType<typeof call>> | Refusal | "text-from" | "owner" | "store"
+export type EditCode = EditRefusal
 
 const valueBytes = limits.valueBytes.toLocaleString("en-US")
 

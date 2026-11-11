@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 import { join } from "node:path"
+import { openRegister } from "../../packages/document/src/index.ts"
 
 type Deck = { deck: string; name: string; edited: string; created: string; trashed?: string }
 const now = "2026-11-11T12:00:00Z"
@@ -16,6 +17,10 @@ async function store(page: Page, decks: Deck[] = [first, second], trash: Deck[] 
     calls.push({ path, body })
     if (path === "list") {
       await route.fulfill({ json: { ok: true, account: { email: "home@example.com" }, ...state } })
+      return
+    }
+    if (path === "open") {
+      await route.fulfill({ json: { ok: true, deck: body.deck, revision: 0, register: openRegister("", "") } })
       return
     }
     if (path === "trash") {

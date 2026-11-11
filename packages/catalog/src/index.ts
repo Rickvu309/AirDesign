@@ -1,6 +1,21 @@
 export { catalog, projectTools, type AgentTool, type OpRow } from "./catalog.js"
 export { storableText } from "./storable-text.js"
 export {
+  deckRoutes,
+  deckPaths,
+  oauthRoutes,
+  oauthPaths,
+  signInRoutes,
+  signInPaths,
+  type CallRefusal,
+  type EditRefusal,
+  type WireRefusal,
+  type WireFailure,
+  type OpenResult,
+  type CommitResult,
+  type WatchResult,
+} from "./deck-routes.js"
+export {
   notifyKey,
   parseNotifyKey,
   readAgentEdit,

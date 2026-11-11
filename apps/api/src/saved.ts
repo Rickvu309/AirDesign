@@ -1,4 +1,4 @@
-import { notifyKey, type DeckId, type WireEdit } from "@airdesign/catalog"
+import { notifyKey, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
@@ -169,7 +169,7 @@ export async function commitEdits(
   owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly key: string }
-  | { readonly ok: false; readonly refusal: string }
+  | { readonly ok: false; readonly refusal: WireRefusal }
 > {
   const wire = {
     deck: parsed.deck,

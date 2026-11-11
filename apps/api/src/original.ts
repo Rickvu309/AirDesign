@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto"
-import type { DeckId } from "@airdesign/catalog"
+import type { DeckId, WireRefusal } from "@airdesign/catalog"
 import { limits } from "@airdesign/document"
 
 import type { OriginalStore } from "./original-store.js"
@@ -14,7 +14,7 @@ type OriginalRow = {
 
 type OriginalRequest = { readonly deck: DeckId; readonly bytes: number; readonly sha256: string }
 
-const refused = (refusal: string) => ({ ok: false as const, refusal })
+const refused = (refusal: WireRefusal) => ({ ok: false as const, refusal })
 
 async function owned(db: Sql, deck: DeckId, email: string): Promise<OriginalRow | undefined> {
   const result = await db.query<OriginalRow>(
