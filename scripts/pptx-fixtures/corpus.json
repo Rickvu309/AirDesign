@@ -1,13 +1,38 @@
 [
   {
+    "name": "nasa-accp-visualizations.pptx",
+    "sha256": "2918c5072fac29ac763248e09c5429ca551fbb9110e3c12cc6fa7bb14848a42d",
+    "source": "https://ntrs.nasa.gov/api/citations/20205010512/downloads/ACCP%20VF%20Visualizations%20SciTech.pptx"
+  },
+  {
+    "name": "nasa-aqua-senior-review.pptx",
+    "sha256": "9f88a1aded611ab8f6b144dac9b44a4e28a02bf1464ae16a0174985b9ec26f2b",
+    "source": "https://ntrs.nasa.gov/api/citations/20210000307/downloads/LO_Aqua_overview_Atmospheres.pptx"
+  },
+  {
     "name": "nasa-class-d-mar.pptx",
     "sha256": "00ffc50e5142c95394c36440d238c97fb3d6a040679724b9bb79312f659383ba",
     "source": "https://ntrs.nasa.gov/api/citations/20205002782/downloads/SMD-ClassD-MAR-final.pptx"
   },
   {
+    "name": "nasa-conjunction-assessment.pptx",
+    "sha256": "d00c6b41a87bd624e923a03bcc6a40e4a5c17397da6472c6f655da9608061f70",
+    "source": "https://ntrs.nasa.gov/api/citations/20230004141/downloads/IAASS%202023%20CARA%20Best%20Practices%20final2.pptx"
+  },
+  {
+    "name": "nasa-cots-electronics.pptx",
+    "sha256": "1ff00c78b35553e56713d6aac602e8b6ba36500bc89c6d5ee4debd014c72d10b",
+    "source": "https://ntrs.nasa.gov/api/citations/20240000751/downloads/new-parts-assurance-COTS-011824.pptx"
+  },
+  {
     "name": "nasa-cots-parts-nesc.pptx",
     "sha256": "1f7d2ac9a75f109e8e1650b768ef4ea99f93d6741b8a181bf7bfa4c09f2324e2",
     "source": "https://ntrs.nasa.gov/api/citations/20220000510/downloads/MRQW%202022%20-%20NESC%20Assessment%20on%20Use%20of%20COTS%20Phase%20I%20-2-9-2022.pptx"
+  },
+  {
+    "name": "nasa-hera-analog-lessons.pptx",
+    "sha256": "a4588b064bceca0715bff4de31b82408dffaf85828950ffa1a4e1f512f1acdce",
+    "source": "https://ntrs.nasa.gov/api/citations/20210013417/downloads/HRP%20Analog%20Lessons%20Learned%20for%20ISS%20as%20Analog%20040821%20-%20for%20EC.pptx"
   },
   {
     "name": "nasa-jwst-optics-lessons.pptx",
@@ -18,5 +43,15 @@
     "name": "nasa-lessons-capture-eee.pptx",
     "sha256": "b6427d112845c478de3d3e325318c53493e36dc603851b9fb159ae3aefc1cf51",
     "source": "https://ntrs.nasa.gov/api/citations/20210025772/downloads/lessons-learned-parts-PCB-seminar-final2.pptx"
+  },
+  {
+    "name": "nasa-on-orbit-failures.pptx",
+    "sha256": "54a82223fa135557262f106c17082c5f427f7bca2b2fa35014e5961c399bea8c",
+    "source": "https://ntrs.nasa.gov/api/citations/20205010787/downloads/recent-mission-failures-11-25-20%20.pptx"
+  },
+  {
+    "name": "nasa-roman-thermal-runtime.pptx",
+    "sha256": "10bbbb8507b38f184162622075baaba543dd2748dcf52625c2a4fee680930fb0",
+    "source": "https://ntrs.nasa.gov/api/citations/20210016888/downloads/H.%20Peabody-ICES-Radks-%20Presentation.pptx"
   }
 ]
