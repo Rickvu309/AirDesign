@@ -14,10 +14,10 @@
 </form>
 
 <script>
-  import { rememberPendingEmail, rememberPendingNext } from "../pending-sign-in-email";
-  import { requestSignInEmail } from "../sign-in-requests";
+  import { rememberNextFromSearch } from "../pending-sign-in-email";
+  import { startEmailSignIn } from "../sign-in-requests";
 
-  rememberPendingNext(new URLSearchParams(location.search).get("next"));
+  rememberNextFromSearch(location.search);
 
   document.querySelector<HTMLFormElement>("[data-sign-in-form]")?.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -25,10 +25,6 @@
     if (typeof email !== "string") {
       return;
     }
-    const destination = await requestSignInEmail("", email);
-    if (destination !== null) {
-      rememberPendingEmail(email);
-      location.assign(destination);
-    }
+    await startEmailSignIn("", email, (path) => location.assign(path));
   });
 </script>
