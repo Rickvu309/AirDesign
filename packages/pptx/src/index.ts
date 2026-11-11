@@ -19,7 +19,7 @@ export {
   type ShapeReference,
 } from "./shape-id.js"
 export { addTextShape, type ShapeBox } from "./shape-write.js"
-export { applyRoute, oneRunValue, textStorable, type SlideRoute } from "./slide-route.js"
+export { applyRoute, oneRunValue, textStorable, type ShapeFill, type SlideRoute } from "./slide-route.js"
 export { shownText } from "./text-value-route.js"
 export { exportElements, type ElementEdit, type WrittenIds } from "./element-export.js"
 export { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"

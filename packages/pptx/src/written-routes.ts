@@ -1,6 +1,7 @@
 import { type ExportRoute, type StructuralRoute } from "@airdesign/document"
 
 export const writtenRoutes = {
+  fill: "spPr.fill",
   text: "txBody",
   move: "xfrm",
   resize: "xfrm",
