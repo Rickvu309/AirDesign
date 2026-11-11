@@ -259,11 +259,31 @@ it.each<[string, PaintFill, string | null]>([
 })
 
 it("shows a picture fill as the box it cannot show yet", () => {
-  expect(painted({ fill: { type: "picture", part: "ppt/media/image1.png" } }).fill).toBe("var(--line)")
+  expect(
+    painted({
+      fill: {
+        type: "picture",
+        part: "ppt/media/image1.png",
+        contentType: "image/png",
+        crop: { left: 0, top: 0, right: 0, bottom: 0 },
+        tile: false,
+      },
+    }).fill,
+  ).toBe("var(--line)")
 })
 
 it("leaves the slide's background out when it is a picture", () => {
-  const paint: SlidePaint = { ...size, elements: [], background: { type: "picture", part: "ppt/media/image1.png" } }
+  const paint: SlidePaint = {
+    ...size,
+    elements: [],
+    background: {
+      type: "picture",
+      part: "ppt/media/image1.png",
+      contentType: "image/png",
+      crop: { left: 0, top: 0, right: 0, bottom: 0 },
+      tile: false,
+    },
+  }
   expect(slideCanvases({ slide: () => paint }, [source])(0)?.background).toBeNull()
 })
 
