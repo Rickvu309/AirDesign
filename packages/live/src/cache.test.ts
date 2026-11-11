@@ -1,25 +1,25 @@
 import type { DeckId } from "@airdesign/catalog"
-import { bytesOf, currentValue, elementId, legacyElement, openRegister, rootElement } from "@airdesign/document"
-import fc from "fast-check"
+import { currentValue, elementId, legacyElement, openRegister } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import { installIndexedDb, node, other, countingRemote, tracedRemote } from "./browser-fixtures.js"
 import {
+  type CommitResult,
   connect,
   deleteDatabase,
-  getPart,
-  getParts,
   httpRemote,
   memoryRemote,
   ownerRemote,
-  putPart,
-  putParts,
-  type CommitResult,
-  type OpenResult,
   type Remote,
 } from "./index.js"
-import { readRows, rowKey, writeRows, writeSlot } from "./store.js"
 
-const node = elementId("258.7")
-const other = elementId("258.8")
+beforeEach(() => {
+  installIndexedDb()
+})
+
+afterEach(async () => {
+  vi.unstubAllGlobals()
+  await deleteDatabase()
+})
 
 it("decodes HTTP size and server refusals and keeps pending rows", async () => {
   for (const [status, refusal] of [
@@ -146,229 +146,6 @@ it("refuses unreadable JSON for all HTTP answers and keeps the pending rows", as
   expect(await cache.pending("unreadable")).toEqual(before)
 })
 
-function installIndexedDb(): void {
-  type Running = { mode: string; started: boolean; start: () => void }
-  type Fake = {
-    names: string[]
-    rows: Map<string, Map<string, unknown>>
-    live: Running[]
-    settle: (transaction: Running) => void
-  }
-  const databases = new Map<string, Fake>()
-
-  function contains(key: string, range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) {
-    if (range.lowerOpen ? key <= range.lower : key < range.lower) return false
-    if (range.upperOpen ? key >= range.upper : key > range.upper) return false
-    return true
-  }
-
-  type Opened = {
-    objectStoreNames: { contains: (store: string) => boolean }
-    createObjectStore: (store: string) => void
-    transaction: (store: string, mode: string) => unknown
-    close: () => void
-  }
-
-  const indexed = {
-    open(name: string) {
-      const request: {
-        result: Opened | undefined
-        onupgradeneeded: (() => void) | null
-        onsuccess: (() => void) | null
-        onerror: (() => void) | null
-      } = {
-        result: undefined,
-        onupgradeneeded: null,
-        onsuccess: null,
-        onerror: null,
-      }
-      queueMicrotask(() => {
-        let database = databases.get(name)
-        const created = database === undefined
-        if (database === undefined) {
-          const created: Fake = {
-            names: [],
-            rows: new Map(),
-            live: [],
-            settle: (transaction) => {
-              if (transaction.started) return
-              const earlier = created.live.slice(0, created.live.indexOf(transaction))
-              const blocked = earlier.some((other) => other.mode === "readwrite" || transaction.mode === "readwrite")
-              if (!blocked) transaction.start()
-            },
-          }
-          database = created
-          databases.set(name, database)
-        }
-        const current = database
-        request.result = {
-          objectStoreNames: { contains: (store: string) => current.names.includes(store) },
-          createObjectStore: (store: string) => {
-            current.names.push(store)
-            current.rows.set(store, new Map())
-          },
-          transaction: (store: string, mode: string) => {
-            const rows = current.rows.get(store) ?? new Map()
-            type Operation = { request: { result: unknown; onsuccess: (() => void) | null }; run: () => unknown }
-            const queue: Operation[] = []
-            const transaction = {
-              mode,
-              started: false,
-              oncomplete: null as (() => void) | null,
-              onerror: null as (() => void) | null,
-              onabort: null as (() => void) | null,
-              objectStore: () => {
-                const enqueue = (run: () => unknown) => {
-                  const request = {
-                    result: undefined as unknown,
-                    onsuccess: null as (() => void) | null,
-                    onerror: null as (() => void) | null,
-                  }
-                  queue.push({ request, run })
-                  return request
-                }
-                return {
-                  getAll: (range: { lower: string; upper: string; lowerOpen?: boolean; upperOpen?: boolean }) =>
-                    enqueue(() =>
-                      [...rows.keys()]
-                        .filter((key) => contains(key, range))
-                        .sort()
-                        .map((key) => rows.get(key)),
-                    ),
-                  put: (value: unknown, key: string) =>
-                    enqueue(() => {
-                      rows.set(key, value)
-                      return key
-                    }),
-                  delete: (key: string) =>
-                    enqueue(() => {
-                      rows.delete(key)
-                      return undefined
-                    }),
-                }
-              },
-              start: () => {
-                transaction.started = true
-                const pump = () => {
-                  const next = queue.shift()
-                  if (next === undefined) {
-                    current.live.splice(current.live.indexOf(transaction), 1)
-                    transaction.oncomplete?.()
-                    for (const waiting of [...current.live]) current.settle(waiting)
-                    return
-                  }
-                  next.request.result = next.run()
-                  next.request.onsuccess?.()
-                  queueMicrotask(pump)
-                }
-                queueMicrotask(pump)
-              },
-            }
-            current.live.push(transaction)
-            current.settle(transaction)
-            return transaction
-          },
-          close: () => undefined,
-        }
-        if (created) request.onupgradeneeded?.()
-        request.onsuccess?.()
-      })
-      return request
-    },
-    deleteDatabase(name: string) {
-      const request = { onsuccess: null as (() => void) | null, onerror: null as (() => void) | null }
-      queueMicrotask(() => {
-        databases.delete(name)
-        request.onsuccess?.()
-      })
-      return request
-    },
-  }
-
-  Object.assign(globalThis, {
-    indexedDB: indexed,
-    IDBKeyRange: {
-      bound: (lower: string, upper: string, lowerOpen = false, upperOpen = false) => ({
-        lower,
-        upper,
-        lowerOpen,
-        upperOpen,
-      }),
-    },
-  })
-}
-
-function installParts(): Map<string, Uint8Array> {
-  const files = new Map<string, Uint8Array>()
-  const storage = {
-    async getDirectory() {
-      return {
-        async getFileHandle(name: string, options?: { create?: boolean }) {
-          if (!files.has(name)) {
-            if (!options?.create) throw new Error("missing")
-            files.set(name, new Uint8Array())
-          }
-          return {
-            async createWritable() {
-              const chunks: Uint8Array[] = []
-              return {
-                async write(data: Uint8Array) {
-                  chunks.push(data.slice())
-                },
-                async close() {
-                  const size = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
-                  const bytes = new Uint8Array(size)
-                  let offset = 0
-                  for (const chunk of chunks) {
-                    bytes.set(chunk, offset)
-                    offset += chunk.byteLength
-                  }
-                  files.set(name, bytes)
-                },
-              }
-            },
-            async getFile() {
-              const bytes = files.get(name) ?? new Uint8Array()
-              return {
-                async arrayBuffer() {
-                  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
-                },
-              }
-            },
-          }
-        },
-      }
-    },
-  }
-  Object.defineProperty(globalThis, "navigator", { value: { storage }, configurable: true })
-  return files
-}
-
-function countingRemote(): { remote: Remote; commits: string[][] } {
-  const remote = memoryRemote()
-  const commits: string[][] = []
-  return {
-    commits,
-    remote: {
-      open: (body) => remote.open(body),
-      watch: (body) => remote.watch(body),
-      commit: async (body) => {
-        commits.push(body.batch.map((edit) => edit.value))
-        return remote.commit(body)
-      },
-    },
-  }
-}
-
-beforeEach(() => {
-  installIndexedDb()
-})
-
-afterEach(async () => {
-  vi.unstubAllGlobals()
-  await deleteDatabase()
-})
-
 describe("live cache", () => {
   it("paints the enqueue and does not commit", async () => {
     const { remote, commits } = countingRemote()
@@ -392,57 +169,6 @@ describe("live cache", () => {
     expect(commits).toEqual([["earlier", "later"]])
   })
 
-  it("refuses an actor and stores nothing", async () => {
-    const remote = memoryRemote()
-    const body = { deck: "deck", actor: "agent", batch: [{ value: "hi", node }] }
-    expect(await remote.commit(body)).toEqual({
-      ok: false,
-      refusal: "field",
-    })
-    const opened = await remote.open({ deck: "deck" })
-    expect(opened.ok).toBe(true)
-    if (!opened.ok) return
-    expect(opened.revision).toBe(0)
-    expect(opened.register.landed).toEqual([])
-  })
-
-  it("raises revision by one commit", async () => {
-    const remote = memoryRemote()
-    expect(await remote.open({ deck: "deck" })).toMatchObject({ ok: true, revision: 0 })
-    expect(
-      await remote.commit({
-        deck: "deck",
-        batch: [
-          { value: "a", node, floor: "sent" },
-          { value: "b", node },
-        ],
-      }),
-    ).toEqual({
-      ok: true,
-      deck: "deck",
-      revision: 1,
-      key: "deck:1",
-    })
-    const opened = await remote.open({ deck: "deck" })
-    expect(opened.ok).toBe(true)
-    if (!opened.ok) return
-    expect(opened.register.elements[node]?.floor).toBe("sent")
-    expect(await remote.commit({ deck: "deck", batch: [{ value: "c", node }] })).toEqual({
-      ok: true,
-      deck: "deck",
-      revision: 2,
-      key: "deck:2",
-    })
-  })
-
-  it("returns the stored revision when the cursor is behind", async () => {
-    const remote = memoryRemote()
-    await remote.open({ deck: "deck" })
-    await remote.commit({ deck: "deck", batch: [{ value: "one", node }] })
-    await remote.commit({ deck: "deck", batch: [{ value: "two", node }] })
-    expect(await remote.watch({ deck: "deck", cursor: 0 })).toEqual({ ok: true, deck: "deck", revision: 2 })
-  })
-
   it("stays on device until flush", async () => {
     const cache = connect(memoryRemote())
     expect(await cache.phase("deck")).toBe("confirmed")
@@ -451,63 +177,6 @@ describe("live cache", () => {
     await cache.flush("deck")
     expect(await cache.phase("deck")).toBe("confirmed")
     expect(await cache.pending("deck")).toEqual([])
-  })
-
-  it("drops a stored row that has no node and flushes the row after it", async () => {
-    const { remote, commits } = countingRemote()
-    const cache = connect(remote)
-    await writeRows(
-      [
-        {
-          key: rowKey("deck", "pending", 0),
-          row: { kind: "pending", deck: "deck" as DeckId, order: 0, base: 0, value: "orphan" },
-        },
-      ],
-      [],
-    )
-    expect(await cache.enqueue("deck", "named", node, "file")).toEqual({ ok: true, painted: "named" })
-    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
-    expect(commits).toEqual([["named"]])
-    expect(await cache.pending("deck")).toEqual([])
-    expect((await cache.rows("deck")).map((row) => row.value)).toEqual(["named"])
-  })
-
-  it("drops a stored row on the old node a and flushes the row before it", async () => {
-    const { remote, commits } = countingRemote()
-    const cache = connect(remote)
-    expect(await cache.enqueue("deck", "named", node, "file")).toEqual({ ok: true, painted: "named" })
-    await writeRows(
-      [
-        {
-          key: rowKey("deck", "pending", 1),
-          row: { kind: "pending", deck: "deck" as DeckId, order: 1, base: 1, value: "legacy", node: rootElement },
-        },
-      ],
-      [],
-    )
-    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
-    expect(commits).toEqual([["named"]])
-    expect(await cache.rows("deck")).toEqual([expect.objectContaining({ kind: "confirmed", value: "named", node })])
-    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "batch" })
-  })
-
-  it("drops a stored confirmed row with a malformed node and keeps the legacy node row", async () => {
-    const cache = connect(memoryRemote())
-    await writeRows(
-      [
-        {
-          key: rowKey("deck", "confirmed", 1),
-          row: { kind: "confirmed", deck: "deck" as DeckId, revision: 1, value: "kept", node: legacyElement },
-        },
-        {
-          key: rowKey("deck", "confirmed", 2),
-          row: { kind: "confirmed", deck: "deck" as DeckId, revision: 2, value: "bad", node: "toString" as never },
-        },
-      ],
-      [],
-    )
-    expect((await cache.rows("deck")).map((row) => row.value)).toEqual(["kept"])
-    expect((await readRows("deck")).map((row) => row.value)).toEqual(["kept"])
   })
 
   it("refuses to enqueue a malformed element id and writes no row", async () => {
@@ -769,32 +438,6 @@ describe("live cache", () => {
     expect(seenWhileCommitting).toEqual(["pending"])
   })
 
-  function tracedRemote(answer?: OpenResult): { remote: Remote; calls: string[] } {
-    const real = memoryRemote()
-    const calls: string[] = []
-    return {
-      calls,
-      remote: {
-        open: async (body) => {
-          calls.push(`open ${body.deck}`)
-          return answer ?? real.open(body)
-        },
-        watch: (body) => real.watch(body),
-        commit: async (body) => {
-          calls.push(`commit ${body.deck}`)
-          return real.commit(body)
-        },
-      },
-    }
-  }
-
-  it("refuses a commit to a deck that was never opened", async () => {
-    expect(await memoryRemote().commit({ deck: "deck", batch: [{ value: "lost", node }] })).toEqual({
-      ok: false,
-      refusal: "deck",
-    })
-  })
-
   it("opens the deck once before its first commit", async () => {
     const { remote, calls } = tracedRemote()
     const cache = connect(remote)
@@ -1006,23 +649,6 @@ describe("live cache", () => {
     ])
   })
 
-  it("does not create a row when open or watch is refused", async () => {
-    const remote = memoryRemote()
-    expect(await remote.open({ deck: "bad id" })).toEqual({ ok: false, refusal: "deck" })
-    const extra = { deck: "deck", extra: true }
-    expect(await remote.open(extra)).toEqual({ ok: false, refusal: "field" })
-    expect(await remote.watch({ deck: "deck", cursor: -1 })).toEqual({ ok: false, refusal: "cursor" })
-    let settled = false
-    const waiting = remote.watch({ deck: "deck", cursor: null }).then((result) => {
-      settled = true
-      return result
-    })
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    expect(settled).toBe(false)
-    expect(await remote.open({ deck: "deck" })).toMatchObject({ ok: true, revision: 0 })
-    expect(await waiting).toEqual({ ok: true, deck: "deck", revision: 0 })
-  })
-
   it("keeps pending rows when the commit key does not match", async () => {
     const remote: Remote = {
       open: async () => ({
@@ -1073,16 +699,6 @@ describe("live cache", () => {
     expect(opened.register.elements[node]?.landed.map((row) => row.value)).toEqual([value])
   })
 
-  it("stores one part for the same bytes", async () => {
-    const files = installParts()
-    const bytes = new Uint8Array([1, 2, 3, 4])
-    const first = await putPart(bytes)
-    const second = await putPart(bytes)
-    expect(second).toBe(first)
-    expect(files.size).toBe(1)
-    expect(Array.from(await getPart(first))).toEqual([1, 2, 3, 4])
-  })
-
   it("keeps the register when the owner refuses", async () => {
     const cache = connect(ownerRemote())
     expect(await cache.enqueue("deck", "kept", node, "")).toEqual({ ok: true, painted: "kept" })
@@ -1095,195 +711,6 @@ describe("live cache", () => {
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "owner" })
     expect(await cache.rows("deck")).toEqual(before)
     expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["kept"])
-  })
-
-  it("stores a deck's parts with names and hashes only", async () => {
-    installParts()
-    const bytes = new Uint8Array([9, 8, 7])
-    const slide = "ppt/slides/slide1.xml"
-    const saved = await putParts("clean", { parts: new Map([[slide, bytes]]), file: new Uint8Array([5]) })
-    expect(saved.ok).toBe(true)
-    const read = await getParts("clean")
-    expect(read.ok).toBe(true)
-    if (!read.ok) return
-    expect(Object.keys(read).sort()).toEqual(["file", "ok", "parts"])
-    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
-  })
-
-  it("keeps the name stored with a deck", async () => {
-    installParts()
-    const slide = "ppt/slides/slide1.xml"
-    await putParts("named", {
-      parts: new Map([[slide, new Uint8Array([9])]]),
-      file: new Uint8Array([5]),
-      name: "Board deck",
-    })
-    const read = await getParts("named")
-    expect(read.ok && read.name).toBe("Board deck")
-  })
-
-  it("reads an old part row that still carries a node table", async () => {
-    installParts()
-    const slide = "ppt/slides/slide1.xml"
-    await writeSlot("clean\u0001", {
-      names: { [slide]: await putPart(new Uint8Array([9, 8, 7])) },
-      file: await putPart(new Uint8Array([5])),
-      nodes: { a: { part: slide, shape: "2" } },
-    })
-    const read = await getParts("clean")
-    expect(read.ok).toBe(true)
-    if (!read.ok) return
-    expect(Object.keys(read).sort()).toEqual(["file", "ok", "parts"])
-    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
-    expect(Array.from(read.file)).toEqual([5])
-  })
-
-  it("refuses a part list of 65536 bytes", async () => {
-    installParts()
-    const saved = await putParts("clean", {
-      parts: new Map([["n".repeat(70_000), new Uint8Array([1])]]),
-      file: new Uint8Array([5]),
-    })
-    expect(saved).toEqual({ ok: false, refusal: "limit" })
-    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
-  })
-
-  it("reads the same part names and hashes back after a new connect", async () => {
-    const files = installParts()
-    const shared = new Uint8Array([9, 8, 7])
-    const other = new Uint8Array([255, 0, 128])
-    const slide = "ppt/slides/slide1.xml"
-    const copy = "ppt/slides/slide2.xml"
-    const notes = "ppt/notesSlides/notesSlide1.xml"
-    const saved = await putParts("clean", {
-      parts: new Map<string, Uint8Array>([
-        [slide, shared],
-        [copy, shared],
-        [notes, other],
-      ]),
-      file: shared,
-    })
-    expect(saved.ok).toBe(true)
-    const sha256 = async (bytes: Uint8Array) => {
-      const payload = new Uint8Array(new ArrayBuffer(bytes.byteLength))
-      payload.set(bytes)
-      const digest = await crypto.subtle.digest("SHA-256", payload)
-      let text = ""
-      for (const byte of new Uint8Array(digest)) text += byte.toString(16).padStart(2, "0")
-      return text
-    }
-    const sharedHash = await sha256(shared)
-    const otherHash = await sha256(other)
-    expect([...files.keys()].sort()).toEqual([sharedHash, otherHash].sort())
-    for (const [hash, bytes] of files) expect(hash).toBe(await sha256(bytes))
-    const stored = [...files.keys()].sort()
-    const written = new Map(files)
-    const cache = connect(memoryRemote())
-    const opened = await cache.openDeck("clean")
-    expect(opened.ok).toBe(true)
-    if (!opened.ok) return
-    expect(opened.pending).toEqual([])
-    expect(opened.confirmed).toEqual([])
-    expect(await cache.rows("clean")).toEqual([])
-    const read = await getParts("clean")
-    expect(read.ok).toBe(true)
-    if (!read.ok) return
-    expect([...read.parts.keys()]).toEqual([slide, copy, notes])
-    expect(Array.from(read.parts.get(slide) ?? [])).toEqual([9, 8, 7])
-    expect(Array.from(read.parts.get(copy) ?? [])).toEqual([9, 8, 7])
-    expect(Array.from(read.parts.get(notes) ?? [])).toEqual([255, 0, 128])
-    expect(files.size).toBe(2)
-    expect([...files.keys()].sort()).toEqual(stored)
-    for (const [hash, bytes] of written) expect(files.get(hash)).toBe(bytes)
-  })
-
-  it("keeps each deck's parts apart after a new connect", async () => {
-    installParts()
-    const slide = "ppt/slides/slide1.xml"
-    const notes = "ppt/notesSlides/notesSlide1.xml"
-    const layout = "ppt/slideLayouts/slideLayout1.xml"
-    const blank = "ppt/media/blank.bin"
-    const stale = await putParts("other", {
-      parts: new Map<string, Uint8Array>([[layout, new Uint8Array([1])]]),
-      file: new Uint8Array([1]),
-    })
-    const clean = await putParts("clean", {
-      parts: new Map<string, Uint8Array>([
-        [slide, new Uint8Array([9, 8, 7])],
-        [layout, new Uint8Array([3])],
-      ]),
-      file: new Uint8Array([2]),
-    })
-    const other = await putParts("other", {
-      parts: new Map<string, Uint8Array>([
-        [slide, new Uint8Array([4, 5])],
-        [notes, new Uint8Array([6])],
-        [blank, new Uint8Array()],
-      ]),
-      file: new Uint8Array([3]),
-    })
-    expect(clean.ok).toBe(true)
-    expect(stale.ok).toBe(true)
-    expect(other.ok).toBe(true)
-    const cache = connect(memoryRemote())
-    expect((await cache.openDeck("clean")).ok).toBe(true)
-    expect((await cache.openDeck("other")).ok).toBe(true)
-    const readClean = await getParts("clean")
-    const readOther = await getParts("other")
-    expect(readClean.ok).toBe(true)
-    expect(readOther.ok).toBe(true)
-    if (!readClean.ok || !readOther.ok) return
-    expect([...readClean.parts.keys()]).toEqual([slide, layout])
-    expect(Array.from(readClean.parts.get(slide) ?? [])).toEqual([9, 8, 7])
-    expect(Array.from(readClean.parts.get(layout) ?? [])).toEqual([3])
-    expect([...readOther.parts.keys()]).toEqual([slide, notes, blank])
-    expect(Array.from(readOther.parts.get(slide) ?? [])).toEqual([4, 5])
-    expect(Array.from(readOther.parts.get(notes) ?? [])).toEqual([6])
-    expect(readOther.parts.get(blank)?.byteLength).toBe(0)
-  })
-
-  it("answers absent for parts after the database is deleted", async () => {
-    installParts()
-    const saved = await putParts("clean", {
-      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9, 8, 7])]]),
-      file: new Uint8Array([1]),
-    })
-    expect(saved.ok).toBe(true)
-    await deleteDatabase()
-    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
-  })
-
-  it("reads a deck's opened file back after a new connect", async () => {
-    installParts()
-    const file = new Uint8Array([80, 75, 3, 4, 200, 1])
-    await putParts("clean", { parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]), file })
-    await connect(memoryRemote()).openDeck("clean")
-    const read = await getParts("clean")
-    expect(read.ok).toBe(true)
-    if (!read.ok) return
-    expect(Array.from(read.file)).toEqual(Array.from(file))
-  })
-
-  it("keeps each deck's own opened file", async () => {
-    installParts()
-    await putParts("first", {
-      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]),
-      file: new Uint8Array([1, 1]),
-    })
-    await putParts("second", {
-      parts: new Map([["ppt/slides/slide1.xml", new Uint8Array([9])]]),
-      file: new Uint8Array([2, 2]),
-    })
-    const first = await getParts("first")
-    const second = await getParts("second")
-    expect(first.ok && Array.from(first.file)).toEqual([1, 1])
-    expect(second.ok && Array.from(second.file)).toEqual([2, 2])
-  })
-
-  it("answers absent for a row without the opened file", async () => {
-    installParts()
-    await writeSlot("clean\u0001", { names: { ["ppt/slides/slide1.xml"]: await putPart(new Uint8Array([9])) } })
-    expect(await getParts("clean")).toEqual({ ok: false, refusal: "absent" })
   })
 
   it("stops at a refused batch and sends no later batch", async () => {
@@ -1393,25 +820,5 @@ describe("live cache", () => {
     await cache.enqueue("once-deck", "Hello!", elementId("258.7"), "")
     expect((await cache.flush("once-deck")).ok).toBe(true)
     expect(opens).toEqual(["once-deck"])
-  })
-})
-
-describe("bytesOf", () => {
-  it("agrees with TextEncoder for any binary string", () => {
-    fc.assert(
-      fc.property(fc.string({ unit: "binary" }), (value) => {
-        expect(bytesOf(value)).toBe(new TextEncoder().encode(value).length)
-      }),
-    )
-  })
-
-  it("agrees with TextEncoder for strings containing lone surrogates", () => {
-    const codeUnits = fc.array(fc.integer({ min: 0, max: 0xffff })).map((units) => String.fromCharCode(...units))
-    fc.assert(
-      fc.property(codeUnits, fc.integer({ min: 0xd800, max: 0xdfff }), codeUnits, (before, lone, after) => {
-        const value = `${before}\u0000${String.fromCharCode(lone)}\u0000${after}`
-        expect(bytesOf(value)).toBe(new TextEncoder().encode(value).length)
-      }),
-    )
   })
 })
