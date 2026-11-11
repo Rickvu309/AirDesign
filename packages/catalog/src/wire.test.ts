@@ -497,7 +497,7 @@ describe("projectTools", () => {
   })
 
   it("throws when an agent row omits where it runs", () => {
-    expect(() => projectTools({ bad: { kind: "command", exposure: "agent", description: "x" } })).toThrow(
+    expect(() => projectTools({ bad: { kind: "command", exposure: "agent", description: "x" } as never })).toThrow(
       "agent tool bad must say where it runs",
     )
   })

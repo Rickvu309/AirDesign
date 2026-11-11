@@ -1,4 +1,12 @@
-import { catalog, projectTools, readAgentEdit, readCapture, readRun, type WireRefusal } from "@airdesign/catalog"
+import {
+  catalog,
+  projectTools,
+  readAgentEdit,
+  readCapture,
+  readRun,
+  type AgentOp,
+  type WireRefusal,
+} from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog, AdmissionText } from "./admit.js"
@@ -105,18 +113,21 @@ function stopRun(raw: unknown, session: Session): ToolResult {
 
 function captureSlide(raw: unknown, session: Session): ToolResult {
   const parsed = readCapture(raw)
-  if (!parsed.ok) return refused(session.deck, parsed.refusal)
+  if (!parsed.ok) return editRefusal(session.deck, parsed.refusal, [])
   if (parsed.deck !== session.deck.id) return refused(session.deck, "deck")
   const code = reach(session.tab ?? absentTab)
   if (code === "ready") return reached(session.deck, "device", nextStep.ready)
   return reached(session.deck, code, nextStep[code])
 }
 
+const handlers: Record<AgentOp, (raw: unknown, session: Session) => ToolResult> = {
+  edit_deck: editDeck,
+  stop_run: stopRun,
+  capture_slide: captureSlide,
+}
+
 export function callTool(name: string, raw: unknown, session: Session): ToolResult {
   const tool = projectTools(catalog).find((item) => item.name === name)
   if (tool === undefined) return refused(session.deck, "field")
-  if (tool.op === "edit_deck" && tool.runsOn === "server") return editDeck(raw, session)
-  if (tool.op === "stop_run" && tool.runsOn === "server") return stopRun(raw, session)
-  if (tool.op === "capture_slide" && tool.runsOn === "device") return captureSlide(raw, session)
-  return refused(session.deck, "field")
+  return handlers[tool.op](raw, session)
 }

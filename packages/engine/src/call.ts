@@ -17,6 +17,7 @@ import {
   readRun,
   readRunStart,
   type CallRefusal,
+  type CommandOp,
   type DeckId,
   type WireChange,
   type WireEdit,
@@ -219,18 +220,8 @@ function callEndRun(deck: Deck, caller: Caller, raw: unknown, end: typeof stopRu
 }
 
 export function call(op: "start_run", deck: Deck, caller: Caller, raw: unknown): StartResult
-export function call(
-  op: "commit_edits" | "edit_deck" | "stop_run" | "undo_run",
-  deck: Deck,
-  caller: Caller,
-  raw: unknown,
-): CallResult
-export function call(
-  op: "commit_edits" | "edit_deck" | "start_run" | "stop_run" | "undo_run",
-  deck: Deck,
-  caller: Caller,
-  raw: unknown,
-): CallResult | StartResult {
+export function call(op: Exclude<CommandOp, "start_run">, deck: Deck, caller: Caller, raw: unknown): CallResult
+export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): CallResult | StartResult {
   if (op === "start_run") return callStartRun(deck, caller, raw)
   if (op === "undo_run") return callEndRun(deck, caller, raw, undoRun)
   if (op === "stop_run") {

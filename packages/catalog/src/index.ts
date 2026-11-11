@@ -1,4 +1,4 @@
-export { catalog, projectTools, type AgentTool, type OpRow } from "./catalog.js"
+export { catalog, projectTools, type AgentOp, type AgentTool, type CommandOp, type OpRow } from "./catalog.js"
 export { storableText } from "./storable-text.js"
 export {
   deckRoutes,
