@@ -12,6 +12,7 @@ export {
   type PaintReader,
   type SlidePaint,
 } from "./paint-reader.js"
+export type { PaintBullet, PaintParagraph, PaintRun, PaintRunStyle, PaintSpacing, PaintText } from "./paint-text.js"
 export { readShapes, readSlides, type ReadShape, type ReadSlide, type ShapeKind } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { CompressorError } from "./package-carry.js"
