@@ -228,7 +228,14 @@ describe("database migrations", () => {
     expect(await applySchema(migrator)).toEqual({ applied: latest - 1, at: latest })
     const after = await migrator.query("select * from deck.saved")
     expect(after.rows).toEqual([
-      { ...before.rows[0], original_key: null, original_bytes: null, original_sha256: null, original_stored: false },
+      {
+        ...before.rows[0],
+        original_key: null,
+        original_bytes: null,
+        original_sha256: null,
+        original_stored: false,
+        original_until: null,
+      },
     ])
     const deck = await open(roleUrl("deck", database))
     await expect(

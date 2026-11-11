@@ -38,15 +38,16 @@ export async function uploadOriginal(
   const key = `originals/${account}/${parsed.deck}/${mint()}`
   const result = await db.query<OriginalRow>(
     `with prior as (
-       select id, original_key from deck.saved where id = $1 and owner = $2 and not original_stored for update
+       select id, original_key, original_until from deck.saved where id = $1 and owner = $2 and not original_stored for update
      ), updated as (
-       update deck.saved set original_key = $3, original_bytes = $4, original_sha256 = $5
+       update deck.saved set original_key = $3, original_bytes = $4, original_sha256 = $5,
+         original_until = now() + interval '15 minutes'
        from prior where deck.saved.id = prior.id
        returning deck.saved.original_key, original_bytes, original_sha256, original_stored,
-         prior.original_key as previous_key
+         prior.original_key as previous_key, prior.original_until as previous_until
      ), queued as (
-       insert into deck.original_delete (key, owner)
-       select previous_key, $2 from updated where previous_key is not null
+       insert into deck.original_delete (key, owner, expires)
+       select previous_key, $2, coalesce(previous_until, now()) from updated where previous_key is not null
        on conflict (key) do nothing
      )
      select * from updated`,
@@ -83,18 +84,42 @@ export async function downloadOriginal(db: Sql, deck: DeckId, email: string, sto
   }
 }
 
-export async function removeOriginals(db: Sql, email: string, store?: OriginalStore): Promise<void> {
-  if (store === undefined) return
-  const result = await db.query<{ key: string; expired: boolean }>(
-    "select key, expires <= now() as expired from deck.original_delete where owner = $1 order by expires limit 100",
-    [email],
+type Queued = { readonly key: string; readonly expired: boolean }
+
+async function attempt(db: Sql, store: OriginalStore, row: Queued): Promise<void> {
+  await db.query("update deck.original_delete set attempted = now() where key = $1", [row.key])
+  try {
+    await store.delete(row.key)
+  } catch {
+    process.stderr.write("api original delete failed: storage\n")
+    return
+  }
+  if (row.expired) await db.query("delete from deck.original_delete where key = $1", [row.key])
+}
+
+export async function discardOriginals(db: Sql, keys: readonly string[], store?: OriginalStore): Promise<void> {
+  if (store === undefined || keys.length === 0) return
+  const result = await db.query<Queued>(
+    "select key, expires <= now() as expired from deck.original_delete where key = any($1::text[])",
+    [keys],
   )
-  for (const row of result.rows) {
-    try {
-      await store.delete(row.key)
-      if (row.expired) await db.query("delete from deck.original_delete where key = $1", [row.key])
-    } catch {
-      process.stderr.write("api original delete failed: storage\n")
-    }
+  for (const row of result.rows) await attempt(db, store, row)
+}
+
+export async function drainOriginals(
+  db: Sql,
+  store: OriginalStore | undefined,
+  options: { readonly owner?: string; readonly batch?: number } = {},
+): Promise<void> {
+  if (store === undefined) return
+  try {
+    const result = await db.query<Queued>(
+      `select key, expires <= now() as expired from deck.original_delete
+       where $1::text is null or owner = $1 order by attempted, key limit $2`,
+      [options.owner ?? null, options.batch ?? 100],
+    )
+    for (const row of result.rows) await attempt(db, store, row)
+  } catch {
+    process.stderr.write("api original drain failed\n")
   }
 }

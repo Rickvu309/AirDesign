@@ -91,12 +91,15 @@ alter table deck.saved
   add column original_key text,
   add column original_bytes integer,
   add column original_sha256 text,
-  add column original_stored boolean not null default false;
+  add column original_stored boolean not null default false,
+  add column original_until timestamptz;
 create table deck.original_delete (
   key text primary key,
   owner text not null,
-  expires timestamptz not null default now() + interval '15 minutes'
+  expires timestamptz not null default now(),
+  attempted timestamptz not null default now()
 );
+create index original_delete_attempted on deck.original_delete (attempted, key);
 grant select, insert, update, delete on deck.original_delete to deck;
 `,
   },

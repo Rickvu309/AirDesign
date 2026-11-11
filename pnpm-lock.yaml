@@ -241,7 +241,7 @@ importers:
         specifier: ^2.4.0
         version: 2.4.0
       aws4fetch:
-        specifier: ^1.0.20
+        specifier: 1.0.20
         version: 1.0.20
       pg:
         specifier: ^8.16.3

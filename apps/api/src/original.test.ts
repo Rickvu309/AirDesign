@@ -6,6 +6,7 @@ import { limits } from "@airdesign/document"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type OriginalUpload } from "./index.js"
 import { LocalOriginalStore } from "./local-original-store.js"
+import { drainOriginals } from "./original.js"
 
 const bytes = Buffer.from("original presentation")
 const sha256 = createHash("sha256").update(bytes).digest("hex")
@@ -327,4 +328,97 @@ it("a reopened deck cannot be damaged by an earlier upload or deletion retry", a
   await post("/decks/list", {})
   expect(await store.size(oldKey)).toBeUndefined()
   expect((await post("/decks/original/done", { deck: id })).json).toEqual({ ok: true })
+})
+
+it("deletes a newly trashed original despite an unexpired retry backlog", async () => {
+  const backlog = Array.from({ length: 100 }, (_, index) => `backlog/${String(index)}`)
+  await admin.query(
+    `insert into deck.original_delete (key, owner, expires, attempted)
+     select key, 'original@example.com', now() + interval '1 minute', '1970-01-01' from unnest($1::text[]) as key`,
+    [backlog],
+  )
+  try {
+    const id = await stored()
+    const object = await key(id)
+    await post("/decks/trash", { deck: id })
+    expect((await post("/decks/delete", { decks: [id] })).json).toEqual({ ok: true, deleted: [id] })
+    expect(await store.size(object)).toBeUndefined()
+    const aged = await stored()
+    const agedObject = await key(aged)
+    await admin.query("update deck.saved set trashed = now() - interval '31 days' where id = $1", [aged])
+    await post("/decks/list", {})
+    expect(await store.size(agedObject)).toBeUndefined()
+  } finally {
+    await admin.query("delete from deck.original_delete where key = any($1::text[])", [backlog])
+  }
+})
+
+it("retries failed original deletion after storage recovers without another account request", async () => {
+  const id = await stored()
+  const object = await key(id)
+  await post("/decks/trash", { deck: id })
+  const failing = vi.spyOn(store, "delete").mockRejectedValue(new Error("offline"))
+  const logged = vi.spyOn(process.stderr, "write").mockImplementation(() => true)
+  try {
+    expect((await post("/decks/delete", { decks: [id] })).json).toEqual({ ok: true, deleted: [id] })
+  } finally {
+    failing.mockRestore()
+    logged.mockRestore()
+  }
+  expect(await store.size(object)).toBe(bytes.length)
+  await admin.query("update deck.original_delete set expires = now() - interval '1 second' where key = $1", [object])
+  await drainOriginals(admin, store, { batch: 1000 })
+  expect(await store.size(object)).toBeUndefined()
+  expect((await admin.query("select key from deck.original_delete where key = $1", [object])).rows).toEqual([])
+})
+
+it("keeps draining the rows behind a row that always fails", async () => {
+  await admin.query(
+    `insert into deck.original_delete (key, owner, expires, attempted) values
+     ('stuck/b', 'nobody@example.com', now() - interval '1 second', '1970-01-01'),
+     ('stuck/a', 'nobody@example.com', now() - interval '1 second', '1970-01-02')`,
+  )
+  store.objects.set("stuck/a", bytes)
+  const real = store.delete.bind(store)
+  const failing = vi
+    .spyOn(store, "delete")
+    .mockImplementation(async (object) => (object === "stuck/b" ? Promise.reject(new Error("down")) : real(object)))
+  const logged = vi.spyOn(process.stderr, "write").mockImplementation(() => true)
+  try {
+    await drainOriginals(admin, store, { batch: 1 })
+    await drainOriginals(admin, store, { batch: 1 })
+    expect(await store.size("stuck/a")).toBeUndefined()
+    expect((await admin.query("select key from deck.original_delete where key like 'stuck/%'")).rows).toEqual([
+      { key: "stuck/b" },
+    ])
+  } finally {
+    failing.mockRestore()
+    logged.mockRestore()
+    await admin.query("delete from deck.original_delete where key like 'stuck/%'")
+  }
+})
+
+it("scopes each original key to its account and deck", async () => {
+  const account = (email: string) => createHash("sha256").update(email).digest("hex")
+  const shared = `scoped${String(++sequence)}`
+  await post("/decks/open", { deck: shared })
+  await upload(shared)
+  const first = await key(shared)
+  await post("/decks/trash", { deck: shared })
+  await post("/decks/delete", { decks: [shared] })
+  const other = await sign("scope-other@example.com")
+  await post("/decks/open", { deck: shared }, other)
+  expect(
+    (await post("/decks/original/upload", { deck: shared, bytes: bytes.length, sha256 }, other)).json,
+  ).toMatchObject({ ok: true })
+  const second = await key(shared)
+  const one = await deck()
+  const two = await deck()
+  await upload(one)
+  await upload(two)
+  expect(first.startsWith(`originals/${account("original@example.com")}/${shared}/`)).toBe(true)
+  expect(second.startsWith(`originals/${account("scope-other@example.com")}/${shared}/`)).toBe(true)
+  expect((await key(one)).startsWith(`originals/${account("original@example.com")}/${one}/`)).toBe(true)
+  expect((await key(two)).startsWith(`originals/${account("original@example.com")}/${two}/`)).toBe(true)
+  expect(new Set([first, second, await key(one), await key(two)]).size).toBe(4)
 })
