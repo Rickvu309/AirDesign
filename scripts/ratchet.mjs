@@ -228,6 +228,8 @@ export const allowedCommit = (comments, sha) =>
     ? sha
     : undefined
 
+export const allowRole = (role, permission) => (permission === "admin" ? "OWNER" : role)
+
 const github = (args) =>
   execFileSync("gh", ["api", ...args], {
     encoding: "utf8",
@@ -241,8 +243,21 @@ const rows = (endpoint, shape) =>
     .filter((line) => line !== "")
     .map((line) => JSON.parse(line))
 
+const permissionOf = (repository, user) => {
+  try {
+    return github([`repos/${repository}/collaborators/${user}/permission`, "--jq", ".permission"]).trim()
+  } catch {
+    return undefined
+  }
+}
+
 export const readComments = (repository, number) =>
-  rows(`repos/${repository}/issues/${number}/comments`, "{body, role: .author_association}")
+  rows(`repos/${repository}/issues/${number}/comments`, "{body, role: .author_association, user: .user.login}").map(
+    ({ body, role, user }) => ({
+      body,
+      role: String(body).startsWith("owner-allows ") ? allowRole(role, permissionOf(repository, user)) : role,
+    }),
+  )
 
 const missing = (error) => String(error.stderr ?? error.message).includes("HTTP 404")
 

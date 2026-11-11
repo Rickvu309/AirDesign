@@ -3,6 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
+  allowRole,
   allowedCommit,
   approvedCommit,
   contents,
@@ -324,6 +325,15 @@ same(
   undefined,
 )
 same("a comment with no text allows nothing", allowedCommit([{ role: "MEMBER" }], "abc"), undefined)
+same("an admin of the repository allows as its owner", allowRole("CONTRIBUTOR", "admin"), "OWNER")
+same("a writer keeps the role GitHub gave", allowRole("CONTRIBUTOR", "write"), "CONTRIBUTOR")
+same("a member with no admin right keeps the role GitHub gave", allowRole("MEMBER", "read"), "MEMBER")
+same("a permission that could not be read changes nothing", allowRole("NONE", undefined), "NONE")
+same(
+  "an admin whose membership is hidden from the reader still allows",
+  allowedCommit([{ body: "owner-allows abc", role: allowRole("CONTRIBUTOR", "admin") }], "abc"),
+  "abc",
+)
 
 const blocksOf = (change) =>
   ownerReasons({ baseMetrics: metrics, headMetrics: metrics, changedFiles: [], changedScripts: [], ...change }).map(
