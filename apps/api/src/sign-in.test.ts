@@ -304,15 +304,8 @@ describe("sign-in", () => {
       seen.push({ url: String(input), body: String(init?.body ?? "") })
       return new Response("{}", { status: 200 })
     }) as typeof fetch
-    process.env.RESEND_API_KEY = "test-key"
-    process.env.RESEND_FROM = "sign-in@localhost"
     const text = "https://localhost/sign-in/link?token=abc\n123456"
-    try {
-      await sendWithResend({ to: "a@example.com", text })
-    } finally {
-      delete process.env.RESEND_API_KEY
-      delete process.env.RESEND_FROM
-    }
+    await sendWithResend({ to: "a@example.com", text }, { key: "test-key", from: "sign-in@localhost" })
     const body = seen[0]?.body
     if (body === undefined) throw new Error("body")
     const posted = JSON.parse(body) as { readonly text: string; readonly subject: string }
@@ -609,17 +602,10 @@ describe("sign-in", () => {
       seen.push({ body: String(init?.body ?? "") })
       return new Response("{}", { status: 200 })
     }) as typeof fetch
-    process.env.RESEND_API_KEY = "test-key"
-    process.env.RESEND_FROM = "sign-in@localhost"
     const link = "https://app.example/sign-in/link?token=abc"
     const code = "123456"
     const text = `${link}\n${code}`
-    try {
-      await sendWithResend({ to: "a@example.com", text })
-    } finally {
-      delete process.env.RESEND_API_KEY
-      delete process.env.RESEND_FROM
-    }
+    await sendWithResend({ to: "a@example.com", text }, { key: "test-key", from: "sign-in@localhost" })
     const body = seen[0]?.body
     if (body === undefined) throw new Error("body")
     const posted = JSON.parse(body) as { readonly text: string; readonly subject: string }

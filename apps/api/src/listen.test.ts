@@ -33,12 +33,21 @@ function freePort(): Promise<number> {
   })
 }
 
+const resendStub = `
+globalThis.fetch = async (address, init) => {
+  const sent = String(address) === "https://api.resend.com/emails" && init.headers.authorization === "Bearer test-key"
+  return new Response("{}", { status: sent && JSON.parse(init.body).from === "sign-in@localhost" ? 200 : 500 })
+}
+`
+
 function childEnv(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
     PUBLIC_ORIGIN: "https://app.example",
     SITE_ORIGIN: "https://site.example",
     MCP_RESOURCE: "https://mcp.example/mcp",
+    RESEND_API_KEY: "test-key",
+    RESEND_FROM: "sign-in@localhost",
   }
   delete env.FORCE_COLOR
   delete env.NO_COLOR
@@ -324,13 +333,12 @@ describe("start entry", () => {
         SESSION_DATABASE_URL: info.session,
         DECK_DATABASE_URL: info.deck,
         LISTEN_DATABASE_URL: info.listen,
-        RESEND_API_KEY: undefined,
-        RESEND_FROM: undefined,
       }),
+      [`--import=data:text/javascript,${encodeURIComponent(resendStub)}`],
     )
     await untilHealth(port, child)
     const response = await ask(`http://127.0.0.1:${String(port)}`, "POST", "/sign-in/email", { email })
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(202)
   }, 20_000)
 
   it("starts with an empty cookie domain", async () => {

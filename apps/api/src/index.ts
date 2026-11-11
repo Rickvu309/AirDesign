@@ -2,7 +2,7 @@ export { acceptCode, acceptLink, findAccess, issueMail } from "./account.js"
 export { screenFor, type Screen } from "./clients.js"
 export { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 export { DeckListen, type CaughtRevision } from "./listen.js"
-export { mailText, sendWithResend, signLink, type Mail, type Sender } from "./mail.js"
+export { mailText, sendWithResend, signLink, type Mail, type ResendAccount, type Sender } from "./mail.js"
 export { openPool, type Sql } from "./pool.js"
 export {
   chosenRevision,

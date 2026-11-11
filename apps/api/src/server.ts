@@ -52,14 +52,19 @@ export type ApiOptions = {
   readonly smokeToken?: string
 }
 
-type Visit = {
+type Context = {
   readonly options: ApiOptions
   readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
   readonly req: IncomingMessage
   readonly res: ServerResponse
-  readonly url: URL
+}
+
+type Visit = Context & {
+  readonly name: string
+  readonly query: URLSearchParams
+  readonly body: () => Promise<Buffer | undefined>
 }
 
 type Serve = (visit: Visit) => Promise<void>
@@ -68,10 +73,16 @@ export type Route = {
   readonly method: "GET" | "POST" | "any"
   readonly path: string
   readonly serve: Serve
+  readonly cap?: number
 }
 
 export const smokeEmail = "smoke@airdesign.app"
 export const bodyCap = 1_000_000
+export const formCap = 16_384
+const localBase = "http://127.0.0.1"
+const unreadTarget = "The request target could not be read."
+const unservedMethod = "This address does not answer that method."
+const mcpMethods = ["GET", "POST", "DELETE"]
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
 const plainHost = /^[A-Za-z0-9.-]+$/
@@ -112,15 +123,20 @@ function redirect(res: ServerResponse, location: string, cookie?: string): void 
   res.end()
 }
 
-async function readBody(req: IncomingMessage): Promise<Buffer | undefined> {
+async function readBody(req: IncomingMessage, cap: number): Promise<Buffer | undefined> {
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
     size += buffer.length
-    if (size <= bodyCap) chunks.push(buffer)
+    if (size <= cap) chunks.push(buffer)
   }
-  return size > bodyCap ? undefined : Buffer.concat(chunks)
+  return size > cap ? undefined : Buffer.concat(chunks)
+}
+
+function bodyOnce(req: IncomingMessage, cap: number): () => Promise<Buffer | undefined> {
+  let read: Promise<Buffer | undefined> | undefined
+  return () => (read ??= readBody(req, cap))
 }
 
 function parsedJson(body: Buffer): unknown {
@@ -147,7 +163,7 @@ function accepted<Value extends { readonly ok: boolean }>(
 }
 
 async function readJson<Read extends Reader>(visit: Visit, read: Read): Promise<ReturnType<Read> | undefined> {
-  const body = await readBody(visit.req)
+  const body = await visit.body()
   if (body === undefined) {
     answerSize(visit.res)
     return undefined
@@ -159,12 +175,18 @@ async function readForm<Parsed>(
   visit: Visit,
   read: (contentType: unknown, pairs: FormPairs) => Parsed,
 ): Promise<Parsed | undefined> {
-  const body = await readBody(visit.req)
+  const body = await visit.body()
   if (body === undefined) {
     answerSize(visit.res)
     return undefined
   }
   return read(visit.req.headers["content-type"], new URLSearchParams(body.toString("utf8")))
+}
+
+function readTarget(raw: string | undefined): URL | undefined {
+  if (raw === undefined || !raw.startsWith("/")) return undefined
+  const target = readUrl(raw, localBase)
+  return target?.origin === localBase ? target : undefined
 }
 
 function gone(res: ServerResponse): AbortSignal {
@@ -175,18 +197,13 @@ function gone(res: ServerResponse): AbortSignal {
   return controller.signal
 }
 
-async function signedIn({ options, req, res }: Visit): Promise<string | undefined> {
+async function signedIn({ options, req, res, body }: Visit): Promise<string | undefined> {
   const token = readSessionCookie(req.headers.cookie)
-  if (token === undefined) {
-    sendJson(res, 401, { ok: false, refusal: "session" })
-    return undefined
-  }
-  const email = await findAccess(options.session, token)
-  if (email === undefined) {
-    sendJson(res, 401, { ok: false, refusal: "session" })
-    return undefined
-  }
-  return email
+  const email = token === undefined ? undefined : await findAccess(options.session, token)
+  if (email !== undefined) return email
+  await body()
+  sendJson(res, 401, { ok: false, refusal: "session" })
+  return undefined
 }
 
 async function caller(visit: Visit): Promise<string | undefined> {
@@ -196,6 +213,7 @@ async function caller(visit: Visit): Promise<string | undefined> {
   const secret = readBearer(authorization)
   const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
   if (bearer?.ok === true) return bearer.principal
+  await visit.body()
   res.setHeader("www-authenticate", 'Bearer error="invalid_token"')
   sendJson(res, 401, { error: "invalid_token" })
   return undefined
@@ -231,7 +249,8 @@ function notFound(res: ServerResponse): void {
   res.end()
 }
 
-async function smokeRoute({ options, req, res }: Visit): Promise<void> {
+async function smokeRoute({ options, req, res, body }: Visit): Promise<void> {
+  await body()
   const given = readBearer(req.headers.authorization)
   if (options.smokeToken === undefined || given === undefined || !sameSecret(given, options.smokeToken)) {
     notFound(res)
@@ -268,8 +287,8 @@ async function codeRoute(visit: Visit): Promise<void> {
   sendJson(res, 200, { ok: true }, sessionCookie(token, options.cookieDomain))
 }
 
-async function linkRoute({ options, url, res }: Visit): Promise<void> {
-  const token = readLinkToken(url.searchParams.get("token"))
+async function linkRoute({ options, query, res }: Visit): Promise<void> {
+  const token = readLinkToken(query.get("token"))
   const expired = `${options.siteOrigin}/sign-in/expired`
   if (token === undefined) {
     redirect(res, expired)
@@ -378,9 +397,20 @@ async function revokeRoute(visit: Visit): Promise<void> {
 }
 
 async function mcpRoute(visit: Visit): Promise<void> {
-  const { options, logs, now, mint, req, res } = visit
+  const { options, logs, now, mint, req, res, name } = visit
+  if (!mcpMethods.includes(req.method ?? "")) {
+    await visit.body()
+    res.setHeader("allow", mcpMethods.join(", "))
+    sendJson(res, 405, { ok: false, refusal: unservedMethod })
+    return
+  }
   const email = await caller(visit)
   if (email === undefined) return
+  const body = await visit.body()
+  if (body === undefined) {
+    answerSize(res)
+    return
+  }
   await serveMcp(
     {
       deck: options.deck,
@@ -390,9 +420,11 @@ async function mcpRoute(visit: Visit): Promise<void> {
       mint,
       hosts: options.hosts ?? localHosts,
       bodyCap,
+      fail: (error) => answerThrow(visit, name, error),
     },
     req,
     res,
+    body,
   )
 }
 
@@ -412,8 +444,8 @@ export const routes: readonly Route[] = [
   { method: "POST", path: "/oauth/register", serve: registerRoute },
   { method: "POST", path: "/oauth/client", serve: clientRoute },
   { method: "POST", path: "/oauth/approve", serve: approveRoute },
-  { method: "POST", path: "/oauth/token", serve: tokenRoute },
-  { method: "POST", path: "/oauth/revoke", serve: revokeRoute },
+  { method: "POST", path: "/oauth/token", serve: tokenRoute, cap: formCap },
+  { method: "POST", path: "/oauth/revoke", serve: revokeRoute, cap: formCap },
   { method: "POST", path: "/sign-in/email", serve: emailRoute },
   { method: "POST", path: "/sign-in/code", serve: codeRoute },
   { method: "GET", path: "/sign-in/link", serve: linkRoute },
@@ -438,14 +470,14 @@ function failureCode(error: unknown): string {
   return typeof error.code === "string" ? error.code : "none"
 }
 
-function answerThrow({ req, res }: Visit, route: Route, error: unknown): void {
+function answerThrow({ req, res }: Context, name: string, error: unknown): void {
   if (req.errored !== null) return
   if (causedByInput(error) && !res.headersSent) {
     sendJson(res, 400, { ok: false, refusal: "The request could not be read." })
     return
   }
-  const name = error instanceof Error ? error.name : "unknown"
-  process.stderr.write(`api ${route.method} ${route.path} failed: ${name} ${failureCode(error)}\n`)
+  const kind = error instanceof Error ? error.name : "unknown"
+  process.stderr.write(`api ${name} failed: ${kind} ${failureCode(error)}\n`)
   if (res.headersSent) {
     res.destroy()
     return
@@ -453,25 +485,30 @@ function answerThrow({ req, res }: Visit, route: Route, error: unknown): void {
   sendJson(res, 500, { ok: false, refusal: "server" })
 }
 
-async function handle(context: Omit<Visit, "url">): Promise<void> {
+function answerNoRoute(res: ServerResponse, url: URL | undefined): void {
+  if (url === undefined) sendJson(res, 400, { ok: false, refusal: unreadTarget })
+  else notFound(res)
+}
+
+async function handle(context: Context): Promise<void> {
   const { req, res } = context
-  const url = readUrl(req.url ?? "/", "http://127.0.0.1")
-  if (url === undefined) {
-    sendJson(res, 400, { ok: false, refusal: "field" })
-    return
-  }
-  const route = routes.find(
-    (candidate) => candidate.path === url.pathname && (candidate.method === "any" || candidate.method === req.method),
-  )
-  if (route === undefined) {
-    notFound(res)
-    return
-  }
-  const visit = { ...context, url }
+  let name = "request"
   try {
-    await route.serve(visit)
+    const url = readTarget(req.url)
+    const route = routes.find(
+      (candidate) =>
+        candidate.path === url?.pathname && (candidate.method === "any" || candidate.method === req.method),
+    )
+    const body = bodyOnce(req, route?.cap ?? bodyCap)
+    if (url === undefined || route === undefined) {
+      await body()
+      answerNoRoute(res, url)
+      return
+    }
+    name = `${route.method} ${route.path}`
+    await route.serve({ ...context, name, query: url.searchParams, body })
   } catch (error) {
-    answerThrow(visit, route, error)
+    answerThrow(context, name, error)
   }
 }
 

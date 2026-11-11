@@ -1208,7 +1208,7 @@ describe("mcp route", () => {
     })
     const blockedText = await blocked.text()
     expect(blocked.status).toBe(413)
-    expect(blockedText).toContain("Payload Too Large")
+    expect(JSON.parse(blockedText)).toEqual({ ok: false, refusal: "size" })
     expect(await row(named.deck)).toMatchObject({ revision: 0, register: { elements: {} } })
     const allowed = await fetch(`${base}/mcp`, {
       method: "POST",

@@ -5,7 +5,7 @@ import type { Answer } from "./answer.js"
 import { readClient, screenFor, type Client } from "./clients.js"
 import { newApprovalId, storeApproval } from "./grants.js"
 import type { Sql } from "./pool.js"
-import { ownResource } from "./resource.js"
+import { ownResource, readUrl } from "./resource.js"
 import { newSecret } from "./secrets.js"
 
 export const codeLifetime = 600_000
@@ -22,12 +22,14 @@ async function checkedClient(
   db: Sql,
   request: ClientRequest,
   own: string,
-): Promise<{ readonly client: Client; readonly redirectUri: string } | Answer> {
+): Promise<{ readonly client: Client; readonly redirectUri: string; readonly target: URL } | Answer> {
   const client = await readClient(db, request.clientId)
   if (client === undefined) return refusal("client")
   if (!client.redirectUris.includes(request.redirectUri)) return refusal("redirect")
+  const target = readUrl(request.redirectUri)
+  if (target === undefined) return refusal("redirect")
   if (!ownResource(request.resource, own)) return refusal("resource")
-  return { client, redirectUri: request.redirectUri }
+  return { client, redirectUri: request.redirectUri, target }
 }
 
 function isAnswer(value: { readonly client: Client } | Answer): value is Answer {
@@ -43,7 +45,7 @@ export async function describeClient(db: Sql, request: ClientRequest, own: strin
       ok: true,
       client_name: checked.client.name,
       screen: screenFor(checked.client.name, checked.redirectUri),
-      redirect_host: new URL(checked.redirectUri).host,
+      redirect_host: checked.target.host,
     },
   }
 }
@@ -70,7 +72,7 @@ export async function approve(
     },
     code,
   )
-  const target = new URL(checked.redirectUri)
+  const { target } = checked
   target.searchParams.set("code", code)
   if (request.state === undefined) target.searchParams.delete("state")
   else target.searchParams.set("state", request.state)

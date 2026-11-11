@@ -1,10 +1,17 @@
-import { connect } from "node:net"
+import { readFile, readdir } from "node:fs/promises"
+import { createServer } from "node:http"
+import { connect, type AddressInfo } from "node:net"
+import path from "node:path"
 import type { Pool } from "pg"
+import { parseSync } from "oxc-parser"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
+import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
+import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
-import { bodyCap, routes } from "./server.js"
+import { serveMcp } from "./mcp.js"
+import { challengeOf } from "./secrets.js"
+import { bodyCap, formCap, routes } from "./server.js"
 
 type Wire = {
   readonly method: string
@@ -12,6 +19,7 @@ type Wire = {
   readonly headers: readonly string[]
   readonly body?: Buffer
   readonly chunked?: true
+  readonly host?: string
 }
 
 type Answer = {
@@ -27,6 +35,9 @@ type Attack = {
   readonly query?: string
   readonly headers?: readonly string[]
   readonly chunked?: true
+  readonly method?: string
+  readonly absolute?: string
+  readonly host?: string
 }
 
 type Good = {
@@ -109,6 +120,15 @@ const attacks: readonly Attack[] = [
   { name: "a nul bearer", headers: ["authorization: Bearer a\u0000b"] },
   { name: "a bad scheme", headers: ["authorization: Basic %"] },
   { name: "a bad origin", headers: ["origin: http://["] },
+  { name: "the trace method", method: "TRACE" },
+  { name: "the track method", method: "TRACK" },
+  { name: "a method nobody serves", method: "PROPFIND" },
+  { name: "an absolute target", absolute: "http://evil.example" },
+  { name: "an absolute target with userinfo", absolute: "http://user:secret@evil.example" },
+  { name: "a host with a port", host: "127.0.0.1:8080" },
+  { name: "a host with a bad port", host: "127.0.0.1:port" },
+  { name: "an absolute target and a host with a port", absolute: "http://evil.example", host: "127.0.0.1:8080" },
+  { name: "an absolute target to this host", absolute: "http://127.0.0.1", host: "127.0.0.1:8080" },
   { name: "a body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType },
   { name: "a chunked body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType, chunked: true },
 ]
@@ -124,6 +144,9 @@ const badTargets: readonly string[] = [
   "/%00",
   "/?%",
   "/%E0%A4%A",
+  "//evil.example/mcp",
+  "/\\evil.example/mcp",
+  "http://evil.example/mcp",
 ]
 
 const leaks: readonly RegExp[] = [
@@ -167,7 +190,7 @@ function exchange(port: number, wire: Wire): Promise<Answer> {
     const framing = wire.chunked === true ? ["transfer-encoding: chunked"] : length
     const lines = [
       `${wire.method} ${wire.target} HTTP/1.1`,
-      "host: 127.0.0.1",
+      `host: ${wire.host ?? "127.0.0.1"}`,
       "connection: close",
       ...wire.headers,
       ...framing,
@@ -207,7 +230,7 @@ function encoded(fields: Readonly<Record<string, string>>): string {
 }
 
 function methodsOf(method: string): readonly string[] {
-  return method === "any" ? ["POST", "GET", "DELETE", "PUT"] : [method]
+  return method === "any" ? ["POST", "GET", "DELETE", "PUT", "HEAD", "OPTIONS", "PATCH"] : [method]
 }
 
 function shapedWire(method: string, path: string, good: Good, cookie: readonly string[], fields: unknown): Wire {
@@ -254,8 +277,8 @@ function attackWire(method: string, path: string, attack: Attack, signedInCookie
   const cookie = [attack.cookie, signedInCookie].filter((part) => part !== undefined).join("; ")
   const body = typeof attack.body === "string" ? Buffer.from(attack.body, "latin1") : attack.body
   return {
-    method,
-    target: `${path}${attack.query ?? ""}`,
+    method: attack.method ?? method,
+    target: `${attack.absolute ?? ""}${path}${attack.query ?? ""}`,
     headers: [
       ...(cookie.length === 0 ? [] : [`cookie: ${cookie}`]),
       ...(attack.type === undefined ? [] : [`content-type: ${attack.type}`]),
@@ -264,6 +287,7 @@ function attackWire(method: string, path: string, attack: Attack, signedInCookie
     ],
     ...(body === undefined ? {} : { body }),
     ...(attack.chunked === undefined ? {} : { chunked: attack.chunked }),
+    ...(attack.host === undefined ? {} : { host: attack.host }),
   }
 }
 
@@ -282,7 +306,10 @@ describe("hostile input over every route", () => {
   let base = ""
   let port = 0
   let cookie = ""
+  const toolLogs = new Map<string, CallerLog>()
   let brokenBase = ""
+  let sessionDb: Pool | undefined
+  let accessToken = ""
   let thrown = new Error("unset")
   let close = async () => {}
   let goods: Readonly<Record<string, readonly Good[]>> = {}
@@ -292,6 +319,7 @@ describe("hostile input over every route", () => {
     const sessionPool = openPool(info.session, "fuzz-session")
     const deckPool = openPool(info.deck, "fuzz-deck")
     const listen = new DeckListen(info.listen)
+    sessionDb = sessionPool
     const served = await serve({
       session: sessionPool,
       deck: deckPool,
@@ -299,6 +327,7 @@ describe("hostile input over every route", () => {
       publicOrigin: "https://app.example",
       siteOrigin: "https://site.example",
       smokeToken,
+      logs: toolLogs,
       send: async (mail) => {
         mails.push(mail)
       },
@@ -334,6 +363,27 @@ describe("hostile input over every route", () => {
     const registered = await ask(base, "POST", "/oauth/register", { redirect_uris: ["https://client.example/cb"] })
     const clientId = (registered.json as { client_id: string }).client_id
     const redirect = "https://client.example/cb"
+    const verifier = "v".repeat(43)
+    const approved = await ask(
+      base,
+      "POST",
+      "/oauth/approve",
+      {
+        client_id: clientId,
+        redirect_uri: redirect,
+        code_challenge: challengeOf(verifier),
+        code_challenge_method: "S256",
+      },
+      cookie,
+    )
+    const issued = await askForm(base, "/oauth/token", {
+      grant_type: "authorization_code",
+      code: new URL((approved.json as { redirect: string }).redirect).searchParams.get("code") ?? "",
+      code_verifier: verifier,
+      client_id: clientId,
+      redirect_uri: redirect,
+    })
+    accessToken = (issued.json as { access_token: string }).access_token
     goods = {
       "GET /health": [{ shape: "none", answers: 200 }],
       "GET /version": [{ shape: "none", answers: 200 }],
@@ -428,6 +478,11 @@ describe("hostile input over every route", () => {
     await close()
   })
 
+  function send(wire: Wire): Promise<Answer> {
+    toolLogs.clear()
+    return exchange(port, wire)
+  }
+
   function keyOf(route: (typeof routes)[number]): string {
     return `${route.method} ${route.path}`
   }
@@ -445,7 +500,7 @@ describe("hostile input over every route", () => {
     for (const route of routes) {
       for (const good of goods[keyOf(route)] ?? []) {
         const method = route.method === "any" ? "POST" : route.method
-        const answer = await exchange(port, shapedWire(method, route.path, good, signedHeaders(), good.fields))
+        const answer = await send(shapedWire(method, route.path, good, signedHeaders(), good.fields))
         if (answer.status !== good.answers || !answer.text.includes(good.says ?? "")) {
           wrong.push(record(keyOf(route), answer))
         }
@@ -462,13 +517,13 @@ describe("hostile input over every route", () => {
         const held = signed ? cookie : undefined
         for (const method of methodsOf(route.method)) {
           for (const attack of attacks) {
-            const answer = await exchange(port, attackWire(method, route.path, attack, held))
+            const answer = await send(attackWire(method, route.path, attack, held))
             if (wrongAnswer(answer)) wrong.push(record(`${method} ${attack.name}`, answer))
           }
           if (method !== methodsOf(route.method)[0]) continue
           for (const good of goods[keyOf(route)] ?? []) {
             for (const [name, wire] of mutated(method, route.path, good, signed ? signedHeaders() : [])) {
-              const answer = await exchange(port, wire)
+              const answer = await send(wire)
               if (wrongAnswer(answer)) wrong.push(record(`${method} ${name}`, answer))
             }
           }
@@ -481,11 +536,173 @@ describe("hostile input over every route", () => {
   it("never answers 500 to a request target that is not a URL", async () => {
     const wrong: string[] = []
     for (const target of badTargets) {
-      const answer = await exchange(port, { method: "GET", target, headers: [] })
+      const answer = await send({ method: "GET", target, headers: [] })
       if (wrongAnswer(answer)) wrong.push(record(target, answer))
     }
     expect(wrong).toEqual([])
   })
+
+  it("refuses a method /mcp does not serve before the SDK sees it, signed in", async () => {
+    for (const method of ["TRACE", "PUT", "PROPFIND"]) {
+      const answer = await send({ method, target: "/mcp", headers: signedHeaders() })
+      expect(answer.status).toBe(405)
+      expect(answer.text).toContain('"refusal":"This address does not answer that method."')
+    }
+  })
+
+  it("refuses an absolute target before the SDK sees it, signed in", async () => {
+    const answer = await send({
+      method: "POST",
+      target: "http://evil.example/mcp",
+      host: "127.0.0.1:8080",
+      headers: [...signedHeaders(), `content-type: ${jsonType}`, mcpAccept],
+      body: Buffer.from("{}"),
+    })
+    expect(answer.status).toBe(400)
+    expect(answer.text).toContain('"refusal":"The request target could not be read."')
+  })
+
+  it("hands a failure inside the SDK to the boundary once", async () => {
+    const failures: unknown[] = []
+    const server = createServer((req, res) => {
+      void serveMcp(
+        {
+          deck: {} as Pool,
+          email: "a@example.com",
+          logs: new Map(),
+          now: () => 0,
+          mint: () => "id",
+          hosts: ["127.0.0.1"],
+          bodyCap,
+          fail: (error) => {
+            failures.push(error)
+            res.writeHead(500)
+            res.end("fixed")
+          },
+        },
+        req,
+        res,
+        Buffer.alloc(0),
+      )
+    })
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()))
+    try {
+      const answer = await exchange((server.address() as AddressInfo).port, {
+        method: "TRACE",
+        target: "/mcp",
+        headers: [],
+      })
+      expect(answer.status).toBe(500)
+      expect(answer.text).toContain("fixed")
+      expect(answer.text).not.toContain("jsonrpc")
+      expect(failures).toHaveLength(1)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
+  })
+
+  function mcpCall(toolArguments: unknown, headers: readonly string[]): Wire {
+    return {
+      method: "POST",
+      target: "/mcp",
+      headers: [...headers, `content-type: ${jsonType}`, mcpAccept],
+      body: Buffer.from(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "tools/call",
+          params: { name: "airdesign_edit_deck", arguments: toolArguments },
+        }),
+      ),
+    }
+  }
+
+  for (const hostile of ["a\u0000b", "\ud800", "a b"]) {
+    it(`refuses MCP tool arguments naming the deck ${JSON.stringify(hostile)} before Postgres`, async () => {
+      const answer = await send(mcpCall({ deck: hostile, base: 0, changes: [] }, signedHeaders()))
+      expect(answer.status).toBe(200)
+      expect(answer.text).not.toContain('"refusal":"store"')
+      expect(answer.text).toContain('"refusal":"deck"')
+    })
+  }
+
+  it("takes a bearer on /mcp only in the Bearer scheme", async () => {
+    const good = await send(mcpCall({ deck, base: 0, changes: [] }, [`authorization: Bearer ${accessToken}`]))
+    expect(good.status).toBe(200)
+    for (const header of [accessToken, `Basic ${accessToken}`, `Basic  ${accessToken}`, `Bearer ${accessToken} x`]) {
+      const answer = await send(mcpCall({ deck, base: 0, changes: [] }, [`authorization: ${header}`]))
+      expect(record(header.slice(0, 7), answer)).toContain("answered 401")
+    }
+  })
+
+  it("takes the smoke token only in the Bearer scheme", async () => {
+    for (const header of [smokeToken, `Basic ${smokeToken}`, `Basic  ${smokeToken}`, `Bearer ${smokeToken} x`]) {
+      const answer = await send({
+        method: "POST",
+        target: "/smoke/session",
+        headers: [`authorization: ${header}`],
+      })
+      expect(record(header.slice(0, 7), answer)).toContain("answered 404")
+    }
+  })
+
+  it("refuses a stored redirect address that does not parse", async () => {
+    await sessionDb?.query("insert into session.oauth_client (id, name, redirect_uris) values ($1, $2, $3)", [
+      "old-row",
+      null,
+      ["not a url"],
+    ])
+    const request = { client_id: "old-row", redirect_uri: "not a url" }
+    const described = await ask(base, "POST", "/oauth/client", request, cookie)
+    expect(described.status).toBe(400)
+    expect(described.json).toEqual({ ok: false, refusal: "redirect" })
+    const approved = await ask(
+      base,
+      "POST",
+      "/oauth/approve",
+      { ...request, code_challenge: "a".repeat(43), code_challenge_method: "S256" },
+      cookie,
+    )
+    expect(approved.status).toBe(400)
+    expect(approved.json).toEqual({ ok: false, refusal: "redirect" })
+  })
+
+  for (const route of ["/oauth/token", "/oauth/revoke"]) {
+    it(`never parses a form over the form cap on ${route}`, async () => {
+      const parse = vi.spyOn(globalThis, "URLSearchParams")
+      try {
+        for (const size of [formCap + 1, 980_000]) {
+          const answer = await send({
+            method: "POST",
+            target: route,
+            headers: [`content-type: ${formType}`],
+            body: Buffer.from("a&".repeat(size).slice(0, size)),
+          })
+          expect(answer.status).toBe(413)
+          expect(answer.text.endsWith('{"ok":false,"refusal":"size"}')).toBe(true)
+        }
+        expect(parse).not.toHaveBeenCalled()
+      } finally {
+        parse.mockRestore()
+      }
+    })
+
+    it(`parses a form exactly at the form cap on ${route}, once`, async () => {
+      const parse = vi.spyOn(globalThis, "URLSearchParams")
+      try {
+        const answer = await send({
+          method: "POST",
+          target: route,
+          headers: [`content-type: ${formType}`],
+          body: Buffer.from("a&".repeat(formCap / 2)),
+        })
+        expect(answer.status).toBeLessThan(413)
+        expect(parse).toHaveBeenCalledTimes(1)
+      } finally {
+        parse.mockRestore()
+      }
+    })
+  }
 
   const unstorable = ["a\u0000b", "\ud800", "a\udc00b"]
 
@@ -521,13 +738,12 @@ describe("hostile input over every route", () => {
       { size: bodyCap * 3, chunked: true as const },
     ]
     for (const route of routes) {
-      if (route.path === "/mcp") continue
       const good = goods[keyOf(route)]?.[0]
       if (good === undefined || (good.shape !== "json" && good.shape !== "form")) continue
       const type = `content-type: ${good.shape === "json" ? jsonType : formType}`
       for (const { size, ...framing } of framings) {
-        const answer = await exchange(port, {
-          method: route.method,
+        const answer = await send({
+          method: route.method === "any" ? "POST" : route.method,
           target: route.path,
           headers: [...signedHeaders(), type],
           body: Buffer.alloc(size, 0x78),
@@ -544,7 +760,7 @@ describe("hostile input over every route", () => {
   it("answers an MCP body over the cap with 413, whatever its framing", async () => {
     const over = Buffer.alloc(bodyCap * 3, 0x78)
     for (const chunked of [false, true]) {
-      const answer = await exchange(port, {
+      const answer = await send({
         method: "POST",
         target: "/mcp",
         headers: [...signedHeaders(), `content-type: ${jsonType}`, mcpAccept],
@@ -573,6 +789,23 @@ describe("hostile input over every route", () => {
     expect(text.endsWith('{"ok":false,"refusal":"size"}')).toBe(true)
   })
 
+  for (const route of ["/decks/open", "/oauth/client", "/mcp", "/no-such-route"]) {
+    it(`reads the whole body before it refuses a signed-out request to ${route}`, async () => {
+      const received: Buffer[] = []
+      const socket = connect(port, "127.0.0.1")
+      const ended = new Promise<void>((resolve) => socket.on("close", () => resolve()))
+      socket.on("data", (chunk) => received.push(chunk))
+      socket.on("error", () => undefined)
+      socket.write(`POST ${route} HTTP/1.1\r\nhost: 127.0.0.1\r\nconnection: close\r\ncontent-length: 1000\r\n\r\n`)
+      socket.write(Buffer.alloc(500, 0x78))
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      expect(received).toEqual([])
+      socket.write(Buffer.alloc(500, 0x78))
+      await ended
+      expect(Buffer.concat(received).toString("latin1")).toMatch(/^HTTP\/1\.1 40[14] /)
+    })
+  }
+
   it("lets the client read the 413 and make its next request", async () => {
     const over = await fetch(`${base}/sign-in/email`, {
       method: "POST",
@@ -588,7 +821,7 @@ describe("hostile input over every route", () => {
 
   it("accepts a body exactly at the cap", async () => {
     const padded = JSON.stringify({ email: `${"a".repeat(bodyCap)}@example.com` }).slice(0, bodyCap - 2)
-    const answer = await exchange(port, {
+    const answer = await send({
       method: "POST",
       target: "/sign-in/email",
       headers: [`content-type: ${jsonType}`],
@@ -650,4 +883,153 @@ describe("hostile input over every route", () => {
       }
     })
   }
+})
+
+describe("the route table is the only way in", () => {
+  const folder = import.meta.dirname
+
+  type Tree = {
+    readonly type: string
+    readonly start: number
+    readonly end: number
+    readonly [key: string]: unknown
+  }
+
+  type Parsed = { readonly text: string; readonly all: readonly Tree[] }
+
+  function isTree(value: unknown): value is Tree {
+    return typeof value === "object" && value !== null && typeof (value as { type?: unknown }).type === "string"
+  }
+
+  function walked(root: Tree): Tree[] {
+    const children = Object.values(root).flat().filter(isTree)
+    return [root, ...children.flatMap(walked)]
+  }
+
+  async function parsedFile(name: string): Promise<Parsed> {
+    const text = await readFile(path.join(folder, name), "utf8")
+    return { text, all: walked(parseSync(name, text, { lang: "ts" }).program as unknown as Tree) }
+  }
+
+  function squeezed(text: string): string {
+    return text.replace(/\s+/g, "").replace(/,([)}\]])/g, "$1")
+  }
+
+  function sourceOf(file: Parsed, node: Tree): string {
+    return file.text.slice(node.start, node.end)
+  }
+
+  function literalText(node: unknown): string | undefined {
+    if (!isTree(node) || node.type !== "Literal" || typeof node.value !== "string") return undefined
+    return node.value
+  }
+
+  function nameOf(node: unknown): string | undefined {
+    if (!isTree(node)) return undefined
+    return node.type === "Identifier" && typeof node.name === "string" ? node.name : literalText(node)
+  }
+
+  function handleOf(file: Parsed): Tree {
+    const handle = file.all.find((node) => node.type === "FunctionDeclaration" && nameOf(node.id) === "handle")
+    if (handle === undefined) throw new Error("handle")
+    return handle
+  }
+
+  const handleSource = `async function handle(context: Context): Promise<void> {
+  const { req, res } = context
+  let name = "request"
+  try {
+    const url = readTarget(req.url)
+    const route = routes.find(
+      (candidate) =>
+        candidate.path === url?.pathname && (candidate.method === "any" || candidate.method === req.method),
+    )
+    const body = bodyOnce(req, route?.cap ?? bodyCap)
+    if (url === undefined || route === undefined) {
+      await body()
+      answerNoRoute(res, url)
+      return
+    }
+    name = \`\${route.method} \${route.path}\`
+    await route.serve({ ...context, name, query: url.searchParams, body })
+  } catch (error) {
+    answerThrow(context, name, error)
+  }
+}`
+
+  it("handle dispatches from the table and has no other branch", async () => {
+    const file = await parsedFile("server.ts")
+    expect(squeezed(sourceOf(file, handleOf(file)))).toBe(squeezed(handleSource))
+  })
+
+  it("createServer does nothing but call handle", async () => {
+    const file = await parsedFile("server.ts")
+    const calls = file.all.filter((node) => node.type === "CallExpression" && nameOf(node.callee) === "createServer")
+    expect(calls.map((call) => squeezed(sourceOf(file, call)))).toEqual([
+      "createServer((req,res)=>{voidhandle({options,logs,now,mint,req,res})})",
+    ])
+  })
+
+  it("server.ts reads the request target only in handle", async () => {
+    const file = await parsedFile("server.ts")
+    const handle = handleOf(file)
+    const read = new Set(["url", "pathname", "href", "originalUrl"])
+    const outside = file.all.filter((node) => {
+      if (node.start >= handle.start && node.end <= handle.end) return false
+      if (node.type === "MemberExpression") {
+        return read.has(nameOf(node.property) ?? "")
+      }
+      return node.type === "Property" && isTree(node.key) && read.has(nameOf(node.key) ?? "")
+    })
+    expect(outside.map((node) => sourceOf(file, node))).toEqual([])
+  })
+
+  it("nothing compares a path outside the table", async () => {
+    const file = await parsedFile("server.ts")
+    const isPath = (node: unknown): boolean => literalText(node)?.startsWith("/") === true
+    const reader = file.all.find((node) => node.type === "FunctionDeclaration" && nameOf(node.id) === "readTarget")
+    if (reader === undefined) throw new Error("readTarget")
+    const compared = file.all.filter((node) => {
+      if (node.start >= reader.start && node.end <= reader.end) return false
+      if (node.type === "BinaryExpression") return isPath(node.left) || isPath(node.right)
+      if (node.type === "SwitchCase") return isPath(node.test)
+      if (node.type !== "CallExpression" || !isTree(node.callee) || node.callee.type !== "MemberExpression")
+        return false
+      const method = nameOf(node.callee.property) ?? ""
+      return ["startsWith", "endsWith", "includes"].includes(method) && isPath((node.arguments as unknown[])[0])
+    })
+    expect(compared.map((node) => sourceOf(file, node))).toEqual([])
+  })
+
+  async function sources(): Promise<readonly string[]> {
+    const names = await readdir(folder)
+    return names.filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
+  }
+
+  it("only server.ts opens a server and nothing listens for requests by hand", async () => {
+    const openers: string[] = []
+    for (const name of await sources()) {
+      const file = await parsedFile(name)
+      for (const node of file.all) {
+        if (node.type === "ImportDeclaration" && literalText(node.source) === "node:http") {
+          if (sourceOf(file, node).includes("createServer")) openers.push(name)
+        }
+        if (node.type !== "CallExpression" || !isTree(node.callee) || node.callee.type !== "MemberExpression") continue
+        if (literalText((node.arguments as unknown[])[0]) === "request") openers.push(sourceOf(file, node))
+      }
+    }
+    expect(openers).toEqual(["server.ts"])
+  })
+
+  it("reads the environment only at each program's entry", async () => {
+    const readers: string[] = []
+    for (const name of await sources()) {
+      const file = await parsedFile(name)
+      const reads = file.all.some(
+        (node) => node.type === "MemberExpression" && squeezed(sourceOf(file, node)) === "process.env",
+      )
+      if (reads) readers.push(name)
+    }
+    expect(readers.toSorted()).toEqual(["bootstrap.ts", "postgres-setup.ts", "setup.ts", "start.ts"])
+  })
 })

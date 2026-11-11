@@ -13,12 +13,12 @@ export function mailText(publicOrigin: string, token: string, code: string): str
   return `${signLink(publicOrigin, token)}\n${code}`
 }
 
-export async function sendWithResend(mail: Mail): Promise<void> {
-  const key = process.env.RESEND_API_KEY
-  const from = process.env.RESEND_FROM
-  if (typeof key !== "string" || key.length === 0 || typeof from !== "string" || from.length === 0) {
-    throw new Error("RESEND_API_KEY and RESEND_FROM are required")
-  }
+export type ResendAccount = {
+  readonly key: string
+  readonly from: string
+}
+
+export async function sendWithResend(mail: Mail, { key, from }: ResendAccount): Promise<void> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

@@ -9,6 +9,8 @@ const good = {
   PUBLIC_ORIGIN: "https://app.example",
   SITE_ORIGIN: "https://site.example",
   MCP_RESOURCE: "https://mcp.example/mcp",
+  RESEND_API_KEY: "resend-secret",
+  RESEND_FROM: "sign-in@app.example",
 }
 
 function refused(values: Record<string, string | undefined>): string | undefined {
@@ -48,6 +50,8 @@ describe("readStartSettings", () => {
       hosts: ["a.example", "b.example"],
       commit: undefined,
       smokeToken: undefined,
+      resendKey: good.RESEND_API_KEY,
+      resendFrom: good.RESEND_FROM,
     })
   })
 
@@ -181,6 +185,20 @@ describe("readStartSettings", () => {
         expect(refused({ COOKIE_DOMAIN: value })).toBe("COOKIE_DOMAIN")
       })
     }
+  })
+
+  describe("exits when a mail setting is missing or empty", () => {
+    for (const name of ["RESEND_API_KEY", "RESEND_FROM"]) {
+      for (const value of [undefined, ""]) {
+        it(`${name} ${JSON.stringify(value) ?? "undefined"}`, () => {
+          expect(refused({ [name]: value })).toBe(name)
+        })
+      }
+    }
+
+    it("puts no key into the refusal", () => {
+      expect(JSON.stringify(readStartSettings({ ...good, RESEND_FROM: undefined }))).not.toContain("resend-secret")
+    })
   })
 
   it("reports the first bad setting in the order the entry checks them", () => {

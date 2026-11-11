@@ -27,20 +27,21 @@ export type McpHost = {
   readonly mint: () => string
   readonly hosts: readonly string[]
   readonly bodyCap: number
+  readonly fail: (error: unknown) => void
 }
 
-function mcpRequest(req: IncomingMessage) {
+function mcpRequest(req: IncomingMessage, body: Buffer) {
   return {
     headers: req.headers,
     ...(typeof req.method === "string" ? { method: req.method } : {}),
     ...(typeof req.url === "string" ? { url: req.url } : {}),
-    [Symbol.asyncIterator]() {
-      return req[Symbol.asyncIterator]()
+    async *[Symbol.asyncIterator]() {
+      if (body.length > 0) yield body
     },
   }
 }
 
-export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerResponse): Promise<void> {
+export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerResponse, body: Buffer): Promise<void> {
   const names = [...host.hosts]
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const pending = readDeckId("pending")
@@ -77,8 +78,15 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     commit: (result) => commitEdit(host.deck, loaded, result),
   }
   const handler = createMcpHandler(() => createServer(session, bridge), { maxRequestBodySize: host.bodyCap })
+  let failed = false
+  const onerror = (error: Error): void => {
+    failed = true
+    host.fail(error)
+  }
   try {
-    await toNodeHandler(handler, { maxRequestBodySize: host.bodyCap })(mcpRequest(req), res)
+    await toNodeHandler(handler, { maxRequestBodySize: host.bodyCap, onerror })(mcpRequest(req, body), res)
+  } catch (error) {
+    if (!failed) throw error
   } finally {
     await handler.close()
   }
