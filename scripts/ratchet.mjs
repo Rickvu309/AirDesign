@@ -218,6 +218,16 @@ export const approvedCommit = (owner, reviews) => {
   return latest !== undefined && latest.state === "APPROVED" ? latest.commit : undefined
 }
 
+const mayAllow = new Set(["OWNER", "MEMBER"])
+
+export const allowedCommit = (comments, sha) =>
+  comments.some(
+    (comment) =>
+      mayAllow.has(comment.role) && typeof comment.body === "string" && comment.body.trim() === `owner-allows ${sha}`,
+  )
+    ? sha
+    : undefined
+
 const github = (args) =>
   execFileSync("gh", ["api", ...args], {
     encoding: "utf8",
@@ -230,6 +240,9 @@ const rows = (endpoint, shape) =>
     .split("\n")
     .filter((line) => line !== "")
     .map((line) => JSON.parse(line))
+
+export const readComments = (repository, number) =>
+  rows(`repos/${repository}/issues/${number}/comments`, "{body, role: .author_association}")
 
 const missing = (error) => String(error.stderr ?? error.message).includes("HTTP 404")
 
@@ -344,7 +357,9 @@ const readPull = (repository, number) => {
   const owner = repository.split("/")[0]
   const reasons = readReasons({ json: githubJson(repository), fork, head: pull.head, listed })
   const reviews = rows(`${pulls}/reviews`, "{user: .user.login, state, commit: .commit_id}")
-  const commit = reasons.some((reason) => reason.blocks) ? approvedCommit(owner, reviews) : undefined
+  const commit = reasons.some((reason) => reason.blocks)
+    ? (approvedCommit(owner, reviews) ?? allowedCommit(readComments(repository, number), pull.head))
+    : undefined
   return {
     owner,
     reasons,
