@@ -1,25 +1,28 @@
+const dayLength = 86400000
+const hourLength = 3600000
+const trashDays = 30
+
+function age(then: number, now: number) {
+  const days = Math.max(0, Math.floor((now - then) / dayLength))
+  const hours = Math.max(0, Math.floor((now - then) / hourLength))
+  if (days >= 30) return "last month"
+  if (days >= 14) return `${Math.floor(days / 7)} weeks ago`
+  if (days >= 7) return "last week"
+  if (days >= 2) return `${days} days ago`
+  if (days === 1) return "yesterday"
+  if (hours === 1) return "1 hour ago"
+  if (hours > 1) return `${hours} hours ago`
+  return "just now"
+}
+
 export function deckTime(iso: string, now: number) {
   const time = Date.parse(iso)
-  const days = Math.max(0, Math.floor((now - time) / 86400000))
-  const hours = Math.max(0, Math.floor((now - time) / 3600000))
-  const row =
-    days >= 30
-      ? "Last month"
-      : days >= 14
-        ? `${Math.floor(days / 7)} weeks ago`
-        : days >= 7
-          ? "Last week"
-          : days >= 2
-            ? `${days} days ago`
-            : days === 1
-              ? "Yesterday"
-              : hours >= 1
-                ? `${hours} hours ago`
-                : "Just now"
+  const words = age(time, now)
+  const left = Math.max(0, trashDays - Math.floor(Math.max(0, now - time) / dayLength))
   return {
-    row,
-    card: `Edited ${row.charAt(0).toLowerCase()}${row.slice(1)}`,
+    row: `${words.charAt(0).toUpperCase()}${words.slice(1)}`,
+    card: `Edited ${words}`,
     created: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(time),
-    trash: `Deleted ${days} days ago, ${Math.max(0, 30 - days)} days left`,
+    trash: `Deleted ${words}, ${left} ${left === 1 ? "day" : "days"} left`,
   }
 }

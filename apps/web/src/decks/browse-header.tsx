@@ -9,6 +9,9 @@ export function BrowseHeader({
   menu,
   trailing,
   compact = false,
+  home = false,
+  onNewDeck,
+  menuOpen,
 }: {
   title: string
   view?: "grid" | "list"
@@ -16,6 +19,9 @@ export function BrowseHeader({
   menu?: ReactNode
   trailing?: ReactNode
   compact?: boolean
+  home?: boolean
+  onNewDeck?: () => void
+  menuOpen?: boolean
 }) {
   return (
     <header
@@ -33,7 +39,13 @@ export function BrowseHeader({
       {trailing ?? (
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Button variant="default" className="h-9 gap-2 px-3.5" type="button">
+            <Button
+              variant="default"
+              className="h-9 gap-2 px-3.5"
+              type="button"
+              onClick={onNewDeck}
+              aria-expanded={menuOpen}
+            >
               <svg width="14" height="14" viewBox="0 0 14 14" className="size-3.5" aria-hidden="true">
                 <path
                   d="M7 2.92 V11.08 M2.92 7 H11.08"
@@ -47,7 +59,7 @@ export function BrowseHeader({
             </Button>
             {menu}
           </div>
-          {view && scope ? <ViewSwitch active={view} scope={scope} /> : null}
+          {view && (scope || home) ? <ViewSwitch active={view} scope={scope} home={home} /> : null}
         </div>
       )}
     </header>
