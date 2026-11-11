@@ -193,15 +193,15 @@ const groupFrame = (children: MarkupChildren, xfrm: MarkupElement): GroupFrame |
   const turn = angle(xfrm)
   if (offX === null || offY === null || width === null || height === null) return null
   if (childX === null || childY === null || childWidth === null || childHeight === null) return null
-  if (turn === null || childWidth === 0 || childHeight === 0) return null
+  if (turn === null) return null
   const radians = (turn / turnsPerDegree) * (Math.PI / 180)
   return {
     offX,
     offY,
     childX,
     childY,
-    scaleX: width / childWidth,
-    scaleY: height / childHeight,
+    scaleX: childWidth === 0 ? 1 : width / childWidth,
+    scaleY: childHeight === 0 ? 1 : height / childHeight,
     centreX: offX + width / 2,
     centreY: offY + height / 2,
     turn,
