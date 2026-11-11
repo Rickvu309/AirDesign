@@ -759,7 +759,7 @@ const decks = [
 ].filter((path) => path.endsWith(".pptx"))
 
 const paintedParts =
-  /^ppt\/(presentation\.xml|_rels\/presentation\.xml\.rels|(slides|slideLayouts|slideMasters)\/(_rels\/)?[^/]+)$/
+  /^ppt\/(presentation\.xml|_rels\/presentation\.xml\.rels|(slides|slideLayouts|slideMasters|theme|media)\/(_rels\/)?[^/]+)$/
 
 const markupParts = (path: string): ReadonlyMap<string, Uint8Array> =>
   new Map(

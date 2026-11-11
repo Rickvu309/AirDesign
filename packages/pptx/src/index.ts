@@ -3,6 +3,7 @@ export { browserExportFailures, paragraphExportFailures, type ParagraphExpectati
 export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
+export type { PaintColor, PaintFill } from "./paint-color.js"
 export {
   paintReader,
   PaintPartError,

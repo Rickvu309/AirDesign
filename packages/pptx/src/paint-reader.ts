@@ -1,4 +1,6 @@
 import { markupDocument, type MarkupElement } from "./element-span.js"
+import { paintColor, type PaintFill, type PaintPalette } from "./paint-color.js"
+import { paintChild, paintFill } from "./paint-fill.js"
 import type { ShapeKind } from "./read-shapes.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 
@@ -22,7 +24,12 @@ export type PaintElement = {
   placeholder: { type: string; index: number | null } | null
 }
 
-export type SlidePaint = { width: number; height: number; elements: readonly PaintElement[] }
+export type SlidePaint = {
+  width: number
+  height: number
+  elements: readonly PaintElement[]
+  background: PaintFill | null
+}
 
 export type PaintReader = { slide(slidePart: string): SlidePaint }
 
@@ -79,6 +86,8 @@ type Drawn = {
 }
 
 type Sheet = {
+  readonly elements: readonly MarkupElement[]
+  readonly children: MarkupChildren
   readonly part: string
   readonly showsMaster: boolean
   readonly drawn: readonly Drawn[]
@@ -363,10 +372,13 @@ const slidePlacement = (item: Drawn, layout: Sheet | null, master: Sheet | null)
 const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
   const { elements } = markupDocument(bytes)
   const root = elements[0]
+  const children = markupChildren(elements)
   return {
+    elements,
+    children,
     part,
     showsMaster: root === undefined || !isFalse(attr(root, "showMasterSp")),
-    drawn: drawnIn(elements, markupChildren(elements)),
+    drawn: drawnIn(elements, children),
   }
 }
 
@@ -386,6 +398,7 @@ const paintedAbove = (sheet: Sheet, from: "layout" | "master"): readonly PaintEl
 export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader {
   const relationships = new Map<string, ReadonlyMap<string, string>>()
   const above = new Map<string, Above | null>()
+  const themes = new Map<string, Sheet | null>()
   let size: { readonly width: number; readonly height: number } | null = null
 
   const slideSize = (): { readonly width: number; readonly height: number } => {
@@ -412,6 +425,8 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
       if (attr(item, "TargetMode") === "External") continue
       const name = type.split("/").pop() ?? ""
       if (!targets.has(name)) targets.set(name, targetPart(part, target))
+      const id = attr(item, "Id")
+      if (id !== null) targets.set(`id:${id}`, targetPart(part, target))
     }
     relationships.set(part, targets)
     return targets
@@ -432,6 +447,68 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
 
   const knownSlide = (part: string, bytes: Uint8Array): boolean =>
     slideName.test(part) || markupDocument(bytes).elements[0]?.kind === "p:sld"
+
+  const backgroundOf = (sheet: Sheet, layout: Sheet | null, master: Sheet | null): PaintFill | null => {
+    let owner: Sheet | null = null
+    let background: MarkupElement | undefined
+    for (const level of [sheet, layout, master]) {
+      if (level === null) continue
+      const body = paintChild(level.children, level.elements[0], "p:cSld")
+      background = paintChild(level.children, body, "p:bg")
+      if (background !== undefined) {
+        owner = level
+        break
+      }
+    }
+    if (owner === null || background === undefined) return null
+    const themePart = master === null ? undefined : relationshipsOf(master.part).get("theme")
+    let theme = themePart === undefined ? null : themes.get(themePart)
+    if (theme === undefined && themePart !== undefined) {
+      const bytes = parts.get(themePart)
+      theme = bytes === undefined ? null : sheetFrom(themePart, bytes)
+      themes.set(themePart, theme)
+    }
+    const themeChildren = theme?.children ?? []
+    const themeElements = paintChild(themeChildren, theme?.elements[0], "a:themeElements")
+    const scheme = paintChild(themeChildren, themeElements, "a:clrScheme")
+    const slots = new Map(
+      (scheme === undefined ? [] : (themeChildren[scheme.index] ?? [])).map((element) => [
+        element.kind.slice(2),
+        element,
+      ]),
+    )
+    let mapping = new Map<string, string>()
+    for (const level of [master, layout, sheet]) {
+      if (level === null) continue
+      const root = level.elements[0]
+      const override = paintChild(level.children, root, "p:clrMapOvr")
+      const map =
+        level === master
+          ? paintChild(level.children, root, "p:clrMap")
+          : paintChild(level.children, override, "a:overrideClrMapping")
+      if (map !== undefined) mapping = new Map(map.attributes.map((item) => [item.name, item.value]))
+    }
+    let palette: PaintPalette = { children: themeChildren, slots, mapping, placeholder: null }
+    const picture =
+      (part: string) =>
+      (id: string): string | null => {
+        const target = relationshipsOf(part).get(`id:${id}`)
+        return target !== undefined && parts.has(target) ? target : null
+      }
+    const properties = paintChild(owner.children, background, "p:bgPr")
+    if (properties !== undefined) return paintFill(properties, owner.children, palette, picture(owner.part))
+    const reference = paintChild(owner.children, background, "p:bgRef")
+    if (reference === undefined || theme === null || theme === undefined) return null
+    const value = attr(reference, "idx")
+    if (value === null || !/^\d+$/.test(value)) return null
+    const format = paintChild(themeChildren, themeElements, "a:fmtScheme")
+    const styles = paintChild(themeChildren, format, "a:bgFillStyleLst")
+    const style = styles === undefined ? undefined : themeChildren[styles.index]?.[Number(value) - 1001]
+    if (style === undefined) return null
+    const color = owner.children[reference.index]?.[0]
+    palette = { ...palette, placeholder: color === undefined ? null : paintColor(color, owner.children, palette) }
+    return paintFill(style, themeChildren, palette, picture(theme.part), true)
+  }
 
   return {
     slide(slidePart: string): SlidePaint {
@@ -455,6 +532,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
       const showsMaster = showsLayout && layout !== null && layout.sheet.showsMaster
       return {
         ...slideSize(),
+        background: backgroundOf(sheet, layout?.sheet ?? null, master?.sheet ?? null),
         elements: [
           ...(showsMaster && master !== null ? master.painted : []),
           ...(showsLayout && layout !== null ? layout.painted : []),
