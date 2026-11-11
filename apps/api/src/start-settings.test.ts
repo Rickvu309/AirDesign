@@ -16,7 +16,21 @@ function refused(values: Record<string, string | undefined>): string | undefined
   return "refusal" in outcome ? outcome.refusal : undefined
 }
 
-const notOrigins = [undefined, "", "http://app.example", "https://app.example/path", "https://app.example/", "app"]
+const notOrigins = [
+  undefined,
+  "",
+  "http://app.example",
+  "https://app.example/path",
+  "https://app.example/",
+  "app",
+  "https://user:secret@app.example",
+  "https://app.example:443",
+  "https://app.example?x=1",
+  "https://app.example#x",
+  "HTTPS://APP.EXAMPLE",
+  "https://app.example\u0000",
+  "https://[",
+]
 
 describe("readStartSettings", () => {
   it("returns every setting the entry needs", () => {
@@ -101,7 +115,21 @@ describe("readStartSettings", () => {
   })
 
   describe("exits when the port is not a port", () => {
-    for (const port of ["0", "abc", "70000", "1e4", "0x1F90", " 8080", "8080 ", "-1", "1.5", "65536"]) {
+    for (const port of [
+      "0",
+      "abc",
+      "70000",
+      "1e4",
+      "0x1F90",
+      " 8080",
+      "8080 ",
+      "-1",
+      "1.5",
+      "65536",
+      "\u0663\u0660\u0660\u0660",
+      "99999999999999999999",
+      "8080\u0000",
+    ]) {
       it(JSON.stringify(port), () => {
         expect(refused({ PORT: port })).toBe("PORT")
       })
@@ -125,7 +153,15 @@ describe("readStartSettings", () => {
   })
 
   describe("exits when the MCP address is missing or not an https url", () => {
-    for (const value of [undefined, "", "http://mcp.example/mcp", "not a url"]) {
+    for (const value of [
+      undefined,
+      "",
+      "http://mcp.example/mcp",
+      "not a url",
+      "ftp://mcp.example/mcp",
+      "https:",
+      "https://[",
+    ]) {
       it(JSON.stringify(value), () => {
         expect(refused({ MCP_RESOURCE: value })).toBe("MCP_RESOURCE")
       })
@@ -133,7 +169,14 @@ describe("readStartSettings", () => {
   })
 
   describe("exits when the cookie domain is not a host name", () => {
-    for (const value of ["app.example; SameSite=None", "https://app.example", "app example"]) {
+    for (const value of [
+      "app.example; SameSite=None",
+      "https://app.example",
+      "app example",
+      "app\u0000.example",
+      "app_example",
+      "app.example\r\nSet-Cookie: a=b",
+    ]) {
       it(JSON.stringify(value), () => {
         expect(refused({ COOKIE_DOMAIN: value })).toBe("COOKIE_DOMAIN")
       })

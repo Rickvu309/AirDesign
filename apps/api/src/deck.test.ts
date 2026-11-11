@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, cookieFrom, postgresInfo, serve, wireCommit } from "./harness.js"
 import { DeckListen, commitEdits, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
 
 function wait(ms: number): Promise<void> {
@@ -184,13 +184,13 @@ describe("deck routes", () => {
     expect(
       await commitEdits(
         db,
-        {
+        wireCommit({
           deck: named.deck,
           batch: [
             { value: "one", node: "258.7", floor: "one" },
             { value: "two", node: "258.8", floor: "two" },
           ],
-        },
+        }),
         "owner@example.com",
       ),
     ).toEqual({ ok: false, refusal: "stale" })

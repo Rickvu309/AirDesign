@@ -1,9 +1,13 @@
-function hrefOf(address: string): string | undefined {
+export function readUrl(address: string, base?: string): URL | undefined {
   try {
-    return new URL(address).href
+    return new URL(address, base)
   } catch {
     return undefined
   }
+}
+
+function hrefOf(address: string): string | undefined {
+  return readUrl(address)?.href
 }
 
 export function ownResource(given: unknown, own: string): boolean {

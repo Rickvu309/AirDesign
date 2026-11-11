@@ -2,6 +2,8 @@ import { readDeckId } from "@airdesign/catalog"
 import { openDeck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 
+import { wireCommit } from "./harness.js"
+
 import type { Sql } from "./pool.js"
 import { commitEdits } from "./saved.js"
 
@@ -31,7 +33,11 @@ describe("saved", () => {
       },
     } as unknown as Sql
     expect(
-      await commitEdits(db, { deck: "other", batch: [{ value: "hi", node: "258.7" }] }, "owner@example.com"),
+      await commitEdits(
+        db,
+        wireCommit({ deck: "other", batch: [{ value: "hi", node: "258.7" }] }),
+        "owner@example.com",
+      ),
     ).toEqual({
       ok: false,
       refusal: "deck",

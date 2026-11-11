@@ -1,4 +1,4 @@
-import { notifyKey, readCapture, readCommit, type DeckId } from "@airdesign/catalog"
+import { notifyKey, type DeckId, type WireEdit } from "@airdesign/catalog"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
@@ -109,14 +109,12 @@ function openedRow(
 
 export async function openSaved(
   db: Sql,
-  raw: unknown,
+  parsed: { readonly deck: DeckId },
   owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
-  | { readonly ok: false; readonly refusal: "field" | "deck" | "owner" }
+  | { readonly ok: false; readonly refusal: "deck" | "owner" }
 > {
-  const parsed = readCapture(raw)
-  if (!parsed.ok) return parsed
   const existing = await readSaved(db, parsed.deck)
   if (existing !== undefined) return openedRow(parsed.deck, existing, owner)
   const opened = openDeck(parsed.deck)
@@ -159,16 +157,25 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
   return result.rows.length > 0
 }
 
+export type Commit = {
+  readonly deck: DeckId
+  readonly batch: readonly WireEdit[]
+  readonly once?: string
+}
+
 export async function commitEdits(
   db: Sql,
-  raw: unknown,
+  parsed: Commit,
   owner: string,
 ): Promise<
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly key: string }
   | { readonly ok: false; readonly refusal: string }
 > {
-  const parsed = readCommit(raw)
-  if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
+  const wire = {
+    deck: parsed.deck,
+    batch: parsed.batch,
+    ...(parsed.once === undefined ? {} : { once: parsed.once }),
+  }
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const saved = await readSaved(db, parsed.deck)
     if (saved === undefined) return { ok: false, refusal: "deck" }
@@ -180,7 +187,7 @@ export async function commitEdits(
       }
     }
     const current: Deck = { id: saved.id as DeckId, revision: saved.revision, register: saved.register }
-    const result = call("commit_edits", current, { actor: "person" }, raw)
+    const result = call("commit_edits", current, { actor: "person" }, wire)
     if (!result.ok) return { ok: false, refusal: result.refusal }
     try {
       const wrote = await writeRevision(db, {
