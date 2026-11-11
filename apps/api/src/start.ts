@@ -1,5 +1,6 @@
 import type { Socket } from "node:net"
 
+import { anthropicTransport } from "./anthropic-transport.js"
 import { DeckListen } from "./listen.js"
 import { sendWithResend } from "./mail.js"
 import { openPool } from "./pool.js"
@@ -30,6 +31,7 @@ const {
   resendKey,
   resendFrom,
   r2,
+  aira,
 } = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
@@ -50,6 +52,7 @@ const server = createApi({
   ...(hosts === undefined ? {} : { hosts }),
   ...(commit === undefined ? {} : { commit }),
   ...(smokeToken === undefined ? {} : { smokeToken }),
+  aira: { ...aira, transport: anthropicTransport() },
 })
 const sockets = new Set<Socket>()
 server.on("connection", (socket) => {

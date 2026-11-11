@@ -20,6 +20,13 @@ export type StartSettings = {
   readonly resendKey: string
   readonly resendFrom: string
   readonly r2: R2Settings | undefined
+  readonly aira: AiraStart
+}
+
+export type AiraStart = {
+  readonly on: boolean
+  readonly key: string | undefined
+  readonly secret: string | undefined
 }
 
 export type StartRefusal = { readonly refusal: string }
@@ -77,6 +84,12 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     const missingStorage = storageNames.find((name) => nonEmpty(env[name]) === undefined)
     if (missingStorage !== undefined) return { refusal: missingStorage }
   }
+  const airaState = env.AIRA ?? ""
+  if (!["", "on", "off"].includes(airaState)) return { refusal: "AIRA" }
+  const airaKey = nonEmpty(env.AIRA_ANTHROPIC_KEY)
+  const airaSecret = nonEmpty(env.AIRA_USER_SECRET)
+  const airaOn = airaState !== "off" && airaKey !== undefined
+  if (airaOn && (airaSecret === undefined || airaSecret.length < 32)) return { refusal: "AIRA_USER_SECRET" }
   const [accountId, accessKeyId, secretAccessKey, bucket] = storage
   const r2 =
     accountId === undefined || accessKeyId === undefined || secretAccessKey === undefined || bucket === undefined
@@ -97,5 +110,6 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     resendKey,
     resendFrom,
     r2,
+    aira: { on: airaOn, key: airaKey, secret: airaSecret },
   }
 }

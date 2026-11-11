@@ -86,6 +86,7 @@ function send(
   payload: Buffer | undefined,
   contentType: string,
   cookie?: string,
+  extra: Record<string, string> = {},
 ): Promise<Reply> {
   const url = new URL(route, base)
   return new Promise((resolve, reject) => {
@@ -98,6 +99,7 @@ function send(
         headers: {
           ...(payload === undefined ? {} : { "content-type": contentType, "content-length": String(payload.length) }),
           ...(cookie === undefined ? {} : { cookie }),
+          ...extra,
         },
       },
       (res) => {
@@ -132,9 +134,10 @@ export async function ask(
   route: string,
   body?: unknown,
   cookie?: string,
+  extra?: Record<string, string>,
 ): Promise<Reply> {
   const payload = body === undefined ? undefined : Buffer.from(JSON.stringify(body))
-  return send(base, method, route, payload, "application/json", cookie)
+  return send(base, method, route, payload, "application/json", cookie, extra)
 }
 
 export async function askForm(base: string, route: string, fields: Record<string, string>): Promise<Reply> {

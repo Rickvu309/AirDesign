@@ -1,4 +1,4 @@
-const allowance = 2_000_000_000
+export const allowance = 2_000_000_000
 const searchFee = 10_000_000
 
 const listPrice = {
