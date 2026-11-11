@@ -442,3 +442,37 @@ it("keeps a deleted key until its actual signed upload expires", async () => {
   const kept = await admin.query<{ expires: Date }>("select expires from deck.original_delete where key = $1", [object])
   expect(kept.rows[0]?.expires.getTime()).toBeGreaterThanOrEqual(Date.parse(late) + 60 * 1000)
 })
+
+it.fails("leaves no object when a delete overtakes a stalled signer", async () => {
+  const id = await deck()
+  let release = () => {}
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  let entered = () => {}
+  const reached = new Promise<void>((resolve) => {
+    entered = resolve
+  })
+  const real = store.upload.bind(store)
+  const signing = vi.spyOn(store, "upload").mockImplementation(async (object, size) => {
+    entered()
+    await gate
+    return real(object, size)
+  })
+  try {
+    const pending = post("/decks/original/upload", { deck: id, bytes: bytes.length, sha256 })
+    await reached
+    const object = await key(id)
+    await admin.query("update deck.saved set original_until = now() - interval '1 minute' where id = $1", [id])
+    await post("/decks/trash", { deck: id })
+    await post("/decks/delete", { decks: [id] })
+    release()
+    const signed = (await pending).json as OriginalUpload
+    store.put(signed.url, bytes, signed.headers)
+    await drainOriginals(admin, store, { batch: 1000 })
+    expect(await store.size(object)).toBeUndefined()
+  } finally {
+    release()
+    signing.mockRestore()
+  }
+})
