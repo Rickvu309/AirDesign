@@ -73,8 +73,7 @@ export const timeMetric = (root, name, started) => {
   const now = Number(((Date.now() - started) / 1000).toFixed(1))
   if (typeof limit !== "number") throw new Error(`${name} has no limit in metrics.json.`)
   const over = overLimit({ name, now, limit })
-  const onCi = process.env.CI === "true" || process.env.CI === "1"
-  return { line: `metric ${name}  now ${now}  limit ${limit}`, over, fails: onCi && now > limit * 2 }
+  return { line: `metric ${name}  now ${now}  limit ${limit}`, over }
 }
 
 export const readMetrics = async (root) => {

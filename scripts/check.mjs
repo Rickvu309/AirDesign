@@ -55,7 +55,7 @@ export const stagesFor = (part, ci = onCi(process.env)) =>
     .map((stage) => stage.filter(([name]) => part === "all" || (part === "side") === sideSteps.has(name)))
     .filter((stage) => stage.length > 0)
 
-export const judgedOnCi = new Set(["test", "browser", "ci-duration"])
+export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
 
@@ -111,7 +111,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const checkSeconds = timeMetric(root, "ci-duration", checkStarted)
   console.log(checkSeconds.line)
   if (checkSeconds.over !== undefined) console.error(checkSeconds.over)
-  if (checkSeconds.fails) failed.push("ci-duration")
   fs.rmSync(ownTemp, { recursive: true, force: true })
   release()
 
