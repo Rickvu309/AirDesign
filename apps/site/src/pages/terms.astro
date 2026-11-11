@@ -1,0 +1,77 @@
+---
+import { legalFacts } from "../legal/legal-facts";
+import LegalPage from "../legal/legal-page.astro";
+---
+
+<LegalPage title="Terms of Service">
+  <h2>The agreement</h2>
+  <p>
+    These terms are between you and {legalFacts.legalName} ("AirDesign", "we"). Our address is {legalFacts.address}. They cover the AirDesign site, the editor, and the agent tools at airdesign.app.
+  </p>
+  <p>
+    AirDesign is for one person and their own work. It is not a team product. You must be 18 or older to use AirDesign. If you use it for someone else, you are the person responsible for that use.
+  </p>
+  <p>By creating an account you agree to these terms. If you do not agree, do not use AirDesign.</p>
+
+  <h2>The service</h2>
+  <p>You can make a deck from an idea or from a PowerPoint file, edit it with us or with your own agent, and export it back to PowerPoint.</p>
+  <p>A person may have any number of decks. A deck has at most 50 slides and is under 70 MB. We can refuse an import or an edit that passes a limit.</p>
+  <p>
+    The service is free. There is no plan and no trial. Usage resets every week. The weekly amount is $2 of model use at Anthropic's list price. We do not take a card and we do not sell credits at launch. A control that mentions credits or a paid reset does nothing until we say that payments are available, and we will change these terms before we charge anyone.
+  </p>
+  <p>You can create an account from any country. Aira is not available in every country. See "Aira and your own agent".</p>
+
+  <h2>Your decks</h2>
+  <p>You keep the rights you already have in decks, files, and text you upload or type. A deck you make with Aira is yours, to the extent the law gives you that right.</p>
+  <p>
+    You let us host, display, and process that material so we can run AirDesign for you: store the deck, paint an edit, import and export, and, when you ask, send the relevant part to Aira. This permission ends when the material is deleted, except for a copy in a backup. A backup keeps a deleted deck for up to {legalFacts.backupWindow}.
+  </p>
+  <p>We do not use your decks, files, or Aira prompts to train a model.</p>
+  <p>You are responsible for having the right to upload what you upload. Do not upload something you are not allowed to use.</p>
+
+  <h2>Aira and your own agent</h2>
+  <p>
+    Aira is an AI system, not a person. It is the agent we run. When you use it, we send the text of the turn and the deck material the turn needs to Anthropic, on our key. Anthropic's commercial terms say Anthropic may not train models on that customer content. Anthropic says it deletes inputs and outputs within 30 days, with exceptions for its Usage Policy, the law, and a few products. If Anthropic's systems flag a turn under their Usage Policy, they may keep it for up to 2 years. We do not have a zero-retention agreement with them.
+  </p>
+  <p>
+    Aira runs on Anthropic's models. When you use Aira you must follow <a href="https://www.anthropic.com/legal/aup" rel="noreferrer">Anthropic's Usage Policy</a>. Do not use Aira to break the law, to make content that sexualizes or endangers a child, to harass or deceive people, to build malware or attack a system, to get around a safety limit, or to train another AI model on what it writes.
+  </p>
+  <p>
+    Aira is not available in a country Anthropic does not support. Anthropic publishes <a href="https://www.anthropic.com/supported-countries" rel="noreferrer">the list of supported countries</a>. We check your country from your network address when you start a turn. The rest of AirDesign works without Aira.
+  </p>
+  <p>
+    You can connect your own agent over MCP, including Claude or Codex. That agent is yours. We are not the host of it, and we do not see what it stores after a tool result leaves us. You follow that agent's terms as well as these.
+  </p>
+  <p>Aira can be wrong. Check a number, a quote, or a slide before you rely on it.</p>
+
+  <h2>What you will not do</h2>
+  <p>
+    Do not break the law with AirDesign, try to get into someone else's account or deck, overload the service, or route around a limit. Do not open a second account after we close one. We may turn Aira off for an account that breaks these terms, we may stop the account, and we may tell Anthropic what happened in an Aira turn.
+  </p>
+
+  <h2>The account</h2>
+  <p>You sign in with a link or a code we email you. The same email creates the account. You are responsible for that inbox.</p>
+  <p>
+    You can stop using AirDesign at any time. Deleting the account removes the account rows, the stored files for that account, and agent connections. A backup may keep them for up to {legalFacts.backupWindow}. We may turn off Aira for, or close, an account that breaks these terms. We will say so when we can.
+  </p>
+  <p>
+    We can change, suspend, or stop the service. If we stop it, we will give you a way to export your decks for {legalFacts.exportWindow} after we tell you, unless the law tells us not to.
+  </p>
+
+  <h2>Our responsibility</h2>
+  <p>AirDesign is provided as it is. We do not promise that a deck will match desktop PowerPoint in every case, that Aira will be right, or that the service will be up at every moment.</p>
+  <p>
+    As far as the law allows, our total liability to you for every claim about AirDesign is limited to {legalFacts.liabilityCap}. Nothing in these terms limits a liability that the law does not let us limit.
+  </p>
+
+  <h2>Governing law</h2>
+  <p>
+    These terms are governed by the law of {legalFacts.governingLaw}. A dispute goes to the courts of {legalFacts.courts}. If the law where you live gives you the right to use your own courts or keeps a protection for you, these terms do not take that away.
+  </p>
+
+  <h2>Changes and contact</h2>
+  <p>
+    We will post a change to these terms on this page and, if the change is material, email the address on the account before it takes effect. If you keep using AirDesign after that date, you agree to the new terms. If you do not agree, delete the account.
+  </p>
+  <p>Questions: {legalFacts.legalEmail}.</p>
+</LegalPage>
