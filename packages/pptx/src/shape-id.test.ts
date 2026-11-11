@@ -56,10 +56,17 @@ describe("shape id forms", () => {
     ])
   })
 
-  it("takes the next id past a signed, referenced or namespaced id", () => {
+  it("counts one shape written in mc:Choice and mc:Fallback under two namespaces once", () => {
+    const pair = `<mc:Choice><p14:cNvPr id="4"/></mc:Choice><mc:Fallback><p:cNvPr id="4"/></mc:Fallback>`
+    expect(shapeIdCounts(new Map([["ppt/slides/slide1.xml", ascii(pair)]]))).toEqual([
+      { part: "ppt/slides/slide1.xml", id: "4", count: 1 },
+    ])
+  })
+
+  it("takes the next id past a signed or referenced id, and reads only p:cNvPr", () => {
     expect(nextShapeId(`<p:cNvPr id="+7"/>`)).toBe(8)
     expect(nextShapeId(`<p:cNvPr id="&#55;"/>`)).toBe(8)
-    expect(nextShapeId(`<p14:cNvPr id="9"/>`)).toBe(10)
+    expect(nextShapeId(`<p14:cNvPr id="9"/>`)).toBe(1)
   })
 })
 
@@ -77,10 +84,9 @@ describe("nextShapeId", () => {
 
 describe("danglingShapeReferences", () => {
   const part = "ppt/slides/slide1.xml"
-  const slide = (references: string) =>
-    new Map([[part, ascii(`<p:sld><p:cNvPr id="2"/><p:timing>${references}</p:timing></p:sld>`)]])
+  const slide = (references: string) => new Map([[part, ascii(`<p:sld><p:cNvPr id="2"/>${references}</p:sld>`)]])
 
-  it.each(["p:spTgt", "p:inkTgt", "p:bldP", "p:bldDgm", "p:bldOleChart", "p:bldGraphic", "p:subSp", "p14:bmkTgt"])(
+  it.each(["p:spTgt", "p:inkTgt", "p:bldP", "p:bldDgm", "p:bldOleChart", "p:bldGraphic"])(
     "lists a %s spid that names no shape",
     (kind) => {
       expect(danglingShapeReferences(slide(`<${kind} spid="9"/>`))).toEqual([{ part, kind, id: "9" }])
@@ -97,18 +103,41 @@ describe("danglingShapeReferences", () => {
 
   it("does not take a shape on another part as the target", () => {
     const parts = new Map([
-      [part, ascii(`<p:sld><p:timing><p:spTgt spid="2"/></p:timing></p:sld>`)],
+      [part, ascii(`<p:sld><p:spTgt spid="2"/></p:sld>`)],
       ["ppt/slides/slide2.xml", ascii(`<p:sld><p:cNvPr id="2"/></p:sld>`)],
     ])
     expect(danglingShapeReferences(parts)).toEqual([{ part, kind: "p:spTgt", id: "2" }])
   })
 
-  it("ignores a spid outside p:timing and parts that hold no shapes", () => {
-    const parts = new Map([
-      [part, ascii(`<p:sld><p:cNvPr id="2"/><p:oleObj spid="_x0000_s1026"/><p:control spid="9"/></p:sld>`)],
-      ["ppt/charts/chart1.xml", ascii(`<p:timing><p:spTgt spid="9"/></p:timing>`)],
-    ])
+  it("ignores a p:oleObj spid, a p:subSp spid and parts that hold no shapes", () => {
+    const parts = slide(`<p:oleObj spid="_x0000_s1026"/><p:subSp spid="9"/>`)
+    parts.set("ppt/charts/chart1.xml", ascii(`<p:spTgt spid="9"/>`))
     expect(danglingShapeReferences(parts)).toEqual([])
+  })
+
+  it.each(["p:subSp", "p14:bmkTgt"])("lists a %s spid inside p:timing that names no shape", (kind) => {
+    expect(danglingShapeReferences(slide(`<p:timing><${kind} spid="9"/></p:timing>`))).toEqual([
+      { part, kind, id: "9" },
+    ])
+  })
+
+  it("lists a target nested several levels under p:timing", () => {
+    const deep = `<p:timing><p:tnLst><p:par><p:cTn><p:childTnLst><p:set><p:cBhvr><p:tgtEl><p14:bmkTgt spid="9"/></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst></p:timing>`
+    expect(danglingShapeReferences(slide(deep))).toEqual([{ part, kind: "p14:bmkTgt", id: "9" }])
+  })
+
+  it("does not merge two integers past the exact range of a number", () => {
+    const parts = new Map([
+      [part, ascii(`<p:sld><p:cNvPr id="9007199254740992"/><a:stCxn id="9007199254740993"/></p:sld>`)],
+    ])
+    expect(danglingShapeReferences(parts)).toEqual([{ part, kind: "a:stCxn", id: "9007199254740993" }])
+  })
+
+  it("does not resolve a reference against a cNvPr under a:graphicData", () => {
+    const parts = new Map([
+      [part, ascii(`<p:sld><a:graphicData><a:cNvPr id="2"/></a:graphicData><a:stCxn id="2"/></p:sld>`)],
+    ])
+    expect(danglingShapeReferences(parts)).toEqual([{ part, kind: "a:stCxn", id: "2" }])
   })
 
   it("finds a target inside p:timing held in mc:AlternateContent", () => {
@@ -160,9 +189,7 @@ describe("danglingShapeReferences", () => {
 describe("newDanglingShapeReferences", () => {
   const part = "ppt/slides/slide1.xml"
   const planted = (references: string) =>
-    danglingShapeReferences(
-      new Map([[part, ascii(`<p:sld><p:cNvPr id="2"/><p:timing>${references}</p:timing></p:sld>`)]]),
-    )
+    danglingShapeReferences(new Map([[part, ascii(`<p:sld><p:cNvPr id="2"/>${references}</p:sld>`)]]))
 
   it("catches a hand-planted dangling spid", () => {
     expect(newDanglingShapeReferences(planted(""), planted(`<p:spTgt spid="9"/>`))).toEqual([

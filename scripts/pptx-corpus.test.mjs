@@ -219,6 +219,7 @@ const pptx = {
   newValidatorErrors: (before, after) => after.filter((error) => !before.includes(error)),
   newDuplicateShapeIds: () => [],
   shapeIdCounts: () => new Map(),
+  danglingShapeReferences: () => [],
   touchMatches: () => true,
 }
 const written = (name) => ({
