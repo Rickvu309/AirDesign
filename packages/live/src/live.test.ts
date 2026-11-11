@@ -12,6 +12,7 @@ import {
   putPart,
   putParts,
   type CommitResult,
+  type OpenResult,
   type Remote,
 } from "./index.js"
 import { readRows, rowKey, writeRows, writeSlot } from "./store.js"
@@ -593,6 +594,84 @@ describe("live cache", () => {
     await cache.enqueue("deck", "only", node, "")
     await cache.flush("deck")
     expect(seenWhileCommitting).toEqual(["pending"])
+  })
+
+  function tracedRemote(answer?: OpenResult): { remote: Remote; calls: string[] } {
+    const real = memoryRemote()
+    const calls: string[] = []
+    return {
+      calls,
+      remote: {
+        open: async (body) => {
+          calls.push(`open ${body.deck}`)
+          return answer ?? real.open(body)
+        },
+        watch: (body) => real.watch(body),
+        commit: async (body) => {
+          calls.push(`commit ${body.deck}`)
+          return real.commit(body)
+        },
+      },
+    }
+  }
+
+  it("refuses a commit to a deck that was never opened", async () => {
+    expect(await memoryRemote().commit({ deck: "deck", batch: [{ value: "lost", node }] })).toEqual({
+      ok: false,
+      refusal: "deck",
+    })
+  })
+
+  it("opens the deck once before its first commit", async () => {
+    const { remote, calls } = tracedRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "first", node, "")
+    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+    await cache.enqueue("deck", "second", node, "")
+    expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 2 })
+    expect(calls).toEqual(["open deck", "commit deck", "commit deck"])
+    expect(await cache.pending("deck")).toEqual([])
+  })
+
+  it("opens each deck on its own", async () => {
+    const { remote, calls } = tracedRemote()
+    const cache = connect(remote)
+    await cache.enqueue("deck", "first", node, "")
+    await cache.flush("deck")
+    await cache.enqueue("other", "second", node, "")
+    await cache.flush("other")
+    expect(calls).toEqual(["open deck", "commit deck", "open other", "commit other"])
+  })
+
+  it("opens nothing when no row is pending", async () => {
+    const { remote, calls } = tracedRemote()
+    expect(await connect(remote).flush("deck")).toEqual({ ok: false, refusal: "batch" })
+    expect(calls).toEqual([])
+  })
+
+  it("commits nothing and keeps the rows when the open is refused", async () => {
+    const { remote, calls } = tracedRemote({ ok: false, refusal: "owner" })
+    const cache = connect(remote)
+    await cache.enqueue("deck", "kept", node, "")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "owner" })
+    expect(calls).toEqual(["open deck"])
+    expect((await cache.pending("deck")).map((row) => row.value)).toEqual(["kept"])
+  })
+
+  it("asks again after a refused open", async () => {
+    const real = memoryRemote()
+    let refuse = true
+    const remote: Remote = {
+      open: async (body) => (refuse ? { ok: false, refusal: "session" } : real.open(body)),
+      watch: (body) => real.watch(body),
+      commit: (body) => real.commit(body),
+    }
+    const cache = connect(remote)
+    await cache.enqueue("deck", "kept", node, "")
+    expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
+    refuse = false
+    expect(await cache.flush("deck")).toMatchObject({ ok: true })
+    expect(await cache.pending("deck")).toEqual([])
   })
 
   it("two enqueues at once keep two rows", async () => {
