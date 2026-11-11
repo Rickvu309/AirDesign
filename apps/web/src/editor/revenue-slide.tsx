@@ -9,6 +9,9 @@ const bars = [
   { label: "Q3 25", value: 5.7 },
 ]
 
+export const slideFrame =
+  "rounded-[2px] shadow-[0px_0px_0px_1px_var(--black-6),0px_2px_8px_var(--black-5),0px_12px_32px_var(--black-3)]"
+
 export function RevenueSlide({
   width,
   working = false,
@@ -23,9 +26,7 @@ export function RevenueSlide({
     <div
       className={cn(
         "relative flex shrink-0 flex-col gap-1.5 bg-white px-14 pt-11 pb-7",
-        working
-          ? "rounded-sm"
-          : "rounded-[2px] shadow-[0px_0px_0px_1px_var(--black-6),0px_2px_8px_var(--black-5),0px_12px_32px_var(--black-3)]",
+        working ? "rounded-sm" : slideFrame,
       )}
       style={{ width, height: Math.round((width * 9) / 16) }}
     >

@@ -5,7 +5,6 @@ import {
   slideId,
   writeTextValue,
   type ElementId,
-  type Kind,
   type Register,
   type TextValue,
 } from "@airdesign/document"
@@ -13,19 +12,22 @@ import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } fr
 import {
   applyRoute,
   exportPackage,
+  paintReader,
   prepareMarkup,
   readPackage,
   readShapes,
   readSlides,
   type ReadShape,
-  type ShapeKind,
 } from "@airdesign/pptx"
-import { Passage, paintStore, textValue, type PaintStore } from "@airdesign/render"
+import { paintStore, SlideCanvas, textValue, type PaintStore } from "@airdesign/render"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { paintKind, slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
+import { slideFrame } from "@/editor/revenue-slide"
+import { cn } from "@/lib/class-names"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
 
@@ -43,14 +45,6 @@ function ensureMarkup(): Promise<void> {
       })
   }
   return markup
-}
-
-function paintKind(kind: ShapeKind): Kind {
-  if (kind === "p:pic") return "picture"
-  if (kind === "p:cxnSp") return "connector"
-  if (kind === "p:grpSp") return "group"
-  if (kind === "p:graphicFrame") return "chart"
-  return "shape"
 }
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
@@ -126,7 +120,8 @@ function paint(
   parts: ReadonlyMap<string, Uint8Array>,
   register: Register | null,
 ): {
-  readonly slides: readonly (readonly ElementId[])[]
+  readonly count: number
+  readonly canvases: SlideCanvases
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
 } {
@@ -145,12 +140,19 @@ function paint(
     boxes.set(id, { id, file })
     rows.set(id, shape)
   }
-  const slides = readSlides(parts).map(({ slide }) => ({
-    id: slideId(slide),
-    elements: named.filter((each) => each.shape.slide === slide).map((each) => each.id),
+  const read = readSlides(parts).map(({ slide, part }) => ({
+    slide,
+    part,
+    named: named.filter((each) => each.shape.slide === slide),
   }))
-  store.setSlides(slides)
-  return { slides: slides.map((each) => each.elements), boxes, shapes: rows }
+  store.setSlides(read.map((each) => ({ id: slideId(each.slide), elements: each.named.map((shape) => shape.id) })))
+  const sources = read.map((each) => ({
+    part: each.part,
+    shapes: new Map(
+      each.named.map(({ id, shape }) => [shape.shape, { id, kind: paintKind(shape.kind), editable: boxes.has(id) }]),
+    ),
+  }))
+  return { count: read.length, canvases: slideCanvases(paintReader(parts), sources), boxes, shapes: rows }
 }
 
 type EditLink = {
@@ -253,7 +255,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
   const shapes = useRef<ReadonlyMap<ElementId, ReadShape>>(new Map())
   const shownParts = useRef<ReadonlyMap<string, Uint8Array>>(new Map())
   const [deckId, setDeckId] = useState(id)
-  const [slides, setSlides] = useState<readonly (readonly ElementId[])[]>([])
+  const canvases = useRef<SlideCanvases>(() => null)
+  const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
@@ -286,7 +289,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       boxes.current = painted.boxes
       shapes.current = painted.shapes
       shownParts.current = stored.parts
-      setSlides(painted.slides)
+      canvases.current = painted.canvases
+      setSlideCount(painted.count)
       setCurrent(0)
       setTitle(stored.name ?? "")
       setPaintedDeck(id)
@@ -343,7 +347,8 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
       boxes.current = painted.boxes
       shapes.current = painted.shapes
       shownParts.current = parts
-      setSlides(painted.slides)
+      canvases.current = painted.canvases
+      setSlideCount(painted.count)
       setCurrent(0)
       setTitle(name)
       setPaintedDeck(nextId)
@@ -438,18 +443,21 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
         <EditorShell
           notes=""
           onExport={() => void onExport()}
-          slides={{ count: slides.length, current, onSelect: setCurrent }}
-          slide={
-            <div data-slide-paint>
-              {(slides[current] ?? []).map((id) =>
-                boxes.current.has(id) ? (
-                  <Passage key={id} id={id} onEdit={(value) => void onEdit(id, value)} store={store.current} />
-                ) : (
-                  <Passage key={id} id={id} store={store.current} />
-                ),
-              )}
-            </div>
-          }
+          slides={{ count: slideCount, current, onSelect: setCurrent }}
+          slide={(width) => {
+            const canvas = canvases.current(current)
+            return canvas === null ? (
+              <div />
+            ) : (
+              <SlideCanvas
+                className={cn(slideFrame, "shrink-0 overflow-clip focus-within:overflow-visible")}
+                onEdit={(target, value) => void onEdit(target, value)}
+                slide={canvas}
+                store={store.current}
+                width={width}
+              />
+            )
+          }}
           slideLabel={String(current + 1)}
           title={title}
         />
