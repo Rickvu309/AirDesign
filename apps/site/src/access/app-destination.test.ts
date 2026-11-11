@@ -1,7 +1,11 @@
+import { readFileSync } from "node:fs"
 import { describe, expect, it } from "vitest"
 import { appDestination, safeNextPath } from "./app-destination"
 
 const hostileValues = [
+  "//",
+  "/.//",
+  "//[",
   "//evil.example",
   "///evil.example",
   "https://evil.example",
@@ -50,5 +54,12 @@ describe("appDestination", () => {
   it("is the path alone when the app origin is unset", () => {
     expect(appDestination("", "/thin/abc?x=1")).toBe("/thin/abc?x=1")
     expect(appDestination(undefined, null)).toBe("/")
+  })
+})
+
+describe("the sign-in page", () => {
+  it("remembers the next path from its own address", () => {
+    const page = readFileSync(new URL("./sign-in/sign-in-form.astro", import.meta.url), "utf8")
+    expect(page).toContain("rememberNextFromSearch(location.search)")
   })
 })
