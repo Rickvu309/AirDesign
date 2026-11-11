@@ -8,7 +8,7 @@ declare const process: {
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { readParts } from "./package-container.js"
-import { readShapes, type ShapeKind } from "./read-shapes.js"
+import { readShapes, readSlides, type ShapeKind } from "./read-shapes.js"
 import { shapeById, applyRoute } from "./slide-route.js"
 
 const work = vi.hoisted(() => ({ counting: false, parses: 0, elements: 0, visits: 0 }))
@@ -47,6 +47,24 @@ const inFallback = (elements: readonly MarkupElement[], index: number): boolean 
   }
   return false
 }
+
+describe("readSlides", () => {
+  it("lists the slides in the presentation's order, not the order of the parts", () => {
+    const xml = (text: string) => new TextEncoder().encode(text)
+    const presentation = `<p:presentation><p:sldIdLst><p:sldId id="452" r:id="rId3"/><p:sldId id="382" r:id="rId2"/></p:sldIdLst></p:presentation>`
+    const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
+    const parts = new Map([
+      ["ppt/slides/slide1.xml", xml("<p:sld/>")],
+      ["ppt/slides/slide2.xml", xml("<p:sld/>")],
+      ["ppt/presentation.xml", xml(presentation)],
+      ["ppt/_rels/presentation.xml.rels", xml(rels)],
+    ])
+    expect(readSlides(parts)).toEqual([
+      { slide: "452", part: "ppt/slides/slide2.xml" },
+      { slide: "382", part: "ppt/slides/slide1.xml" },
+    ])
+  })
+})
 
 describe("readShapes", () => {
   it("reads the text and id that a text edit writes on clean.pptx", async () => {

@@ -3,7 +3,7 @@ export { browserExportFailures, paragraphExportFailures, type ParagraphExpectati
 export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
-export { readShapes, type ReadShape, type ShapeKind } from "./read-shapes.js"
+export { readShapes, readSlides, type ReadShape, type ReadSlide, type ShapeKind } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { CompressorError } from "./package-carry.js"
 export { ContainerError, type ContainerKind } from "./package-container.js"

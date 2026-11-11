@@ -4,15 +4,15 @@ import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
 import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
-import { commitEdit, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
+import { commitEdit, deckName, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
   const sent: { deck: string; value: string; node: string; floor: string }[] = []
-  const saved: { deck: string; parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }[] = []
+  const saved: { deck: string; parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string }[] = []
   const reads: string[] = []
   const flushed: string[] = []
   const state: {
-    parts: { ok: true; parts: ReadonlyMap<string, Uint8Array> } | { ok: false; refusal: "absent" }
+    parts: { ok: true; parts: ReadonlyMap<string, Uint8Array>; name?: string } | { ok: false; refusal: "absent" }
     opened: { ok: true; register: unknown } | { ok: false; refusal: "deck" }
     refuse: boolean
     gate: Promise<void> | null
@@ -56,7 +56,10 @@ const live = vi.hoisted(() => {
       if (state.gate !== null) await state.gate
       return state.parts
     },
-    putParts: async (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }) => {
+    putParts: async (
+      deck: string,
+      stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string },
+    ) => {
       saved.push({ deck, ...stored })
       happened("putParts")
       return { ok: true, ...stored }
@@ -86,7 +89,7 @@ vi.mock("@airdesign/live", async () => {
     ...actual,
     connect: () => live.connect(),
     getParts: (deck: string) => live.getParts(deck),
-    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array }) =>
+    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string }) =>
       live.putParts(deck, stored),
   }
 })
@@ -213,9 +216,10 @@ async function renderedDeck(
   parts: ReadonlyMap<string, Uint8Array>,
   deck: string | undefined = "opened-deck",
   register: Register | null = null,
+  name?: string,
 ) {
   live.reset()
-  live.state.parts = { ok: true, parts }
+  live.state.parts = { ok: true, parts, ...(name === undefined ? {} : { name }) }
   if (register !== null) live.state.opened = { ok: true, register }
   if (jsdom === undefined) throw new Error("jsdom")
   const dom = new jsdom.JSDOM("<!doctype html><html><body><div id='root'></div></body></html>", {
@@ -271,6 +275,14 @@ async function renderedDeck(
   return window
 }
 
+async function showSlide(window: Window & typeof globalThis, number: number): Promise<void> {
+  const entry = window.document.querySelector(`[data-slide-entry="${number}"]`)
+  if (entry === null) throw new Error(`slide ${number}`)
+  await act(async () => {
+    entry.dispatchEvent(new window.MouseEvent("click", { bubbles: true }))
+  })
+}
+
 function boxShowing(window: Window & typeof globalThis, text: string): Element {
   const found = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === text)
   if (found === undefined) throw new Error(text)
@@ -298,8 +310,10 @@ async function committedNodes(
   from: string,
   values: readonly string[],
   deck = "opened-deck",
+  slide = 1,
 ): Promise<readonly (string | undefined)[]> {
   const window = await renderedDeck(parts, deck)
+  await showSlide(window, slide)
   const passage = boxShowing(window, from)
   for (const [index, value] of values.entries()) await typeInto(window, passage, value, index + 2)
   return live.sent.map((edit) => edit.node)
@@ -310,7 +324,7 @@ it("saves the thin edit under its element id", async () => {
 })
 
 it("saves every edit under the id of the shape that was edited", async () => {
-  expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"])).toEqual(["382.2", "382.2"])
+  expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "opened-deck", 2)).toEqual(["382.2", "382.2"])
 })
 
 it("paints before the commit is sent", async () => {
@@ -402,7 +416,7 @@ it("an export writes each edited element into its own box", () => {
 })
 
 it("saves every edit under the deck id in the address", async () => {
-  await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "address-deck")
+  await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "address-deck", 2)
   expect(live.sent.map((edit) => edit.deck)).toEqual(["address-deck", "address-deck"])
   expect(live.reads).toContain("address-deck")
 })
@@ -452,7 +466,8 @@ it("an export of a stored edit refuses the fallback box that shares the edited i
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
-function editableTexts(window: Window): readonly string[] {
+async function editableTexts(window: Window & typeof globalThis, slide: number): Promise<readonly string[]> {
+  await showSlide(window, slide)
   return [...window.document.querySelectorAll('[contenteditable="true"]')].map((node) => node.textContent ?? "").sort()
 }
 
@@ -460,9 +475,11 @@ it("does not offer a locked box for editing", async () => {
   const parts = shapedParts()
   parts.set("ppt/slides/slide1.xml", xml(fallbackSlide))
   const window = await renderedDeck(parts)
+  await showSlide(window, 2)
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(editableTexts(window)).toEqual(["Choice", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["Choice"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
 async function offeredWith(body: string) {
@@ -471,7 +488,9 @@ async function offeredWith(body: string) {
   const keep = "<p:txBody><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody>"
   expect(slide).toContain(keep)
   parts.set("ppt/slides/slide1.xml", xml(slide.replace(keep, `<p:txBody>${body}</p:txBody>`)))
-  return renderedDeck(parts)
+  const window = await renderedDeck(parts)
+  await showSlide(window, 2)
+  return window
 }
 
 it("offers a box with two runs in one paragraph for editing and shows each run", async () => {
@@ -479,7 +498,8 @@ it("offers a box with two runs in one paragraph for editing and shows each run",
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("true")
   expect([...(shown?.querySelectorAll("[data-run]") ?? [])].map((run) => run.textContent)).toEqual(["Ke", "ep"])
-  expect(editableTexts(window)).toEqual(["First", "Keep", "Last", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["First", "Keep", "Last"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
 it("offers a box with several paragraphs for editing and shows each paragraph", async () => {
@@ -487,19 +507,22 @@ it("offers a box with several paragraphs for editing and shows each paragraph", 
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("true")
   expect([...(shown?.querySelectorAll("[data-paragraph]") ?? [])].map((run) => run.textContent)).toEqual(["Ke", "ep"])
-  expect(editableTexts(window)).toEqual(["First", "Keep", "Last", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["First", "Keep", "Last"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
 it("offers an empty box for editing", async () => {
   const window = await offeredWith('<a:p><a:endParaRPr lang="en-US"/></a:p>')
-  expect(editableTexts(window)).toEqual(["", "First", "Last", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["", "First", "Last"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
 it("does not offer a slide-number box for editing", async () => {
   const window = await offeredWith(`<a:p><a:fld id="{1}" type="slidenum"><a:rPr/><a:t>Keep</a:t></a:fld></a:p>`)
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(editableTexts(window)).toEqual(["First", "Last", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["First", "Last"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
 })
 
 it("names every element by its slide id and shape id in the server's pattern", () => {
@@ -510,9 +533,12 @@ it("names every element by its slide id and shape id in the server's pattern", (
 
 it("commits each box under its own id with its file text as floor", async () => {
   const window = await renderedDeck(shapedParts())
+  await showSlide(window, 2)
   await typeInto(window, boxShowing(window, "First"), "One", 2)
   await typeInto(window, boxShowing(window, "Last"), "Two", 3)
+  await showSlide(window, 1)
   await typeInto(window, boxShowing(window, "Other"), "Three", 4)
+  await showSlide(window, 2)
   await typeInto(window, boxShowing(window, "One"), "Four", 5)
   expect(live.sent).toEqual([
     { deck: "opened-deck", value: oneRun("One"), node: "382.5", floor: oneRun("First") },
@@ -531,7 +557,8 @@ it("paints each element's stored value after a reload and the file text elsewher
       ["452.2", "Stored other"],
     ]),
   )
-  expect(editableTexts(window)).toEqual(["First", "Keep", "Stored last", "Stored other"])
+  expect(await editableTexts(window, 2)).toEqual(["First", "Keep", "Stored last"])
+  expect(await editableTexts(window, 1)).toEqual(["Stored other"])
 })
 
 it("sends what is pending when a deck opens", async () => {
@@ -542,6 +569,7 @@ it("sends what is pending when a deck opens", async () => {
 it("puts a refused edit back to the last stored text", async () => {
   const window = await renderedDeck(shapedParts(), "opened-deck", editedRegister([["382.9", "Stored last"]]))
   live.state.refuse = true
+  await showSlide(window, 2)
   const last = boxShowing(window, "Stored last")
   const first = boxShowing(window, "First")
   for (const [index, [box, typed]] of (
@@ -599,7 +627,67 @@ it("does not offer a locked box whose fallback twin has one run", async () => {
   expect(one).not.toBe(fallbackSlide)
   parts.set("ppt/slides/slide1.xml", xml(one))
   const window = await renderedDeck(parts)
+  await showSlide(window, 2)
   const shown = [...window.document.querySelectorAll("[contenteditable]")].find((node) => node.textContent === "Keep")
   expect(shown?.getAttribute("contenteditable")).toBe("false")
-  expect(editableTexts(window)).toEqual(["Choice", "Other"])
+  expect(await editableTexts(window, 2)).toEqual(["Choice"])
+  expect(await editableTexts(window, 1)).toEqual(["Other"])
+})
+
+function inPartOrder(): Map<string, Uint8Array> {
+  const parts = shapedParts()
+  return new Map([...parts].sort(([left], [right]) => left.localeCompare(right)))
+}
+
+function slideTexts(window: Window): readonly string[] {
+  return [...window.document.querySelectorAll("[contenteditable]")].map((node) => node.textContent ?? "")
+}
+
+it("lists the slides in the file's order, not the part-name order", async () => {
+  const parts = inPartOrder()
+  expect([...parts.keys()].filter((name) => name.startsWith("ppt/slides/"))).toEqual([
+    "ppt/slides/slide1.xml",
+    "ppt/slides/slide2.xml",
+  ])
+  const window = await renderedDeck(parts)
+  expect([...window.document.querySelectorAll("[data-slide-entry]")].map((entry) => entry.textContent)).toEqual([
+    "1",
+    "2",
+  ])
+  expect(slideTexts(window)).toEqual(["Other"])
+  await showSlide(window, 2)
+  expect(slideTexts(window)).toEqual(["First", "Keep", "Last"])
+})
+
+it("shows one slide at a time and keeps an edit when the slide changes and comes back", async () => {
+  const window = await renderedDeck(shapedParts())
+  expect(slideTexts(window)).toEqual(["Other"])
+  await showSlide(window, 2)
+  expect(slideTexts(window)).toEqual(["First", "Keep", "Last"])
+  await typeInto(window, boxShowing(window, "Keep"), "Kept", 2)
+  await showSlide(window, 1)
+  expect(slideTexts(window)).toEqual(["Other"])
+  await showSlide(window, 2)
+  expect(slideTexts(window)).toEqual(["First", "Kept", "Last"])
+})
+
+it("names the opened file and shows no sample deck words", async () => {
+  const window = await renderedDeck(shapedParts(), "opened-deck", null, "Quarterly review")
+  const text = window.document.body.textContent ?? ""
+  expect(text).toContain("Quarterly review")
+  expect(text).not.toContain("Q3 Investor Update")
+  expect(text).not.toContain("New slide")
+  expect(text).not.toContain("Opening")
+})
+
+it("shows an empty title for a deck stored without a name", async () => {
+  const window = await renderedDeck(shapedParts())
+  const text = window.document.body.textContent ?? ""
+  expect(text).not.toContain("Q3 Investor Update")
+})
+
+it("saves the file name without .pptx with the deck", async () => {
+  live.reset()
+  await saveDeck(new Map([["first", new Uint8Array([1])]]), new Uint8Array([1]), deckName("Board deck.PPTX"))
+  expect(live.saved[0]?.name).toBe("Board deck")
 })
