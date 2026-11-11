@@ -11,13 +11,13 @@ import {
   type NodeRegister,
   type Register,
 } from "./index.js"
-import { elementId, shapeOf } from "./element-id.js"
+import { elementId, rootElement, shapeOf } from "./element-id.js"
 
-const ids = [elementId("a"), elementId("258.7"), elementId("258.n4k2j9x0q1zab")] as const
+const ids = [rootElement, elementId("258.7"), elementId("258.n4k2j9x0q1zab")] as const
 const kinds = ["person", "start", "stop", "undo", "agent", "remove", "read", "add"] as const
 
 function picture(register: Register, id: ElementId): string {
-  if (id === elementId("a")) {
+  if (id === rootElement) {
     return JSON.stringify({
       route: register.route,
       floor: register.floor,
@@ -36,7 +36,7 @@ function picture(register: Register, id: ElementId): string {
 }
 
 function bodyOf(register: Register, id: ElementId): NodeRegister {
-  if (id === elementId("a")) return register
+  if (id === rootElement) return register
   const body = register.elements[id]
   if (body === undefined) throw new Error("missing body")
   return body
@@ -105,13 +105,13 @@ it("adds any id except the one openRegister created", () => {
   const register = openRegister("floor", "slide")
   expect(shapeOf(first)).toEqual({ slide: "258", shape: "7" })
   expect(shapeOf(second)).toEqual({ slide: "258", shape: "n4k2j9x0q1zab" })
-  expect(decide(register, { command: "add", node: elementId("a"), floor: "x", route: "y" })).toEqual({
+  expect(decide(register, { command: "add", node: rootElement, floor: "x", route: "y" })).toEqual({
     decision: "refuse",
     code: "present",
   })
-  const removed = decide(register, { command: "remove", node: elementId("a") })
+  const removed = decide(register, { command: "remove", node: rootElement })
   if (removed.decision !== "apply") throw new Error("remove")
-  expect(decide(removed.register, { command: "add", node: elementId("a"), floor: "x", route: "y" })).toEqual({
+  expect(decide(removed.register, { command: "add", node: rootElement, floor: "x", route: "y" })).toEqual({
     decision: "refuse",
     code: "present",
   })
@@ -131,7 +131,7 @@ it("adds any id except the one openRegister created", () => {
   expect(history(kept)).toEqual(["kept"])
   const third = decide(again.register, { command: "add", node: second, floor: "two", route: "part" })
   if (third.decision !== "apply") throw new Error("third")
-  expect(third.register.nodes).toEqual([elementId("a"), first, second])
+  expect(third.register.nodes).toEqual([rootElement, first, second])
   const present = decide(third.register, { command: "add", node: second, floor: "two", route: "part" })
   expect(present).toEqual({ decision: "refuse", code: "present" })
   const other = third.register.elements[second]
@@ -173,7 +173,7 @@ function readBody(register: Register, id: ElementId) {
 
 it("opens a plain body for an id that names an object method", () => {
   for (const name of methodNames) {
-    const id = elementId(name)
+    const id = name as ElementId
     const sibling = elementId("258.7")
     const opened = openRegister("floor", "slide")
     const siblingAdded = decide(opened, { command: "add", node: sibling, floor: "sib", route: "part" })
@@ -212,8 +212,8 @@ it("opens a plain body for an id that names an object method", () => {
 
 it("throws missing node for a listed id that has no body", () => {
   for (const name of methodNames) {
-    const id = elementId(name)
-    const register = { ...openRegister("floor", "slide"), nodes: [elementId("a"), id] }
+    const id = name as ElementId
+    const register = { ...openRegister("floor", "slide"), nodes: [rootElement, id] }
     expect(() => decide(register, { command: "person", value: "typed", node: id })).toThrow("missing node")
     expect(() => decide(register, { command: "read", runId: "r1", node: id })).toThrow("missing node")
   }
@@ -269,7 +269,7 @@ it("returns the edited element's route", () => {
   expect(added.route).toBe("part")
   for (const [node, route] of [
     [part, "part"],
-    [elementId("a"), "slide"],
+    [rootElement, "slide"],
   ] as const) {
     const commandsInOrder: readonly Command[] = [
       { command: "person", node, value: "v" },

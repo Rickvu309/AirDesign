@@ -1,10 +1,12 @@
-import { readDeckId, readNode, type DeckId, type WireEdit } from "@airdesign/catalog"
+import { readDeckId, type DeckId, type WireEdit } from "@airdesign/catalog"
 import {
   currentValue,
   decide,
-  elementId,
+  legacyElement,
+  rootElement,
   limits,
   openRegister,
+  readElementId,
   replay,
   unsent,
   version,
@@ -47,7 +49,7 @@ export type OpenDeckResult =
 export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: string }
 
 function pairedBody(register: Register): NodeRegister | null {
-  const stored = register.elements[elementId("b")]
+  const stored = register.elements[legacyElement]
   if (stored !== undefined) return stored
   if (!Object.hasOwn(register, "b")) return null
   const body = (register as { readonly b?: NodeRegister | null }).b
@@ -63,7 +65,7 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
     revision = fitConfirmed(deck, revision, landed.value, undefined, into)
   }
   for (const id of register.nodes) {
-    if (id === elementId("a") || id === elementId("b")) continue
+    if (id === rootElement || id === legacyElement) continue
     const body = register.elements[id]
     if (body === undefined) continue
     for (const landed of body.landed) {
@@ -75,7 +77,7 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
   if (paired !== null) {
     for (const landed of paired.landed) {
       if (!landed.visible) continue
-      revision = fitConfirmed(deck, revision, landed.value, elementId("b"), into)
+      revision = fitConfirmed(deck, revision, landed.value, legacyElement, into)
     }
   }
   return into
@@ -84,7 +86,7 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
 type WiredRow = PendingRow & { readonly node: ElementId }
 
 function wired(row: PendingRow): row is WiredRow {
-  return readNode(row.node) !== undefined
+  return readElementId(row.node) !== undefined
 }
 
 function opened(register: Register, node: ElementId | undefined, floor: string): Register {
@@ -184,7 +186,7 @@ export function connect(remote: Remote) {
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const named = readNode(node)
+      const named = readElementId(node)
       if (named === undefined) return { ok: false, refusal: "dead" }
       return changeRows<EnqueueResult>(parsed.deck, (rows) => {
         const { confirmed, pending } = split(rows)

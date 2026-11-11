@@ -11,7 +11,7 @@ import {
   type Register,
   type Refusal,
 } from "./decide.js"
-import { elementId, type ElementId } from "./element-id.js"
+import { legacyElement, rootElement, type ElementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type Effect = "add" | "remove" | "read"
@@ -69,8 +69,8 @@ for (const rule of rules) {
   table.set(key, rule)
 }
 
-const opened = elementId("a")
-const paired = elementId("b")
+const opened = rootElement
+const paired = legacyElement
 
 function names(hasA: boolean, hasB: boolean): ElementId[] {
   const nodes: ElementId[] = []

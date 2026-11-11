@@ -1,3 +1,4 @@
+import { readElementId } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
 import {
   catalog,
@@ -8,7 +9,6 @@ import {
   readCapture,
   readCommit,
   readEdit,
-  readNode,
   readRun,
   readRunStart,
   readWatch,
@@ -52,16 +52,16 @@ describe("readEdit", () => {
   })
 
   it("reads a node id and refuses anything else", () => {
-    expect(readNode("258.7")).toBe("258.7")
-    expect(readNode("n4k2j9x0q1zab.7")).toBe("n4k2j9x0q1zab.7")
-    expect(readNode("n4k2j9x0q1zab.n4k2j9x0q1zab")).toBe("n4k2j9x0q1zab.n4k2j9x0q1zab")
-    expect(readNode("0.0000000000")).toBe("0.0000000000")
-    expect(readNode("a")).toBeUndefined()
-    expect(readNode("258.")).toBeUndefined()
-    expect(readNode("12345678901.7")).toBeUndefined()
-    expect(readNode("258.12345678901")).toBeUndefined()
-    expect(readNode(7)).toBeUndefined()
-    expect(readNode(undefined)).toBeUndefined()
+    expect(readElementId("258.7")).toBe("258.7")
+    expect(readElementId("n4k2j9x0q1zab.7")).toBe("n4k2j9x0q1zab.7")
+    expect(readElementId("n4k2j9x0q1zab.n4k2j9x0q1zab")).toBe("n4k2j9x0q1zab.n4k2j9x0q1zab")
+    expect(readElementId("0.0000000000")).toBe("0.0000000000")
+    expect(readElementId("a")).toBeUndefined()
+    expect(readElementId("258.")).toBeUndefined()
+    expect(readElementId("12345678901.7")).toBeUndefined()
+    expect(readElementId("258.12345678901")).toBeUndefined()
+    expect(readElementId(7)).toBeUndefined()
+    expect(readElementId(undefined)).toBeUndefined()
   })
 
   it("keeps a named node", () => {

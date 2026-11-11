@@ -1,5 +1,5 @@
 import { memo, useSyncExternalStore } from "react"
-import type { ElementId, SlideId } from "./brand.js"
+import type { ElementId, SlideId } from "@airdesign/document"
 import type { ElementRecord } from "./record.js"
 import type { PaintStore } from "./store.js"
 

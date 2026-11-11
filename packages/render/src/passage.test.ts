@@ -1,8 +1,8 @@
 import { act, createElement, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
-import { readTextValue, writeTextValue, type TextValue } from "@airdesign/document"
+import { elementId, readTextValue, writeTextValue, type TextValue } from "@airdesign/document"
 import { afterEach, describe, expect, it } from "vitest"
-import { Passage, elementId, paintStore } from "./index.js"
+import { Passage, paintStore } from "./index.js"
 
 Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
 
@@ -83,7 +83,7 @@ function show(store: ReturnType<typeof paintStore>, id: ReturnType<typeof elemen
 describe("Passage", () => {
   it("composition keeps the text node", async () => {
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
     function Parent(props: { readonly generation: number }) {
       return createElement("div", { "data-generation": props.generation }, createElement(Passage, { store, id }))
@@ -149,7 +149,7 @@ describe("Passage", () => {
   it("reports committed text and stays quiet during composition", async () => {
     const seen: string[] = []
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
     const mounted = await render(
       createElement(Passage, {
@@ -184,7 +184,7 @@ describe("Passage", () => {
 
   it("an echo of its own value keeps the text node and the caret", async () => {
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, "Hello")
     const mounted = await render(
       createElement(Passage, {
@@ -212,7 +212,7 @@ describe("Passage", () => {
   it("a late echo of an older value keeps the newer typed text", async () => {
     const sent: string[] = []
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, "")
     const mounted = await render(
       createElement(Passage, {
@@ -248,7 +248,7 @@ describe("Passage", () => {
   it("a value from elsewhere replaces the text and keeps the caret, clamped", async () => {
     const sent: string[] = []
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, "Hello world")
     const mounted = await render(
       createElement(Passage, {
@@ -284,7 +284,7 @@ describe("Passage", () => {
 
   it("a passage that cannot store an edit is not editable", async () => {
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, "Hello")
     const fixed = await render(createElement(Passage, { store, id }))
     expect(fixed.host.querySelector('[contenteditable="true"]')).toBeNull()
@@ -297,7 +297,7 @@ describe("Passage", () => {
 
   it("refuses Enter only outside a composition", async () => {
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     expect(store.publish({ id, kind: "shape", text: "hello", picture: null })).toEqual({ ok: true })
     const { host } = await render(createElement(Passage, { store, id, onEdit: () => undefined }))
     const editor = editorIn(host)
@@ -319,7 +319,7 @@ describe("Passage paragraphs", () => {
   it("Enter splits the paragraph at the caret and the new one keeps the run's from", async () => {
     const sent: string[] = []
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     const value = [
       {
         from: 0,
@@ -357,7 +357,7 @@ describe("Passage paragraphs", () => {
   async function mountValue(value: TextValue) {
     const sent: string[] = []
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, writeTextValue(value))
     const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))
     return { sent, store, id, editor: editorIn(host) }
@@ -490,7 +490,7 @@ describe("Passage paragraphs", () => {
 
   it("a stored plain string is one paragraph with one run", async () => {
     const store = paintStore()
-    const id = elementId("body")
+    const id = elementId("1.1")
     await show(store, id, "Hello")
     const sent: string[] = []
     const { host } = await render(createElement(Passage, { store, id, onEdit: (next) => void sent.push(next) }))

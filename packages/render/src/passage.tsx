@@ -1,6 +1,6 @@
 import { writeTextValue, type TextParagraph, type TextRun, type TextValue } from "@airdesign/document"
 import { useLayoutEffect, useRef } from "react"
-import type { ElementId } from "./brand.js"
+import type { ElementId } from "@airdesign/document"
 import { useElement } from "./element-view.js"
 import {
   cutValue,

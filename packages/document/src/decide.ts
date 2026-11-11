@@ -1,4 +1,4 @@
-import { elementId, type ElementId } from "./element-id.js"
+import { legacyElement, rootElement, type ElementId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
@@ -60,7 +60,7 @@ type Edited =
   | { readonly decision: "apply"; readonly body: NodeRegister }
   | { readonly decision: "refuse"; readonly code: Refusal }
 
-const openedElement = elementId("a")
+const openedElement = rootElement
 
 function openNode(floor: string, route: string): NodeRegister {
   return {
@@ -142,7 +142,7 @@ function ownBody(elements: ElementMap, id: ElementId): NodeRegister | null {
 
 function elementsOf(register: Register, id: ElementId): ElementMap {
   if (ownBody(register.elements, id) !== null) return register.elements
-  if (id !== elementId("b")) return register.elements
+  if (id !== legacyElement) return register.elements
   const paired = pairedBody(register)
   if (paired === null) return register.elements
   return { ...register.elements, [id]: paired }

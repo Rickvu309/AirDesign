@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { decide, decideUndo, openRegister, type NodeRegister, type Register } from "./decide.js"
-import { elementId } from "./element-id.js"
+import { legacyElement, type ElementId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
 
 type InsideRow = {
@@ -129,7 +129,7 @@ function visitOutside(name: string, seen: Set<string>): void {
           row.call === "person"
             ? { command: "person", value: "kept" }
             : row.call === "absent"
-              ? { command: "remove", node: elementId("b") }
+              ? { command: "remove", node: legacyElement }
               : { command: "undo", runId: "r" },
         )
   expect(decision, name).toEqual({ decision: "refuse", code: row.code })
@@ -174,7 +174,7 @@ describe("limits", () => {
     for (let index = 0; index < throughDecide; index += 1) {
       const decision = decide(register, {
         command: "add",
-        node: elementId(`n.${index}`),
+        node: `n.${index}` as ElementId,
         floor: "floor",
         route: "slide",
       })
@@ -184,14 +184,14 @@ describe("limits", () => {
     expect(register.nodes.length).toBe(throughDecide + 1)
     const nodes = [...register.nodes]
     while (nodes.length < limits.elements) {
-      nodes.push(elementId(`n.${nodes.length}`))
+      nodes.push(`n.${nodes.length}` as ElementId)
     }
     register = { ...register, nodes }
     expect(register.nodes.length).toBe(limits.elements)
     const before = copyRegister(register)
     const refused = decide(register, {
       command: "add",
-      node: elementId("n.past"),
+      node: "n.past" as ElementId,
       floor: "floor",
       route: "slide",
     })
@@ -199,23 +199,23 @@ describe("limits", () => {
     expect(register).toEqual(before)
     const present = decide(register, {
       command: "add",
-      node: elementId("n.0"),
+      node: "n.0" as ElementId,
       floor: "other",
       route: "slide",
     })
     expect(present).toEqual({ decision: "refuse", code: "present" })
     expect(register).toEqual(before)
-    const removed = decide(register, { command: "remove", node: elementId("n.1") })
+    const removed = decide(register, { command: "remove", node: "n.1" as ElementId })
     if (removed.decision !== "apply") throw new Error("remove")
     const added = decide(removed.register, {
       command: "add",
-      node: elementId("n.past"),
+      node: "n.past" as ElementId,
       floor: "fresh",
       route: "slide",
     })
     expect(added.decision).toBe("apply")
     if (added.decision !== "apply") throw new Error("again")
     expect(added.register.nodes.length).toBe(limits.elements)
-    expect(added.register.nodes.includes(elementId("n.past"))).toBe(true)
+    expect(added.register.nodes.includes("n.past" as ElementId)).toBe(true)
   })
 })

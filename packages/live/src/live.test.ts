@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { currentValue, elementId } from "@airdesign/document"
+import { currentValue, elementId, legacyElement, rootElement } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   connect,
@@ -252,7 +252,7 @@ describe("live cache", () => {
 
   it("drops a refused edit", async () => {
     const cache = connect(memoryRemote())
-    expect(await cache.enqueue("deck", "nope", elementId("b"), "")).toEqual({ ok: false, refusal: "dead" })
+    expect(await cache.enqueue("deck", "nope", legacyElement, "")).toEqual({ ok: false, refusal: "dead" })
     expect(await cache.pending("deck")).toEqual([])
   })
 
@@ -352,7 +352,7 @@ describe("live cache", () => {
       [
         {
           key: rowKey("deck", "pending", 1),
-          row: { kind: "pending", deck: "deck" as DeckId, order: 1, base: 1, value: "legacy", node: elementId("a") },
+          row: { kind: "pending", deck: "deck" as DeckId, order: 1, base: 1, value: "legacy", node: rootElement },
         },
       ],
       [],
@@ -366,7 +366,10 @@ describe("live cache", () => {
   it("refuses to enqueue a malformed element id and writes no row", async () => {
     const cache = connect(memoryRemote())
     const before = await cache.rows("deck")
-    expect(await cache.enqueue("deck", "nope", elementId("258."), "")).toEqual({ ok: false, refusal: "dead" })
+    expect(await Reflect.apply(cache.enqueue, cache, ["deck", "nope", "258.", ""])).toEqual({
+      ok: false,
+      refusal: "dead",
+    })
     expect(await cache.rows("deck")).toEqual(before)
   })
 

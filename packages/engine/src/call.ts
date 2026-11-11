@@ -1,6 +1,6 @@
 import {
   decide,
-  elementId,
+  storedElements,
   limits,
   openRegister,
   type Command,
@@ -119,7 +119,7 @@ function applyEdits<Edit extends Touched>(
 }
 
 function everyElement(register: Register): readonly ElementId[] {
-  return [...new Set([...register.nodes, ...Object.keys(register.elements).map((key) => elementId(key))])]
+  return [...new Set([...register.nodes, ...storedElements(register)])]
 }
 
 function bodyOf(register: Register, node: ElementId): NodeRegister {

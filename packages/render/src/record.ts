@@ -1,5 +1,5 @@
 import type { Kind } from "@airdesign/document"
-import type { ElementId, SlideId } from "./brand.js"
+import type { ElementId, SlideId } from "@airdesign/document"
 
 export type ElementRecord = {
   readonly id: ElementId
