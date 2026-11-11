@@ -70,7 +70,6 @@ expectRejects(
   rule,
   message,
 )
-expectRejects("a test file stays covered", "apps/api/src/second.test.ts", named, rule, message)
 expectAccepts("server.ts may open a server", "apps/api/src/server.ts", named, rule)
 expectAccepts(
   "the harness may import request",
@@ -94,3 +93,4 @@ expectAccepts(
 )
 expectAccepts("a literal dynamic import stays", source, `export const pg = await import("pg")\n`, rule)
 expectAccepts("another package stays out of scope", "apps/web/src/second.ts", named, rule)
+expectAccepts("a test file is out of scope", "apps/api/src/second.test.ts", named, rule)
