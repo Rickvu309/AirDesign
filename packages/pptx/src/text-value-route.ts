@@ -5,14 +5,14 @@ import { xmlText } from "./shape-write.js"
 
 export type MarkupChildren = readonly (readonly MarkupElement[])[]
 
-type SourceInline = {
+export type SourceInline = {
   readonly element: MarkupElement
   readonly format: MarkupElement | undefined
   readonly holder: MarkupElement | undefined
   readonly text: string
 }
 
-type SourceParagraph = {
+export type SourceParagraph = {
   readonly element: MarkupElement
   readonly properties: MarkupElement | undefined
   readonly inlines: readonly SourceInline[]
@@ -84,7 +84,7 @@ function sourceParagraph(children: MarkupChildren, bytes: Uint8Array, element: M
   }
 }
 
-function sourceBody(
+export function sourceBody(
   children: MarkupChildren,
   bytes: Uint8Array,
   shape: MarkupElement,
