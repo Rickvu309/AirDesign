@@ -5,6 +5,13 @@ const pageBytes = 65536
 const chunkBytes = 64 * 1024
 const cdataOpen = "<![CDATA["
 const cdataClose = "]]>"
+const namedReferences = new Map([
+  ["amp", "&"],
+  ["lt", "<"],
+  ["gt", ">"],
+  ["quot", '"'],
+  ["apos", "'"],
+])
 
 export type MarkupAttribute = {
   readonly name: string
@@ -338,6 +345,35 @@ function afterMarker(bytes: Uint8Array, from: number, limit: number, marker: str
     if (markerAt(bytes, at, marker)) return at + marker.length
   }
   return limit
+}
+
+function numericReference(token: string): string | null {
+  const hex = token[1] === "x"
+  const digits = token.slice(hex ? 2 : 1)
+  if (!(hex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/).test(digits)) return null
+  const code = Number.parseInt(digits, hex ? 16 : 10)
+  if (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return null
+  return String.fromCodePoint(code)
+}
+
+function referenceText(token: string): string | null {
+  return token.startsWith("#") ? numericReference(token) : (namedReferences.get(token) ?? null)
+}
+
+export function decodedXmlText(value: string): string {
+  let text = ""
+  let start = 0
+  for (let index = 0; index < value.length; index += 1) {
+    if (value[index] !== "&") continue
+    let end = index + 1
+    while (end < value.length && value[end] !== ";") end += 1
+    if (end >= value.length) return text + value.slice(start)
+    const decoded = referenceText(value.slice(index + 1, end))
+    text += value.slice(start, index) + (decoded ?? value.slice(index, end + 1))
+    start = end + 1
+    index = end
+  }
+  return text + value.slice(start)
 }
 
 export function contentSpans(bytes: Uint8Array, element: MarkupElement): readonly ContentSpan[] {

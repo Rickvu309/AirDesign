@@ -1,13 +1,13 @@
 import type { TextParagraph, TextValue } from "@airdesign/document"
 import fc from "fast-check"
 import { describe, expect, it } from "vitest"
-import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { decodedXmlText, markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
 import { applyRoute, oneRunValue, shapeById, textStorable } from "./slide-route.js"
-import { decodedXmlText, markupChildren, oneRunIn, shapeTextValue } from "./text-value-route.js"
+import { markupChildren, oneRunIn, shapeTextValue } from "./text-value-route.js"
 
 declare const process: {
   cwd(): string

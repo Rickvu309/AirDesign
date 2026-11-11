@@ -538,9 +538,50 @@ describe("removing a shape something refers to", () => {
     expect(removed(onSlide(plain(2) + kept, timing), "2")).toBe(onSlide(kept, timing))
   })
 
-  it("does not read a p:oleObj spid or a p:subSp spid as a reference to the shape", () => {
+  it("does not read a spid outside p:timing as a reference to the shape", () => {
     const shapes = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:oleObj spid="3"/></p:sp>${plain(3)}`
-    const timing = timed(`<p:subSp spid="3"/>`)
-    expect(removed(onSlide(shapes, timing), "3")).toContain(`<p:oleObj spid="3"/>`)
+    expect(removed(onSlide(shapes), "3")).toContain(`<p:oleObj spid="3"/>`)
+  })
+
+  it.each(["p14:bmkTgt", "p:subSp", "x:anything"])("refuses a shape a %s inside p:timing names", (kind) => {
+    expectRefused(onSlide(plain(2), timed(`<${kind} spid="2"/>`)), "2")
+  })
+
+  it("refuses a shape named from timing held in mc:Choice", () => {
+    expectRefused(
+      onSlide(
+        plain(2),
+        `<mc:AlternateContent><mc:Choice>${timed(`<p:spTgt spid="2"/>`)}</mc:Choice></mc:AlternateContent>`,
+      ),
+      "2",
+    )
+  })
+
+  it.each(["05", "+5", "&#53;", "&#x35;", " 5 "])("refuses shape 5 targeted as %j", (form) => {
+    expectRefused(onSlide(plain(5), timed(`<p:spTgt spid="${form}"/>`)), "5")
+  })
+
+  it("refuses a shape written 05 targeted as 5", () => {
+    const shape = `<p:sp><p:nvSpPr><p:cNvPr id="05" name="S"/></p:nvSpPr></p:sp>`
+    expectRefused(onSlide(shape, timed(`<p:spTgt spid="5"/>`)), "05")
+  })
+
+  it.each(["05", "+5", "&#53;"])("cuts a connector end written %j and only those bytes", (form) => {
+    const kept = `<a:endCxn id="03" idx="0"/>`
+    const source = onSlide(plain(5) + plain(3) + connector(6, `<a:stCxn id="${form}" idx="1"/>${kept}`))
+    expect(removed(source, "5")).toBe(onSlide(plain(3) + connector(6, kept)))
+  })
+
+  it("refuses a group holding an animated p14:cNvPr content part", () => {
+    const ink = `<p:contentPart><p14:nvContentPartPr><p14:cNvPr id="5" name="Ink"/></p14:nvContentPartPr></p:contentPart>`
+    expectRefused(onSlide(group(8, ink), timed(`<p:inkTgt spid="5"/>`)), "8")
+    expectRefused(onSlide(group(8, ink), timed(`<p:spTgt spid="5"/>`)), "8")
+  })
+
+  it("cuts a connector attached to a p14:cNvPr content part in a removed group", () => {
+    const ink = `<p:contentPart><p14:nvContentPartPr><p14:cNvPr id="5" name="Ink"/></p14:nvContentPartPr></p:contentPart>`
+    expect(removed(onSlide(group(8, ink) + connector(6, `<a:stCxn id="5" idx="0"/>`)), "8")).toBe(
+      onSlide(connector(6, "")),
+    )
   })
 })

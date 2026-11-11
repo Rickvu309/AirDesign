@@ -1,9 +1,9 @@
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 
 export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
-const animationKinds = new Set(["p:spTgt", "p:inkTgt", "p:bldP", "p:bldDgm", "p:bldOleChart", "p:bldGraphic"])
+const unsignedInteger = /^(?:\+|-(?=0+$))?([0-9]+)$/
 const connectionKinds = new Set(["a:stCxn", "a:endCxn"])
 
 export type ShapeIdCount = {
@@ -18,11 +18,23 @@ export type ShapeReference = {
   readonly id: string
 }
 
+function shapeIdentity(value: string): string {
+  const collapsed = decodedXmlText(value)
+    .replace(/[\t\n\r ]+/g, " ")
+    .replace(/^ | $/g, "")
+  return unsignedInteger.exec(collapsed)?.[1]?.replace(/^0+(?=[0-9])/, "") ?? collapsed
+}
+
+function shapeMarkId(element: MarkupElement): string | null {
+  if (element.id === null || (element.kind !== "cNvPr" && !element.kind.endsWith(":cNvPr"))) return null
+  return shapeIdentity(element.id)
+}
+
 function shapeIdsIn(bytes: Uint8Array): readonly string[] {
   const ids: string[] = []
   for (const element of markupDocument(bytes).elements) {
-    if (element.kind !== "p:cNvPr" || element.id === null) continue
-    ids.push(element.id)
+    const id = shapeMarkId(element)
+    if (id !== null) ids.push(id)
   }
   return ids
 }
@@ -73,13 +85,24 @@ export function newDuplicateShapeIds(
   return found
 }
 
-function animationId(element: MarkupElement): string | null {
-  if (!animationKinds.has(element.kind)) return null
-  return element.attributes.find((item) => item.name === "spid")?.value ?? null
+function insideTiming(elements: readonly MarkupElement[], element: MarkupElement): boolean {
+  let ancestor = elements[element.parent]
+  while (ancestor !== undefined) {
+    if (ancestor.kind === "p:timing") return true
+    ancestor = elements[ancestor.parent]
+  }
+  return false
+}
+
+function animationId(elements: readonly MarkupElement[], element: MarkupElement): string | null {
+  const spid = element.attributes.find((item) => item.name === "spid")
+  if (spid === undefined || !insideTiming(elements, element)) return null
+  return shapeIdentity(spid.value)
 }
 
 function connectionId(element: MarkupElement): string | null {
-  return connectionKinds.has(element.kind) ? element.id : null
+  if (element.id === null || !connectionKinds.has(element.kind)) return null
+  return shapeIdentity(element.id)
 }
 
 function inside(element: MarkupElement, shape: MarkupElement): boolean {
@@ -87,13 +110,13 @@ function inside(element: MarkupElement, shape: MarkupElement): boolean {
 }
 
 function idsWithin(elements: readonly MarkupElement[], shape: MarkupElement): ReadonlySet<string | null> {
-  return new Set(elements.filter((item) => item.kind === "p:cNvPr" && inside(item, shape)).map((item) => item.id))
+  return new Set(elements.filter((item) => inside(item, shape)).map(shapeMarkId))
 }
 
 export function shapeAnimated(elements: readonly MarkupElement[], shape: MarkupElement): boolean {
   const ids = idsWithin(elements, shape)
   return elements.some((element) => {
-    const id = animationId(element)
+    const id = animationId(elements, element)
     return id !== null && ids.has(id)
   })
 }
@@ -114,8 +137,9 @@ export function danglingShapeReferences(parts: ReadonlyMap<string, Uint8Array>):
   for (const [name, bytes] of parts) {
     if (!shapePart.test(name)) continue
     const ids = new Set(shapeIdsIn(bytes))
-    for (const element of markupDocument(bytes).elements) {
-      const id = animationId(element) ?? connectionId(element)
+    const { elements } = markupDocument(bytes)
+    for (const element of elements) {
+      const id = animationId(elements, element) ?? connectionId(element)
       if (id !== null && !ids.has(id)) rows.push({ part: name, kind: element.kind, id })
     }
   }
@@ -126,6 +150,12 @@ export function newDanglingShapeReferences(
   original: readonly ShapeReference[],
   edited: readonly ShapeReference[],
 ): readonly ShapeReference[] {
-  const already = new Set(original.map((row) => `${row.part}\0${row.kind}\0${row.id}`))
-  return edited.filter((row) => !already.has(`${row.part}\0${row.kind}\0${row.id}`))
+  const key = (row: ShapeReference) => `${row.part}\0${row.kind}\0${row.id}`
+  const already = new Map<string, number>()
+  for (const row of original) already.set(key(row), (already.get(key(row)) ?? 0) + 1)
+  return edited.filter((row) => {
+    const left = already.get(key(row)) ?? 0
+    already.set(key(row), left - 1)
+    return left <= 0
+  })
 }
