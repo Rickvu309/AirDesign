@@ -111,6 +111,27 @@ describe("version", () => {
     expect(version(typed)).toBe(version(undone) + 1)
   })
 
+  it("raises an agent edit from the stored number after a compaction", () => {
+    const undone = applied(played(agentRun), { command: "undo", runId: "first" })
+    const compacted = { ...undone, ...compactChain(undone, true) }
+    expect(compacted.landed).toEqual([])
+    const before = version(compacted)
+    expect(before).toBe(2)
+    const started = applied(compacted, { command: "start", runId: "second" })
+    const landed = applied(started, { command: "agent", runId: "second", readAt: before, value: "again" })
+    expect(version(landed)).toBe(before + 1)
+  })
+
+  it("raises an undo from the stored number after a compaction", () => {
+    const undone = applied(played(agentRun), { command: "undo", runId: "first" })
+    const compacted = { ...undone, ...compactChain(undone, true) }
+    const started = applied(compacted, { command: "start", runId: "second" })
+    const landed = applied(started, { command: "agent", runId: "second", readAt: version(compacted), value: "again" })
+    const before = version(landed)
+    const again = applied(landed, { command: "undo", runId: "second" })
+    expect(version(again)).toBe(before + 1)
+  })
+
   it("reads a register stored without the number as its landed rows plus its hidden rows", () => {
     const stored: NodeRegister = {
       ...openRegister("floor", "slide"),
@@ -147,7 +168,7 @@ describe("version", () => {
 
   const kinds = ["person", "start", "agent", "stop", "undo", "compact"] as const
   const runs = ["first", "second"] as const
-  const steps = fc.array(fc.tuple(fc.constantFrom(...kinds), fc.constantFrom(...runs)), { maxLength: 40 })
+  const steps = fc.array(fc.tuple(fc.constantFrom(...kinds), fc.constantFrom(...runs)), { maxLength: 40, size: "max" })
 
   function bodyOf(register: Register, node: ElementId): NodeRegister {
     if (node === rootElement) return register

@@ -10,6 +10,7 @@ VARIABLES
   writes,
   readAt,
   mark,
+  markRows,
   didRead,
   seen,
   seenId,
@@ -26,7 +27,7 @@ VARIABLES
 
 ghost == <<startedLive, liveId, earlierLive>>
 
-vars == <<phase, runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
+vars == <<phase, runId, writes, readAt, mark, markRows, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* The one row counts once when it lands and once more when an undo hides it. The number never falls.
 Version == writes + IF landed = 1 /\ writes = 0 THEN 2 ELSE 0
@@ -40,6 +41,7 @@ TypeOK ==
   /\ writes \in {0, 1}
   /\ readAt \in {-1, 0, 1, 2}
   /\ mark \in {-1, 0, 1, 2}
+  /\ markRows \in {-1, 0, 1, 2}
   /\ didRead \in BOOLEAN
   /\ seen \in {"none", "stopped", "undone"}
   /\ seenId \in {"none", "s", "t"}
@@ -60,6 +62,7 @@ Init ==
   /\ writes = 0
   /\ readAt = -1
   /\ mark = -1
+  /\ markRows = -1
   /\ didRead = FALSE
   /\ seen = "none"
   /\ seenId = "none"
@@ -84,7 +87,7 @@ Start ==
   /\ generation' = generation + 1
   /\ startedLive' = (startedLive \/ phase = "running")
   /\ liveId' = runId'
-  /\ UNCHANGED <<writes, mark, didRead, seen, seenId, seenGen, landed, owner, ownedGen, foreign, earlierLive>>
+  /\ UNCHANGED <<writes, mark, markRows, didRead, seen, seenId, seenGen, landed, owner, ownedGen, foreign, earlierLive>>
 
 \* A start during a live run is refused and does not replace the stored id.
 StartAgain ==
@@ -100,6 +103,7 @@ StartNext ==
   /\ phase' = "running"
   /\ readAt' = Version
   /\ mark' = -1
+  /\ markRows' = -1
   /\ generation' = generation + 1
   /\ foreign' = IF (writes = 1 /\ owner # "none" /\ owner # runId') THEN 1 ELSE foreign
   /\ startedLive' = (startedLive \/ phase = "running")
@@ -123,7 +127,7 @@ AgentWrites ==
      /\ landed' = 1
      /\ owner' = runId
      /\ ownedGen' = generation
-     /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, generation, foreign, ghost>>
+     /\ UNCHANGED <<phase, runId, readAt, mark, markRows, didRead, seen, seenId, seenGen, opened, generation, foreign, ghost>>
   \/ /\ phase \in {"stopped", "undone"}
      /\ UNCHANGED vars
 
@@ -137,6 +141,7 @@ Stop ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = Version
+  /\ markRows' = writes
   /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Stop applies only while the stored id is running.
@@ -149,20 +154,21 @@ Limit ==
   /\ phase = "running"
   /\ phase' = "stopped"
   /\ mark' = Version
+  /\ markRows' = writes
   /\ UNCHANGED <<runId, writes, readAt, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Resume continues the same run. It does not start a second run on the deck.
 Resume ==
   /\ phase = "stopped"
   /\ phase' = "running"
-  /\ UNCHANGED <<runId, writes, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
+  /\ UNCHANGED <<runId, writes, readAt, mark, markRows, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Undo of the current run hides that run's write and leaves an earlier run's write visible.
 Undo ==
   /\ phase \in {"running", "stopped"}
   /\ phase' = "undone"
   /\ writes' = IF owner = runId THEN 0 ELSE writes
-  /\ UNCHANGED <<runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
+  /\ UNCHANGED <<runId, readAt, mark, markRows, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, foreign, ghost>>
 
 \* Undo of an earlier run, while the later run is stopped or undone, hides only the earlier row.
 UndoEarlier ==
@@ -173,7 +179,7 @@ UndoEarlier ==
   /\ writes' = 0
   /\ foreign' = 0
   /\ earlierLive' = (earlierLive \/ phase = "running")
-  /\ UNCHANGED <<phase, runId, readAt, mark, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, startedLive, liveId>>
+  /\ UNCHANGED <<phase, runId, readAt, mark, markRows, didRead, seen, seenId, seenGen, opened, landed, owner, generation, ownedGen, startedLive, liveId>>
 
 \* Undo of an earlier run stays fenced while a run is live.
 UndoEarlierLive ==
@@ -198,7 +204,7 @@ ReadS ==
      /\ seen' = phase
      /\ seenId' = "s"
      /\ seenGen' = generation
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign, ghost>>
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, markRows, opened, landed, owner, generation, ownedGen, foreign, ghost>>
   \/ /\ ~accepted("s")
      /\ UNCHANGED vars
 
@@ -209,7 +215,7 @@ ReadT ==
      /\ seen' = phase
      /\ seenId' = "t"
      /\ seenGen' = generation
-     /\ UNCHANGED <<phase, runId, writes, readAt, mark, opened, landed, owner, generation, ownedGen, foreign, ghost>>
+     /\ UNCHANGED <<phase, runId, writes, readAt, mark, markRows, opened, landed, owner, generation, ownedGen, foreign, ghost>>
   \/ /\ ~accepted("t")
      /\ UNCHANGED vars
 
@@ -224,11 +230,11 @@ UnstartedHasNoWrites ==
 
 \* Stop freezes the visible rows. Undo of an earlier run may hide one afterwards, and it does not add a row.
 StopFreezesLandedWrites ==
-  phase # "stopped" \/ writes <= mark
+  phase # "stopped" \/ writes <= markRows
 
 \* A limit ends the run the way stop does.
 LimitEndsLikeStop ==
-  phase # "stopped" \/ (writes <= mark /\ runId \in {"s", "t"})
+  phase # "stopped" \/ (writes <= markRows /\ runId \in {"s", "t"})
 
 \* Resume continues the same run. It does not start a second run on that deck.
 ResumeContinuesSameRun ==
@@ -238,7 +244,7 @@ ResumeContinuesSameRun ==
 
 \* A stopped run does not grow its visible rows. An undone run shows none of its own rows.
 StoppedOrEndedRejectsWrite ==
-  /\ phase = "stopped" => writes <= mark
+  /\ phase = "stopped" => writes <= markRows
   /\ phase = "undone" => owner # runId \/ writes = 0
 
 \* A read is stored only from a stopped or undone phase, and only for the run id stored then. A later run does not erase it.
