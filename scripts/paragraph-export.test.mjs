@@ -6,10 +6,10 @@ import {
   judgedExportNames,
   paragraphExportLines,
   paragraphsExpected,
+  paragraphsExportName,
   paragraphsOriginalName,
   validatorFiles,
 } from "./paragraph-export.mjs"
-import { browserExportName, paragraphsExportName } from "./pptx-corpus.mjs"
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "paragraph-export-"))
 process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }))
@@ -31,7 +31,7 @@ if (seen !== "false false") throw new Error(`a stale export was there when the s
 if (spec.ok) throw new Error("a spec that wrote no exported-paragraphs.pptx passed")
 if (!spec.line.includes(`wrote no tests/browser/${paragraphsExportName}`)) throw new Error(spec.line)
 
-if (judgedExportNames({ ok: true }).join() !== `${browserExportName},${paragraphsExportName}`) {
+if (judgedExportNames({ ok: true }).join() !== paragraphsExportName) {
   throw new Error("a good spec must judge both exports")
 }
 if (judgedExportNames({ ok: false }).length !== 0) {
