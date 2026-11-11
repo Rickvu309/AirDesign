@@ -15,6 +15,7 @@
     }
   ],
   "rules": {
+    "airdesign/no-byte-counter": "error",
     "airdesign/no-comments": "error",
     "airdesign/no-element-id-cast": "warn",
     "airdesign/no-env-outside-entry": "error",
