@@ -3,6 +3,7 @@ import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { partTouch, routeOperations, routeRuns, touchMatches, type RouteRun } from "./route-parts.js"
+import { danglingShapeReferences, newDanglingShapeReferences } from "./shape-id.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
@@ -648,6 +649,56 @@ describe("routeRuns", () => {
     parts.set("ppt/slides/slide1.xml", text(decodeUtf8(bytes).replace("</p:spTree>", `${lone}</p:spTree>`)))
     const run = routeRuns(parts).find((item) => item.operation === "tbl.removeRow")
     expect(run?.error).toBeNull()
+  })
+
+  it("picks a shape to remove that no animation refers to", () => {
+    const parts = hosts()
+    const first = routeRuns(parts).find((run) => run.operation === "spTree.remove")?.edit
+    if (first?.name !== "spTree.remove") throw new Error("spTree.remove run")
+    const bytes = parts.get(first.part)
+    if (bytes === undefined) throw new Error("part")
+    const timing = `</p:spTree><p:timing><p:spTgt spid="${first.shape}"/></p:timing>`
+    parts.set(first.part, text(decodeUtf8(bytes).replace("</p:spTree>", timing)))
+    const run = routeRuns(parts).find((item) => item.operation === "spTree.remove")
+    if (run?.edit?.name !== "spTree.remove") throw new Error("spTree.remove run")
+    expect(run.error).toBeNull()
+    expect(run.edit.shape).not.toBe(first.shape)
+  })
+
+  it("does not pick a group whose child is animated", () => {
+    const parts = hosts()
+    const child = `<p:sp><p:nvSpPr><p:cNvPr id="3" name="Child"/></p:nvSpPr></p:sp>`
+    const group = `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="2" name="Group"/></p:nvGrpSpPr>${child}</p:grpSp>`
+    const free = `<p:sp><p:nvSpPr><p:cNvPr id="4" name="Free"/></p:nvSpPr></p:sp>`
+    parts.set(
+      "ppt/slides/slide1.xml",
+      text(`<p:sld><p:spTree>${group}${free}</p:spTree><p:timing><p:spTgt spid="3"/></p:timing></p:sld>`),
+    )
+    const run = routeRuns(parts).find((item) => item.operation === "spTree.remove")
+    expect(run?.error).toBeNull()
+    expect(run?.edit).toMatchObject({ shape: "4" })
+  })
+
+  it("a real animated shape is refused, and a hand cut that leaves its target fails the judge", () => {
+    const targets = decks.flatMap((deck) =>
+      [...deck.parts].flatMap(([part, bytes]) => {
+        if (!part.startsWith("ppt/slides/slide")) return []
+        const spid = markup(bytes)
+          .find((element) => element.kind === "p:spTgt")
+          ?.attributes.find((item) => item.name === "spid")?.value
+        return spid === undefined ? [] : [{ parts: deck.parts, part, bytes, shape: spid }]
+      }),
+    )
+    expect(targets.length).toBeGreaterThan(0)
+    for (const { parts, part, bytes, shape } of targets) {
+      expect(() => applyStructuralRoute(parts, { name: "spTree.remove", part, shape })).toThrow(/^shape-animated$/)
+      const cut = new Map(parts).set(part, cutOut(bytes, shapeById(markup(bytes), shape)))
+      expect(newDanglingShapeReferences(danglingShapeReferences(parts), danglingShapeReferences(cut))).toContainEqual({
+        part,
+        kind: "p:spTgt",
+        id: shape,
+      })
+    }
   })
 
   it("a text write on a real deck changes only the bytes of its own shape", () => {

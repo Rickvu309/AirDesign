@@ -390,6 +390,32 @@ describe("exportElements", () => {
     expect(parts.get("ppt/slides/slide1.xml")).toBe(held)
   })
 
+  it("refuses to remove an animated element and writes nothing", () => {
+    const parts = deck()
+    const name = "ppt/slides/slide1.xml"
+    const held = parts.get(name)
+    if (held === undefined) throw new Error(name)
+    const animated = encodeUtf8(
+      decodeUtf8(held).replace("</p:spTree>", `</p:spTree><p:timing><p:spTgt spid="2"/></p:timing>`),
+    )
+    parts.set(name, animated)
+    expect(() => exportElements(parts, [{ id: "256.2", name: "remove" }])).toThrow(/^shape-animated$/)
+    expect(parts.get(name)).toBe(animated)
+  })
+
+  it("cuts the attachment of a connector when its element is removed", () => {
+    const parts = deck()
+    const name = "ppt/slides/slide1.xml"
+    const held = parts.get(name)
+    if (held === undefined) throw new Error(name)
+    const attached = `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="90" name="C"/><p:cNvCxnSpPr><a:stCxn id="2" idx="0"/></p:cNvCxnSpPr></p:nvCxnSpPr></p:cxnSp>`
+    parts.set(name, encodeUtf8(decodeUtf8(held).replace("</p:spTree>", `${attached}</p:spTree>`)))
+    const written = exportElements(parts, [{ id: "256.2", name: "remove" }])
+    const after = written.parts.get(name)
+    if (after === undefined) throw new Error(name)
+    expect(decodeUtf8(after)).toContain(`<p:cNvCxnSpPr></p:cNvCxnSpPr>`)
+  })
+
   it("rejects a created shape that was written onto another slide", () => {
     const before = deck()
     const written = exportElements(before, [

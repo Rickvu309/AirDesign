@@ -234,20 +234,27 @@ const [{ found: lists, planting }] = await Promise.all([
 console.log((await renderCacheReady).line())
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
+const references = new Map([...parts].map(([name, packageParts]) => [name, pptx.danglingShapeReferences(packageParts)]))
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
 let failed = 0
 for (const run of runs) {
   const judgedSamples = run.planted.map((sample, index) => {
     const judged = judge(
       pptx,
-      { list: lists.get(sample.deck), ids: ids.get(sample.deck), orders: orders.get(sample.deck) },
+      {
+        list: lists.get(sample.deck),
+        ids: ids.get(sample.deck),
+        orders: orders.get(sample.deck),
+        references: references.get(sample.deck),
+      },
       {
         list: lists.get(sampleFile(run.seed, index)),
         ids: pptx.shapeIdCounts(sample.parts),
         orders: pptx.branchOrderErrors(sample.parts),
+        references: pptx.danglingShapeReferences(sample.parts),
       },
     )
-    const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0])
+    const reason = judged.errors[0] ?? JSON.stringify(judged.dupes[0] ?? judged.dangling[0])
     return { ...sample, accepted: judged.accepted, reason }
   })
   console.log(`judge proof ${run.announce}`)
@@ -292,8 +299,18 @@ if (!spec.ok) {
 for (const row of cases) {
   const { errors, dupes } = judge(
     pptx,
-    { list: lists.get(row.before), ids: ids.get(row.before), orders: orders.get(row.before) },
-    { list: lists.get(row.after), ids: ids.get(row.after), orders: orders.get(row.after) },
+    {
+      list: lists.get(row.before),
+      ids: ids.get(row.before),
+      orders: orders.get(row.before),
+      references: references.get(row.before),
+    },
+    {
+      list: lists.get(row.after),
+      ids: ids.get(row.after),
+      orders: orders.get(row.after),
+      references: references.get(row.after),
+    },
   )
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),

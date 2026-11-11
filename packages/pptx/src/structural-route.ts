@@ -2,7 +2,7 @@ import { markupDocument, spliceBytes, type MarkupDocument, type MarkupElement } 
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { nextShapeId } from "./shape-id.js"
 import { addTextShape, xmlText } from "./shape-write.js"
-import { shapeById, type RouteResult } from "./slide-route.js"
+import { removeShape, shapeById, type RouteResult } from "./slide-route.js"
 
 export type StructuralEdit =
   | {
@@ -144,11 +144,6 @@ function replaceShapeId(piece: Uint8Array, from: string, to: string): Uint8Array
 function editPart(parts: Map<string, Uint8Array>, name: string, edit: (bytes: Uint8Array) => Uint8Array) {
   const before = partBytes(parts, name)
   replacePart(parts, name, edit(before))
-}
-
-function removeShape(bytes: Uint8Array, shape: string): Uint8Array {
-  const found = shapeById(requireMarkup(bytes).elements, shape)
-  return cut(bytes, found.start, found.end)
 }
 
 function orderShape(bytes: Uint8Array, shape: string, before: string): Uint8Array {

@@ -9,7 +9,15 @@ export { CompressorError } from "./package-carry.js"
 export { ContainerError, type ContainerKind } from "./package-container.js"
 export { packageLimits, readPackage, type PackageLimitName, type ReadPackage } from "./package-limits.js"
 export { exactPageCheck, pageChange, type PageChange } from "./render-pages.js"
-export { newDuplicateShapeIds, nextShapeId, shapeIdCounts, type ShapeIdCount } from "./shape-id.js"
+export {
+  danglingShapeReferences,
+  newDanglingShapeReferences,
+  newDuplicateShapeIds,
+  nextShapeId,
+  shapeIdCounts,
+  type ShapeIdCount,
+  type ShapeReference,
+} from "./shape-id.js"
 export { addTextShape, type ShapeBox } from "./shape-write.js"
 export { applyRoute, oneRunValue, textStorable, type SlideRoute } from "./slide-route.js"
 export { shownText } from "./text-value-route.js"
