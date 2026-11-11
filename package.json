@@ -20,6 +20,7 @@
     "test:unit": "vitest run",
     "test:tooling": "node scripts/tooling-tests.mjs",
     "test:browser": "playwright test",
+    "metric:paint-fidelity": "bash scripts/pptx-tools.sh node scripts/paint-fidelity-run.mjs",
     "build": "pnpm -r --if-present run build"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "oxc-parser": "^0.157.0",
     "oxfmt": "0.78.0",
     "oxlint": "^1.90.0",
+    "pngjs": "7.0.0",
     "postcss": "^8.5.32",
     "railway": "3.16.0",
     "typescript": "catalog:",

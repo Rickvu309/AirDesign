@@ -136,14 +136,19 @@ jobs:
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
           restore-keys: pptx-renders-
       - run: pnpm check:pptx:corpus
+      - name: paint-fidelity
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        timeout-minutes: 20
+        run: pnpm metric:paint-fidelity
       - if: ${{ !cancelled() }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
           path: ~/.cache/airdesign/pptx-renders
-          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
+          key: pptx-renders-corpus-${{ steps.runner-image.outputs.id }}-${{ hashFiles('scripts/pptx-render.mjs', 'scripts/paint-fidelity.mjs', 'scripts/pptx-tools.sh', 'scripts/pptx-fixtures/*.pptx', 'scripts/pptx-fixtures/corpus.json') }}-${{ runner.os }}-ubuntu-24.04-impress-poppler-norecommends-3
       - if: failure()
         env:
           GH_TOKEN: ${{ github.token }}

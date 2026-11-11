@@ -420,7 +420,7 @@ export function ThinDeck({ id }: { id?: string }) {
           onExport={() => void onExport()}
           slides={{ count: slides.length, current, onSelect: setCurrent }}
           slide={
-            <div>
+            <div data-slide-paint>
               {(slides[current] ?? []).map((id) =>
                 boxes.current.has(id) ? (
                   <Passage key={id} id={id} onEdit={(value) => void onEdit(id, value)} store={store.current} />
