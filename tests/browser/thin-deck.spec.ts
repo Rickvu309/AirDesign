@@ -704,6 +704,11 @@ async function expectNoSample(page: Page): Promise<void> {
   await expect(page.locator("circle[stroke-dasharray]"), "usage ring").toHaveCount(0)
   await expect(page.locator("div.h-12.bg-line"), "notes band").toHaveCount(0)
   await expect(page.locator("aside"), "agent panel").toHaveCount(1)
+  const seen = (await page.locator(".screen-frame").innerText())
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+  expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "Export"]))
 }
 
 for (const route of ["thin", "deck"]) {
