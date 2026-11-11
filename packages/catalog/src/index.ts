@@ -7,7 +7,6 @@ export {
   readCommit,
   readDeckId,
   readEdit,
-  readNode,
   readRun,
   readRunStart,
   readWatch,

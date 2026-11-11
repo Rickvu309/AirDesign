@@ -1,4 +1,4 @@
-import type { ElementId } from "@airdesign/document"
+import { readElementId, type ElementId } from "@airdesign/document"
 
 declare const deckIdBrand: unique symbol
 
@@ -42,7 +42,6 @@ export type LiveKey = {
   readonly revision: number
 }
 
-const nodePattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
 const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
 const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const batchCap = 100
@@ -79,11 +78,6 @@ function whole(raw: unknown): number | undefined {
   return raw
 }
 
-export function readNode(raw: unknown): ElementId | undefined {
-  if (typeof raw !== "string" || !nodePattern.test(raw)) return undefined
-  return raw as ElementId
-}
-
 function readFloor(body: Record<string, unknown>): string | undefined | null {
   if (!Object.hasOwn(body, "floor")) return undefined
   if (typeof body.floor !== "string") return null
@@ -112,7 +106,7 @@ export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefu
   if (body === undefined || !knownKeys(body, ["value", "node", "floor"]) || typeof body.value !== "string") {
     return fieldRefusal
   }
-  const node = readNode(body.node)
+  const node = readElementId(body.node)
   if (node === undefined) return fieldRefusal
   const floor = readFloor(body)
   if (floor === null) return fieldRefusal
@@ -125,7 +119,7 @@ function readChange(raw: unknown): { ok: true; change: WireChange } | FieldRefus
   if (body === undefined || !knownKeys(body, ["value", "node", "readAt", "floor"]) || typeof body.value !== "string") {
     return fieldRefusal
   }
-  const node = readNode(body.node)
+  const node = readElementId(body.node)
   if (node === undefined) return fieldRefusal
   const readAt = whole(body.readAt)
   if (readAt === undefined) return fieldRefusal
@@ -219,7 +213,7 @@ function readRunId(raw: unknown): string | undefined {
 function readRunElement(raw: unknown): { ok: true; element: WireRunElement } | FieldRefusal {
   const body = recordOf(raw)
   if (body === undefined || !knownKeys(body, ["node", "floor"])) return fieldRefusal
-  const node = readNode(body.node)
+  const node = readElementId(body.node)
   if (node === undefined) return fieldRefusal
   const floor = readFloor(body)
   if (floor === null) return fieldRefusal

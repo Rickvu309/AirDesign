@@ -1,5 +1,5 @@
 import { kinds, overLimit } from "@airdesign/document"
-import type { ElementId, SlideId } from "./brand.js"
+import type { ElementId, SlideId } from "@airdesign/document"
 import type { ElementRecord, SlideRecord } from "./record.js"
 
 export type PaintResult = { readonly ok: true } | { readonly ok: false; readonly code: "limit" | "absent" | "kind" }

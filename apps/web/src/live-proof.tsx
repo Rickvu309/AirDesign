@@ -1,4 +1,4 @@
-import { elementId } from "@airdesign/document"
+import { readElementId } from "@airdesign/document"
 import {
   connect,
   databaseName,
@@ -29,7 +29,9 @@ const airdesignLive = {
     session.remote = remote
   },
   enqueue(deck: string, value: string, node: string, floor = "") {
-    return cache().enqueue(deck, value, elementId(node), floor)
+    const id = readElementId(node)
+    if (id === undefined) return Promise.resolve({ ok: false, refusal: "node" })
+    return cache().enqueue(deck, value, id, floor)
   },
   pending(deck: string) {
     return cache().pending(deck)

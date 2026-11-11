@@ -9,7 +9,7 @@ import {
   type Register,
   type Refusal,
 } from "./decide.js"
-import { elementId, type ElementId } from "./element-id.js"
+import { elementId, rootElement, type ElementId } from "./element-id.js"
 import { copyRegister, freezeRegister, walkRegisters } from "./decide.walk.js"
 
 type RunState = "match" | "miss"
@@ -525,7 +525,7 @@ function commands(register: Register): readonly Command[] {
   push({ command: "stop", runId: stored })
   push({ command: "undo", runId: stored })
   for (const runId of readIds) {
-    push({ command: "read", runId, node: elementId("a") })
+    push({ command: "read", runId, node: rootElement })
   }
   return list
 }
@@ -858,7 +858,7 @@ describe("decide", () => {
   }
 
   it("holds every rule for a map element", () => {
-    for (const target of [elementId("258.7"), elementId("__proto__")]) {
+    for (const target of [elementId("258.7"), "__proto__" as ElementId]) {
       const outcome = walkOnce(target)
       expect(outcome.overlap, target).toBeNull()
       for (const rule of rules) {

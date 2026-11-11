@@ -1,5 +1,5 @@
 import { decide, version, type Register } from "./decide.js"
-import { elementId, type ElementId } from "./element-id.js"
+import { rootElement, type ElementId } from "./element-id.js"
 
 export type Queued = {
   readonly base: number
@@ -12,7 +12,7 @@ export function unsent<Item>(queue: readonly Item[], acknowledged: number): read
 }
 
 function versionAt(register: Register, node: ElementId | undefined): number {
-  if (node === undefined || node === elementId("a")) return version(register)
+  if (node === undefined || node === rootElement) return version(register)
   const body = register.elements[node]
   if (body === undefined) {
     throw new Error("missing node")

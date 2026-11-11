@@ -1,5 +1,14 @@
-import { readNode } from "@airdesign/catalog"
-import { currentValue, version, writeTextValue, type Kind, type Register, type TextValue } from "@airdesign/document"
+import {
+  currentValue,
+  readElementId,
+  slideId,
+  version,
+  writeTextValue,
+  type ElementId,
+  type Kind,
+  type Register,
+  type TextValue,
+} from "@airdesign/document"
 import { connect, getParts, httpRemote, memoryRemote, putParts, type Remote } from "@airdesign/live"
 import {
   applyRoute,
@@ -10,7 +19,7 @@ import {
   type ReadShape,
   type ShapeKind,
 } from "@airdesign/pptx"
-import { Passage, elementId, paintStore, slideId, textValue, type ElementId, type PaintStore } from "@airdesign/render"
+import { Passage, paintStore, textValue, type PaintStore } from "@airdesign/render"
 import { useEffect, useRef, useState } from "react"
 import wasmUrl from "sax-wasm/lib/sax-wasm.wasm?url"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -38,8 +47,19 @@ function paintKind(kind: ShapeKind): Kind {
   return "shape"
 }
 
+type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
+
+function namedShapes(parts: ReadonlyMap<string, Uint8Array>): readonly NamedShape[] {
+  const named: NamedShape[] = []
+  for (const shape of readShapes(parts)) {
+    const id = readElementId(`${shape.slide}.${shape.shape}`)
+    if (id !== undefined) named.push({ id, shape })
+  }
+  return named
+}
+
 export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
-  return readShapes(parts).map((shape) => elementId(`${shape.slide}.${shape.shape}`))
+  return namedShapes(parts).map((named) => named.id)
 }
 
 function storedText(value: TextValue): string {
@@ -92,27 +112,21 @@ function paint(
   readonly boxes: ReadonlyMap<ElementId, TextBox>
   readonly shapes: ReadonlyMap<ElementId, ReadShape>
 } {
-  const shapes = readShapes(parts)
-  const ids = elementIds(parts)
+  const named = namedShapes(parts)
+  const ids = named.map((each) => each.id)
   const seen = new Map<ElementId, number>()
   for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
   const boxes = new Map<ElementId, TextBox>()
   const rows = new Map<ElementId, ReadShape>()
-  shapes.forEach((shape, index) => {
-    const id = ids[index]
-    if (id === undefined) return
+  for (const { id, shape } of named) {
     const kind = paintKind(shape.kind)
     const file = storedText(shape.text)
     store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
-    const storable =
-      seen.get(id) === 1 &&
-      !shape.locked &&
-      readNode(id) !== undefined &&
-      valueStorable(parts, shape, trialValue(shape.text))
-    if (!storable) return
+    const storable = seen.get(id) === 1 && !shape.locked && valueStorable(parts, shape, trialValue(shape.text))
+    if (!storable) continue
     boxes.set(id, { id, file })
     rows.set(id, shape)
-  })
+  }
   store.setSlides([{ id: slideId("1"), elements: [...ids] }])
   return { ids, boxes, shapes: rows }
 }

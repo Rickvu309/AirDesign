@@ -1,4 +1,14 @@
-export { elementId, shapeOf, slideId, type ElementId, type SlideId } from "./element-id.js"
+export {
+  elementId,
+  legacyElement,
+  readElementId,
+  rootElement,
+  shapeOf,
+  slideId,
+  storedElements,
+  type ElementId,
+  type SlideId,
+} from "./element-id.js"
 export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export { replay, unsent, type Queued } from "./replay.js"
 export { limits, overLimit } from "./limits.js"

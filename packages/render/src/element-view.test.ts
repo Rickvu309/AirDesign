@@ -1,17 +1,8 @@
+import { elementId, slideId, type ElementId, type SlideId } from "@airdesign/document"
 import { act, createElement, useState, type ReactNode } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
-import {
-  ElementView,
-  OpenSlide,
-  elementId,
-  paintStore,
-  slideId,
-  useElement,
-  type ElementId,
-  type PaintStore,
-  type SlideId,
-} from "./index.js"
+import { ElementView, OpenSlide, paintStore, useElement, type PaintStore } from "./index.js"
 
 Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
 
@@ -55,8 +46,8 @@ function counts() {
 function deck() {
   const store = paintStore()
   const slide = slideId("slide")
-  const left = elementId("left")
-  const right = elementId("right")
+  const left = elementId("1.1")
+  const right = elementId("1.2")
   store.publish({ id: left, kind: "shape", text: "left", picture: null })
   store.publish({ id: right, kind: "shape", text: "right", picture: null })
   store.setSlides([{ id: slide, elements: [left, right] }])

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { currentValue, decide, history, openRegister, version, type Register } from "./decide.js"
-import { elementId } from "./element-id.js"
+import { elementId, rootElement } from "./element-id.js"
 import { replay, unsent, type Queued } from "./replay.js"
 
 type ReplayRow = {
@@ -160,7 +160,7 @@ describe("replay", () => {
     })
     if (opened.decision !== "apply") throw new Error("add")
     const next = replay(opened.register, [
-      { base: 0, value: "one", node: elementId("a") },
+      { base: 0, value: "one", node: rootElement },
       { base: 0, value: "two", node: right },
     ])
     expect(history(next)).toEqual(["one"])
