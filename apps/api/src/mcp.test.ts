@@ -1031,6 +1031,271 @@ describe("mcp route", () => {
     })
   })
 
+  it("keeps an element closed after a refused call inside the turn", async () => {
+    const { id, cookie } = await openedDeck("closedbatch")
+    await withMcp(cookie, async (client) => {
+      await editAnswer(client, { deck: id, base: 0, changes: [{ value: "y1", node: sibling, readAt: 0 }] })
+      await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
+      const closedRow = await row(id)
+      expect(elementOf(closedRow, sibling).guarded).toBe(true)
+      const batch = await editAnswer(client, {
+        deck: id,
+        base: 2,
+        changes: [
+          { value: "x", node: element, readAt: 0 },
+          { value: "y", node: sibling, readAt: 2 },
+        ],
+      })
+      expect(batch).toMatchObject({ ok: false, refusal: "person-protected" })
+      const alone = await editAnswer(client, {
+        deck: id,
+        base: 2,
+        changes: [{ value: "overwrite", node: sibling, readAt: 2 }],
+      })
+      expect(alone).toMatchObject({ ok: false, refusal: "person-protected" })
+      expect(await row(id)).toEqual(closedRow)
+    })
+  })
+
+  it("opens a closed element in a new turn whose first edit names another element", async () => {
+    let clock = 1_000_000
+    const served = await ownServer("newturn", { now: () => clock })
+    try {
+      const { id, cookie } = await openedDeck("newturn")
+      await withMcp(
+        cookie,
+        async (client) => {
+          const old = await editAnswer(client, {
+            deck: id,
+            base: 0,
+            changes: [{ value: "y1", node: sibling, readAt: 0 }],
+          })
+          await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
+          clock += 3_600_000
+          const first = await editAnswer(client, firstEdit(id))
+          expect(first.runId).not.toBe(old.runId)
+          const between = await row(id)
+          expect(between?.revision).toBe(3)
+          expect(elementOf(between, sibling).phase).toBe("stopped")
+          const later = await editAnswer(client, {
+            deck: id,
+            base: 3,
+            changes: [{ value: "later", node: sibling, readAt: 2 }],
+          })
+          expect(later).toEqual(landedAnswer(4, [{ node: sibling, value: "later", version: 3 }], first.runId))
+          expect(elementOf(await row(id), sibling).guarded).toBe(false)
+        },
+        served.base,
+      )
+    } finally {
+      await served.close()
+    }
+  })
+
+  it("lands a batch over elements written in two past turns", async () => {
+    let clock = 1_000_000
+    const served = await ownServer("twoturns", { now: () => clock })
+    try {
+      const { id, cookie } = await openedDeck("twoturns")
+      await withMcp(
+        cookie,
+        async (client) => {
+          await editAnswer(client, firstEdit(id))
+          clock += 600_000
+          const second = await editAnswer(client, {
+            deck: id,
+            base: 1,
+            changes: [{ value: "b", node: sibling, readAt: 0 }],
+          })
+          clock += 600_000
+          const batch = await editAnswer(client, {
+            deck: id,
+            base: 2,
+            changes: [
+              { value: "a2", node: element, readAt: 1 },
+              { value: "b2", node: sibling, readAt: 1 },
+            ],
+          })
+          expect(batch.ok).toBe(true)
+          expect(batch.runId).not.toBe(second.runId)
+          const kept = await row(id)
+          expect(runOf(kept)).toBe(batch.runId)
+          expect(runOf(kept, sibling)).toBe(batch.runId)
+        },
+        served.base,
+      )
+    } finally {
+      await served.close()
+    }
+  })
+
+  it("does not land an edit under a run that was undone", async () => {
+    const { id, cookie } = await openedDeck("undonerun")
+    await withMcp(cookie, async (client) => {
+      const first = await editAnswer(client, firstEdit(id))
+      await client.callTool({ name: "airdesign_undo_run", arguments: { deck: id, runId: first.runId } })
+      const later = await editAnswer(client, {
+        deck: id,
+        base: 2,
+        changes: [{ value: "z", node: created, readAt: 0 }],
+      })
+      expect(later.ok).toBe(true)
+      expect(later.runId).not.toBe(first.runId)
+      expect(runOf(await row(id), created)).toBe(later.runId)
+    })
+  })
+
+  it("keeps one account's turns on two decks apart", async () => {
+    const email = address("twodecks")
+    const one = await openedDeck("deckone", email)
+    const two = await openedDeck("decktwo", email)
+    await withMcp(one.cookie, async (client) => {
+      const first = await editAnswer(client, firstEdit(one.id))
+      const second = await editAnswer(client, firstEdit(two.id))
+      expect(second.runId).not.toBe(first.runId)
+      expect(runOf(await row(one.id))).toBe(first.runId)
+      expect(runOf(await row(two.id))).toBe(second.runId)
+      const before = await row(two.id)
+      const crossed = await client.callTool({
+        name: "airdesign_stop_run",
+        arguments: { deck: two.id, runId: first.runId },
+      })
+      expect(crossed.structuredContent).toMatchObject({ ok: false, refusal: "run-fenced" })
+      expect(await row(two.id)).toEqual(before)
+    })
+  })
+
+  it("stores no start for an edit refused inside a turn or on opening one", async () => {
+    let clock = 1_000_000
+    const served = await ownServer("nostart", { now: () => clock })
+    try {
+      const { id, cookie } = await openedDeck("nostart")
+      await withMcp(
+        cookie,
+        async (client) => {
+          const stale = { deck: id, base: 1, changes: [{ value: "z", node: created, readAt: 5 }] }
+          await editAnswer(client, firstEdit(id))
+          const before = await row(id)
+          expect(await editAnswer(client, stale)).toMatchObject({ ok: false, refusal: "stale" })
+          expect(await row(id)).toEqual(before)
+          expect(before?.register.elements[created]).toBeUndefined()
+          clock += 600_000
+          expect(await editAnswer(client, stale)).toMatchObject({ ok: false, refusal: "stale" })
+          expect(await row(id)).toEqual(before)
+        },
+        served.base,
+      )
+    } finally {
+      await served.close()
+    }
+  })
+
+  async function holdingServer(
+    mark: string,
+    now: () => number,
+  ): Promise<{
+    readonly base: string
+    readonly hold: () => { readonly reached: Promise<void>; readonly release: () => void }
+    readonly close: () => Promise<void>
+  }> {
+    const info = await postgresInfo()
+    const stored = openPool(info.deck, `mcp-${mark}-hold`)
+    let held: null | { readonly reach: () => void; readonly released: Promise<void> } = null
+    const holding = new Proxy(stored, {
+      get(target, prop, receiver) {
+        if (prop !== "query") return Reflect.get(target, prop, receiver)
+        const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
+        return async (sql: unknown, params?: unknown[]) => {
+          const answered = await query(sql, params)
+          if (held !== null && typeof sql === "string" && sql.includes("update deck.saved")) {
+            const gate = held
+            held = null
+            gate.reach()
+            await gate.released
+          }
+          return answered
+        }
+      },
+    }) as Sql
+    const served = await ownServer(mark, { deck: holding, now })
+    return {
+      base: served.base,
+      hold: () => {
+        let reach = () => {}
+        let release = () => {}
+        const reached = new Promise<void>((resolve) => {
+          reach = resolve
+        })
+        const released = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        held = { reach, released }
+        return { reached, release }
+      },
+      close: async () => {
+        await served.close()
+        await stored.end()
+      },
+    }
+  }
+
+  it("keeps the newer run in the record when an older call settles after it", async () => {
+    const served = await holdingServer("lateedit", () => 1_000_000)
+    const { id, cookie } = await openedDeck("lateedit")
+    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
+    try {
+      const gate = served.hold()
+      const pending = slow.callTool({ name: "airdesign_edit_deck", arguments: firstEdit(id) })
+      await gate.reached
+      const held = runOf(await row(id))
+      const newer = await editAnswer(fast, secondEdit(id))
+      expect(newer.ok).toBe(true)
+      expect(newer.runId).toBe(runOf(await row(id)))
+      expect(newer.runId).not.toBe(held)
+      gate.release()
+      await pending
+      const next = await editAnswer(fast, {
+        deck: id,
+        base: 2,
+        changes: [{ value: "z", node: sibling, readAt: 0 }],
+      })
+      expect(next.runId).toBe(newer.runId)
+      expect(runOf(await row(id), sibling)).toBe(newer.runId)
+    } finally {
+      await Promise.all([slow.close(), fast.close()])
+      await served.close()
+    }
+  })
+
+  it("keeps a turn ended when an older call settles after the stop", async () => {
+    const served = await holdingServer("latestop", () => 1_000_000)
+    const { id, cookie } = await openedDeck("latestop")
+    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
+    try {
+      const first = await editAnswer(fast, firstEdit(id))
+      const gate = served.hold()
+      const pending = slow.callTool({ name: "airdesign_edit_deck", arguments: secondEdit(id) })
+      await gate.reached
+      const stopped = await fast.callTool({
+        name: "airdesign_stop_run",
+        arguments: { deck: id, runId: first.runId },
+      })
+      expect(stopped.structuredContent).toMatchObject({ ok: true, revision: 3 })
+      gate.release()
+      await pending
+      const next = await editAnswer(fast, {
+        deck: id,
+        base: 3,
+        changes: [{ value: "z", node: sibling, readAt: 0 }],
+      })
+      expect(next.ok).toBe(true)
+      expect(next.runId).not.toBe(first.runId)
+    } finally {
+      await Promise.all([slow.close(), fast.close()])
+      await served.close()
+    }
+  })
+
   async function racingServer(
     mark: string,
     now: () => number,
@@ -1212,33 +1477,34 @@ describe("mcp route", () => {
     expect(values(kept, created)).toEqual([good, good.replace("Two", "Three")])
   })
 
-  it("starts a fresh run on a stopped element and keeps the earlier run's rows", async () => {
+  it("answers run-fenced on an element its run ended, and a stop opens a fresh run that keeps the earlier rows", async () => {
     const { id, cookie } = await openedDeck("restart")
     const before = minted.length
     await withMcp(cookie, async (client) => {
       await seeded(client, id)
       const earlier = await row(id)
-      const firstRun = elementOf(earlier).runId
-      expect(elementOf(earlier, sibling).runId).toBe(firstRun)
+      const firstRun = runOf(earlier)
+      expect(runOf(earlier, sibling)).toBe(firstRun)
       await deck.query("update deck.saved set register = jsonb_set(register, $2, to_jsonb($3::text)) where id = $1", [
         id,
         ["elements", element, "phase"],
         "stopped",
       ])
-      const text = await editText(client, {
-        deck: id,
-        base: 3,
-        changes: [{ value: "a3", node: element, readAt: 2 }],
-      })
-      expect(text).toBe("Landed revision 4.")
+      const stoppedRow = await row(id)
+      const send = { deck: id, base: 3, changes: [{ value: "a3", node: element, readAt: 2 }] }
+      expect(await editText(client, send)).toBe(editNext["run-fenced"])
+      expect(await row(id)).toEqual(stoppedRow)
+      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: firstRun } })
+      expect(await editText(client, send)).toBe("Landed revision 5.")
       const kept = await row(id)
-      const fresh = elementOf(kept).runId
+      const fresh = runOf(kept)
       expect(minted.slice(before)).toContain(fresh)
       expect(fresh).not.toBe(firstRun)
       expect(elementOf(kept).phase).toBe("running")
       expect(elementOf(kept).landed.slice(0, 2)).toEqual(elementOf(earlier).landed)
       expect(elementOf(kept).landed[2]).toMatchObject({ value: "a3", runId: fresh })
-      expect(elementOf(kept, sibling)).toEqual(elementOf(earlier, sibling))
+      expect(elementOf(kept, sibling).landed).toEqual(elementOf(earlier, sibling).landed)
+      expect(elementOf(kept, sibling).phase).toBe("stopped")
     })
   })
 

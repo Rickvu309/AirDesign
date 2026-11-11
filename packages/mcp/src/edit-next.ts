@@ -15,7 +15,7 @@ export const editNext = {
   "person-protected":
     "A person edited this element during this run. It is closed to this run. Do not send this change again.",
   "run-fenced":
-    "This call names elements held by different runs, or an element this run already ended. Send each element's change in its own call; an element this run ended stays closed to it.",
+    "This turn's run has ended on an element this call names, or another run holds one of them, and nothing landed. Call airdesign_stop_run with the runId your edit answers carried to end the turn, then edit in a new turn.",
   limit: `The value is over ${valueBytes} bytes, or the deck is at its size, element or slide limit. Send a shorter value, or tell the person the deck is full.`,
   dead: "The deck has no element with this id. Check the element id.",
   present: "This element is already in the deck. Check the element id.",

@@ -127,7 +127,9 @@ function restoredRun(): string {
 }
 
 function sessionFor(deck: Deck): Session {
-  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0, turns: memoryTurns() }
+  const turns = memoryTurns()
+  turns.write(deck.id, { runId: "run", lastCall: 0, revision: deck.revision })
+  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0, turns }
 }
 
 function elementBody(deck: Deck, node = text) {

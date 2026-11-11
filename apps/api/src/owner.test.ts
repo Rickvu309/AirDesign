@@ -1,6 +1,4 @@
-import { spawn } from "node:child_process"
 import { createHash, randomBytes } from "node:crypto"
-import path from "node:path"
 
 import { readDeckId } from "@airdesign/catalog"
 import { editNext } from "@airdesign/mcp"
@@ -8,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { same, specGraph, type SpecState, type Value } from "./spec-graph.js"
 
 const own = "https://mcp.example.test/mcp"
 const callback = "http://127.0.0.1:8124/owner"
@@ -28,12 +27,6 @@ type Called = {
 type Credential = { readonly cookie: string } | { readonly bearer: string; readonly scheme?: string }
 type Claim = { readonly headers?: Record<string, string>; readonly args?: Record<string, string> }
 const claimFields = ["account", "email", "principal", "sub"] as const
-type Value = boolean | number | string
-type SpecState = Record<string, Value>
-type Graph = {
-  readonly states: Map<string, SpecState>
-  readonly edges: readonly { readonly from: string; readonly to: string; readonly action: string }[]
-}
 
 function deckName(): string {
   const named = readDeckId(`deck${randomBytes(4).toString("hex")}`)
@@ -48,74 +41,6 @@ function address(mark: string): string {
 function verifierPair(): { readonly verifier: string; readonly challenge: string } {
   const verifier = randomBytes(32).toString("base64url")
   return { verifier, challenge: createHash("sha256").update(verifier).digest("base64url") }
-}
-
-function parseValue(raw: string): Value {
-  if (raw === "TRUE") return true
-  if (raw === "FALSE") return false
-  if (raw.startsWith('"') && raw.endsWith('"')) return raw.slice(1, -1)
-  const number = Number(raw)
-  if (Number.isNaN(number)) throw new Error(`bad value ${raw}`)
-  return number
-}
-
-function parseDot(dot: string): Graph {
-  const states = new Map<string, SpecState>()
-  const edges: { from: string; to: string; action: string }[] = []
-  for (const line of dot.split("\n")) {
-    const node = /^(-?\d+) \[label="(.*)"(?:,style = filled)?\]?;?$/.exec(line)
-    if (node?.[1] !== undefined && node[2] !== undefined) {
-      const label = node[2].replaceAll("\\\\", "\\").replaceAll("\\n", "\n").replaceAll('\\"', '"')
-      const state: SpecState = {}
-      for (const part of label.split("\n")) {
-        const matched = /^\/\\ (\w+) = (.+)$/.exec(part)
-        if (matched?.[1] === undefined || matched[2] === undefined) throw new Error(`bad state line ${part}`)
-        state[matched[1]] = parseValue(matched[2])
-      }
-      states.set(node[1], state)
-      continue
-    }
-    const edge = /^(-?\d+) -> (-?\d+) \[label="([^"]+)"/.exec(line)
-    if (edge?.[1] !== undefined && edge[2] !== undefined && edge[3] !== undefined) {
-      edges.push({ from: edge[1], to: edge[2], action: edge[3] })
-    }
-  }
-  return { states, edges }
-}
-
-function ownerGraph(): Promise<Graph> {
-  const specifier = new URL(`file://${path.join(process.cwd(), "scripts/check-specs.mjs")}`).href
-  const topic = path.join(process.cwd(), "specs/owner")
-  return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--input-type=module"], { stdio: ["pipe", "pipe", "pipe"] })
-    let out = ""
-    let err = ""
-    child.stdout.setEncoding("utf8")
-    child.stderr.setEncoding("utf8")
-    child.stdout.on("data", (chunk: string) => {
-      out += chunk
-    })
-    child.stderr.on("data", (chunk: string) => {
-      err += chunk
-    })
-    child.on("error", reject)
-    child.on("close", (code) => {
-      if (code !== 0) reject(new Error(err || out))
-      else resolve(parseDot(out))
-    })
-    child.stdin.end(
-      `import { dumpSpec, javaBin, jarPath } from ${JSON.stringify(specifier)}\nprocess.stdout.write(dumpSpec(${JSON.stringify(topic)}, javaBin(), jarPath(), "Owner.tla", "Owner.cfg").graph)\n`,
-    )
-  })
-}
-
-function same(left: unknown, right: unknown): boolean {
-  return JSON.stringify(sorted(left)) === JSON.stringify(sorted(right))
-}
-
-function sorted(value: unknown): unknown {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return value
-  return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right)))
 }
 
 describe("only a deck's owner acts on it", () => {
@@ -554,7 +479,7 @@ describe("only a deck's owner acts on it", () => {
     }
 
     it("replays traces of the spec through POST /mcp and the OAuth routes", async () => {
-      const graph = await ownerGraph()
+      const graph = await specGraph("owner", "Owner")
       const initial = [...graph.states.entries()].find(
         ([, state]) => state.codeA === "none" && state.codeB === "none" && state.callOutcome === "none",
       )

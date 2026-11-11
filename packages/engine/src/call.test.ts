@@ -11,7 +11,7 @@ import {
   type Register,
 } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { call, openDeck, type Deck } from "./index.js"
+import { call, liveRuns, openDeck, type Deck } from "./index.js"
 
 const left = elementId("258.7")
 const right = elementId("258.8")
@@ -1242,6 +1242,21 @@ describe("run operations", () => {
         ok: false,
         refusal: "batch",
       })
+    })
+  })
+
+  describe("liveRuns", () => {
+    it("names every run live on the deck and leaves a stopped run out", () => {
+      const third = elementId("258.9")
+      const one = start(opened(), "one", [left]).deck
+      const two = start(one, "two", [right]).deck
+      const done = stop(start(two, "done", [third]).deck, "done")
+      expect([...liveRuns(done)].sort()).toEqual(["one", "two"])
+      expect(liveRuns(opened())).toEqual([])
+    })
+
+    it("names a run once however many elements it holds", () => {
+      expect(liveRuns(start(opened(), "one", [left, right]).deck)).toEqual(["one"])
     })
   })
 

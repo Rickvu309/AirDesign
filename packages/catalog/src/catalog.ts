@@ -25,7 +25,7 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     description:
-      "Call this when your turn is finished, so a person's edits stop closing boxes to you. Takes the runId your edit answers carried.",
+      "Call this when your turn is finished, so a person's edits stop closing elements to you. Takes the runId your edit answers carried.",
   },
   undo_run: {
     kind: "command",
@@ -41,7 +41,8 @@ export const catalog = {
     exposure: "agent",
     runsOn: "server",
     destructive: true,
-    description: "Write values on one deck. The server names the actor.",
+    description:
+      "Write values on one deck. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
   },
   capture_slide: {
     kind: "action",

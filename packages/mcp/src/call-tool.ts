@@ -3,7 +3,7 @@ import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
-import { agentCaller, elementFloors, joinRun, openRun } from "./run.js"
+import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
 import { liveTurn, type Turns } from "./turn.js"
 
@@ -61,11 +61,7 @@ function reached(deck: Deck, refusal: string, next: string): ToolResult {
 function startedTurn(raw: unknown, session: Session) {
   const { deck } = session
   const turn = liveTurn(session, deck.id)
-  if (turn !== undefined) {
-    const joined = joinRun(deck.register, raw, turn.runId)
-    if (joined.ok || joined.refusal !== "run-fenced") return joined
-    session.turns.clear(deck.id)
-  }
+  if (turn !== undefined) return joinRun(deck.register, raw, turn.runId)
   return openRun(deck.register, raw, () => session.caller.runId)
 }
 
@@ -100,7 +96,11 @@ function endRun(op: "stop_run" | "undo_run", raw: unknown, session: Session): To
   if (parsed.deck !== before.id) return runRefusal(before, "deck")
   const result = call(op, before, agentCaller(parsed.runId), raw)
   if (!result.ok) return runRefusal(before, result.refusal)
-  return runEnded(result.deck, op, parsed.runId)
+  const endsTurn = session.turns.read(before.id)?.runId === parsed.runId
+  const ended = endsTurn ? stopLiveRuns(result.deck) : result
+  if (!ended.ok) return runRefusal(before, ended.refusal)
+  const deck = ended.deck.register === before.register ? before : { ...ended.deck, revision: before.revision + 1 }
+  return runEnded(deck, op, parsed.runId)
 }
 
 function captureSlide(raw: unknown, session: Session): ToolResult {

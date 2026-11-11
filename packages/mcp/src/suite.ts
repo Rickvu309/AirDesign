@@ -628,7 +628,7 @@ export const suite: readonly SuiteRow[] = [
     task: {
       id: "undone-run",
       prompt: "Your last run on the title of deck undone was undone. Set the title to Again.",
-      deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }, { element: "body" }]),
+      deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
     },
     reference: one("undone", "title", "Again", 0),

@@ -1,7 +1,7 @@
 import { catalog, projectTools } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
 import { elementId, history, rootElement, type ElementId, type NodeRegister, type Register } from "@airdesign/document"
-import type { Deck } from "@airdesign/engine"
+import { liveRuns, type Deck } from "@airdesign/engine"
 import { emptyLog } from "./admit.js"
 import { callTool, type ToolResult } from "./call-tool.js"
 import { memoryTurns } from "./turn.js"
@@ -191,7 +191,9 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   let current = start
   const caller = { actor: "agent" as const, runId: "session" }
   const turns = memoryTurns()
-  turns.write(start.id, { runId: fixtureRun, lastCall: 0 })
+  if (liveRuns(start).includes(fixtureRun)) {
+    turns.write(start.id, { runId: fixtureRun, lastCall: 0, revision: start.revision })
+  }
   for (const step of attempt) {
     const log = emptyLog()
     const now = 0

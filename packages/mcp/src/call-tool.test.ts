@@ -48,7 +48,7 @@ function sessionFor(deck: Deck, tab?: Tab): Session {
 
 function turnOn(deck: Deck, runId: string): Turns {
   const turns = memoryTurns()
-  turns.write(deck.id, { runId, lastCall: 0 })
+  turns.write(deck.id, { runId, lastCall: 0, revision: deck.revision })
   return turns
 }
 
@@ -270,7 +270,7 @@ describe("callTool", () => {
           { value: "b", node: "258.8", readAt: 0 },
         ],
       },
-      sessionFor(before),
+      inTurn(before, "held"),
     )
     expect(both.ok).toBe(false)
     if (both.ok) return
