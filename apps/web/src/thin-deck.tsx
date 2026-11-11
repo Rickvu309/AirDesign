@@ -237,11 +237,7 @@ export async function importDeck(file: File) {
 
 export async function nameImportedDeck(deck: string, name: string) {
   try {
-    const opened = await fetch("/decks/open", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ deck }),
-    })
+    const opened = await connect(server).open(deck)
     if (!opened.ok) return
     await fetch("/decks/rename", {
       method: "POST",

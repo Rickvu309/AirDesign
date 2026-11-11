@@ -1202,4 +1202,22 @@ describe("live cache", () => {
     expect(await connect(httpRemote()).flush("clean")).toEqual({ ok: false, refusal: "payload" })
     expect((await cache.pending("clean")).map((row) => row.value)).toEqual(["Hello!"])
   })
+
+  it("opens a deck once for an open and a later flush", async () => {
+    const real = memoryRemote()
+    const opens: string[] = []
+    const remote: Remote = {
+      open: (body) => {
+        opens.push(body.deck)
+        return real.open(body)
+      },
+      watch: (body) => real.watch(body),
+      commit: (body) => real.commit(body),
+    }
+    const cache = connect(remote)
+    expect(await cache.open("once-deck")).toEqual({ ok: true })
+    await cache.enqueue("once-deck", "Hello!", elementId("258.7"), "")
+    expect((await cache.flush("once-deck")).ok).toBe(true)
+    expect(opens).toEqual(["once-deck"])
+  })
 })
