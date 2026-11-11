@@ -9,6 +9,7 @@ import {
   type PaintTextHolder,
   type PaintTextScope,
 } from "./paint-text.js"
+import { paintShape, type PaintLine, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
 import type { ShapeKind } from "./read-shapes.js"
 import { markupChildren, type MarkupChildren } from "./text-value-route.js"
 
@@ -31,6 +32,9 @@ export type PaintElement = {
   group: string | null
   placeholder: { type: string; index: number | null } | null
   text: PaintText | null
+  fill: PaintFill | null
+  line: PaintLine | null
+  geometry: string | null
 }
 
 export type SlidePaint = {
@@ -113,7 +117,7 @@ type Visit = {
 
 type Above = {
   readonly sheet: Sheet
-  readonly painted: readonly PaintElement[]
+  readonly painted: readonly Omit<PaintElement, keyof ShapePaint>[]
 }
 
 const presentationPart = "ppt/presentation.xml"
@@ -398,7 +402,7 @@ const sheetFrom = (part: string, bytes: Uint8Array): Sheet => {
 const shownAbove = (sheet: Sheet): readonly Drawn[] =>
   sheet.drawn.filter((item) => !item.hidden && item.placeholder === null)
 
-const paintedAbove = (sheet: Sheet, from: "layout" | "master"): readonly PaintElement[] =>
+const paintedAbove = (sheet: Sheet, from: "layout" | "master"): readonly Omit<PaintElement, keyof ShapePaint>[] =>
   shownAbove(sheet).map((item) => ({
     part: sheet.part,
     shape: item.shape,
@@ -441,7 +445,8 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
   const above = new Map<string, Above | null>()
   const themes = new Map<string, Sheet | null>()
   const scopes = new Map<string, PaintTextScope>()
-  const textedAbove = new Map<string, readonly PaintElement[]>()
+  const textedAbove = new Map<string, readonly Omit<PaintElement, keyof ShapePaint>[]>()
+  const styles = new Map<string, PaintStyles>()
   let size: { readonly width: number; readonly height: number } | null = null
   let presentation: Pick<Sheet, "elements" | "children"> | null | undefined
 
@@ -499,19 +504,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
   const knownSlide = (part: string, bytes: Uint8Array): boolean =>
     slideName.test(part) || markupDocument(bytes).elements[0]?.kind === "p:sld"
 
-  const backgroundOf = (sheet: Sheet, layout: Sheet | null, master: Sheet | null): PaintFill | null => {
-    let owner: Sheet | null = null
-    let background: MarkupElement | undefined
-    for (const level of [sheet, layout, master]) {
-      if (level === null) continue
-      const body = paintChild(level.children, level.elements[0], "p:cSld")
-      background = paintChild(level.children, body, "p:bg")
-      if (background !== undefined) {
-        owner = level
-        break
-      }
-    }
-    if (owner === null || background === undefined) return null
+  const paletteOf = (sheet: Sheet, layout: Sheet | null, master: Sheet | null) => {
     const themePart = master === null ? undefined : relationshipsOf(master.part).get("theme")
     let theme = themePart === undefined ? null : themes.get(themePart)
     if (theme === undefined && themePart !== undefined) {
@@ -539,15 +532,52 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
           : paintChild(level.children, override, "a:overrideClrMapping")
       if (map !== undefined) mapping = new Map(map.attributes.map((item) => [item.name, item.value]))
     }
-    let palette: PaintPalette = { children: themeChildren, slots, mapping, placeholder: null }
-    const picture =
-      (part: string) =>
-      (id: string): string | null => {
-        const target = relationshipsOf(part).get(`id:${id}`)
-        return target !== undefined && parts.has(target) ? target : null
+    const palette: PaintPalette = { children: themeChildren, slots, mapping, placeholder: null }
+    if (theme !== null && theme !== undefined && !styles.has(theme.part)) {
+      const format = paintChild(themeChildren, themeElements, "a:fmtScheme")
+      const entries = (kind: string) => {
+        const list = paintChild(themeChildren, format, kind)
+        return list === undefined ? [] : (themeChildren[list.index] ?? [])
       }
+      styles.set(theme.part, {
+        children: themeChildren,
+        part: theme.part,
+        fills: entries("a:fillStyleLst"),
+        lines: entries("a:lnStyleLst"),
+      })
+    }
+    return { theme: theme ?? null, palette }
+  }
+
+  const picture = (part: string, id: string): string | null => {
+    const target = relationshipsOf(part).get(`id:${id}`)
+    return target !== undefined && parts.has(target) ? target : null
+  }
+
+  const backgroundOf = (
+    sheet: Sheet,
+    layout: Sheet | null,
+    master: Sheet | null,
+    context: ReturnType<typeof paletteOf>,
+  ): PaintFill | null => {
+    let owner: Sheet | null = null
+    let background: MarkupElement | undefined
+    for (const level of [sheet, layout, master]) {
+      if (level === null) continue
+      const body = paintChild(level.children, level.elements[0], "p:cSld")
+      background = paintChild(level.children, body, "p:bg")
+      if (background !== undefined) {
+        owner = level
+        break
+      }
+    }
+    if (owner === null || background === undefined) return null
+    const { theme } = context
+    let { palette } = context
+    const themeChildren = theme?.children ?? []
+    const themeElements = paintChild(themeChildren, theme?.elements[0], "a:themeElements")
     const properties = paintChild(owner.children, background, "p:bgPr")
-    if (properties !== undefined) return paintFill(properties, owner.children, palette, picture(owner.part))
+    if (properties !== undefined) return paintFill(properties, owner.children, palette, (id) => picture(owner.part, id))
     const reference = paintChild(owner.children, background, "p:bgRef")
     if (reference === undefined || theme === null || theme === undefined) return null
     const value = attr(reference, "idx")
@@ -558,7 +588,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
     if (style === undefined) return null
     const color = owner.children[reference.index]?.[0]
     palette = { ...palette, placeholder: color === undefined ? null : paintColor(color, owner.children, palette) }
-    return paintFill(style, themeChildren, palette, picture(theme.part), true)
+    return paintFill(style, themeChildren, palette, (id) => picture(theme.part, id), true)
   }
 
   const themeOf = (master: Sheet | null): Sheet | null => {
@@ -587,7 +617,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
     layout: Sheet | null,
     master: Sheet | null,
     scope: () => PaintTextScope,
-  ): readonly PaintElement[] => {
+  ): readonly Omit<PaintElement, keyof ShapePaint>[] => {
     if (item.painted.length === 0) return item.painted
     const key = `${item.sheet.part} ${scope().key}`
     const known = textedAbove.get(key)
@@ -612,6 +642,44 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
       const masterSheet = master?.sheet ?? null
       let known: PaintTextScope | undefined
       const scope = () => (known ??= textScope(sheet, layoutSheet, masterSheet))
+      const context = paletteOf(sheet, layoutSheet, masterSheet)
+      const paints = new Map<Drawn, ShapePaint>()
+      const groups = new Map<Sheet, Map<string, PaintFill | null>>()
+      const sourceOf = (owner: Sheet, item: Drawn): PaintSource => ({
+        element: item.element,
+        children: owner.children,
+        part: owner.part,
+        groupFill: item.group === null ? null : (groups.get(owner)?.get(item.group) ?? null),
+      })
+      for (const owner of [masterSheet, layoutSheet, sheet]) {
+        if (owner === null) continue
+        const fills = new Map<string, PaintFill | null>()
+        groups.set(owner, fills)
+        for (const item of owner.drawn) {
+          const sources = [sourceOf(owner, item)]
+          const wanted = item.placeholder
+          const above =
+            wanted === null || owner !== sheet || layoutSheet === null ? undefined : layoutMatch(layoutSheet, wanted)
+          if (above !== undefined && layoutSheet !== null) sources.push(sourceOf(layoutSheet, above))
+          const base =
+            wanted === null || owner === masterSheet || masterSheet === null
+              ? undefined
+              : masterMatch(masterSheet, above?.placeholder ?? wanted)
+          if (base !== undefined && masterSheet !== null) sources.push(sourceOf(masterSheet, base))
+          const paint = paintShape(
+            sources,
+            context.theme === null ? null : (styles.get(context.theme.part) ?? null),
+            context.palette,
+            picture,
+          )
+          paints.set(item, paint)
+          fills.set(item.shape, paint.fill)
+        }
+      }
+      const abovePaint = (level: Above, layoutLevel: Sheet | null): readonly PaintElement[] => {
+        const texted = withText(level, layoutLevel, masterSheet, scope)
+        return shownAbove(level.sheet).map((item, at) => ({ ...texted[at]!, ...paints.get(item)! }))
+      }
       const painted = sheet.drawn
         .filter((item) => !item.hidden)
         .map((item): PaintElement => ({
@@ -623,15 +691,16 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>): PaintReader
           group: item.group,
           placeholder: item.placeholder,
           text: textOf(item, sheet, layoutSheet, masterSheet, scope),
+          ...paints.get(item)!,
         }))
       const showsLayout = sheet.showsMaster
       const showsMaster = showsLayout && layout !== null && layout.sheet.showsMaster
       return {
         ...slideSize(),
-        background: backgroundOf(sheet, layout?.sheet ?? null, master?.sheet ?? null),
+        background: backgroundOf(sheet, layoutSheet, masterSheet, context),
         elements: [
-          ...(showsMaster && master !== null ? withText(master, null, masterSheet, scope) : []),
-          ...(showsLayout && layout !== null ? withText(layout, layoutSheet, masterSheet, scope) : []),
+          ...(showsMaster && master !== null ? abovePaint(master, null) : []),
+          ...(showsLayout && layout !== null ? abovePaint(layout, layoutSheet) : []),
           ...painted,
         ],
       }
