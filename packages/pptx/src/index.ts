@@ -3,6 +3,14 @@ export { browserExportFailures, paragraphExportFailures, type ParagraphExpectati
 export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"
+export {
+  paintReader,
+  PaintPartError,
+  type PaintBox,
+  type PaintElement,
+  type PaintReader,
+  type SlidePaint,
+} from "./paint-reader.js"
 export { readShapes, readSlides, type ReadShape, type ReadSlide, type ShapeKind } from "./read-shapes.js"
 export { readParts } from "./package-container.js"
 export { CompressorError } from "./package-carry.js"
