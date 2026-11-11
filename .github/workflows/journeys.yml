@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - t3/ci-journey-suite
   workflow_dispatch:
 
 permissions:
