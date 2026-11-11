@@ -58,7 +58,7 @@ try {
 }
 if (refused !== "--part must be main or side, and it is everything.") throw new Error("an unknown part is not refused")
 const stepsWhen = (ci) => stagesFor("all", ci).flatMap((stage) => stage.map(([name]) => name))
-for (const name of ["ratchet", "check-regression"]) {
+for (const name of ["ratchet"]) {
   if (!localSteps.has(name)) throw new Error(`check does not run ${name} on this machine`)
   if (!stepsWhen(false).includes(name)) throw new Error(`a local check skips ${name}`)
   if (stepsWhen(true).includes(name)) throw new Error(`check runs ${name} on CI, where the real guard runs`)

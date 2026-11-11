@@ -3,16 +3,12 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
-  allowRole,
-  allowedCommit,
-  approvedCommit,
   contents,
   guarded,
   lostCases,
   lostDecks,
   listedFiles,
   localFork,
-  localWarning,
   lostKinds,
   metricsFrom,
   newPackageFile,
@@ -26,6 +22,7 @@ import {
   readReasons,
   replacedFixtures,
   sameButReferences,
+  labelsFor,
   verdict,
 } from "./ratchet.mjs"
 import { workingTree } from "./checked.mjs"
@@ -270,112 +267,46 @@ same(
   [true, false, false, false],
 )
 
-const review = (user, state, commit) => ({ user, state, commit })
-same("no review", approvedCommit("owner", []), undefined)
-same("the owner's approval names its commit", approvedCommit("owner", [review("owner", "APPROVED", "abc")]), "abc")
-same("someone else's approval does not count", approvedCommit("owner", [review("agent", "APPROVED", "abc")]), undefined)
-same(
-  "a later request for changes voids it",
-  approvedCommit("owner", [review("owner", "APPROVED", "abc"), review("owner", "CHANGES_REQUESTED", "abc")]),
-  undefined,
-)
-same("a dismissed approval does not count", approvedCommit("owner", [review("owner", "DISMISSED", "abc")]), undefined)
-same(
-  "a later comment keeps it",
-  approvedCommit("owner", [review("owner", "APPROVED", "abc"), review("owner", "COMMENTED", "def")]),
-  "abc",
-)
-
-const comment = (body, role = "MEMBER") => ({ body, role })
-same("no comment allows nothing", allowedCommit([], "abc"), undefined)
-same("a member's owner-allows comment names the head", allowedCommit([comment("owner-allows abc")], "abc"), "abc")
-same("the owner's comment counts too", allowedCommit([comment("owner-allows abc\n", "OWNER")], "abc"), "abc")
-same("a comment for an older head allows nothing", allowedCommit([comment("owner-allows abc")], "def"), undefined)
-same("a short sha allows nothing", allowedCommit([comment("owner-allows ab")], "abc"), undefined)
-same("an outsider's comment allows nothing", allowedCommit([comment("owner-allows abc", "NONE")], "abc"), undefined)
-same(
-  "the words inside a longer comment allow nothing",
-  allowedCommit([comment("I think owner-allows abc")], "abc"),
-  undefined,
-)
-same("a comment with no text allows nothing", allowedCommit([{ role: "MEMBER" }], "abc"), undefined)
-same("an admin of the repository allows as its owner", allowRole("CONTRIBUTOR", "admin"), "OWNER")
-same("a writer keeps the role GitHub gave", allowRole("CONTRIBUTOR", "write"), "CONTRIBUTOR")
-same("a member with no admin right keeps the role GitHub gave", allowRole("MEMBER", "read"), "MEMBER")
-same("a permission that could not be read changes nothing", allowRole("NONE", undefined), "NONE")
-same(
-  "an admin whose membership is hidden from the reader still allows",
-  allowedCommit([{ body: "owner-allows abc", role: allowRole("CONTRIBUTOR", "admin") }], "abc"),
-  "abc",
-)
-
-const blocksOf = (change) =>
+const lowersOf = (change) =>
   ownerReasons({ baseMetrics: metrics, headMetrics: metrics, changedFiles: [], changedScripts: [], ...change }).map(
-    (reason) => reason.blocks,
+    (reason) => reason.lowers,
   )
-same("a raised limit blocks", blocksOf(withMetric("ci-duration", { limit: 60 })), [true])
-same("a dropped deck count blocks", blocksOf(withMetric(decks, { now: 1, goal: 20 })), [true])
-same("a moved goal blocks", blocksOf(withMetric("known-failures", { now: 2, goal: 5 })), [true])
-same("a recorded fault is listed and does not block", blocksOf(withMetric("known-failures", { now: 3, goal: 0 })), [
-  false,
-])
-same("a changed check file is listed and does not block", blocksOf({ changedFiles: ["scripts/check.mjs"] }), [false])
-same("changed scripts are listed and do not block", blocksOf({ changedScripts: ["package.json"] }), [false])
-same("a changed case blocks", blocksOf({ changedCases: ["text-page"] }), [true])
-same("a swapped deck blocks", blocksOf({ changedFixtures: [deck] }), [true])
-same("a lost kind blocks", blocksOf({ changedKinds: ["duplicate shape id"] }), [true])
+same("a raised limit lowers the bar", lowersOf(withMetric("ci-duration", { limit: 60 })), [true])
+same("a dropped deck count lowers the bar", lowersOf(withMetric(decks, { now: 1, goal: 20 })), [true])
+same("a moved goal lowers the bar", lowersOf(withMetric("known-failures", { now: 2, goal: 5 })), [true])
+same("a recorded fault is only listed", lowersOf(withMetric("known-failures", { now: 3, goal: 0 })), [false])
+same("a changed check file is only listed", lowersOf({ changedFiles: ["scripts/check.mjs"] }), [false])
+same("changed scripts are only listed", lowersOf({ changedScripts: ["package.json"] }), [false])
+same("a changed case lowers the bar", lowersOf({ changedCases: ["text-page"] }), [true])
+same("a swapped deck lowers the bar", lowersOf({ changedFixtures: [deck] }), [true])
+same("a lost kind lowers the bar", lowersOf({ changedKinds: ["duplicate shape id"] }), [true])
 
 const listedOnly = verdict({
   owner: "owner",
-  reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", blocks: false }],
-  headPrints: {},
+  reasons: [{ about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", lowers: false }],
 })
-same("a pull that only touches the checks passes and is listed", [listedOnly.pass, listedOnly.listed], [true, true])
-same("its line says it does not block", listedOnly.lines, [
-  "Listed for owner, does not block: AGENTS.md decides what ci checks.",
-])
-
-const reasons = [
-  {
-    about: "file scripts/pptx-fixtures/a.pptx",
-    text: "a.pptx is a deck the PowerPoint check already judges.",
-    blocks: true,
-  },
-  { about: "metric ci-duration", text: "The limit of ci-duration went from 40 to 60.", blocks: true },
-]
-const prints = { "file scripts/pptx-fixtures/a.pptx": "blob1", "metric ci-duration": '{"limit":60}' }
-const untouched = verdict({ owner: "owner", reasons: [], headPrints: {} })
-same("nothing to accept passes and is not listed", [untouched.pass, untouched.listed], [true, false])
-const waiting = verdict({ owner: "owner", reasons, headPrints: prints })
-same("an unapproved pull waits", waiting.pass, false)
-if (!waiting.lines.includes("Undo what lowers the bar. Only an approval from owner lets it through as it is.")) {
-  throw new Error(waiting.lines.join("\n"))
-}
-const forks = { "file scripts/pptx-fixtures/a.pptx": "base1", "metric ci-duration": '{"limit":40}' }
-const settled = {
+same("a pull that only touches the checks is listed", [listedOnly.listed, listedOnly.lowers], [true, false])
+same("its line names the owner", listedOnly.lines, ["Listed for owner: AGENTS.md decides what ci checks."])
+const untouched = verdict({ owner: "owner", reasons: [] })
+same("a pull that touches nothing is not listed", [untouched.listed, untouched.lowers], [false, false])
+const lowering = verdict({
   owner: "owner",
-  reasons,
-  headPrints: prints,
-  approvedPrints: prints,
-  forkPrints: forks,
-  approvedForkPrints: forks,
-}
-same("an approval of this content passes", verdict(settled).pass, true)
-const amended = verdict({ ...settled, headPrints: { ...prints, "file scripts/pptx-fixtures/a.pptx": "blob2" } })
-same("content changed after the approval waits again", amended.pass, false)
-if (!amended.lines.includes("Changed since owner approved: file scripts/pptx-fixtures/a.pptx.")) {
-  throw new Error(amended.lines.join("\n"))
-}
+  reasons: [
+    { about: "metric ci-duration", text: "The limit of ci-duration went from 40 to 60.", lowers: true },
+    { about: "file AGENTS.md", text: "AGENTS.md decides what ci checks.", lowers: false },
+  ],
+})
+same("a pull that lowers the bar is listed as lowering it", [lowering.listed, lowering.lowers], [true, true])
+same("what lowers the bar comes first and nothing asks for an approval", lowering.lines, [
+  "Lowers the bar: The limit of ci-duration went from 40 to 60.",
+  "Listed for owner: AGENTS.md decides what ci checks.",
+])
+same("no verdict stops a pull request", "pass" in lowering, false)
 same(
-  "a metric that got worse again after the approval waits again",
-  verdict({ ...settled, headPrints: { ...prints, "metric ci-duration": '{"limit":99}' } }).pass,
-  false,
+  "each label follows its verdict",
+  [labelsFor(untouched), labelsFor(listedOnly), labelsFor(lowering)],
+  [[], ["changes-ci"], ["changes-ci", "lowers-the-bar"]],
 )
-const reverted = verdict({ ...settled, forkPrints: { ...forks, "metric ci-duration": '{"limit":30}' } })
-same("an approval does not cover what main changed since", reverted.pass, false)
-if (!reverted.lines.includes("Changed on main since owner approved: metric ci-duration.")) {
-  throw new Error(reverted.lines.join("\n"))
-}
 
 const routes = "export-coverage"
 const withRoutes = (base, head) =>
@@ -528,15 +459,14 @@ localFile("scripts/pptx-fixtures/corpus.json", JSON.stringify([{ name: "a.pptx",
 fs.rmSync(path.join(localRepo, "packages/pptx/src/route.test.ts"))
 localFile("scripts/new-check.mjs", "check\n")
 const localVerdict = verdict(readLocal(localRepo))
-same("a lowered bar in the working tree fails locally", localVerdict.pass, false)
+same("a lowered bar in the working tree is seen locally", localVerdict.lowers, true)
 same("the local verdict says what ci says", localVerdict.lines, [
   "Lowers the bar: The limit of ci-duration went from 40 to 50.",
   "Lowers the bar: corpus-size went from 2 to 1, away from its goal of 20.",
   "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
   "Lowers the bar: The corpus deck a.pptx was removed or its sha256 changed.",
   "Lowers the bar: The corpus deck b.pptx was removed or its sha256 changed.",
-  "Listed for Rickvu309, does not block: scripts/new-check.mjs decides what ci checks.",
-  "Undo what lowers the bar. Only an approval from Rickvu309 lets it through as it is.",
+  "Listed for Rickvu309: scripts/new-check.mjs decides what ci checks.",
 ])
 const localStep = () => {
   try {
@@ -551,15 +481,10 @@ const localStep = () => {
     return { status: error.status, output: `${error.stdout}${error.stderr}` }
   }
 }
-same("locally a lowered bar prints what ci says, warns and passes", localStep(), {
+same("locally a lowered bar prints what ci says and passes", localStep(), {
   status: 0,
-  output: [...localVerdict.lines, localWarning("ratchet", "Rickvu309"), ""].join("\n"),
+  output: [...localVerdict.lines, ""].join("\n"),
 })
-same(
-  "the local warning names the check on GitHub and the owner",
-  localWarning("ratchet", "Rickvu309"),
-  "Warning: the ratchet check on GitHub blocks this unless Rickvu309 approves it. This step passes, and GitHub judges.",
-)
 same("reading the working tree leaves the index alone", localGit(["diff", "--cached", "--name-only"]), "")
 same("the working tree is read with what is not staged", workingTree(localRepo) === localGit(["write-tree"]), false)
 
