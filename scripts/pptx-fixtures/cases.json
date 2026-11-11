@@ -84,9 +84,9 @@
     "before": "tall-glyph-before.pptx",
     "after": "tall-glyph-letter.pptx",
     "visible": true,
-    "targeted": [1],
+    "targeted": [2],
     "errors": 0,
     "dupes": 0,
-    "pages": false
+    "pages": true
   }
 ]
