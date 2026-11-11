@@ -38,13 +38,9 @@ const runInput = z.looseObject({
   runId: z.string().describe("The runId your edit answers carried."),
 })
 
-function endsRun(op: string): boolean {
-  return op === "stop_run" || op === "undo_run"
-}
-
 function inputSchema(op: string) {
   if (op === "edit_deck") return editInput
-  if (endsRun(op)) return runInput
+  if (op === "stop_run") return runInput
   if (op === "capture_slide") return captureInput
   return z.looseObject({})
 }
@@ -96,7 +92,7 @@ export function createServer(session: Session, host?: Host): McpServer {
           const prepared = await host.prepare(tool.name, args, session)
           if (!prepared.ok) {
             if (tool.op === "edit_deck") return mcpResult(editRefusal(session.deck, prepared.refusal, []))
-            if (endsRun(tool.op)) return mcpResult(runRefusal(session.deck, prepared.refusal))
+            if (tool.op === "stop_run") return mcpResult(runRefusal(session.deck, prepared.refusal))
             return mcpResult({
               ok: false,
               refusal: prepared.refusal,

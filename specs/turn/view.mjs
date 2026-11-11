@@ -3,7 +3,6 @@ const steps = {
   AgentEdit: "the agent edits an element in the turn",
   PersonEdit: "a person edits an element",
   Stop: "the agent stops the run and the turn ends",
-  Undo: "the agent undoes the run and the turn ends",
   Idle: "the idle window passes and the turn ends",
   Refused: "a refused call changes nothing",
 }

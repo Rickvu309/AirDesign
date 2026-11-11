@@ -13,7 +13,7 @@ const nodes = { x: "258.7", y: "258.8" } as const
 const idleWindow = 600_000
 
 type Name = keyof typeof nodes
-type Action = "TurnStart" | "AgentEdit" | "PersonEdit" | "Stop" | "Undo" | "Idle" | "Refused"
+type Action = "TurnStart" | "AgentEdit" | "PersonEdit" | "Stop" | "Idle" | "Refused"
 type Step = { readonly action: Action; readonly element?: Name; readonly refusal?: "stale" | "unknown" }
 type Stored = {
   readonly revision: number
@@ -42,7 +42,7 @@ const traces: readonly (readonly Step[])[] = [
     { action: "Stop" },
     { action: "TurnStart", element: "x" },
     { action: "PersonEdit", element: "y" },
-    { action: "Undo" },
+    { action: "Stop" },
     { action: "TurnStart", element: "y" },
     { action: "PersonEdit", element: "y" },
     { action: "Idle" },
@@ -179,9 +179,8 @@ describe("a person closes an element for the rest of a turn", () => {
         await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "person", node }] }, cookie)
         return none
       }
-      if (step.action === "Stop" || step.action === "Undo") {
-        const name = step.action === "Stop" ? "airdesign_stop_run" : "airdesign_undo_run"
-        const answer = await called(name, { deck: id, runId })
+      if (step.action === "Stop") {
+        const answer = await called("airdesign_stop_run", { deck: id, runId })
         return { outcome: answer.ok ? "ended" : (answer.refusal ?? "none"), landedOn: "none" }
       }
       if (step.action === "Refused") {

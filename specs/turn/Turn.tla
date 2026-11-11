@@ -1,7 +1,7 @@
 ---- MODULE Turn ----
 
 \* A turn belongs to an account on a deck. It starts with that account's first
-\* edit there and ends by a stop, an undo of its run, or the idle window.
+\* edit there and ends by a stop of its run or the idle window.
 \* stateX and stateY are what the stored row shows for an element:
 \* idle, open (a run holds it), closed (a run holds it and a person edited it), or ended.
 \* closedX and closedY record only that a person closed the element during this turn.
@@ -91,11 +91,6 @@ Stop ==
   /\ outcome' = "ended"
   /\ EndRuns
 
-Undo ==
-  /\ turn = "live"
-  /\ outcome' = "ended"
-  /\ EndRuns
-
 Idle ==
   /\ turn = "live"
   /\ turn' = "none"
@@ -115,10 +110,13 @@ Next ==
   \/ AgentEdit
   \/ PersonEdit
   \/ Stop
-  \/ Undo
   \/ Idle
   \/ Refused
 
 Spec == Init /\ [][Next]_vars
+
+\* A refusal never ends a turn: a refused step leaves the turn and the closed flags as they were.
+RefusalKeepsTurn ==
+  [][outcome' \in {"refused", "person-protected"} => UNCHANGED <<turn, closedX, closedY>>]_vars
 
 ====

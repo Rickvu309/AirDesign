@@ -292,20 +292,18 @@ describe("afterWrite", () => {
     expect(afterWrite(true, landed, loaded)).toBe(landed)
   })
 
-  it("answers stale in the run sentence when a stop or undo loses its write", () => {
+  it("answers stale in the run sentence when a stop loses its write", () => {
     const named = readDeckId("deck")
     if (!named.ok) throw new Error(named.refusal)
     const loaded = openDeck(named.deck)
     const stored = { ...loaded, revision: 4 }
-    for (const op of ["stop_run", "undo_run"] as const) {
-      const lost = afterWrite(false, runEnded({ ...loaded, revision: 1 }, op, "run"), stored)
-      expect(lost.ok).toBe(false)
-      if (lost.ok) return
-      expect(lost.refusal).toBe("stale")
-      expect(lost.deck).toBe(stored)
-      expect(lost.answer).toEqual({ ok: false, revision: 4, refusal: "stale", elements: [] })
-      expect(lost.content[0]).toEqual({ type: "text", text: runNext.stale })
-    }
+    const lost = afterWrite(false, runEnded({ ...loaded, revision: 1 }, "run"), stored)
+    expect(lost.ok).toBe(false)
+    if (lost.ok) return
+    expect(lost.refusal).toBe("stale")
+    expect(lost.deck).toBe(stored)
+    expect(lost.answer).toEqual({ ok: false, revision: 4, refusal: "stale", elements: [] })
+    expect(lost.content[0]).toEqual({ type: "text", text: runNext.stale })
   })
 
   it("answers person-protected when the stored row shows a person edited the element during the run", () => {

@@ -1255,6 +1255,13 @@ describe("run operations", () => {
       expect(liveRuns(opened())).toEqual([])
     })
 
+    it("finds a live run on a removed element", () => {
+      const deck = start(opened(), "one", [left]).deck
+      const removed = decide(deck.register, { command: "remove", node: left })
+      if (removed.decision !== "apply") throw new Error(removed.code)
+      expect(liveRuns({ ...deck, register: removed.register })).toEqual(["one"])
+    })
+
     it("names a run once however many elements it holds", () => {
       expect(liveRuns(start(opened(), "one", [left, right]).deck)).toEqual(["one"])
     })

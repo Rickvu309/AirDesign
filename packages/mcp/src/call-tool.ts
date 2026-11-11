@@ -5,7 +5,7 @@ import type { CallerLog } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
 import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
-import { liveTurn, type Turns } from "./turn.js"
+import { dropGoneTurn, liveTurn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -89,18 +89,18 @@ function malformedRun(raw: unknown): boolean {
   return typeof body.runId === "string" && readRun({ ...body, runId: "run" }).ok
 }
 
-function endRun(op: "stop_run" | "undo_run", raw: unknown, session: Session): ToolResult {
+function stopRun(raw: unknown, session: Session): ToolResult {
   const before = session.deck
   const parsed = readRun(raw)
   if (!parsed.ok) return runRefusal(before, malformedRun(raw) ? "run-fenced" : parsed.refusal)
   if (parsed.deck !== before.id) return runRefusal(before, "deck")
-  const result = call(op, before, agentCaller(parsed.runId), raw)
+  const result = call("stop_run", before, agentCaller(parsed.runId), raw)
   if (!result.ok) return runRefusal(before, result.refusal)
   const endsTurn = session.turns.read(before.id)?.runId === parsed.runId
   const ended = endsTurn ? stopLiveRuns(result.deck) : result
   if (!ended.ok) return runRefusal(before, ended.refusal)
   const deck = ended.deck.register === before.register ? before : { ...ended.deck, revision: before.revision + 1 }
-  return runEnded(deck, op, parsed.runId)
+  return runEnded(deck, parsed.runId)
 }
 
 function captureSlide(raw: unknown, session: Session): ToolResult {
@@ -113,12 +113,11 @@ function captureSlide(raw: unknown, session: Session): ToolResult {
 }
 
 export function callTool(name: string, raw: unknown, session: Session): ToolResult {
+  dropGoneTurn(session)
   const tool = projectTools(catalog).find((item) => item.name === name)
   if (tool === undefined) return refused(session.deck, "field")
   if (tool.op === "edit_deck" && tool.runsOn === "server") return editDeck(raw, session)
-  if ((tool.op === "stop_run" || tool.op === "undo_run") && tool.runsOn === "server") {
-    return endRun(tool.op, raw, session)
-  }
+  if (tool.op === "stop_run" && tool.runsOn === "server") return stopRun(raw, session)
   if (tool.op === "capture_slide" && tool.runsOn === "device") return captureSlide(raw, session)
   return refused(session.deck, "field")
 }

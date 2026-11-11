@@ -29,6 +29,7 @@ import { group as undoGroup, state as undoState, step as undoStep } from "../spe
 import { group as usageGroup, state as usageState, step as usageStep } from "../specs/usage/view.mjs"
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
+import { group as turnGroup, state as turnState, step as turnStep } from "../specs/turn/view.mjs"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -1310,8 +1311,8 @@ describe("spec replay", () => {
       .sort()
     expect(every.map((topic) => topic.name).sort()).toEqual(folders)
     for (const topic of every) expect(topic.view).toBe(true)
-    const replayedByApi = ["owner", "turn"]
-    const found = every.filter((topic) => !replayedByApi.includes(topic.name))
+    const replayedByApi = "owner"
+    const found = every.filter((topic) => topic.name !== replayedByApi)
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
     const views: Record<string, View> = {
@@ -1323,8 +1324,9 @@ describe("spec replay", () => {
       usage: { state: usageState, step: usageStep, group: usageGroup },
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
+      turn: { state: turnState, step: turnStep, group: turnGroup },
     }
-    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => !replayedByApi.includes(name)))
+    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => name !== replayedByApi))
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)

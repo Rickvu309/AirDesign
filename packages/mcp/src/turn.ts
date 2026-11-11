@@ -33,8 +33,11 @@ export function liveTurn(session: Session, deck: DeckId): LiveTurn | undefined {
   return { ...turn, runId: turn.runId }
 }
 
-function endsTurn(op: string): boolean {
-  return op === "stop_run" || op === "undo_run"
+export function dropGoneTurn(session: Session): void {
+  const { deck } = session
+  const held = session.turns.read(deck.id)
+  if (held === undefined || deck.revision >= held.revision) return
+  session.turns.write(deck.id, { runId: null, lastCall: session.now, revision: deck.revision })
 }
 
 export function settleTurn(op: string, result: ToolResult, session: Session): void {
@@ -48,7 +51,7 @@ export function settleTurn(op: string, result: ToolResult, session: Session): vo
       session.turns.write(deck, { runId, lastCall: session.now, revision })
       return
     }
-    if (endsTurn(op) && runId === held?.runId) {
+    if (op === "stop_run" && runId === held?.runId) {
       session.turns.write(deck, { runId: null, lastCall: session.now, revision })
       return
     }

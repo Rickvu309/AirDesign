@@ -70,9 +70,8 @@ export function editLanded(deck: Deck, nodes: readonly ElementId[], runId: strin
   return landedResult(deck, `Landed revision ${String(deck.revision)}.`, runId, nodes)
 }
 
-export function runEnded(deck: Deck, op: "stop_run" | "undo_run", runId: string): EditResult {
-  const done = op === "stop_run" ? "Stopped" : "Undid"
-  return landedResult(deck, `${done} the run at revision ${String(deck.revision)}.`, runId, [])
+export function runEnded(deck: Deck, runId: string): EditResult {
+  return landedResult(deck, `Stopped the run at revision ${String(deck.revision)}.`, runId, [])
 }
 
 function refusedResult(

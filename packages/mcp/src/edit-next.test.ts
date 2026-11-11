@@ -43,7 +43,7 @@ describe("editNext", () => {
     expect(editNext["text-from"]).not.toContain("current value")
   })
 
-  it("gives a stop or undo its own next step where the edit sentence would mislead", () => {
+  it("gives a stop its own next step where the edit sentence would mislead", () => {
     for (const code of editCodes) expect(runSentence(code).endsWith("."), code).toBe(true)
     for (const code of ["stale", "run-fenced", "limit"] as const) {
       expect(runNext[code], code).not.toBe(editNext[code])

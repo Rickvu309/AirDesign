@@ -945,40 +945,7 @@ describe("mcp route", () => {
     }
   })
 
-  it("undoes only the named run, keeps the person's rows, and lands a later edit", async () => {
-    const { id, cookie } = await openedDeck("undo")
-    await withMcp(cookie, async (client) => {
-      const first = await editAnswer(client, firstEdit(id))
-      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: first.runId } })
-      const second = await editAnswer(client, {
-        deck: id,
-        base: 2,
-        changes: [{ value: "22", node: element, readAt: 1 }],
-      })
-      expect(second.runId).not.toBe(first.runId)
-      await typed(id, cookie, "person", 4)
-      const undone = await client.callTool({ name: "airdesign_undo_run", arguments: { deck: id, runId: second.runId } })
-      expect(undone.structuredContent).toEqual({ ok: true, revision: 5, runId: second.runId, elements: [] })
-      const kept = await row(id)
-      expect(kept?.revision).toBe(5)
-      expect(elementOf(kept).landed.map((item) => [item.value, item.visible])).toEqual([
-        ["21", true],
-        ["22", false],
-        ["person", true],
-      ])
-      const later = await editAnswer(client, {
-        deck: id,
-        base: 5,
-        changes: [{ value: "later", node: element, readAt: 2 }],
-      })
-      expect(later).toEqual(landedAnswer(6, [{ node: element, value: "later", version: 3 }]))
-      expect(later.runId).not.toBe(first.runId)
-      expect(later.runId).not.toBe(second.runId)
-      expect(elementOf(await row(id)).landed.slice(0, 3)).toEqual(elementOf(kept).landed)
-    })
-  })
-
-  it("answers owner to another account's stop_run and undo_run and changes nothing", async () => {
+  it("answers owner to another account's stop_run and changes nothing", async () => {
     const { id, cookie } = await openedDeck("runowner")
     let runId = ""
     await withMcp(cookie, async (client) => {
@@ -986,17 +953,15 @@ describe("mcp route", () => {
     })
     const before = await row(id)
     await withMcp(await sign(address("runthief")), async (client) => {
-      for (const name of ["airdesign_stop_run", "airdesign_undo_run"]) {
-        const result = await client.callTool({ name, arguments: { deck: id, runId } })
-        const answer = { ok: false, revision: 0, refusal: "owner", elements: [] }
-        expect(result.isError).toBe(true)
-        expect(result.content).toEqual([
-          { type: "text", text: editNext.owner },
-          { type: "text", text: JSON.stringify(answer) },
-        ])
-        expect(result.structuredContent).toEqual(answer)
-        expect(await row(id)).toEqual(before)
-      }
+      const result = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
+      const answer = { ok: false, revision: 0, refusal: "owner", elements: [] }
+      expect(result.isError).toBe(true)
+      expect(result.content).toEqual([
+        { type: "text", text: editNext.owner },
+        { type: "text", text: JSON.stringify(answer) },
+      ])
+      expect(result.structuredContent).toEqual(answer)
+      expect(await row(id)).toEqual(before)
     })
   })
 
@@ -1005,16 +970,14 @@ describe("mcp route", () => {
     await withMcp(cookie, async (client) => {
       await editAnswer(client, firstEdit(id))
       const before = await row(id)
-      for (const name of ["airdesign_stop_run", "airdesign_undo_run"]) {
-        for (const runId of ["unknown", "../bad"]) {
-          const result = await client.callTool({ name, arguments: { deck: id, runId } })
-          const answer = { ok: false, revision: 1, refusal: "run-fenced", elements: [] }
-          expect(result.content).toEqual([
-            { type: "text", text: runNext["run-fenced"] },
-            { type: "text", text: JSON.stringify(answer) },
-          ])
-          expect(await row(id)).toEqual(before)
-        }
+      for (const runId of ["unknown", "../bad"]) {
+        const result = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId } })
+        const answer = { ok: false, revision: 1, refusal: "run-fenced", elements: [] }
+        expect(result.content).toEqual([
+          { type: "text", text: runNext["run-fenced"] },
+          { type: "text", text: JSON.stringify(answer) },
+        ])
+        expect(await row(id)).toEqual(before)
       }
     })
   })
@@ -1129,22 +1092,6 @@ describe("mcp route", () => {
     }
   })
 
-  it("does not land an edit under a run that was undone", async () => {
-    const { id, cookie } = await openedDeck("undonerun")
-    await withMcp(cookie, async (client) => {
-      const first = await editAnswer(client, firstEdit(id))
-      await client.callTool({ name: "airdesign_undo_run", arguments: { deck: id, runId: first.runId } })
-      const later = await editAnswer(client, {
-        deck: id,
-        base: 2,
-        changes: [{ value: "z", node: created, readAt: 0 }],
-      })
-      expect(later.ok).toBe(true)
-      expect(later.runId).not.toBe(first.runId)
-      expect(runOf(await row(id), created)).toBe(later.runId)
-    })
-  })
-
   it("keeps one account's turns on two decks apart", async () => {
     const email = address("twodecks")
     const one = await openedDeck("deckone", email)
@@ -1162,6 +1109,13 @@ describe("mcp route", () => {
       })
       expect(crossed.structuredContent).toMatchObject({ ok: false, refusal: "run-fenced" })
       expect(await row(two.id)).toEqual(before)
+      const again = await editAnswer(client, {
+        deck: one.id,
+        base: 1,
+        changes: [{ value: "b", node: sibling, readAt: 0 }],
+      })
+      expect(again.runId).toBe(first.runId)
+      expect(runOf(await row(one.id), sibling)).toBe(first.runId)
     })
   })
 
@@ -1188,6 +1142,65 @@ describe("mcp route", () => {
     } finally {
       await served.close()
     }
+  })
+
+  it("lets a person's edit close an element in a new turn after the deck id is deleted and reopened", async () => {
+    let clock = 1_000_000
+    const served = await ownServer("reborn", { now: () => clock })
+    try {
+      const { id, cookie } = await openedDeck("reborn")
+      await withMcp(
+        cookie,
+        async (client) => {
+          await editAnswer(client, firstEdit(id))
+          await editAnswer(client, secondEdit(id))
+          await editAnswer(client, { deck: id, base: 2, changes: [{ value: "23", node: element, readAt: 2 }] })
+          expect((await row(id))?.revision).toBe(3)
+          await ask(base, "POST", "/decks/trash", { deck: id }, cookie)
+          await ask(base, "POST", "/decks/delete", { decks: [id] }, cookie)
+          const reopened = await ask(base, "POST", "/decks/open", { deck: id }, cookie)
+          expect(reopened.json).toMatchObject({ ok: true, revision: 0 })
+          clock += 600_000
+          const first = await editAnswer(client, firstEdit(id))
+          expect(first).toMatchObject({ ok: true, revision: 1 })
+          await typed(id, cookie, "typed", 2)
+          const closedRow = await row(id)
+          const closed = await editAnswer(client, {
+            deck: id,
+            base: 2,
+            changes: [{ value: "overwrite", node: element, readAt: 2 }],
+          })
+          expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
+          expect(await row(id)).toEqual(closedRow)
+        },
+        served.base,
+      )
+    } finally {
+      await served.close()
+    }
+  })
+
+  it("leaves the live turn and its stored rows when stop_run names an old stopped run", async () => {
+    const { id, cookie } = await openedDeck("oldstop")
+    await withMcp(cookie, async (client) => {
+      const old = await editAnswer(client, firstEdit(id))
+      await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: old.runId } })
+      const live = await editAnswer(client, { deck: id, base: 2, changes: [{ value: "b", node: sibling, readAt: 0 }] })
+      expect(live.runId).not.toBe(old.runId)
+      await ask(base, "POST", "/decks/commit", { deck: id, batch: [{ value: "typed", node: sibling }] }, cookie)
+      const before = await row(id)
+      expect(elementOf(before, sibling).guarded).toBe(true)
+      const again = await client.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: old.runId } })
+      expect(again.structuredContent).toEqual({ ok: true, revision: 4, runId: old.runId, elements: [] })
+      expect(await row(id)).toEqual(before)
+      const next = await editAnswer(client, {
+        deck: id,
+        base: 4,
+        changes: [{ value: "overwrite", node: sibling, readAt: 2 }],
+      })
+      expect(next).toMatchObject({ ok: false, refusal: "person-protected" })
+      expect(await row(id)).toEqual(before)
+    })
   })
 
   async function holdingServer(
@@ -1329,32 +1342,33 @@ describe("mcp route", () => {
     }
   }
 
-  it("answers stale when a stop_run or undo_run loses its write, and the run stays live", async () => {
+  it("answers stale when a stop_run loses its write, and the run stays live", async () => {
     const served = await racingServer("lostend", () => 1_000_000)
     try {
-      for (const name of ["airdesign_stop_run", "airdesign_undo_run"]) {
-        const { id, cookie } = await openedDeck("lostend")
-        await withMcp(
-          cookie,
-          async (client) => {
-            const first = await editAnswer(client, firstEdit(id))
-            const before = await row(id)
-            served.race()
-            const lost = await client.callTool({ name, arguments: { deck: id, runId: first.runId } })
-            const answer = { ok: false, revision: 2, refusal: "stale", elements: [] }
-            expect(lost.content).toEqual([
-              { type: "text", text: runNext.stale },
-              { type: "text", text: JSON.stringify(answer) },
-            ])
-            const kept = await row(id)
-            expect(kept?.revision).toBe(2)
-            expect(kept?.register).toEqual(before?.register)
-            const next = await editAnswer(client, secondEdit(id))
-            expect(next.runId).toBe(first.runId)
-          },
-          served.base,
-        )
-      }
+      const { id, cookie } = await openedDeck("lostend")
+      await withMcp(
+        cookie,
+        async (client) => {
+          const first = await editAnswer(client, firstEdit(id))
+          const before = await row(id)
+          served.race()
+          const lost = await client.callTool({
+            name: "airdesign_stop_run",
+            arguments: { deck: id, runId: first.runId },
+          })
+          const answer = { ok: false, revision: 2, refusal: "stale", elements: [] }
+          expect(lost.content).toEqual([
+            { type: "text", text: runNext.stale },
+            { type: "text", text: JSON.stringify(answer) },
+          ])
+          const kept = await row(id)
+          expect(kept?.revision).toBe(2)
+          expect(kept?.register).toEqual(before?.register)
+          const next = await editAnswer(client, secondEdit(id))
+          expect(next.runId).toBe(first.runId)
+        },
+        served.base,
+      )
     } finally {
       await served.close()
     }
@@ -1387,18 +1401,15 @@ describe("mcp route", () => {
     }
   })
 
-  it("counts stop_run and undo_run toward the thirty", async () => {
+  it("counts stop_run toward the thirty", async () => {
     const { id, cookie } = await openedDeck("runlimit")
     await withMcp(cookie, async (client) => {
+      const stop = { name: "airdesign_stop_run", arguments: { deck: id, runId: "unknown" } }
       for (let call = 0; call < 30; call += 1) {
-        const name = call % 2 === 0 ? "airdesign_stop_run" : "airdesign_undo_run"
-        const result = await client.callTool({ name, arguments: { deck: id, runId: "unknown" } })
+        const result = await client.callTool(stop)
         expect(result.content[0]).toEqual({ type: "text", text: runNext["run-fenced"] })
       }
-      for (const name of ["airdesign_stop_run", "airdesign_undo_run"]) {
-        const result = await client.callTool({ name, arguments: { deck: id, runId: "unknown" } })
-        expect(result.content).toEqual([{ type: "text", text: toolLimit }])
-      }
+      expect((await client.callTool(stop)).content).toEqual([{ type: "text", text: toolLimit }])
       expect(await editText(client, firstEdit(id))).toBe(toolLimit)
       expect((await row(id))?.revision).toBe(0)
     })
