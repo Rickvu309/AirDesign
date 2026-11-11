@@ -146,8 +146,7 @@ async function readLedger(db: Sql, account: string, now: number): Promise<Stored
   if (row === undefined) throw new Error("ledger")
   return {
     spent: Number(row.spent),
-    hold: Number(row.hold),
-    turn: row.turn,
+    open: row.turn === null ? null : { turn: row.turn, hold: Number(row.hold) },
     week: row.week,
     outside: row.outside,
     monday: row.monday.getTime(),
@@ -158,7 +157,15 @@ async function writeLedger(db: Sql, account: string, ledger: Stored): Promise<vo
   await db.query(
     `update session.aira_ledger set spent = $2, hold = $3, turn = $4, week = $5, outside = $6, monday = $7
      where email = $1`,
-    [account, ledger.spent, ledger.hold, ledger.turn, ledger.week, ledger.outside, new Date(ledger.monday)],
+    [
+      account,
+      ledger.spent,
+      ledger.open?.hold ?? 0,
+      ledger.open?.turn ?? null,
+      ledger.week,
+      ledger.outside,
+      new Date(ledger.monday),
+    ],
   )
 }
 
@@ -195,14 +202,14 @@ async function closeTurn(
 }
 
 async function dropStale(db: Sql, account: string, ledger: Stored, now: number): Promise<Stored> {
-  if (ledger.turn === null) return ledger
+  if (ledger.open === null) return ledger
   const found = await db.query<{ input: number; started: Date }>(
     "select input, started from session.aira_turn where id = $1 and outcome = 'open'",
-    [ledger.turn],
+    [ledger.open.turn],
   )
   const row = found.rows[0]
   if (row === undefined || now - row.started.getTime() < staleTurn) return ledger
-  return closeTurn(db, account, ledger, ledger.turn, "dropped", heldCounts(row.input), now)
+  return closeTurn(db, account, ledger, ledger.open.turn, "dropped", heldCounts(row.input), now)
 }
 
 function heldCounts(input: number): Counts {
@@ -223,13 +230,13 @@ async function reserveTurn(db: Sql, account: string, id: string, input: number, 
     })
     if (!result.accepted) {
       if (ledger !== stored) await writeLedger(client, account, ledger)
-      return { ok: false, refusal: ledger.turn === null ? "allowance" : "open", ledger }
+      return { ok: false, refusal: ledger.open === null ? "allowance" : "open", ledger }
     }
     await writeLedger(client, account, result.ledger)
     await client.query(
       `insert into session.aira_turn (id, email, outcome, input, ceiling, started)
        values ($1, $2, 'open', $3, $4, $5)`,
-      [id, account, input, result.ledger.hold, new Date(now)],
+      [id, account, input, result.ledger.open?.hold ?? 0, new Date(now)],
     )
     return { ok: true, ledger: result.ledger }
   })
