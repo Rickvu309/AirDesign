@@ -441,7 +441,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
         }
       >
         <EditorShell
-          notes=""
+          panel="none"
           onExport={() => void onExport()}
           slides={{ count: slideCount, current, onSelect: setCurrent }}
           slide={(width) => {
