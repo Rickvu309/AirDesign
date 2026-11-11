@@ -333,6 +333,7 @@ const runLook: PaintRunStyle = {
   strike: false,
   baseline: 0,
   color: { hex: "102030", alpha: 1 },
+  highlight: null,
 }
 
 const paragraph: PaintParagraph = {
