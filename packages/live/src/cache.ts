@@ -1,5 +1,6 @@
 import { readDeckId, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
 import {
+  bytesOf,
   currentValue,
   decide,
   legacyElement,
@@ -25,14 +26,11 @@ import {
   pendingRow,
   readRows,
   rowKey,
-  textBytes,
   writeRows,
   type ConfirmedRow,
   type PendingRow,
   type StoredRow,
 } from "./store.js"
-
-const batchSize = 100
 
 export type LivePhase = "on-device" | "confirmed"
 
@@ -191,8 +189,8 @@ export function connect(remote: Remote) {
     const sending = unsent(pending, 0)
     let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
-    for (let start = 0; start < sending.length; start += batchSize) {
-      const rowsInBatch = sending.slice(start, start + batchSize)
+    for (let start = 0; start < sending.length; start += limits.batch) {
+      const rowsInBatch = sending.slice(start, start + limits.batch)
       result = await remote.commit({ deck, batch: rowsInBatch.map(wireOf) })
       if (!result.ok) return result
       if (result.deck !== deck || result.key !== `${deck}:${result.revision}`) {
@@ -226,7 +224,7 @@ export function connect(remote: Remote) {
         }
         const decision = decide(editing, { command: "person", value, node: named })
         if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
-        if (textBytes(value) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
+        if (bytesOf(value) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
         const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
         const before = editing.elements[named]
         const base = before === undefined ? 0 : version(before)

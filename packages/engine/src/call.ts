@@ -1,4 +1,5 @@
 import {
+  bytesOf,
   decide,
   storedElements,
   limits,
@@ -58,18 +59,6 @@ function agentCommand(edit: WireChange, runId: string): Command {
   return { command: "agent", runId, readAt: edit.readAt, value: edit.value, node: edit.node }
 }
 
-function utf8Length(value: string): number {
-  let size = 0
-  for (const symbol of value) {
-    const code = symbol.codePointAt(0) ?? 0
-    if (code <= 0x7f) size += 1
-    else if (code <= 0x7ff) size += 2
-    else if (code <= 0xffff) size += 3
-    else size += 4
-  }
-  return size
-}
-
 function openedRegister(
   register: Register,
   edit: WireRunElement,
@@ -84,8 +73,6 @@ function openedRegister(
   if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
   return { ok: true, register: opened.register }
 }
-
-const valueBytes = limits.valueBytes
 
 function landed(deck: Deck, register: Register): CallResult {
   const changed = register !== deck.register
@@ -102,12 +89,12 @@ function applyEdits<Edit extends Touched>(
 ): CallResult {
   let register = deck.register
   for (const edit of edits) {
-    if (utf8Length(edit.value) > valueBytes) return refused("limit")
-    if (edit.floor !== undefined && utf8Length(edit.floor) > valueBytes) return refused("limit")
+    if (bytesOf(edit.value) > limits.valueBytes) return refused("limit")
+    if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
     const opened = openedRegister(register, edit)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
-    const next = register.bytes + utf8Length(edit.value)
+    const next = register.bytes + bytesOf(edit.value)
     if (next >= limits.bytes) return refused("limit")
     const decision = decide(register, commandFor(edit))
     if (decision.decision === "refuse") return refused(decision.code)
@@ -187,7 +174,7 @@ function startRun(deck: Deck, requested: string, elements: readonly WireRunEleme
   const runId = liveRun(deck.register, elements) ?? requested
   let register = deck.register
   for (const element of elements) {
-    if (element.floor !== undefined && utf8Length(element.floor) > valueBytes) return refused("limit")
+    if (element.floor !== undefined && bytesOf(element.floor) > limits.valueBytes) return refused("limit")
     const opened = openedRegister(register, element)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register

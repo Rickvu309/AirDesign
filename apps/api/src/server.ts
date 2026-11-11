@@ -1,5 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
+import { bytesOf, limits } from "@airdesign/document"
 
 import {
   deckRoutes,
@@ -80,8 +81,6 @@ export type Route = {
 }
 
 export const smokeEmail = "smoke@airdesign.app"
-export const bodyCap = 1_000_000
-export const formCap = 16_384
 const localBase = "http://127.0.0.1"
 const unreadTarget = "The request target could not be read."
 const unservedMethod = "This address does not answer that method."
@@ -115,7 +114,7 @@ function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: s
   if (cookie !== undefined) res.setHeader("set-cookie", cookie)
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "content-length": Buffer.byteLength(payload),
+    "content-length": bytesOf(payload),
   })
   res.end(payload)
 }
@@ -439,7 +438,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
       now,
       mint,
       hosts: options.hosts ?? localHosts,
-      bodyCap,
+      bodyCap: limits.body,
       fail: (error) => answerThrow(visit, name, error),
     },
     req,
@@ -464,8 +463,8 @@ export const routes: readonly Route[] = [
   { method: "POST", path: "/oauth/register", serve: registerRoute },
   { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
   { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },
-  { method: "POST", path: "/oauth/token", serve: tokenRoute, cap: formCap },
-  { method: "POST", path: "/oauth/revoke", serve: revokeRoute, cap: formCap },
+  { method: "POST", path: "/oauth/token", serve: tokenRoute, cap: limits.form },
+  { method: "POST", path: "/oauth/revoke", serve: revokeRoute, cap: limits.form },
   { method: "POST", path: signInRoutes.email.path, serve: emailRoute },
   { method: "POST", path: signInRoutes.code.path, serve: codeRoute },
   { method: "GET", path: signInRoutes.link.path, serve: linkRoute },
@@ -542,7 +541,7 @@ async function handle(context: Context): Promise<void> {
       (candidate) =>
         candidate.path === url?.pathname && (candidate.method === "any" || candidate.method === req.method),
     )
-    const body = bodyOnce(req, route?.cap ?? bodyCap)
+    const body = bodyOnce(req, route?.cap ?? limits.body)
     if (url === undefined || route === undefined) {
       await body()
       answerNoRoute(res, url)
