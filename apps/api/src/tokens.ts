@@ -1,3 +1,4 @@
+import type { TokenRequest } from "@airdesign/catalog"
 import { oauth } from "@airdesign/oauth"
 
 import type { Answer } from "./answer.js"
@@ -14,7 +15,6 @@ import {
 import type { Sql } from "./pool.js"
 import { ownResource } from "./resource.js"
 import { challengeOf, sameSecret } from "./secrets.js"
-import { storableText } from "./storable-text.js"
 
 export type TokenHost = {
   readonly db: Sql
@@ -52,32 +52,13 @@ function issuedAnswer(issued: Issued): Answer {
   }
 }
 
-export function readForm(contentType: string | undefined, body: Buffer | undefined): Map<string, string> | undefined {
-  if (body === undefined) return undefined
-  if (
-    contentType === undefined ||
-    contentType.split(";")[0]?.trim().toLowerCase() !== "application/x-www-form-urlencoded"
-  ) {
-    return undefined
-  }
-  const fields = new Map<string, string>()
-  for (const [name, value] of new URLSearchParams(body.toString("utf8"))) {
-    if (fields.has(name) || !storableText(name) || !storableText(value)) return undefined
-    fields.set(name, value)
-  }
-  return fields
-}
-
-async function exchangeCode(host: TokenHost, form: Map<string, string>): Promise<Answer> {
-  const code = form.get("code")
-  const verifier = form.get("code_verifier")
-  const clientId = form.get("client_id")
-  const redirectUri = form.get("redirect_uri")
-  if (code === undefined || verifier === undefined || clientId === undefined || redirectUri === undefined) {
-    return failure("invalid_request")
-  }
+async function exchangeCode(
+  host: TokenHost,
+  request: Extract<TokenRequest, { grant: "authorization_code" }>,
+): Promise<Answer> {
+  const { code, verifier, clientId, redirectUri, resource } = request
   if ((await readClient(host.db, clientId)) === undefined) return failure("invalid_client")
-  if (!ownResource(form.get("resource"), host.own)) return failure("invalid_target")
+  if (!ownResource(resource, host.own)) return failure("invalid_target")
   const approval = await readApprovalByCode(host.db, code)
   if (approval === undefined) return failure("invalid_grant")
   if (approval.clientId !== clientId || approval.redirectUri !== redirectUri) return failure("invalid_grant")
@@ -93,12 +74,10 @@ async function exchangeCode(host: TokenHost, form: Map<string, string>): Promise
   return grantAnswer(advanced)
 }
 
-async function refresh(host: TokenHost, form: Map<string, string>): Promise<Answer> {
-  const secret = form.get("refresh_token")
-  const clientId = form.get("client_id")
-  if (secret === undefined || clientId === undefined) return failure("invalid_request")
+async function refresh(host: TokenHost, request: Extract<TokenRequest, { grant: "refresh_token" }>): Promise<Answer> {
+  const { secret, clientId, resource } = request
   if ((await readClient(host.db, clientId)) === undefined) return failure("invalid_client")
-  if (!ownResource(form.get("resource"), host.own)) return failure("invalid_target")
+  if (!ownResource(resource, host.own)) return failure("invalid_target")
   const token = await readToken(host.db, secret)
   if (token === undefined || token.kind !== "refresh") return failure("invalid_grant")
   const approval = await readApproval(host.db, token.grantId)
@@ -112,17 +91,12 @@ async function refresh(host: TokenHost, form: Map<string, string>): Promise<Answ
   return grantAnswer(advanced)
 }
 
-export async function tokenAnswer(host: TokenHost, form: Map<string, string> | undefined): Promise<Answer> {
-  if (form === undefined) return failure("invalid_request")
-  const type = form.get("grant_type")
-  if (type === undefined) return failure("invalid_request")
-  if (type === "authorization_code") return exchangeCode(host, form)
-  if (type === "refresh_token") return refresh(host, form)
-  return failure("unsupported_grant_type")
+export async function tokenAnswer(host: TokenHost, request: TokenRequest): Promise<Answer> {
+  if (request.grant === "authorization_code") return exchangeCode(host, request)
+  return refresh(host, request)
 }
 
-export async function revokeToken(db: Sql, form: Map<string, string> | undefined): Promise<Answer> {
-  const secret = form?.get("token")
+export async function revokeToken(db: Sql, secret: string | undefined): Promise<Answer> {
   if (secret === undefined) return { status: 200, body: {} }
   const token = await readToken(db, secret)
   if (token === undefined) return { status: 200, body: {} }

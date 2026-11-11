@@ -756,7 +756,7 @@ describe("sign-in", () => {
     failSends = 1
     const failed = await ask(base, "POST", "/sign-in/email", { email: linked })
     expect(failed.status).toBe(500)
-    expect(failed.json).toBeUndefined()
+    expect(failed.json).toEqual({ ok: false, refusal: "server" })
     const kept = await session.query<{ misses: number }>("select misses from session.code where email = $1", [linked])
     expect(kept.rows[0]?.misses).toBe(4)
     const counted = await session.query<{ total: number }>(
@@ -788,7 +788,7 @@ describe("sign-in", () => {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const failed = await ask(base, "POST", "/sign-in/email", { email })
       expect(failed.status).toBe(500)
-      expect(failed.json).toBeUndefined()
+      expect(failed.json).toEqual({ ok: false, refusal: "server" })
     }
     expect(mails).toHaveLength(0)
     const pending = await session.query<{ total: number }>(
@@ -848,7 +848,7 @@ describe("sign-in", () => {
         step.held.finish(new Error("provider"))
         const failed = await step.response
         expect(failed.status).toBe(500)
-        expect(failed.json).toBeUndefined()
+        expect(failed.json).toEqual({ ok: false, refusal: "server" })
       }
     }
 
@@ -1042,7 +1042,7 @@ describe("sign-in", () => {
       await admin.query("select pg_terminate_backend($1)", [backend])
       const refused = await cut
       expect(refused.status).toBe(500)
-      expect(refused.json).toBeUndefined()
+      expect(refused.json).toEqual({ ok: false, refusal: "server" })
       await holder.query("commit")
       const next = await ask(base, "POST", "/sign-in/email", { email })
       expect(next.status).toBe(202)

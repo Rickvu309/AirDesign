@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, describe, expect, it } from "vitest"
 
-import { postgresInfo } from "./harness.js"
+import { postgresInfo, wireCommit } from "./harness.js"
 import { commitEdits, openPool, openSaved, writeRevision } from "./index.js"
 
 describe("two sessions on one row", () => {
@@ -67,7 +67,7 @@ describe("two sessions on one row", () => {
     let finished = false
     const second = commitEdits(
       waiter,
-      { deck: named.deck, batch: [{ value: "two", node: "258.7" }] },
+      wireCommit({ deck: named.deck, batch: [{ value: "two", node: "258.7" }] }),
       "a@example.com",
     ).finally(() => {
       finished = true

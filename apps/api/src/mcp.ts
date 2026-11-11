@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { notifyKey, readDeckId, type DeckId } from "@airdesign/catalog"
+import { notifyKey, readDeckId, readNamedDeck } from "@airdesign/catalog"
 import { openDeck, type Deck } from "@airdesign/engine"
 import {
   afterWrite,
@@ -9,7 +9,6 @@ import {
   editRefusal,
   emptyLog,
   type CallerLog,
-  type EditCode,
   type Host,
   type Session,
   type ToolResult,
@@ -28,17 +27,6 @@ export type McpHost = {
   readonly mint: () => string
   readonly hosts: readonly string[]
   readonly bodyCap: number
-}
-
-function namedDeck(
-  raw: unknown,
-): { readonly ok: true; readonly deck: DeckId } | { readonly ok: false; readonly refusal: EditCode } {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false, refusal: "field" }
-  const body = raw as Record<string, unknown>
-  if (!Object.hasOwn(body, "deck")) return { ok: false, refusal: "field" }
-  const parsed = readDeckId(body.deck)
-  if (!parsed.ok) return { ok: false, refusal: "deck" }
-  return { ok: true, deck: parsed.deck }
 }
 
 function mcpRequest(req: IncomingMessage) {
@@ -72,7 +60,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   let loaded: Deck = session.deck
   const bridge: Host = {
     prepare: async (_name, raw) => {
-      const named = namedDeck(raw)
+      const named = readNamedDeck(raw)
       if (!named.ok) return named
       let saved: Awaited<ReturnType<typeof readSaved>>
       try {

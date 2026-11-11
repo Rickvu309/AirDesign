@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto"
 
+import { readClientMetadata } from "@airdesign/catalog"
+
 import type { Answer } from "./answer.js"
 import type { Sql } from "./pool.js"
-import { storableText } from "./storable-text.js"
+import { readUrl } from "./resource.js"
 
 export type Client = {
   readonly id: string
@@ -15,20 +17,9 @@ export type Screen = "claude" | "claude-code" | "codex" | "other"
 const claudeCallbacks = ["https://claude.ai/api/mcp/auth_callback", "https://claude.com/api/mcp/auth_callback"]
 const loopbackHosts = ["localhost", "127.0.0.1", "[::1]"]
 const webSchemes = ["http:", "https:"]
-const nameLimit = 200
-const addressLimit = 2000
-const redirectLimit = 5
-
-function parsed(address: string): URL | undefined {
-  try {
-    return new URL(address)
-  } catch {
-    return undefined
-  }
-}
 
 function loopback(address: string): boolean {
-  const url = parsed(address)
+  const url = readUrl(address)
   return url !== undefined && webSchemes.includes(url.protocol) && loopbackHosts.includes(url.hostname)
 }
 
@@ -40,31 +31,29 @@ export function screenFor(name: string | null, address: string): Screen {
   return "other"
 }
 
-function redirectAllowed(address: unknown): address is string {
-  if (!storableText(address) || address.length > addressLimit || address.includes("#")) return false
-  const url = parsed(address)
+function redirectAllowed(address: string): boolean {
+  const url = readUrl(address)
   if (url === undefined || url.hash !== "") return false
   if (url.protocol === "https:") return true
   return url.protocol === "http:" && loopbackHosts.includes(url.hostname)
 }
 
-function metadataOf(
-  raw: unknown,
-): { readonly redirectUris: readonly string[]; readonly name: string | null } | undefined {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined
-  const body = raw as Record<string, unknown>
-  const uris = body.redirect_uris
-  if (!Array.isArray(uris) || uris.length < 1 || uris.length > redirectLimit) return undefined
-  if (!uris.every(redirectAllowed)) return undefined
-  const name = body.client_name
-  if (name === undefined) return { redirectUris: uris, name: null }
-  if (!storableText(name) || name.length > nameLimit) return undefined
-  return { redirectUris: uris, name }
+export type Registration = {
+  readonly redirectUris: readonly string[]
+  readonly name: string | null
 }
 
-export async function registerClient(db: Sql, raw: unknown): Promise<Answer> {
-  const metadata = metadataOf(raw)
-  if (metadata === undefined) return { status: 400, body: { error: "invalid_client_metadata" } }
+export function readRegistration(
+  raw: unknown,
+): ({ readonly ok: true } & Registration) | { readonly ok: false; readonly refusal: "invalid_client_metadata" } {
+  const metadata = readClientMetadata(raw)
+  if (!metadata.ok || !metadata.redirectUris.every(redirectAllowed)) {
+    return { ok: false, refusal: "invalid_client_metadata" }
+  }
+  return metadata
+}
+
+export async function registerClient(db: Sql, metadata: Registration): Promise<Answer> {
   const id = randomUUID()
   await db.query("insert into session.oauth_client (id, name, redirect_uris) values ($1, $2, $3)", [
     id,

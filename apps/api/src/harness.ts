@@ -1,3 +1,4 @@
+import { readCommit } from "@airdesign/catalog"
 import { randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import { readFile } from "node:fs/promises"
@@ -6,7 +7,7 @@ import path from "node:path"
 import { Client } from "pg"
 import { afterAll } from "vitest"
 
-import { createApi, type ApiOptions } from "./index.js"
+import { createApi, type ApiOptions, type Commit } from "./index.js"
 
 export type PostgresInfo = {
   readonly admin: string
@@ -139,6 +140,12 @@ export async function ask(
 export async function askForm(base: string, route: string, fields: Record<string, string>): Promise<Reply> {
   const payload = Buffer.from(new URLSearchParams(fields).toString())
   return send(base, "POST", route, payload, "application/x-www-form-urlencoded")
+}
+
+export function wireCommit(raw: unknown): Commit {
+  const parsed = readCommit(raw)
+  if (!parsed.ok) throw new Error(parsed.refusal)
+  return parsed
 }
 
 export const testResource = "https://mcp.example.test/mcp"

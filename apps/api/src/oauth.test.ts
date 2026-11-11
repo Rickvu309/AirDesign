@@ -1103,12 +1103,12 @@ describe("oauth host", () => {
           client_id: "c",
         })
         expect(token.status).toBe(500)
-        expect(token.json).toEqual({ error: "server_error" })
+        expect(token.json).toEqual({ ok: false, refusal: "server" })
         expect(token.headers["cache-control"]).toBe("no-store")
         expect(token.text).not.toContain("internal")
         const revoke = await askForm(side.base, "/oauth/revoke", { token: "t" })
         expect(revoke.status).toBe(500)
-        expect(revoke.json).toEqual({ error: "server_error" })
+        expect(revoke.json).toEqual({ ok: false, refusal: "server" })
         expect(revoke.headers["cache-control"]).toBe("no-store")
       } finally {
         await side.close()

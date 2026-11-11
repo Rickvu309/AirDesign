@@ -1,21 +1,39 @@
 import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 
-import { readWatch, type DeckId } from "@airdesign/catalog"
+import {
+  readApprovalRequest,
+  readBearer,
+  readCapture,
+  readClientRequest,
+  readCode,
+  readCommit,
+  readDecks,
+  readEmail,
+  readLinkToken,
+  readNoFields,
+  readRename,
+  readRevokeRequest,
+  readSessionCookie,
+  readTokenRequest,
+  readWatch,
+  sessionCookieName,
+  type DeckId,
+  type FormPairs,
+} from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
-import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession, readCode, readEmail } from "./account.js"
+import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
-import type { Answer } from "./answer.js"
-import { registerClient } from "./clients.js"
+import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
 import { DeckListen } from "./listen.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
-import { checkedResource } from "./resource.js"
+import { checkedResource, readUrl } from "./resource.js"
 import { chosenRevision, commitEdits, openSaved, readSaved } from "./saved.js"
-import { bearerPrincipal, readForm, revokeToken, tokenAnswer } from "./tokens.js"
+import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 
 export type ApiOptions = {
   readonly session: Sql
@@ -34,22 +52,33 @@ export type ApiOptions = {
   readonly smokeToken?: string
 }
 
+type Visit = {
+  readonly options: ApiOptions
+  readonly logs: Map<string, CallerLog>
+  readonly now: () => number
+  readonly mint: () => string
+  readonly req: IncomingMessage
+  readonly res: ServerResponse
+  readonly url: URL
+}
+
+type Serve = (visit: Visit) => Promise<void>
+
+export type Route = {
+  readonly method: "GET" | "POST" | "any"
+  readonly path: string
+  readonly serve: Serve
+}
+
 export const smokeEmail = "smoke@airdesign.app"
-const smokeBearer = /^Bearer (.+)$/
-const cookieName = "airdesign.session"
 export const bodyCap = 1_000_000
 const localHosts = ["localhost", "127.0.0.1", "[::1]"]
 
 const plainHost = /^[A-Za-z0-9.-]+$/
 
 export function requireOrigin(name: string, value: string): void {
-  let parsed: URL
-  try {
-    parsed = new URL(value)
-  } catch {
-    throw new Error(`${name} is not an https origin`)
-  }
-  if (parsed.protocol !== "https:" || parsed.origin !== value) {
+  const parsed = readUrl(value)
+  if (parsed?.protocol !== "https:" || parsed.origin !== value) {
     throw new Error(`${name} is not an https origin`)
   }
 }
@@ -60,30 +89,9 @@ export function requireDomain(cookieDomain: string | undefined): void {
 }
 
 export function sessionCookie(token: string, cookieDomain?: string): string {
-  const cookie = `${cookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
+  const cookie = `${sessionCookieName}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=2592000`
   if (cookieDomain === undefined) return cookie
   return `${cookie}; Domain=${cookieDomain}`
-}
-
-function decodedToken(raw: string): string | undefined {
-  try {
-    const token = decodeURIComponent(raw)
-    return token.includes("\0") ? undefined : token
-  } catch {
-    return undefined
-  }
-}
-
-export function readSessionCookie(header: string | undefined): string | undefined {
-  if (header === undefined) return undefined
-  for (const part of header.split(";")) {
-    const trimmed = part.trim()
-    const split = trimmed.indexOf("=")
-    if (split <= 0) continue
-    if (trimmed.slice(0, split) !== cookieName) continue
-    return decodedToken(trimmed.slice(split + 1))
-  }
-  return undefined
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown, cookie?: string): void {
@@ -104,26 +112,19 @@ function redirect(res: ServerResponse, location: string, cookie?: string): void 
   res.end()
 }
 
-function cookieHeader(req: IncomingMessage): string | undefined {
-  const header = req.headers.cookie
-  return typeof header === "string" ? header : undefined
-}
-
 async function readBody(req: IncomingMessage): Promise<Buffer | undefined> {
   const chunks: Buffer[] = []
   let size = 0
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
     size += buffer.length
-    if (size > bodyCap) return undefined
-    chunks.push(buffer)
+    if (size <= bodyCap) chunks.push(buffer)
   }
-  return Buffer.concat(chunks)
+  return size > bodyCap ? undefined : Buffer.concat(chunks)
 }
 
-async function readJson(req: IncomingMessage): Promise<unknown> {
-  const body = await readBody(req)
-  if (body === undefined || body.length === 0) return undefined
+function parsedJson(body: Buffer): unknown {
+  if (body.length === 0) return undefined
   try {
     return JSON.parse(body.toString("utf8")) as unknown
   } catch {
@@ -131,8 +132,39 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
   }
 }
 
-async function readFormBody(req: IncomingMessage): Promise<Map<string, string> | undefined> {
-  return readForm(req.headers["content-type"], await readBody(req))
+function answerSize(res: ServerResponse): void {
+  res.setHeader("connection", "close")
+  sendJson(res, 413, { ok: false, refusal: "size" })
+}
+
+type Reader = (raw: unknown) => { readonly ok: boolean }
+type Accepted<Read extends Reader> = Extract<ReturnType<Read>, { readonly ok: true }>
+
+function accepted<Value extends { readonly ok: boolean }>(
+  value: Value,
+): value is Extract<Value, { readonly ok: true }> {
+  return value.ok
+}
+
+async function readJson<Read extends Reader>(visit: Visit, read: Read): Promise<ReturnType<Read> | undefined> {
+  const body = await readBody(visit.req)
+  if (body === undefined) {
+    answerSize(visit.res)
+    return undefined
+  }
+  return read(parsedJson(body)) as ReturnType<Read>
+}
+
+async function readForm<Parsed>(
+  visit: Visit,
+  read: (contentType: unknown, pairs: FormPairs) => Parsed,
+): Promise<Parsed | undefined> {
+  const body = await readBody(visit.req)
+  if (body === undefined) {
+    answerSize(visit.res)
+    return undefined
+  }
+  return read(visit.req.headers["content-type"], new URLSearchParams(body.toString("utf8")))
 }
 
 function gone(res: ServerResponse): AbortSignal {
@@ -143,9 +175,9 @@ function gone(res: ServerResponse): AbortSignal {
   return controller.signal
 }
 
-async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<string | undefined> {
-  const token = readSessionCookie(cookieHeader(req))
-  if (token === undefined || token.length === 0) {
+async function signedIn({ options, req, res }: Visit): Promise<string | undefined> {
+  const token = readSessionCookie(req.headers.cookie)
+  if (token === undefined) {
     sendJson(res, 401, { ok: false, refusal: "session" })
     return undefined
   }
@@ -157,17 +189,11 @@ async function signedIn(options: ApiOptions, req: IncomingMessage, res: ServerRe
   return email
 }
 
-const bearerPattern = /^Bearer ([A-Za-z0-9._~+/=-]+)$/i
-
-async function caller(
-  options: ApiOptions,
-  now: () => number,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<string | undefined> {
+async function caller(visit: Visit): Promise<string | undefined> {
+  const { options, now, req, res } = visit
   const authorization = req.headers.authorization
-  if (authorization === undefined) return signedIn(options, req, res)
-  const secret = bearerPattern.exec(authorization)?.[1]
+  if (authorization === undefined) return signedIn(visit)
+  const secret = readBearer(authorization)
   const bearer = secret === undefined ? undefined : await bearerPrincipal(options.session, secret, now())
   if (bearer?.ok === true) return bearer.principal
   res.setHeader("www-authenticate", 'Bearer error="invalid_token"')
@@ -200,34 +226,36 @@ function sameSecret(given: string, expected: string): boolean {
   return timingSafeEqual(left, right)
 }
 
-async function smokeRoute(
-  options: ApiOptions,
-  token: string,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
-  const given = smokeBearer.exec(req.headers.authorization ?? "")?.[1]
-  if (given === undefined || !sameSecret(given, token)) {
-    res.writeHead(404)
-    res.end()
+function notFound(res: ServerResponse): void {
+  res.writeHead(404)
+  res.end()
+}
+
+async function smokeRoute({ options, req, res }: Visit): Promise<void> {
+  const given = readBearer(req.headers.authorization)
+  if (options.smokeToken === undefined || given === undefined || !sameSecret(given, options.smokeToken)) {
+    notFound(res)
     return
   }
   const session = await openSmokeSession(options.session, smokeEmail)
   sendJson(res, 200, { ok: true }, sessionCookie(session, options.cookieDomain))
 }
 
-async function emailRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const parsed = readEmail(await readJson(req))
+async function emailRoute(visit: Visit): Promise<void> {
+  const parsed = await readJson(visit, readEmail)
+  if (parsed === undefined) return
   if (!parsed.ok) {
-    sendJson(res, 400, parsed)
+    sendJson(visit.res, 400, parsed)
     return
   }
-  await issueMail(options.session, parsed.email, options.publicOrigin, options.send)
-  sendJson(res, 202, { ok: true })
+  await issueMail(visit.options.session, parsed.email, visit.options.publicOrigin, visit.options.send)
+  sendJson(visit.res, 202, { ok: true })
 }
 
-async function codeRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const parsed = readCode(await readJson(req))
+async function codeRoute(visit: Visit): Promise<void> {
+  const { options, res } = visit
+  const parsed = await readJson(visit, readCode)
+  if (parsed === undefined) return
   if (!parsed.ok) {
     sendJson(res, 400, parsed)
     return
@@ -240,10 +268,10 @@ async function codeRoute(options: ApiOptions, req: IncomingMessage, res: ServerR
   sendJson(res, 200, { ok: true }, sessionCookie(token, options.cookieDomain))
 }
 
-async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Promise<void> {
-  const token = url.searchParams.get("token")
+async function linkRoute({ options, url, res }: Visit): Promise<void> {
+  const token = readLinkToken(url.searchParams.get("token"))
   const expired = `${options.siteOrigin}/sign-in/expired`
-  if (token === null || token.length === 0) {
+  if (token === undefined) {
     redirect(res, expired)
     return
   }
@@ -255,24 +283,25 @@ async function linkRoute(options: ApiOptions, url: URL, res: ServerResponse): Pr
   redirect(res, "/", sessionCookie(session, options.cookieDomain))
 }
 
-async function openRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const email = await signedIn(options, req, res)
-  if (email === undefined) return
-  const opened = await openSaved(options.deck, await readJson(req), email)
-  sendJson(res, 200, opened)
+function deckRoute<Read extends Reader>(
+  read: Read,
+  answer: (db: Sql, parsed: Accepted<Read>, email: string) => Promise<unknown>,
+): Serve {
+  return async (visit) => {
+    const email = await signedIn(visit)
+    if (email === undefined) return
+    const parsed = await readJson(visit, read)
+    if (parsed === undefined) return
+    sendJson(visit.res, 200, accepted(parsed) ? await answer(visit.options.deck, parsed, email) : parsed)
+  }
 }
 
-async function commitRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const email = await signedIn(options, req, res)
+async function watchRoute(visit: Visit): Promise<void> {
+  const { options, res } = visit
+  const email = await signedIn(visit)
   if (email === undefined) return
-  const committed = await commitEdits(options.deck, await readJson(req), email)
-  sendJson(res, 200, committed)
-}
-
-async function watchRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const email = await signedIn(options, req, res)
-  if (email === undefined) return
-  const parsed = readWatch(await readJson(req))
+  const parsed = await readJson(visit, readWatch)
+  if (parsed === undefined) return
   if (!parsed.ok) {
     sendJson(res, 200, parsed)
     return
@@ -287,171 +316,163 @@ async function watchRoute(options: ApiOptions, req: IncomingMessage, res: Server
   sendJson(res, 200, { ok: true, deck: parsed.deck, revision })
 }
 
-const deckListRoutes = {
-  "/decks/list": listDecks,
-  "/decks/rename": renameDeck,
-  "/decks/trash": trashDeck,
-  "/decks/restore": restoreDeck,
-  "/decks/delete": deleteDecks,
-}
-
-async function deckListRoute(
-  options: ApiOptions,
-  route: (typeof deckListRoutes)[keyof typeof deckListRoutes],
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
-  const email = await signedIn(options, req, res)
-  if (email === undefined) return
-  sendJson(res, 200, await route(options.deck, await readJson(req), email))
-}
-
-async function registerRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const answer = await registerClient(options.session, await readJson(req))
-  sendJson(res, answer.status, answer.body)
-}
-
-async function clientRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  const email = await signedIn(options, req, res)
-  if (email === undefined) return
-  const answer = await describeClient(options.session, await readJson(req), options.resource)
-  sendJson(res, answer.status, answer.body)
-}
-
-async function approveRoute(
-  options: ApiOptions,
-  now: () => number,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
-  const email = await signedIn(options, req, res)
-  if (email === undefined) return
-  const answer = await approve(options.session, await readJson(req), email, options.resource, now())
-  sendJson(res, answer.status, answer.body)
-}
-
-async function noStoreRoute(res: ServerResponse, work: () => Promise<Answer>): Promise<void> {
-  res.setHeader("cache-control", "no-store")
-  try {
-    const answer = await work()
-    sendJson(res, answer.status, answer.body)
-  } catch {
-    sendJson(res, 500, { error: "server_error" })
+async function registerRoute(visit: Visit): Promise<void> {
+  const parsed = await readJson(visit, readRegistration)
+  if (parsed === undefined) return
+  if (!parsed.ok) {
+    sendJson(visit.res, 400, { error: parsed.refusal })
+    return
   }
+  const answer = await registerClient(visit.options.session, parsed)
+  sendJson(visit.res, answer.status, answer.body)
 }
 
-async function tokenRoute(
-  options: ApiOptions,
-  now: () => number,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
-  await noStoreRoute(res, async () =>
-    tokenAnswer(
-      {
-        db: options.session,
-        own: options.resource,
-        now: now(),
-      },
-      await readFormBody(req),
-    ),
+async function clientRoute(visit: Visit): Promise<void> {
+  const { options, res } = visit
+  const email = await signedIn(visit)
+  if (email === undefined) return
+  const parsed = await readJson(visit, readClientRequest)
+  if (parsed === undefined) return
+  if (!parsed.ok) {
+    sendJson(res, 400, parsed)
+    return
+  }
+  const answer = await describeClient(options.session, parsed, options.resource)
+  sendJson(res, answer.status, answer.body)
+}
+
+async function approveRoute(visit: Visit): Promise<void> {
+  const { options, now, res } = visit
+  const email = await signedIn(visit)
+  if (email === undefined) return
+  const parsed = await readJson(visit, readApprovalRequest)
+  if (parsed === undefined) return
+  if (!parsed.ok) {
+    sendJson(res, 400, parsed)
+    return
+  }
+  const answer = await approve(options.session, parsed, email, options.resource, now())
+  sendJson(res, answer.status, answer.body)
+}
+
+async function tokenRoute(visit: Visit): Promise<void> {
+  const { options, now, res } = visit
+  res.setHeader("cache-control", "no-store")
+  const parsed = await readForm(visit, readTokenRequest)
+  if (parsed === undefined) return
+  if (!parsed.ok) {
+    sendJson(res, 400, { error: parsed.refusal })
+    return
+  }
+  const answer = await tokenAnswer({ db: options.session, own: options.resource, now: now() }, parsed)
+  sendJson(res, answer.status, answer.body)
+}
+
+async function revokeRoute(visit: Visit): Promise<void> {
+  const { options, res } = visit
+  res.setHeader("cache-control", "no-store")
+  const parsed = await readForm(visit, readRevokeRequest)
+  if (parsed === undefined) return
+  const answer = await revokeToken(options.session, parsed.ok ? parsed.token : undefined)
+  sendJson(res, answer.status, answer.body)
+}
+
+async function mcpRoute(visit: Visit): Promise<void> {
+  const { options, logs, now, mint, req, res } = visit
+  const email = await caller(visit)
+  if (email === undefined) return
+  await serveMcp(
+    {
+      deck: options.deck,
+      email,
+      logs,
+      now,
+      mint,
+      hosts: options.hosts ?? localHosts,
+      bodyCap,
+    },
+    req,
+    res,
   )
 }
 
-async function revokeRoute(options: ApiOptions, req: IncomingMessage, res: ServerResponse): Promise<void> {
-  await noStoreRoute(res, async () => revokeToken(options.session, await readFormBody(req)))
+async function healthRoute({ res }: Visit): Promise<void> {
+  sendJson(res, 200, { ok: true })
 }
 
-async function handle(
-  options: ApiOptions,
-  logs: Map<string, CallerLog>,
-  now: () => number,
-  mint: () => string,
-  req: IncomingMessage,
-  res: ServerResponse,
-): Promise<void> {
-  const url = new URL(req.url ?? "/", "http://127.0.0.1")
-  const method = req.method ?? "GET"
-  if (method === "GET" && url.pathname === "/health") {
-    sendJson(res, 200, { ok: true })
+async function versionRoute({ options, res }: Visit): Promise<void> {
+  sendJson(res, 200, { commit: options.commit ?? "unknown" })
+}
+
+export const routes: readonly Route[] = [
+  { method: "GET", path: "/health", serve: healthRoute },
+  { method: "GET", path: "/version", serve: versionRoute },
+  { method: "POST", path: "/smoke/session", serve: smokeRoute },
+  { method: "any", path: "/mcp", serve: mcpRoute },
+  { method: "POST", path: "/oauth/register", serve: registerRoute },
+  { method: "POST", path: "/oauth/client", serve: clientRoute },
+  { method: "POST", path: "/oauth/approve", serve: approveRoute },
+  { method: "POST", path: "/oauth/token", serve: tokenRoute },
+  { method: "POST", path: "/oauth/revoke", serve: revokeRoute },
+  { method: "POST", path: "/sign-in/email", serve: emailRoute },
+  { method: "POST", path: "/sign-in/code", serve: codeRoute },
+  { method: "GET", path: "/sign-in/link", serve: linkRoute },
+  { method: "POST", path: "/decks/open", serve: deckRoute(readCapture, openSaved) },
+  { method: "POST", path: "/decks/commit", serve: deckRoute(readCommit, commitEdits) },
+  { method: "POST", path: "/decks/watch", serve: watchRoute },
+  { method: "POST", path: "/decks/list", serve: deckRoute(readNoFields, (db, _, email) => listDecks(db, email)) },
+  { method: "POST", path: "/decks/rename", serve: deckRoute(readRename, renameDeck) },
+  { method: "POST", path: "/decks/trash", serve: deckRoute(readCapture, trashDeck) },
+  { method: "POST", path: "/decks/restore", serve: deckRoute(readCapture, restoreDeck) },
+  { method: "POST", path: "/decks/delete", serve: deckRoute(readDecks, deleteDecks) },
+]
+
+function causedByInput(error: unknown): boolean {
+  if (error instanceof URIError) return true
+  const code = failureCode(error)
+  return code === "ERR_INVALID_URL" || /^22[0-9A-Z]{3}$/.test(code)
+}
+
+function failureCode(error: unknown): string {
+  if (typeof error !== "object" || error === null || !("code" in error)) return "none"
+  return typeof error.code === "string" ? error.code : "none"
+}
+
+function answerThrow({ req, res }: Visit, route: Route, error: unknown): void {
+  if (req.errored !== null) return
+  if (causedByInput(error) && !res.headersSent) {
+    sendJson(res, 400, { ok: false, refusal: "The request could not be read." })
     return
   }
-  if (method === "GET" && url.pathname === "/version") {
-    sendJson(res, 200, { commit: options.commit ?? "unknown" })
+  const name = error instanceof Error ? error.name : "unknown"
+  process.stderr.write(`api ${route.method} ${route.path} failed: ${name} ${failureCode(error)}\n`)
+  if (res.headersSent) {
+    res.destroy()
     return
   }
-  if (method === "POST" && url.pathname === "/smoke/session" && options.smokeToken !== undefined) {
-    await smokeRoute(options, options.smokeToken, req, res)
+  sendJson(res, 500, { ok: false, refusal: "server" })
+}
+
+async function handle(context: Omit<Visit, "url">): Promise<void> {
+  const { req, res } = context
+  const url = readUrl(req.url ?? "/", "http://127.0.0.1")
+  if (url === undefined) {
+    sendJson(res, 400, { ok: false, refusal: "field" })
     return
   }
-  if (url.pathname === "/mcp") {
-    const email = await caller(options, now, req, res)
-    if (email === undefined) return
-    await serveMcp(
-      {
-        deck: options.deck,
-        email,
-        logs,
-        now,
-        mint,
-        hosts: options.hosts ?? localHosts,
-        bodyCap,
-      },
-      req,
-      res,
-    )
+  const route = routes.find(
+    (candidate) => candidate.path === url.pathname && (candidate.method === "any" || candidate.method === req.method),
+  )
+  if (route === undefined) {
+    notFound(res)
     return
   }
-  if (method === "POST" && url.pathname === "/oauth/register") {
-    await registerRoute(options, req, res)
-    return
+  const visit = { ...context, url }
+  try {
+    await route.serve(visit)
+  } catch (error) {
+    answerThrow(visit, route, error)
   }
-  if (method === "POST" && url.pathname === "/oauth/client") {
-    await clientRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/oauth/approve") {
-    await approveRoute(options, now, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/oauth/token") {
-    await tokenRoute(options, now, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/oauth/revoke") {
-    await revokeRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/sign-in/email") {
-    await emailRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/sign-in/code") {
-    await codeRoute(options, req, res)
-    return
-  }
-  if (method === "GET" && url.pathname === "/sign-in/link") {
-    await linkRoute(options, url, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/decks/open") {
-    await openRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/decks/commit") {
-    await commitRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && url.pathname === "/decks/watch") {
-    await watchRoute(options, req, res)
-    return
-  }
-  if (method === "POST" && Object.hasOwn(deckListRoutes, url.pathname)) {
-    await deckListRoute(options, deckListRoutes[url.pathname as keyof typeof deckListRoutes], req, res)
-    return
-  }
-  res.writeHead(404)
-  res.end()
 }
 
 export function createApi(options: ApiOptions): Server {
@@ -464,10 +485,6 @@ export function createApi(options: ApiOptions): Server {
   const mint = options.mint ?? randomUUID
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
-    void handle(options, logs, now, mint, req, res).catch(() => {
-      if (res.headersSent || res.writableEnded) return
-      res.writeHead(500)
-      res.end()
-    })
+    void handle({ options, logs, now, mint, req, res })
   })
 }

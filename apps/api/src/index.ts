@@ -1,10 +1,18 @@
-export { acceptCode, acceptLink, findAccess, issueMail, readCode, readEmail } from "./account.js"
+export { acceptCode, acceptLink, findAccess, issueMail } from "./account.js"
 export { screenFor, type Screen } from "./clients.js"
 export { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 export { DeckListen, type CaughtRevision } from "./listen.js"
 export { mailText, sendWithResend, signLink, type Mail, type Sender } from "./mail.js"
 export { openPool, type Sql } from "./pool.js"
-export { chosenRevision, commitEdits, openSaved, readSaved, writeRevision, type RevisionWrite } from "./saved.js"
+export {
+  chosenRevision,
+  commitEdits,
+  openSaved,
+  readSaved,
+  writeRevision,
+  type Commit,
+  type RevisionWrite,
+} from "./saved.js"
 export { applySchema } from "./schema.js"
 export { bearerPrincipal, type Bearer } from "./tokens.js"
-export { createApi, readSessionCookie, sessionCookie, type ApiOptions } from "./server.js"
+export { createApi, sessionCookie, type ApiOptions } from "./server.js"
