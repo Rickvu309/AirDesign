@@ -53,6 +53,8 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 ## How agents work here
 
+- One agent builds, tests and proves its own change, then queues the PR. No review or verifier agent reads it, and no agent starts one. A bug that gets through is fixed later, together with a test or check that keeps it from coming back.
+- Prove the change before you push. Write the failing test first, then run `pnpm check`. For anything a user sees or the API answers, also drive the real app with the `verify-airdesign` skill in `.agents/skills/verify-airdesign`. The PR body says what you ran and what you saw.
 - A bug or a rule lands in the repo as a test, a check or a metric. A chat message fixes nothing.
 - A check is a free mechanical rule. No check calls a paid model, needs a model key in GitHub secrets, or waits for a person.
 - Decide a call that can be undone, do it, and report it. Ask the owner only for what the owner alone can do, or what cannot be undone.
