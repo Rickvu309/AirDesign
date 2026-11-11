@@ -11,7 +11,7 @@ export type Command =
   | { readonly command: "rotate"; readonly generation: number }
   | { readonly command: "revoke" }
 
-export type OauthResult = {
+type OauthResult = {
   readonly grant: Grant
   readonly accepted: boolean
 }

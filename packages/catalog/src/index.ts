@@ -1,4 +1,4 @@
-export { catalog, projectTools, type AgentOp, type AgentTool, type CommandOp, type OpRow } from "./catalog.js"
+export { catalog, projectTools, type AgentOp, type CommandOp } from "./catalog.js"
 export { storableText } from "./storable-text.js"
 export {
   deckRoutes,
@@ -10,7 +10,6 @@ export {
   type CallRefusal,
   type EditRefusal,
   type WireRefusal,
-  type WireFailure,
   type OpenResult,
   type CommitResult,
   type WatchResult,
@@ -34,7 +33,6 @@ export {
   readLinkToken,
   readNamedDeck,
   readNoFields,
-  readOriginalUpload,
   readRename,
   readRevokeRequest,
   readRun,
@@ -45,7 +43,6 @@ export {
   sessionCookieName,
   type DeckId,
   type FormPairs,
-  type LiveKey,
   type TokenRequest,
   type WireChange,
   type WireEdit,

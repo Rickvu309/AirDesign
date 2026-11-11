@@ -1,7 +1,5 @@
 export const timeoutMs = 30000
 
-export type Presence = "absent" | "hidden" | "visible"
-
 export type Tab =
   | { readonly presence: "absent" }
   | {
@@ -11,7 +9,7 @@ export type Tab =
       readonly authority: number
     }
 
-export type Reach = "ready" | "no-open-tab" | "tab-hidden" | "tab-timeout" | "tab-outdated"
+type Reach = "ready" | "no-open-tab" | "tab-hidden" | "tab-timeout" | "tab-outdated"
 
 function elapsed(value: number): boolean {
   return Number.isFinite(value) && value >= 0

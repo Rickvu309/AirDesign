@@ -26,15 +26,24 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 1. **Searching the demo markup.** `apps/site/src/landing/product-demo/editor-demo-art.html` is 84 KB, and search tools skip it. Pass its path and search for a `data-demo-part` name. Do not read it whole.
 2. **Breaking old production.** `studio.` and `mcp.airdesign.app` still run the old backend. `apps/site/worker/old-deployment-passthrough.ts` forwards the paths it lists to it.
-3. **Treating screens as a working app.** `apps/web` screens are static with sample data, and sign-in sends nothing. Nothing saves yet.
+3. **Mixing up screens and the app.** Pages under `/screens/` are static with sample data. The deck home (`src/decks/home.tsx`) and `src/thin-deck.tsx` call `apps/api` for real, and sign-in lives in `apps/site`.
 
 ## Where code lives
 
 - `apps/site` is the marketing and sign-in site. Color, type, space and motion live in `packages/theme`. Site classes stay in `src/site/site-theme.css`.
 - `apps/web` is the product UI. Product screens go here, never in `apps/site`. Each designed state is a page at `/screens/<id>-<name>`, registered in `src/<area>/<area>-screens.tsx`. Use shadcn parts, Sonner for toasts, and AI Elements for agent chat.
-- `packages/*` are shared packages. The build refuses a deep import, an undeclared dependency, or a browser or Node API in a pure package.
+- `apps/api` is the server: deck order, storage, sign-in, OAuth grants and the MCP address, on Postgres.
+- `packages/*` are shared packages. Each one's `src/index.ts` is its whole interface, so read that first. The build refuses a deep import, an undeclared dependency, or a browser or Node API in a pure package.
   - `packages/document` decides what an edit does: order, undo, offline replay and the deck limits. It imports no other package.
   - `packages/pptx` reads and writes PowerPoint files. It may import `document`.
+  - `packages/catalog` names every op a person or agent can call, the HTTP routes, and the readers that check each request.
+  - `packages/engine` runs one op on an open deck: `call(op, deck, caller, raw)`.
+  - `packages/live` keeps the browser's copy of a deck in IndexedDB and syncs it with the server.
+  - `packages/mcp` is the agent side: the MCP server, tool calls, runs, turns and their limits, and the eval tasks.
+  - `packages/render` paints slides in React: canvas, filmstrip and text editing.
+  - `packages/device` decides whether the user's open tab can take device work now.
+  - `packages/oauth` is the grant state machine: exchange, call, rotate, revoke.
+  - `packages/usage` is the Claude spend ledger and its allowance.
   - `packages/theme` holds the tokens for color, type, space and motion.
 - `specs/<topic>` holds a TLA+ spec for each state machine. A rule a person cares about is an invariant there.
 - `tooling/` holds rules that constrain code. `scripts/` holds runners and generators.
@@ -75,6 +84,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Product code takes the clock, random ids and temp folders as options: no read of `Date.now`, `Date()`, `new Date()`, `performance.now`, `Temporal.Now`, `Math.random`, `crypto.randomUUID`, `crypto.getRandomValues`, `tmpdir` or `TMPDIR`, except as the `??` or default-parameter fallback of an option | lint: `no-hidden-input`. It warns for now and blocks nothing |
 | Only `packages/document` makes an `ElementId`: no type assertion to `ElementId` outside `packages/document/src` | lint: `no-element-id-cast`. It warns for now and blocks nothing |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
+| A package's `index.ts` exports only names a caller outside the package, or a test through `index.ts`, uses | `scripts/interface-width.mjs`, the `interface-width` step of `pnpm check`. It warns for now and blocks nothing |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
 | A state machine keeps its invariants | `pnpm check:specs` |
