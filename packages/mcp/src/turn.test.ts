@@ -1,22 +1,26 @@
 import { readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
-import { decide, elementId, type Register } from "@airdesign/document"
+import { decide, elementId, limits, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import {
   callTool,
   createServer,
   editLanded,
+  editRefusal,
   emptyLog,
   liveTurn,
   memoryTurns,
   settleTurn,
+  type EditCode,
+  type Host,
   type Session,
   type Turns,
 } from "./index.js"
 
 const node = elementId("258.7")
 const sibling = elementId("258.8")
+const created = elementId("258.n0123456789ab")
 const tenMinutes = 600_000
 
 function opened(): Deck {
@@ -39,8 +43,8 @@ function change(id: typeof node, value: string, readAt: number) {
   return { deck: "deck", base: 0, changes: [{ value, node: id, readAt }] }
 }
 
-async function called(session: Session, name: string, raw: Record<string, unknown>) {
-  const server = createServer(session)
+async function called(session: Session, name: string, raw: Record<string, unknown>, host?: Host) {
+  const server = createServer(session, host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "airdesign-test", version: "0.0.0" })
   await server.connect(serverTransport)
@@ -79,22 +83,20 @@ describe("the turn", () => {
     expect((await edit(short, node, "c", 2)).runId).toBe("three")
   })
 
-  it("ends the turn when stop_run or undo_run names its run, and keeps it for another run", async () => {
-    for (const tool of ["airdesign_stop_run", "airdesign_undo_run"]) {
-      const turns = memoryTurns()
-      const session = sessionFor(opened(), turns, "one", 0)
-      await edit(session, node, "a", 0)
-      const other = sessionFor(session.deck, turns, "two", 1)
-      turns.write(other.deck.id, { runId: "two", lastCall: 0, revision: 1 })
-      expect((await called(other, tool, { deck: "deck", runId: "one" })).ok).toBe(true)
-      expect(turns.read(other.deck.id)).toEqual({ runId: "two", lastCall: 1, revision: 1 })
-      const ending = sessionFor(session.deck, turns, "three", 2)
-      turns.write(ending.deck.id, { runId: "one", lastCall: 1, revision: 1 })
-      const answer = await called(ending, tool, { deck: "deck", runId: "one" })
-      expect(answer.ok).toBe(true)
-      expect(turns.read(ending.deck.id)).toEqual({ runId: null, lastCall: 2, revision: 2 })
-      expect(liveTurn(ending, ending.deck.id)).toBeUndefined()
-    }
+  it("ends the turn when stop_run names its run, and keeps it for another run", async () => {
+    const turns = memoryTurns()
+    const session = sessionFor(opened(), turns, "one", 0)
+    await edit(session, node, "a", 0)
+    const other = sessionFor(session.deck, turns, "two", 1)
+    turns.write(other.deck.id, { runId: "two", lastCall: 0, revision: 1 })
+    expect((await called(other, "airdesign_stop_run", { deck: "deck", runId: "one" })).ok).toBe(true)
+    expect(turns.read(other.deck.id)).toEqual({ runId: "two", lastCall: 1, revision: 1 })
+    const ending = sessionFor(session.deck, turns, "three", 2)
+    turns.write(ending.deck.id, { runId: "one", lastCall: 1, revision: 1 })
+    const answer = await called(ending, "airdesign_stop_run", { deck: "deck", runId: "one" })
+    expect(answer.ok).toBe(true)
+    expect(turns.read(ending.deck.id)).toEqual({ runId: null, lastCall: 2, revision: 2 })
+    expect(liveTurn(ending, ending.deck.id)).toBeUndefined()
   })
 
   it("ends every live run on the deck when the turn ends, in one revision", () => {
@@ -192,15 +194,24 @@ describe("the turn", () => {
     expect(turns.read(deck.id)).toEqual(ended)
   })
 
-  it("keeps each deck's turn apart", () => {
+  it("keeps each deck's turn apart", async () => {
     const first = readDeckId("one")
     const second = readDeckId("two")
     if (!first.ok || !second.ok) throw new Error("deck")
     const turns = memoryTurns()
-    turns.write(first.deck, { runId: "a", lastCall: 0, revision: 1 })
-    expect(turns.read(second.deck)).toBeUndefined()
-    turns.write(second.deck, { runId: "b", lastCall: 0, revision: 1 })
-    expect(turns.read(first.deck)?.runId).toBe("a")
+    const one = sessionFor(openDeck(first.deck), turns, "a", 0)
+    const two = sessionFor(openDeck(second.deck), turns, "b", 0)
+    const on = (id: string, value: string, readAt: number, element = node) => ({
+      deck: id,
+      base: 0,
+      changes: [{ value, node: element, readAt }],
+    })
+    expect((await called(one, "airdesign_edit_deck", on("one", "a", 0))).runId).toBe("a")
+    expect((await called(two, "airdesign_edit_deck", on("two", "b", 0))).runId).toBe("b")
+    const next = sessionFor(one.deck, turns, "c", 1)
+    expect((await called(next, "airdesign_edit_deck", on("one", "a2", 0, sibling))).runId).toBe("a")
+    expect(bodyOf(next.deck.register, sibling).runId).toBe("a")
+    expect(bodyOf(two.deck.register).runId).toBe("b")
   })
 
   it("writes nothing to the record when an edit is refused before any turn exists", () => {
@@ -213,13 +224,68 @@ describe("the turn", () => {
     expect(turns.read(deck.id)).toBeUndefined()
   })
 
-  it("answers a malformed run id as run-fenced and a missing one as a field", () => {
-    const session = sessionFor(opened(), memoryTurns(), "one", 0)
-    for (const tool of ["airdesign_stop_run", "airdesign_undo_run"]) {
-      const malformed = callTool(tool, { deck: "deck", runId: "../bad" }, session)
-      expect(!malformed.ok && malformed.refusal).toBe("run-fenced")
-      const missing = callTool(tool, { deck: "deck" }, session)
-      expect(!missing.ok && missing.refusal).toBe("field")
-    }
+  it("answers a malformed run id as run-fenced and a missing one as a field, and the next edit still joins", async () => {
+    const turns = memoryTurns()
+    const session = sessionFor(opened(), turns, "one", 0)
+    await edit(session, node, "a", 0)
+    const before = session.deck
+    const malformed = callTool("airdesign_stop_run", { deck: "deck", runId: "../bad" }, session)
+    expect(!malformed.ok && malformed.refusal).toBe("run-fenced")
+    const missing = callTool("airdesign_stop_run", { deck: "deck" }, session)
+    expect(!missing.ok && missing.refusal).toBe("field")
+    expect(session.deck).toBe(before)
+    expect((await edit(session, node, "b", 1)).runId).toBe("one")
+  })
+
+  it("treats a record ahead of the loaded row as a deck that no longer exists", async () => {
+    const turns = memoryTurns()
+    const deck = opened()
+    turns.write(deck.id, { runId: "old", lastCall: 0, revision: 3 })
+    const session = sessionFor(deck, turns, "fresh", 1)
+    expect((await edit(session, node, "a", 0)).runId).toBe("fresh")
+    expect(turns.read(deck.id)).toEqual({ runId: "fresh", lastCall: 1, revision: 1 })
+  })
+
+  const textFloor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])
+  const badText = JSON.stringify([{ from: 0, runs: [{ from: 3, text: "After" }] }])
+  const failing = (refusal: EditCode): Host => ({
+    commit: (_result, session) => Promise.resolve(editRefusal(session.deck, refusal, [sibling])),
+  })
+  const refusals: readonly {
+    readonly kind: EditCode
+    readonly tool: string
+    readonly raw: Record<string, unknown>
+    readonly host?: Host
+  }[] = [
+    { kind: "stale", tool: "airdesign_edit_deck", raw: change(sibling, "b", 9) },
+    { kind: "person-protected", tool: "airdesign_edit_deck", raw: change(node, "b", 2) },
+    { kind: "run-fenced", tool: "airdesign_stop_run", raw: { deck: "deck", runId: "unknown" } },
+    { kind: "batch", tool: "airdesign_edit_deck", raw: { deck: "deck", base: 0, changes: [] } },
+    { kind: "limit", tool: "airdesign_edit_deck", raw: change(sibling, "x".repeat(limits.valueBytes + 1), 1) },
+    { kind: "field", tool: "airdesign_edit_deck", raw: { ...change(sibling, "b", 1), actor: "person" } },
+    { kind: "store", tool: "airdesign_edit_deck", raw: change(sibling, "b", 1), host: failing("store") },
+    {
+      kind: "text-from",
+      tool: "airdesign_edit_deck",
+      raw: { deck: "deck", base: 0, changes: [{ value: badText, node: created, readAt: 0, floor: textFloor }] },
+    },
+    { kind: "dead", tool: "airdesign_edit_deck", raw: change(sibling, "b", 1), host: failing("dead") },
+  ]
+
+  it.each(refusals)("keeps a closed element closed on the next call after a $kind refusal", async (row) => {
+    const turns = memoryTurns()
+    const session = sessionFor(opened(), turns, "one", 0)
+    await edit(session, node, "a", 0)
+    await edit(session, sibling, "b", 0)
+    const typed = decide(session.deck.register, { command: "person", value: "typed", node })
+    if (typed.decision !== "apply") throw new Error(typed.code)
+    session.deck = { ...session.deck, revision: session.deck.revision + 1, register: typed.register }
+    const closed = session.deck
+    const answer = await called(session, row.tool, row.raw, row.host)
+    expect(answer.refusal).toBe(row.kind)
+    expect(session.deck).toBe(closed)
+    const next = await edit(session, node, "overwrite", 2)
+    expect(next.refusal).toBe("person-protected")
+    expect(bodyOf(session.deck.register).landed.map((item) => item.value)).toEqual(["a", "typed"])
   })
 })

@@ -14,7 +14,7 @@ export {
 export { editCodes, editNext, editSentence, runNext, runSentence, type EditCode } from "./edit-next.js"
 export { afterWrite, agentCaller, elementFloors, joinRun, openRun, stopLiveRuns, type ElementFloors } from "./run.js"
 export { textProblem, type TextProblem } from "./text-from.js"
-export { liveTurn, memoryTurns, settleTurn, type Turn, type Turns } from "./turn.js"
+export { dropGoneTurn, liveTurn, memoryTurns, settleTurn, type Turn, type Turns } from "./turn.js"
 export {
   capture,
   edit,

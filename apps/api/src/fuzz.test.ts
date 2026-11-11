@@ -633,6 +633,7 @@ describe("hostile input over every route", () => {
           deck: {} as Pool,
           email: "a@example.com",
           logs: new Map(),
+          turns: new Map(),
           now: () => 0,
           mint: () => "id",
           hosts: ["127.0.0.1"],
