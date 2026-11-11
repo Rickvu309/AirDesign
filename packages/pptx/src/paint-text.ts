@@ -12,6 +12,7 @@ export type PaintRunStyle = {
   strike: boolean
   baseline: number
   color: PaintColor | null
+  highlight: PaintColor | null
 }
 
 export type PaintRun = PaintRunStyle & {
@@ -180,6 +181,19 @@ const colorOf = (layer: PaintTextHolder, scope: PaintTextScope): PaintColor | nu
   return fill.type === "pattern" ? fill.foreground : null
 }
 
+const highlightOf = (layer: PaintTextHolder, scope: PaintTextScope): PaintColor | null | undefined => {
+  const highlight = held(layer, "a:highlight")
+  if (highlight === undefined) return undefined
+  const color = inside(highlight)[0]
+  return color === undefined ? null : paintColor(color, highlight.children, scope.palette)
+}
+
+const defaultColor = (scope: PaintTextScope): PaintColor | null => {
+  const slot = scope.palette.slots.get(scope.palette.mapping.get("tx1") ?? "dk1")
+  const color = slot === undefined ? undefined : scope.palette.children[slot.index]?.[0]
+  return color === undefined ? null : paintColor(color, scope.palette.children, scope.palette)
+}
+
 const fontOf = (layer: PaintTextHolder, scope: PaintTextScope): string | undefined => {
   const latin = paintChild(layer.children, layer.element, "a:latin")
   return latin === undefined ? undefined : typeface(latin, scope)
@@ -234,7 +248,8 @@ const runStyle = (
     underline: first(all, (layer) => presence(layer, "u", "none")) ?? false,
     strike: first(all, (layer) => presence(layer, "strike", "noStrike")) ?? false,
     baseline: first(all, (layer) => fraction(layer, "baseline")) ?? 0,
-    color: color ?? null,
+    color: color === undefined ? defaultColor(scope) : color,
+    highlight: first(all, (layer) => highlightOf(layer, scope)) ?? null,
   }
 }
 

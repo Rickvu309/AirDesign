@@ -185,7 +185,8 @@ describe("paintText inheritance", () => {
       underline: false,
       strike: false,
       baseline: 0,
-      color: null,
+      color: color("111111"),
+      highlight: null,
     })
   })
 
@@ -387,7 +388,22 @@ describe("paintText colors", () => {
 
   it("does not read a line's fill as the text color", () => {
     const format = `<a:rPr><a:ln>${solid("ABCDEF")}</a:ln></a:rPr>`
-    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).color).toBeNull()
+    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).color).toEqual(color("111111"))
+  })
+})
+
+describe("paintText default color and highlight", () => {
+  it("falls back to the theme color that tx1 maps to when no level gives a color", () => {
+    expect(runOf({ slide: shape({ text: para(run("x")) }) }).color).toEqual(color("111111"))
+  })
+
+  it("keeps an explicit no fill as no color", () => {
+    expect(runOf({ slide: shape({ text: para(run("x", "<a:rPr><a:noFill/></a:rPr>")) }) }).color).toBeNull()
+  })
+
+  it("reads a:highlight on a run", () => {
+    const format = `<a:rPr><a:highlight><a:srgbClr val="FFFF00"/></a:highlight></a:rPr>`
+    expect(runOf({ slide: shape({ text: para(run("x", format)) }) }).highlight).toEqual(color("FFFF00"))
   })
 })
 
@@ -618,7 +634,8 @@ describe("paintText endStyle", () => {
       underline: false,
       strike: false,
       baseline: 0,
-      color: null,
+      color: color("111111"),
+      highlight: null,
     })
   })
 
@@ -646,6 +663,7 @@ describe("paintText endStyle", () => {
       strike: true,
       baseline: -0.25,
       color: color("ABABAB"),
+      highlight: null,
     })
   })
 
