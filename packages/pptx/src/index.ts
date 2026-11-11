@@ -1,5 +1,5 @@
 export { renderedAccent } from "./accent-paint.js"
-export { browserExportFailures } from "./browser-export.js"
+export { browserExportFailures, paragraphExportFailures, type ParagraphExpectation } from "./browser-export.js"
 export { branchOrderErrors, childOrder, insertChild, type ChildOf, type OrderedParent } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"

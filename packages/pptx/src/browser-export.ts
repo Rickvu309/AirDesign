@@ -90,28 +90,37 @@ function sameOutside(
   return leftSpan === leftSpans.length && rightSpan === rightSpans.length
 }
 
+function packageFailures(
+  original: ReadonlyMap<string, Uint8Array>,
+  exported: ReadonlyMap<string, Uint8Array>,
+  slide: string,
+): string[] {
+  const failures: string[] = []
+  for (const name of original.keys()) {
+    if (!exported.has(name)) failures.push(`missing part ${name}`)
+  }
+  for (const name of exported.keys()) {
+    if (!original.has(name)) failures.push(`extra part ${name}`)
+  }
+  if (failures.length === 0 && [...original.keys()].join("\n") !== [...exported.keys()].join("\n")) {
+    failures.push("part order")
+  }
+  for (const [name, before] of original) {
+    if (name === slide) continue
+    const after = exported.get(name)
+    if (after === undefined) continue
+    if (!sameBytes(before, after)) failures.push(`part ${name}`)
+  }
+  return failures
+}
+
 export function browserExportFailures(
   clean: ReadonlyMap<string, Uint8Array>,
   exported: ReadonlyMap<string, Uint8Array>,
   shape: string,
   text: string,
 ): readonly string[] {
-  const failures: string[] = []
-  for (const name of clean.keys()) {
-    if (!exported.has(name)) failures.push(`missing part ${name}`)
-  }
-  for (const name of exported.keys()) {
-    if (!clean.has(name)) failures.push(`extra part ${name}`)
-  }
-  if (failures.length === 0 && [...clean.keys()].join("\n") !== [...exported.keys()].join("\n")) {
-    failures.push("part order")
-  }
-  for (const [name, before] of clean) {
-    if (name === slidePart) continue
-    const after = exported.get(name)
-    if (after === undefined) continue
-    if (!sameBytes(before, after)) failures.push(`part ${name}`)
-  }
+  const failures = packageFailures(clean, exported, slidePart)
   const beforeSlide = clean.get(slidePart)
   const afterSlide = exported.get(slidePart)
   if (beforeSlide === undefined || afterSlide === undefined) return failures
@@ -127,6 +136,92 @@ export function browserExportFailures(
   if (row !== undefined && shownText(row.text) === text && !exact) failures.push(`shape ${shape} text bytes`)
   if (beforeSpans === null || afterSpans === null || !sameOutside(beforeSlide, afterSlide, beforeSpans, afterSpans)) {
     failures.push(`${slidePart} outside shape ${shape} text`)
+  }
+  return failures
+}
+
+export type ParagraphExpectation = {
+  readonly part: string
+  readonly shape: string
+  readonly paragraphs: readonly (readonly string[])[]
+  readonly kept: number
+  readonly bold: readonly string[]
+}
+
+type TextBody = {
+  readonly span: TextSpan
+  readonly paragraphs: readonly MarkupElement[]
+  readonly runs: readonly MarkupElement[]
+  readonly elements: readonly MarkupElement[]
+}
+
+function textBody(bytes: Uint8Array, shapeId: string): TextBody | null {
+  const document = markupDocument(bytes)
+  if (!document.wellFormed) return null
+  const shape = shapeById(document.elements, shapeId)
+  if (shape === null) return null
+  const body = document.elements.find(
+    (element) => element.kind === "p:txBody" && element.parent === shape.index && !element.selfClosing,
+  )
+  if (body === undefined) return null
+  const paragraphs = document.elements.filter((element) => element.kind === "a:p" && element.parent === body.index)
+  const paragraphIndexes = new Set(paragraphs.map((element) => element.index))
+  const runs = document.elements.filter((element) => element.kind === "a:r" && paragraphIndexes.has(element.parent))
+  return { span: { start: body.openEnd, end: body.closeStart }, paragraphs, runs, elements: document.elements }
+}
+
+function boldRuns(bytes: Uint8Array, body: TextBody, text: string): readonly boolean[] {
+  const wanted = encodeUtf8(xmlText(text))
+  const found: boolean[] = []
+  for (const run of body.runs) {
+    const holder = body.elements.find((element) => element.kind === "a:t" && element.parent === run.index)
+    if (holder === undefined || holder.selfClosing) continue
+    if (!sameBytes(bytes.subarray(holder.openEnd, holder.closeStart), wanted)) continue
+    const format = body.elements.find((element) => element.kind === "a:rPr" && element.parent === run.index)
+    found.push(format?.attributes.some((item) => item.name === "b" && item.value === "1") === true)
+  }
+  return found
+}
+
+export function paragraphExportFailures(
+  original: ReadonlyMap<string, Uint8Array>,
+  exported: ReadonlyMap<string, Uint8Array>,
+  expected: ParagraphExpectation,
+): readonly string[] {
+  const { part, shape } = expected
+  const failures = packageFailures(original, exported, part)
+  const beforeSlide = original.get(part)
+  const afterSlide = exported.get(part)
+  if (beforeSlide === undefined || afterSlide === undefined) return failures
+  const found = readShapes(exported).filter((row) => row.part === part && row.shape === shape)
+  const row = found.length === 1 ? found[0] : undefined
+  if (row === undefined) failures.push(`shape ${shape}`)
+  else {
+    const shown = row.text.map((paragraph) => paragraph.runs.map((run) => run.text))
+    if (JSON.stringify(shown) !== JSON.stringify(expected.paragraphs)) {
+      failures.push(`shape ${shape} paragraphs ${JSON.stringify(shown)}`)
+    }
+  }
+  const before = textBody(beforeSlide, shape)
+  const after = textBody(afterSlide, shape)
+  if (before === null || after === null) {
+    failures.push(`shape ${shape} text body`)
+    return failures
+  }
+  if (!sameOutside(beforeSlide, afterSlide, [before.span], [after.span])) {
+    failures.push(`${part} outside shape ${shape} text`)
+  }
+  for (let index = 0; index < expected.kept; index += 1) {
+    const was = before.paragraphs[index]
+    const now = after.paragraphs[index]
+    if (was === undefined || now === undefined) failures.push(`shape ${shape} paragraph ${index}`)
+    else if (!sameBytes(beforeSlide.subarray(was.start, was.end), afterSlide.subarray(now.start, now.end))) {
+      failures.push(`shape ${shape} paragraph ${index} bytes`)
+    }
+  }
+  for (const text of expected.bold) {
+    const states = boldRuns(afterSlide, after, text)
+    if (states.length !== 1 || states[0] !== true) failures.push(`shape ${shape} bold ${text}`)
   }
   return failures
 }

@@ -62,4 +62,37 @@ const silentSpec = await freshBrowserExport({
 if (silentSpec.ok) throw new Error("a spec that failed with no message passed")
 if (!silentSpec.line.includes("browser export spec failed")) throw new Error(silentSpec.line)
 
+const paragraphsFile = path.join(dir, "exported-paragraphs.pptx")
+fs.writeFileSync(file, planted)
+fs.writeFileSync(paragraphsFile, planted)
+let deckBefore = "unread"
+let paragraphsBefore = "unread"
+const both = await freshBrowserExport({
+  file,
+  also: [paragraphsFile],
+  run: async () => {
+    deckBefore = fs.existsSync(file) ? "present" : "gone"
+    paragraphsBefore = fs.existsSync(paragraphsFile) ? "present" : "gone"
+    fs.writeFileSync(file, fresh)
+    fs.writeFileSync(paragraphsFile, fresh)
+  },
+})
+if (deckBefore !== "gone" || paragraphsBefore !== "gone")
+  throw new Error("a stale export was still there when the spec ran")
+if (!both.ok) throw new Error("two fresh exports were rejected")
+
+fs.writeFileSync(file, Buffer.from("old good export"))
+fs.writeFileSync(paragraphsFile, Buffer.from("old good paragraphs"))
+const onlyDeck = await freshBrowserExport({
+  file,
+  also: [paragraphsFile],
+  run: async () => {
+    fs.writeFileSync(file, fresh)
+  },
+})
+if (onlyDeck.ok) throw new Error("a spec that wrote no exported-paragraphs.pptx passed")
+if (!onlyDeck.line.includes("wrote no tests/browser/exported-paragraphs.pptx")) throw new Error(onlyDeck.line)
+if (onlyDeck.line.includes("exported-deck.pptx")) throw new Error(onlyDeck.line)
+if (fs.existsSync(paragraphsFile)) throw new Error("the stale exported-paragraphs.pptx was kept")
+
 console.log("browser export tests passed")
