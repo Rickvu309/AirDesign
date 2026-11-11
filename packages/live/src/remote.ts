@@ -93,7 +93,8 @@ export function memoryRemote(): Remote {
       const parsed = readCommit(body)
       if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
       const stored = decks.get(parsed.deck)
-      let register = stored?.register ?? openRegister("", parsed.deck)
+      if (stored === undefined) return { ok: false, refusal: "deck" }
+      let register = stored.register
       for (const edit of parsed.batch) {
         if (!register.nodes.includes(edit.node)) {
           const opened = decide(register, {
@@ -109,7 +110,7 @@ export function memoryRemote(): Remote {
         if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
         register = decision.register
       }
-      const revision = (stored?.revision ?? 0) + 1
+      const revision = stored.revision + 1
       decks.set(parsed.deck, { revision, register })
       notify(parsed.deck)
       return { ok: true, deck: parsed.deck, revision, key: `${parsed.deck}:${revision}` }

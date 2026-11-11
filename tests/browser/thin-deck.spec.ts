@@ -398,6 +398,16 @@ async function rowsOf(page: Page): Promise<{ kind: string; value: string; node?:
   )
 }
 
+async function answerOpens(page: Page): Promise<void> {
+  await page.route("**/decks/open", async (route) => {
+    const body = route.request().postDataJSON() as { deck: string }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, deck: body.deck, revision: 0 }),
+    })
+  })
+}
+
 async function answerCommits(page: Page): Promise<void> {
   await page.unroute("**/decks/commit")
   let revision = 0
@@ -453,6 +463,7 @@ test("two text boxes keep their own edits after reload and both export", async (
 })
 
 test("an edit left pending by a failed commit is sent after a reload", async ({ page }) => {
+  await answerOpens(page)
   await page.route("**/decks/commit", (route) => route.fulfill({ status: 503, body: "" }))
   await open(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
@@ -468,6 +479,7 @@ test("an edit left pending by a failed commit is sent after a reload", async ({ 
 })
 
 test("an edit made offline is sent when the page comes back online", async ({ page, context }) => {
+  await answerOpens(page)
   await open(page, fixture)
   await page.route("**/decks/commit", (route) => route.abort("internetdisconnected"))
   await context.setOffline(true)
