@@ -15,7 +15,10 @@ type ZipEntry = {
 }
 
 type ZipLibrary = {
-  readonly ZipReader: new (reader: unknown) => { getEntries(): Promise<ZipEntry[]>; close(): Promise<void> }
+  readonly ZipReader: new (reader: unknown) => {
+    getEntries(): Promise<ZipEntry[]>
+    close(): Promise<void>
+  }
   readonly Uint8ArrayReader: new (bytes: Uint8Array) => unknown
   readonly Uint8ArrayWriter: new () => unknown
 }
@@ -50,12 +53,25 @@ async function paragraphsOf(page: Page, box: ReturnType<Page["locator"]>): Promi
 
 const deckAddress = /\/thin\/[A-Za-z0-9_-]{1,64}$/
 
+async function settled(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const deck = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
+  })
+}
+
 async function choose(page: Page, file: string): Promise<string> {
   const before = page.url()
   await page.locator("input[type=file]").setInputFiles(file)
-  await expect.poll(() => page.url()).not.toBe(before)
+  await page.waitForFunction((previous) => location.href !== previous, before)
+  await settled(page)
   await expect(page).toHaveURL(deckAddress)
   return page.url()
+}
+
+async function reload(page: Page): Promise<void> {
+  await page.reload()
+  await settled(page)
 }
 
 async function open(page: Page, file: string): Promise<string> {
@@ -112,7 +128,7 @@ test("an edit to Hello! survives reload and exports", async ({ page }, testInfo)
   await editor.pressSequentially("Hello!", { delay: 50 })
   await expect(editor).toHaveText("Hello!")
   await stored(page, "Hello!")
-  await page.reload()
+  await reload(page)
   expect(page.url()).toBe(address)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
   await saveExport(page, download)
@@ -120,6 +136,41 @@ test("an edit to Hello! survives reload and exports", async ({ page }, testInfo)
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
   expect(saved.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
   await copyFile(download, exported)
+})
+
+type ReadyEntry = { value: string | null; boxes: number }
+
+async function readyLog(page: Page): Promise<ReadyEntry[]> {
+  return page.evaluate(() => (window as unknown as { readyLog: ReadyEntry[] }).readyLog)
+}
+
+test("the page marks a deck ready only once it is painted and clears the mark while a file is read", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const log: { value: string | null; boxes: number }[] = []
+    Object.assign(window, { readyLog: log })
+    new MutationObserver(() => {
+      log.push({
+        value: document.querySelector(".thin-page")?.getAttribute("data-deck-ready") ?? null,
+        boxes: document.querySelectorAll('[contenteditable="true"]').length,
+      })
+    }).observe(document, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-deck-ready"],
+    })
+  })
+  const first = await open(page, fixture)
+  const second = await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
+  const deck = (address: string) => address.slice(address.lastIndexOf("/") + 1)
+  const chosen = await readyLog(page)
+  expect(chosen.map((entry) => entry.value)).toEqual([deck(first), null, deck(second)])
+  expect(chosen.filter((entry) => entry.value !== null).map((entry) => entry.boxes > 0)).toEqual([true, true])
+  await reload(page)
+  const reloaded = await readyLog(page)
+  expect(reloaded.map((entry) => entry.value)).toEqual([deck(second)])
+  expect(reloaded.map((entry) => entry.boxes > 0)).toEqual([true])
 })
 
 test("a page with no deck id shows no slide", async ({ page }) => {
@@ -130,7 +181,9 @@ test("a page with no deck id shows no slide", async ({ page }) => {
 
 test("a second browser context gets a different deck id", async ({ page, browser }) => {
   const address = await open(page, fixture)
-  const other = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const other = await browser.newContext({
+    baseURL: test.info().project.use.baseURL,
+  })
   try {
     expect(await open(await other.newPage(), fixture)).not.toBe(address)
   } finally {
@@ -184,7 +237,7 @@ test("a second deck does not carry the first deck's edit", async ({ page }, test
   const second = await choose(page, join(fixtures, "doe-heat-pumps.pptx"))
   expect(second).not.toBe(first)
   await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
-  await page.reload()
+  await reload(page)
   expect(page.url()).toBe(second)
   await expect(page.getByText("Introduction to Heat Pumps").first()).toBeVisible()
   await expect(page.getByText(marker)).toHaveCount(0)
@@ -201,7 +254,7 @@ test("typing key by key keeps the order of the letters", async ({ page }) => {
   await editor.pressSequentially(" world", { delay: 50 })
   await expect(editor).toHaveText("Hello world")
   await stored(page, "Hello world")
-  await page.reload()
+  await reload(page)
   await expect(editor).toHaveText("Hello world")
   await editor.click()
   await page.keyboard.press("Home")
@@ -221,7 +274,7 @@ test("typed spaces are stored as plain spaces", async ({ page }) => {
   await editor.pressSequentially(" a  b ", { delay: 50 })
   await expect.poll(() => editor.textContent()).toBe("Hello a  b ")
   await stored(page, "Hello a  b ")
-  await page.reload()
+  await reload(page)
   await expect.poll(() => editor.textContent()).toBe("Hello a  b ")
 })
 
@@ -229,9 +282,13 @@ async function paste(page: Page, data: Record<string, string>): Promise<void> {
   await page.evaluate((entries) => {
     const clipboardData = new DataTransfer()
     for (const [type, value] of Object.entries(entries)) clipboardData.setData(type, value)
-    document
-      .querySelector('[contenteditable="true"]')
-      ?.dispatchEvent(new ClipboardEvent("paste", { clipboardData, bubbles: true, cancelable: true }))
+    document.querySelector('[contenteditable="true"]')?.dispatchEvent(
+      new ClipboardEvent("paste", {
+        clipboardData,
+        bubbles: true,
+        cancelable: true,
+      }),
+    )
   }, data)
 }
 
@@ -257,7 +314,7 @@ test("Enter and a pasted line break each start a new paragraph", async ({ page }
   await page.keyboard.press("ControlOrMeta+a")
   await paste(page, {})
   await expect.poll(() => paragraphsOf(page, editor)).toEqual(pasted)
-  await page.reload()
+  await reload(page)
   await expect.poll(() => paragraphsOf(page, editor)).toEqual(pasted)
 })
 
@@ -270,7 +327,7 @@ test("a cleared box is stored empty", async ({ page }) => {
   await page.keyboard.press("Backspace")
   await expect.poll(() => editor.textContent()).toBe("")
   await stored(page, "")
-  await page.reload()
+  await reload(page)
   await expect(editor).toHaveText("")
 })
 
@@ -333,7 +390,12 @@ async function answerCommits(page: Page): Promise<void> {
     revision += 1
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ ok: true, deck: body.deck, revision, key: `${body.deck}:${revision}` }),
+      body: JSON.stringify({
+        ok: true,
+        deck: body.deck,
+        revision,
+        key: `${body.deck}:${revision}`,
+      }),
     })
   })
 }
@@ -358,7 +420,7 @@ test("two text boxes keep their own edits after reload and both export", async (
   await page.keyboard.press("End")
   await body.pressSequentially(" Beta", { delay: 50 })
   await stored(page, "Same technology as: Beta")
-  await page.reload()
+  await reload(page)
   expect(page.url()).toBe(address)
   const editors = page.locator('[contenteditable="true"]')
   await expect(editors.filter({ hasText: /^What is a heat pump\? Alpha$/ })).toHaveCount(1)
@@ -382,7 +444,7 @@ test("an edit left pending by a failed commit is sent after a reload", async ({ 
   await stored(page, "Hello!")
   expect((await rowsOf(page)).map((row) => `${row.kind}:${lines(row.value)}`)).toEqual(["pending:Hello!"])
   await answerCommits(page)
-  await page.reload()
+  await reload(page)
   await confirmed(page, "Hello!")
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
 })
@@ -444,7 +506,7 @@ test("Enter inside a run of a box with eight runs makes a paragraph that keeps e
     "Depressurized (gas) collects heat ",
   ]
   await stored(page, shown.join("\n"))
-  await page.reload()
+  await reload(page)
   await expect.poll(() => paragraphsOf(page, box)).toEqual(shown)
   await saveExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
@@ -558,7 +620,7 @@ test("an empty box takes typed text, keeps it after reload and exports it", asyn
   await empty.click()
   await empty.pressSequentially("Typed here", { delay: 50 })
   await stored(page, "Typed here")
-  await page.reload()
+  await reload(page)
   await expect(page.locator("[contenteditable]").nth(2)).toHaveText("Typed here")
   await saveExport(page, download)
   expect(await changedParts(deck, download)).toEqual([part])
