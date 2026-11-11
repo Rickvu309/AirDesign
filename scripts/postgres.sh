@@ -37,7 +37,13 @@ for package in postgresql-18 libpq5; do
   dpkg-deb -x "$work/$package.deb" "$root"
 done
 
-fetch "http://archive.ubuntu.com/ubuntu/pool/main/libu/liburing/liburing2_2.5-1build1_amd64.deb" "$work/liburing2.deb"
+liburing="pool/main/libu/liburing/liburing2_2.5-1build1_amd64.deb"
+for mirror in http://archive.ubuntu.com/ubuntu https://mirrors.kernel.org/ubuntu https://mirror.math.princeton.edu/pub/ubuntu; do
+  if curl -fsSL --connect-timeout 10 --max-time 60 -o "$work/liburing2.deb" "$mirror/$liburing"; then
+    break
+  fi
+  echo "$mirror did not serve $liburing, so the next mirror is tried" >&2
+done
 checked "c2aef62accee92a06263c3ad4ef46132c13e409b54296c44792a20491830a7b0" "$work/liburing2.deb"
 dpkg-deb -x "$work/liburing2.deb" "$root"
 
