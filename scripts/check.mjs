@@ -21,6 +21,7 @@ export const stages = [
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
     ["worktrees", "node", ["scripts/worktrees.mjs"]],
+    ["commit-authors", "node", ["scripts/commit-authors.mjs"]],
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
@@ -74,7 +75,7 @@ export const recordFailure = (failed, name, warned = warnSteps) => {
   return "fail"
 }
 
-const showOnSuccess = new Set(["bug-rule", "lint", "metrics", "specs", "worktrees", ...localSteps])
+const showOnSuccess = new Set(["bug-rule", "commit-authors", "lint", "metrics", "specs", "worktrees", ...localSteps])
 const all = process.argv.includes("--all")
 const failed = []
 
