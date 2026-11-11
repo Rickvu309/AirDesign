@@ -746,6 +746,7 @@ async function typeAtEnd(page: Page, text: string): Promise<void> {
 
 test("a commit answered 404 with an HTML body shows no offline words", async ({ page }) => {
   let answered = 0
+  await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
     await route.fulfill({ status: 404, contentType: "text/html", body: "<html><body>Not found</body></html>" })
     answered += 1
@@ -761,6 +762,7 @@ test("a commit answered 404 with an HTML body shows no offline words", async ({ 
 
 test("a commit answered 500 with a text body shows no offline words", async ({ page }) => {
   let answered = 0
+  await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
     await route.fulfill({ status: 500, contentType: "text/plain", body: "boom" })
     answered += 1
@@ -776,6 +778,7 @@ test("a commit answered 500 with a text body shows no offline words", async ({ p
 
 test("a commit answered 404 with a JSON body shows no offline words", async ({ page }) => {
   let answered = 0
+  await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
     await route.fulfill({ status: 404, contentType: "application/json", body: JSON.stringify({ error: "not found" }) })
     answered += 1
@@ -791,6 +794,7 @@ test("a commit answered 404 with a JSON body shows no offline words", async ({ p
 
 test("the offline words go when the next commit is answered 404 on a device that stayed online", async ({ page }) => {
   let status: number | null = null
+  await answerOpens(page)
   await page.route("**/decks/commit", async (route) => {
     if (status === null) {
       await route.abort("connectionfailed")
@@ -855,6 +859,7 @@ test("an export whose stored parts are gone shows the export words and downloads
 })
 
 test("a refused session keeps the edit and sends the person to sign in", async ({ page }) => {
+  await answerOpens(page)
   await page.route("**/decks/commit", (route) =>
     route.fulfill({
       status: 401,
