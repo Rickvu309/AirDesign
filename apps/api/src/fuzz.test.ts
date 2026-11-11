@@ -1,5 +1,5 @@
 import { readFile, readdir } from "node:fs/promises"
-import { createServer } from "node:http"
+import { createServer, type IncomingMessage, type Server } from "node:http"
 import { connect, type AddressInfo } from "node:net"
 import path from "node:path"
 import type { Pool } from "pg"
@@ -127,6 +127,13 @@ const attacks: readonly Attack[] = [
   { name: "an absolute target with userinfo", absolute: "http://user:secret@evil.example" },
   { name: "a host with a port", host: "127.0.0.1:8080" },
   { name: "a host with a bad port", host: "127.0.0.1:port" },
+  { name: "a host past the port range", host: "127.0.0.1:65536" },
+  { name: "a host with userinfo", host: "user@127.0.0.1" },
+  { name: "a host with a user and password", host: "user:pass@127.0.0.1" },
+  { name: "a host with two at signs", host: "a@b@127.0.0.1" },
+  { name: "an empty host", host: "" },
+  { name: "a host with spaces", host: "127.0.0.1 evil" },
+  { name: "a non-ascii host", host: "caf\u00e9.example" },
   { name: "an absolute target and a host with a port", absolute: "http://evil.example", host: "127.0.0.1:8080" },
   { name: "an absolute target to this host", absolute: "http://127.0.0.1", host: "127.0.0.1:8080" },
   { name: "a body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType },
@@ -309,6 +316,7 @@ describe("hostile input over every route", () => {
   const toolLogs = new Map<string, CallerLog>()
   let brokenBase = ""
   let sessionDb: Pool | undefined
+  let apiServer: Server | undefined
   let accessToken = ""
   let thrown = new Error("unset")
   let close = async () => {}
@@ -344,6 +352,7 @@ describe("hostile input over every route", () => {
     })
     brokenBase = brokenServed.base
     base = served.base
+    apiServer = served.server
     port = Number(new URL(base).port)
     close = async () => {
       await brokenServed.close()
@@ -560,6 +569,60 @@ describe("hostile input over every route", () => {
     })
     expect(answer.status).toBe(400)
     expect(answer.text).toContain('"refusal":"The request target could not be read."')
+  })
+
+  it("refuses a target naming another origin before the SDK sees it, signed in", async () => {
+    for (const target of ["//evil.example/mcp", "/\\evil.example/mcp"]) {
+      const answer = await send({
+        method: "POST",
+        target,
+        headers: [...signedHeaders(), `content-type: ${jsonType}`, mcpAccept],
+        body: Buffer.from("{}"),
+      })
+      expect(record(target, answer)).toContain("answered 400")
+      expect(answer.text).toContain('"refusal":"The request target could not be read."')
+    }
+  })
+
+  for (const host of [
+    "user@127.0.0.1",
+    "user:pass@127.0.0.1",
+    "",
+    "127.0.0.1:port",
+    "127.0.0.1 evil",
+    "caf\u00e9.example",
+  ]) {
+    it(`refuses the Host ${JSON.stringify(host)} on /mcp before the SDK sees it, signed in`, async () => {
+      const answer = await send({
+        method: "POST",
+        target: "/mcp",
+        host,
+        headers: [...signedHeaders(), `content-type: ${jsonType}`, mcpAccept],
+        body: Buffer.from("{}"),
+      })
+      expect(record(host, answer)).toContain("answered 400")
+      expect(answer.text).toContain('"refusal":"The request host could not be read."')
+    })
+  }
+
+  it("does not log a client that hangs up mid-body", async () => {
+    const write = vi.spyOn(process.stderr, "write").mockReturnValue(true)
+    const seen = new Promise<void>((resolve) => {
+      apiServer?.once("request", (req: IncomingMessage) => {
+        req.once("close", () => setImmediate(resolve))
+        socket.destroy()
+      })
+    })
+    const socket = connect(port, "127.0.0.1")
+    socket.on("error", () => undefined)
+    socket.write("POST /sign-in/email HTTP/1.1\r\nhost: 127.0.0.1\r\ncontent-length: 1000\r\n\r\n{")
+    try {
+      await seen
+      await new Promise((resolve) => setImmediate(resolve))
+      expect(write).not.toHaveBeenCalled()
+    } finally {
+      write.mockRestore()
+    }
   })
 
   it("hands a failure inside the SDK to the boundary once", async () => {

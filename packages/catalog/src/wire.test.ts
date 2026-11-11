@@ -16,6 +16,7 @@ import {
   readDecks,
   readEdit,
   readEmail,
+  readHost,
   readLinkToken,
   readNamedDeck,
   readNoFields,
@@ -625,6 +626,42 @@ describe("readBearer", () => {
   ]) {
     it(`refuses ${JSON.stringify(header) ?? "undefined"}`, () => {
       expect(readBearer(header)).toBeUndefined()
+    })
+  }
+})
+
+describe("readHost", () => {
+  for (const host of ["localhost", "127.0.0.1", "127.0.0.1:8080", "app.example", "[::1]", "[::1]:80", "a:65535"]) {
+    it(`reads ${host}`, () => {
+      expect(readHost(host)).toBe(host)
+    })
+  }
+
+  for (const host of [
+    undefined,
+    7,
+    ["localhost"],
+    "",
+    " ",
+    "user@127.0.0.1",
+    "user:pass@127.0.0.1",
+    "a@b@127.0.0.1",
+    "user:pass@localhost:80",
+    "127.0.0.1:",
+    "127.0.0.1:port",
+    "127.0.0.1:65536",
+    "127.0.0.1:123456",
+    "a b",
+    "a\u0000b",
+    "caf\u00e9.example",
+    "a/b",
+    "a?b",
+    "a#b",
+    "[::1",
+    "::1",
+  ]) {
+    it(`refuses ${JSON.stringify(host) ?? "undefined"}`, () => {
+      expect(readHost(host)).toBeUndefined()
     })
   }
 })
