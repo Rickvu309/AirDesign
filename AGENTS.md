@@ -85,6 +85,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | Only `packages/document` makes an `ElementId`: no type assertion to `ElementId` outside `packages/document/src` | lint: `no-element-id-cast`. It warns for now and blocks nothing |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
 | A package's `index.ts` exports only names a caller outside the package, or a test through `index.ts`, uses | `scripts/interface-width.mjs`, the `interface-width` step of `pnpm check`. It warns for now and blocks nothing |
+| A file an agent writes that is over 5,000 tokens does not grow, and no new file starts over it. A token is four bytes | `scripts/file-size.mjs`, the `file-size` step of `pnpm check`. Its message says how to split the file |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
 | A state machine keeps its invariants | `pnpm check:specs` |

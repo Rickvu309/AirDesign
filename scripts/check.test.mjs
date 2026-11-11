@@ -11,6 +11,7 @@ const requiredSteps = [
   "test",
   "tooling",
   "bug-rule",
+  "file-size",
   "specs",
   "browser",
   "site",
