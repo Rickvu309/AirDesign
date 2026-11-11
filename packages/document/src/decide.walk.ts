@@ -1,4 +1,4 @@
-import { type Command, type NodeRegister, type Register } from "./decide.js"
+import { version, type Command, type NodeRegister, type Register } from "./decide.js"
 
 export function copyNode(node: NodeRegister): NodeRegister {
   return {
@@ -9,6 +9,7 @@ export function copyNode(node: NodeRegister): NodeRegister {
         ? { actor: row.actor, value: row.value, visible: row.visible }
         : { actor: row.actor, value: row.value, visible: row.visible, runId: row.runId },
     ),
+    version: version(node),
     phase: node.phase,
     runId: node.runId,
     readAt: node.readAt,

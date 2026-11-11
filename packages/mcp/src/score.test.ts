@@ -148,7 +148,7 @@ describe("score", () => {
       deck: () => fixture("undone", [{ element: "title", agent: ["Gone"], undone: true }]),
       want: { calls: 1, steps: [{ name: "edit_deck", outcome: "ok" }], elements: { title: ["Again"] } },
     }
-    const result = score(task, [edit("undone", [{ element: "title", value: "Again", readAt: 0 }])])
+    const result = score(task, [edit("undone", [{ element: "title", value: "Again", readAt: 2 }])])
     expect(result.start.register.elements[title]?.landed).toEqual([
       { actor: "agent", value: "Gone", visible: false, runId: "run" },
     ])

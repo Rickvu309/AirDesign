@@ -15,9 +15,18 @@ VARIABLES
   laterHidden,
   laterLanded,
   hiddenBy,
-  firstLive
+  firstLive,
+  reused
 
-vars == <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+vars == <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive, reused>>
+
+\* Version rises by one on each landed row and by one for each row an undo hides. Compaction drops a hidden row and keeps the number.
+Version == person + agent + later + 2 * (hidden + laterHidden) + IF dropped THEN 2 ELSE 0
+
+Shown == <<person, agent, later>>
+
+\* Marks a step that lowers the version, or changes what the element shows and keeps the same version.
+Track == reused' = (reused \/ Version' < Version \/ (Version' = Version /\ Shown' # Shown))
 
 \* Records which undo took the later row out of view, in the step that does it.
 Hider(name) == hiddenBy' = IF later = 1 /\ later' = 0 THEN name ELSE hiddenBy
@@ -36,6 +45,7 @@ TypeOK ==
   /\ laterLanded \in BOOLEAN
   /\ hiddenBy \in {"none", "firstUndo", "secondUndo", "laterUndo"}
   /\ firstLive \in BOOLEAN
+  /\ reused \in BOOLEAN
 
 Init ==
   /\ person = 0
@@ -51,6 +61,7 @@ Init ==
   /\ laterLanded = FALSE
   /\ hiddenBy = "none"
   /\ firstLive = FALSE
+  /\ reused = FALSE
 
 PersonWrites ==
   /\ track = "old"
@@ -58,6 +69,7 @@ PersonWrites ==
   /\ person' = 1
   /\ prevPerson' = 1
   /\ UNCHANGED <<agent, hidden, eligible, undoMark, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 AgentWrites ==
   /\ track = "old"
@@ -67,6 +79,7 @@ AgentWrites ==
   /\ hidden = 0
   /\ agent' = 1
   /\ UNCHANGED <<person, prevPerson, hidden, eligible, undoMark, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 GiveHorizon ==
   /\ track = "old"
@@ -74,6 +87,7 @@ GiveHorizon ==
   /\ eligible = FALSE
   /\ eligible' = TRUE
   /\ UNCHANGED <<person, prevPerson, agent, hidden, undoMark, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 Undo ==
   /\ track = "old"
@@ -84,6 +98,7 @@ Undo ==
   /\ agent' = 0
   /\ hidden' = agent
   /\ UNCHANGED <<prevPerson, eligible, dropped, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 Compact ==
   /\ track = "old"
@@ -94,6 +109,7 @@ Compact ==
   /\ hidden' = 0
   /\ undoMark' = FALSE
   /\ UNCHANGED <<prevPerson, eligible, agent, track, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 Done ==
   /\ track = "old"
@@ -113,12 +129,14 @@ StopFirst ==
   /\ dropped = FALSE
   /\ track' = "held"
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 \* A new run starts on the same element.
 StartSecond ==
   /\ track = "held"
   /\ track' = "second"
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 \* The later run lands its own row. The earlier row stays.
 LaterWrites ==
@@ -127,6 +145,7 @@ LaterWrites ==
   /\ later' = 1
   /\ laterLanded' = TRUE
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, track, laterHidden, hiddenBy, firstLive>>
+  /\ Track
 
 \* Undo of the earlier run stays fenced while the later run is live.
 UndoFirstLive ==
@@ -140,6 +159,7 @@ StopSecond ==
   /\ later = 1
   /\ track' = "secondStopped"
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, later, laterHidden, laterLanded, hiddenBy, firstLive>>
+  /\ Track
 
 \* Undo of the earlier run hides only that run's row and leaves the later run stopped.
 UndoFirst ==
@@ -153,6 +173,7 @@ UndoFirst ==
   /\ Hider("firstUndo")
   /\ firstLive' = (firstLive \/ track = "second")
   /\ UNCHANGED <<person, prevPerson, eligible, undoMark, dropped, laterLanded>>
+  /\ Track
 
 \* Undo of the later run hides only that run's row.
 UndoSecond ==
@@ -163,6 +184,7 @@ UndoSecond ==
   /\ track' = "bothGone"
   /\ Hider("laterUndo")
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, laterLanded, firstLive>>
+  /\ Track
 
 \* A second undo of the earlier run removes nothing more.
 UndoFirstAgain ==
@@ -172,6 +194,7 @@ UndoFirstAgain ==
   /\ laterHidden' = laterHidden
   /\ Hider("secondUndo")
   /\ UNCHANGED <<person, prevPerson, agent, hidden, eligible, undoMark, dropped, track, laterLanded, firstLive>>
+  /\ Track
 
 \* A second undo of the later run removes nothing more.
 UndoLaterAgain ==
@@ -212,5 +235,8 @@ SecondUndoRemovesNothing ==
 \* A person row stays where undo found it.
 PersonRowsStay ==
   person = prevPerson
+
+\* A version is never reused for different text. It never falls, and each change to what the element shows raises it.
+VersionNeverReused == reused = FALSE
 
 ====

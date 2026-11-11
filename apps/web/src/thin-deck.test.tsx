@@ -386,6 +386,23 @@ function editedRegister(edits: readonly (readonly [string, string])[]): Register
 
 const twoBoxSlide = `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>World</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
 
+it("an export skips an element whose only rows were undone", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const node = elementId("256.2")
+  let register = openRegister("", "clean")
+  for (const command of [
+    { command: "add", node, floor: "", route: "clean" },
+    { command: "start", node, runId: "run" },
+    { command: "agent", node, runId: "run", readAt: 0, value: "gone" },
+    { command: "undo", node, runId: "run" },
+  ] as const) {
+    const decision = decide(register, command)
+    if (decision.decision === "refuse") throw new Error("refused")
+    register = decision.register
+  }
+  expect(exportedParts(parts, register)).toBe(parts)
+})
+
 it("an export with no stored edit applies no route and keeps the stored parts", () => {
   const slide = xml(twoBoxSlide)
   const parts = onSlide(slide)

@@ -1,8 +1,8 @@
 import {
   currentValue,
+  history,
   readElementId,
   slideId,
-  version,
   writeTextValue,
   type ElementId,
   type Kind,
@@ -199,7 +199,7 @@ export function exportedParts(
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const id of register.nodes) {
     const body = register.elements[id]
-    if (body === undefined || version(body) === 0) continue
+    if (body === undefined || history(body).length === 0) continue
     const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
     const shape = named[0]
     if (named.length !== 1 || shape === undefined || shape.locked) throw new Error("text-shape")

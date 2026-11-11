@@ -128,6 +128,10 @@ function phaseOf(spec: Spec): Phase {
   throw new Error(`bad phase ${phase}`)
 }
 
+function editVersion(spec: Spec): number {
+  return num(spec, "personBefore") + num(spec, "personAfter") + num(spec, "agent") + 2 * num(spec, "hidden")
+}
+
 function nodeRegister(spec: Spec): Register {
   const landed: NodeRegister["landed"][number][] = []
   for (let index = 0; index < num(spec, "personBefore"); index += 1) {
@@ -153,6 +157,7 @@ function nodeRegister(spec: Spec): Register {
   return {
     ...openRegister("floor", "slide"),
     landed,
+    version: editVersion(spec),
     phase,
     runId: phase === "idle" ? null : run,
     readAt: num(spec, "readAt") === -1 ? null : num(spec, "readAt"),
@@ -199,7 +204,7 @@ function editPicture(register: Register, positional: boolean) {
 function editExpected(spec: Spec, positional: boolean) {
   const picture: Record<string, Value> = {
     phase: text(spec, "phase"),
-    version: num(spec, "personBefore") + num(spec, "personAfter") + num(spec, "agent"),
+    version: editVersion(spec),
     readAt: num(spec, "readAt"),
     guarded: flag(spec, "guarded"),
     agent: num(spec, "agent"),
@@ -325,6 +330,7 @@ function undoRegister(spec: Spec): Register {
   return {
     ...openRegister("floor", "slide"),
     landed,
+    version: undoVersion(spec),
     phase: undoPhase(spec),
     runId: run,
     readAt: people,
@@ -348,6 +354,11 @@ function undoExpected(spec: Spec) {
     agent: num(spec, "agent"),
     hidden: num(spec, "hidden"),
   }
+}
+
+function undoVersion(spec: Spec): number {
+  const hidden = num(spec, "hidden") + num(spec, "laterHidden") + (flag(spec, "dropped") ? 1 : 0)
+  return num(spec, "person") + num(spec, "agent") + num(spec, "later") + 2 * hidden
 }
 
 function laterPhase(spec: Spec): Phase {
@@ -376,6 +387,7 @@ function laterRegister(spec: Spec): Register {
   return {
     ...openRegister("floor", "slide"),
     landed,
+    version: undoVersion(spec),
     phase: laterPhase(spec),
     runId: laterRunId(spec),
     readAt: landed.filter((row) => row.visible).length,
@@ -416,6 +428,19 @@ function undoHider(action: string): string | null {
   if (action === "UndoSecond") return "laterUndo"
   if (action === "UndoFirstAgain" || action === "UndoLaterAgain") return "secondUndo"
   return null
+}
+
+function undoStepped(action: string, source: Spec, register: Register): NodeRegister | null {
+  if (action === "Compact") return compactChain(register, flag(source, "eligible"))
+  const decision =
+    action === "PersonWrites"
+      ? decide(register, { command: "person", value: "person" })
+      : action === "AgentWrites"
+        ? decide(register, { command: "agent", runId: run, readAt: version(register), value: "agent" })
+        : action === "Undo"
+          ? decide(register, { command: "undo", runId: run })
+          : null
+  return decision?.decision === "apply" ? decision.register : null
 }
 
 function replayUndo(graph: Graph, view: View, failures: string[]) {
@@ -468,6 +493,9 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
       }
       const actual = laterPicture(decision.register)
       const expected = laterExpected(target)
+      if (version(decision.register) !== undoVersion(target)) {
+        failures.push(`undo ${where} version ${version(decision.register)} expected ${undoVersion(target)}`)
+      }
       if (actual.laterHidden > num(source, "laterHidden") && text(target, "hiddenBy") !== undoHider(edge.action)) {
         failures.push(`undo ${where} hid the later row with the wrong undo`)
       }
@@ -486,6 +514,10 @@ function replayUndo(graph: Graph, view: View, failures: string[]) {
       continue
     }
     const register = undoRegister(source)
+    const stepped = undoStepped(edge.action, source, register)
+    if (stepped !== null && version(stepped) !== undoVersion(target)) {
+      failures.push(`undo ${where} version ${version(stepped)} expected ${undoVersion(target)}`)
+    }
     let picture: ReturnType<typeof undoPicture> | null = null
     if (edge.action === "PersonWrites") {
       const decision = decide(register, { command: "person", value: "person" })
@@ -1123,6 +1155,11 @@ function replayOauth(graph: Graph, view: View, failures: string[]) {
 
 const secondRun = "s"
 
+function rerunVersion(spec: Spec): number {
+  const shown = num(spec, "firstRows") + num(spec, "person") + num(spec, "secondRows") + num(spec, "secondPerson")
+  return shown + 2 * num(spec, "hidden")
+}
+
 function rerunRegister(spec: Spec): Register {
   const landed: NodeRegister["landed"][number][] = []
   if (flag(spec, "firstLanded")) {
@@ -1141,6 +1178,7 @@ function rerunRegister(spec: Spec): Register {
   return {
     ...openRegister("floor", "slide"),
     landed,
+    version: rerunVersion(spec),
     phase,
     runId: phase === "idle" ? null : num(spec, "run") === 2 ? secondRun : run,
     readAt: num(spec, "readAt") === -1 ? null : num(spec, "readAt"),
@@ -1170,7 +1208,7 @@ function rerunExpected(spec: Spec) {
   return {
     phase,
     runId: phase === "idle" ? "none" : num(spec, "run") === 2 ? secondRun : run,
-    version: num(spec, "firstRows") + num(spec, "person") + num(spec, "secondRows") + num(spec, "secondPerson"),
+    version: rerunVersion(spec),
     readAt: num(spec, "readAt"),
     guarded: flag(spec, "guarded"),
     claims: num(spec, "claims"),
