@@ -70,6 +70,8 @@ it("carries the deck's size and each row's own box", () => {
   })
 })
 
+const css = (hex: string): string => `#${hex}`
+
 const seen = { hex: "112233", alpha: 1 }
 const clear = { hex: "112233", alpha: 0 }
 
@@ -211,7 +213,7 @@ it("paints the slide with the file's background", () => {
     background: { type: "solid", color: { hex: "A1B2C3", alpha: 1 } },
   }
   const canvas = slideCanvases({ slide: () => paint }, [source])(0)
-  expect(canvas?.background).toBe("#A1B2C3")
+  expect(canvas?.background).toBe(css("A1B2C3"))
 })
 
 function painted(overrides: Partial<PaintElement>) {
@@ -223,8 +225,8 @@ function painted(overrides: Partial<PaintElement>) {
 
 it.each<[string, PaintFill, string | null]>([
   ["no fill", { type: "none" }, null],
-  ["a solid", { type: "solid", color: { hex: "0A0B0C", alpha: 1 } }, "#0A0B0C"],
-  ["a clear solid", { type: "solid", color: { hex: "0A0B0C", alpha: 0.5 } }, "#0A0B0C80"],
+  ["a solid", { type: "solid", color: { hex: "0A0B0C", alpha: 1 } }, css("0A0B0C")],
+  ["a clear solid", { type: "solid", color: { hex: "0A0B0C", alpha: 0.5 } }, css("0A0B0C80")],
   [
     "a linear gradient",
     {
@@ -235,12 +237,12 @@ it.each<[string, PaintFill, string | null]>([
       ],
       angle: 45,
     },
-    "linear-gradient(135deg, #000000 0%, #FFFFFF 100%)",
+    `linear-gradient(135deg, ${css("000000")} 0%, ${css("FFFFFF")} 100%)`,
   ],
   [
     "a path gradient",
     { type: "gradient", stops: [{ position: 0.5, color: { hex: "123456", alpha: 1 } }], angle: null },
-    "radial-gradient(#123456 50%)",
+    `radial-gradient(${css("123456")} 50%)`,
   ],
   [
     "a pattern, by its background",
@@ -250,7 +252,7 @@ it.each<[string, PaintFill, string | null]>([
       foreground: { hex: "111111", alpha: 1 },
       background: { hex: "EEEEEE", alpha: 1 },
     },
-    "#EEEEEE",
+    css("EEEEEE"),
   ],
 ])("turns %s into the fill the box paints", (_, fill, css) => {
   expect(painted({ fill }).fill).toBe(css)
@@ -275,8 +277,8 @@ const line: PaintLine = {
 
 it("carries a line's colour, width and dash apart from the fill", () => {
   const element = painted({ fill: { type: "solid", color: { hex: "AABBCC", alpha: 1 } }, line })
-  expect(element.fill).toBe("#AABBCC")
-  expect(element.line).toEqual({ color: "#334455", width: 38_100, dash: [4, 3] })
+  expect(element.fill).toBe(css("AABBCC"))
+  expect(element.line).toEqual({ color: css("334455"), width: 38_100, dash: [4, 3] })
 })
 
 it("paints no line when the line has no fill", () => {
@@ -345,7 +347,9 @@ it("turns a paragraph's points into the slide's units, shrunk by the box's font 
       {
         from: 2,
         align: "justify",
-        runs: [{ from: 3, text: "words", font: "Serifa", size: 152_400, bold: true, italic: true, color: "#102030" }],
+        runs: [
+          { from: 3, text: "words", font: "Serifa", size: 152_400, bold: true, italic: true, color: css("102030") },
+        ],
         endStyle: { font: null, size: 76_200, bold: false, italic: false, color: null },
       },
     ],

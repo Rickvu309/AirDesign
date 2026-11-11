@@ -180,7 +180,8 @@ export function Passage(props: {
     const value = textValue(text)
     reported.current = writeTextValue(value)
     const read = readBox(shown)
-    if (writeTextValue(read.value) !== reported.current) showValue(shown, value, selectionCarets(shown, read.units), look)
+    if (writeTextValue(read.value) !== reported.current)
+      showValue(shown, value, selectionCarets(shown, read.units), look)
   }, [record, text])
   useLayoutEffect(() => {
     const shown = box.current
