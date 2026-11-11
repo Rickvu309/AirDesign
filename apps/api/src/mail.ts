@@ -1,3 +1,5 @@
+import { signInRoutes } from "@airdesign/catalog"
+
 export type Mail = {
   readonly to: string
   readonly text: string
@@ -6,7 +8,7 @@ export type Mail = {
 export type Sender = (mail: Mail) => Promise<void>
 
 export function signLink(publicOrigin: string, token: string): string {
-  return `${publicOrigin}/sign-in/link?token=${encodeURIComponent(token)}`
+  return `${publicOrigin}${signInRoutes.link.path}?token=${encodeURIComponent(token)}`
 }
 
 export function mailText(publicOrigin: string, token: string, code: string): string {
