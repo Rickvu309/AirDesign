@@ -59,8 +59,7 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
-      - if: matrix.part == 'main'
-        name: Install PostgreSQL 18
+      - name: Install PostgreSQL 18
         run: |
           sudo install -d /usr/share/postgresql-common/pgdg
           sudo install -m 644 .github/postgresql-archive.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc

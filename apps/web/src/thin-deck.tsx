@@ -153,10 +153,12 @@ function paint(
   return { slides: slides.map((each) => each.elements), boxes, shapes: rows }
 }
 
-type EditLink = {
+type EditLink<Sent> = {
   enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
-  flush(deck: string): Promise<unknown>
+  flush(deck: string): Promise<Sent>
 }
+
+const server = httpRemote()
 
 export type FlushOutcome = "sent" | "offline" | "signed-out" | "kept"
 
@@ -164,7 +166,7 @@ export type CommitOutcome = FlushOutcome | "refused"
 
 export async function flushPending(open: (remote: Remote) => EditLink, deckId: string): Promise<FlushOutcome> {
   try {
-    const flushed = await open(httpRemote()).flush(deckId)
+    const flushed = await open(server).flush(deckId)
     if (typeof flushed !== "object" || flushed === null) return "kept"
     if ("ok" in flushed && flushed.ok === true) return "sent"
     if ("refusal" in flushed && flushed.refusal === "session") return "signed-out"
@@ -254,9 +256,11 @@ export function ThinDeck({ id }: { id?: string }) {
       await ensureMarkup()
       const stored = await getParts(id)
       if (!stored.ok || !live) return
-      const opened = await connect(memoryRemote()).openDeck(id)
+      const opened = await connect(server)
+        .openDeck(id)
+        .catch(() => null)
       if (!live) return
-      const painted = paint(store.current, stored.parts, opened.ok ? opened.register : null)
+      const painted = paint(store.current, stored.parts, opened?.ok === true ? opened.register : null)
       boxes.current = painted.boxes
       shapes.current = painted.shapes
       shownParts.current = stored.parts

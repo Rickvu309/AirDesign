@@ -169,11 +169,20 @@ function view(
 }
 
 const flushing = new Map<DeckId, Promise<unknown>>()
+const openedByRemote = new WeakMap<Remote, Set<DeckId>>()
 
 export function connect(remote: Remote) {
+  const openedDecks = openedByRemote.get(remote) ?? new Set<DeckId>()
+  openedByRemote.set(remote, openedDecks)
+
   async function sendRows(deck: DeckId): Promise<CommitResult> {
     const { confirmed, pending } = split(await readDeck(deck))
     if (pending.length === 0) return { ok: false, refusal: "batch" }
+    if (!openedDecks.has(deck)) {
+      const opened = await remote.open({ deck })
+      if (!opened.ok) return opened
+      openedDecks.add(deck)
+    }
     const sending = unsent(pending, 0)
     let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }

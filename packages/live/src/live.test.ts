@@ -1,5 +1,5 @@
 import type { DeckId } from "@airdesign/catalog"
-import { currentValue, elementId, legacyElement, rootElement } from "@airdesign/document"
+import { currentValue, elementId, legacyElement, openRegister, rootElement } from "@airdesign/document"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   connect,
@@ -311,6 +311,7 @@ describe("live cache", () => {
 
   it("returns the stored revision when the cursor is behind", async () => {
     const remote = memoryRemote()
+    await remote.open({ deck: "deck" })
     await remote.commit({ deck: "deck", batch: [{ value: "one", node }] })
     await remote.commit({ deck: "deck", batch: [{ value: "two", node }] })
     expect(await remote.watch({ deck: "deck", cursor: 0 })).toEqual({ ok: true, deck: "deck", revision: 2 })
@@ -633,6 +634,15 @@ describe("live cache", () => {
     expect(await cache.pending("deck")).toEqual([])
   })
 
+  it("opens the deck once across connections to one remote", async () => {
+    const { remote, calls } = tracedRemote()
+    await connect(remote).enqueue("deck", "first", node, "")
+    await connect(remote).flush("deck")
+    await connect(remote).enqueue("deck", "second", node, "")
+    await connect(remote).flush("deck")
+    expect(calls).toEqual(["open deck", "commit deck", "commit deck"])
+  })
+
   it("opens each deck on its own", async () => {
     const { remote, calls } = tracedRemote()
     const cache = connect(remote)
@@ -715,12 +725,29 @@ describe("live cache", () => {
     const cache = connect(remote)
     expect(await remote.open({ deck: "deck" })).toEqual({ ok: false, refusal: "session" })
     expect(await remote.watch({ deck: "deck", cursor: null })).toEqual({ ok: false, refusal: "session" })
+    expect(
+      await remote.commit({
+        deck: "deck",
+        batch: [
+          { value: "earlier", node, floor: "file" },
+          { value: "later", node },
+        ],
+      }),
+    ).toEqual({ ok: false, refusal: "session" })
     await cache.enqueue("deck", "earlier", node, "file")
     await cache.enqueue("deck", "later", node, "file")
     const before = await cache.rows("deck")
     expect(await cache.flush("deck")).toEqual({ ok: false, refusal: "session" })
     expect(await cache.rows("deck")).toEqual(before)
     expect(await cache.phase("deck")).toBe("on-device")
+    expect(seen.at(-1)).toEqual({
+      url: "/decks/open",
+      method: "POST",
+      credentials: "same-origin",
+      type: "application/json",
+      body: { deck: "deck" },
+    })
+    seen.pop()
     expect(seen).toEqual([
       {
         url: "/decks/open",
@@ -761,6 +788,7 @@ describe("live cache", () => {
         credentials: String(init.credentials),
         body: JSON.parse(String(init.body)) as Record<string, unknown>,
       })
+      if (String(url) === "/decks/open") return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 0 }))
       return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 1, key: "clean:1" }))
     })
     const cache = connect(memoryRemote())
@@ -772,6 +800,7 @@ describe("live cache", () => {
       key: "clean:1",
     })
     expect(seen).toEqual([
+      { url: "/decks/open", method: "POST", credentials: "same-origin", body: { deck: "clean" } },
       {
         url: "/decks/commit",
         method: "POST",
@@ -779,12 +808,13 @@ describe("live cache", () => {
         body: { deck: "clean", batch: [{ value: "Hello!", node: "258.7", floor: "Hello" }] },
       },
     ])
-    expect(Object.keys(seen[0]?.body ?? {}).sort()).toEqual(["batch", "deck"])
+    expect(Object.keys(seen[1]?.body ?? {}).sort()).toEqual(["batch", "deck"])
     expect(await cache.pending("clean")).toEqual([])
   })
 
   it("keeps the pending row when the clean commit key does not match", async () => {
     vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      if (String(url) === "/decks/open") return new Response(JSON.stringify({ ok: true, deck: "clean", revision: 0 }))
       expect(String(url)).toBe("/decks/commit")
       expect(String(init.method)).toBe("POST")
       expect(String(init.credentials)).toBe("same-origin")
@@ -821,7 +851,12 @@ describe("live cache", () => {
 
   it("keeps pending rows when the commit key does not match", async () => {
     const remote: Remote = {
-      open: async () => ({ ok: false, refusal: "session" }),
+      open: async () => ({
+        ok: true,
+        deck: "deck" as DeckId,
+        revision: 0,
+        register: openRegister("", "deck" as DeckId),
+      }),
       watch: async () => ({ ok: false, refusal: "session" }),
       commit: async () => ({ ok: true, deck: "deck", revision: 1, key: "deck:9" }) as CommitResult,
     }
@@ -851,6 +886,7 @@ describe("live cache", () => {
   it("splits a large register into rows under 65536 bytes", async () => {
     const remote = memoryRemote()
     const value = "y".repeat(70_000)
+    await remote.open({ deck: "deck" })
     await remote.commit({ deck: "deck", batch: [{ value, node }] })
     await deleteDatabase()
     const opened = await connect(remote).openDeck("deck")
