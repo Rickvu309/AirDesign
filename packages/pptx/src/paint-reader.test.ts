@@ -463,17 +463,71 @@ describe("paintReader rule 8: group transforms", () => {
     expectBox(boxOf(elements, "2"), { x: 0, y: 0, width: 2000, height: 2000, ...plain, rotation: 90 })
   })
 
-  it.each([
-    [0, 1000],
-    [1000, 0],
-  ])("gives a null box under a chExt of %i by %i, and the group keeps its own", (cx, cy) => {
-    const frame = groupTransform([1, 2, 3, 4], [0, 0, cx, cy])
-    const nested = group("3", groupTransform([0, 0, 1, 1], [0, 0, 1, 1]), sp("4", xfrm(0, 0, 1, 1)))
-    const elements = painted({ slide: group("2", frame, child.replace(`id="3"`, `id="5"`) + nested) })
-    expect(boxOf(elements, "5")).toBeNull()
-    expect(boxOf(elements, "3")).toBeNull()
-    expect(boxOf(elements, "4")).toBeNull()
-    expectBox(boxOf(elements, "2"), { x: 1, y: 2, width: 3, height: 4, ...plain })
+  it("applies a horizontally flipped outer group around a rotated inner group", () => {
+    const outer = groupTransform([5000000, 1000000, 2400000, 2400000], [0, 0, 1200000, 1200000], `flipH="1"`)
+    const inner = groupTransform([200000, 300000, 800000, 800000], [0, 0, 400000, 400000], `rot="5400000"`)
+    const leaf = sp("4", xfrm(100000, 200000, 400000, 200000, `rot="1800000"`))
+    const elements = painted({ slide: group("2", outer, group("3", inner, leaf)) })
+    expectBox(boxOf(elements, "4"), {
+      x: 5800000,
+      y: 2400000,
+      width: 1600000,
+      height: 800000,
+      rotation: 240,
+      flipH: true,
+      flipV: false,
+    })
+    expectBox(boxOf(elements, "3"), {
+      x: 5400000,
+      y: 1600000,
+      width: 1600000,
+      height: 1600000,
+      rotation: 270,
+      flipH: true,
+      flipV: false,
+    })
+  })
+
+  it("scales 1 on a zero chExt height and still applies the offset, leaving width scaled", () => {
+    const frame = groupTransform([1000, 2000, 3000, 0], [100, 200, 1500, 0])
+    expectBox(box(group("2", frame, sp("3", xfrm(400, 250, 600, 10)))), {
+      x: 1600,
+      y: 2050,
+      width: 1200,
+      height: 10,
+      ...plain,
+    })
+  })
+
+  it("scales 1 on a zero chExt width and still applies the offset, leaving height scaled", () => {
+    const frame = groupTransform([2000, 1000, 0, 3000], [200, 100, 0, 1500])
+    expectBox(box(group("2", frame, sp("3", xfrm(250, 400, 10, 600)))), {
+      x: 2050,
+      y: 1600,
+      width: 10,
+      height: 1200,
+      ...plain,
+    })
+  })
+
+  it("scales 1 on both axes when chExt is zero on both, whatever the ext", () => {
+    const frame = groupTransform([1000, 2000, 500, 700], [100, 200, 0, 0])
+    expectBox(box(group("2", frame, sp("3", xfrm(150, 260, 10, 20)))), {
+      x: 1050,
+      y: 2060,
+      width: 10,
+      height: 20,
+      ...plain,
+    })
+  })
+
+  it("gives nested shapes and the group itself a box under a zero chExt", () => {
+    const frame = groupTransform([1000, 2000, 3000, 0], [100, 200, 1500, 0])
+    const nested = group("3", groupTransform([100, 250, 20, 10], [0, 0, 20, 10]), sp("4", xfrm(2, 3, 4, 5)))
+    const elements = painted({ slide: group("2", frame, nested) })
+    expectBox(boxOf(elements, "2"), { x: 1000, y: 2000, width: 3000, height: 0, ...plain })
+    expectBox(boxOf(elements, "3"), { x: 1000, y: 2050, width: 40, height: 10, ...plain })
+    expectBox(boxOf(elements, "4"), { x: 1004, y: 2053, width: 8, height: 5, ...plain })
   })
 
   it("passes a child through a group that has no transform", () => {
