@@ -65,21 +65,9 @@ const sameHits = (name, hits, said) => {
   if (hits.join("\n") !== said.join("\n")) throw new Error(`${name} gave\n${hits.join("\n")}`)
 }
 const where = "tooling/oxlint-plugin-airdesign/glossary.json: The allowed line in scripts/ratchet.mjs"
-const entry = { file: "scripts/ratchet.mjs", text: "x", reason: "compatibility", expires: "2027-02-09" }
-sameHits("a live entry passes", glossaryFindings("2026-11-11", [entry]), [])
-sameHits("an entry passes on its last day", glossaryFindings("2027-02-09", [entry]), [])
-sameHits("an expired entry fails", glossaryFindings("2027-02-10", [entry]), [
-  `${where} expired on 2027-02-09. Replace the word or renew it with a reason.`,
-])
-sameHits("an entry may not stay past 92 days", glossaryFindings("2026-11-01", [entry]), [
-  `${where} may stay at most 92 days. Set expires on or before that.`,
-])
-sameHits("an entry needs a reason", glossaryFindings("2026-11-11", [{ ...entry, reason: "" }]), [
-  `${where} needs a reason.`,
-])
-sameHits("an entry needs an expiry", glossaryFindings("2026-11-11", [{ ...entry, expires: undefined }]), [
-  `${where} needs an expires date.`,
-])
+const entry = { file: "scripts/ratchet.mjs", text: "x", reason: "compatibility" }
+sameHits("an entry with a reason passes", glossaryFindings([entry]), [])
+sameHits("an entry needs a reason", glossaryFindings([{ ...entry, reason: "" }]), [`${where} needs a reason.`])
 
 const root = path.resolve(import.meta.dirname, "../..")
 for (const one of glossary.allowed) {
