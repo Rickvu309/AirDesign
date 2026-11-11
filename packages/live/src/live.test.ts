@@ -631,6 +631,52 @@ describe("live cache", () => {
     expect(opened.register.elements[other]?.floor).toBe("right file")
   })
 
+  it("asks the server to open a deck once when an edit is sent while the first open is in flight", async () => {
+    const real = memoryRemote()
+    const asked: string[] = []
+    let answer: () => void = () => {}
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve
+    })
+    const cache = connect({
+      open: async (body) => {
+        asked.push(body.deck)
+        await answered
+        return real.open(body)
+      },
+      watch: (body) => real.watch(body),
+      commit: (body) => real.commit(body),
+    })
+    await cache.enqueue("deck", "typed", node, "")
+    const named = cache.open("deck")
+    const sent = cache.flush("deck")
+    await cache.rows("deck")
+    await cache.rows("deck")
+    answer()
+    expect(await named).toEqual({ ok: true })
+    expect(await sent).toMatchObject({ ok: true })
+    expect(asked).toEqual(["deck"])
+  })
+
+  it("asks again after a refused open", async () => {
+    const real = memoryRemote()
+    let refuse = true
+    let opens = 0
+    const cache = connect({
+      open: async (body) => {
+        opens += 1
+        return refuse ? { ok: false, refusal: "session" } : real.open(body)
+      },
+      watch: (body) => real.watch(body),
+      commit: (body) => real.commit(body),
+    })
+    expect(await cache.open("deck")).toEqual({ ok: false, refusal: "session" })
+    refuse = false
+    expect(await cache.open("deck")).toEqual({ ok: true })
+    expect(await cache.open("deck")).toEqual({ ok: true })
+    expect(opens).toBe(2)
+  })
+
   it("opens a new element with the file text it was given", async () => {
     const cache = connect(memoryRemote())
     await cache.enqueue("deck", "typed", node, "from file")

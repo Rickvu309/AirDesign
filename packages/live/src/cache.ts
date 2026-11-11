@@ -167,18 +167,34 @@ function view(
 }
 
 const flushing = new Map<DeckId, Promise<unknown>>()
-const openedByRemote = new WeakMap<Remote, Set<DeckId>>()
+type OpenOnceResult = { ok: true } | Extract<OpenResult, { ok: false }>
+
+const openingByRemote = new WeakMap<Remote, Map<DeckId, Promise<OpenOnceResult>>>()
 
 export function connect(remote: Remote) {
-  const openedDecks = openedByRemote.get(remote) ?? new Set<DeckId>()
-  openedByRemote.set(remote, openedDecks)
+  const openingDecks = openingByRemote.get(remote) ?? new Map<DeckId, Promise<OpenOnceResult>>()
+  openingByRemote.set(remote, openingDecks)
 
-  async function openOnce(deck: DeckId): Promise<{ ok: true } | Extract<OpenResult, { ok: false }>> {
-    if (openedDecks.has(deck)) return { ok: true }
-    const opened = await remote.open({ deck })
-    if (!opened.ok) return opened
-    openedDecks.add(deck)
-    return { ok: true }
+  function forget(deck: DeckId, opening: Promise<OpenOnceResult>) {
+    if (openingDecks.get(deck) === opening) openingDecks.delete(deck)
+  }
+
+  function openOnce(deck: DeckId): Promise<OpenOnceResult> {
+    const known = openingDecks.get(deck)
+    if (known !== undefined) return known
+    const opening: Promise<OpenOnceResult> = remote.open({ deck }).then(
+      (opened) => {
+        if (opened.ok) return { ok: true }
+        forget(deck, opening)
+        return opened
+      },
+      (error: unknown) => {
+        forget(deck, opening)
+        throw error
+      },
+    )
+    openingDecks.set(deck, opening)
+    return opening
   }
 
   async function sendRows(deck: DeckId): Promise<CommitResult> {
@@ -236,7 +252,7 @@ export function connect(remote: Remote) {
         }
       })
     },
-    async open(deck: string): Promise<{ ok: true } | Extract<OpenResult, { ok: false }>> {
+    async open(deck: string): Promise<OpenOnceResult> {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
       return openOnce(parsed.deck)
