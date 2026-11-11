@@ -59,13 +59,7 @@ jobs:
           path: ~/.cache/airdesign/spec-results
           key: spec-results-${{ hashFiles('specs/**') }}
           restore-keys: spec-results-
-      - name: Install PostgreSQL 18
-        run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo install -m 644 .github/postgresql-archive.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get -o Acquire::Retries=5 update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y postgresql-18
+      - uses: ./.github/actions/postgres
       - if: matrix.part != 'pptx'
         run: pnpm check --part=${{ matrix.part }}
       - if: matrix.part == 'main' && !cancelled()
@@ -190,13 +184,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Install PostgreSQL 18
-        run: |
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo install -m 644 .github/postgresql-archive.asc /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
-          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get -o Acquire::Retries=5 update
-          sudo DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 install -y postgresql-18
+      - uses: ./.github/actions/postgres
       - name: Report planted faults on changed code
         run: |
           code=0
