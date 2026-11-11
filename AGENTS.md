@@ -52,7 +52,7 @@ Prefer the simple system. Do not keep complexity because it exists, or add machi
 
 - Code has no comments. If code needs explaining, use a better name.
 - Never name a file or folder `utils`, `helpers` or `common`. Name it after what it contains.
-- Use one word per idea, everywhere. The same name appears in the code, the test and the tool, so one search finds all of it.
+- Use one word per idea, everywhere. The same name appears in the code, the test and the tool, so one search finds all of it. `GLOSSARY.md` says which word.
 - Every package exposes only its `index.ts`, and tests sit beside the code. `@airdesign/theme` also exposes `tokens.css`.
 - Extend what exists before building a parallel version.
 - Copy follows the existing screens. Do not invent product copy. Layout follows the tokens in `packages/theme` and the components in `apps/web/src/components/ui/`. Add a missing role to the token file.
