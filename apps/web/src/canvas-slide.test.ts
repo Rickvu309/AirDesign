@@ -1,5 +1,15 @@
 import { elementId } from "@airdesign/document"
-import type { PaintBox, PaintElement, PaintFill, PaintReader, SlidePaint } from "@airdesign/pptx"
+import type {
+  PaintBox,
+  PaintElement,
+  PaintFill,
+  PaintLine,
+  PaintParagraph,
+  PaintReader,
+  PaintRunStyle,
+  PaintText,
+  SlidePaint,
+} from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { paintKind, slideCanvases, type CanvasSource } from "./canvas-slide"
 
@@ -41,7 +51,22 @@ it("carries the deck's size and each row's own box", () => {
   const canvas = slideCanvases(reader({ ...size, elements: [row()] }), [source])(0)
   expect(canvas).toEqual({
     ...size,
-    elements: [{ key: `${part}#2`, id, kind: "shape", box, editable: true, placeholder: false, filled: false }],
+    background: null,
+    elements: [
+      {
+        key: `${part}#2`,
+        id,
+        kind: "shape",
+        box,
+        editable: true,
+        placeholder: false,
+        filled: false,
+        fill: null,
+        line: null,
+        outline: "box",
+        text: null,
+      },
+    ],
   })
 })
 
@@ -144,7 +169,19 @@ it("keeps every shape's words on the slide when the reader cannot read it", () =
   }
   const canvas = slideCanvases(broken, [source])(0)
   expect(canvas?.elements).toEqual([
-    { key: `${part}#2`, id, kind: "shape", box: null, editable: true, placeholder: false, filled: false },
+    {
+      key: `${part}#2`,
+      id,
+      kind: "shape",
+      box: null,
+      editable: true,
+      placeholder: false,
+      filled: false,
+      fill: null,
+      line: null,
+      outline: "box",
+      text: null,
+    },
   ])
 })
 
@@ -175,4 +212,142 @@ it("paints the slide with the file's background", () => {
   }
   const canvas = slideCanvases({ slide: () => paint }, [source])(0)
   expect(canvas?.background).toBe("#A1B2C3")
+})
+
+function painted(overrides: Partial<PaintElement>) {
+  const canvas = slideCanvases(reader({ ...size, elements: [row(overrides)] }), [source])(0)
+  const element = canvas?.elements[0]
+  if (element === undefined) throw new Error("no element")
+  return element
+}
+
+it.each<[string, PaintFill, string | null]>([
+  ["no fill", { type: "none" }, null],
+  ["a solid", { type: "solid", color: { hex: "0A0B0C", alpha: 1 } }, "#0A0B0C"],
+  ["a clear solid", { type: "solid", color: { hex: "0A0B0C", alpha: 0.5 } }, "#0A0B0C80"],
+  [
+    "a linear gradient",
+    {
+      type: "gradient",
+      stops: [
+        { position: 0, color: { hex: "000000", alpha: 1 } },
+        { position: 1, color: { hex: "FFFFFF", alpha: 1 } },
+      ],
+      angle: 45,
+    },
+    "linear-gradient(135deg, #000000 0%, #FFFFFF 100%)",
+  ],
+  [
+    "a path gradient",
+    { type: "gradient", stops: [{ position: 0.5, color: { hex: "123456", alpha: 1 } }], angle: null },
+    "radial-gradient(#123456 50%)",
+  ],
+  [
+    "a pattern, by its background",
+    {
+      type: "pattern",
+      preset: "pct5",
+      foreground: { hex: "111111", alpha: 1 },
+      background: { hex: "EEEEEE", alpha: 1 },
+    },
+    "#EEEEEE",
+  ],
+])("turns %s into the fill the box paints", (_, fill, css) => {
+  expect(painted({ fill }).fill).toBe(css)
+})
+
+it("shows a picture fill as the box it cannot show yet", () => {
+  expect(painted({ fill: { type: "picture", part: "ppt/media/image1.png" } }).fill).toBe("var(--line)")
+})
+
+it("leaves the slide's background out when it is a picture", () => {
+  const paint: SlidePaint = { ...size, elements: [], background: { type: "picture", part: "ppt/media/image1.png" } }
+  expect(slideCanvases({ slide: () => paint }, [source])(0)?.background).toBeNull()
+})
+
+const line: PaintLine = {
+  fill: { type: "solid", color: { hex: "334455", alpha: 1 } },
+  width: 38_100,
+  dash: "dash",
+  head: null,
+  tail: null,
+}
+
+it("carries a line's colour, width and dash apart from the fill", () => {
+  const element = painted({ fill: { type: "solid", color: { hex: "AABBCC", alpha: 1 } }, line })
+  expect(element.fill).toBe("#AABBCC")
+  expect(element.line).toEqual({ color: "#334455", width: 38_100, dash: [4, 3] })
+})
+
+it("paints no line when the line has no fill", () => {
+  expect(painted({ line: { ...line, fill: { type: "none" } } }).line).toBeNull()
+})
+
+it("draws a solid line with no dash", () => {
+  expect(painted({ line: { ...line, dash: "solid" } }).line?.dash).toBeNull()
+})
+
+it.each<[string, Partial<PaintElement>, string]>([
+  ["a rectangle", { geometry: "rect" }, "box"],
+  ["a preset it cannot draw", { geometry: "star5" }, "box"],
+  ["a rounded rectangle", { geometry: "roundRect" }, "round"],
+  ["an ellipse", { geometry: "ellipse" }, "ellipse"],
+  ["a line", { geometry: "line" }, "line"],
+  ["a connector", { kind: "p:cxnSp", geometry: "bentConnector3" }, "line"],
+])("draws %s with its outline", (_, overrides, outline) => {
+  expect(painted(overrides).outline).toBe(outline)
+})
+
+it("never fills a line", () => {
+  expect(painted({ geometry: "line", fill: { type: "solid", color: seen } }).fill).toBeNull()
+})
+
+const runLook: PaintRunStyle = {
+  font: "Serifa",
+  size: 24,
+  bold: true,
+  italic: true,
+  underline: false,
+  strike: false,
+  baseline: 0,
+  color: { hex: "102030", alpha: 1 },
+}
+
+const paragraph: PaintParagraph = {
+  from: 2,
+  align: "distributed",
+  level: 0,
+  marginLeft: 0,
+  indent: 0,
+  lineSpacing: null,
+  spaceBefore: null,
+  spaceAfter: null,
+  bullet: null,
+  runs: [{ ...runLook, from: 3, kind: "text", text: "words" }],
+  endStyle: { ...runLook, size: 12, font: null, color: null, bold: false, italic: false },
+}
+
+const text: PaintText = {
+  paragraphs: [paragraph],
+  anchor: "middle",
+  insets: { left: 1, top: 2, right: 3, bottom: 4 },
+  wrap: false,
+  fontScale: 0.5,
+  spacingReduction: 0,
+}
+
+it("turns a paragraph's points into the slide's units, shrunk by the box's font scale", () => {
+  expect(painted({ text }).text).toEqual({
+    anchor: "middle",
+    insets: { left: 1, top: 2, right: 3, bottom: 4 },
+    wrap: false,
+    paragraphs: [
+      {
+        from: 2,
+        align: "justify",
+        runs: [{ from: 3, text: "words", font: "Serifa", size: 152_400, bold: true, italic: true, color: "#102030" }],
+        endStyle: { font: null, size: 76_200, bold: false, italic: false, color: null },
+      },
+    ],
+  })
 })

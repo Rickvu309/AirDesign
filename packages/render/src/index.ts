@@ -4,11 +4,17 @@ export { textValue } from "./paragraph-edit.js"
 export { Passage } from "./passage.js"
 export {
   type CanvasElement,
+  type CanvasLine,
+  type CanvasOutline,
+  type CanvasParagraph,
+  type CanvasRun,
+  type CanvasRunStyle,
   type CanvasSlide,
+  type CanvasText,
   type ElementRecord,
   type PaintBox,
   type SlideRecord,
   type Thumb,
 } from "./record.js"
-export { SlideCanvas } from "./slide-canvas.js"
+export { SlideCanvas, unshownFill } from "./slide-canvas.js"
 export { paintStore, type PaintResult, type PaintStore } from "./store.js"
