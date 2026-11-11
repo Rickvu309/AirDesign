@@ -23,7 +23,8 @@ import {
 import type { CallerLog, Turns } from "@airdesign/mcp"
 
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
-import { airaBodyCap, airaTurn, type AiraSettings } from "./aira.js"
+import { type AiraSettings } from "./aira.js"
+import { airaRoute } from "./aira-route.js"
 import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
 import { readRegistration, registerClient } from "./clients.js"
 import { approve, describeClient } from "./consent.js"
@@ -450,24 +451,6 @@ async function mcpRoute(visit: Visit): Promise<void> {
   )
 }
 
-async function airaRoute(visit: Visit): Promise<void> {
-  const { options, logs, now, mint, req, res } = visit
-  const email = await signedIn(visit)
-  if (email === undefined) return
-  const body = await visit.body()
-  if (body === undefined) {
-    answerSize(res)
-    return
-  }
-  const answer = await airaTurn(
-    { settings: options.aira, db: options.session, logs, now, mint },
-    email,
-    req.headers["cf-ipcountry"],
-    parsedJson(body),
-  )
-  sendJson(res, answer.status, answer.body)
-}
-
 async function healthRoute({ res }: Visit): Promise<void> {
   sendJson(res, 200, { ok: true })
 }
@@ -481,7 +464,7 @@ export const routes: readonly Route[] = [
   { method: "GET", path: "/version", serve: versionRoute },
   { method: "POST", path: "/smoke/session", serve: smokeRoute },
   { method: "any", path: "/mcp", serve: mcpRoute },
-  { method: "POST", path: "/aira/turn", serve: airaRoute, cap: airaBodyCap },
+  airaRoute({ signedIn, answerSize, parsedJson, sendJson }),
   { method: "POST", path: "/oauth/register", serve: registerRoute },
   { method: "POST", path: oauthRoutes.client.path, serve: clientRoute },
   { method: "POST", path: oauthRoutes.approve.path, serve: approveRoute },

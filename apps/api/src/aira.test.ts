@@ -4,6 +4,7 @@ import { request, type Server } from "node:http"
 import type { Socket } from "node:net"
 
 import { signInRoutes } from "@airdesign/catalog"
+import { bytesOf } from "@airdesign/document"
 import type { CallerLog } from "@airdesign/mcp"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -136,7 +137,7 @@ async function turnsOf(email: string): Promise<TurnRow[]> {
 }
 
 function heldCeiling(text: string): number {
-  return (Buffer.byteLength(instructions) + Buffer.byteLength(text) + 64) * 2_000 + airaMaxTokens * 10_000
+  return (bytesOf(instructions) + bytesOf(text) + 64) * 2_000 + airaMaxTokens * 10_000
 }
 
 function userId(email: string): string {

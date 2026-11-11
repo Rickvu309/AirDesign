@@ -6,7 +6,8 @@ import type { Pool } from "pg"
 import { parseSync } from "oxc-parser"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 
-import { Replay } from "./aira-replay.js"
+import { airaFuzzGood, airaFuzzSettings } from "./aira-fuzz.js"
+import { badTargets } from "./fuzz-target.js"
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource } from "./harness.js"
 import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
@@ -142,22 +143,6 @@ const attacks: readonly Attack[] = [
   { name: "an absolute target to this host", absolute: "http://127.0.0.1", host: "127.0.0.1:8080" },
   { name: "a body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType },
   { name: "a chunked body over the cap", body: Buffer.alloc(bodyCap + 1, 0x78), type: jsonType, chunked: true },
-]
-
-const badTargets: readonly string[] = [
-  "//",
-  "///",
-  "/\\/",
-  "http://",
-  "http://[",
-  "*",
-  "/%",
-  "/%00",
-  "/?%",
-  "/%E0%A4%A",
-  "//evil.example/mcp",
-  "/\\evil.example/mcp",
-  "http://evil.example/mcp",
 ]
 
 const leaks: readonly RegExp[] = [
@@ -343,13 +328,7 @@ describe("hostile input over every route", () => {
       send: async (mail) => {
         mails.push(mail)
       },
-      aira: {
-        on: true,
-        key: "test-key-not-real",
-        secret: "fuzz-user-secret-not-real-0123456789abcdef",
-        transport: new Replay().transport,
-        log: () => undefined,
-      },
+      aira: airaFuzzSettings,
     })
     const broken = { query: () => Promise.reject(thrown) } as unknown as Pool
     const brokenListen = new DeckListen(info.listen)
@@ -467,9 +446,7 @@ describe("hostile input over every route", () => {
         },
       ],
       "POST /oauth/revoke": [{ shape: "form", answers: 200, fields: { token: "t" } }],
-      "POST /aira/turn": [
-        { shape: "json", answers: 200, says: '"ok":true', headers: ["cf-ipcountry: VN"], fields: { text: "Fuzz" } },
-      ],
+      ...airaFuzzGood,
       "POST /sign-in/email": [{ shape: "json", answers: 202, fields: { email: "good@example.com" } }],
       "POST /sign-in/code": [{ shape: "json", answers: 401, fields: { email: "good@example.com", code: "000000" } }],
       "GET /sign-in/link": [{ shape: "query", answers: 302, fields: { token: "t" } }],
