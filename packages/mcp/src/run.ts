@@ -2,7 +2,7 @@ import { readAgentEdit, type WireChange } from "@airdesign/catalog"
 import { decide, type Decision, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
-import { editRefusal } from "./edit-answer.js"
+import { editRefusal, heldElements } from "./edit-answer.js"
 import type { EditCode } from "./edit-next.js"
 
 export function agentCaller(runId: string): AgentCaller {
@@ -102,5 +102,6 @@ export function openRun(
 export function afterWrite(wrote: boolean, result: ToolResult, stored: Deck): ToolResult {
   if (!result.ok || wrote) return result
   const nodes = (result.answer?.elements ?? []).map((element) => element.node)
-  return editRefusal(stored, "stale", nodes)
+  const closed = heldElements(stored.register, nodes).some((element) => element.closed === true)
+  return editRefusal(stored, closed ? "person-protected" : "stale", nodes)
 }

@@ -395,9 +395,27 @@ describe("mcp route", () => {
       const foreign = await openedDeck("theirs")
       const opened = await openedDeck("field", nearLimit("field"))
       const cases = [
-        { text: editNext.deck, target: counting.base, cookie: await sign(nearLimit("nodeck")), id: deckName(), extra: {} },
-        { text: editNext.owner, target: counting.base, cookie: await sign(nearLimit("noowner")), id: foreign.id, extra: {} },
-        { text: editNext.field, target: counting.base, cookie: opened.cookie, id: opened.id, extra: { runId: "client-run" } },
+        {
+          text: editNext.deck,
+          target: counting.base,
+          cookie: await sign(nearLimit("nodeck")),
+          id: deckName(),
+          extra: {},
+        },
+        {
+          text: editNext.owner,
+          target: counting.base,
+          cookie: await sign(nearLimit("noowner")),
+          id: foreign.id,
+          extra: {},
+        },
+        {
+          text: editNext.field,
+          target: counting.base,
+          cookie: opened.cookie,
+          id: opened.id,
+          extra: { runId: "client-run" },
+        },
         {
           text: storeFailure,
           target: broken.base,
