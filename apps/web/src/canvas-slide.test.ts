@@ -166,3 +166,13 @@ it("names each kind the way the record does", () => {
     "chart",
   ])
 })
+
+it("paints the slide with the file's background", () => {
+  const paint: SlidePaint = {
+    ...size,
+    elements: [row()],
+    background: { type: "solid", color: { hex: "A1B2C3", alpha: 1 } },
+  }
+  const canvas = slideCanvases({ slide: () => paint }, [source])(0)
+  expect(canvas?.background).toBe("#A1B2C3")
+})
