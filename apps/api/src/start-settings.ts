@@ -15,6 +15,8 @@ export type StartSettings = {
   readonly hosts: readonly string[] | undefined
   readonly commit: string | undefined
   readonly smokeToken: string | undefined
+  readonly resendKey: string
+  readonly resendFrom: string
 }
 
 export type StartRefusal = { readonly refusal: string }
@@ -63,6 +65,10 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
   if (!accepted(resource, checkedResource)) return { refusal: "MCP_RESOURCE" }
   const cookieText = env.COOKIE_DOMAIN ?? ""
   if (cookieText !== "" && !accepted(cookieText, requireDomain)) return { refusal: "COOKIE_DOMAIN" }
+  const resendKey = nonEmpty(env.RESEND_API_KEY)
+  if (resendKey === undefined) return { refusal: "RESEND_API_KEY" }
+  const resendFrom = nonEmpty(env.RESEND_FROM)
+  if (resendFrom === undefined) return { refusal: "RESEND_FROM" }
   return {
     sessionUrl: env.SESSION_DATABASE_URL ?? "",
     deckUrl: env.DECK_DATABASE_URL ?? "",
@@ -75,5 +81,7 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     hosts: configuredHosts(env.API_HOSTS),
     commit: nonEmpty(env.RAILWAY_GIT_COMMIT_SHA),
     smokeToken: nonEmpty(env.SMOKE_TOKEN),
+    resendKey,
+    resendFrom,
   }
 }

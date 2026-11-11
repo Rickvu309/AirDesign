@@ -25,6 +25,8 @@ const {
   hosts,
   commit,
   smokeToken,
+  resendKey,
+  resendFrom,
 } = settings
 const session = openPool(sessionUrl, "api-session")
 const deck = openPool(deckUrl, "api-deck")
@@ -39,7 +41,7 @@ const server = createApi({
   siteOrigin,
   resource,
   ...(cookieDomain === undefined ? {} : { cookieDomain }),
-  send: (mail) => sendWithResend(mail),
+  send: (mail) => sendWithResend(mail, { key: resendKey, from: resendFrom }),
   ...(hosts === undefined ? {} : { hosts }),
   ...(commit === undefined ? {} : { commit }),
   ...(smokeToken === undefined ? {} : { smokeToken }),
