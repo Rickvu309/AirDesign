@@ -14,23 +14,23 @@ function slide(properties: string, kind = "p:sp", extra = ""): string {
   return `<?xml version="1.0"?><p:sld><p:cSld><p:spTree><${kind}><p:nvSpPr><p:cNvPr id="2" name="日本語 &amp; café"/></p:nvSpPr>${properties}${style}${extra}</${kind}><p:sp><p:cNvPr id="3"/><p:spPr><a:gradFill/></p:spPr></p:sp></p:spTree></p:cSld></p:sld>`
 }
 
-function parts(xml: string): Map<string, Uint8Array> {
+function parts(xml: string, name = part): Map<string, Uint8Array> {
   return new Map([
-    [part, encodeUtf8(xml)],
+    [name, encodeUtf8(xml)],
     [rels, encodeUtf8('<Relationships><Relationship Id="rId2" Target="../media/image1.png"/></Relationships>')],
     ["ppt/media/image1.png", new Uint8Array([0, 255, 20])],
   ])
 }
 
-function write(xml: string, value: ShapeFill = { kind: "srgb", value: "19a7E8" }): string {
-  const before = parts(xml)
+function write(xml: string, value: ShapeFill = { kind: "srgb", value: "19a7E8" }, name = part): string {
+  const before = parts(xml, name)
   const snapshot = new Map([...before].map(([name, bytes]) => [name, bytes.slice()]))
-  const next = applyRoute(before, { name: "spPr.fill", part, shape: "2", value })
+  const next = applyRoute(before, { name: "spPr.fill", part: name, shape: "2", value })
   expect(before).toEqual(snapshot)
-  for (const [name, bytes] of before) {
-    if (name !== part) expect(next.get(name)).toBe(bytes)
+  for (const [other, bytes] of before) {
+    if (other !== name) expect(next.get(other)).toBe(bytes)
   }
-  const bytes = next.get(part)
+  const bytes = next.get(name)
   if (bytes === undefined) throw new Error("part")
   expect(markupDocument(bytes).wellFormed).toBe(true)
   return decodeUtf8(bytes)
@@ -130,5 +130,22 @@ describe("spPr.fill", () => {
     const child = slide("<p:spPr><a:noFill/></p:spPr>")
     const xml = `<p:grpSp><p:cNvPr id="8"/><p:grpSpPr/>${child}</p:grpSp>`
     expect(write(xml)).toBe(xml.replace("<a:noFill/>", solid))
+  })
+
+  it.each([
+    ["ppt/slideLayouts/slideLayout1.xml", "p:sldLayout"],
+    ["ppt/slideMasters/slideMaster1.xml", "p:sldMaster"],
+  ])("sets the fill of a shape on %s", (name, root) => {
+    const xml = slide("<p:spPr><a:noFill/></p:spPr>").replace("<p:sld>", `<${root}>`).replace("</p:sld>", `</${root}>`)
+    expect(write(xml, { kind: "srgb", value: "19a7E8" }, name)).toBe(xml.replace("<a:noFill/>", solid))
+  })
+
+  it("sets a shape fill in a part with a table cell fill and leaves the cell fill as written", () => {
+    const cell = '<a:tcPr marL="0"><a:solidFill><a:srgbClr val="00FF00"/></a:solidFill></a:tcPr>'
+    const frame = `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="5" name="Table"/></p:nvGraphicFramePr><a:graphic><a:graphicData><a:tbl><a:tr h="1"><a:tc><a:txBody><a:bodyPr/><a:p/></a:txBody>${cell}</a:tc></a:tr></a:tbl></a:graphicData></a:graphic></p:graphicFrame>`
+    const xml = slide("<p:spPr><a:noFill/></p:spPr>").replace("<p:spTree>", `<p:spTree>${frame}`)
+    const written = write(xml)
+    expect(written).toBe(xml.replace("<a:noFill/>", solid))
+    expect(written).toContain(cell)
   })
 })
