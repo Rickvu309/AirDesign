@@ -1,5 +1,5 @@
 import type { ElementId, Kind } from "@airdesign/document"
-import type { PaintElement, PaintReader, ShapeKind, SlidePaint } from "@airdesign/pptx"
+import type { PaintElement, PaintFill, PaintReader, ShapeKind, SlidePaint } from "@airdesign/pptx"
 import type { CanvasElement, CanvasSlide } from "@airdesign/render"
 
 export type CanvasShape = { readonly id: ElementId; readonly kind: Kind; readonly editable: boolean }
@@ -18,6 +18,14 @@ export function paintKind(kind: ShapeKind): Kind {
   return "shape"
 }
 
+function visibleFill(fill: PaintFill | null): boolean {
+  if (fill === null || fill.type === "none") return false
+  if (fill.type === "solid") return fill.color.alpha > 0
+  if (fill.type === "gradient") return fill.stops.some((stop) => stop.color.alpha > 0)
+  if (fill.type === "pattern") return fill.foreground.alpha > 0 || fill.background.alpha > 0
+  return true
+}
+
 function canvasElements(rows: readonly PaintElement[], source: CanvasSource): readonly CanvasElement[] {
   const seen = new Map<string, number>()
   const elements: CanvasElement[] = []
@@ -33,6 +41,8 @@ function canvasElements(rows: readonly PaintElement[], source: CanvasSource): re
       kind: shape?.kind ?? paintKind(row.kind),
       box: row.box,
       editable: shape?.editable ?? false,
+      placeholder: row.placeholder !== null,
+      filled: visibleFill(row.fill),
     })
   }
   return elements
@@ -41,7 +51,7 @@ function canvasElements(rows: readonly PaintElement[], source: CanvasSource): re
 function unplaced(source: CanvasSource): readonly CanvasElement[] {
   return [...source.shapes]
     .filter(([, shape]) => shape.kind !== "group")
-    .map(([name, shape]) => ({ key: `${source.part}#${name}`, ...shape, box: null }))
+    .map(([name, shape]) => ({ key: `${source.part}#${name}`, ...shape, box: null, placeholder: false, filled: false }))
 }
 
 function paintOf(reader: PaintReader, part: string): SlidePaint | null {

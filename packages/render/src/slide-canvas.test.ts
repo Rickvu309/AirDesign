@@ -29,7 +29,7 @@ const place: PaintBox = {
 }
 
 function written(id: ElementId, overrides: Partial<CanvasElement> = {}): CanvasElement {
-  return { key: id, id, kind: "shape", box: place, editable: false, ...overrides }
+  return { key: id, id, kind: "shape", box: place, editable: false, placeholder: false, filled: false, ...overrides }
 }
 
 async function canvas(
@@ -37,8 +37,8 @@ async function canvas(
   width = 800,
   text = "words",
   onEdit?: (id: ElementId, value: string) => void,
+  store = paintStore(),
 ) {
-  const store = paintStore()
   for (const element of slide.elements) {
     if (element.id !== null)
       store.publish({ id: element.id, kind: element.kind, text, picture: element.kind === "picture" ? "" : null })
@@ -148,6 +148,54 @@ describe("SlideCanvas", () => {
     expect(placed(host, other).querySelector('[contenteditable="true"]')).toBeNull()
   })
 
+  it.each([
+    ["no text", ""],
+    ["only spaces", "   "],
+    ["paragraphs with no runs", '[{"from":0,"runs":[]},{"from":1,"runs":[]}]'],
+    ["runs of only spaces", '[{"from":0,"runs":[{"from":0,"text":"  "}]}]'],
+  ])("lets the pointer through an empty box with %s and keeps its caret", async (_name, text) => {
+    const host = await canvas({ ...wide, elements: [written(id, { editable: true })] }, 800, text, () => undefined)
+    expect(placed(host, id).style.pointerEvents).toBe("none")
+    expect(placed(host, id).querySelector('[contenteditable="true"]')).not.toBeNull()
+  })
+
+  it("keeps the pointer on an empty placeholder", async () => {
+    const element = written(id, { editable: true, placeholder: true })
+    const host = await canvas({ ...wide, elements: [element] }, 800, "", () => undefined)
+    expect(placed(host, id).style.pointerEvents).toBe("auto")
+  })
+
+  it("keeps the pointer on an empty box with a visible fill", async () => {
+    const element = written(id, { editable: true, filled: true })
+    const host = await canvas({ ...wide, elements: [element] }, 800, "", () => undefined)
+    expect(placed(host, id).style.pointerEvents).toBe("auto")
+  })
+
+  it("keeps the pointer on an empty box with no place on the slide, since it covers nothing", async () => {
+    const element = written(id, { editable: true, box: null })
+    const host = await canvas({ ...wide, elements: [element] }, 800, "", () => undefined)
+    expect(placed(host, id).style.pointerEvents).toBe("auto")
+  })
+
+  it("does not give the pointer to a placeholder that cannot be edited", async () => {
+    const host = await canvas({ ...wide, elements: [written(id, { placeholder: true })] }, 800, "")
+    expect(placed(host, id).style.pointerEvents).toBe("none")
+  })
+
+  it("gives the pointer to an empty box once it has text and takes it back when the text goes", async () => {
+    const store = paintStore()
+    const host = await canvas({ ...wide, elements: [written(id, { editable: true })] }, 800, "", () => undefined, store)
+    const publish = async (text: string) => {
+      await act(async () => {
+        store.publish({ id, kind: "shape", text, picture: null })
+      })
+    }
+    await publish("typed")
+    expect(placed(host, id).style.pointerEvents).toBe("auto")
+    await publish("")
+    expect(placed(host, id).style.pointerEvents).toBe("none")
+  })
+
   it("reports an edit against the element that was typed in", async () => {
     const edits: string[] = []
     const host = await canvas(
@@ -172,7 +220,17 @@ describe("SlideCanvas", () => {
   it("paints a sheet element with no document id as an empty box", async () => {
     const host = await canvas({
       ...wide,
-      elements: [{ key: "ppt/slideLayouts/slideLayout1.xml#7", id: null, kind: "shape", box: place, editable: false }],
+      elements: [
+        {
+          key: "ppt/slideLayouts/slideLayout1.xml#7",
+          id: null,
+          kind: "shape",
+          box: place,
+          editable: false,
+          placeholder: false,
+          filled: false,
+        },
+      ],
     })
     const element = placed(host, "ppt/slideLayouts/slideLayout1.xml#7")
     expect(element.style.width).toBe("400px")

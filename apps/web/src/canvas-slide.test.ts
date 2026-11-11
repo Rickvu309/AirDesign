@@ -1,5 +1,5 @@
 import { elementId } from "@airdesign/document"
-import type { PaintBox, PaintElement, PaintReader, SlidePaint } from "@airdesign/pptx"
+import type { PaintBox, PaintElement, PaintFill, PaintReader, SlidePaint } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { paintKind, slideCanvases, type CanvasSource } from "./canvas-slide"
 
@@ -9,14 +9,27 @@ const size = { width: 12_192_000, height: 6_858_000 }
 const id = elementId("256.2")
 
 function row(overrides: Partial<PaintElement> = {}): PaintElement {
-  return { part, shape: "2", from: "slide", kind: "p:sp", box, group: null, placeholder: null, ...overrides }
+  return {
+    part,
+    shape: "2",
+    from: "slide",
+    kind: "p:sp",
+    box,
+    group: null,
+    placeholder: null,
+    text: null,
+    fill: null,
+    line: null,
+    geometry: null,
+    ...overrides,
+  }
 }
 
-function reader(paint: SlidePaint, reads: string[] = []): PaintReader {
+function reader(paint: Omit<SlidePaint, "background">, reads: string[] = []): PaintReader {
   return {
     slide(slidePart) {
       reads.push(slidePart)
-      return paint
+      return { ...paint, background: null }
     },
   }
 }
@@ -27,8 +40,46 @@ it("carries the deck's size and each row's own box", () => {
   const canvas = slideCanvases(reader({ ...size, elements: [row()] }), [source])(0)
   expect(canvas).toEqual({
     ...size,
-    elements: [{ key: `${part}#2`, id, kind: "shape", box, editable: true }],
+    elements: [{ key: `${part}#2`, id, kind: "shape", box, editable: true, placeholder: false, filled: false }],
   })
+})
+
+const seen = { hex: "112233", alpha: 1 }
+const clear = { hex: "112233", alpha: 0 }
+
+it.each<[string, PaintFill | null, boolean]>([
+  ["no fill read", null, false],
+  ["no fill", { type: "none" }, false],
+  ["a clear solid", { type: "solid", color: clear }, false],
+  ["a solid", { type: "solid", color: seen }, true],
+  ["a clear gradient", { type: "gradient", stops: [{ position: 0, color: clear }], angle: 0 }, false],
+  [
+    "a gradient",
+    {
+      type: "gradient",
+      stops: [
+        { position: 0, color: clear },
+        { position: 1, color: seen },
+      ],
+      angle: 0,
+    },
+    true,
+  ],
+  ["a clear pattern", { type: "pattern", preset: "pct5", foreground: clear, background: clear }, false],
+  ["a pattern", { type: "pattern", preset: "pct5", foreground: clear, background: seen }, true],
+  ["a picture", { type: "picture", part: "ppt/media/image1.png" }, true],
+])("reads whether %s is a visible fill", (_name, fill, filled) => {
+  const canvas = slideCanvases(reader({ ...size, elements: [row({ fill })] }), [source])(0)
+  expect(canvas?.elements[0]?.filled).toBe(filled)
+})
+
+it("says which row is a placeholder", () => {
+  const title = row({ shape: "3", placeholder: { type: "title", index: null } })
+  const canvas = slideCanvases(reader({ ...size, elements: [row(), title] }), [source])(0)
+  expect(canvas?.elements.map((each) => [each.key, each.placeholder])).toEqual([
+    [`${part}#2`, false],
+    [`${part}#3`, true],
+  ])
 })
 
 it("paints a layout row under the slide with no document id even when its shape number matches a slide shape", () => {
@@ -81,7 +132,9 @@ it("keeps every shape's words on the slide when the reader cannot read it", () =
     },
   }
   const canvas = slideCanvases(broken, [source])(0)
-  expect(canvas?.elements).toEqual([{ key: `${part}#2`, id, kind: "shape", box: null, editable: true }])
+  expect(canvas?.elements).toEqual([
+    { key: `${part}#2`, id, kind: "shape", box: null, editable: true, placeholder: false, filled: false },
+  ])
 })
 
 it("keeps every shape's words on the slide when the reader lists none of the slide's own shapes", () => {

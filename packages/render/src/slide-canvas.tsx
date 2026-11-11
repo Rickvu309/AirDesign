@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react"
 import type { ElementId } from "@airdesign/document"
+import { useElement } from "./element-view.js"
+import { paragraphText, textValue } from "./paragraph-edit.js"
 import { Passage } from "./passage.js"
 import type { CanvasElement, CanvasSlide, PaintBox } from "./record.js"
 import type { PaintStore } from "./store.js"
@@ -42,33 +44,42 @@ function textLayer(box: PaintBox | null, scaled: Scaled): CSSProperties {
   }
 }
 
-function PlacedElement(props: {
+function isBlank(text: string): boolean {
+  return textValue(text).every((paragraph) => paragraphText(paragraph).trim() === "")
+}
+
+function takesPointer(element: CanvasElement, text: string): boolean {
+  if (!element.editable) return false
+  return element.placeholder || element.filled || element.box === null || !isBlank(text)
+}
+
+function frame(element: CanvasElement, scaled: Scaled, pointer: boolean): CSSProperties {
+  const unshown = element.kind === "picture" || element.kind === "chart"
+  return {
+    ...placement(element.box, scaled),
+    pointerEvents: pointer ? "auto" : "none",
+    ...(unshown ? { background: unshownFill } : {}),
+  }
+}
+
+function PlacedText(props: {
   readonly store: PaintStore
   readonly element: CanvasElement
+  readonly id: ElementId
   readonly scaled: Scaled
   readonly onEdit?: ((id: ElementId, value: string) => void) | undefined
 }) {
-  const { element, onEdit, scaled, store } = props
-  const { box, editable, id, key, kind } = element
-  const unshown = kind === "picture" || kind === "chart"
+  const { element, id, onEdit, scaled, store } = props
+  const record = useElement(store, id)
   return (
-    <div
-      data-canvas-element={key}
-      style={{
-        ...placement(box, scaled),
-        pointerEvents: editable ? "auto" : "none",
-        ...(unshown ? { background: unshownFill } : {}),
-      }}
-    >
-      {id === null ? null : (
-        <div style={textLayer(box, scaled)}>
-          {editable && onEdit !== undefined ? (
-            <Passage id={id} onEdit={(value) => onEdit(id, value)} store={store} />
-          ) : (
-            <Passage id={id} store={store} />
-          )}
-        </div>
-      )}
+    <div data-canvas-element={element.key} style={frame(element, scaled, takesPointer(element, record?.text ?? ""))}>
+      <div style={textLayer(element.box, scaled)}>
+        {element.editable && onEdit !== undefined ? (
+          <Passage id={id} onEdit={(value) => onEdit(id, value)} store={store} />
+        ) : (
+          <Passage id={id} store={store} />
+        )}
+      </div>
     </div>
   )
 }
@@ -95,9 +106,20 @@ export function SlideCanvas(props: {
         fontSize: scaled(defaultTextSize),
       }}
     >
-      {slide.elements.map((element) => (
-        <PlacedElement key={element.key} element={element} onEdit={props.onEdit} scaled={scaled} store={props.store} />
-      ))}
+      {slide.elements.map((element) =>
+        element.id === null ? (
+          <div key={element.key} data-canvas-element={element.key} style={frame(element, scaled, false)} />
+        ) : (
+          <PlacedText
+            key={element.key}
+            element={element}
+            id={element.id}
+            onEdit={props.onEdit}
+            scaled={scaled}
+            store={props.store}
+          />
+        ),
+      )}
     </div>
   )
 }
