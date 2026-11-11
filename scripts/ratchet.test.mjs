@@ -3,6 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
+  allowedCommit,
   approvedCommit,
   contents,
   guarded,
@@ -309,6 +310,20 @@ same(
   approvedCommit("owner", [review("owner", "APPROVED", "abc"), review("owner", "COMMENTED", "def")]),
   "abc",
 )
+
+const comment = (body, role = "MEMBER") => ({ body, role })
+same("no comment allows nothing", allowedCommit([], "abc"), undefined)
+same("a member's owner-allows comment names the head", allowedCommit([comment("owner-allows abc")], "abc"), "abc")
+same("the owner's comment counts too", allowedCommit([comment("owner-allows abc\n", "OWNER")], "abc"), "abc")
+same("a comment for an older head allows nothing", allowedCommit([comment("owner-allows abc")], "def"), undefined)
+same("a short sha allows nothing", allowedCommit([comment("owner-allows ab")], "abc"), undefined)
+same("an outsider's comment allows nothing", allowedCommit([comment("owner-allows abc", "NONE")], "abc"), undefined)
+same(
+  "the words inside a longer comment allow nothing",
+  allowedCommit([comment("I think owner-allows abc")], "abc"),
+  undefined,
+)
+same("a comment with no text allows nothing", allowedCommit([{ role: "MEMBER" }], "abc"), undefined)
 
 const blocksOf = (change) =>
   ownerReasons({ baseMetrics: metrics, headMetrics: metrics, changedFiles: [], changedScripts: [], ...change }).map(

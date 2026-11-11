@@ -6,7 +6,16 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { jarPath, javaBin } from "./check-specs.mjs"
 import { workingTree } from "./checked.mjs"
-import { approvedCommit, guarded, localFork, localOwner, localWarning, packageFile } from "./ratchet.mjs"
+import {
+  allowedCommit,
+  approvedCommit,
+  guarded,
+  localFork,
+  localOwner,
+  localWarning,
+  packageFile,
+  readComments,
+} from "./ratchet.mjs"
 
 const checkFolders = ["tooling/", "scripts/"]
 const proofName = /\.test\.(js|mjs|ts)$/
@@ -474,7 +483,8 @@ const approved = (repository, number, sha) => {
     .split("\n")
     .filter((line) => line !== "")
     .map((line) => JSON.parse(line))
-  return approvedCommit(repository.split("/")[0], reviews) === sha
+  if (approvedCommit(repository.split("/")[0], reviews) === sha) return true
+  return allowedCommit(readComments(repository, number), sha) === sha
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
