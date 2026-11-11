@@ -55,4 +55,20 @@ describe("usage", () => {
     expect(settledUs.accepted).toBe(true)
     expect(settledUs.ledger.spent).toBe(10_020_460)
   })
+
+  it("holds the reserve on the open turn and clears both together", () => {
+    const reserved = usage(openLedger(), {
+      command: "reserve",
+      id: "row",
+      input: 1,
+      maxTokens: 0,
+      coldPrefix: 0,
+      search: 0,
+      searchOn: false,
+      usOnly: false,
+    })
+    expect(reserved.ledger.open).toEqual({ turn: "row", hold: 2_000 })
+    const released = usage(reserved.ledger, { command: "release", id: "row" })
+    expect(released.ledger.open).toBeNull()
+  })
 })
