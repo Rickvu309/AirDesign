@@ -26,17 +26,16 @@ const expectWords = (relative, source, said) => {
 const oldFailure = "known " + "fa" + "ult"
 const oldMetric = "st" + "ick"
 const oldCi = "ga" + "te"
-const oldRatchet = `owner ${oldCi}`
+const oldBar = `owner ${oldCi}`
 const instead = (relative, line, use, old) => `${relative}:${line}: Write "${use}" instead of "${old}".`
 
 expectWords("scripts/metrics.mjs", `  throw new Error("one ${oldFailure} was not counted")`, [
   instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
 ])
-expectWords(
-  "AGENTS.md",
-  `| A ${oldMetric} moves only toward its goal | the \`${oldRatchet}\` check, run from \`main\` |`,
-  [instead("AGENTS.md", 1, "ratchet", oldRatchet), instead("AGENTS.md", 1, "metric", oldMetric)],
-)
+expectWords("AGENTS.md", `| A ${oldMetric} moves only toward its goal | the \`${oldBar}\` check, run from \`main\` |`, [
+  instead("AGENTS.md", 1, "bar", oldBar),
+  instead("AGENTS.md", 1, "metric", oldMetric),
+])
 expectWords("scripts/metrics.mjs", `const ${"known" + "Fa" + "ults"} = (root) => 0`, [
   instead("scripts/metrics.mjs", 1, "known failure", oldFailure),
 ])
@@ -53,9 +52,9 @@ expectWords("scripts/check.mjs", `${oldMetric}s and ${oldMetric}`, [
   instead("scripts/check.mjs", 1, "metric", oldMetric),
 ])
 expectWords("apps/web/src/gated.ts", `export const ${oldCi}d = ${oldMetric}er + investigate + oldMetricsFile`, [])
-const ratchetLine = glossary.allowed[0].text
-expectWords("scripts/ratchet.mjs", `  ${ratchetLine}`, [])
-expectWords("scripts/check.mjs", ratchetLine, [instead("scripts/check.mjs", 1, "metric", oldMetric)])
+const barLine = glossary.allowed[0].text
+expectWords("scripts/bar.mjs", `  ${barLine}`, [])
+expectWords("scripts/check.mjs", barLine, [instead("scripts/check.mjs", 1, "metric", oldMetric)])
 expectWords("tooling/oxlint-plugin-airdesign/glossary.json", `"${oldMetric}": "metric"`, [])
 const pastPath = expectHits(`scripts/${oldMetric}s.mjs`, 1)
 if (pastPath[0] !== `scripts/${oldMetric}s.mjs: Write "metric" instead of "${oldMetric}".`) throw new Error(pastPath[0])
@@ -64,8 +63,8 @@ expectHits(`.github/workflows/owner-${oldCi}.yml`, 1)
 const sameHits = (name, hits, said) => {
   if (hits.join("\n") !== said.join("\n")) throw new Error(`${name} gave\n${hits.join("\n")}`)
 }
-const where = "tooling/oxlint-plugin-airdesign/glossary.json: The allowed line in scripts/ratchet.mjs"
-const entry = { file: "scripts/ratchet.mjs", text: "x", reason: "compatibility" }
+const where = "tooling/oxlint-plugin-airdesign/glossary.json: The allowed line in scripts/bar.mjs"
+const entry = { file: "scripts/bar.mjs", text: "x", reason: "compatibility" }
 sameHits("an entry with a reason passes", glossaryFindings([entry]), [])
 sameHits("an entry needs a reason", glossaryFindings([{ ...entry, reason: "" }]), [`${where} needs a reason.`])
 

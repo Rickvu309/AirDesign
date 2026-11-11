@@ -33,11 +33,6 @@ same(
   "a timed metric went over its limit",
 )
 same(
-  "a pull waiting for the owner",
-  failureClass(line("Run node scripts/ratchet.mjs", "Only Rickvu309 can accept this. Ask for a review.")),
-  "ratchet: waiting for the owner",
-)
-same(
   "an install that broke",
   failureClass(line("Run pnpm install --frozen-lockfile", "ERR_PNPM")),
   "other: Run pnpm install --frozen-lockfile",
