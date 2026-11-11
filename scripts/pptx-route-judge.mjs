@@ -59,12 +59,17 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   }
   const errors = pptx.newValidatorErrors(beforeErrors, afterErrors)
   const dupes = pptx.newDuplicateShapeIds(pptx.shapeIdCounts(beforeParts), pptx.shapeIdCounts(item.back))
+  const dangling = pptx.newDanglingShapeReferences(
+    pptx.danglingShapeReferences(beforeParts),
+    pptx.danglingShapeReferences(item.back),
+  )
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
-  if (errors.length === 0 && dupes.length === 0 && partsMatch) return null
+  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && partsMatch) return null
   return {
     operation: item.run.operation,
     errors: errors.length,
     dupes: dupes.length,
+    dangling: dangling.length,
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

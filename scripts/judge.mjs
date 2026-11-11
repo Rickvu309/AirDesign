@@ -4,5 +4,6 @@ export const judge = (pptx, before, after) => {
     ...pptx.newValidatorErrors(before.orders, after.orders),
   ]
   const dupes = pptx.newDuplicateShapeIds(before.ids, after.ids)
-  return { errors, dupes, accepted: errors.length === 0 && dupes.length === 0 }
+  const dangling = pptx.newDanglingShapeReferences(before.references, after.references)
+  return { errors, dupes, dangling, accepted: errors.length === 0 && dupes.length === 0 && dangling.length === 0 }
 }

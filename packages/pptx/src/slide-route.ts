@@ -2,6 +2,7 @@ import type { TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { attachedConnections, shapeAnimated } from "./shape-id.js"
 import { addTextShape } from "./shape-write.js"
 import {
   markupChildren,
@@ -178,6 +179,17 @@ export type RouteResult = {
   readonly id: string | null
 }
 
+export function removeShape(bytes: Uint8Array, id: string): Uint8Array {
+  const { elements } = requireMarkup(bytes)
+  const shape = shapeById(elements, id)
+  if (shapeAnimated(elements, shape)) throw new Error("shape-animated")
+  const pieces = [shape, ...attachedConnections(elements, shape)]
+  return spliceBytes(
+    bytes,
+    pieces.map(({ start, end }) => ({ start, end, next: emptyBytes })),
+  )
+}
+
 function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name: "add" }>): Uint8Array {
   switch (route.name) {
     case "text": {
@@ -216,11 +228,8 @@ function editPart(bytes: Uint8Array, route: Exclude<SlideRoute, { readonly name:
       }
       return spliceBytes(bytes, [attributeEdit(ext, "cx", String(cx)), attributeEdit(ext, "cy", String(cy))])
     }
-    case "remove": {
-      const document = requireMarkup(bytes)
-      const shape = shapeById(document.elements, route.shape)
-      return spliceBytes(bytes, [{ start: shape.start, end: shape.end, next: emptyBytes }])
-    }
+    case "remove":
+      return removeShape(bytes, route.shape)
     default: {
       const unexpected: never = route
       throw new Error(String(unexpected))

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
-import { shapeById } from "./slide-route.js"
+import { applyRoute, shapeById } from "./slide-route.js"
 import { newDuplicateShapeIds, shapeIdCounts } from "./shape-id.js"
 import { applyStructuralRoute, writeStructuralRoute } from "./structural-route.js"
 
@@ -443,5 +443,104 @@ describe("applyStructuralRoute", () => {
     expect(removedXml).toContain(">B<")
     expect(removedXml).toContain(">C<")
     expect(removedXml).not.toContain(">A<")
+  })
+})
+
+describe("removing a shape something refers to", () => {
+  const part = "ppt/slides/slide1.xml"
+  const plain = (id: number) => `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="S"/></p:nvSpPr></p:sp>`
+  const group = (id: number, inner: string) =>
+    `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="G"/></p:nvGrpSpPr>${inner}</p:grpSp>`
+  const connector = (id: number, ends: string) =>
+    `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="${id}" name="C"/><p:cNvCxnSpPr>${ends}</p:cNvCxnSpPr></p:nvCxnSpPr></p:cxnSp>`
+  const onSlide = (shapes: string, timing = "") =>
+    `<p:sld><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>${shapes}</p:spTree></p:cSld>${timing}</p:sld>`
+  const timed = (reference: string) => `<p:timing>${reference}</p:timing>`
+  const removed = (source: string, shape: string) =>
+    xml(applyStructuralRoute(deck(source), { name: "spTree.remove", part, shape }), part)
+
+  function expectRefused(source: string, shape: string) {
+    const parts = deck(source)
+    const held = parts.get(part)
+    expect(() => applyStructuralRoute(parts, { name: "spTree.remove", part, shape })).toThrow(/^shape-animated$/)
+    expect(() => applyRoute(parts, { name: "remove", part, shape })).toThrow(/^shape-animated$/)
+    expect(parts.get(part)).toBe(held)
+    expect(decodeUtf8(held ?? new Uint8Array())).toBe(source)
+  }
+
+  it("refuses a shape a p:spTgt targets and writes nothing", () => {
+    expectRefused(onSlide(plain(2) + plain(3), timed(`<p:spTgt spid="2"/>`)), "2")
+  })
+
+  it("refuses a shape a p:bldP builds and writes nothing", () => {
+    expectRefused(onSlide(plain(2) + plain(3), timed(`<p:bldP spid="2" grpId="0"/>`)), "2")
+  })
+
+  it.each(["p:bldDgm", "p:bldOleChart", "p:bldGraphic", "p:inkTgt"])("refuses a shape a %s names", (kind) => {
+    expectRefused(onSlide(plain(2), timed(`<${kind} spid="2"/>`)), "2")
+  })
+
+  it("refuses a group whose child is animated and writes nothing", () => {
+    expectRefused(onSlide(group(2, plain(3)) + plain(4), timed(`<p:spTgt spid="3"/>`)), "2")
+  })
+
+  it("refuses a group nested in a group whose deep child is animated", () => {
+    expectRefused(onSlide(group(2, group(3, plain(4))), timed(`<p:spTgt spid="4"/>`)), "2")
+  })
+
+  it("cuts a connector's a:stCxn and only those bytes besides the shape", () => {
+    const start = `<a:stCxn id="2" idx="1"/>`
+    const end = `<a:endCxn id="3" idx="0"/>`
+    expect(removed(onSlide(plain(2) + plain(3) + connector(4, start + end)), "2")).toBe(
+      onSlide(plain(3) + connector(4, end)),
+    )
+  })
+
+  it("cuts a connector's a:endCxn and only those bytes besides the shape", () => {
+    const start = `<a:stCxn id="2" idx="1"/>`
+    const end = `<a:endCxn id="3" idx="0"/>`
+    expect(removed(onSlide(plain(2) + plain(3) + connector(4, start + end)), "3")).toBe(
+      onSlide(plain(2) + connector(4, start)),
+    )
+  })
+
+  it("cuts both ends and every connector attached to the shape", () => {
+    const both = `<a:stCxn id="2" idx="1"/><a:endCxn id="2" idx="3"/>`
+    expect(removed(onSlide(connector(4, both) + plain(2) + connector(5, `<a:endCxn id="2" idx="0"/>`)), "2")).toBe(
+      onSlide(connector(4, "") + connector(5, "")),
+    )
+  })
+
+  it("cuts an attachment written with a close tag", () => {
+    expect(removed(onSlide(plain(2) + connector(4, `<a:stCxn id="2" idx="1"></a:stCxn>`)), "2")).toBe(
+      onSlide(connector(4, "")),
+    )
+  })
+
+  it("cuts an attachment to a child of a removed group", () => {
+    const attached = connector(5, `<a:stCxn id="3" idx="1"/>`)
+    expect(removed(onSlide(group(2, plain(3)) + attached), "2")).toBe(onSlide(connector(5, "")))
+  })
+
+  it("removes a group holding a connector attached inside it without a second cut", () => {
+    const inner = plain(3) + connector(4, `<a:stCxn id="3" idx="1"/>`)
+    expect(removed(onSlide(group(2, inner) + plain(5)), "2")).toBe(onSlide(plain(5)))
+  })
+
+  it("the slide route cuts an attachment the same way", () => {
+    const source = onSlide(plain(2) + connector(4, `<a:stCxn id="2" idx="1"/>`))
+    expect(xml(applyRoute(deck(source), { name: "remove", part, shape: "2" }), part)).toBe(onSlide(connector(4, "")))
+  })
+
+  it("removes an unreferenced shape exactly as before and leaves other references", () => {
+    const kept = plain(3) + connector(4, `<a:stCxn id="3" idx="1"/>`)
+    const timing = timed(`<p:spTgt spid="3"/><p:bldP spid="3" grpId="0"/>`)
+    expect(removed(onSlide(plain(2) + kept, timing), "2")).toBe(onSlide(kept, timing))
+  })
+
+  it("does not read a p:oleObj spid or a p:subSp spid as a reference to the shape", () => {
+    const shapes = `<p:sp><p:nvSpPr><p:cNvPr id="2" name="S"/></p:nvSpPr><p:oleObj spid="3"/></p:sp>${plain(3)}`
+    const timing = timed(`<p:subSp spid="3"/>`)
+    expect(removed(onSlide(shapes, timing), "3")).toContain(`<p:oleObj spid="3"/>`)
   })
 })

@@ -2,6 +2,7 @@ import { elementId, type TextValue } from "@airdesign/document"
 import { exportElements } from "./element-export.js"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { readShapes } from "./read-shapes.js"
+import { shapeAnimated } from "./shape-id.js"
 import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
@@ -421,8 +422,8 @@ function oneShape(parts: ReadonlyMap<string, Uint8Array>): { part: string; id: s
   for (const name of slideNames(parts)) {
     const bytes = parts.get(name)
     if (bytes === undefined) continue
-    const first = topShapes(bytes)[0]
-    if (first !== undefined) return { part: name, id: first.id }
+    const free = topShapes(bytes).find((item) => !shapeAnimated(item.elements, item.shape))
+    if (free !== undefined) return { part: name, id: free.id }
   }
   return null
 }

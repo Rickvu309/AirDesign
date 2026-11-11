@@ -1,5 +1,6 @@
 import fs from "node:fs"
 import { judge } from "./judge.mjs"
+import { scoreWrittenRoute } from "./pptx-route-judge.mjs"
 import {
   changedSinceArgs,
   changesJudge,
@@ -249,7 +250,48 @@ same(
 const countingPptx = {
   newValidatorErrors: (before, after) => after.filter((line) => !before.includes(line)),
   newDuplicateShapeIds: () => [],
+  newDanglingShapeReferences: (before = [], after = []) => after.filter((row) => !before.includes(row)),
 }
+const dangling = "ppt/slides/slide1.xml p:spTgt 9"
+same(
+  "the judge rejects a new dangling shape reference",
+  judge(
+    countingPptx,
+    { list: [], ids: [], orders: [], references: [] },
+    { list: [], ids: [], orders: [], references: [dangling] },
+  ).accepted,
+  false,
+)
+same(
+  "the judge does not blame a dangling shape reference the deck already had",
+  judge(
+    countingPptx,
+    { list: [], ids: [], orders: [], references: [dangling] },
+    { list: [], ids: [], orders: [], references: [dangling] },
+  ).accepted,
+  true,
+)
+const routePptx = {
+  ...countingPptx,
+  shapeIdCounts: () => [],
+  touchMatches: () => true,
+  danglingShapeReferences: (parts) => parts,
+}
+const writtenRoute = (back) => ({
+  run: { operation: "spTree.remove", error: null, touch: {} },
+  exportError: null,
+  back,
+})
+same(
+  "a written route that leaves a new dangling reference fails",
+  scoreWrittenRoute(routePptx, [], [], writtenRoute([dangling]), [])?.dangling,
+  1,
+)
+same(
+  "a written route is not blamed for a dangling reference the deck already had",
+  scoreWrittenRoute(routePptx, [dangling], [], writtenRoute([dangling]), []),
+  null,
+)
 const orderFault = "Order: p:spPr after p:txBody in p:sp of a markup branch /ppt/slides/slide1.xml"
 same(
   "the judge rejects a new order error",
