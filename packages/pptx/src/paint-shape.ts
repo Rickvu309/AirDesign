@@ -125,12 +125,18 @@ export const paintShape = (
     }
     line = { fill: lineFill ?? { type: "none" }, width: width ?? 9525, dash, head, tail }
   }
-  const properties = propertiesOf(own)
-  const preset = paintChild(own.children, properties, "a:prstGeom")
-  const custom = paintChild(own.children, properties, "a:custGeom")
-  return {
-    fill,
-    line,
-    geometry: preset === undefined ? (custom === undefined ? null : "custom") : paintAttribute(preset, "prst"),
+  let geometry: string | null = null
+  for (const source of sources) {
+    const properties = propertiesOf(source)
+    const preset = paintChild(source.children, properties, "a:prstGeom")
+    if (preset !== undefined) {
+      geometry = paintAttribute(preset, "prst")
+      break
+    }
+    if (paintChild(source.children, properties, "a:custGeom") !== undefined) {
+      geometry = "custom"
+      break
+    }
   }
+  return { fill, line, geometry }
 }

@@ -813,4 +813,17 @@ describe("paintReader on the real decks", () => {
     expect(drift).toEqual([])
     expect(total).toBeGreaterThan(0)
   }, 30_000)
+
+  it("inherits a title's master geometry and themes a connector's line on real decks", () => {
+    const deckAt = (name: string) => markupParts(decks.find((path) => path.endsWith(`/${name}`))!)
+    const shapeIn = (name: string, part: string, shape: string) =>
+      paintReader(deckAt(name))
+        .slide(part)
+        .elements.find((element) => element.from === "slide" && element.shape === shape)
+    expect(shapeIn("nasa-1d-cnn.pptx", "ppt/slides/slide2.xml", "5")?.geometry).toBe("rect")
+    expect(shapeIn("census-updating-spm.pptx", "ppt/slides/slide5.xml", "17")?.line).toMatchObject({
+      fill: { type: "solid", color: { hex: "2C567A" } },
+      width: 6350,
+    })
+  })
 })
