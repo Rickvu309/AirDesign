@@ -31,6 +31,7 @@ const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grp
 const box = { x: 914400, y: 914400, cx: 914400, cy: 914400 }
 
 export const routeOperations = [
+  "spPr.fill",
   "text",
   "move",
   "resize",
@@ -53,6 +54,7 @@ export const routeOperations = [
 ] as const
 
 const routeName: Record<(typeof routeOperations)[number], string> = {
+  "spPr.fill": writtenRoutes.fill,
   text: writtenRoutes.text,
   move: writtenRoutes.move,
   resize: writtenRoutes.resize,
@@ -222,6 +224,7 @@ export function createdShapesLanded(
 
 export function partTouch(parts: ReadonlyMap<string, Uint8Array>, route: SlideRoute | StructuralEdit): PartTouch {
   switch (route.name) {
+    case "spPr.fill":
     case "text":
     case "move":
     case "resize":
@@ -556,6 +559,21 @@ function attempt(
 
 export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly RouteRun[] {
   const runs: RouteRun[] = []
+  for (const part of slideNames(parts)) {
+    const bytes = parts.get(part)
+    if (bytes === undefined) continue
+    const host = topShapes(bytes).find((item) => {
+      if (item.shape.kind !== "p:sp") return false
+      const spPr = item.elements.find((mark) => mark.parent === item.shape.index && mark.kind === "p:spPr")
+      return (
+        spPr !== undefined && !item.elements.some((mark) => mark.parent === spPr.index && mark.kind === "a:blipFill")
+      )
+    })
+    if (host === undefined) continue
+    const route = { name: "spPr.fill", part, shape: host.id, value: { kind: "srgb", value: "19A7E8" } } as const
+    runs.push(attempt("spPr.fill", route, () => ({ touch: partTouch(parts, route), parts: applyRoute(parts, route) })))
+    break
+  }
   const text = textHost(parts)
   if (text !== null) {
     const route = {

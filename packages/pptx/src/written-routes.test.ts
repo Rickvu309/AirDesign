@@ -5,6 +5,7 @@ import { writtenRoutes } from "./written-routes.js"
 describe("writtenRoutes", () => {
   it("writes each edit through the route document names for a shape", () => {
     expect(writtenRoutes).toEqual({
+      fill: properties.shape.fill.route,
       text: properties.shape.text.route,
       move: properties.shape.box.route,
       resize: properties.shape.box.route,
