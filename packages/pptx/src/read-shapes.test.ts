@@ -50,7 +50,7 @@ const inFallback = (elements: readonly MarkupElement[], index: number): boolean 
 
 describe("readSlides", () => {
   it("lists the slides in the presentation's order, not the order of the parts", () => {
-    const xml = (text: string) => new TextEncoder().encode(text)
+    const xml = (text: string) => Uint8Array.from(text, (character) => character.charCodeAt(0))
     const presentation = `<p:presentation><p:sldIdLst><p:sldId id="452" r:id="rId3"/><p:sldId id="382" r:id="rId2"/></p:sldIdLst></p:presentation>`
     const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
     const parts = new Map([
