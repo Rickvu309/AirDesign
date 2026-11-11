@@ -79,6 +79,32 @@ describe("paint backgrounds", () => {
     expect(background(parts)).toBeNull()
   })
 
+  it("resolves phClr gradient stops in a bgRef style with the reference color", () => {
+    const reference = '<p:bg><p:bgRef idx="1001"><a:srgbClr val="336699"/></p:bgRef></p:bg>'
+    const style =
+      '<a:gradFill><a:gsLst><a:gs pos="0"><a:schemeClr val="phClr"/></a:gs><a:gs pos="100000"><a:schemeClr val="phClr"><a:alpha val="50000"/></a:schemeClr></a:gs></a:gsLst><a:lin ang="5400000"/></a:gradFill>'
+    expect(background(partsOf([reference], [], style))).toEqual({
+      type: "gradient",
+      stops: [
+        { position: 0, color: { hex: "336699", alpha: 1 } },
+        { position: 1, color: { hex: "336699", alpha: 0.5 } },
+      ],
+      angle: 90,
+    })
+  })
+
+  const styles = '<a:solidFill><a:srgbClr val="123456"/></a:solidFill><a:noFill/>'
+
+  it("gives a null background for bgRef idx 0", () => {
+    const reference = '<p:bg><p:bgRef idx="0"><a:srgbClr val="FFFFFF"/></p:bgRef></p:bg>'
+    expect(background(partsOf([reference], [], styles))).toBeNull()
+  })
+
+  it("gives a null background for a bgRef idx past the style list", () => {
+    const reference = '<p:bg><p:bgRef idx="1003"><a:srgbClr val="FFFFFF"/></p:bgRef></p:bg>'
+    expect(background(partsOf([reference], [], styles))).toBeNull()
+  })
+
   it("resolves bgRef 1001 with phClr and both sets of transforms", () => {
     const reference =
       '<p:bg><p:bgRef idx="1001"><a:schemeClr val="accent1"><a:alpha val="50000"/></a:schemeClr></p:bgRef></p:bg>'
@@ -86,7 +112,7 @@ describe("paint backgrounds", () => {
       '<a:solidFill><a:schemeClr val="phClr"><a:shade val="50000"/><a:alphaMod val="50000"/></a:schemeClr></a:solidFill>'
     expect(background(partsOf([reference], [], style))).toEqual({
       type: "solid",
-      color: { hex: "800000", alpha: 0.25 },
+      color: { hex: "BC0000", alpha: 0.25 },
     })
     expect(background(partsOf([reference.replace("1001", "1000")], [], style))).toBeNull()
     expect(background(partsOf([reference.replace("1001", "1002")], [], style + "<a:noFill/>"))).toEqual({
