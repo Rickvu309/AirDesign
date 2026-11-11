@@ -19,6 +19,7 @@ export const stages = [
     ["test", "pnpm", ["test:unit"], { AIRDESIGN_REPLAY_ONLY: "1", AIRDESIGN_SPEC_CACHE: specCache }],
     ["tooling", "pnpm", ["test:tooling"]],
     ["bug-rule", "node", ["scripts/bug-rule.mjs"]],
+    ["file-size", "node", ["scripts/file-size.mjs"]],
     ["references", "node", ["scripts/reference-order.mjs"]],
     ["interface-width", "node", ["scripts/interface-width.mjs"]],
     ["worktrees", "node", ["scripts/worktrees.mjs"]],
