@@ -31,7 +31,7 @@ export type EditorShellProps = {
   actionsMenu?: boolean
   toast?: ReactNode
   overlay?: ReactNode
-  slide?: ReactNode
+  slide?: (width: number) => ReactNode
   slides?: SlideStrip
   onExport?: () => void
 }
@@ -83,7 +83,11 @@ export function EditorShell({
       <div className="relative flex min-w-0 flex-1 flex-col items-center pt-14 pb-4">
         <div className="flex flex-col gap-3" style={{ width }}>
           <span className="text-[length:var(--type-dense)] text-faint">{slideLabel}</span>
-          {slide ?? <RevenueSlide width={width} working={working} selected={run === "compose"} />}
+          {slide === undefined ? (
+            <RevenueSlide width={width} working={working} selected={run === "compose"} />
+          ) : (
+            slide(width)
+          )}
         </div>
         <span className="block flex-1" />
         <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
