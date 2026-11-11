@@ -1,0 +1,15 @@
+export const badTargets: readonly string[] = [
+  "//",
+  "///",
+  "/\\/",
+  "http://",
+  "http://[",
+  "*",
+  "/%",
+  "/%00",
+  "/?%",
+  "/%E0%A4%A",
+  "//evil.example/mcp",
+  "/\\evil.example/mcp",
+  "http://evil.example/mcp",
+]

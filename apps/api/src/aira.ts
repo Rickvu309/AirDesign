@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto"
 
+import { bytesOf } from "@airdesign/document"
 import { admit, emptyLog, type CallerLog } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
@@ -113,7 +114,7 @@ export function weekStart(now: number): number {
 }
 
 function inputCeiling(text: string): number {
-  return Buffer.byteLength(instructions) + Buffer.byteLength(text) + framing
+  return bytesOf(instructions) + bytesOf(text) + framing
 }
 
 function weekUsage(ledger: Stored): WeekUsage {
