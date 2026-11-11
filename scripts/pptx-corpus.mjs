@@ -11,7 +11,9 @@ const realDeckBytes = 100_000
 const fixturesOf = (root) => path.join(root, "scripts/pptx-fixtures")
 
 const corpusFolder = (root) => path.join(fixturesOf(root), "corpus")
-const browserExports = ["exported-deck.pptx", "exported-paragraphs.pptx"]
+export const browserExportName = "exported-deck.pptx"
+export const paragraphsExportName = "exported-paragraphs.pptx"
+export const browserExports = [browserExportName, paragraphsExportName]
 const notOpened = "open: "
 
 export const validatorList = (row) => (row.opened === "ok" ? row.list : [`${notOpened}${row.opened}`])
@@ -77,6 +79,9 @@ export const rendersOf = ({ cases, added }) => [
   ...new Set([...cases.flatMap((row) => [row.before, afterRender(row)]), ...added]),
 ]
 
+export const lateRenders = ({ cases, browser }) =>
+  rendersOf({ cases, added: [] }).filter((render) => [browser].flat().includes(renderName(render)))
+
 export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, browser, size = rotatingDecks }) => {
   const full = argv.includes("--corpus")
   const { seed, fresh } = seeds.at(-1)
@@ -97,7 +102,9 @@ export const corpusDecision = ({ argv, seeds, listed, every, fixed, cases, brows
       return { pages: [], line: `corpus render ${render}: ${error.message}` }
     },
     duration: (measure) => (full ? { line: "the corpus check has no duration limit", fails: false } : measure()),
-    renders: rendersOf({ cases, added: full ? added : [] }).filter((render) => renderName(render) !== browser),
+    renders: rendersOf({ cases, added: full ? added : [] }).filter(
+      (render) => ![browser].flat().includes(renderName(render)),
+    ),
     rendersAdded: full,
     excusable: !full && fresh,
     announce: full

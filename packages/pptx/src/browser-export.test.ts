@@ -6,7 +6,8 @@ declare const process: {
 }
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
-import { markupDocument, spliceBytes, type ByteEdit } from "./element-span.js"
+import type { TextValue } from "@airdesign/document"
+import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { applyRoute, oneRunValue, shapeById } from "./slide-route.js"
@@ -189,47 +190,37 @@ describe("browserExportFailures", () => {
 
 const doeSlide = "ppt/slides/slide7.xml"
 const doeFixture = `${process.cwd()}/scripts/pptx-fixtures/doe-heat-pumps.pptx`
-const expectation: ParagraphExpectation = {
-  part: doeSlide,
-  shape: "45",
-  paragraphs: [
-    ["Vapor Compression Cycle"],
-    ["Pumped refrigerant"],
-    ["Pressurized (liquid) ", "supplies", " heat "],
-    ["Depressurized (gas) ", "collects", " heat "],
-    ["Extra line"],
-  ],
-  kept: 2,
-  bold: ["supplies", "collects"],
+const supplies = "supplies"
+const lines = ["Vapor Compression Cycle", "Pumped refrigerant"]
+
+function doeValue(word = supplies): TextValue {
+  return [
+    { from: 0, runs: [{ from: 0, text: lines[0] ?? "" }] },
+    { from: 1, runs: [{ from: 0, text: lines[1] ?? "" }] },
+    {
+      from: 2,
+      runs: [
+        { from: 0, text: "Pressurized (liquid) " },
+        { from: 1, text: word },
+        { from: 2, text: " heat " },
+      ],
+    },
+    {
+      from: 3,
+      runs: [
+        { from: 0, text: "Depressurized (gas) " },
+        { from: 1, text: "collects" },
+        { from: 2, text: " heat " },
+      ],
+    },
+    { from: 3, runs: [{ from: -1, text: "Extra line" }] },
+  ]
 }
 
-function doeExport(original: ReadonlyMap<string, Uint8Array>, supplies = "supplies"): Map<string, Uint8Array> {
-  return applyRoute(original, {
-    name: "text",
-    part: doeSlide,
-    shape: "45",
-    value: [
-      { from: 0, runs: [{ from: 0, text: "Vapor Compression Cycle" }] },
-      { from: 1, runs: [{ from: 0, text: "Pumped refrigerant" }] },
-      {
-        from: 2,
-        runs: [
-          { from: 0, text: "Pressurized (liquid) " },
-          { from: 1, text: supplies },
-          { from: 2, text: " heat " },
-        ],
-      },
-      {
-        from: 3,
-        runs: [
-          { from: 0, text: "Depressurized (gas) " },
-          { from: 1, text: "collects" },
-          { from: 2, text: " heat " },
-        ],
-      },
-      { from: 3, runs: [{ from: -1, text: "Extra line" }] },
-    ],
-  })
+const expectation: ParagraphExpectation = { part: doeSlide, shape: "45", value: doeValue() }
+
+function doeExport(original: ReadonlyMap<string, Uint8Array>, value = doeValue()): Map<string, Uint8Array> {
+  return applyRoute(original, { name: "text", part: doeSlide, shape: "45", value })
 }
 
 function slideBody(parts: ReadonlyMap<string, Uint8Array>) {
@@ -240,7 +231,12 @@ function slideBody(parts: ReadonlyMap<string, Uint8Array>) {
   const body = elements.find((element) => element.kind === "p:txBody" && element.parent === host.index)
   if (body === undefined) throw new Error("p:txBody")
   const paragraphs = elements.filter((element) => element.kind === "a:p" && element.parent === body.index)
-  return { bytes, elements, host, body, paragraphs }
+  const child = (parent: MarkupElement | undefined, kind: string, nth = 0): MarkupElement => {
+    const found = elements.filter((element) => element.kind === kind && element.parent === parent?.index)[nth]
+    if (found === undefined) throw new Error(kind)
+    return found
+  }
+  return { bytes, elements, host, body, paragraphs, child }
 }
 
 function withSlide(parts: ReadonlyMap<string, Uint8Array>, bytes: Uint8Array): Map<string, Uint8Array> {
@@ -253,6 +249,17 @@ function replaced(bytes: Uint8Array, from: number, to: number, next: string): Ui
   return spliceBytes(bytes, [{ start: from, end: to, next: encodeUtf8(next) }])
 }
 
+type Plant = (body: ReturnType<typeof slideBody>) => ByteEdit[]
+
+function planted(parts: ReadonlyMap<string, Uint8Array>, plant: Plant): Map<string, Uint8Array> {
+  const body = slideBody(parts)
+  return withSlide(parts, spliceBytes(body.bytes, plant(body)))
+}
+
+function insertion(at: number, text: string): ByteEdit {
+  return { start: at, end: at, next: encodeUtf8(text) }
+}
+
 describe("paragraphExportFailures", () => {
   it("a correct replaced run and new paragraph export has no failures", async () => {
     const original = await readParts(readFileSync(doeFixture))
@@ -261,43 +268,85 @@ describe("paragraphExportFailures", () => {
 
   it("wrong text in a replaced run", async () => {
     const original = await readParts(readFileSync(doeFixture))
-    const failures = paragraphExportFailures(original, doeExport(original, "delivers"), expectation)
+    const failures = paragraphExportFailures(original, doeExport(original, doeValue("delivers")), expectation)
     expect(failures.some((failure) => failure.startsWith("shape 45 paragraphs "))).toBe(true)
-    expect(failures).toContain("shape 45 bold supplies")
+    expect(failures).toContain(`${doeSlide} bytes`)
   })
 
-  it("a lost bold on a replaced run", async () => {
-    const original = await readParts(readFileSync(doeFixture))
-    const exported = doeExport(original)
-    const { bytes, elements, paragraphs } = slideBody(exported)
-    const paragraph = paragraphs[3]
-    if (paragraph === undefined) throw new Error("a:p")
-    const format = elements.find(
-      (element) =>
-        element.kind === "a:rPr" &&
-        element.start > paragraph.start &&
-        element.end < paragraph.end &&
-        element.attributes.some((item) => item.name === "b" && item.value === "1"),
-    )
-    if (format === undefined) throw new Error("a:rPr")
-    const text = decodeUtf8(bytes.subarray(format.start, format.end))
-    const unbolded = replaced(bytes, format.start, format.end, text.replace(' b="1"', ""))
-    expect(paragraphExportFailures(original, withSlide(exported, unbolded), expectation)).toEqual([
-      "shape 45 bold collects",
-    ])
-  })
+  const plants: readonly (readonly [string, Plant])[] = [
+    [
+      "a lost bold on a replaced run",
+      ({ elements, paragraphs, child }) => {
+        const run = child(paragraphs[3], "a:r", 1)
+        const format = elements.find((element) => element.kind === "a:rPr" && element.parent === run.index)
+        if (format === undefined) throw new Error("a:rPr")
+        return [{ start: format.start, end: format.end, next: encodeUtf8("<a:rPr/>") }]
+      },
+    ],
+    ["a changed byte in paragraph 0", ({ paragraphs }) => [insertion((paragraphs[0]?.start ?? 0) + 4, " ")]],
+    ["a changed byte in paragraph 1", ({ paragraphs }) => [insertion((paragraphs[1]?.start ?? 0) + 4, " ")]],
+    ["a changed a:bodyPr", ({ body, child }) => [insertion(child(body, "a:bodyPr").start + 9, ' rot="60000"')]],
+    [
+      "a changed a:lstStyle",
+      ({ body, child }) => {
+        const list = child(body, "a:lstStyle")
+        return [{ start: list.start, end: list.end, next: encodeUtf8("<a:lstStyle><a:lvl1pPr/></a:lstStyle>") }]
+      },
+    ],
+    [
+      "a changed a:pPr in paragraph 2",
+      ({ paragraphs, child }) => [insertion(child(paragraphs[2], "a:pPr").start + 6, ' rtl="1"')],
+    ],
+    [
+      "a changed a:pPr in paragraph 3",
+      ({ paragraphs, child }) => [insertion(child(paragraphs[3], "a:pPr").start + 6, ' rtl="1"')],
+    ],
+    [
+      "a changed a:rPr of an unreplaced run",
+      ({ paragraphs, child }) => [
+        insertion(child(child(paragraphs[2], "a:r", 0), "a:rPr").start + 6, ' strike="sngStrike"'),
+      ],
+    ],
+    [
+      "a changed a:rPr of the replaced run",
+      ({ paragraphs, child }) => [insertion(child(child(paragraphs[2], "a:r", 1), "a:rPr").start + 6, ' i="1"')],
+    ],
+    [
+      "a bold new paragraph",
+      ({ paragraphs, child }) => [insertion(child(paragraphs[4], "a:r").start + 5, '<a:rPr b="1"/>')],
+    ],
+    [
+      "a new paragraph that lost its a:pPr",
+      ({ paragraphs, child }) => {
+        const format = child(paragraphs[4], "a:pPr")
+        return [{ start: format.start, end: format.end, next: new Uint8Array() }]
+      },
+    ],
+    [
+      "a run split in two with the same text",
+      ({ bytes, paragraphs, child }) => {
+        const run = child(paragraphs[3], "a:r", 0)
+        const source = decodeUtf8(bytes.subarray(run.start, run.end))
+        const head = source.replace("Depressurized (gas) ", "Depressurized ")
+        const tail = source.replace("Depressurized (gas) ", "(gas) ")
+        expect(head).not.toBe(source)
+        return [{ start: run.start, end: run.end, next: encodeUtf8(head + tail) }]
+      },
+    ],
+  ]
 
-  it("a changed byte in paragraph 0", async () => {
-    const original = await readParts(readFileSync(doeFixture))
-    const exported = doeExport(original)
-    const { bytes, paragraphs } = slideBody(exported)
-    const paragraph = paragraphs[0]
-    if (paragraph === undefined) throw new Error("a:p")
-    const source = decodeUtf8(bytes.subarray(paragraph.start, paragraph.end))
-    const spaced = replaced(bytes, paragraph.start, paragraph.end, source.replace("<a:p>", "<a:p >"))
-    const failures = paragraphExportFailures(original, withSlide(exported, spaced), expectation)
-    expect(failures).toContain("shape 45 paragraph 0 bytes")
-  })
+  for (const [name, plant] of plants) {
+    it(name, async () => {
+      const original = await readParts(readFileSync(doeFixture))
+      const failures = paragraphExportFailures(original, planted(doeExport(original), plant), expectation)
+      expect(failures).toContain(`${doeSlide} bytes`)
+      expect(
+        failures
+          .filter((failure) => failure !== `${doeSlide} bytes`)
+          .every((failure) => failure.startsWith("shape 45 paragraphs ")),
+      ).toBe(true)
+    })
+  }
 
   it("a changed byte in another part", async () => {
     const original = await readParts(readFileSync(doeFixture))
@@ -312,9 +361,7 @@ describe("paragraphExportFailures", () => {
     const declaration = decodeUtf8(bytes.subarray(0, 60))
     expect(declaration).toContain('version="1.0"')
     const changed = replaced(bytes, 0, 60, declaration.replace('version="1.0"', 'version="1.1"'))
-    expect(paragraphExportFailures(original, withSlide(exported, changed), expectation)).toEqual([
-      `${doeSlide} outside shape 45 text`,
-    ])
+    expect(paragraphExportFailures(original, withSlide(exported, changed), expectation)).toEqual([`${doeSlide} bytes`])
   })
 
   it("a part added, removed or reordered", async () => {
@@ -331,34 +378,9 @@ describe("paragraphExportFailures", () => {
 
   it("a sixth paragraph", async () => {
     const original = await readParts(readFileSync(doeFixture))
-    const exported = applyRoute(doeExport(original), {
-      name: "text",
-      part: doeSlide,
-      shape: "45",
-      value: [
-        { from: 0, runs: [{ from: 0, text: "Vapor Compression Cycle" }] },
-        { from: 1, runs: [{ from: 0, text: "Pumped refrigerant" }] },
-        {
-          from: 2,
-          runs: [
-            { from: 0, text: "Pressurized (liquid) " },
-            { from: 1, text: "supplies" },
-            { from: 2, text: " heat " },
-          ],
-        },
-        {
-          from: 3,
-          runs: [
-            { from: 0, text: "Depressurized (gas) " },
-            { from: 1, text: "collects" },
-            { from: 2, text: " heat " },
-          ],
-        },
-        { from: 4, runs: [{ from: 0, text: "Extra line" }] },
-        { from: 4, runs: [{ from: 0, text: "One more" }] },
-      ],
-    })
+    const exported = doeExport(original, [...doeValue(), { from: 3, runs: [{ from: -1, text: "One more" }] }])
     const failures = paragraphExportFailures(original, exported, expectation)
     expect(failures.some((failure) => failure.startsWith("shape 45 paragraphs "))).toBe(true)
+    expect(failures).toContain(`${doeSlide} bytes`)
   })
 })
