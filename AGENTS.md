@@ -84,5 +84,6 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | A rule or script under `tooling/` or `scripts/` that has tests on `main` still passes those tests, as `main` has them, and those tests lose no line | the `check-regression` check, run from `main`, and the `check-regression` step of a local `pnpm check`. Only the owner's approval of the commit, and a rerun of the check after it, lets a broken one through |
 | A change to what `ci` checks is seen by the owner | the `ratchet` check labels the PR `changes-ci`. It does not block |
 | A bug you find and do not fix is an `it.fails` test. A skipped, todo, expected-failure or no-expect test counts as a known failure, and the number of tests cannot fall | `scripts/metrics.mjs` prints both counts on every run and fails when `test-count` is under its floor. A known failure is shown, never blocked. Tests deleted from a file that still exists are caught only in review until a per-file count exists |
+| A new check starts in `warnSteps` in `scripts/check.mjs` and blocks only after it has caught a real fault with no false stop | review |
 | One word per idea, extend before you build a parallel version, no invented copy, reduced motion shows the finished state | review |
 | How agents work here | review |

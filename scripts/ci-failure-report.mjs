@@ -2,8 +2,11 @@ import { execFileSync } from "node:child_process"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-const days = 7
 const logLimit = 60
+const pullListLimit = 100
+
+export const mergedLimit = 20
+export const falseStopBudget = 1
 
 export const failureClass = (log) => {
   const step = /\bfail ([a-z:-]+)(?: [\d.]+s)?$/m.exec(log)
@@ -36,7 +39,7 @@ export const audit = ({ runs, logs }) => {
 }
 
 export const report = (result, repository) => [
-  `Runs in the last ${days} days: ${result.total}. Failed: ${result.failed}. Failed on main: ${result.redMain}.`,
+  `Failed runs: ${result.failed}.`,
   "",
   "| Failures | Class | Example run |",
   "| --- | --- | --- |",
@@ -47,60 +50,154 @@ export const report = (result, repository) => [
   "Take the top class. Find the mistake behind it, and change the repo so it cannot repeat: code first, a check second, a line in AGENTS.md last.",
 ]
 
+const failedConclusions = new Set(["failure", "timed_out", "startup_failure"])
+
+export const lastMerged = (pulls) =>
+  [...pulls].sort((left, right) => right.mergedAt.localeCompare(left.mergedAt)).slice(0, mergedLimit)
+
+const stoppedRuns = (runs) => {
+  const ordered = [...runs].sort((left, right) => left.id - right.id || left.attempt - right.attempt)
+  return ordered.filter(
+    (run, index) =>
+      failedConclusions.has(run.conclusion) &&
+      ordered.slice(index + 1).some((later) => later.sha === run.sha && later.conclusion === "success"),
+  )
+}
+
+export const falseStops = (pulls) => {
+  const read = lastMerged(pulls)
+  const stops = read
+    .map((pull) => ({ number: pull.number, runs: stoppedRuns(pull.runs) }))
+    .filter((stop) => stop.runs.length > 0)
+  return { read: read.length, count: stops.length, stops }
+}
+
+export const falseStopLine = ({ count, read }) =>
+  `False stops: ${count} of the last ${read} merged PRs. Budget: ${falseStopBudget}.`
+
+export const countIn = (texts) => {
+  const counts = texts.flatMap((text) => /False stops: (\d+) of/.exec(text)?.[1] ?? [])
+  return counts.length > 0 ? Number(counts.at(-1)) : undefined
+}
+
+export const alarmAction = (count, open) => {
+  if (count <= falseStopBudget) return open ? "close" : "none"
+  if (!open) return "open"
+  return countIn(open.texts) === count ? "none" : "comment"
+}
+
+export const attemptId = (run) => `${run.id}/attempts/${run.attempt}`
+
 const self = fileURLToPath(import.meta.url)
 if (process.argv[1] && path.resolve(process.argv[1]) === self) {
   const repository = process.argv[2]
   const gh = (args) =>
     execFileSync("gh", args, { encoding: "utf8", maxBuffer: 256 * 1024 * 1024, stdio: ["ignore", "pipe", "ignore"] })
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-  const runsOf = (workflow) =>
+  const fields = "{id, attempt: .run_attempt, sha: .head_sha, conclusion, createdAt: .created_at}"
+  const earlierAttempts = (run) =>
+    Array.from({ length: run.attempt - 1 }, (_, index) =>
+      JSON.parse(gh(["api", `repos/${repository}/actions/runs/${run.id}/attempts/${index + 1}`, "--jq", fields])),
+    )
+  const runsOf = (pull) =>
     JSON.parse(
       gh([
-        "run",
-        "list",
-        "--workflow",
-        workflow,
-        "--repo",
-        repository,
-        "--created",
-        `>=${since}`,
-        "--limit",
-        "1000",
-        "--json",
-        "databaseId,conclusion,headBranch",
+        "api",
+        `repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&per_page=100&branch=${encodeURIComponent(pull.headRefName)}`,
         "--jq",
-        "[.[] | {id: .databaseId, conclusion, branch: .headBranch}]",
+        `[.workflow_runs[] | ${fields}]`,
       ]),
     )
-  const listed = (workflow) => {
-    try {
-      return runsOf(workflow)
-    } catch {
-      return []
-    }
-  }
-  const runs = [...runsOf("ci"), ...listed("ratchet")]
-  const logs = new Map()
-  for (const run of runs.filter((each) => each.conclusion === "failure").slice(0, logLimit)) {
-    try {
-      logs.set(run.id, gh(["run", "view", String(run.id), "--repo", repository, "--log-failed"]))
-    } catch {
-      logs.set(run.id, "")
-    }
-  }
-  const result = audit({ runs, logs })
-  const lines = report(result, repository)
-  for (const line of lines) console.log(line)
-  if (process.argv[3] === "--issue" && result.failed > 0) {
+      .filter((run) => run.createdAt >= pull.createdAt && run.createdAt <= pull.mergedAt)
+      .flatMap((run) => [...earlierAttempts(run), run])
+  const merged = JSON.parse(
     gh([
-      "issue",
-      "create",
+      "pr",
+      "list",
       "--repo",
       repository,
-      "--title",
-      `CI failure report, week to ${new Date().toISOString().slice(0, 10)}`,
-      "--body",
-      lines.join("\n"),
-    ])
+      "--state",
+      "merged",
+      "--limit",
+      String(pullListLimit),
+      "--json",
+      "number,headRefName,createdAt,mergedAt",
+    ]),
+  )
+  const result = falseStops(lastMerged(merged).map((pull) => ({ ...pull, runs: runsOf(pull) })))
+  const stopped = result.stops.flatMap((stop) => stop.runs).slice(0, logLimit)
+  const logs = new Map()
+  for (const run of stopped) {
+    try {
+      logs.set(
+        attemptId(run),
+        gh(["run", "view", String(run.id), "--attempt", String(run.attempt), "--repo", repository, "--log-failed"]),
+      )
+    } catch {
+      logs.set(attemptId(run), "")
+    }
+  }
+  const classes = audit({
+    runs: stopped.map((run) => ({ id: attemptId(run), conclusion: "failure", branch: "" })),
+    logs,
+  })
+  const line = falseStopLine(result)
+  const lines = [
+    line,
+    "",
+    ...result.stops.map(
+      (stop) => `- #${stop.number}: ${stop.runs.length} failed on ${stop.runs[0].sha.slice(0, 7)}, then passed`,
+    ),
+    "",
+    ...report(classes, repository),
+  ]
+  for (const each of lines) console.log(each)
+  if (process.argv[3] === "--issue") {
+    const [found] = JSON.parse(
+      gh([
+        "issue",
+        "list",
+        "--repo",
+        repository,
+        "--label",
+        "false-stops",
+        "--state",
+        "open",
+        "--json",
+        "number,body,comments",
+      ]),
+    )
+    const open = found && {
+      number: String(found.number),
+      texts: [found.body, ...found.comments.map((comment) => comment.body)],
+    }
+    const action = alarmAction(result.count, open)
+    if (action === "open") {
+      gh([
+        "label",
+        "create",
+        "false-stops",
+        "--repo",
+        repository,
+        "--description",
+        "ci stopped agents with no code at fault",
+        "--color",
+        "B60205",
+        "--force",
+      ])
+      gh([
+        "issue",
+        "create",
+        "--repo",
+        repository,
+        "--title",
+        "False stops are over budget",
+        "--label",
+        "false-stops",
+        "--body",
+        lines.join("\n"),
+      ])
+    }
+    if (action === "comment") gh(["issue", "comment", open.number, "--repo", repository, "--body", lines.join("\n")])
+    if (action === "close") gh(["issue", "close", open.number, "--repo", repository, "--comment", line])
   }
 }
