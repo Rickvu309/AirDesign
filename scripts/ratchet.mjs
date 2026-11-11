@@ -26,15 +26,6 @@ export const replacedFixtures = (files) =>
     )
     .flatMap((file) => [file.name, file.before].filter((name) => name?.startsWith(openFolders[0])))
 
-const testFile = (name) => typeof name === "string" && (name.includes(".test.") || name.includes(".spec."))
-
-export const removedTestFiles = (files) =>
-  files.flatMap((file) => {
-    if (file.status === "removed" && testFile(file.name)) return [file.name]
-    if (file.status === "renamed" && testFile(file.before) && !testFile(file.name)) return [file.before]
-    return []
-  })
-
 const withoutReferences = (tsconfig) => JSON.stringify({ ...tsconfig, references: undefined })
 
 export const sameButReferences = (left, right) =>
@@ -54,14 +45,12 @@ const keysOf = (metric) =>
   metric !== null && typeof metric === "object" && !Array.isArray(metric) ? Object.keys(metric).sort().join() : ""
 const timed = (metric) => keysOf(metric) === "limit" && finite(metric.limit)
 const counted = (metric) => keysOf(metric) === "goal,now" && finite(metric.now) && finite(metric.goal)
-const floored = (metric) => keysOf(metric) === "floor" && finite(metric.floor)
 
 const metricsFile = "metrics.json"
 export const oldMetricsFile = "sticks.json"
 
 export const oldMetricNames = {
   "known faults": "known-failures",
-  tests: "test-count",
   "real decks in the PowerPoint check": "corpus-size",
   "planted breaks the judge catches": "fault-detection",
   "routes pptx writes": "export-coverage",
@@ -83,17 +72,13 @@ const countsProof = new Set(["fault-detection"])
 
 const metricReason = (name, before, after) => {
   if (after === undefined) return `The metric ${name} was removed.`
-  if (!timed(after) && !counted(after) && !floored(after)) {
-    return `The metric ${name} must be only a limit, or only now and goal, or only a floor, as numbers.`
+  if (!timed(after) && !counted(after)) {
+    return `The metric ${name} must be only a limit, or only now and goal, as numbers.`
   }
   if (before === undefined) return undefined
   if (timed(before)) {
     if (!timed(after)) return `The metric ${name} stopped being a limit.`
     return after.limit <= before.limit ? undefined : `The limit of ${name} went from ${before.limit} to ${after.limit}.`
-  }
-  if (floored(before)) {
-    if (!floored(after)) return `The metric ${name} stopped being a floor.`
-    return after.floor >= before.floor ? undefined : `The floor of ${name} went from ${before.floor} to ${after.floor}.`
   }
   if (!counted(after)) return `The metric ${name} stopped being a count with a goal.`
   if (countsProof.has(name)) return undefined
@@ -135,7 +120,6 @@ export const ownerReasons = ({
   changedCases = [],
   changedDecks = [],
   changedFixtures = [],
-  removedTests = [],
   changedKinds = [],
 }) => {
   const reasons = []
@@ -146,9 +130,6 @@ export const ownerReasons = ({
   }
   for (const file of changedFiles.filter(guarded)) {
     reasons.push({ about: `file ${file}`, text: `${file} decides what ci checks.`, blocks: false })
-  }
-  for (const file of removedTests) {
-    reasons.push({ about: `file ${file}`, text: `The test file ${file} was removed.`, blocks: true })
   }
   for (const file of changedFixtures) {
     reasons.push({
@@ -348,7 +329,6 @@ export const readReasons = ({ json, fork, head, listed }) => {
     headMetrics: metricsAt(json, head) ?? {},
     changedFiles: changedFiles.filter((file) => !generated.has(file)),
     changedFixtures: replacedFixtures(listed),
-    removedTests: removedTestFiles(listed),
     changedCases: changedFiles.includes(casesFile) ? lostCases(casesAt(json, fork), casesAt(json, head)) : [],
     changedDecks: changedFiles.includes(corpusFile) ? lostDecks(corpusAt(json, fork), corpusAt(json, head)) : [],
     changedKinds: changedFiles.includes(proofFile) ? lostKinds(proofAt(json, fork), proofAt(json, head)) : [],

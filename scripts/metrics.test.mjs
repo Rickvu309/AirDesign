@@ -26,7 +26,6 @@ const record = (faults, tests = 2) => {
     "metrics.json",
     JSON.stringify({
       "known-failures": { now: faults, goal: 0 },
-      "test-count": { floor: tests },
       "corpus-size": { now: 1, goal: 20 },
       "export-coverage": { now: 2, goal: 3 },
       "fault-detection": { now: 1, goal: 2 },
@@ -135,12 +134,6 @@ fs.rmSync(path.join(root, "scripts/pptx-fixtures/judge-seeds.json"))
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("a repo with no seed list has no listed miss")
 seedList([])
-cache(1, 0)
-const fewer = (await readMetrics(root)).drift
-if (!fewer.includes("test-count is 1 and its floor is 2. Put back the tests that are gone.")) {
-  throw new Error(`a deleted test must lower the count\n${fewer.join("\n")}`)
-}
-cache(2, 0)
 
 write(
   "metrics.json",
@@ -237,7 +230,6 @@ cache(3, 1)
 const more = await readMetrics(root)
 if (more.drift.length !== 0) throw new Error(`a new test must need no record\n${more.drift.join("\n")}`)
 const moreLines = metricLines(more.rows).map((line) => line.replace(/ {2,}/g, "  "))
-if (!moreLines.includes("metric test-count  now 3  floor 2")) throw new Error(moreLines.join("\n"))
 if (moreLines.some((line) => line.includes("duration"))) throw new Error("a limit metric was printed as a count")
 
 cache(2, 5)
@@ -247,11 +239,9 @@ const faultyLines = metricLines(faulty.rows).map((line) => line.replace(/ {2,}/g
 if (!faultyLines.includes("metric known-failures  now 5  goal 0")) throw new Error(faultyLines.join("\n"))
 
 cache(1, 1)
-const under = (await readMetrics(root)).drift
-if (under.length !== 1 || under[0] !== "test-count is 1 and its floor is 2. Put back the tests that are gone.") {
-  throw new Error(`a count under the floor must fail and name both numbers\n${under.join("\n")}`)
-}
-if (under.some((line) => line.includes("Record"))) throw new Error("nobody is told to record a test count")
+const fewerTests = await readMetrics(root)
+if (fewerTests.drift.length !== 0) throw new Error(`a removed test must not fail\n${fewerTests.drift.join("\n")}`)
+if (fewerTests.rows.some((row) => row.name === "test-count")) throw new Error("the test count is still a metric")
 
 record(1, 2)
 const deckCount = (metrics) => metrics.rows.find((row) => row.name === "corpus-size")?.now

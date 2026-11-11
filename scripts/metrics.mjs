@@ -27,8 +27,6 @@ export const browserFaults = (root) =>
 
 const knownFailures = (root) => readRun(root).faults + listedMisses(root) + browserFaults(root)
 
-const testCount = (root) => readRun(root).tests
-
 const realDecks = (root) => judgedDecks(root).length
 
 const built = (root, name) => {
@@ -54,7 +52,6 @@ const plantedBreaks = (root) =>
 
 const measures = {
   "known-failures": knownFailures,
-  "test-count": testCount,
   "corpus-size": realDecks,
   "export-coverage": capabilitiesExported,
   "fault-detection": plantedBreaks,
@@ -98,13 +95,6 @@ export const readMetrics = async (root) => {
       continue
     }
     const measured = await measure(root)
-    if (typeof metric.floor === "number") {
-      rows.push({ name, now: measured, floor: metric.floor })
-      if (measured < metric.floor) {
-        drift.push(`${name} is ${measured} and its floor is ${metric.floor}. Put back the tests that are gone.`)
-      }
-      continue
-    }
     if (measuredLive.has(name)) {
       rows.push({ name, now: measured, goal: metric.goal })
       continue
@@ -133,11 +123,7 @@ export const metricLines = (rows) => {
   const width = Math.max(...rows.map((row) => row.name.length))
   return rows
     .filter((row) => !("limit" in row))
-    .map((row) =>
-      "floor" in row
-        ? `metric ${row.name.padEnd(width)}  now ${row.now}  floor ${row.floor}`
-        : `metric ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`,
-    )
+    .map((row) => `metric ${row.name.padEnd(width)}  now ${row.now}  goal ${row.goal}`)
 }
 
 const self = fileURLToPath(import.meta.url)

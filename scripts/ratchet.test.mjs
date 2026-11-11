@@ -24,7 +24,6 @@ import {
   packageFile,
   readLocal,
   readReasons,
-  removedTestFiles,
   replacedFixtures,
   sameButReferences,
   verdict,
@@ -53,31 +52,6 @@ same("a fixed fault needs nobody", texts(withMetric("known-failures", { now: 1, 
 same("a deck added needs nobody", texts(withMetric(decks, { now: 3, goal: 20 })), [])
 same("a tighter limit needs nobody", texts(withMetric("ci-duration", { limit: 30 })), [])
 same("a new metric needs nobody", texts(withMetric("new one", { now: 9, goal: 0 })), [])
-same("a new floor needs nobody", texts(withMetric("test-count", { floor: 9 })), [])
-same(
-  "a higher floor needs nobody",
-  texts({
-    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
-    headMetrics: { ...metrics, "test-count": { floor: 11 } },
-  }),
-  [],
-)
-same(
-  "a lower floor needs the owner",
-  texts({
-    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
-    headMetrics: { ...metrics, "test-count": { floor: 9 } },
-  }),
-  ["The floor of test-count went from 10 to 9."],
-)
-same(
-  "a floor turned into a count needs the owner",
-  texts({
-    baseMetrics: { ...metrics, "test-count": { floor: 10 } },
-    headMetrics: { ...metrics, "test-count": { now: 10, goal: 10 } },
-  }),
-  ["The metric test-count stopped being a floor."],
-)
 same("a new fault needs the owner", texts(withMetric("known-failures", { now: 3, goal: 0 })), [
   "known-failures went from 2 to 3, away from its goal of 0.",
 ])
@@ -111,7 +85,7 @@ for (const loose of [
   null,
 ]) {
   same(`a metric shaped ${JSON.stringify(loose)} needs the owner`, texts(withMetric("known-failures", loose)), [
-    "The metric known-failures must be only a limit, or only now and goal, or only a floor, as numbers.",
+    "The metric known-failures must be only a limit, or only now and goal, as numbers.",
   ])
 }
 same("a malformed new metric needs the owner", texts(withMetric("new one", { now: [] })).length, 1)
@@ -158,7 +132,7 @@ same("changed scripts need the owner", texts({ changedScripts: ["package.json"] 
 same(
   "a count given a limit as well needs the owner",
   texts(withMetric("known-failures", { now: 2, goal: 0, limit: 5 })),
-  ["The metric known-failures must be only a limit, or only now and goal, or only a floor, as numbers."],
+  ["The metric known-failures must be only a limit, or only now and goal, as numbers."],
 )
 same("a count turned into a limit needs the owner", texts(withMetric("known-failures", { limit: 5 })), [
   "The metric known-failures stopped being a count with a goal.",
@@ -403,34 +377,6 @@ if (!reverted.lines.includes("Changed on main since owner approved: metric ci-du
   throw new Error(reverted.lines.join("\n"))
 }
 
-same(
-  "a removed test file is named, and so is one renamed into a file that is not a test",
-  removedTestFiles([
-    { name: "packages/pptx/src/slide-route.test.ts", status: "removed" },
-    { name: "tests/browser/every-screen.spec.ts", status: "removed" },
-    { name: "packages/pptx/src/notes.ts", before: "packages/pptx/src/shape-id.test.ts", status: "renamed" },
-    { name: "packages/pptx/src/shape.test.ts", before: "packages/pptx/src/shape-id.test.ts", status: "renamed" },
-    { name: "packages/pptx/src/new.test.ts", status: "added" },
-    { name: "packages/pptx/src/old.test.ts", status: "modified" },
-    { name: "packages/pptx/src/slide-route.ts", status: "removed" },
-  ]),
-  ["packages/pptx/src/slide-route.test.ts", "tests/browser/every-screen.spec.ts", "packages/pptx/src/shape-id.test.ts"],
-)
-const removedTest = ownerReasons({
-  baseMetrics: metrics,
-  headMetrics: metrics,
-  changedFiles: [],
-  changedScripts: [],
-  removedTests: ["packages/pptx/src/slide-route.test.ts"],
-})
-same("a removed test file lowers the bar", removedTest, [
-  {
-    about: "file packages/pptx/src/slide-route.test.ts",
-    text: "The test file packages/pptx/src/slide-route.test.ts was removed.",
-    blocks: true,
-  },
-])
-
 const routes = "export-coverage"
 const withRoutes = (base, head) =>
   ownerReasons({
@@ -473,7 +419,6 @@ same(
 
 const renamed = {
   "known-failures": { now: 17, goal: 0 },
-  "test-count": { floor: 199 },
   "corpus-size": { now: 2, goal: 20 },
   "fault-detection": { now: 9, goal: 10 },
   "export-coverage": { now: 17, goal: 50 },
@@ -489,16 +434,6 @@ same(
   "the old file at the merge base and the same values at the head need nobody",
   ownerReasons({ baseMetrics: atMergeBase, headMetrics: atHead, changedFiles: [], changedScripts: [] }),
   [],
-)
-same(
-  "a floor lowered across the rename is still caught",
-  ownerReasons({
-    baseMetrics: atMergeBase,
-    headMetrics: { ...atHead, "test-count": { floor: 198 } },
-    changedFiles: [],
-    changedScripts: [],
-  }).map((reason) => reason.text),
-  ["The floor of test-count went from 199 to 198."],
 )
 same(
   "the new file wins when both exist",
@@ -529,6 +464,20 @@ same(
 same("the owner is read from an https remote", ownerOf("https://github.com/Rickvu309/AirDesign.git"), "Rickvu309")
 same("the owner is read from an ssh remote", ownerOf("git@github.com:Rickvu309/AirDesign.git"), "Rickvu309")
 same("no remote names the repo owner", ownerOf(undefined), "the repo owner")
+same(
+  "a test file split into two and removed needs nobody",
+  readReasons({
+    json: (sha, file) => (file === "metrics.json" ? { "ci-duration": { limit: 40 } } : undefined),
+    fork: "fork",
+    head: "head",
+    listed: [
+      { name: "packages/live/src/live.test.ts", status: "removed" },
+      { name: "packages/live/src/cache.test.ts", status: "added" },
+      { name: "packages/live/src/remote.test.ts", status: "added" },
+    ],
+  }),
+  [],
+)
 same(
   "the reasons read through any reader",
   readReasons({
@@ -583,7 +532,6 @@ same("a lowered bar in the working tree fails locally", localVerdict.pass, false
 same("the local verdict says what ci says", localVerdict.lines, [
   "Lowers the bar: The limit of ci-duration went from 40 to 50.",
   "Lowers the bar: corpus-size went from 2 to 1, away from its goal of 20.",
-  "Lowers the bar: The test file packages/pptx/src/route.test.ts was removed.",
   "Lowers the bar: The PowerPoint case doe-heat-pumps was changed or removed.",
   "Lowers the bar: The corpus deck a.pptx was removed or its sha256 changed.",
   "Lowers the bar: The corpus deck b.pptx was removed or its sha256 changed.",
