@@ -12,6 +12,7 @@ import {
   replaceSelection,
 } from "./paragraph-edit.js"
 import type { PaintStore } from "./store.js"
+import { holdsOnlyRuns, restyle, type TextLook } from "./text-look.js"
 
 type ReadBox = { readonly value: TextValue; readonly units: readonly (readonly Node[])[] }
 type Carets = { readonly start: Caret; readonly end: Caret }
@@ -137,8 +138,9 @@ function paragraphNode(document: Document, paragraph: TextParagraph): HTMLElemen
   return block
 }
 
-function showValue(box: HTMLElement, value: TextValue, carets: Carets | null): void {
+function showValue(box: HTMLElement, value: TextValue, carets: Carets | null, look: TextLook | undefined): void {
   box.replaceChildren(...value.map((paragraph) => paragraphNode(box.ownerDocument, paragraph)))
+  if (look !== undefined) restyle(box, look)
   if (carets === null) return
   const selection = box.ownerDocument.getSelection()
   if (selection === null) return
@@ -157,7 +159,9 @@ export function Passage(props: {
   readonly store: PaintStore
   readonly id: ElementId
   readonly onEdit?: (value: string) => void
+  readonly look?: TextLook | undefined
 }) {
+  const { look } = props
   const record = useElement(props.store, props.id)
   const text = record === null ? "" : record.text
   const box = useRef<HTMLDivElement>(null)
@@ -176,8 +180,12 @@ export function Passage(props: {
     const value = textValue(text)
     reported.current = writeTextValue(value)
     const read = readBox(shown)
-    if (writeTextValue(read.value) !== reported.current) showValue(shown, value, selectionCarets(shown, read.units))
+    if (writeTextValue(read.value) !== reported.current) showValue(shown, value, selectionCarets(shown, read.units), look)
   }, [record, text])
+  useLayoutEffect(() => {
+    const shown = box.current
+    if (shown !== null && look !== undefined && !composing.current) restyle(shown, look)
+  })
   function report(value: string) {
     if (value === reported.current) return
     reported.current = value
@@ -186,8 +194,13 @@ export function Passage(props: {
     props.onEdit(value)
   }
   function edit(shown: HTMLElement, value: TextValue, caret: Caret) {
-    showValue(shown, value, { start: caret, end: caret })
+    showValue(shown, value, { start: caret, end: caret }, look)
     report(writeTextValue(value))
+  }
+  function settle(shown: HTMLElement, read: ReadBox) {
+    if (look === undefined) return
+    if (holdsOnlyRuns(shown)) restyle(shown, look)
+    else showValue(shown, read.value, selectionCarets(shown, read.units), look)
   }
   useLayoutEffect(() => {
     const shown = box.current
@@ -211,7 +224,7 @@ export function Passage(props: {
     <div
       ref={box}
       contentEditable={props.onEdit !== undefined}
-      style={{ whiteSpace: "pre-wrap" }}
+      style={{ whiteSpace: "pre-wrap", ...look?.body }}
       onKeyDown={(event) => {
         if (composing.current || event.nativeEvent.isComposing) return
         const shown = event.currentTarget
@@ -275,7 +288,9 @@ export function Passage(props: {
         props.store.beginComposition(props.id)
       }}
       onCompositionEnd={(event) => {
-        const value = writeTextValue(readBox(event.currentTarget).value)
+        const read = readBox(event.currentTarget)
+        settle(event.currentTarget, read)
+        const value = writeTextValue(read.value)
         pending.current.push(value)
         props.store.endComposition(props.id, value)
         report(value)
@@ -284,7 +299,9 @@ export function Passage(props: {
       onInput={(event) => {
         const native = event.nativeEvent
         if (composing.current || (native instanceof InputEvent && native.isComposing)) return
-        report(writeTextValue(readBox(event.currentTarget).value))
+        const read = readBox(event.currentTarget)
+        settle(event.currentTarget, read)
+        report(writeTextValue(read.value))
       }}
     />
   )

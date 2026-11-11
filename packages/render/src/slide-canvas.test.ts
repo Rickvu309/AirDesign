@@ -2,7 +2,15 @@ import { elementId, type ElementId } from "@airdesign/document"
 import { act, createElement } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { afterEach, describe, expect, it } from "vitest"
-import { paintStore, SlideCanvas, type CanvasElement, type CanvasSlide, type PaintBox } from "./index.js"
+import {
+  paintStore,
+  SlideCanvas,
+  type CanvasElement,
+  type CanvasRunStyle,
+  type CanvasSlide,
+  type CanvasText,
+  type PaintBox,
+} from "./index.js"
 
 Reflect.set(globalThis, "IS_REACT_ACT_ENVIRONMENT", true)
 
@@ -17,7 +25,7 @@ afterEach(async () => {
   }
 })
 
-const wide = { width: 12_192_000, height: 6_858_000 }
+const wide = { width: 12_192_000, height: 6_858_000, background: null }
 const place: PaintBox = {
   x: 1_219_200,
   y: 685_800,
@@ -29,7 +37,20 @@ const place: PaintBox = {
 }
 
 function written(id: ElementId, overrides: Partial<CanvasElement> = {}): CanvasElement {
-  return { key: id, id, kind: "shape", box: place, editable: false, placeholder: false, filled: false, ...overrides }
+  return {
+    key: id,
+    id,
+    kind: "shape",
+    box: place,
+    editable: false,
+    placeholder: false,
+    filled: false,
+    fill: null,
+    line: null,
+    outline: "box",
+    text: null,
+    ...overrides,
+  }
 }
 
 async function canvas(
@@ -69,7 +90,7 @@ describe("SlideCanvas", () => {
   const id = elementId("256.2")
 
   it("sizes the canvas to the given width at the deck's aspect ratio", async () => {
-    const host = await canvas({ width: 9_144_000, height: 6_858_000, elements: [] })
+    const host = await canvas({ width: 9_144_000, height: 6_858_000, background: null, elements: [] })
     expect(surface(host).style.width).toBe("800px")
     expect(surface(host).style.height).toBe("600px")
   })
@@ -85,7 +106,7 @@ describe("SlideCanvas", () => {
   })
 
   it("keeps a tall slide's vertical positions on the width scale", async () => {
-    const host = await canvas({ width: 6_858_000, height: 12_192_000, elements: [written(id)] }, 343)
+    const host = await canvas({ width: 6_858_000, height: 12_192_000, background: null, elements: [written(id)] }, 343)
     expect(Number.parseFloat(surface(host).style.height)).toBeCloseTo(609.778, 2)
     expect(Number.parseFloat(placed(host, id).style.top)).toBeCloseTo(34.3, 2)
     expect(Number.parseFloat(placed(host, id).style.left)).toBeCloseTo(60.978, 2)
@@ -229,6 +250,10 @@ describe("SlideCanvas", () => {
           editable: false,
           placeholder: false,
           filled: false,
+          fill: null,
+          line: null,
+          outline: "box",
+          text: null,
         },
       ],
     })
@@ -267,5 +292,248 @@ describe("SlideCanvas", () => {
       )
     })
     expect(surface(host).className).toBe("framed")
+  })
+})
+
+const styled = (size: number, color: string | null, font: string | null = "Serifa"): CanvasRunStyle => ({
+  font,
+  size,
+  bold: false,
+  italic: false,
+  color,
+})
+
+const twoRuns: CanvasText = {
+  paragraphs: [
+    {
+      from: 0,
+      align: "center",
+      runs: [
+        { from: 0, text: "big", ...styled(508_000, "rgb(1, 2, 3)") },
+        { from: 1, text: "small", ...styled(254_000, "rgb(4, 5, 6)", null), bold: true, italic: true },
+      ],
+      endStyle: styled(127_000, "rgb(7, 8, 9)"),
+    },
+  ],
+  anchor: "bottom",
+  insets: { left: 12_192, top: 24_384, right: 36_576, bottom: 48_768 },
+  wrap: true,
+}
+
+function runNode(host: HTMLElement, name: string): HTMLElement {
+  const found = host.querySelector<HTMLElement>(`[data-run="${name}"]`)
+  if (found === null) throw new Error(`no run ${name}`)
+  return found
+}
+
+function value(runs: readonly { from: number; text: string }[]): string {
+  return JSON.stringify([{ from: 0, runs }])
+}
+
+describe("SlideCanvas style", () => {
+  const id = elementId("256.2")
+
+  it("paints the slide with its background and white when it has none", async () => {
+    const painted = await canvas({ ...wide, background: "rgb(9, 8, 7)", elements: [] })
+    const plain = await canvas({ ...wide, elements: [] })
+    expect(painted.querySelector<HTMLElement>("[data-slide-paint]")?.style.background).toBe("rgb(9, 8, 7)")
+    expect(plain.querySelector<HTMLElement>("[data-slide-paint]")?.style.background).toBe("white")
+  })
+
+  it("paints a fill behind the box and a line around it, each with its own colour", async () => {
+    const host = await canvas({
+      ...wide,
+      elements: [
+        written(id, {
+          fill: "rgb(10, 20, 30)",
+          line: { color: "rgb(40, 50, 60)", width: 152_400, dash: [4, 3] },
+        }),
+      ],
+    })
+    expect(placed(host, id).style.background).toBe("rgb(10, 20, 30)")
+    const stroke = host.querySelector("[data-canvas-line] rect")
+    expect(stroke?.getAttribute("stroke")).toBe("rgb(40, 50, 60)")
+    expect(stroke?.getAttribute("stroke-width")).toBe("10")
+    expect(stroke?.getAttribute("stroke-dasharray")).toBe("40 30")
+    expect(stroke?.getAttribute("width")).toBe("400")
+  })
+
+  it("draws a line from corner to corner and an ellipse in its box", async () => {
+    const other = elementId("256.3")
+    const line = { color: "rgb(1, 1, 1)", width: 12_700, dash: null }
+    const host = await canvas({
+      ...wide,
+      elements: [written(id, { line, outline: "line" }), written(other, { line, outline: "ellipse" })],
+    })
+    expect(placed(host, id).querySelector("line")?.getAttribute("x2")).toBe("400")
+    expect(placed(host, id).querySelector("line")?.getAttribute("y2")).toBe(String((1_714_500 * 800) / 12_192_000))
+    expect(placed(host, other).querySelector("ellipse")?.getAttribute("rx")).toBe("200")
+    expect(placed(host, other).style.borderRadius).toBe("50%")
+  })
+
+  it("scales each run's size with the canvas like the box", async () => {
+    const slide = { ...wide, elements: [written(id, { text: twoRuns })] }
+    const stored = value([
+      { from: 0, text: "big" },
+      { from: 1, text: "small" },
+    ])
+    const sized = async (width: number) =>
+      Number.parseFloat(runNode(await canvas(slide, width, stored), "0.0").style.fontSize)
+    expect(await sized(800)).toBeCloseTo((508_000 * 800) / 12_192_000, 3)
+    expect(await sized(400)).toBeCloseTo((508_000 * 400) / 12_192_000, 3)
+  })
+
+  it("styles each run by its offset, not its place in the paragraph", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([
+        { from: 1, text: "small" },
+        { from: 0, text: "big" },
+      ]),
+    )
+    expect(runNode(host, "0.1").textContent).toBe("small")
+    expect(runNode(host, "0.1").style.color).toBe("rgb(4, 5, 6)")
+    expect(runNode(host, "0.1").style.fontWeight).toBe("700")
+    expect(runNode(host, "0.1").style.fontStyle).toBe("italic")
+    expect(runNode(host, "0.0").style.color).toBe("rgb(1, 2, 3)")
+    expect(runNode(host, "0.0").style.fontWeight).toBe("400")
+  })
+
+  it("falls back to the page's font and colour when a run has none", async () => {
+    const plain: CanvasText = {
+      ...twoRuns,
+      paragraphs: [{ from: 0, align: "left", runs: [{ from: 0, text: "a", ...styled(1, null, null) }], endStyle: styled(1, null, null) }],
+    }
+    const host = await canvas({ ...wide, elements: [written(id, { text: plain })] }, 800, value([{ from: 0, text: "a" }]))
+    expect(runNode(host, "0.0").style.color).toBe("black")
+    expect(runNode(host, "0.0").style.fontFamily).toBe("var(--font-sans)")
+  })
+
+  it("names the file's font first and keeps the page's as the fallback", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([{ from: 0, text: "big" }]),
+    )
+    expect(runNode(host, "0.0").style.fontFamily).toBe('"Serifa", var(--font-sans)')
+  })
+
+  it("gives an empty paragraph its end style and its natural line", async () => {
+    const host = await canvas({ ...wide, elements: [written(id, { text: twoRuns })] }, 800, value([]))
+    const block = host.querySelector<HTMLElement>('[data-paragraph="0"]')
+    expect(Number.parseFloat(block?.style.fontSize ?? "")).toBeCloseTo((127_000 * 800) / 12_192_000, 3)
+    expect(block?.style.color).toBe("rgb(7, 8, 9)")
+    expect(block?.style.lineHeight).toBe("normal")
+  })
+
+  it("styles a new run with the end style the export writes it with", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([{ from: -1, text: "typed" }]),
+    )
+    expect(runNode(host, "0.-1").style.color).toBe("rgb(7, 8, 9)")
+  })
+
+  it("lets only the runs set the height of a line that has words", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([{ from: 0, text: "big" }]),
+    )
+    expect(host.querySelector<HTMLElement>('[data-paragraph="0"]')?.style.lineHeight).toBe("0")
+    expect(runNode(host, "0.0").style.lineHeight).toBe("normal")
+  })
+
+  it("aligns each paragraph and places the words by the box's insets and anchor", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([{ from: 0, text: "big" }]),
+    )
+    expect(host.querySelector<HTMLElement>('[data-paragraph="0"]')?.style.textAlign).toBe("center")
+    const layer = placed(host, id).firstElementChild as HTMLElement
+    expect(layer.style.padding).toBe("1.6px 2.4px 3.2px 0.8px")
+    expect(layer.style.justifyContent).toBe("flex-end")
+  })
+
+  it("does not wrap the words of a box that does not wrap", async () => {
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: { ...twoRuns, wrap: false } })] },
+      800,
+      value([{ from: 0, text: "big" }]),
+    )
+    expect(host.querySelector<HTMLElement>("[data-paragraph]")?.parentElement?.style.whiteSpace).toBe("pre")
+  })
+
+  it("paints a sheet element's own words with their style and no caret", async () => {
+    const key = "ppt/slideMasters/slideMaster1.xml#4"
+    const host = await canvas({
+      ...wide,
+      elements: [{ ...written(id, { text: twoRuns }), key, id: null }],
+    })
+    const element = placed(host, key)
+    expect(element.textContent).toBe("bigsmall")
+    expect(element.querySelector("[contenteditable]")).toBeNull()
+    const spans = element.querySelectorAll("span")
+    expect(spans[0]?.style.color).toBe("rgb(1, 2, 3)")
+    expect(spans[1]?.style.color).toBe("rgb(4, 5, 6)")
+  })
+
+  it("keeps each run's style when a later value moves the words", async () => {
+    const store = paintStore()
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns })] },
+      800,
+      value([
+        { from: 0, text: "big" },
+        { from: 1, text: "small" },
+      ]),
+      undefined,
+      store,
+    )
+    await act(async () => {
+      store.publish({
+        id,
+        kind: "shape",
+        text: value([
+          { from: 0, text: "bigger" },
+          { from: 1, text: "sm" },
+        ]),
+        picture: null,
+      })
+    })
+    expect(runNode(host, "0.0").textContent).toBe("bigger")
+    expect(runNode(host, "0.0").style.color).toBe("rgb(1, 2, 3)")
+    expect(runNode(host, "0.1").style.color).toBe("rgb(4, 5, 6)")
+  })
+
+  it("folds a wrapper the browser adds back into a plain run in the end style", async () => {
+    const edits: string[] = []
+    const host = await canvas(
+      { ...wide, elements: [written(id, { text: twoRuns, editable: true })] },
+      800,
+      value([{ from: 0, text: "big" }]),
+      (_, written) => edits.push(written),
+    )
+    const box = host.querySelector<HTMLElement>('[contenteditable="true"]')
+    const block = box?.querySelector<HTMLElement>('[data-paragraph="0"]')
+    if (box === null || box === undefined || block === null || block === undefined) throw new Error("no box")
+    const wrapper = document.createElement("span")
+    wrapper.style.color = "rgb(200, 0, 0)"
+    wrapper.append("x")
+    block.append(wrapper)
+    await act(async () => {
+      box.dispatchEvent(new InputEvent("input", { bubbles: true }))
+    })
+    expect(edits).toEqual([
+      value([
+        { from: 0, text: "big" },
+        { from: -1, text: "x" },
+      ]),
+    ])
+    expect(runNode(host, "0.-1").style.color).toBe("rgb(7, 8, 9)")
+    expect(block.isConnected ? block.querySelector("span:not([data-run])") : null).toBeNull()
   })
 })

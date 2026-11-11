@@ -23,6 +23,43 @@ export type PaintBox = {
   readonly flipV: boolean
 }
 
+export type CanvasOutline = "box" | "round" | "ellipse" | "line"
+
+export type CanvasLine = {
+  readonly color: string
+  readonly width: number
+  readonly dash: readonly number[] | null
+}
+
+export type CanvasRunStyle = {
+  readonly font: string | null
+  readonly size: number
+  readonly bold: boolean
+  readonly italic: boolean
+  readonly color: string | null
+}
+
+export type CanvasRun = CanvasRunStyle & { readonly from: number; readonly text: string }
+
+export type CanvasParagraph = {
+  readonly from: number
+  readonly align: "left" | "center" | "right" | "justify"
+  readonly runs: readonly CanvasRun[]
+  readonly endStyle: CanvasRunStyle
+}
+
+export type CanvasText = {
+  readonly paragraphs: readonly CanvasParagraph[]
+  readonly anchor: "top" | "middle" | "bottom"
+  readonly insets: {
+    readonly left: number
+    readonly top: number
+    readonly right: number
+    readonly bottom: number
+  }
+  readonly wrap: boolean
+}
+
 export type CanvasElement = {
   readonly key: string
   readonly id: ElementId | null
@@ -31,11 +68,16 @@ export type CanvasElement = {
   readonly editable: boolean
   readonly placeholder: boolean
   readonly filled: boolean
+  readonly fill: string | null
+  readonly line: CanvasLine | null
+  readonly outline: CanvasOutline
+  readonly text: CanvasText | null
 }
 
 export type CanvasSlide = {
   readonly width: number
   readonly height: number
+  readonly background: string | null
   readonly elements: readonly CanvasElement[]
 }
 
