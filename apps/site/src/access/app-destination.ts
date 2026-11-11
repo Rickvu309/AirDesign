@@ -10,20 +10,25 @@ function hasControlCharacterOrBackslash(value: string): boolean {
   return false
 }
 
-function staysOnOrigin(value: string): boolean {
-  return new URL(value, placeholderOrigin).origin === placeholderOrigin
+function resolvedOnOrigin(value: string): URL | null {
+  try {
+    const resolved = new URL(value, placeholderOrigin)
+    return resolved.origin === placeholderOrigin ? resolved : null
+  } catch {
+    return null
+  }
 }
 
 export function safeNextPath(value: string | null | undefined): string {
   if (typeof value !== "string" || !value.startsWith("/") || hasControlCharacterOrBackslash(value)) {
     return "/"
   }
-  if (!staysOnOrigin(value)) {
+  const resolved = resolvedOnOrigin(value)
+  if (resolved === null) {
     return "/"
   }
-  const resolved = new URL(value, placeholderOrigin)
   const path = `${resolved.pathname}${resolved.search}`
-  return staysOnOrigin(path) ? path : "/"
+  return resolvedOnOrigin(path) === null ? "/" : path
 }
 
 export function appDestination(appOrigin: string | undefined, next: string | null | undefined): string {
