@@ -20,8 +20,21 @@ export type AgentTool = {
 export const catalog = {
   commit_edits: { kind: "command", exposure: "web" },
   start_run: { kind: "command", exposure: "web" },
-  stop_run: { kind: "command", exposure: "web" },
-  undo_run: { kind: "command", exposure: "web" },
+  stop_run: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    description:
+      "Call this when your turn is finished, so a person's edits stop closing boxes to you. Takes the runId your edit answers carried.",
+  },
+  undo_run: {
+    kind: "command",
+    exposure: "agent",
+    runsOn: "server",
+    destructive: true,
+    description:
+      "Take back everything one run wrote on this deck, on every element or on none. A person's edits stay. Takes the runId your edit answers carried. An edit on an element it changed answers stale with the new version.",
+  },
   watch_deck: { kind: "stream", exposure: "web" },
   edit_deck: {
     kind: "command",

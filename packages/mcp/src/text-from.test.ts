@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { currentValue, decide, elementId, readTextValue, version, writeTextValue } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { callTool, createServer, editNext, emptyLog, type Session } from "./index.js"
+import { callTool, createServer, editNext, emptyLog, memoryTurns, type Session } from "./index.js"
 
 const floor = writeTextValue([
   {
@@ -127,7 +127,7 @@ function restoredRun(): string {
 }
 
 function sessionFor(deck: Deck): Session {
-  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 }
+  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0, turns: memoryTurns() }
 }
 
 function elementBody(deck: Deck, node = text) {
@@ -177,6 +177,7 @@ describe("editText", () => {
     expect(readAnswer(result)).toEqual({
       ok: true,
       revision: 1,
+      runId: "run",
       elements: [{ node: "258.7", value: sent, version: before + 1 }],
     })
     expect(version(elementBody(result.deck))).toBe(before + 1)
@@ -268,6 +269,7 @@ describe("editText", () => {
     expect(readAnswer(result)).toEqual({
       ok: true,
       revision: 1,
+      runId: "run",
       elements: [{ node: "258.8", value: "21", version: before + 1 }],
     })
     expect(version(elementBody(result.deck, plain))).toBe(before + 1)
@@ -457,6 +459,7 @@ describe("editText", () => {
     expect(readAnswer(result)).toEqual({
       ok: true,
       revision: 1,
+      runId: "run",
       elements: [{ node: "258.9", value: sent, version: 1 }],
     })
     expect(deck.register.elements[created]).toBeUndefined()
@@ -507,6 +510,7 @@ describe("editText", () => {
     expect(readAnswer(result)).toEqual({
       ok: true,
       revision: 1,
+      runId: "run",
       elements: [{ node: "258.9", value: sent, version: 2 }],
     })
   })

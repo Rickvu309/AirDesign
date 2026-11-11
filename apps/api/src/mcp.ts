@@ -8,10 +8,12 @@ import {
   createServer,
   editRefusal,
   emptyLog,
+  memoryTurns,
   type CallerLog,
   type Host,
   type Session,
   type ToolResult,
+  type Turns,
 } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
@@ -23,6 +25,7 @@ export type McpHost = {
   readonly deck: Sql
   readonly email: string
   readonly logs: Map<string, CallerLog>
+  readonly turns: Map<string, Turns>
   readonly now: () => number
   readonly mint: () => string
   readonly hosts: readonly string[]
@@ -47,6 +50,8 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
   if (!host.logs.has(host.email)) host.logs.set(host.email, emptyLog())
+  const turns = host.turns.get(host.email) ?? memoryTurns()
+  host.turns.set(host.email, turns)
   const session: Session = {
     caller: agentCaller(host.mint()),
     deck: openDeck(pending.deck),
@@ -57,6 +62,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       host.logs.set(host.email, value)
     },
     now: host.now(),
+    turns,
   }
   let loaded: Deck = session.deck
   const bridge: Host = {
@@ -93,7 +99,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
 }
 
 async function commitEdit(db: Sql, loaded: Deck, result: ToolResult): Promise<ToolResult> {
-  if (!result.ok) return result
+  if (!result.ok || result.deck === loaded) return result
   const nodes = (result.answer?.elements ?? []).map((element) => element.node)
   const key = notifyKey(result.deck.id, result.deck.revision)
   if (!key.ok) return editRefusal(loaded, "payload", nodes)

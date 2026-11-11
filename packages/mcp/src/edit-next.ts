@@ -33,6 +33,18 @@ export const editNext = {
 
 export const editCodes = Object.keys(editNext) as EditCode[]
 
+export const runNext = {
+  ...editNext,
+  stale: "The deck changed while this call ran, and nothing changed. Call this tool again.",
+  "run-fenced":
+    "This deck has no run with this id, the run is already undone, or a later run is live on an element it wrote. Nothing changed. Use the runId an edit answer carried, and stop any later run first.",
+  limit: "The deck is at its element limit, so this run could not be ended, and nothing changed. Tell the person.",
+} as const satisfies Record<EditCode, string>
+
 export function editSentence(code: EditCode): string {
   return editNext[code]
+}
+
+export function runSentence(code: EditCode): string {
+  return runNext[code]
 }

@@ -443,20 +443,28 @@ describe("readRun", () => {
 })
 
 describe("run operations in the catalog", () => {
-  it("lists them as commands an agent cannot call until its server answers them", () => {
-    for (const op of [catalog.start_run, catalog.stop_run, catalog.undo_run]) {
-      expect(op).toEqual({ kind: "command", exposure: "web" })
-    }
-    expect(projectTools(catalog).map((tool) => tool.op)).toEqual(["capture_slide", "edit_deck"])
+  it("keeps start_run from agents and offers stop_run and undo_run on the server", () => {
+    expect(catalog.start_run).toEqual({ kind: "command", exposure: "web" })
+    expect(catalog.stop_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server" })
+    expect(catalog.undo_run).toMatchObject({ kind: "command", exposure: "agent", runsOn: "server", destructive: true })
+    expect(projectTools(catalog).map((tool) => tool.op)).toEqual(["capture_slide", "edit_deck", "stop_run", "undo_run"])
   })
 })
 
 describe("projectTools", () => {
-  it("projects the two agent tools in name order", () => {
+  it("projects the four agent tools in name order", () => {
     const tools = projectTools(catalog)
-    expect(tools).toHaveLength(2)
-    expect(tools.map((tool) => tool.name)).toEqual(["airdesign_capture_slide", "airdesign_edit_deck"])
-    expect(tools.map((tool) => tool.runsOn)).toEqual(["device", "server"])
+    expect(tools).toHaveLength(4)
+    expect(tools.map((tool) => tool.name)).toEqual([
+      "airdesign_capture_slide",
+      "airdesign_edit_deck",
+      "airdesign_stop_run",
+      "airdesign_undo_run",
+    ])
+    expect(tools.map((tool) => tool.runsOn)).toEqual(["device", "server", "server", "server"])
+    expect(tools.find((tool) => tool.op === "stop_run")?.destructiveHint).toBe(false)
+    expect(tools.find((tool) => tool.op === "stop_run")?.description).toContain("when your turn is finished")
+    expect(tools.find((tool) => tool.op === "undo_run")?.destructiveHint).toBe(true)
     expect(tools.every((tool) => tool.openWorldHint === false)).toBe(true)
     const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
     const capture = tools.find((tool) => tool.name === "airdesign_capture_slide")

@@ -1,20 +1,12 @@
-import { readAgentEdit, type WireChange } from "@airdesign/catalog"
-import { decide, type Decision, type ElementId, type Register } from "@airdesign/document"
-import type { Deck } from "@airdesign/engine"
+import { readAgentEdit, type WireChange, type WireRunElement } from "@airdesign/catalog"
+import type { ElementId, Register } from "@airdesign/document"
+import { call, type Deck } from "@airdesign/engine"
 import type { AgentCaller, ToolResult } from "./call-tool.js"
-import { editRefusal, heldElements } from "./edit-answer.js"
+import { editRefusal, heldElements, runRefusal } from "./edit-answer.js"
 import type { EditCode } from "./edit-next.js"
 
 export function agentCaller(runId: string): AgentCaller {
   return { actor: "agent", runId }
-}
-
-function runningId(register: Register): string | undefined {
-  for (const id of register.nodes) {
-    const body = register.elements[id]
-    if (body !== undefined && body.phase === "running" && body.runId !== null) return body.runId
-  }
-  return undefined
 }
 
 export type ElementFloors =
@@ -40,68 +32,61 @@ export function elementFloors(register: Register, changes: readonly WireChange[]
   return { ok: true, floors }
 }
 
-function openedElement(register: Register, change: WireChange, floors: ReadonlyMap<ElementId, string>): Decision {
-  if (register.nodes.includes(change.node)) return { decision: "apply", register, route: register.route }
-  return decide(register, {
-    command: "add",
-    node: change.node,
-    floor: floors.get(change.node) ?? register.floor,
-    route: register.route,
-  })
-}
-
-function startedElement(
-  register: Register,
-  change: WireChange,
-  floors: ReadonlyMap<ElementId, string>,
-  candidate: () => string,
-):
-  | { readonly ok: true; readonly register: Register; readonly runId: string }
-  | { readonly ok: false; readonly refusal: EditCode } {
-  const opened = openedElement(register, change, floors)
-  if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
-  const body = opened.register.elements[change.node]
-  if (body?.phase === "running" && body.runId !== null) {
-    return { ok: true, register: opened.register, runId: body.runId }
-  }
-  const ended = body?.phase === "stopped" || body?.phase === "undone"
-  const runId = ended ? candidate() : (runningId(opened.register) ?? candidate())
-  const started = decide(opened.register, { command: "start", runId, node: change.node })
-  if (started.decision === "refuse") return { ok: false, refusal: started.code }
-  return { ok: true, register: started.register, runId }
-}
-
-export function openRun(
-  register: Register,
-  raw: unknown,
-  mint: () => string,
-):
+type Opened =
   | { readonly ok: true; readonly register: Register; readonly caller: AgentCaller }
-  | { readonly ok: false; readonly refusal: EditCode } {
+  | { readonly ok: false; readonly refusal: EditCode }
+
+type RunRequest =
+  | { readonly ok: true; readonly deck: Deck; readonly elements: readonly WireRunElement[] }
+  | { readonly ok: false; readonly refusal: EditCode }
+
+function runElements(changes: readonly WireChange[]): readonly WireRunElement[] {
+  const elements = new Map<ElementId, WireRunElement>()
+  for (const { node, floor } of changes) {
+    if (!elements.has(node)) elements.set(node, floor === undefined ? { node } : { node, floor })
+  }
+  return [...elements.values()]
+}
+
+function runRequest(register: Register, raw: unknown): RunRequest {
   const parsed = readAgentEdit(raw)
-  if (!parsed.ok) return { ok: false, refusal: parsed.refusal }
+  if (!parsed.ok) return parsed
   const floors = elementFloors(register, parsed.changes)
   if (!floors.ok) return floors
-  let next = register
-  let minted: string | undefined
-  const candidate = (): string => {
-    minted ??= mint()
-    return minted
-  }
-  let caller: AgentCaller | undefined
-  for (const change of parsed.changes) {
-    const started = startedElement(next, change, floors.floors, candidate)
-    if (!started.ok) return started
-    next = started.register
-    caller ??= agentCaller(started.runId)
-  }
-  if (caller === undefined) return { ok: false, refusal: "batch" }
-  return { ok: true, register: next, caller }
+  return { ok: true, deck: { id: parsed.deck, revision: 0, register }, elements: runElements(parsed.changes) }
+}
+
+function startRun(deck: Deck, elements: readonly WireRunElement[], runId: string) {
+  return call("start_run", deck, agentCaller(runId), { deck: deck.id, runId, elements })
+}
+
+function underRun(started: ReturnType<typeof startRun>): Opened {
+  if (!started.ok) return started
+  return { ok: true, register: started.deck.register, caller: agentCaller(started.runId) }
+}
+
+export function joinRun(register: Register, raw: unknown, runId: string): Opened {
+  const request = runRequest(register, raw)
+  if (!request.ok) return request
+  return underRun(startRun(request.deck, request.elements, runId))
+}
+
+export function openRun(register: Register, raw: unknown, mint: () => string): Opened {
+  const request = runRequest(register, raw)
+  if (!request.ok) return request
+  const candidate = mint()
+  const first = startRun(request.deck, request.elements, candidate)
+  if (!first.ok || first.runId === candidate) return underRun(first)
+  const older = first.runId
+  const stopped = call("stop_run", request.deck, agentCaller(older), { deck: request.deck.id, runId: older })
+  if (!stopped.ok) return stopped
+  return underRun(startRun(stopped.deck, request.elements, candidate))
 }
 
 export function afterWrite(wrote: boolean, result: ToolResult, stored: Deck): ToolResult {
   if (!result.ok || wrote) return result
   const nodes = (result.answer?.elements ?? []).map((element) => element.node)
+  if (nodes.length === 0) return runRefusal(stored, "stale")
   const closed = heldElements(stored.register, nodes).some((element) => element.closed === true)
   return editRefusal(stored, closed ? "person-protected" : "stale", nodes)
 }

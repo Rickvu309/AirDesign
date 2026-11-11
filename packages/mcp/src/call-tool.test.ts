@@ -3,7 +3,7 @@ import { openTab, type Tab } from "@airdesign/device"
 import { decide, elementId, version, type ElementId, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { callTool, editNext, emptyLog, type AgentCaller, type Session } from "./index.js"
+import { callTool, editNext, emptyLog, memoryTurns, type AgentCaller, type Session, type Turns } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -41,8 +41,19 @@ function sessionFor(deck: Deck, tab?: Tab): Session {
   const caller = callerFor()
   const log = emptyLog()
   const now = 0
-  if (tab === undefined) return { caller, deck, log, now }
-  return { caller, deck, tab, log, now }
+  const turns = memoryTurns()
+  if (tab === undefined) return { caller, deck, log, now, turns }
+  return { caller, deck, tab, log, now, turns }
+}
+
+function turnOn(deck: Deck, runId: string): Turns {
+  const turns = memoryTurns()
+  turns.write(deck.id, { runId, lastCall: 0 })
+  return turns
+}
+
+function inTurn(deck: Deck, runId: string): Session {
+  return { ...sessionFor(deck), turns: turnOn(deck, runId) }
 }
 
 function openedTab(fields: {
@@ -90,7 +101,7 @@ describe("callTool", () => {
     ])
     expect(deck.revision).toBe(0)
     expect(nodeBody(deck.register).landed).toEqual([])
-    const answer = { ok: true, revision: 1, elements: [{ node: "258.7", value: "21", version: 1 }] }
+    const answer = { ok: true, revision: 1, runId: "run", elements: [{ node: "258.7", value: "21", version: 1 }] }
     expect(result.content).toEqual([
       { type: "text", text: "Landed revision 1." },
       { type: "text", text: JSON.stringify(answer) },
@@ -166,7 +177,7 @@ describe("callTool", () => {
     const result = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      { caller: { actor: "agent", runId: "host-run" }, deck, log: emptyLog(), now: 0 },
+      { caller: { actor: "agent", runId: "host-run" }, deck, log: emptyLog(), now: 0, turns: memoryTurns() },
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -183,7 +194,7 @@ describe("callTool", () => {
     const result = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
-      { caller: { actor: "agent", runId: "other" }, deck, log: emptyLog(), now: 0 },
+      { caller: { actor: "agent", runId: "other" }, deck, log: emptyLog(), now: 0, turns: turnOn(deck, "run") },
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -219,7 +230,7 @@ describe("callTool", () => {
     const result = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 1 }] },
-      { caller: { actor: "agent", runId: "fresh" }, deck: after, log: emptyLog(), now: 0 },
+      { caller: { actor: "agent", runId: "fresh" }, deck: after, log: emptyLog(), now: 0, turns: memoryTurns() },
     )
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -242,8 +253,7 @@ describe("callTool", () => {
       { command: "add", node, floor: "", route: "slide" },
       { command: "add", node: other, floor: "", route: "slide" },
       { command: "start", runId: "held", node },
-      { command: "start", runId: "ended", node: other },
-      { command: "stop", runId: "ended", node: other },
+      { command: "start", runId: "other", node: other },
     ] as const) {
       const decision = decide(register, command)
       if (decision.decision !== "apply") throw new Error(decision.code)
@@ -279,14 +289,14 @@ describe("callTool", () => {
     const first = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 0, changes: [{ value: "a", node: "258.7", readAt: 0 }] },
-      sessionFor(before),
+      inTurn(before, "held"),
     )
     expect(first.ok).toBe(true)
     if (!first.ok) return
     const second = callTool(
       "airdesign_edit_deck",
       { deck: "deck", base: 1, changes: [{ value: "b", node: "258.8", readAt: 0 }] },
-      sessionFor(first.deck),
+      inTurn(first.deck, "other"),
     )
     expect(second.ok).toBe(true)
     if (!second.ok) return
@@ -294,8 +304,42 @@ describe("callTool", () => {
       { actor: "agent", value: "a", visible: true, runId: "held" },
     ])
     expect(nodeBody(second.deck.register, other).landed).toEqual([
-      { actor: "agent", value: "b", visible: true, runId: "run" },
+      { actor: "agent", value: "b", visible: true, runId: "other" },
     ])
+  })
+
+  it("starts a stopped element under the run live on another named element, as the engine answers", () => {
+    const deck = opened()
+    const other = elementId("258.8")
+    let register = deck.register
+    for (const command of [
+      { command: "add", node, floor: "", route: "slide" },
+      { command: "add", node: other, floor: "", route: "slide" },
+      { command: "start", runId: "held", node },
+      { command: "start", runId: "ended", node: other },
+      { command: "stop", runId: "ended", node: other },
+    ] as const) {
+      const decision = decide(register, command)
+      if (decision.decision !== "apply") throw new Error(decision.code)
+      register = decision.register
+    }
+    const before = { id: deck.id, revision: 0, register }
+    const result = callTool(
+      "airdesign_edit_deck",
+      {
+        deck: "deck",
+        base: 0,
+        changes: [
+          { value: "a", node: "258.7", readAt: 0 },
+          { value: "b", node: "258.8", readAt: 0 },
+        ],
+      },
+      inTurn(before, "held"),
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.answer?.ok === true && result.answer.runId).toBe("held")
+    expect(nodeBody(result.deck.register, other).runId).toBe("held")
   })
 
   it("answers stale with the send-again sentence on an open element while another element is closed", () => {

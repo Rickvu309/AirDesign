@@ -1,7 +1,7 @@
 import { readDeckId } from "@airdesign/catalog"
 import { decide, openRegister, version, type Command, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
-import { elements, type EditableName } from "./score.js"
+import { elements, fixtureRun as runId, type EditableName } from "./score.js"
 
 export type Seed = {
   readonly element: EditableName
@@ -10,8 +10,6 @@ export type Seed = {
   readonly undone?: boolean
   readonly during?: readonly string[]
 }
-
-const runId = "run"
 
 function applied(register: Register, command: Command): Register {
   const decision = decide(register, command)

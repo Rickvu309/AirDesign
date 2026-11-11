@@ -22,7 +22,7 @@ import {
   type DeckId,
   type FormPairs,
 } from "@airdesign/catalog"
-import type { CallerLog } from "@airdesign/mcp"
+import type { CallerLog, Turns } from "@airdesign/mcp"
 
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { deleteDecks, listDecks, renameDeck, restoreDeck, trashDeck } from "./deck-list.js"
@@ -56,6 +56,7 @@ export type ApiOptions = {
 type Context = {
   readonly options: ApiOptions
   readonly logs: Map<string, CallerLog>
+  readonly turns: Map<string, Turns>
   readonly now: () => number
   readonly mint: () => string
   readonly req: IncomingMessage
@@ -399,7 +400,7 @@ async function revokeRoute(visit: Visit): Promise<void> {
 }
 
 async function mcpRoute(visit: Visit): Promise<void> {
-  const { options, logs, now, mint, req, res, name } = visit
+  const { options, logs, turns, now, mint, req, res, name } = visit
   if (!mcpMethods.includes(req.method ?? "")) {
     await visit.body()
     res.setHeader("allow", mcpMethods.join(", "))
@@ -423,6 +424,7 @@ async function mcpRoute(visit: Visit): Promise<void> {
       deck: options.deck,
       email,
       logs,
+      turns,
       now,
       mint,
       hosts: options.hosts ?? localHosts,
@@ -525,10 +527,11 @@ export function createApi(options: ApiOptions): Server {
   requireDomain(options.cookieDomain)
   checkedResource(options.resource)
   const logs = options.logs ?? new Map<string, CallerLog>()
+  const turns = new Map<string, Turns>()
   const now = options.now ?? Date.now
   const mint = options.mint ?? randomUUID
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
-    void handle({ options, logs, now, mint, req, res })
+    void handle({ options, logs, turns, now, mint, req, res })
   })
 }
