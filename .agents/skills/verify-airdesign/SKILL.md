@@ -71,7 +71,19 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`. Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, and `cleared-browser` (a known failure today: a deck reopened in a cleared browser shows an empty slide). Each feature file in `features/` names its journey and steps.
+
+## Every journey after every merge
+
+The `journeys` workflow runs every journey on every push to `main`, after the merge, as its own job. It does not run on pull requests and blocks no merge. One command runs the same suite locally from the repo root:
+
+```sh
+pnpm test:journeys
+```
+
+It builds `@airdesign/api` and `apps/web` once, launches one stack with `$V launch --no-build` in Playwright's global setup, runs every journey listed in `tests/journeys/journeys.spec.ts` in parallel against that one stack (each signs in its own account), and stops the stack in teardown. Evidence lands under `~/tmp/verify-airdesign/<run>/` as usual. No test retries.
+
+When it fails on `main`, the workflow opens the issue `journey failed on main` (or comments on the open one) with the failed journey, the commit and the run link, through `scripts/red-main.sh`. The next passing push closes it. A known bug is a journey marked `test.fail()` in the spec; `scripts/metrics.mjs` counts it in `known-failures`, and the fix removes the mark.
 
 To prove something no journey covers, write a new journey file there (or a scratch one under `~/tmp`, copied into `journeys/` for the run) that exports `default async function drive(kit)`. The kit gives you:
 
@@ -136,4 +148,4 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 ## Helpers
 
 - `bin/verify-airdesign.mjs`: the only helper. `$V` with no command prints usage.
-- `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>`.
+- `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>` and by `pnpm test:journeys`.

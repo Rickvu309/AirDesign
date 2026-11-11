@@ -2,6 +2,10 @@
 
 This directory is the maintained source for verifying what an AirDesign user does. Read this index before driving the app, then use the matching feature file as the recipe. Driving commands are in `../SKILL.md`; below, `V` is `.agents/skills/verify-airdesign/bin/verify-airdesign.mjs`, run from the repo root.
 
+## Every merge runs every journey
+
+The `journeys` workflow (`.github/workflows/journeys.yml`) runs `pnpm test:journeys` on every push to `main`: it builds `apps/api` and `apps/web` once, launches one stack with `$V launch --no-build`, runs every journey in `journeys/` against it through `tests/journeys/journeys.spec.ts`, and stops the stack. A failure opens or comments on the issue `journey failed on main`, naming the journey, the commit and the run; the next passing push closes it. It does not run on pull requests and blocks no merge. Run the same thing locally with `pnpm test:journeys` from the repo root. A new journey file is driven in that suite once it is listed in `tests/journeys/journeys.spec.ts`.
+
 ## Baseline preconditions
 
 - `$V launch` printed a run id and `$V doctor <run>` printed `"ok":true`.
@@ -32,4 +36,5 @@ Each feature file starts with an H1 title and one paragraph describing what the 
 - [Open a PowerPoint and edit its text](./open-edit-save.md): import from Home, type in the slide, the server keeps the text, reopening shows it. Journey `open-edit-save`.
 - [Deck list and Trash](./deck-list-trash.md): Home lists the person's decks, Move to Trash, Restore, Empty Trash. Journey `deck-list-trash`.
 - [Slide paint](./slide-paint.md): the opened deck paints each element at its place on a slide of the right shape. Journey `slide-paint`.
+- [Reopen in a cleared browser](./cleared-browser.md): after IndexedDB, local storage and site files are cleared, the saved deck still shows its slide. Journey `cleared-browser`, a known failure today.
 - [Sign in](./sign-in.md): email, six-digit code, session cookie, signed-out redirect. Command `$V sign-in`.

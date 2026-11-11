@@ -36,6 +36,6 @@ Preconditions:
 ## Gotchas
 
 - The editor paints before the network. A typed screen is not proof of a save. Wait for `deckRoutes.open` to return the text.
-- Deleting the whole `airdesign` IndexedDB database, not just the edit rows, and reopening the deck shows an empty slide with page number `1`: the imported file's content lives on the device, and the server keeps the edit register only. Observed 2026-11-11 at `948cefca`. Do not report that as a save failure; report it as its own behaviour if your change touches it.
+- Deleting the whole `airdesign` IndexedDB database, not just the edit rows, and reopening the deck shows an empty slide with page number `1`: the imported file's content lives on the device, and the server keeps the edit register only. The `cleared-browser` journey holds that bug as a known failure; see `cleared-browser.md`.
 - The deck id is a UUID taken from the URL after import. Read it from `page.url()`.
 - Typing uses `pressSequentially` with a 50 ms delay, as the repo's `tests/browser/real-save.spec.ts` does; `fill` does not go through the editor's input path.

@@ -124,6 +124,13 @@ if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?
 seedList([])
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("an empty seed list must add no known failure")
+write(
+  "tests/journeys/a.spec.ts",
+  'test("bug", async () => {\n  test.fail()\n  expect(/x/.test("x")).toBe(true)\n})\ntest("ok", async () => {})\n',
+)
+if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 1)
+  throw new Error("a Playwright test.fail must count as one known failure")
+fs.rmSync(path.join(root, "tests"), { recursive: true })
 fs.rmSync(path.join(root, "scripts/pptx-fixtures/judge-seeds.json"))
 if ((await readMetrics(root)).rows.find((row) => row.name === "known-failures")?.now !== 0)
   throw new Error("a repo with no seed list has no listed miss")
