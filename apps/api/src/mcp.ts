@@ -6,6 +6,7 @@ import {
   afterWrite,
   agentCaller,
   createServer,
+  dropGoneTurn,
   editRefusal,
   emptyLog,
   memoryTurns,
@@ -69,6 +70,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     prepare: async (_name, raw) => {
       const named = readNamedDeck(raw)
       if (!named.ok) return named
+      const seen = turns.read(named.deck)
       let saved: Awaited<ReturnType<typeof readSaved>>
       try {
         saved = await readSaved(host.deck, named.deck)
@@ -79,6 +81,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       if (saved.owner !== host.email) return { ok: false, refusal: "owner" }
       loaded = { id: named.deck, revision: saved.revision, register: saved.register }
       session.deck = loaded
+      dropGoneTurn(session, seen)
       return { ok: true }
     },
     commit: (result) => commitEdit(host.deck, loaded, result),

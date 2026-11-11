@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest"
 import {
   callTool,
   createServer,
+  dropGoneTurn,
   editLanded,
   editRefusal,
   emptyLog,
@@ -242,8 +243,21 @@ describe("the turn", () => {
     const deck = opened()
     turns.write(deck.id, { runId: "old", lastCall: 0, revision: 3 })
     const session = sessionFor(deck, turns, "fresh", 1)
+    dropGoneTurn(session, turns.read(deck.id))
     expect((await edit(session, node, "a", 0)).runId).toBe("fresh")
     expect(turns.read(deck.id)).toEqual({ runId: "fresh", lastCall: 1, revision: 1 })
+  })
+
+  it("keeps a record written after the snapshot, and one no newer than the loaded row", () => {
+    const turns = memoryTurns()
+    const deck = { ...opened(), revision: 3 }
+    const session = sessionFor(deck, turns, "fresh", 1)
+    const newer = { runId: "newer", lastCall: 0, revision: 5 }
+    turns.write(deck.id, newer)
+    dropGoneTurn(session, { runId: "old", lastCall: 0, revision: 4 })
+    expect(turns.read(deck.id)).toBe(newer)
+    dropGoneTurn(session, { runId: "newer", lastCall: 0, revision: 3 })
+    expect(turns.read(deck.id)).toBe(newer)
   })
 
   const textFloor = JSON.stringify([{ from: 0, runs: [{ from: 0, text: "Before" }] }])

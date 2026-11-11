@@ -1208,19 +1208,19 @@ describe("mcp route", () => {
     now: () => number,
   ): Promise<{
     readonly base: string
-    readonly hold: () => { readonly reached: Promise<void>; readonly release: () => void }
+    readonly hold: (match?: string) => { readonly reached: Promise<void>; readonly release: () => void }
     readonly close: () => Promise<void>
   }> {
     const info = await postgresInfo()
     const stored = openPool(info.deck, `mcp-${mark}-hold`)
-    let held: null | { readonly reach: () => void; readonly released: Promise<void> } = null
+    let held: null | { readonly match: string; readonly reach: () => void; readonly released: Promise<void> } = null
     const holding = new Proxy(stored, {
       get(target, prop, receiver) {
         if (prop !== "query") return Reflect.get(target, prop, receiver)
         const query = target.query.bind(target) as (sql: unknown, params?: unknown[]) => Promise<unknown>
         return async (sql: unknown, params?: unknown[]) => {
           const answered = await query(sql, params)
-          if (held !== null && typeof sql === "string" && sql.includes("update deck.saved")) {
+          if (held !== null && typeof sql === "string" && sql.includes(held.match)) {
             const gate = held
             held = null
             gate.reach()
@@ -1233,7 +1233,7 @@ describe("mcp route", () => {
     const served = await ownServer(mark, { deck: holding, now })
     return {
       base: served.base,
-      hold: () => {
+      hold: (match = "update deck.saved") => {
         let reach = () => {}
         let release = () => {}
         const reached = new Promise<void>((resolve) => {
@@ -1242,7 +1242,7 @@ describe("mcp route", () => {
         const released = new Promise<void>((resolve) => {
           release = resolve
         })
-        held = { reach, released }
+        held = { match, reach, released }
         return { reached, release }
       },
       close: async () => {
@@ -1274,6 +1274,43 @@ describe("mcp route", () => {
       })
       expect(next.runId).toBe(newer.runId)
       expect(runOf(await row(id), sibling)).toBe(newer.runId)
+    } finally {
+      await Promise.all([slow.close(), fast.close()])
+      await served.close()
+    }
+  })
+
+  it("keeps the record and a closed element when a call's row read lags a newer settle", async () => {
+    const served = await holdingServer("lagread", () => 1_000_000)
+    const { id, cookie } = await openedDeck("lagread")
+    const [slow, fast] = await Promise.all([connected(cookie, served.base), connected(cookie, served.base)])
+    try {
+      const first = await editAnswer(fast, firstEdit(id))
+      await editAnswer(fast, { deck: id, base: 1, changes: [{ value: "b", node: sibling, readAt: 0 }] })
+      await typed(id, cookie, "person", 3)
+      const gate = served.hold("from deck.saved where id")
+      const pending = slow.callTool({
+        name: "airdesign_edit_deck",
+        arguments: { deck: id, base: 3, changes: [{ value: "slow", node: sibling, readAt: 1 }] },
+      })
+      await gate.reached
+      const newer = await editAnswer(fast, {
+        deck: id,
+        base: 3,
+        changes: [{ value: "fast", node: sibling, readAt: 1 }],
+      })
+      expect(newer).toMatchObject({ ok: true, revision: 4, runId: first.runId })
+      gate.release()
+      expect((await pending).structuredContent).toMatchObject({ ok: false, refusal: "stale" })
+      const before = await row(id)
+      expect(elementOf(before).guarded).toBe(true)
+      const closed = await editAnswer(fast, {
+        deck: id,
+        base: 4,
+        changes: [{ value: "overwrite", node: element, readAt: 2 }],
+      })
+      expect(closed).toMatchObject({ ok: false, refusal: "person-protected" })
+      expect(await row(id)).toEqual(before)
     } finally {
       await Promise.all([slow.close(), fast.close()])
       await served.close()
