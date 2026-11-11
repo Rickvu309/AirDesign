@@ -141,6 +141,7 @@ describe("database migrations", () => {
     expect(tables.rows).toEqual(
       [
         "deck.once",
+        "deck.original_delete",
         "deck.saved",
         "session.access",
         "session.account",
@@ -163,6 +164,7 @@ describe("database migrations", () => {
     const noDelete = "INSERT SELECT UPDATE"
     expect(grants.rows).toEqual([
       { grantee: "deck", name: "deck.once", rights: full },
+      { grantee: "deck", name: "deck.original_delete", rights: full },
       { grantee: "deck", name: "deck.saved", rights: full },
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
       { grantee: "session", name: "session.access", rights: full },
@@ -213,6 +215,25 @@ describe("database migrations", () => {
     const accounts = await migrator.query("select email, note from session.account")
     expect(accounts.rows).toEqual([{ email: "kept@example.com", note: null }])
     await expect(migrator.query("select id from deck.later")).resolves.toMatchObject({ rowCount: 0 })
+  })
+
+  it("adds original storage to a database at migration 1 without changing its decks", async () => {
+    const database = await bootstrappedDatabase()
+    const migrator = await open(roleUrl("migrator", database))
+    await applySchema(migrator, [first])
+    await migrator.query(
+      "insert into deck.saved (id, revision, register, owner) values ('kept', 7, '{\"kept\":true}', 'kept@example.com')",
+    )
+    const before = await migrator.query("select * from deck.saved")
+    expect(await applySchema(migrator)).toEqual({ applied: latest - 1, at: latest })
+    const after = await migrator.query("select * from deck.saved")
+    expect(after.rows).toEqual([
+      { ...before.rows[0], original_key: null, original_bytes: null, original_sha256: null, original_stored: false },
+    ])
+    const deck = await open(roleUrl("deck", database))
+    await expect(
+      deck.query("insert into deck.original_delete (key, owner) values ('retry', 'kept@example.com')"),
+    ).resolves.toMatchObject({ rowCount: 1 })
   })
 
   it("rolls a failed migration back, records nothing, and applies it on the next run", async () => {

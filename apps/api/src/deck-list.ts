@@ -1,6 +1,8 @@
 import type { DeckId } from "@airdesign/catalog"
 
 import type { Sql } from "./pool.js"
+import { removeOriginals } from "./original.js"
+import type { OriginalStore } from "./original-store.js"
 
 type Listed = {
   readonly deck: DeckId
@@ -22,9 +24,12 @@ type ListRow = {
 type Refusal = "owner"
 
 const expireSql = `
-delete from deck.saved
+with removed as (delete from deck.saved
 where owner = $1 and trashed is not null and trashed < now() - interval '30 days'
-returning id
+returning original_key, owner)
+insert into deck.original_delete (key, owner)
+select original_key, owner from removed where original_key is not null
+on conflict (key) do nothing
 `
 
 const listSql = `
@@ -45,9 +50,15 @@ returning id, trashed
 const restoreSql = "update deck.saved set trashed = null where id = $1 and owner = $2 returning id"
 
 const deleteSql = `
-delete from deck.saved
+with removed as (delete from deck.saved
 where owner = $1 and id = any($2::text[]) and trashed is not null
-returning id
+returning id, original_key, owner),
+queued as (
+  insert into deck.original_delete (key, owner)
+  select original_key, owner from removed where original_key is not null
+  on conflict (key) do nothing
+)
+select id from removed
 `
 
 function listed(row: ListRow): Listed {
@@ -62,6 +73,7 @@ function listed(row: ListRow): Listed {
 export async function listDecks(
   db: Sql,
   email: string,
+  store?: OriginalStore,
 ): Promise<{
   readonly ok: true
   readonly account: { readonly email: string }
@@ -69,6 +81,7 @@ export async function listDecks(
   readonly trash: ListedTrash[]
 }> {
   await db.query(expireSql, [email])
+  await removeOriginals(db, email, store)
   const result = await db.query<ListRow>(listSql, [email])
   const decks: Listed[] = []
   const trash: ListedTrash[] = []
@@ -121,8 +134,10 @@ export async function deleteDecks(
   db: Sql,
   parsed: { readonly decks: readonly DeckId[] },
   email: string,
+  store?: OriginalStore,
 ): Promise<{ readonly ok: true; readonly deleted: string[] }> {
   const result = await db.query<{ id: string }>(deleteSql, [email, parsed.decks])
+  await removeOriginals(db, email, store)
   const gone = new Set(result.rows.map((row) => row.id))
   return { ok: true, deleted: parsed.decks.filter((deck) => gone.has(deck)) }
 }

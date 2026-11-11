@@ -84,4 +84,20 @@ grant usage on schema deck to listen;
 grant select on deck.saved to listen;
 `,
   },
+  {
+    id: 2,
+    sql: `
+alter table deck.saved
+  add column original_key text,
+  add column original_bytes integer,
+  add column original_sha256 text,
+  add column original_stored boolean not null default false;
+create table deck.original_delete (
+  key text primary key,
+  owner text not null,
+  expires timestamptz not null default now() + interval '15 minutes'
+);
+grant select, insert, update, delete on deck.original_delete to deck;
+`,
+  },
 ]

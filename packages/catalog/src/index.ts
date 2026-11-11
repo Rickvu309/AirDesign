@@ -19,6 +19,7 @@ export {
   readLinkToken,
   readNamedDeck,
   readNoFields,
+  readOriginalUpload,
   readRename,
   readRevokeRequest,
   readRun,

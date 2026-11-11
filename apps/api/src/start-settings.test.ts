@@ -35,6 +35,35 @@ const notOrigins = [
 ]
 
 describe("readStartSettings", () => {
+  it("starts without storage when every R2 setting is absent or empty", () => {
+    expect(readStartSettings(good)).toMatchObject({ r2: undefined })
+    expect(
+      readStartSettings({ ...good, R2_ACCOUNT_ID: "", R2_ACCESS_KEY_ID: "", R2_SECRET_ACCESS_KEY: "", R2_BUCKET: "" }),
+    ).toMatchObject({ r2: undefined })
+  })
+
+  it("reads all four R2 settings together", () => {
+    expect(
+      readStartSettings({
+        ...good,
+        R2_ACCOUNT_ID: "example",
+        R2_ACCESS_KEY_ID: "example",
+        R2_SECRET_ACCESS_KEY: "example",
+        R2_BUCKET: "originals",
+      }),
+    ).toMatchObject({
+      r2: { accountId: "example", accessKeyId: "example", secretAccessKey: "example", bucket: "originals" },
+    })
+  })
+
+  it("names the first missing R2 setting for every partial configuration", () => {
+    const names = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"]
+    for (let mask = 1; mask < 15; mask++) {
+      const values = Object.fromEntries(names.map((name, index) => [name, mask & (1 << index) ? "example" : ""]))
+      expect(refused(values)).toBe(names.find((_, index) => !(mask & (1 << index))))
+    }
+  })
+
   it("returns every setting the entry needs", () => {
     expect(
       readStartSettings({ ...good, PORT: "8080", COOKIE_DOMAIN: "link.example", API_HOSTS: " A.example, ,b.example " }),
@@ -52,6 +81,7 @@ describe("readStartSettings", () => {
       smokeToken: undefined,
       resendKey: good.RESEND_API_KEY,
       resendFrom: good.RESEND_FROM,
+      r2: undefined,
     })
   })
 

@@ -1,7 +1,9 @@
 import { checkedResource } from "./resource.js"
 import { requireDomain, requireOrigin } from "./server.js"
+import type { R2Settings } from "./r2-original-store.js"
 
 const databaseNames = ["SESSION_DATABASE_URL", "DECK_DATABASE_URL", "LISTEN_DATABASE_URL"] as const
+const storageNames = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"] as const
 
 export type StartSettings = {
   readonly sessionUrl: string
@@ -17,6 +19,7 @@ export type StartSettings = {
   readonly smokeToken: string | undefined
   readonly resendKey: string
   readonly resendFrom: string
+  readonly r2: R2Settings | undefined
 }
 
 export type StartRefusal = { readonly refusal: string }
@@ -69,6 +72,16 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
   if (resendKey === undefined) return { refusal: "RESEND_API_KEY" }
   const resendFrom = nonEmpty(env.RESEND_FROM)
   if (resendFrom === undefined) return { refusal: "RESEND_FROM" }
+  const storage = storageNames.map((name) => nonEmpty(env[name]))
+  if (storage.some((value) => value !== undefined)) {
+    const missingStorage = storageNames.find((name) => nonEmpty(env[name]) === undefined)
+    if (missingStorage !== undefined) return { refusal: missingStorage }
+  }
+  const [accountId, accessKeyId, secretAccessKey, bucket] = storage
+  const r2 =
+    accountId === undefined || accessKeyId === undefined || secretAccessKey === undefined || bucket === undefined
+      ? undefined
+      : { accountId, accessKeyId, secretAccessKey, bucket }
   return {
     sessionUrl: env.SESSION_DATABASE_URL ?? "",
     deckUrl: env.DECK_DATABASE_URL ?? "",
@@ -83,5 +96,6 @@ export function readStartSettings(env: Environment): StartSettings | StartRefusa
     smokeToken: nonEmpty(env.SMOKE_TOKEN),
     resendKey,
     resendFrom,
+    r2,
   }
 }
