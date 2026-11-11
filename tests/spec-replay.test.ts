@@ -1303,13 +1303,15 @@ function dumpTopics(
 describe("spec replay", () => {
   it("replays every reachable spec edge through decide", async () => {
     assertJar(jarPath())
-    const found = topics(root)
+    const every = topics(root)
     const folders = readdirSync(path.join(root, "specs"), { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name)
       .sort()
-    expect(found.map((topic) => topic.name).sort()).toEqual(folders)
-    for (const topic of found) expect(topic.view).toBe(true)
+    expect(every.map((topic) => topic.name).sort()).toEqual(folders)
+    for (const topic of every) expect(topic.view).toBe(true)
+    const replayedByApi = "owner"
+    const found = every.filter((topic) => topic.name !== replayedByApi)
     const failures: string[] = []
     const reports: Record<string, unknown> = {}
     const views: Record<string, View> = {
@@ -1322,7 +1324,7 @@ describe("spec replay", () => {
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
     }
-    expect(Object.keys(views).sort()).toEqual(folders)
+    expect(Object.keys(views).sort()).toEqual(folders.filter((name) => name !== replayedByApi))
     for (const dumped of await dumpTopics(found)) {
       const topic = found.find((item) => item.name === dumped.name)
       if (!topic) throw new Error(dumped.name)
