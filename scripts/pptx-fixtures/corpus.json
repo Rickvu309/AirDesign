@@ -1,5 +1,10 @@
 [
   {
+    "name": "nasa-8ft-tunnel.pptx",
+    "sha256": "e8aa92450ace775b1430062edcbfc1274ac73b0bed57937f258845dcff145cd9",
+    "source": "https://ntrs.nasa.gov/api/citations/20210017545/downloads/LaRC%20AETC%20Facilities%208-Ft%20Aerothermal%20Workshop.pptx"
+  },
+  {
     "name": "nasa-accp-visualizations.pptx",
     "sha256": "2918c5072fac29ac763248e09c5429ca551fbb9110e3c12cc6fa7bb14848a42d",
     "source": "https://ntrs.nasa.gov/api/citations/20205010512/downloads/ACCP%20VF%20Visualizations%20SciTech.pptx"
@@ -13,6 +18,11 @@
     "name": "nasa-class-d-mar.pptx",
     "sha256": "00ffc50e5142c95394c36440d238c97fb3d6a040679724b9bb79312f659383ba",
     "source": "https://ntrs.nasa.gov/api/citations/20205002782/downloads/SMD-ClassD-MAR-final.pptx"
+  },
+  {
+    "name": "nasa-collaborative-testing.pptx",
+    "sha256": "6764578bb7b7531dd9ed5ecda2bee02522b7b470357ed4fd989d05494b7ccc82",
+    "source": "https://ntrs.nasa.gov/api/citations/20220010588/downloads/challenge_introtalk_3.pptx"
   },
   {
     "name": "nasa-conjunction-assessment.pptx",
@@ -30,9 +40,34 @@
     "source": "https://ntrs.nasa.gov/api/citations/20220000510/downloads/MRQW%202022%20-%20NESC%20Assessment%20on%20Use%20of%20COTS%20Phase%20I%20-2-9-2022.pptx"
   },
   {
+    "name": "nasa-earth-gram-overview.pptx",
+    "sha256": "9ec57495418000ea164c50a23d3e06c59f4d4e3a5565cebaa3574c4d9111aa32",
+    "source": "https://ntrs.nasa.gov/api/citations/20205011786/downloads/COSPAR2021_PWhite.pptx"
+  },
+  {
+    "name": "nasa-earth-gram-rra.pptx",
+    "sha256": "54ad97d665420705d4db4584b51d348094649bd42a363d98a98a66dd3fad3222",
+    "source": "https://ntrs.nasa.gov/api/citations/20260001177/downloads/Earth-GRAM%20RRA%20training.pptx"
+  },
+  {
+    "name": "nasa-earth-gram-tutorial.pptx",
+    "sha256": "64b75a17fce80b48e7542f54ee6727391202fe61e104c20cd13683a7ac3644f9",
+    "source": "https://ntrs.nasa.gov/api/citations/20260000179/downloads/Earth-GRAM%20Overview.pptx"
+  },
+  {
     "name": "nasa-hera-analog-lessons.pptx",
     "sha256": "a4588b064bceca0715bff4de31b82408dffaf85828950ffa1a4e1f512f1acdce",
     "source": "https://ntrs.nasa.gov/api/citations/20210013417/downloads/HRP%20Analog%20Lessons%20Learned%20for%20ISS%20as%20Analog%20040821%20-%20for%20EC.pptx"
+  },
+  {
+    "name": "nasa-hlpw4-turbulence.pptx",
+    "sha256": "29bcdfdff857d6ca8671d1bb163eeebbef0c73c0b62b83483d413c2f3932f019",
+    "source": "https://ntrs.nasa.gov/api/citations/20205011462/downloads/hlpw-4-verification-fun3d.pptx"
+  },
+  {
+    "name": "nasa-ixpe-science-ops.pptx",
+    "sha256": "58150f7b453e6d100483df1bbafec9672de8a5078ec49287e115244b552296c5",
+    "source": "https://ntrs.nasa.gov/api/citations/20240009181/downloads/Science_Operations.pptx"
   },
   {
     "name": "nasa-jwst-optics-lessons.pptx",
