@@ -29,6 +29,8 @@ export type CanvasElement = {
   readonly kind: Kind
   readonly box: PaintBox | null
   readonly editable: boolean
+  readonly placeholder: boolean
+  readonly filled: boolean
 }
 
 export type CanvasSlide = {
