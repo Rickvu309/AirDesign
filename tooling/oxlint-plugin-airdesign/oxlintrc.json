@@ -16,6 +16,7 @@
   ],
   "rules": {
     "airdesign/no-comments": "error",
+    "airdesign/no-element-id-cast": "warn",
     "airdesign/no-hidden-input": "warn",
     "airdesign/no-raw": "error",
     "airdesign/no-run-literal": "error",

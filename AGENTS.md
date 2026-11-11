@@ -70,6 +70,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | No file or folder named `utils`, `helpers` or `common` | lint: the name scan |
 | One word per idea: a word listed in `tooling/oxlint-plugin-airdesign/glossary.json` is replaced by the word it names | lint: the name scan reads the glossary. A line kept on purpose is listed there with a reason. It warns for now and blocks nothing |
 | Product code takes the clock, random ids and temp folders as options: no read of `Date.now`, `Date()`, `new Date()`, `performance.now`, `Temporal.Now`, `Math.random`, `crypto.randomUUID`, `crypto.getRandomValues`, `tmpdir` or `TMPDIR`, except as the `??` or default-parameter fallback of an option | lint: `no-hidden-input`. It warns for now and blocks nothing |
+| Only `packages/document` makes an `ElementId`: no type assertion to `ElementId` outside `packages/document/src` | lint: `no-element-id-cast`. It warns for now and blocks nothing |
 | A package exposes only its `index.ts`, declares what it imports, and stays pure | `pnpm check:boundaries` |
 | No hand-kept list of what a folder holds: `pnpm typecheck` reads `apps/` and `packages/`, `pnpm test:tooling` reads `scripts/`, and the spec replay reads `specs/` | the `references` step of `pnpm check` fails when the root `tsconfig.json` lists references |
 | Unit tests run with nothing built | `pnpm check` runs tests before typecheck |
