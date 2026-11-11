@@ -348,7 +348,7 @@ test("a box that cannot keep an edit is not editable", async ({ page }) => {
   await expect(slideNumber).toHaveText("10")
   await expect(slideNumber).toHaveAttribute("contenteditable", "false")
   await expect(page.locator('[contenteditable="true"]')).toHaveCount(35)
-  await page.locator("input[type=file]").setInputFiles(fixture)
+  await choose(page, fixture)
   const editor = page.locator('[contenteditable="true"]')
   await expect(editor).toHaveCount(1)
   await expect(editor).toHaveText("Hello")
