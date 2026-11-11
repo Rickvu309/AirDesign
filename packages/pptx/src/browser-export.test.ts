@@ -7,9 +7,10 @@ declare const process: {
 
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, spliceBytes, type ByteEdit } from "./element-span.js"
+import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { applyRoute, oneRunValue, shapeById } from "./slide-route.js"
-import { browserExportFailures } from "./browser-export.js"
+import { browserExportFailures, paragraphExportFailures, type ParagraphExpectation } from "./browser-export.js"
 
 const slidePart = "ppt/slides/slide1.xml"
 const shape = "2"
@@ -183,5 +184,181 @@ describe("browserExportFailures", () => {
     ]) {
       expect(failures.some((failure) => failure.includes(name))).toBe(true)
     }
+  })
+})
+
+const doeSlide = "ppt/slides/slide7.xml"
+const doeFixture = `${process.cwd()}/scripts/pptx-fixtures/doe-heat-pumps.pptx`
+const expectation: ParagraphExpectation = {
+  part: doeSlide,
+  shape: "45",
+  paragraphs: [
+    ["Vapor Compression Cycle"],
+    ["Pumped refrigerant"],
+    ["Pressurized (liquid) ", "supplies", " heat "],
+    ["Depressurized (gas) ", "collects", " heat "],
+    ["Extra line"],
+  ],
+  kept: 2,
+  bold: ["supplies", "collects"],
+}
+
+function doeExport(original: ReadonlyMap<string, Uint8Array>, supplies = "supplies"): Map<string, Uint8Array> {
+  return applyRoute(original, {
+    name: "text",
+    part: doeSlide,
+    shape: "45",
+    value: [
+      { from: 0, runs: [{ from: 0, text: "Vapor Compression Cycle" }] },
+      { from: 1, runs: [{ from: 0, text: "Pumped refrigerant" }] },
+      {
+        from: 2,
+        runs: [
+          { from: 0, text: "Pressurized (liquid) " },
+          { from: 1, text: supplies },
+          { from: 2, text: " heat " },
+        ],
+      },
+      {
+        from: 3,
+        runs: [
+          { from: 0, text: "Depressurized (gas) " },
+          { from: 1, text: "collects" },
+          { from: 2, text: " heat " },
+        ],
+      },
+      { from: 3, runs: [{ from: -1, text: "Extra line" }] },
+    ],
+  })
+}
+
+function slideBody(parts: ReadonlyMap<string, Uint8Array>) {
+  const bytes = parts.get(doeSlide)
+  if (bytes === undefined) throw new Error(doeSlide)
+  const { elements } = markupDocument(bytes)
+  const host = shapeById(elements, "45")
+  const body = elements.find((element) => element.kind === "p:txBody" && element.parent === host.index)
+  if (body === undefined) throw new Error("p:txBody")
+  const paragraphs = elements.filter((element) => element.kind === "a:p" && element.parent === body.index)
+  return { bytes, elements, host, body, paragraphs }
+}
+
+function withSlide(parts: ReadonlyMap<string, Uint8Array>, bytes: Uint8Array): Map<string, Uint8Array> {
+  const next = new Map(parts)
+  next.set(doeSlide, bytes)
+  return next
+}
+
+function replaced(bytes: Uint8Array, from: number, to: number, next: string): Uint8Array {
+  return spliceBytes(bytes, [{ start: from, end: to, next: encodeUtf8(next) }])
+}
+
+describe("paragraphExportFailures", () => {
+  it("a correct replaced run and new paragraph export has no failures", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    expect(paragraphExportFailures(original, doeExport(original), expectation)).toEqual([])
+  })
+
+  it("wrong text in a replaced run", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const failures = paragraphExportFailures(original, doeExport(original, "delivers"), expectation)
+    expect(failures.some((failure) => failure.startsWith("shape 45 paragraphs "))).toBe(true)
+    expect(failures).toContain("shape 45 bold supplies")
+  })
+
+  it("a lost bold on a replaced run", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = doeExport(original)
+    const { bytes, elements, paragraphs } = slideBody(exported)
+    const paragraph = paragraphs[3]
+    if (paragraph === undefined) throw new Error("a:p")
+    const format = elements.find(
+      (element) =>
+        element.kind === "a:rPr" &&
+        element.start > paragraph.start &&
+        element.end < paragraph.end &&
+        element.attributes.some((item) => item.name === "b" && item.value === "1"),
+    )
+    if (format === undefined) throw new Error("a:rPr")
+    const text = decodeUtf8(bytes.subarray(format.start, format.end))
+    const unbolded = replaced(bytes, format.start, format.end, text.replace(' b="1"', ""))
+    expect(paragraphExportFailures(original, withSlide(exported, unbolded), expectation)).toEqual([
+      "shape 45 bold collects",
+    ])
+  })
+
+  it("a changed byte in paragraph 0", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = doeExport(original)
+    const { bytes, paragraphs } = slideBody(exported)
+    const paragraph = paragraphs[0]
+    if (paragraph === undefined) throw new Error("a:p")
+    const source = decodeUtf8(bytes.subarray(paragraph.start, paragraph.end))
+    const spaced = replaced(bytes, paragraph.start, paragraph.end, source.replace("<a:p>", "<a:p >"))
+    const failures = paragraphExportFailures(original, withSlide(exported, spaced), expectation)
+    expect(failures).toContain("shape 45 paragraph 0 bytes")
+  })
+
+  it("a changed byte in another part", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = flipByte(doeExport(original), "docProps/app.xml")
+    expect(paragraphExportFailures(original, exported, expectation)).toEqual(["part docProps/app.xml"])
+  })
+
+  it("a changed byte in the slide outside the shape text", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = doeExport(original)
+    const { bytes } = slideBody(exported)
+    const declaration = decodeUtf8(bytes.subarray(0, 60))
+    expect(declaration).toContain('version="1.0"')
+    const changed = replaced(bytes, 0, 60, declaration.replace('version="1.0"', 'version="1.1"'))
+    expect(paragraphExportFailures(original, withSlide(exported, changed), expectation)).toEqual([
+      `${doeSlide} outside shape 45 text`,
+    ])
+  })
+
+  it("a part added, removed or reordered", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = doeExport(original)
+    const added = new Map(exported)
+    added.set("ppt/media/extra.bin", new Uint8Array([1]))
+    expect(paragraphExportFailures(original, added, expectation)).toEqual(["extra part ppt/media/extra.bin"])
+    const removed = new Map(exported)
+    removed.delete("docProps/app.xml")
+    expect(paragraphExportFailures(original, removed, expectation)).toEqual(["missing part docProps/app.xml"])
+    expect(paragraphExportFailures(original, new Map([...exported].reverse()), expectation)).toEqual(["part order"])
+  })
+
+  it("a sixth paragraph", async () => {
+    const original = await readParts(readFileSync(doeFixture))
+    const exported = applyRoute(doeExport(original), {
+      name: "text",
+      part: doeSlide,
+      shape: "45",
+      value: [
+        { from: 0, runs: [{ from: 0, text: "Vapor Compression Cycle" }] },
+        { from: 1, runs: [{ from: 0, text: "Pumped refrigerant" }] },
+        {
+          from: 2,
+          runs: [
+            { from: 0, text: "Pressurized (liquid) " },
+            { from: 1, text: "supplies" },
+            { from: 2, text: " heat " },
+          ],
+        },
+        {
+          from: 3,
+          runs: [
+            { from: 0, text: "Depressurized (gas) " },
+            { from: 1, text: "collects" },
+            { from: 2, text: " heat " },
+          ],
+        },
+        { from: 4, runs: [{ from: 0, text: "Extra line" }] },
+        { from: 4, runs: [{ from: 0, text: "One more" }] },
+      ],
+    })
+    const failures = paragraphExportFailures(original, exported, expectation)
+    expect(failures.some((failure) => failure.startsWith("shape 45 paragraphs "))).toBe(true)
   })
 })

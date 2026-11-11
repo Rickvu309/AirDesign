@@ -53,6 +53,22 @@ const browserExportPath = path.join(root, "tests/browser", browserExportName)
 const browserShape = "2"
 const browserText = "Hello!"
 const inputs = corpusInputs(root)
+const paragraphsExportName = "exported-paragraphs.pptx"
+const paragraphsExportPath = path.join(root, "tests/browser", paragraphsExportName)
+const paragraphsOriginalName = "doe-heat-pumps.pptx"
+const paragraphsExpected = {
+  part: "ppt/slides/slide7.xml",
+  shape: "45",
+  paragraphs: [
+    ["Vapor Compression Cycle"],
+    ["Pumped refrigerant"],
+    ["Pressurized (liquid) ", "supplies", " heat "],
+    ["Depressurized (gas) ", "collects", " heat "],
+    ["Extra line"],
+  ],
+  kept: 2,
+  bold: ["supplies", "collects"],
+}
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
@@ -86,6 +102,7 @@ const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: proce
 await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
 const browserSpec = freshBrowserExport({
   file: browserExportPath,
+  also: [paragraphsExportPath],
   run: () => run("pnpm", ["exec", "playwright", "test", "tests/browser/thin-deck.spec.ts"]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
@@ -103,8 +120,11 @@ cases.push({
   pages: true,
 })
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const fixturePath = (name) =>
-  name === browserExportName ? browserExportPath : path.join(root, decision.deckPath(name))
+const exportPaths = new Map([
+  [browserExportName, browserExportPath],
+  [paragraphsExportName, paragraphsExportPath],
+])
+const fixturePath = (name) => exportPaths.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
@@ -202,6 +222,7 @@ const spec = await browserSpec
 console.log(`browser export spec ${spec.seconds.toFixed(1)} seconds`)
 if (spec.ok) {
   parts.set(browserExportName, await pptx.readParts(fs.readFileSync(browserExportPath)))
+  parts.set(paragraphsExportName, await pptx.readParts(fs.readFileSync(paragraphsExportPath)))
   waiting.push(browserExportName)
 } else {
   const index = cases.findIndex((row) => row.name === "browser-text-export")
@@ -263,6 +284,34 @@ if (!spec.ok) {
   for (const failure of pptx.browserExportFailures(cleanParts, exportParts, browserShape, browserText)) {
     failed += 1
     console.log(failure)
+  }
+  const originalParts = parts.get(paragraphsOriginalName)
+  const paragraphParts = parts.get(paragraphsExportName)
+  if (originalParts === undefined || paragraphParts === undefined) throw new Error("paragraph export")
+  for (const failure of pptx.paragraphExportFailures(originalParts, paragraphParts, paragraphsExpected)) {
+    failed += 1
+    console.log(`paragraph export ${failure}`)
+  }
+  const verdict = judge(
+    pptx,
+    {
+      list: lists.get(paragraphsOriginalName),
+      ids: ids.get(paragraphsOriginalName),
+      orders: orders.get(paragraphsOriginalName),
+    },
+    {
+      list: lists.get(paragraphsExportName),
+      ids: ids.get(paragraphsExportName),
+      orders: orders.get(paragraphsExportName),
+    },
+  )
+  for (const error of verdict.errors) {
+    failed += 1
+    console.log(`paragraph export validator ${error}`)
+  }
+  for (const dupe of verdict.dupes) {
+    failed += 1
+    console.log(`paragraph export duplicate shape id ${JSON.stringify(dupe)}`)
   }
 }
 for (const row of cases) {
