@@ -288,6 +288,19 @@ same(
   [checkSource.includes('import { judgeParts } from "./judge.mjs"'), /\bjudge\(/.test(checkSource)],
   [true, false],
 )
+same(
+  "pptx-check compares each deck's own dangling references before and after",
+  [
+    checkSource.includes("references: references.get(name)"),
+    checkSource.includes("pptx.danglingShapeReferences(packageParts)"),
+  ],
+  [true, true],
+)
+same(
+  "pptx-check fails a case that leaves a dangling reference, judged against the case's own after parts",
+  [checkSource.includes("dangling.length !== 0"), checkSource.includes("parts.get(row.after)")],
+  [true, true],
+)
 const routePptx = {
   ...partsPptx,
   touchMatches: () => true,

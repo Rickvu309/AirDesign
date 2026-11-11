@@ -289,16 +289,23 @@ if (!spec.ok) {
   }
 }
 for (const row of cases) {
-  const { errors, dupes } = judgeParts(pptx, judgedBefore(row.before), lists.get(row.after), parts.get(row.after))
+  const { errors, dupes, dangling } = judgeParts(
+    pptx,
+    judgedBefore(row.before),
+    lists.get(row.after),
+    parts.get(row.after),
+  )
   const pages = pptx.exactPageCheck({
     before: rendered.get(row.before),
     after: rendered.get(afterRender(row)),
     targeted: row.targeted,
     visible: row.visible,
   })
-  if (errors.length !== row.errors || dupes.length !== row.dupes || pages !== row.pages) {
+  if (errors.length !== row.errors || dupes.length !== row.dupes || dangling.length !== 0 || pages !== row.pages) {
     failed += 1
-    console.log(JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, pages }))
+    console.log(
+      JSON.stringify({ name: row.name, errors: errors.length, dupes: dupes.length, dangling: dangling.length, pages }),
+    )
   }
 }
 const checkSeconds = decision.duration(() => timeMetric(root, "pptx-check-duration", checkStarted))

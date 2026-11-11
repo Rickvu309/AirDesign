@@ -1,5 +1,5 @@
 import type { TextParagraph, TextRun, TextValue } from "@airdesign/document"
-import { contentSpans, type ByteEdit, type MarkupElement } from "./element-span.js"
+import { contentSpans, decodedXmlText, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { xmlText } from "./shape-write.js"
 
@@ -22,13 +22,6 @@ type SourceParagraph = {
 
 const inlineKinds = new Set(["a:r", "a:br", "a:fld"])
 const paragraphKinds = new Set(["a:pPr", "a:endParaRPr", ...inlineKinds])
-const namedReferences = new Map([
-  ["amp", "&"],
-  ["lt", "<"],
-  ["gt", ">"],
-  ["quot", '"'],
-  ["apos", "'"],
-])
 const emptyBytes = new Uint8Array(0)
 const runOpen = encodeUtf8("<a:r>")
 const runClose = encodeUtf8("</a:r>")
@@ -38,35 +31,6 @@ const paragraphOpen = encodeUtf8("<a:p>")
 const paragraphClose = encodeUtf8("</a:p>")
 const formatOpen = encodeUtf8("<a:rPr")
 const formatClose = encodeUtf8("</a:rPr>")
-
-function numericReference(token: string): string | null {
-  const hex = token[1] === "x"
-  const digits = token.slice(hex ? 2 : 1)
-  if (!(hex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/).test(digits)) return null
-  const code = Number.parseInt(digits, hex ? 16 : 10)
-  if (code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) return null
-  return String.fromCodePoint(code)
-}
-
-function referenceText(token: string): string | null {
-  return token.startsWith("#") ? numericReference(token) : (namedReferences.get(token) ?? null)
-}
-
-export function decodedXmlText(value: string): string {
-  let text = ""
-  let start = 0
-  for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== "&") continue
-    let end = index + 1
-    while (end < value.length && value[end] !== ";") end += 1
-    if (end >= value.length) return text + value.slice(start)
-    const decoded = referenceText(value.slice(index + 1, end))
-    text += value.slice(start, index) + (decoded ?? value.slice(index, end + 1))
-    start = end + 1
-    index = end
-  }
-  return text + value.slice(start)
-}
 
 function joinBytes(chunks: readonly Uint8Array[]): Uint8Array {
   const merged = new Uint8Array(chunks.reduce((size, chunk) => size + chunk.length, 0))
