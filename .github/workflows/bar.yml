@@ -1,4 +1,4 @@
-name: ratchet
+name: bar
 
 on:
   pull_request_target:
@@ -12,12 +12,12 @@ on:
       - edited
 
 concurrency:
-  group: ratchet-${{ github.event.pull_request.number }}
+  group: bar-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  ratchet:
-    name: ratchet
+  bar:
+    name: bar
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -28,4 +28,4 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/ratchet.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label
+        run: node scripts/bar.mjs "$GITHUB_REPOSITORY" "${{ github.event.pull_request.number }}" --label

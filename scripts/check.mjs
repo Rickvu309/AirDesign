@@ -27,7 +27,7 @@ export const stages = [
     ["specs", "pnpm", ["check:specs"], { AIRDESIGN_SPEC_CACHE: specCache }],
     ["browser", "pnpm", ["test:browser"]],
     ["site", "pnpm", ["--filter", "@airdesign/site...", "run", "build"]],
-    ["ratchet", "node", ["scripts/ratchet.mjs", "local"]],
+    ["bar", "node", ["scripts/bar.mjs", "local"]],
   ],
   [["typecheck", "pnpm", ["typecheck"]]],
   [
@@ -47,7 +47,7 @@ export const partOf = (argv) => {
   return part
 }
 
-export const localSteps = new Set(["ratchet"])
+export const localSteps = new Set(["bar"])
 
 export const onCi = (env) => env.CI === "true" || env.CI === "1"
 

@@ -13,7 +13,6 @@ export const failureClass = (log) => {
   if (step) return `pnpm check: ${step[1]}`
   if (/\d+ pptx checks failed/.test(log)) return "PowerPoint check: a case failed"
   if (/ is \d+(\.\d+)? and its limit is /.test(log)) return "a timed metric went over its limit"
-  if (/Only \S+ can accept this\./.test(log)) return "ratchet: waiting for the owner"
   const named = /^[^\t]*\t([^\t]+)\t/m.exec(log)
   return named ? `other: ${named[1].replace(/[^\w .:/-]/g, "")}` : "the run left no log"
 }

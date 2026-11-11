@@ -3,18 +3,18 @@
     "known fault": "known failure",
     "stick": "metric",
     "gate": "ci",
-    "owner gate": "ratchet"
+    "owner gate": "bar"
   },
   "allowed": [
     {
-      "file": "scripts/ratchet.mjs",
+      "file": "scripts/bar.mjs",
       "text": "export const oldMetricsFile = \"sticks.json\"",
-      "reason": "ratchet reads the metrics file of a main that still has the old name"
+      "reason": "bar reads the metrics file of a main that still has the old name"
     },
     {
-      "file": "scripts/ratchet.mjs",
+      "file": "scripts/bar.mjs",
       "text": "\"known faults\": \"known-failures\",",
-      "reason": "ratchet maps the old metric name to the new one"
+      "reason": "bar maps the old metric name to the new one"
     }
   ]
 }

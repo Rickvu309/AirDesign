@@ -24,7 +24,7 @@ import {
   sameButReferences,
   labelsFor,
   verdict,
-} from "./ratchet.mjs"
+} from "./bar.mjs"
 import { workingTree } from "./checked.mjs"
 
 const metrics = {
@@ -420,7 +420,7 @@ same(
   ["The limit of ci-duration went from 40 to 45."],
 )
 
-const localRepo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-ratchet-local-"))
+const localRepo = fs.mkdtempSync(path.join(os.tmpdir(), "airdesign-bar-local-"))
 process.on("exit", () => fs.rmSync(localRepo, { recursive: true, force: true }))
 const localGit = (args, input) =>
   execFileSync("git", ["-C", localRepo, ...args], {
@@ -472,7 +472,7 @@ const localStep = () => {
   try {
     return {
       status: 0,
-      output: execFileSync(process.execPath, ["scripts/ratchet.mjs", "local", localRepo], {
+      output: execFileSync(process.execPath, ["scripts/bar.mjs", "local", localRepo], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
       }),
@@ -488,4 +488,4 @@ same("locally a lowered bar prints what ci says and passes", localStep(), {
 same("reading the working tree leaves the index alone", localGit(["diff", "--cached", "--name-only"]), "")
 same("the working tree is read with what is not staged", workingTree(localRepo) === localGit(["write-tree"]), false)
 
-console.log("ratchet tests passed")
+console.log("bar tests passed")
