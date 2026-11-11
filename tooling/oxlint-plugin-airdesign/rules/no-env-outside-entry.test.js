@@ -86,7 +86,6 @@ expectRejects(
   rule,
   message,
 )
-expectRejects("a test file stays covered", "apps/api/src/second.test.ts", read, rule, message)
 expectAccepts("start.ts passes the whole object", "apps/api/src/start.ts", startEntry, rule)
 expectAccepts(
   "setup.ts passes the whole object",
@@ -116,3 +115,4 @@ expectAccepts(
 expectAccepts("a property named process stays", source, `export const ok = (job) => ({ process: job.process })\n`, rule)
 expectAccepts("a type of process stays", source, `export type Env = typeof process.env\n`, rule)
 expectAccepts("another package stays out of scope", "apps/web/src/second.ts", read, rule)
+expectAccepts("a test file is out of scope", "apps/api/src/second.test.ts", read, rule)

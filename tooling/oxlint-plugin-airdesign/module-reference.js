@@ -7,8 +7,10 @@ const wrappers = new Set([
   "ParenthesizedExpression",
 ])
 
-export const apiFile = (context) =>
-  /\/apps\/api\/src\/(.+)$/u.exec(String(context.filename ?? context.getFilename?.() ?? "").replaceAll("\\", "/"))?.[1]
+export const apiFile = (context) => {
+  const filename = String(context.filename ?? context.getFilename?.() ?? "").replaceAll("\\", "/")
+  return filename.endsWith(".test.ts") ? undefined : /\/apps\/api\/src\/(.+)$/u.exec(filename)?.[1]
+}
 
 export const outer = (node) => (wrappers.has(node.parent?.type) ? outer(node.parent) : node)
 
