@@ -66,6 +66,14 @@ export const judgedOnCi = new Set(["test", "browser"])
 
 export const mayPush = (failed, ran) => ran && failed.every((name) => judgedOnCi.has(name))
 
+export const warnSteps = new Set()
+
+export const recordFailure = (failed, name, warned = warnSteps) => {
+  if (warned.has(name)) return "warn"
+  failed.push(name)
+  return "fail"
+}
+
 const showOnSuccess = new Set(["bug-rule", "metrics", "specs", "worktrees", ...localSteps])
 const all = process.argv.includes("--all")
 const failed = []
@@ -83,8 +91,7 @@ const run = ([name, command, args, extra]) =>
     const finish = (status) => {
       const seconds = ((Date.now() - started) / 1000).toFixed(1)
       if (status !== 0) {
-        process.stderr.write(`${output}fail ${name} ${seconds}s\n`)
-        failed.push(name)
+        process.stderr.write(`${output}${recordFailure(failed, name)} ${name} ${seconds}s\n`)
       } else {
         process.stdout.write(`${showOnSuccess.has(name) ? output : ""}ok ${name} ${seconds}s\n`)
       }

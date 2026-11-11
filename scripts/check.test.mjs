@@ -2,6 +2,7 @@ import { stages } from "./check.mjs"
 import { partOf, sideSteps, stagesFor } from "./check.mjs"
 import { judgedOnCi, mayPush } from "./check.mjs"
 import { localSteps, onCi } from "./check.mjs"
+import { recordFailure, warnSteps } from "./check.mjs"
 
 const requiredSteps = [
   "format",
@@ -101,3 +102,17 @@ for (const name of everyStep.filter((step) => !ciOnlySteps.has(step))) {
   if (!ranWhen("all", false).includes(name)) throw new Error(`a local check skips ${name}`)
 }
 if (stepsToRun([[["browser"]], [["lint"]]], false).length !== 1) throw new Error("an emptied stage was kept")
+const warned = new Set(["new-step"])
+const warnFailed = []
+if (recordFailure(warnFailed, "new-step", warned) !== "warn") throw new Error("a warn step does not print as a warning")
+if (warnFailed.length !== 0) throw new Error("a warn step made check fail")
+if (!mayPush(warnFailed, true)) throw new Error("a warn step stopped a push")
+if (recordFailure(warnFailed, "lint", warned) !== "fail") throw new Error("a step outside warnSteps does not fail")
+if (warnFailed.join() !== "lint" || mayPush(warnFailed, true)) throw new Error("a failing step must stop a push")
+for (const name of warnSteps) {
+  if (!everyStep.includes(name) && !localSteps.has(name))
+    throw new Error(`warnSteps names ${name}, which check does not run`)
+}
+for (const name of [...requiredSteps, ...localSteps]) {
+  if (warnSteps.has(name)) throw new Error(`${name} already blocks and cannot go back to warnSteps`)
+}
