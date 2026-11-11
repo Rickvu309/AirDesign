@@ -328,7 +328,7 @@ it("saves every edit under the id of the shape that was edited", async () => {
   expect(await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "opened-deck", 2)).toEqual(["382.2", "382.2"])
 })
 
-it("returns the refusal of the flush and keeps it from being lost", async () => {
+it("reports a refused flush as kept, not as sent", async () => {
   const refusal = { ok: false, refusal: "owner" }
   const answer = await commitEdit(
     () => ({
@@ -339,7 +339,7 @@ it("returns the refusal of the flush and keeps it from being lost", async () => 
     "Hello!",
     { id: await editedId, file: "Hello" },
   )
-  expect(answer).toBe(refusal)
+  expect(answer).toBe("kept")
 })
 
 it("paints before the commit is sent", async () => {

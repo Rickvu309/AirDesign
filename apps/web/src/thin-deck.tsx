@@ -153,9 +153,9 @@ function paint(
   return { slides: slides.map((each) => each.elements), boxes, shapes: rows }
 }
 
-type EditLink<Sent> = {
+type EditLink = {
   enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<{ readonly ok: boolean }>
-  flush(deck: string): Promise<Sent>
+  flush(deck: string): Promise<unknown>
 }
 
 const server = httpRemote()
