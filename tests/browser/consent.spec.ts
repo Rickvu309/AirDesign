@@ -1,15 +1,352 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
-test("a refused client never shows consent or redirects", async ({ page }) => {
+test.use({ reducedMotion: "reduce" })
+
+const redirectUri = "https://client.example/callback"
+const state = "state /&="
+const challenge = "challenge"
+const accountEmail = "account@example.com"
+
+function authorizePath(overrides: Record<string, string | null> = {}) {
+  const fields: Record<string, string> = {
+    response_type: "code",
+    client_id: "client-id",
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state,
+  }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value === null) delete fields[key]
+    else fields[key] = value
+  }
+  return `/oauth/authorize?${new URLSearchParams(fields)}`
+}
+
+async function answerClient(page: Page, payload: Record<string, unknown>, status = 200) {
   await page.route("**/oauth/client", async (route) => {
-    await route.fulfill({ status: 400, json: { ok: false, refusal: "client" } })
+    await route.fulfill({ status, json: payload })
+  })
+  await page.route("**/decks/list", async (route) => {
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  })
+}
+
+async function openConsent(
+  page: Page,
+  payload: Record<string, unknown> = {
+    ok: true,
+    client_name: "<img src=x onerror=alert(1)>",
+    screen: "claude",
+    redirect_host: "claude.ai",
+  },
+  path = authorizePath(),
+) {
+  await answerClient(page, payload)
+  await page.goto(path)
+  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+}
+
+for (const screen of [
+  {
+    name: "Claude",
+    title: "Claude wants to use AirDesign",
+    subtitle: "It can work on your decks for you.",
+    ability: "Claude will be able to",
+    footer: "Returns you to claude.ai. Uses your weekly usage. Disconnect anytime in Settings.",
+    screen: "claude",
+    marks: 2,
+  },
+  {
+    name: "Claude Code",
+    title: "Claude Code wants to use AirDesign",
+    subtitle: "It can work on your decks for you.",
+    ability: "Claude Code will be able to",
+    footer: "Returns you to Claude Code on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
+    screen: "claude-code",
+    marks: 2,
+  },
+  {
+    name: "Codex",
+    title: "Codex wants to use AirDesign",
+    subtitle: "It can work on your decks for you.",
+    ability: "Codex will be able to",
+    footer: "Returns you to Codex on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
+    screen: "codex",
+    marks: 2,
+  },
+  {
+    name: "other",
+    title: "tool.example wants to use AirDesign",
+    subtitle: "It can work on your decks for you.",
+    ability: "tool.example will be able to",
+    footer: "Returns you to tool.example. Uses your weekly usage. Disconnect anytime in Settings.",
+    screen: "other",
+    marks: 1,
+  },
+]) {
+  test(`${screen.name} shows its title and mark`, async ({ page }) => {
+    await openConsent(page, {
+      ok: true,
+      client_name: "Claude",
+      screen: screen.screen,
+      redirect_host: "tool.example",
+    })
+
+    await expect(page.getByRole("heading", { name: screen.title, exact: true })).toBeVisible()
+    await expect(page.getByText(screen.subtitle, { exact: true })).toBeVisible()
+    await expect(page.getByText(screen.ability, { exact: true })).toBeVisible()
+    await expect(page.getByText(screen.footer, { exact: true })).toBeVisible()
+    await expect(page.locator("main > section > div").first().locator("svg")).toHaveCount(screen.marks)
+    if (screen.screen === "other") await expect(page.getByText("Claude", { exact: true })).toHaveCount(0)
+  })
+}
+
+test("the consent account shows its email and first initial", async ({ page }) => {
+  await openConsent(page)
+
+  await expect(page.getByText(accountEmail, { exact: true })).toHaveCount(2)
+  await expect(page.getByText("A", { exact: true })).toBeVisible()
+})
+
+test("the other screen uses only its redirect host", async ({ page }) => {
+  await openConsent(page, {
+    ok: true,
+    client_name: "<img src=x onerror=alert(1)>",
+    screen: "other",
+    redirect_host: "tool.example",
   })
 
-  await page.goto(
-    "/oauth/authorize?response_type=code&client_id=unknown&redirect_uri=https%3A%2F%2Fclient.example%2Fcallback&code_challenge=challenge&code_challenge_method=S256",
+  await expect(page.getByRole("heading", { name: "tool.example wants to use AirDesign", exact: true })).toBeVisible()
+  await expect(page.getByText("Claude", { exact: true })).toHaveCount(0)
+  await expect(page.locator("img")).toHaveCount(0)
+  await expect(page.getByText("<img src=x onerror=alert(1)>", { exact: true })).toHaveCount(0)
+})
+
+test("client check and account lookup send only their agreed bodies", async ({ page }) => {
+  let clientBody: unknown
+  let accountBody: unknown
+  await page.route("**/oauth/client", async (route) => {
+    clientBody = route.request().postDataJSON()
+    await route.fulfill({
+      json: { ok: true, client_name: "ignored", screen: "claude", redirect_host: "claude.ai" },
+    })
+  })
+  await page.route("**/decks/list", async (route) => {
+    accountBody = route.request().postDataJSON()
+    await route.fulfill({ json: { ok: true, account: { email: accountEmail }, decks: [] } })
+  })
+  await page.goto(authorizePath({ resource: "https://api.example/resource" }))
+  await expect(page.getByRole("button", { name: "Allow", exact: true })).toBeVisible()
+
+  expect(clientBody).toEqual({
+    client_id: "client-id",
+    redirect_uri: redirectUri,
+    resource: "https://api.example/resource",
+  })
+  expect(accountBody).toEqual({})
+})
+
+for (const refusal of ["client", "redirect", "resource", "field"]) {
+  test(`a ${refusal} refusal never shows consent or redirects`, async ({ page }) => {
+    await answerClient(page, { ok: false, refusal }, 400)
+    await page.goto(authorizePath())
+
+    await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
+    await expect(page.getByRole("button", { name: "Allow", exact: true })).toHaveCount(0)
+    await expect(page).toHaveURL(/\/oauth\/authorize/)
+  })
+}
+
+test("a signed-out account goes to sign-in with the intact authorization address", async ({ page }) => {
+  await answerClient(page, { ok: false, refusal: "session" }, 401)
+  await page.goto(authorizePath({ resource: "https://api.example/resource" }))
+
+  await expect(page).toHaveURL((url) => {
+    const signIn = new URL(process.env.VITE_SIGN_IN_URL ?? "/sign-in", url.origin)
+    const current = new URL(url)
+    return (
+      current.pathname === signIn.pathname &&
+      current.searchParams.get("next") ===
+        `/oauth/authorize?${new URLSearchParams({
+          response_type: "code",
+          client_id: "client-id",
+          redirect_uri: redirectUri,
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          state,
+          resource: "https://api.example/resource",
+        })}`
+    )
+  })
+})
+
+test("Allow sends only the agreed fields and follows the answered redirect", async ({ page }) => {
+  let body: unknown
+  let posts = 0
+  const target = `${redirectUri}?code=approved`
+  await openConsent(
+    page,
+    {
+      ok: true,
+      client_name: "ignored",
+      screen: "claude",
+      redirect_host: "claude.ai",
+    },
+    authorizePath({ resource: "https://api.example/resource" }),
   )
+  await page.route("**/oauth/approve", async (route) => {
+    posts += 1
+    body = route.request().postDataJSON()
+    await route.fulfill({ json: { ok: true, redirect: target } })
+  })
+  await page.route("https://client.example/**", async (route) => {
+    await route.fulfill({ body: "returned" })
+  })
+
+  await page.getByRole("button", { name: "Allow", exact: true }).click()
+
+  await expect(page.getByRole("heading", { name: "Connected", exact: true })).toBeVisible()
+  await expect(page.getByText("Taking you back to Claude", { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(target)
+  expect(posts).toBe(1)
+  expect(body).toEqual({
+    client_id: "client-id",
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state,
+    resource: "https://api.example/resource",
+  })
+})
+
+test("Allow omits absent state and resource", async ({ page }) => {
+  let body: unknown
+  await openConsent(
+    page,
+    { ok: true, client_name: "ignored", screen: "codex", redirect_host: "codex" },
+    authorizePath({ state: null, resource: null }),
+  )
+  await page.route("**/oauth/approve", async (route) => {
+    body = route.request().postDataJSON()
+    await route.fulfill({ json: { ok: true, redirect: `${redirectUri}?code=approved` } })
+  })
+  await page.route("https://client.example/**", async (route) => {
+    await route.fulfill({ body: "returned" })
+  })
+
+  await page.getByRole("button", { name: "Allow", exact: true }).click()
+  await expect(page).toHaveURL(`${redirectUri}?code=approved`)
+
+  expect(body).toEqual({
+    client_id: "client-id",
+    redirect_uri: redirectUri,
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+  })
+})
+
+test("Allow can be clicked twice but posts once", async ({ page }) => {
+  let posts = 0
+  await openConsent(page)
+  await page.route("**/oauth/approve", async (route) => {
+    posts += 1
+    await route.fulfill({ json: { ok: true, redirect: `${redirectUri}?code=approved` } })
+  })
+  await page.route("https://client.example/**", async (route) => {
+    await route.fulfill({ body: "returned" })
+  })
+
+  await page.getByRole("button", { name: "Allow", exact: true }).evaluate((element) => {
+    element.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+    element.dispatchEvent(new MouseEvent("click", { bubbles: true }))
+  })
+
+  await expect(page).toHaveURL(`${redirectUri}?code=approved`)
+  expect(posts).toBe(1)
+})
+
+test("an approve refusal shows the refused words and does not navigate", async ({ page }) => {
+  await openConsent(page)
+  await page.route("**/oauth/approve", async (route) => {
+    await route.fulfill({ status: 400, json: { ok: false, refusal: "challenge" } })
+  })
+
+  await page.getByRole("button", { name: "Allow", exact: true }).click()
 
   await expect(page.getByText("This app can't connect to AirDesign.", { exact: true })).toBeVisible()
-  await expect(page.getByRole("button", { name: "Allow", exact: true })).toHaveCount(0)
+  await expect(page).toHaveURL(/\/oauth\/authorize/)
+})
+
+test("Deny posts nothing and preserves the callback query and state", async ({ page }) => {
+  let approvePosts = 0
+  const callbackWithQuery = `${redirectUri}?keep=yes&error=old`
+  await answerClient(page, {
+    ok: true,
+    client_name: "ignored",
+    screen: "claude-code",
+    redirect_host: "claude.ai",
+  })
+  await page.route("**/oauth/approve", async (route) => {
+    approvePosts += 1
+    await route.fulfill({ json: { ok: true, redirect: `${redirectUri}?code=unexpected` } })
+  })
+  await page.route("https://client.example/**", async (route) => {
+    await route.fulfill({ body: "returned" })
+  })
+  await page.goto(authorizePath({ redirect_uri: callbackWithQuery }))
+  await page.getByRole("button", { name: "Cancel", exact: true }).click()
+
+  await expect(page).toHaveURL((url) => {
+    const current = new URL(url)
+    return (
+      current.origin === "https://client.example" &&
+      current.pathname === "/callback" &&
+      current.searchParams.get("keep") === "yes" &&
+      current.searchParams.get("error") === "access_denied" &&
+      current.searchParams.get("state") === state
+    )
+  })
+  expect(approvePosts).toBe(0)
+})
+
+for (const invalid of [
+  { name: "an unsupported response type", query: { response_type: "token" }, error: "unsupported_response_type" },
+  { name: "a missing challenge", query: { code_challenge: null }, error: "invalid_request" },
+]) {
+  test(`${invalid.name} redirects after validation without approval`, async ({ page }) => {
+    let approvePosts = 0
+    await answerClient(page, {
+      ok: true,
+      client_name: "ignored",
+      screen: "claude",
+      redirect_host: "claude.ai",
+    })
+    await page.route("**/oauth/approve", async (route) => {
+      approvePosts += 1
+      await route.fulfill({ json: { ok: true, redirect: `${redirectUri}?code=unexpected` } })
+    })
+    await page.route("https://client.example/**", async (route) => {
+      await route.fulfill({ body: "returned" })
+    })
+    await page.goto(authorizePath(invalid.query))
+
+    await expect(page).toHaveURL((url) => {
+      const current = new URL(url)
+      return current.searchParams.get("error") === invalid.error && current.searchParams.get("state") === state
+    })
+    expect(approvePosts).toBe(0)
+  })
+}
+
+test("nothing is posted to approve before Allow", async ({ page }) => {
+  let approvePosts = 0
+  await page.route("**/oauth/approve", async (route) => {
+    approvePosts += 1
+    await route.fulfill({ json: { ok: true, redirect: `${redirectUri}?code=unexpected` } })
+  })
+  await openConsent(page)
+
+  expect(approvePosts).toBe(0)
   await expect(page).toHaveURL(/\/oauth\/authorize/)
 })

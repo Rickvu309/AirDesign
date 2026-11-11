@@ -1,4 +1,5 @@
 import type { ComponentType } from "react"
+import { OAuthAuthorize } from "./connect/oauth-authorize"
 import { LiveProof } from "./live-proof"
 import { ThinDeck } from "./thin-deck"
 import { Home } from "./decks/home"
@@ -46,6 +47,9 @@ export default function App() {
   }
   if (path === "/thin") {
     return <ThinDeck />
+  }
+  if (path === "/oauth/authorize") {
+    return <OAuthAuthorize />
   }
   const thinDeck = /^\/thin\/([A-Za-z0-9_-]{1,64})$/.exec(path)
   if (thinDeck?.[1] !== undefined) {

@@ -120,8 +120,10 @@ describe("API forwarding", () => {
     "/decks/trash",
     "/decks/restore",
     "/decks/delete",
+    "/oauth/client",
+    "/oauth/approve",
   ])("forwards %s", async (path) => {
-    await worker.fetch(new Request(`https://example.com${path}`), env())
+    await worker.fetch(new Request(`https://example.com${path}`, { method: "POST" }), env())
     expect(seen[0]?.url).toBe(path)
     expect(assets).toEqual([])
   })

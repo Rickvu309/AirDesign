@@ -15,6 +15,8 @@ const apiPaths = [
   "/decks/trash",
   "/decks/restore",
   "/decks/delete",
+  "/oauth/client",
+  "/oauth/approve",
 ]
 
 export default {

@@ -12,13 +12,21 @@ export function ApproveAgent({
   ability,
   footer,
   screenTitle,
+  account = signedInAccount,
+  onDeny,
+  onAllow,
+  approving = false,
 }: {
-  agent: "claude" | "codex"
+  agent: "claude" | "codex" | null
   title: string
   subtitle: string
   ability: string
   footer: string
   screenTitle: string
+  account?: { initials: string; name: string; email: string }
+  onDeny?: () => void
+  onAllow?: () => void
+  approving?: boolean
 }) {
   useEffect(() => {
     document.title = screenTitle
@@ -42,15 +50,13 @@ export function ApproveAgent({
           <span
             className={`flex size-8 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] font-semibold text-white ${trimmed}`}
           >
-            {signedInAccount.initials}
+            {account.initials}
           </span>
           <span className="min-w-0 flex-1">
             <span className="block text-[length:var(--type-dense)] leading-[17px] font-medium text-foreground">
-              {signedInAccount.name}
+              {account.name}
             </span>
-            <span className="block text-[length:var(--type-caption)] leading-4 text-faint">
-              {signedInAccount.email}
-            </span>
+            <span className="block text-[length:var(--type-caption)] leading-4 text-faint">{account.email}</span>
           </span>
           <button
             type="button"
@@ -88,6 +94,7 @@ export function ApproveAgent({
             type="button"
             variant="outline"
             className={`h-10 w-[176px] rounded-[var(--shape-card)] border-0 bg-white px-0 text-sm font-medium text-foreground shadow-[0_0_0_1px_var(--field-edge),0_1px_2px_0_rgb(0_0_0/4%)] hover:bg-white active:scale-[0.97] ${trimmed}`}
+            onClick={onDeny}
           >
             Cancel
           </Button>
@@ -95,6 +102,8 @@ export function ApproveAgent({
             type="button"
             variant="default"
             className={`h-10 w-[176px] rounded-[var(--shape-card)] px-0 text-sm font-medium active:scale-[0.97] ${trimmed}`}
+            disabled={approving}
+            onClick={onAllow}
           >
             Allow
           </Button>
