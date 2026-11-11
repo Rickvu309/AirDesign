@@ -28,3 +28,27 @@ export const codexConnect = {
   footer: "Returns you to Codex on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
   approveTitle: "S71.03 Agents / Connect / Approve Codex",
 } as const
+
+export const claudeCodeConnect = {
+  title: "Claude Code wants to use AirDesign",
+  subtitle: claudeConnect.subtitle,
+  ability: "Claude Code will be able to",
+  footer: "Returns you to Claude Code on this computer. Uses your weekly usage. Disconnect anytime in Settings.",
+} as const
+
+export const refusedConnect = "This app can't connect to AirDesign."
+
+export function otherConnect(host: string) {
+  return {
+    title: `${host} wants to use AirDesign`,
+    ability: `${host} will be able to`,
+    footer: `Returns you to ${host}. Uses your weekly usage. Disconnect anytime in Settings.`,
+  }
+}
+
+export function connectedCopy(name: string) {
+  return {
+    title: claudeConnect.connectedTitle,
+    subtitle: name === "Claude" ? claudeConnect.connectedSubtitle : `Taking you back to ${name}`,
+  }
+}

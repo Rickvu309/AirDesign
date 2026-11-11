@@ -1,7 +1,7 @@
 import { AirdesignMark } from "@/decks/airdesign-mark"
 import { ClaudeMark, CodexMark } from "@/connect/agent-marks"
 
-export function AgentPair({ agent }: { agent: "claude" | "codex" }) {
+export function AgentPair({ agent }: { agent: "claude" | "codex" | null }) {
   return (
     <div className="flex items-center gap-3">
       <span className="flex size-12 items-center justify-center rounded-xl bg-white shadow-[0_0_0_1px_var(--field-edge)]">
@@ -12,15 +12,17 @@ export function AgentPair({ agent }: { agent: "claude" | "codex" }) {
         <span className="size-1 rounded-full bg-[var(--dot)]" />
         <span className="size-1 rounded-full bg-[var(--dot)]" />
       </span>
-      <span
-        className={
-          agent === "claude"
-            ? "flex size-12 items-center justify-center rounded-xl bg-claude text-white"
-            : "flex size-12 items-center justify-center rounded-xl bg-ink text-white"
-        }
-      >
-        {agent === "claude" ? <ClaudeMark /> : <CodexMark />}
-      </span>
+      {agent !== null && (
+        <span
+          className={
+            agent === "claude"
+              ? "flex size-12 items-center justify-center rounded-xl bg-claude text-white"
+              : "flex size-12 items-center justify-center rounded-xl bg-ink text-white"
+          }
+        >
+          {agent === "claude" ? <ClaudeMark /> : <CodexMark />}
+        </span>
+      )}
     </div>
   )
 }
