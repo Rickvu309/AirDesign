@@ -1,4 +1,4 @@
-import { decide, elementId, openRegister, writeTextValue, type Register } from "@airdesign/document"
+import { elementId, writeTextValue, type Register } from "@airdesign/document"
 import type { Remote } from "@airdesign/live"
 import { readPackage } from "@airdesign/pptx"
 import { act } from "react"
@@ -6,7 +6,8 @@ import { createRoot } from "react-dom/client"
 import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { productCopy } from "./copy/product-copy"
 import { signInAddress } from "./thin-notice"
-import { commitEdit, deckName, elementIds, exportedParts, saveDeck, ThinDeck } from "./thin-deck"
+import { editedRegister, fallbackSlide, xml } from "./slide-fixtures"
+import { commitEdit, deckName, elementIds, saveDeck, ThinDeck } from "./thin-deck"
 
 const live = vi.hoisted(() => {
   const sent: { deck: string; value: string; node: string; floor: string }[] = []
@@ -215,10 +216,6 @@ function oneRun(text: string): string {
   return writeTextValue([{ from: 0, runs: [{ from: 0, text }] }])
 }
 
-function xml(text: string): Uint8Array {
-  return new TextEncoder().encode(text)
-}
-
 function shapedParts(): Map<string, Uint8Array> {
   const slide2 = `<p:sld><p:sp><p:cNvPr id="2"/><p:txBody><a:p><a:r><a:t>Other</a:t></a:r></a:p></p:txBody></p:sp></p:sld>`
   const slide1 = `<p:sld><p:sp><p:cNvPr id="5"/><p:txBody><a:p><a:r><a:t>First</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id="2"/><p:txBody><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:cNvPr id="9"/><p:txBody><a:p><a:r><a:t>Last</a:t></a:r></a:p></p:txBody></p:sp></p:sld>`
@@ -407,80 +404,6 @@ it("paints before the commit is sent", async () => {
   expect(order).toEqual(["enqueue", "paint", "flush"])
 })
 
-function onSlide(slide: Uint8Array): Map<string, Uint8Array> {
-  const presentation = `<p:presentation><p:sldIdLst><p:sldId id="256" r:id="rId2"/></p:sldIdLst></p:presentation>`
-  const rels = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/></Relationships>`
-  return new Map([
-    ["ppt/presentation.xml", xml(presentation)],
-    ["ppt/_rels/presentation.xml.rels", xml(rels)],
-    ["ppt/slides/slide1.xml", slide],
-  ])
-}
-
-function editedRegister(edits: readonly (readonly [string, string])[]): Register {
-  let register = openRegister("", "clean")
-  for (const [id, value] of edits) {
-    if (!register.nodes.includes(elementId(id))) {
-      const added = decide(register, { command: "add", node: elementId(id), floor: "", route: register.route })
-      if (added.decision === "refuse") throw new Error("refused")
-      register = added.register
-    }
-    const edited = decide(register, { command: "person", value, node: elementId(id) })
-    if (edited.decision === "refuse") throw new Error("refused")
-    register = edited.register
-  }
-  return register
-}
-
-const twoBoxSlide = `<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>Hello</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:p><a:r><a:t>World</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
-
-it("an export skips an element whose only rows were undone", () => {
-  const parts = onSlide(xml(twoBoxSlide))
-  const node = elementId("256.2")
-  let register = openRegister("", "clean")
-  for (const command of [
-    { command: "add", node, floor: "", route: "clean" },
-    { command: "start", node, runId: "run" },
-    { command: "agent", node, runId: "run", readAt: 0, value: "gone" },
-    { command: "undo", node, runId: "run" },
-  ] as const) {
-    const decision = decide(register, command)
-    if (decision.decision === "refuse") throw new Error("refused")
-    register = decision.register
-  }
-  expect(exportedParts(parts, register)).toBe(parts)
-})
-
-it("an export with no stored edit applies no route and keeps the stored parts", () => {
-  const slide = xml(twoBoxSlide)
-  const parts = onSlide(slide)
-  expect(exportedParts(parts, openRegister("", "clean"))).toBe(parts)
-  const next = exportedParts(parts, editedRegister([["256.2", "Hello!"]]))
-  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml")).match(/<a:t>[^<]*<\/a:t>/g)).toEqual([
-    "<a:t>Hello!</a:t>",
-    "<a:t>World</a:t>",
-  ])
-  expect([...next.keys()].sort()).toEqual([...parts.keys()].sort())
-  expect(next.get("ppt/presentation.xml")).toEqual(parts.get("ppt/presentation.xml"))
-  expect(parts.get("ppt/slides/slide1.xml")).toBe(slide)
-})
-
-it("an export writes each edited element into its own box", () => {
-  const parts = onSlide(xml(twoBoxSlide))
-  const next = exportedParts(
-    parts,
-    editedRegister([
-      ["256.3", "Planet"],
-      ["256.2", "Hi"],
-      ["256.3", "Earth"],
-    ]),
-  )
-  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml")).match(/<a:t>[^<]*<\/a:t>/g)).toEqual([
-    "<a:t>Hi</a:t>",
-    "<a:t>Earth</a:t>",
-  ])
-})
-
 it("saves every edit under the deck id in the address", async () => {
   await committedNodes(shapedParts(), "Keep", ["Next", "Later"], "address-deck", 2)
   expect(live.sent.map((edit) => edit.deck)).toEqual(["address-deck", "address-deck"])
@@ -500,36 +423,6 @@ it("saves two opened files under distinct valid deck ids", async () => {
     { deck: first, parts: firstParts, file: new Uint8Array([1]) },
     { deck: second, parts: secondParts, file: new Uint8Array([2]) },
   ])
-})
-
-it("an export writes a stored value with several paragraphs and a value the route refuses writes nothing", () => {
-  const lines = Array.from({ length: 9 }, (_, index) => `<a:p><a:r><a:t>Line ${index}</a:t></a:r></a:p>`).join("")
-  const slide = new TextEncoder().encode(
-    `<p:sld><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/></p:nvSpPr><p:txBody><a:bodyPr/>${lines}</p:txBody></p:sp></p:spTree></p:cSld></p:sld>`,
-  )
-  const saved = Uint8Array.from(slide)
-  const parts = onSlide(slide)
-  const value = Array.from({ length: 9 }, (_, index) => ({
-    from: index,
-    runs: [{ from: 0, text: index === 3 ? "typed" : `Line ${index}` }],
-  }))
-  const next = exportedParts(parts, editedRegister([["256.2", writeTextValue(value)]]))
-  expect(new TextDecoder().decode(next.get("ppt/slides/slide1.xml"))).toBe(
-    new TextDecoder().decode(slide).replace("Line 3", "typed"),
-  )
-  const outside = writeTextValue([{ from: 9, runs: [{ from: 0, text: "typed" }] }])
-  expect(() => exportedParts(parts, editedRegister([["256.2", outside]]))).toThrow(/text-paragraph/)
-  expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
-})
-
-const fallbackSlide = `<p:sld><p:cSld><p:spTree><mc:AlternateContent><mc:Choice Requires="x"><p:sp><p:nvSpPr><p:cNvPr id="6" name="C"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Choice</a:t></a:r></a:p></p:txBody></p:sp></mc:Choice><mc:Fallback><p:sp><p:nvSpPr><p:cNvPr id="2" name="F"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>One</a:t></a:r></a:p><a:p><a:r><a:rPr b="1"/><a:t>Two</a:t></a:r></a:p><a:p><a:r><a:t>Three</a:t></a:r></a:p></p:txBody></p:sp></mc:Fallback></mc:AlternateContent><p:sp><p:nvSpPr><p:cNvPr id="2" name="P"/></p:nvSpPr><p:txBody><a:bodyPr/><a:p><a:r><a:t>Keep</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:sld>`
-
-it("an export of a stored edit refuses the fallback box that shares the edited id and writes nothing", () => {
-  const slide = new TextEncoder().encode(fallbackSlide)
-  const saved = Uint8Array.from(slide)
-  const parts = onSlide(slide)
-  expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
-  expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
 })
 
 async function editableTexts(window: Window & typeof globalThis, slide: number): Promise<readonly string[]> {

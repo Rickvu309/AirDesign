@@ -1,7 +1,6 @@
 import { deckRoutes } from "@airdesign/catalog"
 import {
   currentValue,
-  history,
   readElementId,
   slideId,
   writeTextValue,
@@ -38,6 +37,7 @@ import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
+import { exportedParts } from "@/exported-parts"
 
 export type TextBox = { readonly id: ElementId; readonly file: string }
 
@@ -203,28 +203,6 @@ export async function commitEdit(
   }
   paint?.()
   return flushPending(open, deckId)
-}
-
-export function exportedParts(
-  parts: ReadonlyMap<string, Uint8Array>,
-  register: Register,
-): ReadonlyMap<string, Uint8Array> {
-  const shapes = readShapes(parts)
-  let next: ReadonlyMap<string, Uint8Array> = parts
-  for (const id of register.nodes) {
-    const body = register.elements[id]
-    if (body === undefined || history(body).length === 0) continue
-    const named = shapes.filter((shape) => `${shape.slide}.${shape.shape}` === id)
-    const shape = named[0]
-    if (named.length !== 1 || shape === undefined || shape.locked) throw new Error("text-shape")
-    next = applyRoute(next, {
-      name: "text",
-      part: shape.part,
-      shape: shape.shape,
-      value: textValue(currentValue(body)),
-    })
-  }
-  return next
 }
 
 export async function saveDeck(
