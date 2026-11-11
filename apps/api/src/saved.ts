@@ -57,6 +57,17 @@ type Saved = {
   | { readonly deleted: true; readonly register: null }
 )
 
+type LiveSaved = Extract<Saved, { readonly deleted: false }>
+
+export function deckAccess(
+  saved: Saved,
+  email: string,
+): { readonly ok: true; readonly saved: LiveSaved } | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
+  if (saved.owner !== email) return { ok: false, refusal: "owner" }
+  if (saved.deleted) return { ok: false, refusal: "deleted" }
+  return { ok: true, saved }
+}
+
 export type RevisionWrite = {
   readonly id: string
   readonly revision: number
@@ -117,9 +128,9 @@ function openedRow(
 ):
   | { readonly ok: true; readonly deck: DeckId; readonly revision: number; readonly register: Deck["register"] }
   | { readonly ok: false; readonly refusal: "owner" | "deleted" } {
-  if (saved.owner !== owner) return { ok: false, refusal: "owner" }
-  if (saved.deleted) return { ok: false, refusal: "deleted" }
-  return { ok: true, deck, revision: saved.revision, register: saved.register }
+  const access = deckAccess(saved, owner)
+  if (!access.ok) return access
+  return { ok: true, deck, revision: access.saved.revision, register: access.saved.register }
 }
 
 export async function openSaved(
@@ -192,10 +203,11 @@ export async function commitEdits(
     ...(parsed.once === undefined ? {} : { once: parsed.once }),
   }
   for (let attempt = 0; attempt < 8; attempt += 1) {
-    const saved = await readSaved(db, parsed.deck)
-    if (saved === undefined) return { ok: false, refusal: "deck" }
-    if (saved.owner !== owner) return { ok: false, refusal: "owner" }
-    if (saved.deleted) return { ok: false, refusal: "deleted" }
+    const read = await readSaved(db, parsed.deck)
+    if (read === undefined) return { ok: false, refusal: "deck" }
+    const access = deckAccess(read, owner)
+    if (!access.ok) return access
+    const saved = access.saved
     if (parsed.once !== undefined) {
       const prior = await readStoredOnce(db, owner, parsed.deck, parsed.once)
       if (prior !== undefined) {

@@ -20,7 +20,7 @@ import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcon
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
 import type { Sql } from "./pool.js"
-import { readSaved, writeRevision } from "./saved.js"
+import { deckAccess, readSaved, writeRevision } from "./saved.js"
 
 export type McpHost = {
   readonly deck: Sql
@@ -78,9 +78,9 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
         return { ok: false, refusal: "store" }
       }
       if (saved === undefined) return { ok: false, refusal: "deck" }
-      if (saved.owner !== host.email) return { ok: false, refusal: "owner" }
-      if (saved.deleted) return { ok: false, refusal: "deleted" }
-      loaded = { id: named.deck, revision: saved.revision, register: saved.register }
+      const access = deckAccess(saved, host.email)
+      if (!access.ok) return access
+      loaded = { id: named.deck, revision: access.saved.revision, register: access.saved.register }
       session.deck = loaded
       dropGoneTurn(session, seen)
       return { ok: true }

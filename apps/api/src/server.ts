@@ -36,7 +36,7 @@ import type { Sql } from "./pool.js"
 import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import { checkedResource, readUrl } from "./resource.js"
-import { chosenRevision, savedAnswers, readSaved } from "./saved.js"
+import { chosenRevision, deckAccess, savedAnswers, readSaved } from "./saved.js"
 import { bearerPrincipal, revokeToken, tokenAnswer } from "./tokens.js"
 
 export type ApiOptions = {
@@ -238,8 +238,8 @@ async function hold(
     await options.listen.ready()
     if (signal.aborted) return undefined
     const saved = await readSaved(options.deck, deck)
-    if (saved !== undefined && saved.owner !== email) return "owner"
-    if (saved?.deleted === true) return "deleted"
+    const access = saved === undefined ? null : deckAccess(saved, email)
+    if (access?.ok === false) return access.refusal
     const revision = chosenRevision(cursor, saved?.revision)
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
