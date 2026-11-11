@@ -399,7 +399,7 @@ describe("exportElements", () => {
       decodeUtf8(held).replace("</p:spTree>", `</p:spTree><p:timing><p:spTgt spid="2"/></p:timing>`),
     )
     parts.set(name, animated)
-    expect(() => exportElements(parts, [{ id: "256.2", name: "remove" }])).toThrow(/^shape-animated$/)
+    expect(() => exportElements(parts, [{ id: elementId("256.2"), name: "remove" }])).toThrow(/^shape-animated$/)
     expect(parts.get(name)).toBe(animated)
   })
 
@@ -410,7 +410,7 @@ describe("exportElements", () => {
     if (held === undefined) throw new Error(name)
     const attached = `<p:cxnSp><p:nvCxnSpPr><p:cNvPr id="90" name="C"/><p:cNvCxnSpPr><a:stCxn id="2" idx="0"/></p:cNvCxnSpPr></p:nvCxnSpPr></p:cxnSp>`
     parts.set(name, encodeUtf8(decodeUtf8(held).replace("</p:spTree>", `${attached}</p:spTree>`)))
-    const written = exportElements(parts, [{ id: "256.2", name: "remove" }])
+    const written = exportElements(parts, [{ id: elementId("256.2"), name: "remove" }])
     const after = written.parts.get(name)
     if (after === undefined) throw new Error(name)
     expect(decodeUtf8(after)).toContain(`<p:cNvCxnSpPr></p:cNvCxnSpPr>`)

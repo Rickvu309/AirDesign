@@ -3,6 +3,7 @@ import path from "node:path"
 
 export async function writtenRouteFiles(pptx, original, parts, directory, prefix) {
   const files = []
+  const references = pptx.danglingShapeReferences(parts)
   for (const run of pptx.routeRuns(parts)) {
     if (run.error !== null || run.parts === null || run.touch === null) {
       files.push({ run, file: null, back: null, exportError: null })
@@ -13,7 +14,9 @@ export async function writtenRouteFiles(pptx, original, parts, directory, prefix
       const packed = await pptx.exportPackage(original, run.parts)
       const file = path.join(directory, name)
       fs.writeFileSync(file, packed)
-      files.push({ run, file, back: await pptx.readParts(packed), exportError: null })
+      const back = await pptx.readParts(packed)
+      const dangling = pptx.newDanglingShapeReferences(references, pptx.danglingShapeReferences(back))
+      files.push({ run, file, back, exportError: null, dangling })
     } catch (error) {
       files.push({
         run,
@@ -59,17 +62,14 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   }
   const errors = pptx.newValidatorErrors(beforeErrors, afterErrors)
   const dupes = pptx.newDuplicateShapeIds(pptx.shapeIdCounts(beforeParts), pptx.shapeIdCounts(item.back))
-  const dangling = pptx.newDanglingShapeReferences(
-    pptx.danglingShapeReferences(beforeParts),
-    pptx.danglingShapeReferences(item.back),
-  )
+  const dangling = item.dangling ?? []
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
   if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && partsMatch) return null
   return {
     operation: item.run.operation,
     errors: errors.length,
     dupes: dupes.length,
-    dangling: dangling.length,
+    ...(dangling.length === 0 ? {} : { dangling: dangling.length }),
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

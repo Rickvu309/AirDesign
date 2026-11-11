@@ -584,4 +584,34 @@ describe("removing a shape something refers to", () => {
       onSlide(connector(6, "")),
     )
   })
+
+  const frame = (id: number, inner: string) =>
+    `<p:graphicFrame><p:nvGraphicFramePr><p:cNvPr id="${id}" name="F"/></p:nvGraphicFramePr><a:graphic><a:graphicData uri="u">${inner}</a:graphicData></a:graphic></p:graphicFrame>`
+  const canvas = (id: number) => `<a:sp><a:nvSpPr><a:cNvPr id="${id}" name="In"/></a:nvSpPr></a:sp>`
+
+  it("keeps a live connector when a removed frame's canvas reuses the id it attaches to", () => {
+    const kept = plain(2) + connector(4, `<a:stCxn id="2" idx="0"/>`)
+    expect(removed(onSlide(frame(10, canvas(2)) + kept), "10")).toBe(onSlide(kept))
+  })
+
+  it("does not refuse a frame because a canvas inside it reuses an animated id", () => {
+    const timing = timed(`<p:spTgt spid="2"/>`)
+    expect(removed(onSlide(frame(10, canvas(2)) + plain(2), timing), "10")).toBe(onSlide(plain(2), timing))
+  })
+
+  it("refuses a frame whose own id is animated", () => {
+    expectRefused(onSlide(frame(10, canvas(2)), timed(`<p:spTgt spid="10"/>`)), "10")
+  })
+
+  it.each(["p:spTgt", "p:inkTgt", "p:bldP", "p:bldDgm", "p:bldOleChart", "p:bldGraphic"])(
+    "refuses a shape a %s outside p:timing names",
+    (kind) => {
+      expectRefused(onSlide(plain(2), `<${kind} spid="2"/>`), "2")
+    },
+  )
+
+  it("refuses a shape targeted several levels under p:timing", () => {
+    const deep = `<p:tnLst><p:par><p:cTn><p:childTnLst><p:set><p:cBhvr><p:tgtEl><p14:bmkTgt spid="2"/></p:tgtEl></p:cBhvr></p:set></p:childTnLst></p:cTn></p:par></p:tnLst>`
+    expectRefused(onSlide(plain(2), timed(deep)), "2")
+  })
 })

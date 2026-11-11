@@ -4,6 +4,7 @@ import { encodeUtf8 } from "./package-bytes.js"
 export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
 const unsignedInteger = /^(?:\+|-(?=0+$))?([0-9]+)$/
+const animationKinds = new Set(["p:spTgt", "p:inkTgt", "p:bldP", "p:bldDgm", "p:bldOleChart", "p:bldGraphic"])
 const connectionKinds = new Set(["a:stCxn", "a:endCxn"])
 
 export type ShapeIdCount = {
@@ -25,16 +26,11 @@ function shapeIdentity(value: string): string {
   return unsignedInteger.exec(collapsed)?.[1]?.replace(/^0+(?=[0-9])/, "") ?? collapsed
 }
 
-function shapeMarkId(element: MarkupElement): string | null {
-  if (element.id === null || (element.kind !== "cNvPr" && !element.kind.endsWith(":cNvPr"))) return null
-  return shapeIdentity(element.id)
-}
-
 function shapeIdsIn(bytes: Uint8Array): readonly string[] {
   const ids: string[] = []
   for (const element of markupDocument(bytes).elements) {
-    const id = shapeMarkId(element)
-    if (id !== null) ids.push(id)
+    if (element.kind !== "p:cNvPr" || element.id === null) continue
+    ids.push(shapeIdentity(element.id))
   }
   return ids
 }
@@ -85,18 +81,24 @@ export function newDuplicateShapeIds(
   return found
 }
 
-function insideTiming(elements: readonly MarkupElement[], element: MarkupElement): boolean {
+function under(elements: readonly MarkupElement[], element: MarkupElement, kind: string): boolean {
   let ancestor = elements[element.parent]
   while (ancestor !== undefined) {
-    if (ancestor.kind === "p:timing") return true
+    if (ancestor.kind === kind) return true
     ancestor = elements[ancestor.parent]
   }
   return false
 }
 
+function shapeMarkId(elements: readonly MarkupElement[], element: MarkupElement): string | null {
+  if (element.id === null || (element.kind !== "cNvPr" && !element.kind.endsWith(":cNvPr"))) return null
+  return under(elements, element, "a:graphicData") ? null : shapeIdentity(element.id)
+}
+
 function animationId(elements: readonly MarkupElement[], element: MarkupElement): string | null {
   const spid = element.attributes.find((item) => item.name === "spid")
-  if (spid === undefined || !insideTiming(elements, element)) return null
+  if (spid === undefined) return null
+  if (!animationKinds.has(element.kind) && !under(elements, element, "p:timing")) return null
   return shapeIdentity(spid.value)
 }
 
@@ -110,7 +112,7 @@ function inside(element: MarkupElement, shape: MarkupElement): boolean {
 }
 
 function idsWithin(elements: readonly MarkupElement[], shape: MarkupElement): ReadonlySet<string | null> {
-  return new Set(elements.filter((item) => inside(item, shape)).map(shapeMarkId))
+  return new Set(elements.filter((item) => inside(item, shape)).map((item) => shapeMarkId(elements, item)))
 }
 
 export function shapeAnimated(elements: readonly MarkupElement[], shape: MarkupElement): boolean {
@@ -136,8 +138,8 @@ export function danglingShapeReferences(parts: ReadonlyMap<string, Uint8Array>):
   const rows: ShapeReference[] = []
   for (const [name, bytes] of parts) {
     if (!shapePart.test(name)) continue
-    const ids = new Set(shapeIdsIn(bytes))
     const { elements } = markupDocument(bytes)
+    const ids = new Set(elements.map((element) => shapeMarkId(elements, element)))
     for (const element of elements) {
       const id = animationId(elements, element) ?? connectionId(element)
       if (id !== null && !ids.has(id)) rows.push({ part: name, kind: element.kind, id })
