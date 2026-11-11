@@ -15,3 +15,25 @@ export function readPendingEmail(): string | null {
     return null
   }
 }
+
+const pendingNextKey = "airdesign.pending-sign-in-next"
+
+export function rememberPendingNext(next: string | null): void {
+  try {
+    if (next === null) {
+      sessionStorage.removeItem(pendingNextKey)
+    } else {
+      sessionStorage.setItem(pendingNextKey, next)
+    }
+  } catch {
+    return
+  }
+}
+
+export function readPendingNext(): string | null {
+  try {
+    return sessionStorage.getItem(pendingNextKey)
+  } catch {
+    return null
+  }
+}
