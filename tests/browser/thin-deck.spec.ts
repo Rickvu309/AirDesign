@@ -679,6 +679,52 @@ test("the page names the opened file, not the sample deck", async ({ page }) => 
   }
 })
 
+const sampleWords = [
+  "Q3 investor update",
+  "64%",
+  "38%",
+  "Weekly usage",
+  "Resets Mon 8:00 AM",
+  "See all",
+  "Make an 8-slide investor update from my notes. Calm, data first, our Halden brand.",
+  "Q3 board notes.docx",
+  "Read 1 file, built 8 slides",
+  "Your deck is ready. Eight slides, every number from your notes.",
+  "Undo",
+  "Slide 3",
+  "Ask Aira",
+]
+const sampleControls = ["New chat", "Attach", "Microphone", "Agent", "Design"]
+
+async function expectNoSample(page: Page): Promise<void> {
+  const body = (await page.locator("body").textContent()) ?? ""
+  for (const word of sampleWords) expect(body, word).not.toContain(word)
+  for (const name of sampleControls) {
+    await expect(page.getByRole("button", { name, exact: true }), name).toHaveCount(0)
+  }
+  await expect(page.locator("circle[stroke-dasharray]"), "usage ring").toHaveCount(0)
+  await expect(page.locator("div.h-12.bg-line"), "notes band").toHaveCount(0)
+  await expect(page.locator("aside"), "agent panel").toHaveCount(1)
+}
+
+for (const route of ["thin", "deck"]) {
+  test(`a real deck on /${route} paints no sample and still exports`, async ({ page }, testInfo) => {
+    const saved = testInfo.outputPath(`${route}-no-sample.pptx`)
+    const deck = (await open(page, fixture)).split("/").pop() ?? ""
+    await page.goto(`/${route}/${deck}`)
+    await page.locator(`.thin-page[data-deck-ready="${deck}"]`).waitFor({ state: "attached" })
+    await expectNoSample(page)
+    await expect(page.locator("aside").first()).toContainText("clean")
+    await expect(page.locator("[data-slide-entry]").first()).toBeVisible()
+    await expect(page.locator("[data-slide-paint]")).toContainText("Hello")
+    const place = await page.getByRole("button", { name: "Export", exact: true }).boundingBox()
+    expect(place?.y ?? 923).toBeLessThan(56)
+    expect(1470 - (place?.x ?? 0) - (place?.width ?? 0)).toBeLessThan(40)
+    await saveExport(page, saved)
+    expect(await changedParts(fixture, saved)).toEqual([])
+  })
+}
+
 test("one slide shows at a time", async ({ page }, testInfo) => {
   const deck = join(fixtures, "doe-heat-pumps.pptx")
   const download = testInfo.outputPath("one-slide.pptx")
