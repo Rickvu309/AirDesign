@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
 import { AgentPanel } from "@/editor/agent-panel"
 import { DesignPanel } from "@/editor/design-panel"
-import { EditorToolbar, type EditorTool } from "@/editor/editor-toolbar"
+import { ExportButton, Island } from "@/editor/editor-chrome"
+import { EditorToolbar, type EditorPanel, type EditorTool } from "@/editor/editor-toolbar"
 import { RevenueSlide } from "@/editor/revenue-slide"
 import { SlideSidebar, type SidebarRun, type SlideStrip } from "@/editor/slide-sidebar"
 import {
@@ -19,9 +20,9 @@ export type EditorRail = "slides" | "images" | "shapes" | "text"
 export type EditorShellProps = {
   title: string
   slideLabel: string
-  notes: string
+  notes?: string
   run?: SidebarRun
-  panel?: "agent" | "design"
+  panel?: EditorPanel
   rail?: EditorRail
   activeTool?: EditorTool
   toolMenu?: boolean
@@ -90,12 +91,16 @@ export function EditorShell({
           )}
         </div>
         <span className="block flex-1" />
-        <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
-        <span className="block h-2" />
-        <div className="flex h-12 items-center rounded-[var(--shape-card)] bg-line px-4" style={{ width }}>
-          <span className={cnTone(run === "working")}>{run === "working" ? "Add speaker notes" : notes}</span>
-        </div>
-        <span className="block h-3" />
+        {notes === undefined ? null : (
+          <>
+            <span className="block h-1 w-12 rounded-full bg-[var(--dot)]" />
+            <span className="block h-2" />
+            <div className="flex h-12 items-center rounded-[var(--shape-card)] bg-line px-4" style={{ width }}>
+              <span className={cnTone(run === "working")}>{run === "working" ? "Add speaker notes" : notes}</span>
+            </div>
+            <span className="block h-3" />
+          </>
+        )}
         <EditorToolbar activeTool={activeTool} menuOpen={toolMenu} panel={panel} />
         {shapeTray || actionsMenu ? (
           <div className="absolute inset-x-0 bottom-[72px] flex justify-center">
@@ -103,11 +108,15 @@ export function EditorShell({
           </div>
         ) : null}
       </div>
-      {panel === "design" ? (
-        <DesignPanel />
-      ) : (
+      {panel === "design" ? <DesignPanel /> : null}
+      {panel === "agent" ? (
         <AgentPanel run={run} usageOpen={usageOpen} {...(onExport === undefined ? {} : { onExport })} />
-      )}
+      ) : null}
+      {panel === "none" ? (
+        <Island className="absolute top-3 right-3">
+          <ExportButton {...(onExport === undefined ? {} : { onClick: onExport })} />
+        </Island>
+      ) : null}
       {templatePicker ? <TemplatePicker /> : null}
       {toast}
       {overlay}

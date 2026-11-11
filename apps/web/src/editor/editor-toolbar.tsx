@@ -5,6 +5,8 @@ import { cn } from "@/lib/class-names"
 
 export type EditorTool = "move" | "text" | "shape" | "image" | "actions"
 
+export type EditorPanel = "agent" | "design" | "none"
+
 const tools: { tool: Exclude<EditorTool, "move">; icon: EditorIconName }[] = [
   { tool: "text", icon: "text" },
   { tool: "shape", icon: "shape" },
@@ -19,7 +21,7 @@ export function EditorToolbar({
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
-  panel?: "agent" | "design"
+  panel?: EditorPanel
 }) {
   const moveOn = activeTool === "move"
   return (
@@ -70,8 +72,12 @@ export function EditorToolbar({
           </Button>
         )
       })}
-      <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-      <PanelSwitch active={panel} />
+      {panel === "none" ? null : (
+        <>
+          <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
+          <PanelSwitch active={panel} />
+        </>
+      )}
       {menuOpen ? <ToolMenu /> : null}
     </div>
   )
