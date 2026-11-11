@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { decide, elementId, version, type Register } from "@airdesign/document"
 import { openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
-import { createServer, editNext, emptyLog, type CallerLog, type Session } from "./index.js"
+import { createServer, editNext, emptyLog, memoryTurns, type CallerLog, type Session } from "./index.js"
 
 function opened(): Deck {
   const id = readDeckId("deck")
@@ -34,7 +34,7 @@ function running(): Deck {
 }
 
 function sessionFor(deck: Deck): Session {
-  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0 }
+  return { caller: { actor: "agent", runId: "run" }, deck, log: emptyLog(), now: 0, turns: memoryTurns() }
 }
 
 function held(deck: Deck, holder: { log: CallerLog }): Session {
@@ -48,6 +48,7 @@ function held(deck: Deck, holder: { log: CallerLog }): Session {
       holder.log = value
     },
     now: 0,
+    turns: memoryTurns(),
   }
 }
 
@@ -144,7 +145,7 @@ describe("createServer", () => {
   it("lands an edit on the wire", async () => {
     const before = running()
     const caller = { actor: "agent" as const, runId: "run" }
-    const session: Session = { caller, deck: before, log: emptyLog(), now: 0 }
+    const session: Session = { caller, deck: before, log: emptyLog(), now: 0, turns: memoryTurns() }
     await withClient(session, async (client) => {
       const first = await client.callTool({
         name: "airdesign_edit_deck",
@@ -225,7 +226,7 @@ describe("createServer", () => {
         arguments: { deck: "deck", base: 0, changes: [{ value: "21", node: "258.7", readAt: 0 }] },
       })
       expect(result.isError).not.toBe(true)
-      const answer = { ok: true, revision: 1, elements: [{ node: "258.7", value: "21", version: 1 }] }
+      const answer = { ok: true, revision: 1, runId: "run", elements: [{ node: "258.7", value: "21", version: 1 }] }
       expect(result.content).toEqual([
         { type: "text", text: "Landed revision 1." },
         { type: "text", text: JSON.stringify(answer) },
@@ -282,6 +283,7 @@ describe("createServer", () => {
       expect(resent.structuredContent).toEqual({
         ok: true,
         revision: 3,
+        runId: "run",
         elements: [{ node: "258.7", value: "late", version: 3 }],
       })
       expect(session.deck.revision).toBe(3)

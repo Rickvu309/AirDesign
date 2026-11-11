@@ -1,6 +1,6 @@
 import type { Refusal } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { editCodes, editNext, editSentence, type EditCode } from "./edit-next.js"
+import { editCodes, editNext, editSentence, runNext, runSentence, type EditCode } from "./edit-next.js"
 
 describe("editNext", () => {
   it("gives every refusal that can reach an agent a sentence", () => {
@@ -40,5 +40,16 @@ describe("editNext", () => {
     expect(editNext.limit).toContain("8,000 bytes")
     expect(editNext.limit).not.toContain("Send less")
     expect(editNext["text-from"]).not.toContain("current value")
+  })
+
+  it("gives a stop or undo its own next step where the edit sentence would mislead", () => {
+    for (const code of editCodes) expect(runSentence(code).endsWith("."), code).toBe(true)
+    for (const code of ["stale", "run-fenced", "limit"] as const) {
+      expect(runNext[code], code).not.toBe(editNext[code])
+      expect(runNext[code], code).not.toContain("send the change again")
+      expect(runNext[code], code).not.toContain("shorter value")
+    }
+    expect(runNext["run-fenced"]).toContain("runId")
+    expect(runNext.owner).toBe(editNext.owner)
   })
 })

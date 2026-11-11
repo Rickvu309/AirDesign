@@ -5,13 +5,16 @@ export {
   editRefusal,
   heldElements,
   namedNodes,
+  runEnded,
+  runRefusal,
   type EditAnswer,
   type EditElement,
   type EditResult,
 } from "./edit-answer.js"
-export { editCodes, editNext, editSentence, type EditCode } from "./edit-next.js"
-export { afterWrite, agentCaller, elementFloors, openRun, type ElementFloors } from "./run.js"
+export { editCodes, editNext, editSentence, runNext, runSentence, type EditCode } from "./edit-next.js"
+export { afterWrite, agentCaller, elementFloors, joinRun, openRun, type ElementFloors } from "./run.js"
 export { textProblem, type TextProblem } from "./text-from.js"
+export { liveTurn, memoryTurns, settleTurn, type Turn, type Turns } from "./turn.js"
 export {
   capture,
   edit,

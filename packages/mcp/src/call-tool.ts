@@ -1,10 +1,11 @@
-import { catalog, projectTools, readAgentEdit, readCapture } from "@airdesign/catalog"
+import { catalog, projectTools, readAgentEdit, readCapture, readRun } from "@airdesign/catalog"
 import { reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog } from "./admit.js"
-import { editLanded, editRefusal, namedNodes, type EditAnswer } from "./edit-answer.js"
-import { elementFloors, openRun } from "./run.js"
+import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
+import { agentCaller, elementFloors, joinRun, openRun } from "./run.js"
 import { textProblem } from "./text-from.js"
+import { liveTurn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -13,6 +14,8 @@ export type Session = {
   deck: Deck
   log: CallerLog
   now: number
+  readonly turns: Turns
+  readonly idleWindow?: number
   readonly tab?: Tab
 }
 
@@ -55,6 +58,17 @@ function reached(deck: Deck, refusal: string, next: string): ToolResult {
   return { ok: false, refusal, deck, next, content: [{ type: "text", text: next }] }
 }
 
+function startedTurn(raw: unknown, session: Session) {
+  const { deck } = session
+  const turn = liveTurn(session, deck.id)
+  if (turn !== undefined) {
+    const joined = joinRun(deck.register, raw, turn.runId)
+    if (joined.ok || joined.refusal !== "run-fenced") return joined
+    session.turns.clear(deck.id)
+  }
+  return openRun(deck.register, raw, () => session.caller.runId)
+}
+
 function editDeck(raw: unknown, session: Session): ToolResult {
   const before = session.deck
   const parsed = readAgentEdit(raw)
@@ -65,12 +79,28 @@ function editDeck(raw: unknown, session: Session): ToolResult {
   if (!floors.ok) return editRefusal(before, floors.refusal, nodes)
   const problem = textProblem(floors.floors, parsed.changes)
   if (problem !== undefined) return editRefusal(before, problem.code, nodes, problem.detail)
-  const opened = openRun(before.register, raw, () => session.caller.runId)
+  const opened = startedTurn(raw, session)
   if (!opened.ok) return editRefusal(before, opened.refusal, nodes)
   const deck = { id: before.id, revision: before.revision, register: opened.register }
   const result = call("edit_deck", deck, opened.caller, raw)
-  if (!result.ok) return editRefusal(before, result.refusal, nodes)
-  return editLanded(result.deck, nodes)
+  if (!result.ok) return { ...editRefusal(deck, result.refusal, nodes), deck: before }
+  return editLanded(result.deck, nodes, opened.caller.runId)
+}
+
+function malformedRun(raw: unknown): boolean {
+  if (typeof raw !== "object" || raw === null) return false
+  const body = raw as Record<string, unknown>
+  return typeof body.runId === "string" && readRun({ ...body, runId: "run" }).ok
+}
+
+function endRun(op: "stop_run" | "undo_run", raw: unknown, session: Session): ToolResult {
+  const before = session.deck
+  const parsed = readRun(raw)
+  if (!parsed.ok) return runRefusal(before, malformedRun(raw) ? "run-fenced" : parsed.refusal)
+  if (parsed.deck !== before.id) return runRefusal(before, "deck")
+  const result = call(op, before, agentCaller(parsed.runId), raw)
+  if (!result.ok) return runRefusal(before, result.refusal)
+  return runEnded(result.deck, op, parsed.runId)
 }
 
 function captureSlide(raw: unknown, session: Session): ToolResult {
@@ -86,6 +116,9 @@ export function callTool(name: string, raw: unknown, session: Session): ToolResu
   const tool = projectTools(catalog).find((item) => item.name === name)
   if (tool === undefined) return refused(session.deck, "field")
   if (tool.op === "edit_deck" && tool.runsOn === "server") return editDeck(raw, session)
+  if ((tool.op === "stop_run" || tool.op === "undo_run") && tool.runsOn === "server") {
+    return endRun(tool.op, raw, session)
+  }
   if (tool.op === "capture_slide" && tool.runsOn === "device") return captureSlide(raw, session)
   return refused(session.deck, "field")
 }

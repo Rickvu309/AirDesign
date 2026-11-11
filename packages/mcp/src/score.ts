@@ -4,6 +4,7 @@ import { elementId, history, rootElement, type ElementId, type NodeRegister, typ
 import type { Deck } from "@airdesign/engine"
 import { emptyLog } from "./admit.js"
 import { callTool, type ToolResult } from "./call-tool.js"
+import { memoryTurns } from "./turn.js"
 
 export type ElementName = "opened" | "title" | "body" | "note" | "footer"
 
@@ -14,6 +15,8 @@ export const elements: Readonly<Record<ElementName, ElementId>> = {
   note: elementId("259.1"),
   footer: elementId("259.2"),
 }
+
+export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
@@ -187,11 +190,15 @@ export function score(task: Task, attempt: Attempt): ScoreResult {
   if (attempt.length > task.want.calls) return failed("calls", start)
   let current = start
   const caller = { actor: "agent" as const, runId: "session" }
+  const turns = memoryTurns()
+  turns.write(start.id, { runId: fixtureRun, lastCall: 0 })
   for (const step of attempt) {
     const log = emptyLog()
     const now = 0
     const session =
-      task.tab === undefined ? { caller, deck: current, log, now } : { caller, deck: current, tab: task.tab, log, now }
+      task.tab === undefined
+        ? { caller, deck: current, log, now, turns }
+        : { caller, deck: current, tab: task.tab, log, now, turns }
     let result: ToolResult
     const before = current
     try {

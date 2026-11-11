@@ -3,8 +3,9 @@ import { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod/v4"
 import { admit } from "./admit.js"
 import { callTool, type Session, type ToolResult } from "./call-tool.js"
-import { editRefusal } from "./edit-answer.js"
+import { editRefusal, runRefusal } from "./edit-answer.js"
 import { editSentence, type EditCode } from "./edit-next.js"
+import { settleTurn } from "./turn.js"
 
 const editInput = z.looseObject({
   deck: z.string().describe("Deck id."),
@@ -32,8 +33,18 @@ const captureInput = z.looseObject({
   deck: z.string().describe("Deck id."),
 })
 
+const runInput = z.looseObject({
+  deck: z.string().describe("Deck id."),
+  runId: z.string().describe("The runId your edit answers carried."),
+})
+
+function endsRun(op: string): boolean {
+  return op === "stop_run" || op === "undo_run"
+}
+
 function inputSchema(op: string) {
   if (op === "edit_deck") return editInput
+  if (endsRun(op)) return runInput
   if (op === "capture_slide") return captureInput
   return z.looseObject({})
 }
@@ -85,6 +96,7 @@ export function createServer(session: Session, host?: Host): McpServer {
           const prepared = await host.prepare(tool.name, args, session)
           if (!prepared.ok) {
             if (tool.op === "edit_deck") return mcpResult(editRefusal(session.deck, prepared.refusal, []))
+            if (endsRun(tool.op)) return mcpResult(runRefusal(session.deck, prepared.refusal))
             return mcpResult({
               ok: false,
               refusal: prepared.refusal,
@@ -96,6 +108,7 @@ export function createServer(session: Session, host?: Host): McpServer {
         const result = callTool(tool.name, args, session)
         const settled = host?.commit ? await host.commit(result, session) : result
         if (settled.ok) session.deck = settled.deck
+        settleTurn(tool.op, settled, session)
         return mcpResult(settled)
       },
     )

@@ -1,7 +1,7 @@
 import type { WireChange } from "@airdesign/catalog"
 import { currentValue, version, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
-import { editSentence, type EditCode } from "./edit-next.js"
+import { editSentence, runSentence, type EditCode } from "./edit-next.js"
 
 export type EditElement = {
   readonly node: ElementId
@@ -11,7 +11,12 @@ export type EditElement = {
 }
 
 export type EditAnswer =
-  | { readonly ok: true; readonly revision: number; readonly elements: readonly EditElement[] }
+  | {
+      readonly ok: true
+      readonly revision: number
+      readonly runId: string
+      readonly elements: readonly EditElement[]
+    }
   | {
       readonly ok: false
       readonly revision: number
@@ -56,20 +61,38 @@ function answerBlock(answer: EditAnswer): { readonly type: "text"; readonly text
   return { type: "text", text: JSON.stringify(answer) }
 }
 
-export function editLanded(deck: Deck, nodes: readonly ElementId[]): EditResult {
-  const answer: EditAnswer = { ok: true, revision: deck.revision, elements: heldElements(deck.register, nodes) }
-  return {
-    ok: true,
-    deck,
-    answer,
-    content: [{ type: "text", text: `Landed revision ${String(deck.revision)}.` }, answerBlock(answer)],
-  }
+function landedResult(deck: Deck, lead: string, runId: string, nodes: readonly ElementId[]): EditResult {
+  const answer: EditAnswer = { ok: true, revision: deck.revision, runId, elements: heldElements(deck.register, nodes) }
+  return { ok: true, deck, answer, content: [{ type: "text", text: lead }, answerBlock(answer)] }
+}
+
+export function editLanded(deck: Deck, nodes: readonly ElementId[], runId: string): EditResult {
+  return landedResult(deck, `Landed revision ${String(deck.revision)}.`, runId, nodes)
+}
+
+export function runEnded(deck: Deck, op: "stop_run" | "undo_run", runId: string): EditResult {
+  const done = op === "stop_run" ? "Stopped" : "Undid"
+  return landedResult(deck, `${done} the run at revision ${String(deck.revision)}.`, runId, [])
+}
+
+function refusedResult(
+  deck: Deck,
+  code: EditCode,
+  sentence: string,
+  nodes: readonly ElementId[],
+  detail?: string,
+): EditResult {
+  const elements = heldElements(deck.register, nodes)
+  const answer: EditAnswer = { ok: false, revision: deck.revision, refusal: code, elements }
+  const lead = { type: "text" as const, text: sentence }
+  const content = detail === undefined ? [lead] : [lead, { type: "text" as const, text: detail }]
+  return { ok: false, refusal: code, deck, answer, content: [...content, answerBlock(answer)] }
 }
 
 export function editRefusal(deck: Deck, code: EditCode, nodes: readonly ElementId[], detail?: string): EditResult {
-  const elements = heldElements(deck.register, nodes)
-  const answer: EditAnswer = { ok: false, revision: deck.revision, refusal: code, elements }
-  const lead = { type: "text" as const, text: editSentence(code) }
-  const content = detail === undefined ? [lead] : [lead, { type: "text" as const, text: detail }]
-  return { ok: false, refusal: code, deck, answer, content: [...content, answerBlock(answer)] }
+  return refusedResult(deck, code, editSentence(code), nodes, detail)
+}
+
+export function runRefusal(deck: Deck, code: EditCode): EditResult {
+  return refusedResult(deck, code, runSentence(code), [])
 }
