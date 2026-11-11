@@ -1,9 +1,8 @@
 import type { DeckId } from "@airdesign/catalog"
-import type { ElementId } from "@airdesign/document"
+import { bytesOf, limits, type ElementId } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
-export const rowCap = 65536
 
 export type ConfirmedRow = {
   readonly kind: "confirmed"
@@ -30,12 +29,8 @@ export function rowKey(deck: string, kind: "confirmed" | "pending", number: numb
   return `${deck}\u0000${tag}\u0000${String(number).padStart(12, "0")}`
 }
 
-export function textBytes(text: string): number {
-  return new TextEncoder().encode(text).length
-}
-
 export function rowBytes(row: StoredRow): number {
-  return textBytes(JSON.stringify(row))
+  return bytesOf(JSON.stringify(row))
 }
 
 export function confirmedRow(deck: DeckId, revision: number, value: string, node?: ElementId): ConfirmedRow {
@@ -74,18 +69,18 @@ export function fitConfirmed(
   let part = 0
   if (value.length === 0) {
     const row = confirmedRow(deck, revision, "", node)
-    if (rowBytes(row) >= rowCap) return revision
+    if (rowBytes(row) >= limits.row) return revision
     into.push(row)
     return revision + 1
   }
   while (offset < value.length) {
     let count = value.length - offset
     let row = confirmedRow(deck, revision, piece(part, value, offset, count), node)
-    while (rowBytes(row) >= rowCap && count > 1) {
+    while (rowBytes(row) >= limits.row && count > 1) {
       count = Math.ceil(count / 2)
       row = confirmedRow(deck, revision, piece(part, value, offset, count), node)
     }
-    if (rowBytes(row) >= rowCap) return revision
+    if (rowBytes(row) >= limits.row) return revision
     into.push(row)
     offset += count
     revision += 1

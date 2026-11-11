@@ -1,5 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
-import { readSlot, rowCap, writeSlot } from "./store.js"
+import { bytesOf, limits } from "@airdesign/document"
+import { readSlot, writeSlot } from "./store.js"
 
 export type DeckParts = {
   readonly parts: ReadonlyMap<string, Uint8Array>
@@ -26,10 +27,6 @@ function partKey(deck: string): string {
   return `${deck}\u0001`
 }
 
-function jsonBytes(value: unknown): number {
-  return new TextEncoder().encode(JSON.stringify(value)).length
-}
-
 function isPartRow(value: unknown): value is PartRow {
   if (typeof value !== "object" || value === null) return false
   const row = value as { names?: unknown; file?: unknown; name?: unknown }
@@ -48,7 +45,7 @@ export async function putParts(deck: string, parts: DeckParts): Promise<PartsRes
     file: await putPart(parts.file),
     ...(parts.name === undefined ? {} : { name: parts.name }),
   }
-  if (jsonBytes(row) >= rowCap) return { ok: false, refusal: "limit" }
+  if (bytesOf(JSON.stringify(row)) >= limits.row) return { ok: false, refusal: "limit" }
   await writeSlot(partKey(parsed.deck), row)
   return {
     ok: true,

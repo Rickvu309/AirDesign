@@ -8,7 +8,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
-import { bodyCap } from "./server.js"
+import { limits } from "@airdesign/document"
+
+const { body: bodyCap } = limits
 
 function deckName(): string {
   return `deck${randomBytes(4).toString("hex")}`

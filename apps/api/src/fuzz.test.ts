@@ -11,7 +11,10 @@ import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
 import { challengeOf } from "./secrets.js"
-import { bodyCap, formCap, routes } from "./server.js"
+import { limits } from "@airdesign/document"
+import { routes } from "./server.js"
+
+const { body: bodyCap, form: formCap } = limits
 
 type Wire = {
   readonly method: string
@@ -1018,7 +1021,7 @@ describe("the route table is the only way in", () => {
       (candidate) =>
         candidate.path === url?.pathname && (candidate.method === "any" || candidate.method === req.method),
     )
-    const body = bodyOnce(req, route?.cap ?? bodyCap)
+    const body = bodyOnce(req, route?.cap ?? limits.body)
     if (url === undefined || route === undefined) {
       await body()
       answerNoRoute(res, url)

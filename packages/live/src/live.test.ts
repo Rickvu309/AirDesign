@@ -1,5 +1,6 @@
 import type { DeckId } from "@airdesign/catalog"
-import { currentValue, elementId, legacyElement, openRegister, rootElement } from "@airdesign/document"
+import { bytesOf, currentValue, elementId, legacyElement, openRegister, rootElement } from "@airdesign/document"
+import fc from "fast-check"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import {
   connect,
@@ -1346,5 +1347,25 @@ describe("live cache", () => {
     await cache.enqueue("once-deck", "Hello!", elementId("258.7"), "")
     expect((await cache.flush("once-deck")).ok).toBe(true)
     expect(opens).toEqual(["once-deck"])
+  })
+})
+
+describe("bytesOf", () => {
+  it("agrees with TextEncoder for any binary string", () => {
+    fc.assert(
+      fc.property(fc.string({ unit: "binary" }), (value) => {
+        expect(bytesOf(value)).toBe(new TextEncoder().encode(value).length)
+      }),
+    )
+  })
+
+  it("agrees with TextEncoder for strings containing lone surrogates", () => {
+    const codeUnits = fc.array(fc.integer({ min: 0, max: 0xffff })).map((units) => String.fromCharCode(...units))
+    fc.assert(
+      fc.property(codeUnits, fc.integer({ min: 0xd800, max: 0xdfff }), codeUnits, (before, lone, after) => {
+        const value = `${before}\u0000${String.fromCharCode(lone)}\u0000${after}`
+        expect(bytesOf(value)).toBe(new TextEncoder().encode(value).length)
+      }),
+    )
   })
 })

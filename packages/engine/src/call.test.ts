@@ -1,5 +1,6 @@
 import { parseNotifyKey, readDeckId } from "@airdesign/catalog"
 import {
+  bytesOf,
   currentValue,
   decide,
   decideUndo,
@@ -57,6 +58,28 @@ const person = { actor: "person" } as const
 const agent = { actor: "agent", runId: "run" } as const
 
 describe("call", () => {
+  it("accepts exactly valueBytes and refuses one more byte in ASCII and multi-byte text", () => {
+    for (const value of ["x".repeat(limits.valueBytes), "é".repeat(limits.valueBytes / 2)]) {
+      expect(bytesOf(value)).toBe(limits.valueBytes)
+      const deck = opened()
+      const accepted = call("commit_edits", deck, person, {
+        deck: "deck",
+        batch: [{ value, node: "258.7" }],
+      })
+      expect(accepted.ok).toBe(true)
+      if (!accepted.ok) throw new Error(accepted.refusal)
+      expect(currentValue(nodeBody(accepted.deck.register, left))).toBe(value)
+      expect(accepted.deck.register.bytes).toBe(limits.valueBytes)
+      const over = `${value}x`
+      expect(bytesOf(over)).toBe(limits.valueBytes + 1)
+      expect(call("commit_edits", deck, person, { deck: "deck", batch: [{ value: over, node: "258.7" }] })).toEqual({
+        ok: false,
+        refusal: "limit",
+      })
+      expect(deck.revision).toBe(0)
+    }
+  })
+
   it("lands a person commit and a key for that revision", () => {
     const deck = opened()
     const result = call("commit_edits", deck, person, { deck: "deck", batch: [{ value: "hi", node: "258.7" }] })
