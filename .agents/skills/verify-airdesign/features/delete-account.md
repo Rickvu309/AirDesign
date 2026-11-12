@@ -1,6 +1,6 @@
 # Delete account
 
-The account button on Home opens a menu with `Delete account`. It opens a dialog that names what goes (`Removes your decks and credits for good.`) and asks for the signed-in email. Once the email is typed, `Delete account` deletes the account on the server with every deck, stored original, session, agent connection and Aira usage it holds, removes the browser's copy of the decks, and goes to sign-in.
+The account button on Home opens a menu with `Delete account`, and the Account tab in Settings has the same button. It opens a dialog that names what goes (`Your decks, Trash and connected agents are deleted for good. This can't be undone.`) and asks for the signed-in email. Once the email is typed, `Delete account` deletes the account on the server with every deck, stored original, session, agent connection and Aira usage it holds, removes the browser's copy of the decks, and goes to sign-in.
 
 ## Sub-features
 
@@ -24,7 +24,7 @@ Preconditions:
 - **Run it.** `$V journey <run> delete-account`. Prints `"passed":true`.
 - **Make data.** Import `clean.pptx` from Home. Poll `post(deckRoutes.original, { deck })` until it answers `ok: true`, and fetch its `url`: 200.
 - **Ask.** On `/`, open the account menu, click `menuitem "Delete account"`. The dialog's `Delete account` button is disabled. Evidence `NN-delete-account-asks`.
-- **Confirm.** Type the email into `Signed in with email`. The button enables. Evidence `NN-delete-account-typed`.
+- **Confirm.** Type the email into `Type your email to confirm`. The button enables. Evidence `NN-delete-account-typed`.
 - **Delete.** Click it. The page goes to `/sign-in?next=%2F`. Evidence `NN-after-delete`.
 - **Second views.** `post(deckRoutes.list, {}, cookie)` answers 401 `session`, the original's `url` answers 404, and `indexedDB.databases()` has no `airdesign`.
 - **Sign up again.** Not in the journey, because the kit signs in a new email each time. `apps/api/src/delete-account.test.ts` signs the same email in again and lists no decks.

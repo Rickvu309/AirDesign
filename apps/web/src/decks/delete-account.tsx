@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { accountRoutes } from "@airdesign/catalog"
 import { deleteDatabase } from "@airdesign/live"
+import { accountCopy } from "@/copy/account-copy"
 import { Input } from "@/components/ui/input"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { settingsCopy } from "@/settings/settings-sample"
@@ -21,8 +22,8 @@ export function DeleteAccountDialog({ email, onCancel }: { email: string; onCanc
   const [busy, setBusy] = useState(false)
   return (
     <DangerDialog
-      title={settingsCopy.deleteAccount}
-      body={settingsCopy.deleteBody}
+      title={accountCopy.deleteTitle}
+      body={accountCopy.deleteBody}
       action={settingsCopy.deleteAccount}
       busy={busy}
       ready={typed.trim().toLowerCase() === email}
@@ -36,7 +37,7 @@ export function DeleteAccountDialog({ email, onCancel }: { email: string; onCanc
       }}
     >
       <label className="mt-4 flex flex-col gap-1.5 text-[length:var(--type-dense)] leading-[var(--leading-body)] font-medium text-foreground">
-        {settingsCopy.signedIn}
+        {accountCopy.deleteConfirmLabel}
         <Input
           type="email"
           autoComplete="off"

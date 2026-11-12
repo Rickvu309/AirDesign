@@ -41,7 +41,6 @@ export const settingsCopy = {
   email: "ada@halden.com",
   signOut: "Sign out",
   deleteAccount: "Delete account",
-  deleteBody: "Removes your decks and credits for good.",
 } as const
 
 export const usageHistory = [
