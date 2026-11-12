@@ -185,6 +185,7 @@ const streamed = "/aira/"
 
 export async function forward(page: Page, stack: Stack): Promise<string[]> {
   const asked: string[] = []
+  const { countryHeader } = await import("../../packages/catalog/src/index.ts")
   await page.route(
     (url) =>
       url.pathname === stack.mcp ||
@@ -194,7 +195,7 @@ export async function forward(page: Page, stack: Stack): Promise<string[]> {
       const request = route.request()
       const { pathname, search } = new URL(request.url())
       asked.push(pathname)
-      const headers = { ...(await request.allHeaders()), "cf-ipcountry": "US" }
+      const headers = { ...(await request.allHeaders()), [countryHeader]: "US" }
       if (pathname.startsWith(streamed)) {
         await route.continue({ url: `${stack.origin}${pathname}${search}`, headers })
         return

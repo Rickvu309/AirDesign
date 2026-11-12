@@ -181,6 +181,8 @@ export const airaRoutes = {
   turn: { path: "/aira/turn", method: "POST" },
 } as const
 
+export const countryHeader = "visitor-country"
+
 export const signInRoutes = {
   email: { path: "/sign-in/email", method: "POST" },
   code: { path: "/sign-in/code", method: "POST" },

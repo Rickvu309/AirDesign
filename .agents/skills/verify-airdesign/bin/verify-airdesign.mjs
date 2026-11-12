@@ -352,7 +352,8 @@ try {
       `${JSON.stringify(await designCommand(command, rest, { repo, readState, evidenceDir, journeyKit }))}\n`,
     )
   } else if (command === "launch") await launch(rest)
-  else if (command === "serve") await serve(rest[0], { repo, apiDist, webDist, scratchDir, statePath, airaPath, head })
+  else if (command === "serve")
+    await serve(rest[0], { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head })
   else if (command === "doctor") await doctor(rest[0])
   else if (command === "sign-in")
     process.stdout.write(`${JSON.stringify(await signIn(readState(rest[0]), flag("--email")))}\n`)

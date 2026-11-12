@@ -1,3 +1,5 @@
+import { countryHeader } from "@airdesign/catalog"
+
 import { Replay } from "./aira-replay.js"
 import type { AiraSettings } from "./aira.js"
 
@@ -16,7 +18,7 @@ export function fuzzGood(deck: string) {
         shape: "json" as const,
         answers: 200,
         says: '"type":"end","ok":true',
-        headers: ["cf-ipcountry: VN"],
+        headers: [`${countryHeader}: VN`],
         fields: { deck, messages: [{ role: "user", content: "Fuzz" }] },
       },
     ],
