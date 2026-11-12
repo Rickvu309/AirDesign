@@ -69,7 +69,7 @@ async function croppedDeck(): Promise<Buffer> {
 
 async function settled(page: Page, before: string | null = null): Promise<string> {
   const handle = await page.waitForFunction((previous) => {
-    const id = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     const ready = document.querySelector(".thin-page")?.getAttribute("data-deck-ready")
     return id !== undefined && ready === id && id !== previous ? id : false
   }, before)
@@ -107,7 +107,7 @@ async function shares(page: Page): Promise<Shares> {
 test.use({ viewport: { width: 1600, height: 1000 } })
 
 test("a cropped picture paints the part of the picture its crop keeps", async ({ page }) => {
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles({
     name: "cropped.pptx",
     mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -119,9 +119,7 @@ test("a cropped picture paints the part of the picture its crop keeps", async ({
   expect((await shares(page)).cropped).toBe(0)
 })
 
-test("a deck makes one address per picture across slide switches and releases them all when another deck opens", async ({
-  page,
-}) => {
+test("a deck reuses picture addresses across slide switches and navigation releases them", async ({ page }) => {
   await page.addInitScript(() => {
     const made: string[] = []
     const released: string[] = []
@@ -140,7 +138,7 @@ test("a deck makes one address per picture across slide switches and releases th
   })
   const addresses = () =>
     page.evaluate(() => Reflect.get(window, "pictureAddresses") as { made: string[]; released: string[] })
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(deck)
   const first = await settled(page)
   await showSlide(page, 4)
@@ -150,8 +148,20 @@ test("a deck makes one address per picture across slide switches and releases th
   await showSlide(page, 4)
   await showSlide(page, 5)
   expect((await addresses()).made.length).toBe(seen)
+  const previous = (await addresses()).made
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(otherDeck)
   await settled(page, first)
-  const after = await addresses()
-  expect(after.made.slice(0, seen).filter((url) => !after.released.includes(url))).toEqual([])
+  expect(
+    await page.evaluate(async (urls) => {
+      return Promise.all(
+        urls.map(async (url) =>
+          fetch(url).then(
+            () => true,
+            () => false,
+          ),
+        ),
+      )
+    }, previous),
+  ).toEqual(previous.map(() => false))
 })

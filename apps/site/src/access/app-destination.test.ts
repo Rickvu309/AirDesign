@@ -23,7 +23,7 @@ const hostileValues = [
 
 describe("safeNextPath", () => {
   it("keeps a path with its query", () => {
-    expect(safeNextPath("/thin/abc?x=1")).toBe("/thin/abc?x=1")
+    expect(safeNextPath("/deck/abc?x=1")).toBe("/deck/abc?x=1")
   })
 
   it.each(hostileValues)("falls back to the root for %j", (value) => {
@@ -48,11 +48,11 @@ describe("safeNextPath", () => {
 
 describe("appDestination", () => {
   it("joins the app origin and the remembered path", () => {
-    expect(appDestination("https://app.airdesign.app", "/thin/abc?x=1")).toBe("https://app.airdesign.app/thin/abc?x=1")
+    expect(appDestination("https://app.airdesign.app", "/deck/abc?x=1")).toBe("https://app.airdesign.app/deck/abc?x=1")
   })
 
   it("is the path alone when the app origin is unset", () => {
-    expect(appDestination("", "/thin/abc?x=1")).toBe("/thin/abc?x=1")
+    expect(appDestination("", "/deck/abc?x=1")).toBe("/deck/abc?x=1")
     expect(appDestination(undefined, null)).toBe("/")
   })
 })

@@ -124,7 +124,7 @@ describe("API forwarding", () => {
     expect(response.headers.get("set-cookie")).toBe("airdesign.session=abc; Path=/")
   })
 
-  it.each(["/thin", "/sign-in/check", "/sign-in", "/decks", "/decks/open/x", "/screens/example"])(
+  it.each(["/deck/abc", "/sign-in/check", "/sign-in", "/decks", "/decks/open/x", "/screens/example"])(
     "serves %s from assets",
     async (path) => {
       const request = new Request(`https://example.com${path}`)

@@ -90,13 +90,13 @@ const answered = async (origin) => {
 }
 
 const opened = async (page, file) => {
-  await page.goto("/thin")
+  await page.goto("/")
   const before = page.url()
   await page.locator("input[type=file]").setInputFiles(file)
   await page.waitForFunction((previous) => location.href !== previous, before, { timeout: paintLimit })
   await page.waitForFunction(
     () => {
-      const deck = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+      const deck = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
       return deck !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === deck
     },
     undefined,

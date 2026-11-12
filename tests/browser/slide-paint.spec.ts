@@ -140,13 +140,13 @@ function inheritedBox(parts: ReadonlyMap<string, string>, slide: string, shape: 
 
 async function settled(page: Page): Promise<void> {
   await page.waitForFunction(() => {
-    const id = location.pathname.match(/^\/thin\/([A-Za-z0-9_-]{1,64})$/)?.[1]
+    const id = location.pathname.match(/^\/deck\/([A-Za-z0-9_-]{1,64})$/)?.[1]
     return id !== undefined && document.querySelector(".thin-page")?.getAttribute("data-deck-ready") === id
   })
 }
 
 async function open(page: Page, file: Parameters<Locator["setInputFiles"]>[0] = deck): Promise<void> {
-  await page.goto("/thin")
+  await page.goto("/")
   await page.locator("input[type=file]").setInputFiles(file)
   await settled(page)
 }

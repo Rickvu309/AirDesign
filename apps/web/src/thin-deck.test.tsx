@@ -20,17 +20,14 @@ const live = vi.hoisted(() => {
     parts: { ok: true; parts: ReadonlyMap<string, Uint8Array>; name?: string } | { ok: false; refusal: "absent" }
     opened: { ok: true; register: unknown } | { ok: false; refusal: "deck" }
     refuse: boolean
-    gate: Promise<void> | null
     original: { ok: true; file: Uint8Array } | { ok: false; refusal: "missing" }
   } = {
     parts: { ok: false, refusal: "absent" },
     opened: { ok: false, refusal: "deck" },
     refuse: false,
-    gate: null,
     original: { ok: false, refusal: "missing" },
   }
-  const uploaded: { deck: string; file: Uint8Array }[] = []
-  const counts = { openDeck: 0, flush: 0, putParts: 0, fetchOriginal: 0, sendOriginal: 0 }
+  const counts = { openDeck: 0, flush: 0, fetchOriginal: 0 }
   type Counted = keyof typeof counts
   let waiters: { kind: Counted; count: number; resolve: () => void }[] = []
   function happened(kind: Counted) {
@@ -44,11 +41,8 @@ const live = vi.hoisted(() => {
     reads,
     flushed,
     state,
-    uploaded,
     reset() {
-      uploaded.length = 0
       counts.fetchOriginal = 0
-      counts.sendOriginal = 0
       state.original = { ok: false, refusal: "missing" }
       sent.length = 0
       reads.length = 0
@@ -56,12 +50,10 @@ const live = vi.hoisted(() => {
       flushed.length = 0
       counts.openDeck = 0
       counts.flush = 0
-      counts.putParts = 0
       waiters = []
       state.parts = { ok: false, refusal: "absent" }
       state.opened = { ok: false, refusal: "deck" }
       state.refuse = false
-      state.gate = null
     },
     reached(kind: Counted, count: number): Promise<void> {
       if (counts[kind] >= count) return Promise.resolve()
@@ -71,7 +63,6 @@ const live = vi.hoisted(() => {
     },
     getParts: async (deck: string) => {
       reads.push(deck)
-      if (state.gate !== null) await state.gate
       return state.parts
     },
     putParts: async (
@@ -79,18 +70,12 @@ const live = vi.hoisted(() => {
       stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string },
     ) => {
       saved.push({ deck, ...stored })
-      happened("putParts")
       return { ok: true, ...stored }
     },
     fetchOriginal: async (deck: string) => {
       reads.push(deck)
       happened("fetchOriginal")
       return state.original
-    },
-    sendOriginal: async (deck: string, file: Uint8Array) => {
-      uploaded.push({ deck, file })
-      happened("sendOriginal")
-      return { ok: true }
     },
     connect: () => ({
       async enqueue(deck: string, value: string, node: string, floor: string) {
@@ -123,7 +108,6 @@ vi.mock("@airdesign/live", async () => {
     putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string }) =>
       live.putParts(deck, stored),
     fetchOriginal: (deck: string) => live.fetchOriginal(deck),
-    sendOriginal: (deck: string, file: Uint8Array) => live.sendOriginal(deck, file),
   }
 })
 
@@ -243,7 +227,7 @@ async function wasmBytes(): Promise<Uint8Array> {
 
 async function renderedDeck(
   parts: ReadonlyMap<string, Uint8Array> | Uint8Array | null,
-  deck: string | undefined = "opened-deck",
+  deck = "opened-deck",
   register: Register | null = null,
   name?: string,
 ) {
@@ -293,12 +277,6 @@ async function renderedDeck(
       root.unmount()
     })
   })
-  if (deck === undefined) {
-    await act(async () => {
-      root.render(<ThinDeck />)
-    })
-    return window
-  }
   const sentOnOpen = parts === null ? live.reached("fetchOriginal", 1) : live.reached("flush", 1)
   await act(async () => {
     root.render(<ThinDeck id={deck} />)
@@ -511,20 +489,6 @@ it("shows the import notice and no slide when neither the device nor the server 
   expect(window.document.body.textContent).toContain(productCopy.importFailedTitle)
 })
 
-it("sends the imported file to the server as the deck's original", async () => {
-  const window = await renderedDeck(await cleanParts(), undefined)
-  const file = await cleanFile()
-  const input = window.document.querySelector("input[type=file]")
-  if (input === null) throw new Error("input")
-  Object.defineProperty(input, "files", { value: [new File([Uint8Array.from(file)], "clean.pptx")] })
-  const sent = live.reached("sendOriginal", 1)
-  await act(async () => {
-    input.dispatchEvent(new window.Event("change", { bubbles: true }))
-    await sent
-  })
-  expect(live.uploaded.map((each) => [each.deck, [...each.file]])).toEqual([[live.saved[0]?.deck, [...file]]])
-})
-
 it("sends what is pending when a deck opens", async () => {
   await renderedDeck(shapedParts(), "address-deck")
   expect(live.flushed).toEqual(["address-deck"])
@@ -553,33 +517,6 @@ it("puts a refused edit back to the last stored text", async () => {
   expect(last.textContent).toBe("Stored last")
   expect(first.textContent).toBe("First")
   expect(live.sent).toEqual([])
-})
-
-it("keeps what was typed while the opened file was still loading", async () => {
-  const window = await renderedDeck(await cleanParts(), undefined)
-  let release: () => void = () => undefined
-  live.state.gate = new Promise<void>((resolve) => {
-    release = resolve
-  })
-  const input = window.document.querySelector("input[type=file]")
-  if (input === null) throw new Error("input")
-  Object.defineProperty(input, "files", { value: [new File([Uint8Array.from(await cleanFile())], "clean.pptx")] })
-  const saved = live.reached("putParts", 1)
-  await act(async () => {
-    input.dispatchEvent(new window.Event("change", { bubbles: true }))
-    await saved
-  })
-  await act(async () => {})
-  const box = boxShowing(window, "Hello")
-  await typeInto(window, box, "Typed while held", 1)
-  await act(async () => {
-    release()
-    await live.state.gate
-  })
-  await act(async () => {})
-  expect(box.textContent).toBe("Typed while held")
-  expect(live.sent.map((edit) => edit.value)).toEqual([oneRun("Typed while held")])
-  expect(live.sent[0]?.deck).toBe(live.saved[0]?.deck)
 })
 
 it("does not offer a locked box whose fallback twin has one run", async () => {
@@ -651,7 +588,7 @@ it("shows an empty title for a deck stored without a name", async () => {
 })
 
 it("sends a signed-out person to sign in with the current path and query as next", () => {
-  expect(signInAddress({ pathname: "/thin/abc-123", search: "?slide=2" })).toBe(
-    "/sign-in?next=%2Fthin%2Fabc-123%3Fslide%3D2",
+  expect(signInAddress({ pathname: "/deck/abc-123", search: "?slide=2" })).toBe(
+    "/sign-in?next=%2Fdeck%2Fabc-123%3Fslide%3D2",
   )
 })
