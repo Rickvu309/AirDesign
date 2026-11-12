@@ -74,16 +74,8 @@ Init ==
   /\ kept2 = FALSE
   /\ keptStale = FALSE
   /\ undone = FALSE
-  /\ typed = FALSE
-  /\ journaled = FALSE
-
-Type ==
-  /\ wiped = FALSE
-  /\ crashed = FALSE
-  /\ typed = FALSE
-  /\ typed' = TRUE
-  /\ journaled' = TRUE
-  /\ UNCHANGED <<lands1, lands2, queued1, queued2, sent1, sent2, acked1, landed1, landed2, priorAck, version, stale, skipped, landedStale, wiped, crashed, kept1, kept2, keptStale, undone>>
+  /\ typed \in BOOLEAN
+  /\ journaled = typed
 
 QueueFirst ==
   /\ wiped = FALSE
@@ -214,7 +206,7 @@ Undo ==
 Rest == UNCHANGED vars
 
 Next ==
-  Type \/ QueueFirst \/ QueueSecond \/ Send \/ SendNext \/ Ack \/ Land \/ LandNext \/ QueueStale \/ Skip \/ LandStale \/ Crash \/ Wipe \/ Undo \/ Rest
+  QueueFirst \/ QueueSecond \/ Send \/ SendNext \/ Ack \/ Land \/ LandNext \/ QueueStale \/ Skip \/ LandStale \/ Crash \/ Wipe \/ Undo \/ Rest
 
 Spec == Init /\ [][Next]_vars
 
