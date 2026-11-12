@@ -2,7 +2,11 @@ import { productCopy } from "@/copy/product-copy"
 
 export function NewDeckMenu({ onImport, onBlank }: { onImport?: () => void; onBlank?: () => void }) {
   return (
-    <div className="absolute top-[calc(100%+4.5px)] right-0 z-20 w-[180px] rounded-[var(--shape-card)] bg-background p-1 shadow-[inset_0_0_0_1px_var(--sheet),0_12px_32px_rgb(0_0_0/12%)]">
+    <div
+      role="group"
+      aria-label="New deck"
+      className="absolute top-[calc(100%+4.5px)] right-0 z-20 w-[180px] rounded-[var(--shape-card)] bg-background p-1 shadow-[inset_0_0_0_1px_var(--sheet),0_12px_32px_rgb(0_0_0/12%)]"
+    >
       <button
         type="button"
         onClick={onBlank}

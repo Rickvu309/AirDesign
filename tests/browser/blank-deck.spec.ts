@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
+import { newBlankDeck } from "./new-deck"
 
 type ZipLibrary = {
   ZipReader: new (reader: unknown) => {
@@ -33,8 +34,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
 }, testInfo) => {
   await page.goto("/")
   await context.setOffline(true)
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const address = page.url()
   const title = page.locator('[contenteditable="true"]').first()
@@ -64,8 +64,7 @@ test("Blank deck edits, reloads, exports and imports without an upload, even whe
 
 test("New slide on a blank deck paints layout placeholders and exports @export", async ({ page }, testInfo) => {
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   await page.getByRole("button", { name: "Add slide" }).click()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
@@ -82,8 +81,7 @@ test("Blank deck subtitle prompt shows, typing replaces it, deleting brings it b
   page,
 }, testInfo) => {
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   const prompt = page.locator("[data-slide-paint] [data-placeholder-prompt='Add a subtitle']")
   await expect(prompt).toBeVisible()

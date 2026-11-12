@@ -56,8 +56,9 @@ test("empty home says there are no decks yet, lists no sample decks and offers t
   await expect(page.getByRole("button", { name: "Import PowerPoint" })).toHaveCount(1)
   await expect(page.getByRole("button", { name: "Blank deck", exact: true })).toHaveCount(1)
   await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await expect(page.getByRole("button", { name: "Import PowerPoint" })).toHaveCount(2)
-  await expect(page.getByRole("button", { name: "Blank deck", exact: true })).toHaveCount(2)
+  const menu = page.getByRole("group", { name: "New deck" })
+  await expect(menu.getByRole("button", { name: "Import PowerPoint" })).toHaveCount(1)
+  await expect(menu.getByRole("button", { name: "Blank deck", exact: true })).toHaveCount(1)
 })
 
 test("choosing a file opens its deck and posts the filename rename", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { newBlankDeck } from "./new-deck"
 
 const fixtures = join(process.cwd(), "scripts/pptx-fixtures")
 const clean = join(fixtures, "clean.pptx")
@@ -176,8 +177,7 @@ test("speaker notes typed while the device write is slow are still there after a
 
 test("a slide added while the device write is slow is still there after an immediate reload", async ({ page }) => {
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)

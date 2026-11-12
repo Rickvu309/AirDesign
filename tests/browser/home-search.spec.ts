@@ -27,6 +27,13 @@ test("a reload keeps the query and its matches", async ({ page }) => {
   await expect(cards(page)).toHaveText([first.name])
 })
 
+test("an account with no decks shows No decks yet for a query, never No decks match", async ({ page }) => {
+  await store(page, [])
+  await page.goto("/?q=quarterly")
+  await expect(page.getByRole("heading", { name: "No decks yet" })).toBeVisible()
+  await expect(page.getByRole("heading", { name: /No decks match/ })).toHaveCount(0)
+})
+
 test("a query with no match names the query and Clear search brings the decks back", async ({ page }) => {
   await store(page)
   await page.goto("/?q=quarterly")

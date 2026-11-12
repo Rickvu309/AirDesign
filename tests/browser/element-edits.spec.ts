@@ -3,6 +3,7 @@ import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { exportFromDialog } from "./export-dialog.ts"
+import { newBlankDeck } from "./new-deck"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -36,8 +37,7 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   page,
 }, testInfo) => {
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
   const texts = page.locator('[data-slide-paint] [contenteditable="true"]')

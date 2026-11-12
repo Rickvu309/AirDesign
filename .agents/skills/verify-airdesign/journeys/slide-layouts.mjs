@@ -2,12 +2,12 @@ import fs from "node:fs"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { expect } from "@playwright/test"
+import { newBlankDeck } from "../bin/new-deck.mjs"
 
 export default async function drive({ repo, page, signIn, post, capture, note, deckRoutes }) {
   const { cookie } = await signIn()
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
   const deck = page.url().split("/").at(-1)
   await page.getByRole("button", { name: "Choose a layout for the new slide" }).click()
