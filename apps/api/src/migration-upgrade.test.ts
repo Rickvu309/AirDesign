@@ -20,9 +20,10 @@ it("adds the import index and its deleted-row constraint after migration 6", asy
     await expect(db.query("select import_index from deck.saved")).rejects.toMatchObject({ code: "42703" })
     const output: string[] = []
     expect(await runSetup({ MIGRATOR_DATABASE_URL: url }, (_stream, line) => output.push(line))).toBe(0)
-    expect(output).toEqual(["setup: roles 3, migrations 1 applied, now at 7"])
+    const latest = migrations.length
+    expect(output).toEqual([`setup: roles 3, migrations ${String(latest - 6)} applied, now at ${String(latest)}`])
     expect((await db.query("select id from setup.migration order by id")).rows).toEqual(
-      [1, 2, 3, 4, 5, 6, 7].map((id) => ({ id })),
+      migrations.map(({ id }) => ({ id })),
     )
     await db.query("insert into session.account (email) values ('kept@example.com')")
     await db.query(

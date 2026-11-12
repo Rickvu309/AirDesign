@@ -9,25 +9,23 @@ import {
   dropGoneTurn,
   editRefusal,
   emptyLog,
-  memoryTurns,
-  type CallerLog,
   type Host,
   type Session,
   type ToolResult,
-  type Turns,
 } from "@airdesign/mcp"
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
+import { storedTurns } from "./agent-turn.js"
+import { admitCaller } from "./caller-log.js"
 import { readOwnedDecks } from "./deck-list.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved, writeRevision } from "./saved.js"
 
 export type McpHost = {
   readonly deck: Sql
+  readonly session: Sql
   readonly email: string
-  readonly logs: Map<string, CallerLog>
-  readonly turns: Map<string, Turns>
   readonly now: () => number
   readonly mint: () => string
   readonly hosts: readonly string[]
@@ -51,23 +49,17 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   if (!hostHeaderValidation(names)(req, res) || !originValidation(names)(req, res)) return
   const pending = readDeckId("pending")
   if (!pending.ok) throw new Error(pending.refusal)
-  if (!host.logs.has(host.email)) host.logs.set(host.email, emptyLog())
-  const turns = host.turns.get(host.email) ?? memoryTurns()
-  host.turns.set(host.email, turns)
+  const turns = storedTurns(host.session, host.email)
   const session: Session = {
     caller: agentCaller(host.mint()),
     deck: openDeck(pending.deck),
-    get log() {
-      return host.logs.get(host.email) ?? emptyLog()
-    },
-    set log(value) {
-      host.logs.set(host.email, value)
-    },
+    log: emptyLog(),
     now: host.now(),
     turns,
   }
   let loaded: Deck = session.deck
   const bridge: Host = {
+    admit: (called) => admitCaller(host.session, host.email, "tool", called.now),
     prepare: async (name, raw) => {
       if (name === "airdesign_list_decks") {
         try {
@@ -79,13 +71,14 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
       }
       const named = readNamedDeck(raw)
       if (!named.ok) return named
-      const seen = turns.read(named.deck)
       let saved: Awaited<ReturnType<typeof readSaved>>
       try {
+        await turns.load(named.deck)
         saved = await readSaved(host.deck, named.deck)
       } catch {
         return { ok: false, refusal: "store" }
       }
+      const seen = turns.read(named.deck)
       if (saved === undefined) return { ok: false, refusal: "deck" }
       const access = deckAccess(saved, host.email)
       if (!access.ok) return access
@@ -108,6 +101,7 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
     if (!failed) throw error
   } finally {
     await handler.close()
+    await turns.saved()
   }
 }
 

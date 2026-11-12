@@ -84,7 +84,7 @@ describe("the route table is the only way in", () => {
     const file = await parsedFile("server.ts")
     const calls = file.all.filter((node) => node.type === "CallExpression" && nameOf(node.callee) === "createServer")
     expect(calls.map((call) => squeezed(sourceOf(file, call)))).toEqual([
-      "createServer((req,res)=>{voidhandle({options,logs,now,mint,req,res})})",
+      "createServer((req,res)=>{voidhandle({options,now,mint,req,res})})",
     ])
   })
 

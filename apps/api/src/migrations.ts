@@ -197,4 +197,30 @@ alter table deck.saved add column import_index jsonb;
 alter table deck.saved add constraint saved_deleted_index_empty check (deleted is null or import_index is null);
 `,
   },
+  {
+    id: 8,
+    sql: `
+create table session.caller_log (
+  email text primary key references session.account (email) on delete cascade,
+  events jsonb not null
+);
+create table session.agent_turn (
+  email text not null references session.account (email) on delete cascade,
+  deck text not null,
+  run_id text,
+  last_call bigint not null,
+  revision integer not null,
+  primary key (email, deck)
+);
+create table session.aira_ask (
+  id bigint generated always as identity primary key,
+  email text not null references session.account (email) on delete cascade,
+  ask text,
+  started timestamptz not null default now(),
+  stopped timestamptz
+);
+create index aira_ask_email on session.aira_ask (email, ask);
+grant select, insert, update, delete on session.caller_log, session.agent_turn, session.aira_ask to session;
+`,
+  },
 ]

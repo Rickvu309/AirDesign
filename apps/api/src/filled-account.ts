@@ -93,6 +93,7 @@ export async function fillAccount(served: Served, sql: Sql, email: string): Prom
   const decks = [await storedDeck(served, cookie), await storedDeck(served, cookie)]
   await posted(served, deckRoutes.trash.path, { deck: decks[1] }, cookie)
   const oauth = await connected(served, cookie)
+  await agentEdit(served, oauth.access, decks[0] ?? "")
   const asked = { deck: decks[0], messages: [{ role: "user", content: "Fuzz" }] }
   const turn = await ask(served.base, "POST", airaRoutes.turn.path, asked, cookie, { [countryHeader]: "VN" })
   if (turn.status !== 200) throw new Error(turn.text)
@@ -112,6 +113,9 @@ export async function personalRows(sql: Sql, filled: Filled): Promise<Record<str
     ["session.oauth_token", "grant_id = any($1::text[])", filled.grants],
     ["session.aira_ledger", "email = $1", filled.email],
     ["session.aira_turn", "email = $1", filled.email],
+    ["session.aira_ask", "email = $1", filled.email],
+    ["session.caller_log", "email = $1", filled.email],
+    ["session.agent_turn", "email = $1", filled.email],
     ["deck.saved", "owner = $1", filled.email],
     ["deck.once", "deck = any($1::text[])", filled.decks],
     ["deck.original_delete", "owner = $1", filled.email],
@@ -133,6 +137,26 @@ export function emptied(counts: Record<string, number>): readonly string[] {
 export function storedKeys(store: LocalOriginalStore, email: string): readonly string[] {
   const account = createHash("sha256").update(email).digest("hex")
   return [...store.objects.keys()].filter((key) => key.startsWith(`originals/${account}/`))
+}
+
+async function agentEdit(served: Served, access: string, deck: string): Promise<void> {
+  const edit = { deck, base: 0, changes: [{ value: "agent", node: "258.7", readAt: 0 }] }
+  const response = await fetch(`${served.base}${mcpRoutes.mcp.path}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json, text/event-stream",
+      authorization: `Bearer ${access}`,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: { name: "airdesign_edit_deck", arguments: edit },
+    }),
+  })
+  const text = await response.text()
+  if (!text.includes("Landed revision")) throw new Error(text)
 }
 
 export async function mcpStatus(served: Served, access: string): Promise<number> {

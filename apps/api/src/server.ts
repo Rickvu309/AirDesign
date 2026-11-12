@@ -21,8 +21,6 @@ import {
   type DeckId,
   type FormPairs,
 } from "@airdesign/catalog"
-import type { CallerLog, Turns } from "@airdesign/mcp"
-
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { accountRouteList } from "./account-route.js"
 import { type AiraSettings } from "./aira.js"
@@ -57,7 +55,6 @@ export type ApiOptions = {
   readonly now?: () => number
   readonly mint?: () => string
   readonly hosts?: readonly string[]
-  readonly logs?: Map<string, CallerLog>
   readonly resource: string
   readonly commit?: string
   readonly smokeToken?: string
@@ -67,11 +64,10 @@ export type ApiOptions = {
   readonly forwardSecret?: string
 }
 
-type ServedOptions = ApiOptions & { readonly turns: Map<string, Turns>; readonly closing: Closing }
+type ServedOptions = ApiOptions & { readonly closing: Closing }
 
 type Context = {
   readonly options: ServedOptions
-  readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
   readonly req: IncomingMessage
@@ -429,7 +425,7 @@ async function revokeRoute(visit: Visit): Promise<void> {
 }
 
 async function mcpRoute(visit: Visit): Promise<void> {
-  const { options, logs, now, mint, req, res, name } = visit
+  const { options, now, mint, req, res, name } = visit
   if (!mcpMethods.includes(req.method ?? "")) {
     await visit.body()
     res.setHeader("allow", mcpMethods.join(", "))
@@ -451,9 +447,8 @@ async function mcpRoute(visit: Visit): Promise<void> {
   await serveMcp(
     {
       deck: options.deck,
+      session: options.session,
       email,
-      logs,
-      turns: options.turns,
       now,
       mint,
       hosts: options.hosts ?? localHosts,
@@ -565,16 +560,18 @@ async function handle(context: Context): Promise<void> {
 }
 
 export function createApi(given: ApiOptions): Server {
-  const options: ServedOptions = { ...given, turns: new Map<string, Turns>(), closing: given.closing ?? new Closing() }
+  const options: ServedOptions = {
+    ...given,
+    closing: given.closing ?? new Closing({ db: given.session, listen: given.listen }),
+  }
   requireOrigin("publicOrigin", options.publicOrigin)
   requireOrigin("siteOrigin", options.siteOrigin)
   requireDomain(options.cookieDomain)
   checkedResource(options.resource)
-  const logs = options.logs ?? new Map<string, CallerLog>()
   const now = options.now ?? Date.now
   const mint = options.mint ?? randomUUID
   void options.listen.open().catch(() => undefined)
   return createServer((req, res) => {
-    void handle({ options, logs, now, mint, req, res })
+    void handle({ options, now, mint, req, res })
   })
 }

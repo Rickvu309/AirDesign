@@ -138,23 +138,15 @@ describe("database migrations", () => {
       `select schemaname || '.' || tablename as name, tableowner from pg_tables
        where schemaname in ('session', 'deck', 'setup') order by name`,
     )
-    expect(tables.rows).toEqual(
-      [
-        "deck.once",
-        "deck.original_delete",
-        "deck.saved",
-        "session.access",
-        "session.account",
-        "session.aira_ledger",
-        "session.aira_turn",
-        "session.code",
-        "session.oauth_client",
-        "session.oauth_grant",
-        "session.oauth_token",
-        "session.sent",
-        "setup.migration",
-      ].map((name) => ({ name, tableowner: "migrator" })),
-    )
+    const sessionTables = "access account agent_turn aira_ask aira_ledger aira_turn caller_log code oauth_client"
+    const named = [
+      "deck.once",
+      "deck.original_delete",
+      "deck.saved",
+      ...`${sessionTables} oauth_grant oauth_token sent`.split(" ").map((table) => `session.${table}`),
+      "setup.migration",
+    ]
+    expect(tables.rows).toEqual(named.map((name) => ({ name, tableowner: "migrator" })))
     const grants = await admin.query<{ grantee: string; name: string; rights: string }>(
       `select grantee, table_schema || '.' || table_name as name,
          string_agg(privilege_type, ' ' order by privilege_type) as rights
@@ -164,20 +156,26 @@ describe("database migrations", () => {
     )
     const full = "DELETE INSERT SELECT UPDATE"
     const noDelete = "INSERT SELECT UPDATE"
+    const sessionRights: readonly (readonly [string, string])[] = [
+      ["access", full],
+      ["account", full],
+      ["agent_turn", full],
+      ["aira_ask", full],
+      ["aira_ledger", noDelete],
+      ["aira_turn", noDelete],
+      ["caller_log", full],
+      ["code", full],
+      ["oauth_client", noDelete],
+      ["oauth_grant", noDelete],
+      ["oauth_token", noDelete],
+      ["sent", full],
+    ]
     expect(grants.rows).toEqual([
       { grantee: "deck", name: "deck.once", rights: full },
       { grantee: "deck", name: "deck.original_delete", rights: full },
       { grantee: "deck", name: "deck.saved", rights: noDelete },
       { grantee: "listen", name: "deck.saved", rights: "SELECT" },
-      { grantee: "session", name: "session.access", rights: full },
-      { grantee: "session", name: "session.account", rights: full },
-      { grantee: "session", name: "session.aira_ledger", rights: noDelete },
-      { grantee: "session", name: "session.aira_turn", rights: noDelete },
-      { grantee: "session", name: "session.code", rights: full },
-      { grantee: "session", name: "session.oauth_client", rights: noDelete },
-      { grantee: "session", name: "session.oauth_grant", rights: noDelete },
-      { grantee: "session", name: "session.oauth_token", rights: noDelete },
-      { grantee: "session", name: "session.sent", rights: full },
+      ...sessionRights.map(([table, rights]) => ({ grantee: "session", name: `session.${table}`, rights })),
     ])
     const session = await open(roleUrl("session", database))
     await expect(

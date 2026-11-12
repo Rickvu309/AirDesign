@@ -1,7 +1,7 @@
 import { readSuite } from "./read-suite.js"
 import { suite as writtenSuite, type SuiteRow } from "./suite.js"
 
-export { admit, emptyLog, type CallerLog, type LimitKind } from "./admit.js"
+export { admit, emptyLog, type Admission, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolResult } from "./call-tool.js"
 export { editLanded, editRefusal } from "./edit-answer.js"
 export { editNext, runNext, type EditCode } from "./edit-next.js"

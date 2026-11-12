@@ -1,5 +1,7 @@
 import { Client, type Notification } from "pg"
 
+export type Channel = "deck" | "aira"
+
 export type CaughtRevision = {
   readonly id: string
   readonly revision: number
@@ -12,7 +14,7 @@ export class DeckListen {
   private opening: Promise<void> | undefined
   private pendingWake = false
   private caught: CaughtRevision[] = []
-  private readonly waiters = new Set<() => void>()
+  private readonly waiters: Record<Channel, Set<() => void>> = { deck: new Set(), aira: new Set() }
   private readonly connectionString: string
 
   constructor(connectionString: string) {
@@ -48,21 +50,22 @@ export class DeckListen {
     await this.ensure()
   }
 
-  wait(signal: AbortSignal): Promise<void> {
+  wait(signal: AbortSignal, channel: Channel = "deck"): Promise<void> {
     if (signal.aborted) return Promise.resolve()
+    const waiters = this.waiters[channel]
     return new Promise((resolve) => {
       const finish = () => {
-        this.waiters.delete(finish)
+        waiters.delete(finish)
         signal.removeEventListener("abort", finish)
         resolve()
       }
-      this.waiters.add(finish)
+      waiters.add(finish)
       signal.addEventListener("abort", finish, { once: true })
     })
   }
 
-  private wake(): void {
-    for (const waiter of [...this.waiters]) waiter()
+  private wake(channel: Channel = "deck"): void {
+    for (const waiter of [...this.waiters[channel]]) waiter()
   }
 
   private async ensure(): Promise<void> {
@@ -103,6 +106,10 @@ export class DeckListen {
     })
     client.on("notification", (message: Notification) => {
       if (this.client !== client) return
+      if (message.channel === "aira") {
+        if (this.trusted) this.wake("aira")
+        return
+      }
       if (message.channel !== "deck") return
       if (!this.trusted) {
         this.pendingWake = true
@@ -117,6 +124,7 @@ export class DeckListen {
       return
     }
     await client.query("listen deck")
+    await client.query("listen aira")
     const seen = await client.query<{ id: string; revision: number }>("select id, revision from deck.saved")
     if (this.stopped) {
       client.removeAllListeners()
@@ -126,6 +134,7 @@ export class DeckListen {
     this.caught = seen.rows.map((row) => ({ id: row.id, revision: row.revision }))
     this.client = client
     this.trusted = true
+    this.wake("aira")
     if (this.pendingWake) {
       this.pendingWake = false
       this.wake()
