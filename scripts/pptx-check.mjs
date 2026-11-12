@@ -72,16 +72,21 @@ const inputs = corpusInputs(root)
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
-    execFile(command, args, { cwd: root, env: browserEnv(process.env), maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        const failure = new Error([stdout, stderr].filter(Boolean).join("\n").trim() || `${command} failed`)
-        failure.stdout = stdout
-        failure.stderr = stderr
-        reject(failure)
-      } else {
-        resolve(stdout)
-      }
-    })
+    execFile(
+      command,
+      args,
+      { cwd: root, env: browserEnv(process.env), maxBuffer: 64 * 1024 * 1024 },
+      (error, stdout, stderr) => {
+        if (error) {
+          const failure = new Error([stdout, stderr].filter(Boolean).join("\n").trim() || `${command} failed`)
+          failure.stdout = stdout
+          failure.stderr = stderr
+          reject(failure)
+        } else {
+          resolve(stdout)
+        }
+      },
+    )
   })
 
 const validatorLists = async (files) => {

@@ -7,7 +7,8 @@ export const statusOf = (error) => {
   return code === undefined ? undefined : Number(code)
 }
 
-const notJson = (text) => /invalid character|unexpected end of JSON|looking for beginning of value|unexpected EOF/i.test(text)
+const notJson = (text) =>
+  /invalid character|unexpected end of JSON|looking for beginning of value|unexpected EOF/i.test(text)
 const dropped = (text) => /ETIMEDOUT|ECONNRESET|EAI_AGAIN|timeout|connection (reset|refused)|\bEOF\b/i.test(text)
 
 export const worthRetrying = (error) => {
@@ -41,7 +42,9 @@ export const readWithRetry = ({
           failure.stderr = stderrOf(error)
           throw failure
         }
-        say(`GitHub answered with ${seen}. Trying again in ${pause / 1000} seconds (try ${attempt + 1} of ${attempts}).`)
+        say(
+          `GitHub answered with ${seen}. Trying again in ${pause / 1000} seconds (try ${attempt + 1} of ${attempts}).`,
+        )
         sleep(pause)
       }
     }
