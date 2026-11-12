@@ -865,13 +865,13 @@ function landedHistory(spec: Spec): string[] {
 function replayOffline(graph: Graph, view: View, failures: string[]) {
   let replayed = 0
   let stuttered = 0
-  const unconnected: Record<string, number> = { Type: 0, Crash: 0, Wipe: 0, Undo: 0 }
+  const unconnected: Record<string, number> = { Crash: 0, Wipe: 0, Undo: 0 }
   for (const edge of graph.edges) {
     const source = graph.states.get(edge.from)
     const target = graph.states.get(edge.to)
     if (!source || !target) throw new Error(`missing offline state for ${edge.action}`)
     const where = `${readView(view, source, edge.action)} -${edge.action}-> ${readView(view, target, edge.action)}`
-    if (edge.action === "Type" || edge.action === "Crash" || edge.action === "Wipe" || edge.action === "Undo") {
+    if (edge.action === "Crash" || edge.action === "Wipe" || edge.action === "Undo") {
       unconnected[edge.action] += 1
       continue
     }
@@ -1192,9 +1192,7 @@ describe("spec replay", () => {
       undo: { stuttered: expect.any(Number) },
       structure: { replayed: expect.any(Number) },
       run: { unconnected: { Resume: expect.any(Number), Limit: expect.any(Number) } },
-      offline: {
-        unconnected: { Type: expect.any(Number), Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 },
-      },
+      offline: { unconnected: { Crash: expect.any(Number), Wipe: expect.any(Number), Undo: 0 } },
       usage: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       oauth: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       rerun: { replayed: expect.any(Number), stuttered: expect.any(Number) },
