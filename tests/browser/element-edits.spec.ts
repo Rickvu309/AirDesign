@@ -2,7 +2,6 @@ import { readFile } from "node:fs/promises"
 import { createRequire } from "node:module"
 import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
-import { stored } from "./device-store"
 
 type ZipEntry = { readonly filename: string; getData(writer: unknown): Promise<Uint8Array> }
 
@@ -49,7 +48,6 @@ test("adds a text box and deletes an element, and both survive a reload, the exp
   await expect(page.locator("[data-slide-paint] [data-selection]")).toHaveCount(1)
   await page.keyboard.type("Added text", { delay: 20 })
   await expect(added).toHaveText("Added text")
-  await stored(page, "Added text")
   await page.reload()
   await settled(page)
   await expect(texts).toHaveCount(3)
