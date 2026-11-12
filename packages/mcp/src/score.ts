@@ -1,4 +1,4 @@
-import { catalog, projectTools } from "@airdesign/catalog"
+import { catalog, projectTools, type WireRefusal } from "@airdesign/catalog"
 import type { Tab } from "@airdesign/device"
 import { elementId, history, rootElement, type ElementId, type NodeRegister, type Register } from "@airdesign/document"
 import { liveRuns, type Deck } from "@airdesign/engine"
@@ -27,25 +27,7 @@ export type AttemptCall = {
   readonly raw: unknown
 }
 
-export type Outcome =
-  | "ok"
-  | "field"
-  | "deck"
-  | "batch"
-  | "base"
-  | "payload"
-  | "stale"
-  | "person-protected"
-  | "run-fenced"
-  | "dead"
-  | "present"
-  | "limit"
-  | "no-open-tab"
-  | "tab-hidden"
-  | "tab-timeout"
-  | "tab-outdated"
-  | "device"
-  | "thrown"
+export type Outcome = "ok" | WireRefusal | "thrown"
 
 export type Reason = "ok" | "calls" | "tool" | "captured" | "touched" | "landed"
 

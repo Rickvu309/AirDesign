@@ -1,29 +1,10 @@
-import type { Refusal } from "@airdesign/document"
+import { refusals } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { editCodes, editNext, runNext, type EditCode } from "./edit-next.js"
+import { editCodes, editNext, runNext } from "./edit-next.js"
 
 describe("editNext", () => {
   it("gives every refusal that can reach an agent a sentence", () => {
-    const covered: Record<Refusal, string> = editNext
-    for (const code of Object.keys(covered)) expect(editCodes).toContain(code)
-    const reached: EditCode[] = [
-      "field",
-      "deck",
-      "batch",
-      "base",
-      "payload",
-      "stale",
-      "person-protected",
-      "run-fenced",
-      "dead",
-      "present",
-      "limit",
-      "text-from",
-      "owner",
-      "deleted",
-      "store",
-    ]
-    expect([...editCodes].sort()).toEqual([...reached].sort())
+    for (const code of refusals) expect(editCodes).toContain(code)
     for (const code of editCodes) {
       const sentence = editNext[code]
       expect(sentence.length, code).toBeGreaterThan(0)

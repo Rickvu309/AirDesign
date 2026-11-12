@@ -7,7 +7,7 @@ import {
   type AgentOp,
   type WireRefusal,
 } from "@airdesign/catalog"
-import { reach, type Tab } from "@airdesign/device"
+import { reach, type Reach, type Tab } from "@airdesign/device"
 import { call, type Caller, type Deck } from "@airdesign/engine"
 import type { CallerLog, AdmissionText } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
@@ -55,7 +55,7 @@ const nextStep = {
   "tab-timeout": "The tab did not answer. Show the AirDesign tab, then try again.",
   "tab-outdated": "Reload the AirDesign tab, then try again.",
   ready: "Capture runs in the open tab. This server did not capture a slide.",
-} as const
+} as const satisfies Record<Reach, string>
 
 const absentTab: Tab = { presence: "absent" }
 
