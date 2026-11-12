@@ -72,6 +72,13 @@ const traces: readonly (readonly Step[])[] = [
     { action: "PersonEdit", element: "y" },
     { action: "AgentEdit", element: "y" },
   ],
+  [
+    { action: "TurnStart", element: "x" },
+    { action: "Idle" },
+    { action: "SlideStart" },
+    { action: "SlideInTurn" },
+    { action: "AgentEdit", element: "y" },
+  ],
 ]
 
 function stateOf(stored: Stored | undefined, name: Name): string {
@@ -257,18 +264,6 @@ describe("a person closes an element for the rest of a turn", () => {
   it("replays traces of the spec through POST /mcp and the stored rows", async () => {
     const failures: string[] = []
     for (const [index, trace] of traces.entries()) await replay(trace, index, failures)
-    expect(failures).toEqual([])
-  }, 120_000)
-
-  it.fails("lands a slide tool call after the turn went idle with its run still live", async () => {
-    const failures: string[] = []
-    const stuck: readonly Step[] = [
-      { action: "TurnStart", element: "x" },
-      { action: "Idle" },
-      { action: "SlideStart" },
-      { action: "SlideStart" },
-    ]
-    await replay(stuck, traces.length, failures)
     expect(failures).toEqual([])
   }, 120_000)
 

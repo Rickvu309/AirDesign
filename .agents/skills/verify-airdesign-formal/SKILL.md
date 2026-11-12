@@ -50,7 +50,7 @@ Replay the counterexample against the real code, one step at a time, with the fu
 - A step the code cannot take means the model is wrong. Fix the model from the code, and say what was wrong.
 - If every step can happen, it is a bug. Name the commit that introduced it, tell the steps in the code's own words, and say the harm in one sentence. Do not weaken the property or the model until it passes, and do not fix product code in the same change.
 
-Keep a bug you do not fix in two places. In the code, add an `it.fails` test that replays the counterexample against the real functions. In the spec, move the violated property out of `<Module>.cfg` into `<Module>.known.cfg`. `check:specs` then runs the known config and fails only if it stops failing, so the fix forces both to move back. `specs/index/Index.known.cfg` is the example.
+Keep a bug you do not fix in two places. In the code, add an `it.fails` test that replays the counterexample against the real functions. In the spec, move the violated property out of `<Module>.cfg` into `<Module>.known.cfg`. `check:specs` then runs the known config and fails only if it stops failing, so the fix forces both to move back.
 
 ## 5. Change a spec with the code
 

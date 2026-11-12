@@ -1,6 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import { elementId, writeTextValue } from "@airdesign/document"
-import { indexDeck, openDeck, readDeckPage, call } from "@airdesign/engine"
+import { indexDeck, liveRuns, openDeck, readDeckPage, call } from "@airdesign/engine"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { expect, it } from "vitest"
 import { createServer, emptyLog, memoryTurns, type Session } from "./index.js"
@@ -95,5 +95,43 @@ it("refuses stale, forged, missing slides and deletion of the last slide atomica
     ["add_slide", { after: "256", layout: "256", actor: "person" }, "field"],
   ] as const) {
     expect(call(op, held.deck, held.caller, { deck: "deck", base: 0, ...input })).toEqual({ ok: false, refusal })
+  }
+})
+it("lands a slide call on a fresh base while an earlier run is still live, and stops that run", async () => {
+  const held = session()
+  const started = call(
+    "start_run",
+    held.deck,
+    { actor: "agent", runId: "old" },
+    {
+      deck: "deck",
+      runId: "old",
+      elements: [{ node: elementId("256.2") }],
+    },
+  )
+  if (!started.ok) throw new Error(started.refusal)
+  held.deck = started.deck
+  const server = createServer(held)
+  const [a, b] = InMemoryTransport.createLinkedPair()
+  const client = new Client({ name: "test", version: "1" })
+  await server.connect(b)
+  await client.connect(a)
+  try {
+    const seen = held.deck.revision
+    const stale = await client.callTool({
+      name: "airdesign_add_slide",
+      arguments: { deck: "deck", base: seen - 1, after: "256", layout: "256" },
+    })
+    expect(stale.structuredContent).toMatchObject({ ok: false, refusal: "stale" })
+    expect(held.deck).toBe(started.deck)
+    const add = await client.callTool({
+      name: "airdesign_add_slide",
+      arguments: { deck: "deck", base: seen, after: "256", layout: "256" },
+    })
+    expect(add.structuredContent).toMatchObject({ ok: true, slide: "257", runId: "run" })
+    expect(liveRuns(held.deck)).toEqual([])
+  } finally {
+    await client.close()
+    await server.close()
   }
 })
