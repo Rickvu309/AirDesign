@@ -12,7 +12,12 @@ import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { applyRoute, oneRunValue } from "./slide-route.js"
 import { shapeById } from "./shape-tree.js"
-import { browserExportFailures, paragraphExportFailures, type ParagraphExpectation } from "./browser-export.js"
+import {
+  browserExportFailures,
+  paragraphExportFailures,
+  routeExportFailures,
+  type ParagraphExpectation,
+} from "./browser-export.js"
 
 const slidePart = "ppt/slides/slide1.xml"
 const shape = "2"
@@ -383,5 +388,23 @@ describe("paragraphExportFailures", () => {
     const failures = paragraphExportFailures(original, exported, expectation)
     expect(failures.some((failure) => failure.startsWith("shape 45 paragraphs "))).toBe(true)
     expect(failures).toContain(`${doeSlide} bytes`)
+  })
+})
+
+describe("routeExportFailures", () => {
+  const routes = [
+    { name: "move", part: slidePart, shape, x: 914400, y: 1371600 },
+    { name: "resize", part: slidePart, shape, cx: 3657600, cy: 2743200 },
+  ] as const
+
+  it("passes the export the routes write and names each part that differs from it", async () => {
+    const clean = await readParts(readFileSync(fixture))
+    const exported = routes.reduce<ReadonlyMap<string, Uint8Array>>((parts, route) => applyRoute(parts, route), clean)
+    expect(routeExportFailures(clean, exported, routes)).toEqual([])
+    expect(routeExportFailures(clean, applyRoute(clean, routes[0]), routes)).toEqual([`${slidePart} bytes`])
+    expect(routeExportFailures(clean, flipByte(exported, "docProps/app.xml"), routes)).toEqual([
+      "part docProps/app.xml",
+    ])
+    expect(routeExportFailures(clean, clean, routes)).toEqual([`${slidePart} bytes`])
   })
 })

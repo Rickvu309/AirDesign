@@ -1,6 +1,7 @@
 import { deckRoutes } from "@airdesign/catalog"
 import {
   currentValue,
+  history,
   readElementId,
   slideId,
   writeTextValue,
@@ -94,7 +95,7 @@ export function valueStorable(
 
 export function shownValue(register: Register | null, id: ElementId, file: string): string {
   const body = register?.elements[id]
-  return body === undefined ? file : currentValue(body)
+  return body === undefined || history(body).length === 0 ? file : currentValue(body)
 }
 
 function paint(

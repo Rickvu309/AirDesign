@@ -1,5 +1,6 @@
-import { version, type Command, type NodeRegister, type Register } from "./decide.js"
-import { rootElement } from "./element-id.js"
+import { decide, openRegister, version, type Command, type NodeRegister, type Register } from "./decide.js"
+import { rootElement, type ElementId } from "./element-id.js"
+import { storedValue } from "./value.js"
 
 export function copyNode(node: NodeRegister): NodeRegister {
   return {
@@ -7,8 +8,8 @@ export function copyNode(node: NodeRegister): NodeRegister {
     floor: node.floor,
     landed: node.landed.map((row) =>
       row.runId === undefined
-        ? { actor: row.actor, value: row.value, visible: row.visible }
-        : { actor: row.actor, value: row.value, visible: row.visible, runId: row.runId },
+        ? { actor: row.actor, ...storedValue(row), visible: row.visible }
+        : { actor: row.actor, ...storedValue(row), visible: row.visible, runId: row.runId },
     ),
     version: version(node),
     phase: node.phase,
@@ -70,6 +71,14 @@ export function freezeRegister(register: Register): Register {
     Object.freeze(frozen.readNodes)
   }
   return Object.freeze(frozen)
+}
+
+export function walkStart(target: ElementId | null): Register {
+  const opened = openRegister("floor", "slide")
+  if (target === null) return freezeRegister(opened)
+  const added = decide(opened, { command: "add", node: target, floor: "floor", route: "part" })
+  if (added.decision !== "apply") throw new Error("add")
+  return freezeRegister(added.register)
 }
 
 export function walkRegisters(input: {

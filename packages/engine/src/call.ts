@@ -2,8 +2,10 @@ import {
   bytesOf,
   decide,
   storedElements,
+  storedValue,
   limits,
   openRegister,
+  valueBytes,
   type Command,
   type Decision,
   type ElementId,
@@ -40,9 +42,7 @@ type StartResult =
   | { readonly ok: true; readonly deck: Deck; readonly key: string; readonly runId: string }
   | { readonly ok: false; readonly refusal: CallRefusal }
 
-type Touched = WireRunElement & {
-  readonly value: string
-}
+type Touched = WireEdit | WireChange
 
 export function openDeck(id: DeckId): Deck {
   return { id, revision: 0, register: openRegister("", "") }
@@ -53,11 +53,11 @@ function refused(refusal: CallRefusal): { readonly ok: false; readonly refusal: 
 }
 
 function personCommand(edit: WireEdit): Command {
-  return { command: "person", value: edit.value, node: edit.node }
+  return { command: "person", ...storedValue(edit), node: edit.node }
 }
 
 function agentCommand(edit: WireChange, runId: string): Command {
-  return { command: "agent", runId, readAt: edit.readAt, value: edit.value, node: edit.node }
+  return { command: "agent", runId, readAt: edit.readAt, ...storedValue(edit), node: edit.node }
 }
 
 function openedRegister(
@@ -90,12 +90,13 @@ function applyEdits<Edit extends Touched>(
 ): CallResult {
   let register = deck.register
   for (const edit of edits) {
-    if (bytesOf(edit.value) > limits.valueBytes) return refused("limit")
+    const bytes = valueBytes(edit)
+    if (bytes > limits.valueBytes) return refused("limit")
     if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
     const opened = openedRegister(register, edit)
     if (!opened.ok) return refused(opened.refusal)
     register = opened.register
-    const next = register.bytes + bytesOf(edit.value)
+    const next = register.bytes + bytes
     if (next >= limits.bytes) return refused("limit")
     const decision = decide(register, commandFor(edit))
     if (decision.decision === "refuse") return refused(decision.code)

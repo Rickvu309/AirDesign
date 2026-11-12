@@ -27,6 +27,7 @@ export function textProblem(
   changes: readonly WireChange[],
 ): TextProblem | undefined {
   for (const change of changes) {
+    if (change.property === "box") continue
     const floor = floors.get(change.node)
     if (floor === undefined) continue
     const file = readTextValue(floor)

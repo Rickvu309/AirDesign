@@ -1,4 +1,4 @@
-import { bytesOf, elementPattern, limits, readElementId, type ElementId } from "@airdesign/document"
+import { bytesOf, limits, readElementId, type ElementId } from "@airdesign/document"
 import * as z from "zod/v4"
 
 import { readDeckName } from "./deck-name.js"
@@ -7,34 +7,6 @@ import { storableText, unstorable } from "./storable-text.js"
 declare const deckIdBrand: unique symbol
 
 export type DeckId = string & { readonly [deckIdBrand]: true }
-
-export type WireEdit = {
-  readonly value: string
-  readonly node: ElementId
-  readonly floor?: string
-  readonly readAt?: never
-  readonly actor?: never
-  readonly command?: never
-  readonly principal?: never
-  readonly person?: never
-  readonly agent?: never
-  readonly surface?: never
-  readonly onBehalfOf?: never
-}
-
-export type WireChange = {
-  readonly value: string
-  readonly node: ElementId
-  readonly readAt: number
-  readonly floor?: string
-  readonly actor?: never
-  readonly command?: never
-  readonly principal?: never
-  readonly person?: never
-  readonly agent?: never
-  readonly surface?: never
-  readonly onBehalfOf?: never
-}
 
 export type WireRunElement = {
   readonly node: ElementId
@@ -46,7 +18,7 @@ export type LiveKey = {
   readonly revision: number
 }
 
-const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
+export const deckPattern = /^[A-Za-z0-9_-]{1,64}$/
 const revisionPattern = /^(?:0|[1-9][0-9]*)$/
 const redirectCap = 5
 const emailCap = 254
@@ -60,34 +32,34 @@ const portCap = 65_535
 
 export const sessionCookieName = "airdesign.session"
 
-type FieldRefusal = { ok: false; refusal: "field" }
-type DeckRefusal = { ok: false; refusal: "deck" }
-type BatchRefusal = { ok: false; refusal: "batch" }
+export type FieldRefusal = { ok: false; refusal: "field" }
+export type DeckRefusal = { ok: false; refusal: "deck" }
+export type BatchRefusal = { ok: false; refusal: "batch" }
 type CursorRefusal = { ok: false; refusal: "cursor" }
-type BaseRefusal = { ok: false; refusal: "base" }
+export type BaseRefusal = { ok: false; refusal: "base" }
 type PayloadRefusal = { ok: false; refusal: "payload" }
 type ResourceRefusal = { ok: false; refusal: "resource" }
 type ChallengeRefusal = { ok: false; refusal: "challenge" }
 type FormRefusal = { ok: false; refusal: "invalid_request" }
 type GrantRefusal = { ok: false; refusal: "unsupported_grant_type" }
 
-const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
+export const fieldRefusal: FieldRefusal = { ok: false, refusal: "field" }
 const deckRefusal: DeckRefusal = { ok: false, refusal: "deck" }
-const batchRefusal: BatchRefusal = { ok: false, refusal: "batch" }
+export const batchRefusal: BatchRefusal = { ok: false, refusal: "batch" }
 const cursorRefusal: CursorRefusal = { ok: false, refusal: "cursor" }
-const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
+export const baseRefusal: BaseRefusal = { ok: false, refusal: "base" }
 const payloadRefusal: PayloadRefusal = { ok: false, refusal: "payload" }
 const resourceRefusal: ResourceRefusal = { ok: false, refusal: "resource" }
 const challengeRefusal: ChallengeRefusal = { ok: false, refusal: "challenge" }
 const formRefusal: FormRefusal = { ok: false, refusal: "invalid_request" }
 const grantRefusal: GrantRefusal = { ok: false, refusal: "unsupported_grant_type" }
 
-function recordOf(raw: unknown): Record<string, unknown> | undefined {
+export function recordOf(raw: unknown): Record<string, unknown> | undefined {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined
   return raw as Record<string, unknown>
 }
 
-function knownKeys(body: Record<string, unknown>, keys: readonly string[]): boolean {
+export function knownKeys(body: Record<string, unknown>, keys: readonly string[]): boolean {
   for (const key of Object.keys(body)) {
     if (!keys.includes(key)) return false
   }
@@ -99,7 +71,7 @@ function whole(raw: unknown): number | undefined {
   return raw
 }
 
-function readFloor(body: Record<string, unknown>): string | undefined | null {
+export function readFloor(body: Record<string, unknown>): string | undefined | null {
   if (!Object.hasOwn(body, "floor")) return undefined
   if (!storableText(body.floor)) return null
   return body.floor
@@ -108,47 +80,6 @@ function readFloor(body: Record<string, unknown>): string | undefined | null {
 export function readDeckId(raw: unknown): { ok: true; deck: DeckId } | DeckRefusal {
   if (typeof raw !== "string" || !deckPattern.test(raw)) return deckRefusal
   return { ok: true, deck: raw as DeckId }
-}
-
-export function readEdit(raw: unknown): { ok: true; edit: WireEdit } | FieldRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["value", "node", "floor"]) || !storableText(body.value)) {
-    return fieldRefusal
-  }
-  const node = readElementId(body.node)
-  if (node === undefined) return fieldRefusal
-  const floor = readFloor(body)
-  if (floor === null) return fieldRefusal
-  if (floor === undefined) return { ok: true, edit: { value: body.value, node } }
-  return { ok: true, edit: { value: body.value, node, floor } }
-}
-
-function readEditBatch(raw: unknown): { ok: true; edits: readonly WireEdit[] } | FieldRefusal | BatchRefusal {
-  if (!Array.isArray(raw) || raw.length < 1 || raw.length > limits.batch) return batchRefusal
-  const edits: WireEdit[] = []
-  for (const item of raw) {
-    const edit = readEdit(item)
-    if (!edit.ok) return fieldRefusal
-    edits.push(edit.edit)
-  }
-  return { ok: true, edits }
-}
-
-export function readCommit(
-  raw: unknown,
-): { ok: true; deck: DeckId; batch: readonly WireEdit[]; once?: string } | FieldRefusal | DeckRefusal | BatchRefusal {
-  const body = recordOf(raw)
-  if (body === undefined || !knownKeys(body, ["deck", "batch", "once"]) || !Object.hasOwn(body, "deck")) {
-    return fieldRefusal
-  }
-  const deck = readDeckId(body.deck)
-  if (!deck.ok) return deckRefusal
-  if (!Object.hasOwn(body, "batch")) return batchRefusal
-  const batch = readEditBatch(body.batch)
-  if (!batch.ok) return batch
-  if (!Object.hasOwn(body, "once")) return { ok: true, deck: deck.deck, batch: batch.edits }
-  if (typeof body.once !== "string" || !deckPattern.test(body.once)) return fieldRefusal
-  return { ok: true, deck: deck.deck, batch: batch.edits, once: body.once }
 }
 
 export function readWatch(
@@ -165,33 +96,18 @@ export function readWatch(
   return { ok: true, deck: deck.deck, cursor }
 }
 
-const deckInput = z
+export const deckInput = z
   .string()
   .regex(deckPattern)
   .transform((value) => value as DeckId)
   .describe("Deck id.")
-const wholeInput = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
-const textInput = z.string().regex(new RegExp(`^(?![\\s\\S]*(?:${unstorable.source}))[\\s\\S]*$`))
-const changeInput = z.strictObject({
-  value: textInput.describe(
-    "Text to write. For an element whose file text is a JSON text value, send a JSON text value: [{from, runs: [{from, text}]}]. Each from is an index the file has, and a run from of -1 is a new run.",
-  ),
-  node: z
-    .string()
-    .regex(elementPattern)
-    .transform((value) => value as ElementId)
-    .describe("Element id, <slide>.<shape>, such as 258.7."),
-  readAt: wholeInput.describe(
-    "Version of that element from your last read. Every answer carries each named element's value and version. 0 for an element nobody has changed.",
-  ),
-  floor: textInput.exactOptional(),
-})
-
+export const wholeInput = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER)
+export const textInput = z.string().regex(new RegExp(`^(?![\\s\\S]*(?:${unstorable.source}))[\\s\\S]*$`))
 export type WireReader = ((raw: unknown) => { readonly ok: boolean }) & {
   readonly input: z.ZodType
 }
 
-function readInput<Shape extends z.ZodRawShape, Refusal extends { ok: false; refusal: string }>(
+export function readInput<Shape extends z.ZodRawShape, Refusal extends { ok: false; refusal: string }>(
   input: z.ZodObject<Shape>,
   refuse: (issues: readonly z.core.$ZodIssue[], raw: unknown) => Refusal,
 ) {
@@ -205,7 +121,7 @@ function readInput<Shape extends z.ZodRawShape, Refusal extends { ok: false; ref
   )
 }
 
-function inputRefusal(issues: readonly z.core.$ZodIssue[], raw: unknown): FieldRefusal | DeckRefusal {
+export function inputRefusal(issues: readonly z.core.$ZodIssue[], raw: unknown): FieldRefusal | DeckRefusal {
   if (issues.some((issue) => issue.path.length === 0)) return fieldRefusal
   const deck = issues.find((issue) => issue.path[0] === "deck")
   if (deck === undefined) return fieldRefusal
@@ -213,20 +129,6 @@ function inputRefusal(issues: readonly z.core.$ZodIssue[], raw: unknown): FieldR
   if (body === undefined || !Object.hasOwn(body, "deck")) return fieldRefusal
   return deckRefusal
 }
-
-export const readAgentEdit = readInput(
-  z.strictObject({
-    deck: deckInput,
-    base: wholeInput.describe("Revision the edit was read from."),
-    changes: z.array(changeInput).min(1).max(limits.batch).describe("Edits to land."),
-  }),
-  (issues, raw): FieldRefusal | DeckRefusal | BaseRefusal | BatchRefusal => {
-    if (issues.some((issue) => issue.path.length === 0 || issue.path[0] === "deck")) return inputRefusal(issues, raw)
-    if (issues.some((issue) => issue.path[0] === "base")) return baseRefusal
-    if (issues.some((issue) => issue.path.length === 1 && issue.path[0] === "changes")) return batchRefusal
-    return fieldRefusal
-  },
-)
 
 function readRunId(raw: unknown): string | undefined {
   if (typeof raw !== "string" || !deckPattern.test(raw)) return undefined

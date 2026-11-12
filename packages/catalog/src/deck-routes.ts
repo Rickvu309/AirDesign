@@ -1,15 +1,7 @@
 import { unreachable } from "@airdesign/device"
 import { foldRegister, refusals, type Register, type StoredRegister } from "@airdesign/document"
-import {
-  readCapture,
-  readCommit,
-  readDecks,
-  readNoFields,
-  readOriginalUpload,
-  readRename,
-  readWatch,
-  type DeckId,
-} from "./wire.js"
+import { readCommit } from "./edit-wire.js"
+import { readCapture, readDecks, readNoFields, readOriginalUpload, readRename, readWatch, type DeckId } from "./wire.js"
 import { isRegister } from "./register-answer.js"
 
 const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload"] as const

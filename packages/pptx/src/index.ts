@@ -1,4 +1,4 @@
-export { browserExportFailures, paragraphExportFailures } from "./browser-export.js"
+export { browserExportFailures, paragraphExportFailures, routeExportFailures } from "./browser-export.js"
 export { branchOrderErrors } from "./child-order.js"
 export { exportPackage } from "./export-package.js"
 export { prepareMarkup } from "./element-span.js"

@@ -1,24 +1,22 @@
 import type { DeckId } from "@airdesign/catalog"
-import { bytesOf, limits, type ElementId } from "@airdesign/document"
+import { bytesOf, limits, storedValue, type ElementId, type Value } from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
 
-export type ConfirmedRow = {
+export type ConfirmedRow = Value & {
   readonly kind: "confirmed"
   readonly deck: DeckId
   readonly revision: number
-  readonly value: string
   readonly node?: ElementId
 }
 
-export type PendingRow = {
+export type PendingRow = Value & {
   readonly kind: "pending"
   readonly once?: string
   readonly deck: DeckId
   readonly order: number
   readonly base: number
-  readonly value: string
   readonly node?: ElementId
   readonly floor?: string
 }
@@ -34,21 +32,21 @@ export function rowBytes(row: StoredRow): number {
   return bytesOf(JSON.stringify(row))
 }
 
-export function confirmedRow(deck: DeckId, revision: number, value: string, node?: ElementId): ConfirmedRow {
-  if (node === undefined) return { kind: "confirmed", deck, revision, value }
-  return { kind: "confirmed", deck, revision, value, node }
+export function confirmedRow(deck: DeckId, revision: number, edit: Value, node?: ElementId): ConfirmedRow {
+  if (node === undefined) return { kind: "confirmed", deck, revision, ...storedValue(edit) }
+  return { kind: "confirmed", deck, revision, ...storedValue(edit), node }
 }
 
 export function pendingRow(
   deck: DeckId,
   order: number,
   base: number,
-  value: string,
+  edit: Value,
   node: ElementId,
   floor: string | undefined,
 ): PendingRow {
-  if (floor === undefined) return { kind: "pending", deck, order, base, value, node }
-  return { kind: "pending", deck, order, base, value, node, floor }
+  if (floor === undefined) return { kind: "pending", deck, order, base, ...storedValue(edit), node }
+  return { kind: "pending", deck, order, base, ...storedValue(edit), node, floor }
 }
 
 export function isConfirmed(row: StoredRow): row is ConfirmedRow {
@@ -62,24 +60,29 @@ export function isPending(row: StoredRow): row is PendingRow {
 export function fitConfirmed(
   deck: DeckId,
   revision: number,
-  value: string,
+  edit: Value,
   node: ElementId | undefined,
   into: ConfirmedRow[],
 ): number {
+  if (edit.property === "box") {
+    into.push(confirmedRow(deck, revision, edit, node))
+    return revision + 1
+  }
+  const value = edit.value
   let offset = 0
   let part = 0
   if (value.length === 0) {
-    const row = confirmedRow(deck, revision, "", node)
+    const row = confirmedRow(deck, revision, { value: "" }, node)
     if (rowBytes(row) >= limits.row) return revision
     into.push(row)
     return revision + 1
   }
   while (offset < value.length) {
     let count = value.length - offset
-    let row = confirmedRow(deck, revision, piece(part, value, offset, count), node)
+    let row = confirmedRow(deck, revision, { value: piece(part, value, offset, count) }, node)
     while (rowBytes(row) >= limits.row && count > 1) {
       count = Math.ceil(count / 2)
-      row = confirmedRow(deck, revision, piece(part, value, offset, count), node)
+      row = confirmedRow(deck, revision, { value: piece(part, value, offset, count) }, node)
     }
     if (rowBytes(row) >= limits.row) return revision
     into.push(row)
@@ -90,17 +93,17 @@ export function fitConfirmed(
   return revision
 }
 
-export type LogicalValue = { readonly value: string; readonly node?: ElementId }
+export type LogicalValue = Value & { readonly node?: ElementId }
 
 export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
   const values: LogicalValue[] = []
   for (const row of rows) {
     const last = values.at(-1)
-    if (row.value.startsWith("\u0001") && last !== undefined) {
+    if (row.property !== "box" && row.value.startsWith("\u0001") && last !== undefined && last.property !== "box") {
       values[values.length - 1] = { ...last, value: `${last.value}${row.value.slice(1)}` }
       continue
     }
-    values.push(row.node === undefined ? { value: row.value } : { value: row.value, node: row.node })
+    values.push(row.node === undefined ? storedValue(row) : { ...storedValue(row), node: row.node })
   }
   return values
 }

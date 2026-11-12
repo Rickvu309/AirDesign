@@ -1,3 +1,4 @@
+import type { WireEdit } from "@airdesign/catalog"
 import { elementId } from "@airdesign/document"
 import { memoryRemote, type OpenResult, type Remote } from "./index.js"
 
@@ -202,9 +203,9 @@ export function installParts(): Map<string, Uint8Array> {
   return files
 }
 
-export function countingRemote(): { remote: Remote; commits: string[][] } {
+export function countingRemote(): { remote: Remote; commits: WireEdit["value"][][] } {
   const remote = memoryRemote()
-  const commits: string[][] = []
+  const commits: WireEdit["value"][][] = []
   return {
     commits,
     remote: {

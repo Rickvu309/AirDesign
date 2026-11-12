@@ -112,9 +112,11 @@ describe("createServer", () => {
       const edit = tools.find((tool) => tool.name === "airdesign_edit_deck")
       if (edit === undefined) throw new Error("missing edit")
       const schema = edit.inputSchema as {
-        properties?: { changes?: { items?: { required?: readonly string[] } } }
+        properties?: { changes?: { items?: { anyOf?: readonly { required?: readonly string[] }[] } } }
       }
-      expect(schema.properties?.changes?.items?.required).toEqual(expect.arrayContaining(["node", "readAt"]))
+      const changes = schema.properties?.changes?.items?.anyOf ?? []
+      expect(changes).toHaveLength(2)
+      for (const change of changes) expect(change.required).toEqual(expect.arrayContaining(["node", "readAt"]))
       const advertised = tools.map((tool) => ({
         name: tool.name,
         description: tool.description,

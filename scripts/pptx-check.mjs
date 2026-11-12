@@ -6,6 +6,9 @@ import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import {
+  boxExportLines,
+  boxExportName,
+  browserSpecs,
   freshExports,
   judgedExportNames,
   paragraphExportLines,
@@ -57,6 +60,7 @@ const fixtures = path.join(root, "scripts/pptx-fixtures")
 const browserExportName = "exported-deck.pptx"
 const browserExportPath = path.join(root, "tests/browser", browserExportName)
 const paragraphsExportPath = path.join(root, "tests/browser", paragraphsExportName)
+const boxExportPath = path.join(root, "tests/browser", boxExportName)
 const browserShape = "2"
 const browserText = "Hello!"
 const inputs = corpusInputs(root)
@@ -94,7 +98,8 @@ await run("pnpm", ["--filter", "@airdesign/pptx", "build"])
 const browserSpec = freshExports({
   deck: browserExportPath,
   paragraphs: paragraphsExportPath,
-  run: () => run("pnpm", ["exec", "playwright", "test", "tests/browser/thin-deck.spec.ts"]),
+  box: boxExportPath,
+  run: () => run("pnpm", ["exec", "playwright", "test", ...browserSpecs]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
 const require = createRequire(path.join(root, "packages/pptx/package.json"))
@@ -111,12 +116,12 @@ cases.push({
   pages: true,
 })
 const names = [...new Set(cases.flatMap((row) => [row.before, row.after]))]
-const fixturePath = (name) =>
-  name === browserExportName
-    ? browserExportPath
-    : name === paragraphsExportName
-      ? paragraphsExportPath
-      : path.join(root, decision.deckPath(name))
+const browserExports = new Map([
+  [browserExportName, browserExportPath],
+  [paragraphsExportName, paragraphsExportPath],
+  [boxExportName, boxExportPath],
+])
+const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
 const renderNext = async () => {
   for (let render = waiting.shift(); render !== undefined; render = waiting.shift()) {
@@ -284,6 +289,10 @@ if (!spec.ok) {
     console.log(failure)
   }
   for (const line of paragraphExportLines({ pptx, parts, lists, ids, orders })) {
+    failed += 1
+    console.log(line)
+  }
+  for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {
     failed += 1
     console.log(line)
   }

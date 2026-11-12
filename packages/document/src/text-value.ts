@@ -1,29 +1,11 @@
+import { onlyKeys, record } from "./plain-object.js"
+
 export type TextRun = { readonly from: number; readonly text: string }
 export type TextParagraph = { readonly from: number; readonly runs: readonly TextRun[] }
 export type TextValue = readonly TextParagraph[]
 
 const paragraphKeys = ["from", "runs"]
 const runKeys = ["from", "text"]
-
-function record(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null
-  }
-  return value as Record<string, unknown>
-}
-
-function onlyKeys(value: Record<string, unknown>, keys: readonly string[]): boolean {
-  const own = Object.keys(value)
-  if (own.length !== keys.length) {
-    return false
-  }
-  for (const key of keys) {
-    if (!own.includes(key)) {
-      return false
-    }
-  }
-  return true
-}
 
 function integerAtLeast(value: unknown, floor: number): number | null {
   if (typeof value !== "number" || !Number.isInteger(value) || value < floor) {

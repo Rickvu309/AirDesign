@@ -180,6 +180,7 @@ for (const follows of [
   "validatorFiles({",
   "for (const name of judgedExportNames(spec)) {",
   "for (const line of paragraphExportLines({ pptx, parts, lists, ids, orders })) {",
+  "for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {",
 ]) {
   if (!checkSource.includes(follows)) throw new Error(`pptx-check.mjs does not follow the decision: ${follows}`)
 }

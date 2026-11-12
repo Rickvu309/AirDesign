@@ -3,6 +3,7 @@ import { decide, decideUndo, openRegister, type NodeRegister, type Register } fr
 import { legacyElement, type ElementId } from "./element-id.js"
 import { bytesOf, limits, overLimit } from "./limits.js"
 import { openedBody, withOpened } from "./decide.walk.js"
+import { storedValue } from "./value.js"
 
 type InsideRow = {
   readonly decision: "inside"
@@ -67,7 +68,7 @@ function copyElements(elements: Register["elements"]): Register["elements"] {
       floor: body.floor,
       landed: body.landed.map((row) => ({
         actor: row.actor,
-        value: row.value,
+        ...storedValue(row),
         visible: row.visible,
       })),
       phase: body.phase,
