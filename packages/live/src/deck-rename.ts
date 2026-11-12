@@ -5,7 +5,9 @@ import { readSlot, writeSlot } from "./store.js"
 
 const key = (deck: string) => `${deck}\u0003name`
 
-export async function flushRename(deck: string): Promise<{ readonly ok: boolean }> {
+const sending = new Map<string, Promise<{ readonly ok: boolean }>>()
+
+async function send(deck: string): Promise<{ readonly ok: boolean }> {
   try {
     const name = await readSlot(key(deck))
     if (typeof name !== "string") return { ok: true }
@@ -18,9 +20,19 @@ export async function flushRename(deck: string): Promise<{ readonly ok: boolean 
   }
 }
 
+export function flushRename(deck: string): Promise<{ readonly ok: boolean }> {
+  const run = (sending.get(deck) ?? Promise.resolve({ ok: true })).then(() => send(deck))
+  sending.set(deck, run)
+  return run
+}
+
+export async function queueRename(deck: string, name: string): Promise<void> {
+  await writeSlot(key(deck), name)
+}
+
 export async function renameDeck(deck: string, name: string): Promise<{ readonly ok: boolean }> {
   const renamed = await renameParts(deck, name)
   if (!renamed.ok) return renamed
-  await writeSlot(key(deck), name)
+  await queueRename(deck, name)
   return flushRename(deck)
 }
