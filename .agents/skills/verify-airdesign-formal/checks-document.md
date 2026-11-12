@@ -130,4 +130,4 @@ Bounds: four slides in two sections split anywhere, logs of up to six commands, 
 
 Known bug, from `43f2f2d1`: a moved slide joins the section of the slide before it, and the undo of a move is another move. A person moves the first slide of a section to the end and undoes it; the slide comes back after the last slide of the earlier section and stays in that section. Harm: a person who undid every edit exports a deck whose section list moved a slide into another section. Run Undo of an agent's move does the same. Reproduced by the `it.fails` test in the same file; the undo property leaves moves out until the fix moves them back in.
 
-Sync: `0d9ce090ff00d15cfc69cccdb6ab5c2fc596cedc`.
+Sync: `aea28fbf04d9ca40d9d566f02a0449e62f95ad44`.

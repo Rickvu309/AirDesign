@@ -110,8 +110,9 @@ AgentLoadsTurn ==
 \* running is refused run-fenced. A run that holds no element passes, so r with no element
 \* is never fenced. Otherwise the slide is added under the turn's run, or under the
 \* caller's run u when no turn is live. A refused call ends and saves no turn.
-\* slideTool with no live turn and a fresh base first stops every live run. That needs a
-\* running element with no live turn, which NoTurnWhileRunning says this model never holds.
+\* slideTool with no live turn joins a live run the turn row does not name (heldRun), or
+\* else, on a fresh base, stops every live run. Both need a running element with no live
+\* turn, which NoTurnWhileRunning says this model never holds.
 SlideRunOf == IF aTurn = "none" THEN "u" ELSE aTurn
 
 Fenced == SlideRunOf = "r" /\ element = "stopped"
