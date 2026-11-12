@@ -235,10 +235,13 @@ export function connect(remote: Remote, options: Options = {}) {
   async function sendRows(deck: DeckId): Promise<CommitResult> {
     const indexed = await sendIndex(remote, deck, () => openOnce(deck))
     if (indexed !== null && !indexed.ok) return indexed
-    const { confirmed, pending } = split(await readDeck(deck))
-    if (pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
+    const rows = split(await readDeck(deck))
+    if (rows.pending.length === 0) return indexed ?? { ok: false, refusal: "batch" }
     const opened = await openOnce(deck)
     if (!opened.ok) return opened
+    const adopting = !known.has(deck)
+    if (adopting) await adopt(deck, opened)
+    const { confirmed, pending } = adopting ? split(await readDeck(deck)) : rows
     const sending = unsent(pending, 0)
     let revision = confirmed.reduce((max, row) => Math.max(max, row.revision + 1), 0)
     let result: CommitResult = { ok: false, refusal: "batch" }
@@ -291,6 +294,11 @@ export function connect(remote: Remote, options: Options = {}) {
   async function refresh(deck: DeckId): Promise<OpenResult> {
     const opened = await remote.open({ deck })
     if (!opened.ok) return opened
+    await adopt(deck, opened)
+    return opened
+  }
+
+  async function adopt(deck: DeckId, opened: Extract<OpenResult, { ok: true }>): Promise<void> {
     const confirmed = rowsFromRegister(deck, opened.register)
     const existing = await readRows(deck)
     await writeRows(
@@ -299,7 +307,13 @@ export function connect(remote: Remote, options: Options = {}) {
     )
     openingDecks.set(deck, Promise.resolve(opened))
     known.set(deck, opened.revision)
-    return opened
+  }
+
+  async function adoptOpening(deck: DeckId): Promise<void> {
+    const opening = known.has(deck) ? undefined : openingDecks.get(deck)
+    if (opening === undefined) return
+    const opened = await opening
+    if (opened.ok && !known.has(deck)) await adopt(deck, opened)
   }
 
   const recovered = (deck: DeckId) => recoverUnsaved(shelf, deck, (entry) => replayUnsaved(deck, entry))
@@ -436,7 +450,11 @@ export function connect(remote: Remote, options: Options = {}) {
       const parsed = readDeckId(deck)
       if (!parsed.ok) return parsed
       const rows = await readRecovered(parsed.deck)
-      if (rows.length > 0) return { ok: true, ...view(parsed.deck, rows) }
+      if (rows.length > 0) {
+        if (known.has(parsed.deck) || !openingDecks.has(parsed.deck)) return { ok: true, ...view(parsed.deck, rows) }
+        await serial(parsed.deck, () => adoptOpening(parsed.deck))
+        return { ok: true, ...view(parsed.deck, await readRecovered(parsed.deck)) }
+      }
       const opened = await openOnce(parsed.deck)
       if (!opened.ok) return opened
       const confirmed = rowsFromRegister(parsed.deck, opened.register)

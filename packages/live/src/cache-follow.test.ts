@@ -61,6 +61,72 @@ it("does not open the deck again for this device's own commit", async () => {
   expect(calls).toEqual(["open", "commit"])
 })
 
+it("opens the deck once for a visit whose first edit lands before the open is read", async () => {
+  const { remote, calls } = traced()
+  const cache = connect(remote)
+  await cache.open("deck")
+  await cache.enqueue("deck", "Mine", node, "")
+  expect(await shown(cache)).toBe("Mine")
+  const following = cache.follow("deck")
+  expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+  expect(await following).toEqual({ ok: true, deck: "deck", revision: 1, changed: false })
+  expect(calls).toEqual(["open", "commit"])
+})
+
+it("waits for another writer after this device's first commit instead of opening the deck again", async () => {
+  const { real, remote, calls } = traced()
+  const cache = connect(remote)
+  await cache.open("deck")
+  await cache.enqueue("deck", "Mine", node, "")
+  expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 1 })
+  let answered = false
+  const following = cache.follow("deck").then((result) => {
+    answered = true
+    return result
+  })
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  expect(answered).toBe(false)
+  expect(calls).toEqual(["open", "commit"])
+  await real.commit({ deck: "deck", batch: [{ node: other, value: "Agent" }] })
+  expect(await following).toEqual({ ok: true, deck: "deck", revision: 2, changed: true })
+  expect([await shown(cache), await shown(cache, other)]).toEqual(["Mine", "Agent"])
+})
+
+it("brings another writer's rows from the open into a first commit that starts from local rows", async () => {
+  const { real, remote, calls } = traced()
+  const cache = connect(remote)
+  await real.open({ deck: "deck" })
+  await real.commit({ deck: "deck", batch: [{ node: other, value: "Agent" }] })
+  await cache.open("deck")
+  await cache.enqueue("deck", "Mine", node, "")
+  expect(await cache.flush("deck")).toMatchObject({ ok: true, revision: 2 })
+  expect([await shown(cache), await shown(cache, other)]).toEqual(["Mine", "Agent"])
+  expect(calls).toEqual(["open", "commit"])
+})
+
+it("shows a reopened visit what the server holds from the open it already made, and opens once", async () => {
+  const { real, remote, calls } = traced()
+  const first = connect(remote)
+  await first.openDeck("deck")
+  await first.enqueue("deck", "Mine", node, "")
+  await first.flush("deck")
+  await real.commit({ deck: "deck", batch: [{ node: other, value: "Agent" }] })
+  vi.resetModules()
+  const reopened = (await import("./index.js")).connect(remote)
+  expect(await reopened.open("deck")).toEqual({ ok: true })
+  expect([await shown(reopened), await shown(reopened, other)]).toEqual(["Mine", "Agent"])
+  let answered = false
+  const following = reopened.follow("deck").then((result) => {
+    answered = true
+    return result
+  })
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  expect(answered).toBe(false)
+  expect(calls).toEqual(["open", "commit", "open"])
+  await real.commit({ deck: "deck", batch: [{ node: other, value: "Later" }] })
+  expect(await following).toMatchObject({ ok: true, changed: true })
+})
+
 it("opens the deck again when another writer's revision lands between two of this device's", async () => {
   const { real, remote, calls } = traced()
   const cache = connect(remote)
