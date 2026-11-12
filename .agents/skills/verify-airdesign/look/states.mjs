@@ -19,7 +19,7 @@ export async function openDeck(page, file, slide) {
 async function tableCells(kit) {
   await kit.signIn()
   await kit.page.goto("/")
-  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx"), 10)
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/corpus/nasa-roman-thermal-runtime.pptx"), 9)
   await expect(kit.page.locator("[data-slide-paint] [data-canvas-table]")).toHaveCount(1)
 }
 

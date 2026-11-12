@@ -128,10 +128,10 @@ test("an empty placeholder on a blank slide shows that it is there", () => {
   expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
 })
 
-test.fail("a table's text and the legend under it are never painted over each other", () => {
+test("a table's text and shapes under it are never painted over each other", () => {
   expect(
     seen(["table-cells"], "overflowing-text"),
-    "the grown table and the legend are painted over each other",
+    "a table's text and shapes under it are painted over each other",
   ).toEqual([])
 })
 
