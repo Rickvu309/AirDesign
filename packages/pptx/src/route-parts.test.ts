@@ -1,10 +1,12 @@
+import { commonPrefix } from "./byte-prefix.js"
 import { beforeAll, describe, expect, it } from "vitest"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { readParts } from "./package-container.js"
 import { partTouch, routeOperations, routeRuns, touchMatches, type RouteRun } from "./route-parts.js"
 import { danglingShapeReferences, newDanglingShapeReferences } from "./shape-id.js"
-import { applyRoute, shapeById, type SlideRoute } from "./slide-route.js"
+import { applyRoute, type SlideRoute } from "./slide-route.js"
+import { shapeById } from "./shape-tree.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText, type MarkupChildren } from "./text-value-route.js"
 
@@ -22,12 +24,6 @@ const fs = process.getBuiltinModule("node:fs")
 function sameBytes(left: Uint8Array | undefined, right: Uint8Array | undefined): boolean {
   if (left === undefined || right === undefined) return left === right
   return left.length === right.length && left.every((byte, index) => byte === right[index])
-}
-
-function commonPrefix(left: Uint8Array, right: Uint8Array): number {
-  let at = 0
-  while (at < left.length && at < right.length && left[at] === right[at]) at += 1
-  return at
 }
 
 function text(value: string): Uint8Array {

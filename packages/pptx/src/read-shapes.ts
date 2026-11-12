@@ -1,10 +1,9 @@
+import { isShapeTag, type ShapeKind } from "./shape-tree.js"
 import type { TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
 import { markupChildren, shapeTextValue } from "./text-value-route.js"
-
-export type ShapeKind = "p:sp" | "p:pic" | "p:graphicFrame" | "p:cxnSp" | "p:grpSp"
 
 export type ReadShape = {
   readonly slide: string
@@ -16,7 +15,6 @@ export type ReadShape = {
   readonly locked: boolean
 }
 
-const kinds = new Set<string>(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
 const fallbackKind = "mc:Fallback"
 
@@ -46,7 +44,7 @@ const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
     const shape = parent >= 0 ? (below[parent] ?? -1) : -1
     const covered = parent >= 0 ? (hidden[parent] ?? 0) : 0
     fallback[element.index] = covered
-    below[element.index] = kinds.has(element.kind) ? element.index : shape
+    below[element.index] = isShapeTag(element.kind) ? element.index : shape
     hidden[element.index] = element.kind === fallbackKind ? 1 : covered
     if (shape < 0) continue
     let found = parts.get(shape)
@@ -92,7 +90,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     const kept: ReadShape[] = []
     const { parts: found, fallback } = slideShapes(elements)
     for (const shape of elements) {
-      if (!kinds.has(shape.kind)) continue
+      if (!isShapeTag(shape.kind)) continue
       const { id = null, off = null, ext = null } = found.get(shape.index) ?? {}
       if (id === null) continue
       if (fallback[shape.index] === 1) {
@@ -107,7 +105,7 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
         slide,
         part,
         shape: id,
-        kind: shape.kind as ShapeKind,
+        kind: shape.kind,
         box: x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy },
         text: shapeTextValue(children, bytes, shape),
         locked: false,

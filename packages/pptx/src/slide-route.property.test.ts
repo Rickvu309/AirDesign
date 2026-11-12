@@ -1,11 +1,11 @@
+import { shapeById } from "./shape-tree.js"
 import fc from "fast-check"
 import { expect, it } from "vitest"
-import { markupDocument, type MarkupElement } from "./element-span.js"
+import { markupDocument } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
 import { applyRoute, type SlideRoute } from "./slide-route.js"
 
 const part = "ppt/slides/slide1.xml"
-const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz "
 
 type Run = { readonly text: string; readonly empty: boolean }
@@ -86,20 +86,6 @@ function flatten(shapes: readonly Shape[]): Shape[] {
     if (shape.nested !== null) all.push(shape.nested)
   }
   return all
-}
-
-function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
-  for (const mark of elements) {
-    if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
-    let parent = mark.parent
-    while (parent >= 0) {
-      const ancestor = elements[parent]
-      if (ancestor === undefined) break
-      if (shapeKinds.has(ancestor.kind)) return ancestor
-      parent = ancestor.parent
-    }
-  }
-  throw new Error("shape")
 }
 
 function routeFor(op: "text" | "move" | "resize" | "remove", target: Shape): SlideRoute {

@@ -13,6 +13,7 @@ import {
   applyRoute,
   exportPackage,
   paintReader,
+  paintKind,
   readPackage,
   readShapes,
   readSlides,
@@ -20,7 +21,7 @@ import {
 } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue, type PaintStore } from "@airdesign/render"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { paintKind, slideCanvases, type SlideCanvases } from "@/canvas-slide"
+import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"

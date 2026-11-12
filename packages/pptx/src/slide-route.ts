@@ -1,3 +1,4 @@
+import { owns, shapeById } from "./shape-tree.js"
 import type { TextValue } from "@airdesign/document"
 import { insertChild } from "./child-order.js"
 import { markupDocument, spliceBytes, type ByteEdit, type MarkupDocument, type MarkupElement } from "./element-span.js"
@@ -29,7 +30,6 @@ export type SlideRoute =
     }
   | { readonly name: "remove"; readonly part: string; readonly shape: string }
 
-const shapeKinds = new Set(["p:sp", "p:pic", "p:graphicFrame", "p:cxnSp", "p:grpSp"])
 const emptyBytes = new Uint8Array(0)
 
 export type ShapeFill =
@@ -120,31 +120,6 @@ function requireMarkup(bytes: Uint8Array): MarkupDocument {
   const document = markupDocument(bytes)
   if (!document.wellFormed) throw new Error("xml")
   return document
-}
-
-export function shapeById(elements: readonly MarkupElement[], id: string): MarkupElement {
-  for (const mark of elements) {
-    if (mark.kind !== "p:cNvPr" || mark.id !== id) continue
-    let parent = mark.parent
-    while (parent >= 0) {
-      const ancestor = elements[parent]
-      if (ancestor === undefined) break
-      if (shapeKinds.has(ancestor.kind)) return ancestor
-      parent = ancestor.parent
-    }
-  }
-  throw new Error("shape")
-}
-
-function owns(elements: readonly MarkupElement[], index: number, shape: MarkupElement): boolean {
-  let parent = elements[index]?.parent ?? -1
-  while (parent >= 0) {
-    const ancestor = elements[parent]
-    if (ancestor === undefined) return false
-    if (shapeKinds.has(ancestor.kind)) return ancestor.index === shape.index
-    parent = ancestor.parent
-  }
-  return false
 }
 
 function attributeEdit(element: MarkupElement, name: string, value: string): ByteEdit {

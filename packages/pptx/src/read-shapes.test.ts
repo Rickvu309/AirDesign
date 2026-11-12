@@ -8,8 +8,10 @@ declare const process: {
 const { readFileSync } = process.getBuiltinModule("node:fs")
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { readParts } from "./package-container.js"
-import { readShapes, readSlides, type ShapeKind } from "./read-shapes.js"
-import { shapeById, applyRoute } from "./slide-route.js"
+import { readShapes, readSlides } from "./read-shapes.js"
+import type { ShapeKind } from "./shape-tree.js"
+import { applyRoute } from "./slide-route.js"
+import { shapeById } from "./shape-tree.js"
 
 const work = vi.hoisted(() => ({ counting: false, parses: 0, elements: 0, visits: 0 }))
 
