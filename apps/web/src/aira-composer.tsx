@@ -14,22 +14,22 @@ const buttonRing = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--b
 export function AiraComposer({
   draft,
   working,
-  limit,
+  blocked,
   onDraft,
   onSend,
   onStop,
 }: {
   draft: string
   working: boolean
-  limit: string | undefined
+  blocked: string | undefined
   onDraft: (text: string) => void
   onSend: () => void
   onStop: () => void
 }) {
   const field = useRef<HTMLTextAreaElement>(null)
   const composing = useRef(false)
-  const waiting = limit !== undefined
-  const hint = limit ?? (working ? airaCopy.addToRequest : creditsCopy.askAira)
+  const waiting = blocked !== undefined
+  const hint = blocked ?? (working ? airaCopy.addToRequest : creditsCopy.askAira)
   function onKey(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey) return
     if (composing.current || event.nativeEvent.isComposing) return

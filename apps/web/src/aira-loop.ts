@@ -19,7 +19,7 @@ export type AiraStep =
   | { readonly kind: "added"; readonly text: string }
   | { readonly kind: "tool"; readonly id: string; readonly name: string; readonly state: ToolState }
 
-export type AiraEnd = "working" | "done" | "stopped" | "failed" | "out-of-usage" | "signed-out" | "undone"
+export type AiraEnd = "working" | "done" | "stopped" | "failed" | "out-of-usage" | "signed-out" | "country" | "undone"
 
 export type AiraExchange = {
   readonly asked: string
@@ -176,6 +176,7 @@ async function refusedTurn(response: Response): Promise<Turned> {
   const usage = weekUsage(body?.usage)
   if (response.status === 402) return { kind: "ended", end: "out-of-usage", usage }
   if (response.status === 401) return { kind: "ended", end: "signed-out", usage }
+  if (response.status === 403 && body?.refusal === "country") return { kind: "ended", end: "country", usage }
   return { kind: "ended", end: "failed", usage }
 }
 

@@ -70,7 +70,7 @@ function StepsRow({ row }: { row: Extract<ReplyPiece, { kind: "steps" }> }) {
   }
   return (
     <ChainOfThought data-tool-state={row.state}>
-      <ChainOfThoughtHeader>{row.title}</ChainOfThoughtHeader>
+      <ChainOfThoughtHeader status={statusOf[row.state]}>{row.title}</ChainOfThoughtHeader>
       <ChainOfThoughtContent>
         {row.lines.map((line) => (
           <ChainOfThoughtStep key={line.id} data-tool-state={line.state} status={statusOf[line.state]}>
@@ -117,26 +117,50 @@ function UndoRefused() {
   )
 }
 
-function FailedCard({ changed, onUndo }: { changed: boolean; onUndo: (() => void) | undefined }) {
+const cardButton = `h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0 ${surfaceShadow}`
+
+function FailedCard({
+  changed,
+  onUndo,
+  onRetry,
+}: {
+  changed: boolean
+  onUndo: (() => void) | undefined
+  onRetry: (() => void) | undefined
+}) {
   return (
-    <div className={cardClass}>
+    <div className={cardClass} data-aira-failed>
       <span className="flex items-center gap-2">
         <FailedMark />
         <span className={cardTitle}>{airaCopy.failedTitle}</span>
       </span>
       <p className={cardBody}>{changed ? airaCopy.failedKept : airaCopy.failedNothing}</p>
-      {onUndo === undefined ? null : (
+      {onUndo === undefined && onRetry === undefined ? null : (
         <span className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            className={`h-8 rounded-lg bg-white px-3 text-[length:var(--type-dense)] font-medium text-foreground hover:bg-white active:translate-y-0 ${surfaceShadow}`}
-            onClick={onUndo}
-          >
-            {productCopy.undo}
-          </Button>
+          {onRetry === undefined ? null : (
+            <Button type="button" variant="ghost" className={cardButton} onClick={onRetry}>
+              {airaCopy.retry}
+            </Button>
+          )}
+          {onUndo === undefined ? null : (
+            <Button type="button" variant="ghost" className={cardButton} onClick={onUndo}>
+              {productCopy.undo}
+            </Button>
+          )}
         </span>
       )}
+    </div>
+  )
+}
+
+function CountryCard() {
+  return (
+    <div className={cardClass} data-aira-country>
+      <span className="flex items-center gap-2">
+        <FailedMark />
+        <span className={cardTitle}>{airaCopy.notOffered}</span>
+      </span>
+      <p className={cardBody}>{airaCopy.notOfferedBody}</p>
     </div>
   )
 }
@@ -157,12 +181,14 @@ function endingOf(
   exchange: AiraExchange,
   resets: string | undefined,
   onUndo: (() => void) | undefined,
+  onRetry: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
   const refused = exchange.undoRefused === true
   if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
+  if (exchange.end === "country") return <CountryCard />
   if (exchange.end === "failed") {
-    return <FailedCard changed={undoable} onUndo={undoable && !refused ? onUndo : undefined} />
+    return <FailedCard changed={undoable} onUndo={undoable && !refused ? onUndo : undefined} onRetry={onRetry} />
   }
   if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
     return refused ? <UndoRefused /> : <UndoLink onUndo={onUndo} />
@@ -180,13 +206,15 @@ export function ExchangeView({
   exchange,
   resets,
   onUndo,
+  onRetry,
 }: {
   exchange: AiraExchange
   resets: string | undefined
   onUndo: (() => void) | undefined
+  onRetry: (() => void) | undefined
 }) {
   const parts = segments(exchange)
-  const ending = endingOf(exchange, resets, onUndo)
+  const ending = endingOf(exchange, resets, onUndo, onRetry)
   const endsWithReply = parts.at(-1)?.from === "assistant"
   return (
     <>

@@ -45,7 +45,9 @@ async function panelRegions(page: Page, step: string | null): Promise<PanelRegio
       composer: sure(panel.querySelector('[data-slot="prompt-input"]')),
       asked: box(panel.querySelector('[data-role="user"] > div')),
       stop: box(panel.querySelector('button[aria-label="Stop"]')),
-      step: box(title),
+      step: box(
+        title?.previousElementSibling?.matches("[data-step-mark]") === true ? title.previousElementSibling : title,
+      ),
     }
   }, step)
 }

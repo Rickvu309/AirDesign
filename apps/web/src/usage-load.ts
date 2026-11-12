@@ -3,7 +3,7 @@ import { airaRoutes } from "@airdesign/catalog"
 import { fieldsOf, weekUsage, type WeekUsage } from "@/aira-wire"
 
 export type UsageLoad =
-  | { readonly kind: "usage"; readonly email: string; readonly usage: WeekUsage }
+  | { readonly kind: "usage"; readonly email: string; readonly usage: WeekUsage; readonly available: boolean }
   | { readonly kind: "signed-out" }
   | { readonly kind: "unavailable" }
 
@@ -21,25 +21,26 @@ export async function loadUsage(send: typeof fetch = fetch): Promise<UsageLoad> 
     const usage = weekUsage(body?.usage)
     const email = fieldsOf(body?.account)?.email
     if (response.status !== 200 || usage === undefined || typeof email !== "string") return unavailable
-    return { kind: "usage", email, usage }
+    return { kind: "usage", email, usage, available: body?.available !== false }
   } catch {
     return unavailable
   }
 }
 
-type Fetched = { readonly usage: WeekUsage; readonly after: WeekUsage | null }
+type Fetched = { readonly usage: WeekUsage; readonly after: WeekUsage | null; readonly available: boolean }
 
 export function useWeekUsage(
   fromTurn: WeekUsage | null,
   load: () => Promise<UsageLoad> = loadUsage,
-): { readonly usage: WeekUsage | null; readonly refresh: () => void } {
+): { readonly usage: WeekUsage | null; readonly available: boolean; readonly refresh: () => void } {
   const [fetched, setFetched] = useState<Fetched | null>(null)
   const mounted = useRef(true)
   const turn = useRef(fromTurn)
   const keep = useCallback(
     (after: WeekUsage | null) =>
       void load().then((loaded) => {
-        if (mounted.current && loaded.kind === "usage") setFetched({ usage: loaded.usage, after })
+        if (mounted.current && loaded.kind === "usage")
+          setFetched({ usage: loaded.usage, after, available: loaded.available })
       }),
     [load],
   )
@@ -54,5 +55,5 @@ export function useWeekUsage(
     turn.current = fromTurn
   }, [fromTurn])
   const usage = fetched !== null && fetched.after === fromTurn ? fetched.usage : (fromTurn ?? fetched?.usage ?? null)
-  return { usage, refresh: () => keep(turn.current) }
+  return { usage, available: fetched?.available ?? true, refresh: () => keep(turn.current) }
 }

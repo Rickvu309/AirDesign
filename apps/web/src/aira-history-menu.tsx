@@ -55,7 +55,7 @@ export function AiraHistoryMenu({
           ) : (
             <DropdownMenuRadioGroup value={openId} onValueChange={(id: string) => onPick(id)}>
               {chats.map((chat) => (
-                <DropdownMenuRadioItem key={chat.id} value={chat.id} disabled={disabled} title={chat.asked}>
+                <DropdownMenuRadioItem key={chat.id} value={chat.id} disabled={disabled} title={chat.title}>
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-xs text-foreground">{chat.title}</span>
                     <span className="text-[length:var(--type-caption)] text-muted-foreground">

@@ -48,12 +48,20 @@ function saved(chat: AiraChat, id = "c1", updated = 2_000): SavedChat {
 describe("a chat's title", () => {
   it.each([
     ["Fix the typos on every slide", "Fix the typos on every slide"],
-    ["Make an 8-slide investor update from my notes. Calm, data first.", "Make an 8-slide investor update from my"],
+    [
+      "Make an 8-slide investor update from my notes. Calm, data first.",
+      "Make an 8-slide investor update from my notes",
+    ],
+    [
+      "Make the Q3 investor update lead with the number. Keep it calm.",
+      "Make the Q3 investor update lead with the number",
+    ],
     ["Q3 investor update, please!", "Q3 investor update, please"],
     ["What's 3.5 times 2? Then put it on slide one.", "What's 3.5 times 2"],
     ["  Line one  \nline two", "Line one"],
     ["Shorten   every\ttitle.", "Shorten every title"],
-    ["a".repeat(60), "a".repeat(40)],
+    ["a".repeat(300), "a".repeat(120)],
+    [`${"word ".repeat(40)}end`, "word ".repeat(24).trim()],
     ["...", "..."],
   ])("of %j is %j", (ask, title) => {
     expect(chatTitle(ask)).toBe(title)
@@ -67,6 +75,16 @@ describe("a saved chat", () => {
     expect(kept.exchanges[0]?.runs).toEqual(["run1"])
     expect(kept).not.toHaveProperty("usage")
     expect(readSavedChat(JSON.parse(JSON.stringify(kept)), deck)).toEqual(kept)
+  })
+
+  it("reads the whole first sentence as the title of a chat saved with a shorter one", () => {
+    const kept = saved(doneChat())
+    const older = {
+      ...JSON.parse(JSON.stringify(kept)),
+      title: "Make the",
+      asked: "Make the title shorter. Keep it calm.",
+    }
+    expect(readSavedChat(older, deck)?.title).toBe("Make the title shorter")
   })
 
   it("leaves out the oldest tool results first when the chat is over its bytes, and stays continuable", () => {

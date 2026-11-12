@@ -8,24 +8,32 @@ export function AiraWelcome({
   onPick,
   starters = airaCopy.starters,
   disabled = false,
+  notOffered = false,
 }: {
   onPick: (text: string) => void
   starters?: readonly string[]
   disabled?: boolean
+  notOffered?: boolean
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 pt-3 pb-4" data-aira-welcome>
-      <ConversationEmptyState icon={<AiraTile large />} title={productCopy.agentName} description={airaCopy.welcome} />
-      {starters.length === 0 ? null : (
+      <ConversationEmptyState
+        icon={<AiraTile large />}
+        title={productCopy.agentName}
+        description={notOffered ? airaCopy.notOffered : airaCopy.welcome}
+      />
+      {starters.length === 0 || notOffered ? null : (
         <Suggestions>
           {starters.slice(0, 4).map((starter) => (
             <Suggestion key={starter} suggestion={starter} onPick={onPick} disabled={disabled} />
           ))}
         </Suggestions>
       )}
-      <p className="px-3 text-center text-[length:var(--type-caption)] leading-[var(--leading-dense)] text-pretty text-muted-foreground">
-        {airaCopy.caution}
-      </p>
+      {notOffered ? null : (
+        <p className="px-3 text-center text-[length:var(--type-caption)] leading-[var(--leading-dense)] text-pretty text-muted-foreground">
+          {airaCopy.caution}
+        </p>
+      )}
     </div>
   )
 }

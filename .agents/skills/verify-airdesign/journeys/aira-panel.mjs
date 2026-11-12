@@ -3,6 +3,8 @@ import { expect } from "@playwright/test"
 
 const node = "256.2"
 const asked = "Change the title to Hello from Aira"
+const failedNothing =
+  "Aira's reply didn't come through. Nothing in your deck changed. Check your connection and try again."
 
 function lastText(register) {
   const rows = register?.elements?.[node]?.landed ?? []
@@ -89,9 +91,8 @@ export default async function drive(kit) {
   await composer.fill("Make the title bigger")
   await page.keyboard.press("Enter")
   await expect(log.getByText("Unable to finish your request", { exact: true })).toBeVisible()
-  await expect(
-    log.getByText("Nothing in your deck changed. Ask again to try once more.", { exact: true }),
-  ).toBeVisible()
+  await expect(log.getByText(failedNothing, { exact: true })).toBeVisible()
+  await expect(side.getByRole("button", { name: "Try again" })).toBeVisible()
   await capture("failed")
   note("an overloaded model call shows the failed card")
 }

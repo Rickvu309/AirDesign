@@ -46,8 +46,10 @@ export function AiraPanel({
   const popId = useId()
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
-  const { usage, refresh: refreshUsage } = useWeekUsage(chat.usage)
+  const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
+  const notOffered = !available || last?.end === "country"
+  const blocked = notOffered ? airaCopy.notOffered : limit
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
   const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
@@ -107,7 +109,7 @@ export function AiraPanel({
 
   function ask(said: string) {
     const text = said.trim()
-    if (text === "" || limit !== undefined || undoing) return false
+    if (text === "" || blocked !== undefined || undoing) return false
     toLatest()
     if (!working) {
       void run(text)
@@ -193,7 +195,11 @@ export function AiraPanel({
         </span>
       </div>
       {empty ? (
-        <AiraWelcome onPick={(text) => void ask(text)} disabled={limit !== undefined || undoing} />
+        <AiraWelcome
+          onPick={(text) => void ask(text)}
+          disabled={blocked !== undefined || undoing}
+          notOffered={notOffered}
+        />
       ) : (
         <div className="relative flex min-h-0 flex-1 flex-col">
           <Conversation
@@ -212,6 +218,11 @@ export function AiraPanel({
                   exchange={exchange}
                   resets={usage?.resets}
                   onUndo={working || undoing ? undefined : () => void undo(index)}
+                  onRetry={
+                    index === chat.exchanges.length - 1 && !working && !undoing && blocked === undefined
+                      ? () => void ask(exchange.asked)
+                      : undefined
+                  }
                 />
               ))}
               {queued.map((text, index) => (
@@ -225,7 +236,7 @@ export function AiraPanel({
       <AiraComposer
         draft={draft}
         working={working}
-        limit={limit}
+        blocked={blocked}
         onDraft={setDraft}
         onSend={send}
         onStop={() => stopper.current?.abort()}

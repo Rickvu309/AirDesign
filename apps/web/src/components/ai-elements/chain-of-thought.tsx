@@ -8,6 +8,32 @@ export type StepStatus = "running" | "error" | "stopped"
 const lineClass =
   "flex min-h-6 max-w-full min-w-0 items-center gap-1.5 text-[length:var(--type-dense)] text-muted-foreground"
 
+const stepMark: Readonly<Record<"done" | StepStatus, "progress" | "check" | "x">> = {
+  done: "check",
+  error: "x",
+  stopped: "x",
+  running: "progress",
+}
+
+function StepMark({ status }: { status: StepStatus | undefined }) {
+  const mark = stepMark[status ?? "done"]
+  if (mark === "progress") {
+    return (
+      <span data-step-mark={mark} className="flex size-3 shrink-0 text-primary motion-safe:animate-spin">
+        <svg viewBox="0 0 12 12" width={12} height={12} fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.5" />
+          <path d="M10.5 6A4.5 4.5 0 0 0 6 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      </span>
+    )
+  }
+  return (
+    <span data-step-mark={mark} className="flex size-3 shrink-0">
+      <EditorIcon name={mark} size={12} />
+    </span>
+  )
+}
+
 function StepTitle({ status, children }: { status?: StepStatus | undefined; children: ReactNode }) {
   return <span className={cn("min-w-0 truncate", status === "running" && "aira-shimmer")}>{children}</span>
 }
@@ -20,6 +46,7 @@ export function ChainOfThoughtLine({
 }: ComponentProps<"div"> & { status?: StepStatus | undefined }) {
   return (
     <div data-status={status} className={cn(lineClass, className)} {...props}>
+      <StepMark status={status} />
       <StepTitle status={status}>{children}</StepTitle>
     </div>
   )
@@ -29,7 +56,12 @@ export function ChainOfThought({ className, ...props }: ComponentProps<typeof Co
   return <Collapsible className={cn("flex w-full min-w-0 flex-col", className)} {...props} />
 }
 
-export function ChainOfThoughtHeader({ className, children, ...props }: ComponentProps<typeof CollapsibleTrigger>) {
+export function ChainOfThoughtHeader({
+  status,
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof CollapsibleTrigger> & { status?: StepStatus | undefined }) {
   return (
     <CollapsibleTrigger
       className={cn(
@@ -39,7 +71,8 @@ export function ChainOfThoughtHeader({ className, children, ...props }: Componen
       )}
       {...props}
     >
-      <StepTitle>{children}</StepTitle>
+      <StepMark status={status} />
+      <StepTitle status={status}>{children}</StepTitle>
       <svg
         viewBox="0 0 10 10"
         width={10}
@@ -64,23 +97,15 @@ export function ChainOfThoughtContent({ className, children, ...props }: Compone
   )
 }
 
-const stepMark: Readonly<Record<"done" | StepStatus, "check" | "x" | null>> = {
-  done: "check",
-  error: "x",
-  stopped: "x",
-  running: null,
-}
-
 export function ChainOfThoughtStep({
   status,
   className,
   children,
   ...props
 }: ComponentProps<"li"> & { status?: StepStatus | undefined }) {
-  const mark = stepMark[status ?? "done"]
   return (
     <li data-status={status} className={cn(lineClass, className)} {...props}>
-      {mark === null ? null : <EditorIcon name={mark} size={12} className="shrink-0" />}
+      <StepMark status={status} />
       <StepTitle status={status}>{children}</StepTitle>
     </li>
   )

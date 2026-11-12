@@ -77,17 +77,30 @@ describe("POST /aira/usage answers the week's usage without a model call", () =>
   it("answers nothing used and next Monday for an account that never asked, and writes no ledger row", async () => {
     clock = wednesday
     const account = await signIn()
-    const answer = await usageOf(account.cookie)
+    const answer = await usageOf(account.cookie, { [countryHeader]: "VN" })
     expect([answer.status, answer.json]).toEqual([
       200,
       {
         ok: true,
         account: { email: account.email },
         usage: { used: 0, allowed: 2, resets: "2026-11-16T00:00:00.000Z" },
+        available: true,
       },
     ])
     expect(answer.headers["cache-control"]).toBe("no-store")
     expect(await ledgerRows(account.email)).toBe(0)
+  })
+
+  it("says Aira is not available when the visitor's country is not offered or unknown, and still answers the numbers", async () => {
+    clock = wednesday
+    const account = await signIn()
+    for (const headers of [{ [countryHeader]: "CN" }, { [countryHeader]: "" }, {}]) {
+      const answer = await usageOf(account.cookie, headers)
+      expect([answer.status, answer.json]).toMatchObject([
+        200,
+        { ok: true, available: false, usage: { used: 0, allowed: 2 } },
+      ])
+    }
   })
 
   it("answers the same numbers the last turn's answer carried, and zero once the week turns over", async () => {

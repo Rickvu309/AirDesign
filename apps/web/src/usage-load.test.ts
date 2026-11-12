@@ -15,11 +15,18 @@ describe("loading the week's usage", () => {
   it("posts an empty body to the usage route and reads the account and the week", async () => {
     const seen: Request[] = []
     const loaded = await loadUsage(answering(200, { ok: true, account: { email: "ada@example.com" }, usage }, seen))
-    expect(loaded).toEqual({ kind: "usage", email: "ada@example.com", usage })
+    expect(loaded).toEqual({ kind: "usage", email: "ada@example.com", usage, available: true })
     expect(seen.map((request) => [request.method, new URL(request.url).pathname])).toEqual([
       [airaRoutes.usage.method, airaRoutes.usage.path],
     ])
     expect(await seen[0]?.json()).toEqual({})
+  })
+
+  it("says whether Aira is offered where the person is, and takes an answer without the word as offered", async () => {
+    const body = { ok: true, account: { email: "ada@example.com" }, usage }
+    expect(await loadUsage(answering(200, { ...body, available: false }))).toMatchObject({ available: false })
+    expect(await loadUsage(answering(200, { ...body, available: true }))).toMatchObject({ available: true })
+    expect(await loadUsage(answering(200, body))).toMatchObject({ available: true })
   })
 
   it("says signed out on a session refusal, and unavailable on any other answer or a dropped connection", async () => {
