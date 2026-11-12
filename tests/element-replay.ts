@@ -1,5 +1,18 @@
 import { readDeckId } from "@airdesign/catalog"
-import { elementId, nextElementId, readSlideId, redoOf, slideId, undoOf, type Undoable } from "@airdesign/document"
+import {
+  addedPictures,
+  changedTable,
+  elementId,
+  nextElementId,
+  openingTable,
+  readSlideId,
+  redoOf,
+  slideId,
+  undoOf,
+  writeTableValue,
+  type Register,
+  type Undoable,
+} from "@airdesign/document"
 import { call, indexDeck, openDeck, readDeckPage, type Deck } from "@airdesign/engine"
 import type { Graph } from "./spec-graph.js"
 
@@ -9,17 +22,43 @@ const deck = parsed.deck
 const node = elementId("256.9")
 const file = ["256"]
 const box = { x: 0, y: 0, cx: 1000, cy: 500 }
-const element = { node, kind: "shape", value: "", box, grouped: false }
+const opening = openingTable(2, 2)
+const grown = changedTable(changedTable(opening, { change: "cell", row: 0, column: 0, text: "Typed" })!, {
+  change: "row",
+  row: 1,
+  place: "below",
+})!
+const kinds = {
+  box: { element: { node, kind: "shape", value: "", box, grouped: false }, typed: "Typed" },
+  table: {
+    element: { node, kind: "table", value: writeTableValue(opening), box, grouped: false },
+    typed: writeTableValue(grown),
+  },
+}
+let kind: keyof typeof kinds = "box"
+const media = { sha256: "d".repeat(64), type: "image/png" }
+const picture = { node, kind: "picture", value: null, box, grouped: false }
 const agent = { actor: "agent", runId: "run" } as const
 const person = { actor: "person" } as const
-const batches: Record<string, unknown> = {
-  Add: { slide: "element-add", id: "256", element, file },
-  Type: { node, value: "Typed" },
-  Remove: { slide: "element-remove", id: "256", node, file },
-  OtherRemove: { slide: "element-remove", id: "256", node, file },
-  OtherRestore: { slide: "element-restore", id: "256", node, file },
-}
 type Spec = Graph["states"] extends Map<string, infer State> ? State : never
+
+function typedValue(state: Spec): string {
+  return state.run === "add" || state.run === "both" ? "Typed" : kinds[kind].typed
+}
+
+function batch(source: Spec, action: string): unknown {
+  if (action === "Add") return { slide: "element-add", id: "256", element: kinds[kind].element, file }
+  if (action === "AddPicture") return { slide: "element-add", id: "256", element: picture, media, file }
+  if (action === "Type") return { node, value: typedValue(source) }
+  if (action === "OtherRestore") return { slide: "element-restore", id: "256", node, file }
+  return { slide: "element-remove", id: "256", node, file }
+}
+
+const unchanged = new Set(["Upload", "ExportElsewhere"])
+
+function exportable(register: Register, uploaded: boolean): boolean {
+  return addedPictures(register).every((each) => uploaded && each.sha256 === media.sha256)
+}
 const refusedBy: Record<string, string> = { AgentRemoveRefused: "person-protected", UndoRunRefused: "run-fenced" }
 type Answer = ReturnType<typeof call> | "told"
 
@@ -64,17 +103,17 @@ function act(current: Deck, source: Spec, action: string): Answer {
   }
   if (action === "UndoRun" || action === "UndoRunRefused")
     return call("undo_run", current, person, { deck, runId: "run" })
-  return call("commit_edits", current, person, { deck, batch: [batches[action]] })
+  return call("commit_edits", current, person, { deck, batch: [batch(source, action)] })
 }
 
-function shown(current: Deck): { readonly added: boolean; readonly typed: boolean } | null {
+function shown(current: Deck, state: Spec): { readonly added: boolean; readonly typed: boolean } | null {
   const read = readDeckPage(current, { runId: null }).elements.find((each) => each.node === node)
-  return read === undefined ? null : { added: true, typed: read.value === "Typed" }
+  return read === undefined ? null : { added: true, typed: read.value === typedValue(state) }
 }
 
 function initialId(graph: Graph): string {
   const found = [...graph.states].find(
-    ([, state]) => state.added === false && state.run === "none" && state.last === "none",
+    ([, state]) => state.added === false && state.run === "none" && state.last === "none" && state.exported === false,
   )
   if (found === undefined) throw new Error("no initial state")
   return found[0]
@@ -90,6 +129,11 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
     if (from === undefined || current === undefined || source === undefined) throw new Error("state")
     for (const edge of graph.edges) {
       if (edge.from !== from || decks.has(edge.to)) continue
+      if (unchanged.has(edge.action)) {
+        decks.set(edge.to, current)
+        queue.push(edge.to)
+        continue
+      }
       const answer = act(current, source, edge.action)
       const refused = answer === "told" || !answer.ok
       if (refused && refusedBy[edge.action] === undefined && answer !== "told") continue
@@ -105,12 +149,31 @@ function reached(graph: Graph, failures: string[]): Map<string, Deck> {
 
 export function replayElement(graph: Graph, failures: string[]) {
   let told = 0
+  for (const each of ["box", "table"] as const) {
+    kind = each
+    told += replayKind(graph, failures)
+  }
+  if (graph.edges.length === 0 || told === 0) failures.push("element replay drove no edge where the person is told")
+  return { states: graph.states.size, edges: graph.edges.length, told }
+}
+
+function replayKind(graph: Graph, failures: string[]): number {
+  let told = 0
   const decks = reached(graph, failures)
   for (const edge of graph.edges) {
     const target = graph.states.get(edge.to)
     const source = graph.states.get(edge.from)
     const current = decks.get(edge.from)
     if (source === undefined || target === undefined || current === undefined) continue
+    if (edge.action === "Upload") {
+      if (addedPictures(current.register).length !== 1) failures.push("element Upload has no picture to send")
+      continue
+    }
+    if (edge.action === "ExportElsewhere") {
+      if (!exportable(current.register, source.uploaded === true))
+        failures.push("element ExportElsewhere refused a deck whose pictures all uploaded")
+      continue
+    }
     const answer = act(current, source, edge.action)
     const refusal = refusedBy[edge.action]
     if (refusal !== undefined) {
@@ -124,7 +187,7 @@ export function replayElement(graph: Graph, failures: string[]) {
     const dropped = target.held === "dropped" && source.held !== "dropped"
     if (answer === "told") {
       if (dropped) told += 1
-      else failures.push(`element ${edge.action} was refused`)
+      else failures.push(`element ${kind} ${edge.action} was refused`)
       continue
     }
     if (dropped) {
@@ -132,12 +195,12 @@ export function replayElement(graph: Graph, failures: string[]) {
       continue
     }
     if (!answer.ok) {
-      failures.push(`element ${edge.action} refused ${answer.refusal} from ${JSON.stringify(source)}`)
+      failures.push(`element ${kind} ${edge.action} refused ${answer.refusal} from ${JSON.stringify(source)}`)
       continue
     }
     const expected = target.added === true && target.removed !== true ? { added: true, typed: target.typed } : null
-    if (JSON.stringify(shown(answer.deck)) !== JSON.stringify(expected))
-      failures.push(`element ${edge.action} reads ${JSON.stringify(shown(answer.deck))}`)
+    if (JSON.stringify(shown(answer.deck, target)) !== JSON.stringify(expected))
+      failures.push(`element ${kind} ${edge.action} reads ${JSON.stringify(shown(answer.deck, target))}`)
   }
   const slide = readSlideId("256")
   if (slide === undefined) throw new Error("slide")
@@ -149,9 +212,9 @@ export function replayElement(graph: Graph, failures: string[]) {
     }
     const forbidden =
       state.removed === true
-        ? ["Add", "Type", "Remove", "AgentRemove"]
+        ? ["Add", "AddPicture", "Type", "Remove", "AgentRemove"]
         : state.added === true
-          ? ["Add", "OtherRestore"]
+          ? ["Add", "AddPicture", "OtherRestore"]
           : ["OtherRestore"]
     if (state.added === true) {
       const another = act(current, state, "AgentAdd")
@@ -166,7 +229,8 @@ export function replayElement(graph: Graph, failures: string[]) {
       if (answer !== "told" && answer.ok && !(action === "AgentRemove" && state.removed !== true))
         failures.push(`element ${action} lands where the spec forbids it ${JSON.stringify(state)}`)
     }
+    if (state.picture === true && state.uploaded !== true && exportable(current.register, false))
+      failures.push("element ExportElsewhere lands without the picture's bytes")
   }
-  if (graph.edges.length === 0 || told === 0) failures.push("element replay drove no edge where the person is told")
-  return { states: graph.states.size, edges: graph.edges.length, told }
+  return told
 }
