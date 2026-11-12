@@ -54,13 +54,7 @@ function edited(
   return { ok: true, editing, after: decision.register, added }
 }
 
-export function valueChange(
-  deck: DeckId,
-  held: Held,
-  edit: Value,
-  node: ElementId,
-  floor: string,
-): Change<Enqueued> {
+export function valueChange(deck: DeckId, held: Held, edit: Value, node: ElementId, floor: string): Change<Enqueued> {
   const joined = joins(held, edit, node)
   if (joined !== undefined && held.before !== undefined) {
     const made = edited(held.before, edit, node, joined.floor ?? floor)
@@ -76,7 +70,14 @@ export function valueChange(
   if (!("editing" in made)) return refused(made)
   const order = (held.pending.at(-1)?.order ?? -1) + 1
   const before = made.editing.elements[node]
-  const row = pendingRow(deck, order, before === undefined ? 0 : version(before), edit, node, made.added ? floor : undefined)
+  const row = pendingRow(
+    deck,
+    order,
+    before === undefined ? 0 : version(before),
+    edit,
+    node,
+    made.added ? floor : undefined,
+  )
   return {
     next: { ...held, pending: [...held.pending, row], register: made.after, before: held.register },
     puts: [{ key: rowKey(deck, "pending", order), row }],

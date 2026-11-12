@@ -18,13 +18,12 @@ import {
   readAccountCookie,
   readSessionCookie,
   readTokenRequest,
-  accountCookieName,
-  sessionCookieName,
   type DeckId,
   type FormPairs,
 } from "@airdesign/catalog"
 import { acceptCode, acceptLink, findAccess, issueMail, openSmokeSession } from "./account.js"
 import { accountRouteList } from "./account-route.js"
+import { accountCookie, clearSessionCookie, keptSeconds, signedInCookies } from "./session-cookie.js"
 import { type AiraSettings } from "./aira.js"
 import { Closing } from "./aira-closing.js"
 import { airaRouteList } from "./aira-route.js"
@@ -111,33 +110,6 @@ export function requireOrigin(name: string, value: string): void {
 export function requireDomain(cookieDomain: string | undefined): void {
   if (cookieDomain === undefined) return
   if (!plainHost.test(cookieDomain)) throw new Error("cookieDomain is not a plain host name")
-}
-
-function sessionCookieHeader(value: string, maxAge: number, cookieDomain?: string): string {
-  const cookie = `${sessionCookieName}=${value}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${String(maxAge)}`
-  if (cookieDomain === undefined) return cookie
-  return `${cookie}; Domain=${cookieDomain}`
-}
-
-export function sessionCookie(token: string, cookieDomain?: string): string {
-  return sessionCookieHeader(encodeURIComponent(token), 2592000, cookieDomain)
-}
-
-function accountCookie(device: string, maxAge: number, cookieDomain?: string): string {
-  const cookie = `${accountCookieName}=${device}; Secure; SameSite=Lax; Path=/; Max-Age=${String(maxAge)}`
-  if (cookieDomain === undefined) return cookie
-  return `${cookie}; Domain=${cookieDomain}`
-}
-
-function clearSessionCookie(cookieDomain?: string): readonly string[] {
-  return [sessionCookieHeader("", 0, cookieDomain), accountCookie("", 0, cookieDomain)]
-}
-
-async function signedInCookies(options: ApiOptions, token: string): Promise<readonly string[]> {
-  const access = await findAccess(options.session, token)
-  const session = sessionCookie(token, options.cookieDomain)
-  if (access === undefined) return [session]
-  return [session, accountCookie(access.device, 2592000, options.cookieDomain)]
 }
 
 type Cookie = string | readonly string[]
@@ -239,7 +211,7 @@ async function signedIn({ options, req, res, body }: Visit): Promise<string | un
   const access = token === undefined ? undefined : await findAccess(options.session, token)
   if (access !== undefined) {
     if (readAccountCookie(req.headers.cookie) !== access.device)
-      res.setHeader("set-cookie", accountCookie(access.device, 2592000, options.cookieDomain))
+      res.setHeader("set-cookie", accountCookie(access.device, keptSeconds, options.cookieDomain))
     return access.email
   }
   await body()
@@ -296,7 +268,7 @@ async function smokeRoute({ options, req, res, body }: Visit): Promise<void> {
     return
   }
   const session = await openSmokeSession(options.session, smokeEmail)
-  sendJson(res, 200, { ok: true }, await signedInCookies(options, session))
+  sendJson(res, 200, { ok: true }, await signedInCookies(options.session, options.cookieDomain, session))
 }
 
 async function emailRoute(visit: Visit): Promise<void> {
@@ -323,7 +295,7 @@ async function codeRoute(visit: Visit): Promise<void> {
     sendJson(res, 401, { ok: false, refusal: "code" })
     return
   }
-  sendJson(res, 200, { ok: true }, await signedInCookies(options, token))
+  sendJson(res, 200, { ok: true }, await signedInCookies(options.session, options.cookieDomain, token))
 }
 
 async function linkRoute({ options, query, res }: Visit): Promise<void> {
@@ -338,7 +310,7 @@ async function linkRoute({ options, query, res }: Visit): Promise<void> {
     redirect(res, expired)
     return
   }
-  redirect(res, "/", await signedInCookies(options, session))
+  redirect(res, "/", await signedInCookies(options.session, options.cookieDomain, session))
 }
 
 function deckRoute<Read extends Reader>(
