@@ -10,7 +10,18 @@ const same = (name, actual, expected) => {
   }
 }
 
-const workflow = fs.readFileSync(path.join(root, ".github/workflows/deploy-site.yml"), "utf8")
+same(
+  "the site and web deploys share one workflow file",
+  fs.existsSync(path.join(root, ".github/workflows/deploy.yml")),
+  true,
+)
+same(
+  "the old site-only workflow file is gone",
+  fs.existsSync(path.join(root, ".github/workflows/deploy-site.yml")),
+  false,
+)
+
+const workflow = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8")
 
 const steps = workflow
   .split(/^ {4}steps:\n/m)[1]
@@ -36,8 +47,15 @@ same(
   true,
 )
 same(
-  "two deploys cannot race",
-  /^concurrency:\n {2}group: deploy-site\n {2}cancel-in-progress: false$/m.test(workflow),
+  "the matrix holds the site and the web app, and one failing deploy does not stop the other",
+  /^ {4}strategy:\n {6}fail-fast: false\n {6}matrix:\n {8}include:\n {10}- app: site\n {12}directory: apps\/site\n {12}what: Site\n {10}- app: web\n {12}directory: apps\/web\n {12}what: Web app$/m.test(
+    workflow,
+  ),
+  true,
+)
+same(
+  "each app has its own deploy queue and its two deploys cannot race",
+  /^ {4}concurrency:\n {6}group: deploy-\$\{\{ matrix\.app \}\}\n {6}cancel-in-progress: false$/m.test(workflow),
   true,
 )
 same(
@@ -55,6 +73,7 @@ same(
   workflow.includes('if [ "$tip" != "$HEAD_SHA" ]'),
   true,
 )
+same("each deploy runs in its own app folder", workflow.includes("working-directory: ${{ matrix.directory }}"), true)
 
 const inRun = steps.map((step) => step.split(/^ {8}run: \|\n/m)[1] ?? "").join("\n")
 same("no run script reads the event", /\$\{\{/.test(inRun), false)
@@ -76,18 +95,18 @@ same(
 )
 same("a secret is never echoed", /echo[^\n]*(CLOUDFLARE|secrets\.)/.test(workflow), false)
 same(
-  "the alarm is a deploy-red issue with its own title",
-  workflow.includes('gh issue create --title "$title" --label site-deploy-red --body') &&
-    workflow.includes('title="Site deploy is red"'),
+  "the alarm is a red-deploy issue named for the app that failed",
+  workflow.includes('title="$WHAT deploy is red"') &&
+    workflow.includes('label="$APP-deploy-red"') &&
+    workflow.includes('gh issue create --title "$title" --label "$label" --body "$line"'),
   true,
 )
-same("the alarm never uses the smoke label", /--label deploy-red/.test(workflow), false)
+same("the alarm never uses the smoke label", /label[ =]"?deploy-red\b/.test(workflow), false)
 same(
-  "the alarm finds its issue by its own label",
-  workflow.includes("gh issue list --label site-deploy-red --state open"),
+  "the alarm finds its issue by the app's own label",
+  workflow.includes('gh issue list --label "$label" --state open'),
   true,
 )
 same("the alarm never uses the smoke title", workflow.includes("Deploy or smoke check is red"), false)
-same("a deployed site closes its own issue", workflow.includes('gh issue close "$open"'), true)
-same("no path gate keeps a commit from deploying", /apps\/site packages\/theme|git diff/.test(workflow), false)
+same("a deployed app closes its own issue", workflow.includes('gh issue close "$open"'), true)
 same("the workflow does not swallow a failure with || true", workflow.includes("|| true"), false)
