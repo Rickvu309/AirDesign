@@ -12,6 +12,7 @@ import {
 import { connect, memoryRemote } from "@airdesign/live"
 import { readSlides } from "@airdesign/pptx"
 import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { flooredEdit } from "@/slide-floor"
 
 export type SlideChange = "add" | "clone" | "remove" | "move"
 
@@ -83,7 +84,8 @@ export async function commitSlideChange(
   const file = fileSlides(parts, register)
   const built = slideCommand(file, register.order, change, index, to)
   if (built === null) return "refused"
-  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, built.edit)
+  const edit = flooredEdit(parts, register, file, built.edit)
+  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
   if (!kept.ok) return "refused"
   await paint(built.current)
   return flushPending(connect, deckId)

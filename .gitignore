@@ -18,3 +18,4 @@ tests/browser/exported-deck.pptx
 .wrangler
 
 tests/browser/exported-blank-slides.pptx
+tests/browser/exported-slide-edits.pptx

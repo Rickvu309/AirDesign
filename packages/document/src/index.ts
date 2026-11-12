@@ -47,7 +47,7 @@ export { coordinates, readBox, type Box } from "./box.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
-export { floorNodes, openingElement } from "./slide-floor.js"
+export { floorFor, floorNodes, openingElement } from "./slide-floor.js"
 export {
   foldSlides,
   nextSlideId,

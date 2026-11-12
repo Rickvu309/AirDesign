@@ -1,6 +1,7 @@
 import { currentValue, history, type Box, type ElementId, type Register } from "@airdesign/document"
 import { sameBox, type PaintStore } from "@airdesign/render"
 import { landedBox } from "@/element-move"
+import { newSlideElement } from "@/exported-parts"
 
 export type BusyElements = {
   readonly hold: (id: ElementId) => () => void
@@ -27,7 +28,9 @@ export function busyElements(): BusyElements {
 
 export function shownValue(register: Register | null, id: ElementId, file: string): string {
   const body = register?.elements[id]
-  return body === undefined || history(body).length === 0 ? file : currentValue(body)
+  if (body !== undefined && history(body).length > 0) return currentValue(body)
+  const opening = newSlideElement(register, id)
+  return opening === undefined ? file : (opening.value ?? "")
 }
 
 type Landed = { readonly text: string; readonly box: Box | null }

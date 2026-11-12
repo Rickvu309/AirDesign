@@ -67,4 +67,18 @@ describe("orderedParts", () => {
     expect(exported.get(clonePart)).toEqual(original.get(secondPart))
     expect(exported.get(blankPart)).not.toEqual(original.get(secondPart))
   })
+
+  it("names each new slide by its command's id and refuses an id the file already holds", async () => {
+    const original = await readParts(readFileSync(fixture))
+    const file = slideAddresses(original).map((address) => slideId(address.slide))
+    const first = file[0]
+    if (first === undefined) throw new Error("slide")
+    const key = orderKeyAfter(presentSlides({ file, order: [] }), first)
+    if (key === null) throw new Error("key")
+    const add: SlideCommand = { slide: "add", id: slideId("300"), after: first, key, layout: first }
+    const clone: SlideCommand = { slide: "clone", id: slideId("299"), source: first, key }
+    const written = slideAddresses(orderedParts(original, { file, order: [add, clone] }))
+    expect(written.map((address) => address.slide)).toEqual([first, "299", "300", ...file.slice(1)])
+    expect(() => orderedParts(original, { file, order: [{ ...clone, id: first }] })).toThrow(/slide/)
+  })
 })

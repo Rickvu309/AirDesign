@@ -27,6 +27,10 @@ export type Stack = {
   readonly hold: () => Promise<void>
   readonly release: () => void
   readonly exhaust: (cookie: string) => Promise<void>
+  readonly originals: {
+    put(url: string, bytes: Uint8Array, headers: Readonly<Record<string, string>>): void
+    get(url: string): Uint8Array
+  }
 }
 
 export const test = base.extend<object, { stack: Stack }>({
@@ -40,6 +44,8 @@ export const test = base.extend<object, { stack: Stack }>({
       const { createApi } = await import("../../apps/api/src/server.js")
       const { Replay } = await import("../../apps/api/src/aira-replay.js")
       const { mcpRoutes, signInRoutes } = await import("../../packages/catalog/src/index.ts")
+      const { LocalOriginalStore } = await import("../../apps/api/src/local-original-store.js")
+      const originals = new LocalOriginalStore(Date.now, "https://original.test")
       const { allowance } = await import("../../packages/usage/src/index.ts")
       const cluster = await startEmptyCluster()
       const role = (name: string) =>
@@ -77,6 +83,7 @@ export const test = base.extend<object, { stack: Stack }>({
           transport: replay.transport,
           log: () => undefined,
         },
+        originals,
         send: async (mail) => {
           mails.push(mail)
         },
@@ -136,6 +143,7 @@ export const test = base.extend<object, { stack: Stack }>({
         aira: (...scripts) => replay.play(...scripts),
         hold: () => replay.hold(),
         release: () => replay.release(),
+        originals,
         async exhaust(cookie) {
           await admin.query(
             `insert into session.aira_ledger (email, spent, monday)
