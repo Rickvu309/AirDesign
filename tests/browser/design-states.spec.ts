@@ -86,7 +86,8 @@ test("every named state of the real app is reached and scanned in one stack", as
     rows.sort((a, b) => a.page.localeCompare(b.page))
     const { writeReport } = await load<Reports>(join(root, "scripts/design-findings.mjs"))
     writeReport(root, "states", { rows, used: [...used], failures, seconds: (performance.now() - started) / 1000 })
-    expect(rows.length + failures.length).toBe(states.length)
+    expect(failures, "every named state is reached").toEqual([])
+    expect(rows.length).toBe(states.length)
   } finally {
     execFileSync(process.execPath, [helper, "stop", run], { cwd: root, stdio: "ignore" })
   }
@@ -101,30 +102,39 @@ const editing = [
   "agent-empty",
 ]
 
-test.fail("the Agent panel names a tool's work in plain words, never its internal name", () => {
-  expect(seen(["agent-working", "agent-done", "agent-failed"], "internal-identifier")).toEqual([])
+test("the Agent panel names a tool's work in plain words, never its internal name", () => {
+  expect(
+    seen(["agent-working", "agent-done", "agent-failed"], "internal-identifier"),
+    "a step shows an internal tool name",
+  ).toEqual([])
 })
 
-test.fail("the Agent panel shows an empty state before the first ask", () => {
-  expect(seen(editing, "empty-region")).toEqual([])
+test("the Agent panel shows an empty state before the first ask", () => {
+  expect(seen(editing, "empty-region"), "the Agent panel is an empty column").toEqual([])
 })
 
-test.fail("a text box being edited draws one frame, not two", () => {
-  expect(seen(["editor-text-focused"], "stacked-frames")).toEqual([])
+test("a selected text box draws one frame, not two", () => {
+  expect(
+    seen(["editor-text-focused", "editor-offline"], "stacked-frames"),
+    "a selected text box draws two frames",
+  ).toEqual([])
 })
 
-test.fail("the offline notice shows its whole sentence", () => {
-  expect(seen(["editor-offline"], "truncated-text")).toEqual([])
+test("the offline notice shows its whole sentence", () => {
+  expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
 })
 
 test.fail("an empty placeholder on a blank slide shows that it is there", () => {
-  expect(seen(["blank-deck"], "invisible-control")).toEqual([])
+  expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
 })
 
-test.fail("table cell text is never cut off by its cell", () => {
-  expect(seen(["table-cells"], "overflowing-text")).toEqual([])
+test.fail("a table's text and the legend under it are never painted over each other", () => {
+  expect(
+    seen(["table-cells"], "overflowing-text"),
+    "the grown table and the legend are painted over each other",
+  ).toEqual([])
 })
 
 test.fail("text in the real app meets WCAG AA contrast", () => {
-  expect(seen([...swept.keys()], "text-contrast")).toEqual([])
+  expect(seen([...swept.keys()], "text-contrast"), "text is below WCAG AA contrast").toEqual([])
 })
