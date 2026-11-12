@@ -98,7 +98,3 @@ export type CanvasSlide = {
   readonly background: string | null
   readonly elements: readonly CanvasElement[]
 }
-
-export type Thumb =
-  | { readonly id: SlideId; readonly kind: "image"; readonly src: string }
-  | { readonly id: SlideId; readonly kind: "deep"; readonly width: number; readonly height: number }
