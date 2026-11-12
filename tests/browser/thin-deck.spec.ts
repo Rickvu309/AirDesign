@@ -665,7 +665,7 @@ const sampleWords = [
   "Slide 3",
   "Ask Aira",
 ]
-const sampleControls = ["New chat", "Attach", "Microphone", "Agent", "Design"]
+const sampleControls = ["Attach", "Microphone"]
 
 async function expectNoSample(page: Page): Promise<void> {
   const body = (await page.locator("body").textContent()) ?? ""
@@ -679,7 +679,7 @@ async function expectNoSample(page: Page): Promise<void> {
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-  expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "63%", "Export"]))
+  expect(new Set(seen)).toEqual(new Set(["clean", "1", "Hello", "63%", "Export", "Aira", "Agent", "Design"]))
 }
 
 test("a real deck paints no sample and still exports", async ({ page }, testInfo) => {

@@ -31,11 +31,13 @@ export function EditorToolbar({
   menuOpen = false,
   panel = "agent",
   pointer,
+  onPanel,
 }: {
   activeTool?: EditorTool
   menuOpen?: boolean
   panel?: EditorPanel
   pointer?: ToolPick
+  onPanel?: (panel: Exclude<EditorPanel, "none">) => void
 }) {
   const chosen = pointer?.tool ?? "move"
   const shown = pointerTools.find((each) => each.tool === chosen) ?? pointerTools[0]
@@ -117,7 +119,7 @@ export function EditorToolbar({
       {panel === "none" ? null : (
         <>
           <span className="mx-1 block h-6 w-px bg-[var(--field-edge)]" />
-          <PanelSwitch active={panel} />
+          <PanelSwitch active={panel} {...(onPanel === undefined ? {} : { onPick: onPanel })} />
         </>
       )}
     </div>

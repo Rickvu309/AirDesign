@@ -12,7 +12,7 @@ The browser asks Aira one model call at a time. Each call goes to `airaRoutes.tu
 
 ## How to get to it (user POV)
 
-- The Agent panel in an open deck sends these calls. Until the panel ships, drive them over HTTP.
+- The Agent panel in an open deck sends these calls. See [aira-panel.md](./aira-panel.md). This journey drives them over HTTP.
 
 ## Driving it with verify-airdesign
 

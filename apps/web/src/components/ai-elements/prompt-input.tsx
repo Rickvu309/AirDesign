@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react"
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react"
 import { cn } from "@/lib/class-names"
 
 export function PromptInput({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
@@ -19,6 +19,19 @@ export function PromptInputBody({ className, ...props }: HTMLAttributes<HTMLDivE
 
 export function PromptInputText({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
   return <p className={cn("min-w-0 flex-1 text-[length:var(--type-dense)] text-faint", className)} {...props} />
+}
+
+export function PromptInputTextarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      rows={1}
+      className={cn(
+        "max-h-40 min-w-0 flex-1 resize-none bg-transparent field-sizing-content text-[length:var(--type-dense)] leading-[1.5] text-foreground outline-none placeholder:text-faint disabled:cursor-not-allowed",
+        className,
+      )}
+      {...props}
+    />
+  )
 }
 
 export function PromptInputFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

@@ -46,6 +46,7 @@ for (const name of [
   "move-resize",
   "aira-turn",
   "connected-agents",
+  "aira-panel",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

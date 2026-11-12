@@ -24,6 +24,9 @@ export type Stack = {
   readonly saved: (deck: string) => Promise<{ owner: string; register: SavedRegister } | undefined>
   readonly emailOf: (cookie: string) => Promise<string>
   readonly aira: (...scripts: readonly [Script, ...Script[]]) => void
+  readonly hold: () => Promise<void>
+  readonly release: () => void
+  readonly exhaust: (cookie: string) => Promise<void>
 }
 
 export const test = base.extend<object, { stack: Stack }>({
@@ -37,6 +40,7 @@ export const test = base.extend<object, { stack: Stack }>({
       const { createApi } = await import("../../apps/api/src/server.js")
       const { Replay } = await import("../../apps/api/src/aira-replay.js")
       const { mcpRoutes, signInRoutes } = await import("../../packages/catalog/src/index.ts")
+      const { allowance } = await import("../../packages/usage/src/index.ts")
       const cluster = await startEmptyCluster()
       const role = (name: string) =>
         `postgres://${name}:${randomBytes(18).toString("hex")}@127.0.0.1:${String(cluster.port)}/api`
@@ -130,6 +134,16 @@ export const test = base.extend<object, { stack: Stack }>({
           return found.rows[0]
         },
         aira: (...scripts) => replay.play(...scripts),
+        hold: () => replay.hold(),
+        release: () => replay.release(),
+        async exhaust(cookie) {
+          await admin.query(
+            `insert into session.aira_ledger (email, spent, monday)
+             values ($1, $2, date_trunc('week', now() at time zone 'utc') at time zone 'utc')
+             on conflict (email) do update set spent = excluded.spent`,
+            [owners.get(cookie), allowance],
+          )
+        },
       })
       await new Promise<void>((resolve) => {
         server.close(() => resolve())
@@ -158,20 +172,29 @@ export async function signInBrowser(context: BrowserContext, cookie: string): Pr
   ])
 }
 
-const forwarded = ["/decks/", "/sign-in/", "/aira/"]
+const forwarded = ["/decks/", "/sign-in/"]
+const streamed = "/aira/"
 
 export async function forward(page: Page, stack: Stack): Promise<string[]> {
   const asked: string[] = []
   await page.route(
-    (url) => url.pathname === stack.mcp || forwarded.some((path) => url.pathname.startsWith(path)),
+    (url) =>
+      url.pathname === stack.mcp ||
+      url.pathname.startsWith(streamed) ||
+      forwarded.some((path) => url.pathname.startsWith(path)),
     async (route) => {
       const request = route.request()
       const { pathname, search } = new URL(request.url())
       asked.push(pathname)
+      const headers = { ...(await request.allHeaders()), "cf-ipcountry": "US" }
+      if (pathname.startsWith(streamed)) {
+        await route.continue({ url: `${stack.origin}${pathname}${search}`, headers })
+        return
+      }
       try {
         const answer = await route.fetch({
           url: `${stack.origin}${pathname}${search}`,
-          headers: { ...(await request.allHeaders()), "cf-ipcountry": "US" },
+          headers,
         })
         await route.fulfill({ response: answer })
       } catch {

@@ -37,6 +37,7 @@ import { backfillIndex } from "@/index-deck"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { followDeck } from "@/deck-follow"
 import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
+import { AiraPanel } from "@/aira-panel"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -201,6 +202,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
+  const [panel, setPanel] = useState<"agent" | "design">("agent")
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") setPending(false)
@@ -416,6 +418,9 @@ export function ThinDeck({ id }: { id: string }) {
               )
             },
           }}
+          panel={panel}
+          onPanel={setPanel}
+          side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}
           slideLabel={String(current + 1)}
           title={title}
         />

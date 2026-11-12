@@ -101,12 +101,7 @@ function AgentTurn({ run }: { run: SidebarRun }) {
         </Tool>
         <div className="flex flex-col gap-3 rounded-xl bg-white p-3.5 shadow-[0px_0px_0px_1px_var(--line),0px_1px_2px_var(--black-5)]">
           <span className="flex items-center gap-2">
-            <span className="flex size-5 items-center justify-center rounded-[var(--shape-control)] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
-              <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
-                <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
-                <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
-              </svg>
-            </span>
+            <FailedMark />
             <span className="text-[length:var(--type-dense)] font-semibold text-foreground">
               Unable to finish this run
             </span>
@@ -245,7 +240,18 @@ function FileGlyph() {
   )
 }
 
-function UsageRing({ fraction }: { fraction: number }) {
+export function FailedMark() {
+  return (
+    <span className="flex size-5 items-center justify-center rounded-[var(--shape-control)] bg-[linear-gradient(180deg,var(--danger-light),var(--destructive))] shadow-[inset_0px_1px_0px_var(--white-35),0px_0px_0px_1px_var(--danger-edge),0px_1px_2px_var(--black-12)]">
+      <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true">
+        <path d="M6 2.6v4.2" stroke="var(--background)" strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="6" cy="9.2" r="1" fill="var(--background)" />
+      </svg>
+    </span>
+  )
+}
+
+export function UsageRing({ fraction }: { fraction: number }) {
   const dash = (2 * Math.PI * 7.5 * fraction).toFixed(1)
   return (
     <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">

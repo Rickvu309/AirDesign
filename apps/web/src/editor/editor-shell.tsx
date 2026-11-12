@@ -32,6 +32,7 @@ export type EditorShellProps = {
   notes?: string
   run?: SidebarRun
   panel?: EditorPanel
+  onPanel?: (panel: Exclude<EditorPanel, "none">) => void
   side?: ReactNode
   rail?: EditorRail
   activeTool?: EditorTool
@@ -50,6 +51,7 @@ export function EditorShell({
   notes,
   run = "done",
   panel = "none",
+  onPanel,
   side,
   rail = "slides",
   activeTool = "move",
@@ -123,6 +125,7 @@ export function EditorShell({
               menuOpen={toolMenu}
               panel={panel}
               {...(deck === undefined ? {} : { pointer })}
+              {...(onPanel === undefined ? {} : { onPanel })}
             />
           </div>
         </div>

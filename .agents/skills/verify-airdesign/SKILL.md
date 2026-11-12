@@ -71,7 +71,7 @@ Journeys are Playwright scripts in `.agents/skills/verify-airdesign/journeys/`. 
 $V journey <run> open-edit-save
 ```
 
-Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), `delete-account` (the account menu deletes the account and everything it holds), `aira-turn` (a scripted Aira call streams a tool call, `/mcp` runs it, and the run is undone), and `connected-agents` (the account menu opens Agents, copies the MCP address, lists connected agents, and disconnects one so its tokens stop working). Each feature file in `features/` names its journey and steps.
+Shipped journeys: `open-edit-save`, `deck-list-trash`, `slide-paint`, `cleared-browser` (a deck reopened in a cleared browser is rebuilt from the original the server keeps), `delete-account` (the account menu deletes the account and everything it holds), `aira-turn` (a scripted Aira call streams a tool call, `/mcp` runs it, and the run is undone), `connected-agents` (the account menu opens Agents, copies the MCP address, lists connected agents, and disconnects one so its tokens stop working), and `aira-panel` (the person asks Aira in the editor's Agent panel, watches the reply and the slide change, reads the week's usage and undoes the run). Each feature file in `features/` names its journey and steps.
 
 ## Every journey after every merge
 
