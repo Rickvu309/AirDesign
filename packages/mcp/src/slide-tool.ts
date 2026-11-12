@@ -2,7 +2,7 @@ import { slideReaders, type SlideOp } from "@airdesign/catalog"
 import { call } from "@airdesign/engine"
 import type { Session, ToolResult } from "./call-tool.js"
 import { editRefusal } from "./edit-answer.js"
-import { liveTurn } from "./turn.js"
+import { heldRun } from "./turn.js"
 import { stopLiveRuns } from "./run.js"
 
 function slideDetail(op: SlideOp, refusal: string, named: string): string | undefined {
@@ -22,7 +22,7 @@ export function slideTool(op: SlideOp, raw: unknown, session: Session): ToolResu
   const before = session.deck
   const parsed = slideReaders[op](raw)
   if (!parsed.ok) return editRefusal(before, parsed.refusal, [])
-  const held = liveTurn(session, before.id)
+  const held = heldRun(session)
   const fresh = parsed.base === before.revision
   const stopped = held === undefined && fresh ? stopLiveRuns(before) : ({ ok: true, deck: before } as const)
   if (!stopped.ok) return editRefusal(before, stopped.refusal, [])

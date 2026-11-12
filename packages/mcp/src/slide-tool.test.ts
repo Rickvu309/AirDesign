@@ -111,6 +111,7 @@ it("lands a slide call on a fresh base while an earlier run is still live, and s
   )
   if (!started.ok) throw new Error(started.refusal)
   held.deck = started.deck
+  held.turns.write(held.deck.id, { runId: "old", lastCall: -600_000, revision: held.deck.revision })
   const server = createServer(held)
   const [a, b] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "test", version: "1" })

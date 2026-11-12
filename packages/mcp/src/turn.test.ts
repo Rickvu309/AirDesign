@@ -1,7 +1,7 @@
 import { readDeckId } from "@airdesign/catalog"
 import { Client, InMemoryTransport } from "@modelcontextprotocol/client"
 import { decide, elementId, limits, type Register } from "@airdesign/document"
-import { openDeck, type Deck } from "@airdesign/engine"
+import { indexDeck, openDeck, type Deck } from "@airdesign/engine"
 import { describe, expect, it } from "vitest"
 import {
   callTool,
@@ -72,6 +72,45 @@ describe("the turn", () => {
     expect((await edit(second, sibling, "b", 0)).runId).toBe("one")
     expect(bodyOf(second.deck.register, sibling).runId).toBe("one")
     expect(turns.read(first.deck.id)).toEqual({ runId: "one", lastCall: tenMinutes - 1, revision: 2 })
+  })
+
+  it("joins the run of a call whose turn is not saved yet, at the same read and on another element", async () => {
+    const first = sessionFor(opened(), memoryTurns(), "one", 0)
+    expect((await edit(first, node, "a", 0)).runId).toBe("one")
+    const same = sessionFor(first.deck, memoryTurns(), "two", 0)
+    expect((await edit(same, node, "b", 0)).runId).toBe("one")
+    expect(bodyOf(same.deck.register).landed.map((item) => item.value)).toEqual(["a", "b"])
+    const other = sessionFor(first.deck, memoryTurns(), "three", 0)
+    expect((await edit(other, sibling, "c", 0)).runId).toBe("one")
+    expect(bodyOf(other.deck.register).phase).toBe("running")
+    expect(bodyOf(other.deck.register).runId).toBe("one")
+  })
+
+  it("joins the run of an edit whose turn is not saved yet from a slide tool call", async () => {
+    const indexed = indexDeck(
+      opened(),
+      { actor: "person" },
+      {
+        deck: "deck",
+        once: "index",
+        offset: 0,
+        total: 1,
+        slides: [{ id: "258", position: 0, layout: [] }],
+        elements: [{ node, kind: "shape", value: "", box: null, grouped: false }],
+      },
+    )
+    if (!indexed.ok) throw new Error(indexed.refusal)
+    const first = sessionFor(indexed.deck, memoryTurns(), "one", 0)
+    await edit(first, node, "a", 0)
+    const slide = sessionFor(first.deck, memoryTurns(), "two", 0)
+    const answer = await called(slide, "airdesign_add_slide", {
+      deck: "deck",
+      base: first.deck.revision,
+      after: "258",
+      layout: "258",
+    })
+    expect(answer).toMatchObject({ ok: true, runId: "one" })
+    expect(bodyOf(slide.deck.register).phase).toBe("running")
   })
 
   it("treats a call exactly at the idle window as idle and honours a shorter window", async () => {

@@ -1268,17 +1268,12 @@ describe("mcp route", () => {
       const pending = slow.callTool({ name: "airdesign_edit_deck", arguments: firstEdit(id) })
       await gate.reached
       const held = runOf(await row(id))
-      const newer = await editAnswer(fast, secondEdit(id))
-      expect(newer.ok).toBe(true)
-      expect(newer.runId).toBe(runOf(await row(id)))
+      await fast.callTool({ name: "airdesign_stop_run", arguments: { deck: id, runId: held } })
+      const newer = await editAnswer(fast, { ...secondEdit(id), base: 2 })
       expect(newer.runId).not.toBe(held)
       gate.release()
       await pending
-      const next = await editAnswer(fast, {
-        deck: id,
-        base: 2,
-        changes: [{ value: "z", node: sibling, readAt: 0 }],
-      })
+      const next = await editAnswer(fast, { deck: id, base: 3, changes: [{ value: "z", node: sibling, readAt: 0 }] })
       expect(next.runId).toBe(newer.runId)
       expect(runOf(await row(id), sibling)).toBe(newer.runId)
     } finally {

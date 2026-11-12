@@ -23,7 +23,7 @@ import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./ru
 import { textProblem } from "./text-from.js"
 import { editNext, type EditCode } from "./edit-next.js"
 import { listDecksTool, readDeckTool } from "./read-tool.js"
-import { liveTurn, type Turn, type Turns } from "./turn.js"
+import { heldRun, liveTurn, type Turn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -80,8 +80,8 @@ function reached(deck: Deck, refusal: WireRefusal, next: string): ToolResult {
 
 function startedTurn(raw: unknown, session: Session) {
   const { deck } = session
-  const turn = liveTurn(session, deck.id)
-  if (turn !== undefined) return joinRun(deck.register, raw, turn.runId)
+  const held = heldRun(session)
+  if (held !== undefined) return joinRun(deck.register, raw, held.runId)
   return openRun(deck.register, raw, () => session.caller.runId)
 }
 
