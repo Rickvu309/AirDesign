@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { cn } from "@/lib/class-names"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
 import { usageCopy, usageUsedOf } from "@/copy/usage-copy"
 import { resetsWhen, usagePercent } from "@/aira-usage"
@@ -65,7 +66,11 @@ export function UsagePage({
               aria-valuenow={percent}
               className="h-2 min-w-0 flex-1 rounded-sm bg-line"
             >
-              <div className="h-2 rounded-sm bg-primary" style={{ width: `${String(percent)}%` }} />
+              <div
+                data-usage-fill
+                className={cn("h-2 rounded-sm", percent >= 100 ? "bg-destructive" : "bg-primary")}
+                style={{ width: `${String(percent)}%` }}
+              />
             </div>
             <span className="text-[length:var(--type-dense)] leading-[17px] text-muted-foreground">
               {week === null ? null : usageUsedOf(percent)}

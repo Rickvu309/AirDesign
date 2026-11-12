@@ -11,7 +11,7 @@ export const placeholderPrompts: Readonly<Record<string, string>> = {
   sldNum: "Add slide number",
 }
 
-export function fallbackPrompt(type: string | null | undefined): string {
+export function fallbackPrompt(type: string | null | undefined): string | null {
   if (type === null || type === undefined) return "Add text"
-  return placeholderPrompts[type] ?? "Add text"
+  return placeholderPrompts[type] ?? null
 }

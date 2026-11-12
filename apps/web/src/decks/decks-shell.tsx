@@ -32,15 +32,21 @@ const accountButton =
   "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
 
 function AccountFace({ account: realAccount }: { account?: { email: string } }) {
+  const name =
+    realAccount === undefined ? account.name : realAccount.email === "" ? settingsCopy.account : realAccount.email
   return (
     <>
       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-[length:var(--type-caption)] leading-none font-semibold text-white">
-        {realAccount ? realAccount.email.charAt(0).toUpperCase() : account.initials}
+        {realAccount === undefined ? account.initials : name.charAt(0).toUpperCase()}
       </span>
-      <span className="text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground">
-        {realAccount?.email ?? account.name}
+      <span
+        data-account-name
+        title={name}
+        className="min-w-0 flex-1 truncate text-[length:var(--type-body)] leading-[var(--leading-body)] font-medium text-foreground"
+      >
+        {name}
       </span>
-      <span className="text-faint">
+      <span className="shrink-0 text-faint">
         <DeckGlyph name="chevron" size={14} />
       </span>
     </>

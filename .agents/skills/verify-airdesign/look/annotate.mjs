@@ -52,7 +52,8 @@ export function marks(block) {
   const targets = block.callouts.map(
     (_, index) => per.map((boxes) => boxes[index]).findLast((box) => box !== null) ?? null,
   )
-  const circles = place(targets, { width: shape.width, height: shape.height })
+  const obstacles = block.sides.flatMap((side) => (side.texts ?? []).map((box) => scaled(box, shape.scale)))
+  const circles = place(targets, { width: shape.width, height: shape.height }, { obstacles })
   return {
     shape,
     circles,

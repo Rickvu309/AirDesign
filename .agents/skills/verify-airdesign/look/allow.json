@@ -4,5 +4,11 @@
     "detector": "stacked-frames",
     "selector": "span[class*='shadow-[0_0_0_2px_var(--ring)]']",
     "reason": "The tool panels' slide column marks the current slide with a ring around its bordered card, as designed. The ring is the selection, not a second frame."
+  },
+  {
+    "page": "*",
+    "detector": "truncated-text",
+    "selector": "[data-account-name]",
+    "reason": "The account row is one line in a fixed 248 px sidebar. A long email address is cut with an ellipsis and its full text is the row's title, as a name is in any account menu."
   }
 ]

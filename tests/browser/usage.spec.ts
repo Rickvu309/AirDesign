@@ -7,6 +7,7 @@ import { forward, openClean, signInBrowser, test } from "./api-stack"
 test.use({ viewport: { width: 1600, height: 1000 }, locale: "en-US", timezoneId: "Asia/Ho_Chi_Minh" })
 
 const resets = usageResetsOn("Monday at 7:00 AM")
+const spentColor = "rgb(217, 63, 63)"
 
 test("the usage ring shows before any ask, stays current, and See all opens the Usage page", async ({
   page,
@@ -28,6 +29,7 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   await stack.exhaust(cookie)
   await ring.click()
   await expect(pop).toContainText("100%")
+  await expect(pop.locator("[data-usage-fill]")).toHaveCSS("background-color", spentColor)
   expect(paths).not.toContain("/aira/turn")
   await pop.getByRole("link", { name: usageCopy.seeAllName }).click()
   await expect(page).toHaveURL(/\/settings\/usage$/)
@@ -40,6 +42,7 @@ test("the usage ring shows before any ask, stays current, and See all opens the 
   await expect(page.getByText(resets, { exact: true })).toBeVisible()
   await expect(page.getByText(usageUsedOf(100), { exact: true })).toBeVisible()
   await expect(page.getByRole("meter", { name: productCopy.usageTitle })).toHaveAttribute("aria-valuenow", "100")
+  await expect(page.locator("[data-usage-fill]")).toHaveCSS("background-color", spentColor)
   await expect(page.getByRole("heading", { name: usageCopy.runsOutTitle, exact: true })).toBeVisible()
   for (const left of [
     settingsCopy.credits,
@@ -105,4 +108,26 @@ test("the Usage page says when it cannot load and tries again, and sends a signe
   await page.route("**/sign-in?*", (route) => route.fulfill({ body: "Sign in" }))
   await page.goto("/settings/usage?from=menu")
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fsettings%2Fusage%3Ffrom%3Dmenu$/)
+})
+
+test("a long email stays inside the sidebar with its menu arrow, and the full address is its title", async ({
+  page,
+}) => {
+  const email = "first.name.of.a.person@a-long-company-name.example.com"
+  await page.route("**/decks/list", (route) =>
+    route.fulfill({ json: { ok: true, account: { email }, decks: [], trash: [] } }),
+  )
+  await page.route("**/aira/usage", (route) =>
+    route.fulfill({
+      json: { ok: true, account: { email }, usage: { used: 0, allowed: 2, resets: "2026-11-16T00:00:00.000Z" } },
+    }),
+  )
+  await page.goto("/settings/usage")
+  const sidebar = await page.locator("[data-decks-sidebar]").boundingBox()
+  const name = page.locator("[data-account-name]")
+  await expect(name).toHaveAttribute("title", email)
+  const arrow = await page.getByRole("button", { name: email }).locator("svg").last().boundingBox()
+  expect(sidebar).not.toBeNull()
+  expect(arrow).not.toBeNull()
+  expect(arrow!.x + arrow!.width).toBeLessThanOrEqual(sidebar!.x + sidebar!.width)
 })

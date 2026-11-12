@@ -41,14 +41,60 @@ function freeSpace(box, [dx, dy], area) {
   return Math.min(across, down)
 }
 
-export function place(targets, area, { radius = circleRadius, gap = arrowGap, margin = frameMargin } = {}) {
+export function crossesBox(from, to, box) {
+  const steps = Math.max(1, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / 2))
+  for (let step = 0; step <= steps; step += 1) {
+    const x = from.x + ((to.x - from.x) * step) / steps
+    const y = from.y + ((to.y - from.y) * step) / steps
+    if (x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height) return true
+  }
+  return false
+}
+
+const along = [0.5, 0.2, 0.8]
+const stretch = [1, 1.7]
+
+function candidates(box, reach) {
+  const found = []
+  for (const [step, factor] of stretch.entries()) {
+    const away = reach * factor
+    for (const [slide, t] of along.entries()) {
+      const x = box.x + box.width * t
+      const y = box.y + box.height * t
+      const options = [
+        [[-1, 0], { x: box.x - away, y }],
+        [[1, 0], { x: box.x + box.width + away, y }],
+        [[0, -1], { x, y: box.y - away }],
+        [[0, 1], { x, y: box.y + box.height + away }],
+      ]
+      for (const [direction, spot] of options) found.push({ direction, spot, penalty: step * 20 + slide * 6 })
+    }
+    for (const direction of directions.filter(([dx, dy]) => dx !== 0 && dy !== 0))
+      found.push({ direction, spot: spotFor(box, direction, away), penalty: step * 20 })
+  }
+  return found
+}
+
+export function place(
+  targets,
+  area,
+  { radius = circleRadius, gap = arrowGap, margin = frameMargin, obstacles = [] } = {},
+) {
   const placed = []
   const reach = gap + radius
+  const own = targets.filter((each) => each !== null)
+  const texts = obstacles.filter(
+    (text) =>
+      !own.some((target) => {
+        const x = text.x + text.width / 2
+        const y = text.y + text.height / 2
+        return x >= target.x && x <= target.x + target.width && y >= target.y && y <= target.y + target.height
+      }),
+  )
   return targets.map((box) => {
     if (box === null) return null
     let best
-    for (const [order, direction] of directions.entries()) {
-      const spot = spotFor(box, direction, reach)
+    for (const { direction, spot, penalty } of candidates(box, reach)) {
       const outside =
         spot.x < -margin + radius ||
         spot.y < -margin + radius ||
@@ -57,10 +103,22 @@ export function place(targets, area, { radius = circleRadius, gap = arrowGap, ma
       if (outside) continue
       const inMargin =
         spot.x < radius || spot.y < radius || spot.x > area.width - radius || spot.y > area.height - radius
-      const covers = targets.filter((other) => other !== null && touches(other, spot, radius + 4)).length
+      const covers = own.filter((other) => touches(other, spot, radius + 4)).length
       const crowds = placed.filter((other) => Math.hypot(other.x - spot.x, other.y - spot.y) < radius * 2 + 6).length
+      const tip = nearest(box, spot)
+      const onText = texts.filter((text) => touches(text, spot, radius + 2)).length
+      const throughText = texts.filter((text) => crossesBox(spot, tip, text)).length
       const room = Math.min(freeSpace(box, direction, area), 240)
-      const score = covers * 1000 + crowds * 1000 + (inMargin ? 60 : 0) - room / 8 + order
+      const order = directions.findIndex(([dx, dy]) => dx === direction[0] && dy === direction[1])
+      const score =
+        covers * 1000 +
+        crowds * 1000 +
+        onText * 700 +
+        throughText * 300 +
+        (inMargin ? 60 : 0) -
+        room / 8 +
+        order +
+        penalty
       if (best === undefined || score < best.score) best = { ...spot, score }
     }
     const spot = best === undefined ? spotFor(box, [-1, 0], reach) : { x: best.x, y: best.y }

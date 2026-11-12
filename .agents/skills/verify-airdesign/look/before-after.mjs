@@ -58,6 +58,26 @@ async function measure(page, places) {
   }, places)
 }
 
+async function textBoxes(page) {
+  return page.evaluate(() => {
+    const found = []
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    while (walker.nextNode() && found.length < 3000) {
+      const node = walker.currentNode
+      const parent = node.parentElement
+      if (parent === null || node.textContent.trim() === "" || parent.closest("script,style") !== null) continue
+      const style = getComputedStyle(parent)
+      if (style.visibility === "hidden" || style.display === "none") continue
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      for (const rect of range.getClientRects())
+        if (rect.width > 1 && rect.height > 1)
+          found.push({ x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+    }
+    return found
+  })
+}
+
 export async function captureSide({ browser, side, block, runtime }) {
   const context = await browser.newContext({ ...designContext, baseURL: side.origin })
   try {
@@ -81,7 +101,8 @@ export async function captureSide({ browser, side, block, runtime }) {
     const broken = places.find((place) => place.error)
     if (broken) throw new Error(`${block.state}: ${broken.error}`)
     const [frame, ...boxes] = places.map((place) => place.box)
-    return { full, frame, boxes, skipped }
+    const texts = await textBoxes(page)
+    return { full, frame, boxes, texts, skipped }
   } finally {
     await context.close()
   }
@@ -109,6 +130,7 @@ export function composeBlock(block, sides, shots) {
       missing: side.missing,
       png: crop(image, frame, scale(image), 0),
       boxes: shot.boxes.map((box) => relative(box, frame)),
+      texts: shot.texts.map((box) => relative(box, frame)).filter((box) => box !== null),
     }
   })
   const fresh = sides.length > 1 && shots[0].error !== undefined
