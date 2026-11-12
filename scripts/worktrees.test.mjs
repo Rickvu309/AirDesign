@@ -184,7 +184,7 @@ same("main, unfinished work and branches in a worktree stay", left, [
 ])
 
 const clone = path.join(folder, "clone")
-git(folder, "clone", "-q", remote, clone)
+git(folder, "clone", "-q", "-b", "main", remote, clone)
 git(root, "push", "-q", "origin", "main")
 git(clone, "fetch", "-q", "origin")
 const tip = git(root, "rev-parse", "main").trim()
