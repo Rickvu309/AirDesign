@@ -36,6 +36,6 @@ export default {
     forwarded.headers.delete(countryHeader)
     const country = request.cf?.country
     if (typeof country === "string") forwarded.headers.set(countryHeader, country)
-    return fetch(forwarded, { redirect: "manual" })
+    return fetch(forwarded, { redirect: "manual", signal: request.signal })
   },
 }

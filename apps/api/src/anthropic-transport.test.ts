@@ -3,7 +3,7 @@ import { createServer, type IncomingHttpHeaders } from "node:http"
 import type { AddressInfo } from "node:net"
 
 import { airaTools } from "@airdesign/catalog"
-import { afterAll, beforeAll, expect, it } from "vitest"
+import { afterAll, beforeAll, expect, it, vi } from "vitest"
 
 import { airaMaxTokens, airaModel, airaSystem, type ModelCall } from "./aira.js"
 import { failureOf, fixtureText, streamEvents } from "./aira-replay.js"
@@ -38,7 +38,9 @@ const call: ModelCall = {
   output_config: { effort: "low" },
 }
 
+const held = "held"
 let fixture = "turn.sse"
+let upstreamClosed = "open"
 const seen: { headers: IncomingHttpHeaders; body: unknown }[] = []
 const server = createServer((req, res) => {
   const chunks: Buffer[] = []
@@ -52,7 +54,14 @@ const server = createServer((req, res) => {
       return
     }
     res.writeHead(200, { "content-type": "text/event-stream", "request-id": "req_fixture_sdk" })
-    res.end(fixtureText(fixture))
+    if (fixture !== held) {
+      res.end(fixtureText(fixture))
+      return
+    }
+    res.on("close", () => {
+      upstreamClosed = res.writableEnded ? "ended" : "closed"
+    })
+    res.write(fixtureText("turn.sse").split("\n\n").slice(0, 4).join("\n\n") + "\n\n")
   })
 })
 let base = ""
@@ -70,7 +79,7 @@ afterAll(async () => {
 
 async function opened(name: string) {
   fixture = name
-  const open = await anthropicTransport(base)(call, fakeKey)
+  const open = await anthropicTransport(base)(call, fakeKey, new AbortController().signal)
   if (!open.ok) return { open, events: [] }
   const events: unknown[] = []
   for await (const event of open.events) events.push(event)
@@ -111,4 +120,24 @@ it("relays an error event in the stream as an error event", async () => {
   const { open, events } = await opened("overloaded.sse")
   expect(open.ok).toBe(true)
   expect(events).toEqual([{ type: "error", error: { type: "overloaded_error", message: "Overloaded" } }])
+})
+
+it("closes the model's HTTP request when the signal aborts mid-stream and ends the events without an error", async () => {
+  fixture = held
+  const stopping = new AbortController()
+  const open = await anthropicTransport(base)(call, fakeKey, stopping.signal)
+  if (!open.ok) throw new Error("open")
+  const events: unknown[] = []
+  for await (const event of open.events) {
+    events.push(event)
+    if ((event as { type?: string }).type === "content_block_delta") stopping.abort()
+  }
+  expect(events.map((event) => (event as { type?: string }).type)).toEqual([
+    "message_start",
+    "content_block_start",
+    "content_block_delta",
+  ])
+  await vi.waitFor(() => {
+    expect(upstreamClosed).toBe("closed")
+  })
 })

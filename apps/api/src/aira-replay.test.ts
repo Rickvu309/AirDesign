@@ -6,7 +6,7 @@ import { Replay } from "./aira-replay.js"
 const call = {} as ModelCall
 
 async function eventsOf(replay: Replay): Promise<unknown[]> {
-  const opened = await replay.transport(call, "key")
+  const opened = await replay.transport(call, "key", new AbortController().signal)
   if (!opened.ok) return [opened.status]
   const seen: unknown[] = []
   for await (const event of opened.events) seen.push(event)

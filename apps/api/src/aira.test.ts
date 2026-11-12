@@ -1,13 +1,10 @@
 import { createHmac, randomBytes } from "node:crypto"
-import { once } from "node:events"
-import { request, type Server } from "node:http"
-import type { Socket } from "node:net"
 
 import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import type { CallerLog } from "@airdesign/mcp"
 import { Client } from "pg"
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { airaMaxTokens, airaModel, airaSystem, settleTurn, staleTurn } from "./aira.js"
 import { Replay } from "./aira-replay.js"
@@ -35,12 +32,10 @@ const mails: Mail[] = []
 const lines: string[] = []
 const replay = new Replay()
 const logs = new Map<string, CallerLog>()
-const sockets: Socket[] = []
 let clock = wednesday
 let main = ""
 let off = ""
 let keyless = ""
-let mainServer: Server | undefined
 let session: Sql = openPool("postgres://session@127.0.0.1/api")
 let admin = new Client()
 let close = async () => {}
@@ -77,11 +72,7 @@ beforeAll(async () => {
   const served = await serveWith(listen, deck, { on: true, key: fakeKey })
   const offServed = await serveWith(listen, deck, { on: false, key: fakeKey })
   const keylessServed = await serveWith(listen, deck, { on: true, key: undefined })
-  served.server.on("connection", (socket: Socket) => {
-    sockets.push(socket)
-  })
   main = served.base
-  mainServer = served.server
   off = offServed.base
   keyless = keylessServed.base
   close = async () => {
@@ -204,53 +195,17 @@ describe("POST /aira/turn settles a model turn once", () => {
     ])
   })
 
-  it("settles once when the client leaves mid-stream", async () => {
-    const account = await signIn()
-    replay.play({ name: "turn.sse", holdAfter: 3 })
-    const reached = replay.hold()
-    const before = sockets.length
-    const port = new URL(main).port
-    const payload = Buffer.from(JSON.stringify({ deck, messages: asked }))
-    const leaving = request({
-      method: "POST",
-      hostname: "127.0.0.1",
-      port,
-      path: "/aira/turn",
-      agent: false,
-      headers: {
-        "content-type": "application/json",
-        "content-length": String(payload.length),
-        cookie: account.cookie,
-        ...vietnam,
-      },
-    })
-    leaving.on("error", () => undefined)
-    leaving.end(payload)
-    await reached
-    const socket = sockets[before]
-    if (socket === undefined || mainServer === undefined) throw new Error("socket")
-    const closed = once(socket, "close")
-    leaving.destroy()
-    await closed
-    replay.release()
-    await vi.waitFor(
-      async () => {
-        expect(await ledgerOf(account.email)).toMatchObject({ spent: String(turnCharge), hold: "0", turn: null })
-      },
-      { timeout: 5_000 },
-    )
-    expect(await turnsOf(account.email)).toMatchObject([{ outcome: "settled", charged: String(turnCharge) }])
-  })
-
-  it("keeps the reservation when the stream drops before message_delta", async () => {
+  it("charges the input message_start reported and the whole output allowance when the stream drops before message_delta", async () => {
     const account = await signIn()
     replay.play({ name: "dropped.sse" })
     const reply = await turn(account)
-    const ceiling = String(heldCeiling(asked))
+    const charged = 412 * 2_000 + airaMaxTokens * 10_000 + 200 * 2_500 + 100 * 100
     expect(reply.status).toBe(200)
-    expect(endOf(reply)).toMatchObject({ ok: false, refusal: "dropped", usage: { used: heldCeiling(asked) / nano } })
-    expect(await ledgerOf(account.email)).toMatchObject({ spent: ceiling, hold: "0", turn: null })
-    expect(await turnsOf(account.email)).toMatchObject([{ outcome: "dropped", charged: ceiling, ceiling }])
+    expect(endOf(reply)).toMatchObject({ ok: false, refusal: "dropped", usage: { used: charged / nano } })
+    expect(await ledgerOf(account.email)).toMatchObject({ spent: String(charged), hold: "0", turn: null })
+    expect(await turnsOf(account.email)).toMatchObject([
+      { outcome: "dropped", charged: String(charged), ceiling: String(heldCeiling(asked)) },
+    ])
   })
 
   it("keeps the reservation of a turn left open past the stale window and starts the next one", async () => {

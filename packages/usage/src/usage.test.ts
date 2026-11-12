@@ -72,3 +72,48 @@ describe("usage", () => {
     expect(released.ledger.open).toBeNull()
   })
 })
+
+describe("a stopped turn", () => {
+  const reserve = {
+    command: "reserve",
+    id: "row",
+    input: 1,
+    maxTokens: 1,
+    coldPrefix: 0,
+    search: 0,
+    searchOn: false,
+    usOnly: false,
+  } as const
+  const stop = (id: string, input: number, output: number) =>
+    ({
+      command: "stop",
+      id,
+      input,
+      output,
+      write5m: 0,
+      write1h: 0,
+      read: 0,
+      search: 0,
+      searchOn: false,
+      usOnly: false,
+    }) as const
+
+  it("is charged what it reported, never more than its reserve, and closes", () => {
+    const reserved = usage(openLedger(), reserve).ledger
+    expect(reserved.open).toEqual({ turn: "row", hold: 12_000 })
+    expect(usage(reserved, stop("row", 0, 1))).toEqual({
+      accepted: true,
+      ledger: { ...reserved, spent: 10_000, open: null },
+    })
+    expect(usage(reserved, stop("row", 1, 1)).ledger.spent).toBe(12_000)
+    expect(usage(reserved, stop("row", 9, 9)).ledger.spent).toBe(12_000)
+  })
+
+  it("is charged once, and a stop of another turn changes nothing", () => {
+    const reserved = usage(openLedger(), reserve).ledger
+    expect(usage(reserved, stop("other", 1, 1))).toEqual({ accepted: false, ledger: reserved })
+    const stopped = usage(reserved, stop("row", 1, 1)).ledger
+    expect(usage(stopped, stop("row", 1, 1))).toEqual({ accepted: false, ledger: stopped })
+    expect(usage(stopped, { ...stop("row", 1, 1), command: "settle" })).toEqual({ accepted: false, ledger: stopped })
+  })
+})

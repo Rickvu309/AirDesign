@@ -10,11 +10,11 @@ export function scriptedAira({ Replay, repo, file, log }) {
     key: "verify-key-not-real",
     secret: "verify-secret-not-real",
     log,
-    transport: (call, key) => {
+    transport: (call, key, signal) => {
       const scripts = existsSync(file) ? readFileSync(file, "utf8") : played
       if (scripts !== played) replay.play(...JSON.parse(scripts).scripts)
       played = scripts
-      return replay.transport(call, key)
+      return replay.transport(call, key, signal)
     },
   }
 }

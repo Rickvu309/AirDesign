@@ -2,6 +2,7 @@
   "name": "airdesign-web",
   "main": "worker/api-forward.ts",
   "compatibility_date": "2026-11-09",
+  "compatibility_flags": ["enable_request_signal"],
   "workers_dev": false,
   "routes": [{ "pattern": "studio.airdesign.app", "custom_domain": true }],
   "assets": {

@@ -996,8 +996,15 @@ function usageCommand(action: string): Command | null {
     searchOn,
     usOnly,
   })
-  const settle = (id: string, output: number, search: number, searchOn: boolean, usOnly: boolean): Command => ({
-    command: "settle",
+  const settle = (
+    id: string,
+    output: number,
+    search: number,
+    searchOn: boolean,
+    usOnly: boolean,
+    command: "settle" | "stop" = "settle",
+  ): Command => ({
+    command,
     id,
     input: 0,
     output,
@@ -1018,6 +1025,9 @@ function usageCommand(action: string): Command | null {
   if (action === "SettleOther") return settle("b", halfTokens, 0, false, false)
   if (action === "SettleSearch") return settle("a", halfTokens, 1, true, false)
   if (action === "SettleUs") return settle("a", halfTokens, 0, false, true)
+  if (action === "StopHalf" || action === "StopAgain") return settle("a", halfTokens, 0, false, false, "stop")
+  if (action === "StopAll") return settle("a", allTokens, 0, false, false, "stop")
+  if (action === "StopOther") return settle("b", halfTokens, 0, false, false, "stop")
   if (action === "Release" || action === "ReleaseClosed") return { command: "release", id: "a" }
   if (action === "ReleaseOther") return { command: "release", id: "b" }
   if (action === "Monday") return { command: "monday" }

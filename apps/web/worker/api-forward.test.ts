@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 import { createServer, type Server } from "node:http"
-import { afterEach, beforeEach, describe, expect, it } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import worker from "./api-forward.js"
 import {
@@ -33,11 +33,13 @@ let origin: string
 let seen: Seen[]
 let assets: Request[]
 let finish: () => void
+let turnClosed = "open"
 
 beforeEach(async () => {
   seen = []
   assets = []
   finish = () => undefined
+  turnClosed = "open"
   server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on("data", (chunk: Buffer) => chunks.push(chunk))
@@ -53,6 +55,9 @@ beforeEach(async () => {
       if (request.url === "/aira/turn") {
         response.writeHead(200, { "content-type": "application/x-ndjson; charset=utf-8" })
         response.write('{"type":"text","text":"Lead"}\n')
+        response.on("close", () => {
+          turnClosed = response.writableFinished ? "ended" : "closed"
+        })
         finish = () => {
           finish = () => undefined
           response.end('{"type":"end","ok":true}\n')
@@ -197,6 +202,31 @@ describe("API forwarding", () => {
     })
     await worker.fetch(request, env())
     expect(seen[0]?.country).toBeUndefined()
+  })
+
+  it("closes the API's Aira turn when the person's request is cancelled, so the API stops the model call", async () => {
+    const leaving = new AbortController()
+    const response = await worker.fetch(
+      new Request("https://example.com/aira/turn", {
+        method: "POST",
+        headers: { cookie: "airdesign.session=abc" },
+        signal: leaving.signal,
+      }),
+      env(),
+    )
+    const reader = response.body?.getReader()
+    if (reader === undefined) throw new Error("body")
+    expect(new TextDecoder().decode((await reader.read()).value)).toBe('{"type":"text","text":"Lead"}\n')
+    leaving.abort()
+    await vi.waitFor(() => {
+      expect(turnClosed).toBe("closed")
+    })
+  })
+
+  it("asks Cloudflare to signal a cancelled request to the Worker", () => {
+    const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")
+    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as { compatibility_flags?: string[] }
+    expect(config.compatibility_flags).toContain("enable_request_signal")
   })
 
   it("returns the link redirect and cookie without following it", async () => {
