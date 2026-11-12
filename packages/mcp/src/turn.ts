@@ -1,5 +1,5 @@
-import type { DeckId } from "@airdesign/catalog"
-import type { Session, ToolResult } from "./call-tool.js"
+import type { AgentOp, DeckId } from "@airdesign/catalog"
+import { agentOps, type Session, type ToolResult } from "./call-tool.js"
 
 export type Turn = {
   readonly runId: string | null
@@ -40,19 +40,15 @@ export function dropGoneTurn(session: Session, seen: Turn | undefined): void {
   session.turns.write(deck.id, { runId: null, lastCall: session.now, revision: deck.revision })
 }
 
-export function settleTurn(op: string, result: ToolResult, session: Session): void {
+export function settleTurn(op: AgentOp, result: ToolResult, session: Session): void {
   if (!result.ok) return
   const deck = session.deck.id
   const held = session.turns.read(deck)
   const answer = result.answer?.ok === true ? result.answer : undefined
   if (answer !== undefined && (held === undefined || answer.revision >= held.revision)) {
-    const { revision, runId } = answer
-    if (op === "edit_deck") {
-      session.turns.write(deck, { runId, lastCall: session.now, revision })
-      return
-    }
-    if (op === "stop_run" && runId === held?.runId) {
-      session.turns.write(deck, { runId: null, lastCall: session.now, revision })
+    const runId = agentOps[op].turnRun(answer, held)
+    if (runId !== undefined) {
+      session.turns.write(deck, { runId, lastCall: session.now, revision: answer.revision })
       return
     }
   }

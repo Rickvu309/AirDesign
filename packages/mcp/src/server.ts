@@ -2,9 +2,8 @@ import { catalog, projectTools } from "@airdesign/catalog"
 import { McpServer } from "@modelcontextprotocol/server"
 import * as z from "zod/v4"
 import { admit } from "./admit.js"
-import { callTool, type Session, type ToolResult } from "./call-tool.js"
-import { editRefusal, runRefusal } from "./edit-answer.js"
-import { editSentence, type EditCode } from "./edit-next.js"
+import { agentOps, callTool, type Session, type ToolResult } from "./call-tool.js"
+import type { EditCode } from "./edit-next.js"
 import { settleTurn } from "./turn.js"
 
 function inputSchema(input: z.ZodType) {
@@ -65,14 +64,7 @@ export function createServer(session: Session, host?: Host): McpServer {
         if (host?.prepare) {
           const prepared = await host.prepare(tool.name, args, session)
           if (!prepared.ok) {
-            if (tool.op === "edit_deck") return mcpResult(editRefusal(session.deck, prepared.refusal, []))
-            if (tool.op === "stop_run") return mcpResult(runRefusal(session.deck, prepared.refusal))
-            return mcpResult({
-              ok: false,
-              refusal: prepared.refusal,
-              deck: session.deck,
-              content: [{ type: "text", text: editSentence(prepared.refusal) }],
-            })
+            return mcpResult(agentOps[tool.op].refuse(session.deck, prepared.refusal))
           }
         }
         const result = callTool(tool.name, args, session)

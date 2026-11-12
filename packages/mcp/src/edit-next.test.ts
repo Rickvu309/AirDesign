@@ -1,6 +1,6 @@
 import type { Refusal } from "@airdesign/document"
 import { describe, expect, it } from "vitest"
-import { editCodes, editNext, editSentence, runNext, runSentence, type EditCode } from "./edit-next.js"
+import { editCodes, editNext, runNext, type EditCode } from "./edit-next.js"
 
 describe("editNext", () => {
   it("gives every refusal that can reach an agent a sentence", () => {
@@ -25,7 +25,7 @@ describe("editNext", () => {
     ]
     expect([...editCodes].sort()).toEqual([...reached].sort())
     for (const code of editCodes) {
-      const sentence = editSentence(code)
+      const sentence = editNext[code]
       expect(sentence.length, code).toBeGreaterThan(0)
       expect(sentence, code).not.toBe(code)
       expect(sentence.endsWith("."), code).toBe(true)
@@ -33,7 +33,7 @@ describe("editNext", () => {
       expect(sentence, code).not.toContain("send the change again")
       expect(sentence, code).not.toContain("version")
     }
-    expect(new Set(editCodes.map((code) => editSentence(code))).size).toBe(editCodes.length)
+    expect(new Set(editCodes.map((code) => editNext[code])).size).toBe(editCodes.length)
     expect(editNext.stale).toContain("send the change again")
     expect(editNext["person-protected"]).toContain("Do not send this change again")
     expect(editNext["run-fenced"]).toContain("airdesign_stop_run")
@@ -45,7 +45,7 @@ describe("editNext", () => {
   })
 
   it("gives a stop its own next step where the edit sentence would mislead", () => {
-    for (const code of editCodes) expect(runSentence(code).endsWith("."), code).toBe(true)
+    for (const code of editCodes) expect(runNext[code].endsWith("."), code).toBe(true)
     for (const code of ["stale", "run-fenced", "limit"] as const) {
       expect(runNext[code], code).not.toBe(editNext[code])
       expect(runNext[code], code).not.toContain("send the change again")

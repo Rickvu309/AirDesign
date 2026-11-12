@@ -39,11 +39,3 @@ export const runNext = {
   "run-fenced": "This deck has no run with this id, and nothing changed. Use the runId an edit answer carried.",
   limit: "The deck is at its element limit, so this run could not be ended, and nothing changed. Tell the person.",
 } as const satisfies Record<EditCode, string>
-
-export function editSentence(code: EditCode): string {
-  return editNext[code]
-}
-
-export function runSentence(code: EditCode): string {
-  return runNext[code]
-}
