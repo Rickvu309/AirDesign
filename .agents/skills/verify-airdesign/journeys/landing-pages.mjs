@@ -18,19 +18,22 @@ async function scrollToEnd(page) {
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))))
 }
 
-async function top(kit, size, label) {
+async function openAt(kit, size) {
   await kit.page.setViewportSize(size)
   await kit.page.goto(`${kit.siteOrigin}/`)
   await expect(kit.page.getByRole("heading", { level: 1 })).toHaveText("Clarity is the edge.")
-  await kit.capture(label)
 }
 
 export default async function drive(kit) {
   const { page, siteOrigin, capture, note } = kit
-  await top(kit, desktop, "landing-hero")
-  await top(kit, landscape, "landing-hero-landscape")
-  await top(kit, narrow, "landing-hero-narrow")
-  await top(kit, phone, "landing-hero-phone")
+  await openAt(kit, desktop)
+  await capture("landing-hero")
+  await openAt(kit, landscape)
+  await capture("landing-hero-landscape")
+  await openAt(kit, narrow)
+  await capture("landing-hero-narrow")
+  await openAt(kit, phone)
+  await capture("landing-hero-phone")
   await scrollTo(page, "#product")
   await capture("landing-product-phone")
   await scrollTo(page, "#agents")
