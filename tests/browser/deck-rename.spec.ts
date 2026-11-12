@@ -1,18 +1,6 @@
-import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
+import { openFixture as open } from "./fixture-deck.ts"
 import { store } from "./home-store.ts"
-
-const fixture = join(process.cwd(), "scripts/pptx-fixtures/clean.pptx")
-
-test.use({ viewport: { width: 1600, height: 1000 } })
-
-async function open(page: Page): Promise<void> {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await expect(page).toHaveURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await expect(page.locator(".thin-page[data-deck-ready]")).toBeVisible()
-  await expect(page.getByRole("button", { name: "Rename deck: clean" })).toBeVisible()
-}
 
 const title = (page: Page) => page.getByRole("button", { name: /^Rename deck: / })
 const field = (page: Page) => page.getByRole("textbox", { name: "Deck name" })
@@ -101,11 +89,12 @@ test("a rename made offline reaches the server once the network is back", async 
 })
 
 test("the deck home shows the new name", async ({ page }) => {
-  await store(page, [])
+  const { calls } = await store(page, [])
   await open(page)
   await title(page).click()
   await field(page).fill("Shown at home")
   await field(page).press("Enter")
+  await expect.poll(() => calls.some((call) => call.path === "rename")).toBe(true)
   await page.goto("/")
   await expect(page.getByRole("heading", { name: "Shown at home" })).toBeVisible()
 })

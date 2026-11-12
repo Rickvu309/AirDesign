@@ -1,12 +1,12 @@
 import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
-import { connect, distrustDevice, flushOriginal, getParts, memoryRemote, trustDeck } from "@airdesign/live"
-import { exportPackage, readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
+import { connect, distrustDevice, flushOriginal, memoryRemote, trustDeck } from "@airdesign/live"
+import { readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
-import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
-import { exportFileName } from "@/export/export-file-name"
+import { DownloadedNotice, signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
+import { exportDeck } from "@/export/export-deck"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { thumbHeight } from "@/thumb-height"
@@ -78,6 +78,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [offline, setOffline] = useState(() => navigator.onLine === false)
   const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
   const [refused, setRefused] = useState(false)
+  const [downloaded, setDownloaded] = useState<string | null>(null)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
   const undoList = useRef(emptyUndo)
   const turning = useRef<Promise<void>>(Promise.resolve())
@@ -286,26 +287,6 @@ export function ThinDeck({ id }: { id: string }) {
     void work().finally(release)
   }
 
-  async function exportDeck() {
-    await notesQueue.current
-    await ensureMarkup()
-    const stored = await getParts(id)
-    if (!stored.ok) throw new Error("parts")
-    const opened = await connect(memoryRemote()).openDeck(id)
-    if (!opened.ok) throw new Error("register")
-    const bytes = await exportPackage(stored.file, exportedParts(stored.parts, opened.register))
-    const copy = new Uint8Array(bytes.byteLength)
-    copy.set(bytes)
-    const url = URL.createObjectURL(new Blob([copy]))
-    const link = document.createElement("a")
-    link.href = url
-    link.download = exportFileName(stored.name)
-    document.body.append(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
-  }
-
   function openFrom(
     stored: { readonly parts: ReadonlyMap<string, Uint8Array>; readonly name?: string },
     register: Register | null,
@@ -433,7 +414,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function onExport() {
     try {
-      await exportDeck()
+      setDownloaded(await exportDeck(id, notesQueue.current))
       setFailure(null)
     } catch {
       setFailure("export-failed")
@@ -475,6 +456,9 @@ export function ThinDeck({ id }: { id: string }) {
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
       <ThinNoticeView notice={notice} onTryAgain={tryAgain} />
+      {downloaded !== null && notice === null && (
+        <DownloadedNotice name={downloaded} onDone={() => setDownloaded(null)} />
+      )}
       <EditorFrame>
         <EditorShell
           deck={{
