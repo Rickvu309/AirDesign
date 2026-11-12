@@ -39,6 +39,9 @@ export default async function drive(kit) {
   await capture("landing-pricing-phone")
   await scrollToEnd(page)
   await capture("landing-footer-phone")
-  const reach = await page.evaluate(() => ({ across: document.documentElement.scrollWidth, shown: document.documentElement.clientWidth }))
+  const reach = await page.evaluate(() => ({
+    across: document.documentElement.scrollWidth,
+    shown: document.documentElement.clientWidth,
+  }))
   note(`the landing page at ${siteOrigin}/ is ${reach.across} px wide in a ${reach.shown} px phone`)
 }
