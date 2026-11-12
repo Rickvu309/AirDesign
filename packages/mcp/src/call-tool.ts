@@ -13,7 +13,8 @@ import type { CallerLog, AdmissionText } from "./admit.js"
 import { editLanded, editRefusal, namedNodes, runEnded, runRefusal, type EditAnswer } from "./edit-answer.js"
 import { agentCaller, elementFloors, joinRun, openRun, stopLiveRuns } from "./run.js"
 import { textProblem } from "./text-from.js"
-import { liveTurn, type Turns } from "./turn.js"
+import { editNext, type EditCode } from "./edit-next.js"
+import { liveTurn, type Turn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
@@ -120,14 +121,38 @@ function captureSlide(raw: unknown, session: Session): ToolResult {
   return reached(session.deck, code, nextStep[code])
 }
 
-const handlers: Record<AgentOp, (raw: unknown, session: Session) => ToolResult> = {
-  edit_deck: editDeck,
-  stop_run: stopRun,
-  capture_slide: captureSlide,
+export const agentOps: Record<
+  AgentOp,
+  {
+    handle: (raw: unknown, session: Session) => ToolResult
+    refuse: (deck: Deck, code: EditCode) => ToolResult
+    turnRun: (answer: Extract<EditAnswer, { ok: true }>, held: Turn | undefined) => string | null | undefined
+  }
+> = {
+  edit_deck: {
+    handle: editDeck,
+    refuse: (deck, code) => editRefusal(deck, code, []),
+    turnRun: (answer) => answer.runId,
+  },
+  stop_run: {
+    handle: stopRun,
+    refuse: runRefusal,
+    turnRun: (answer, held) => (answer.runId === held?.runId ? null : undefined),
+  },
+  capture_slide: {
+    handle: captureSlide,
+    refuse: (deck, code) => ({
+      ok: false,
+      refusal: code,
+      deck,
+      content: [{ type: "text", text: editNext[code] }],
+    }),
+    turnRun: () => undefined,
+  },
 }
 
 export function callTool(name: string, raw: unknown, session: Session): ToolResult {
   const tool = projectTools(catalog).find((item) => item.name === name)
   if (tool === undefined) return refused(session.deck, "field")
-  return handlers[tool.op](raw, session)
+  return agentOps[tool.op].handle(raw, session)
 }

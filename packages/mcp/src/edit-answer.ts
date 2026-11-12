@@ -1,7 +1,7 @@
 import type { WireChange } from "@airdesign/catalog"
 import { currentValue, version, type ElementId, type Register } from "@airdesign/document"
 import type { Deck } from "@airdesign/engine"
-import { editSentence, runSentence, type EditCode } from "./edit-next.js"
+import { editNext, runNext, type EditCode } from "./edit-next.js"
 
 export type EditElement = {
   readonly node: ElementId
@@ -89,9 +89,9 @@ function refusedResult(
 }
 
 export function editRefusal(deck: Deck, code: EditCode, nodes: readonly ElementId[], detail?: string): EditResult {
-  return refusedResult(deck, code, editSentence(code), nodes, detail)
+  return refusedResult(deck, code, editNext[code], nodes, detail)
 }
 
 export function runRefusal(deck: Deck, code: EditCode): EditResult {
-  return refusedResult(deck, code, runSentence(code), [])
+  return refusedResult(deck, code, runNext[code], [])
 }
