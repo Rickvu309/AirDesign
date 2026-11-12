@@ -263,3 +263,38 @@ test("a picture moves by a drag anywhere on it and keeps the arrows once selecte
   expect(after[1]).toBeCloseTo((before[1] ?? 0) + 10, 3)
   await expect.poll(async () => (await boxRows(page)).length).toBe(2)
 })
+
+const pictured = "ppt/slides/slide4.xml#6"
+
+async function dragAndPressAtOnce(page: Page, from: { x: number; y: number }, by: { x: number; y: number }) {
+  await page.evaluate(
+    ({ id, start, step }) => {
+      const frame = document.querySelector<HTMLElement>(`[data-canvas-element="${id}"]`)
+      if (frame === null) throw new Error("no frame")
+      const options = { bubbles: true, cancelable: true, pointerId: 1, button: 0, isPrimary: true }
+      frame.dispatchEvent(new PointerEvent("pointerdown", { ...options, clientX: start.x, clientY: start.y }))
+      const end = { clientX: start.x + step.x, clientY: start.y + step.y }
+      document.dispatchEvent(new PointerEvent("pointermove", { ...options, ...end }))
+      document.dispatchEvent(new PointerEvent("pointerup", { ...options, ...end, buttons: 0 }))
+      frame.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }))
+    },
+    { id: pictured, start: from, step: by },
+  )
+}
+
+test("a nudge made as a drag lands is kept when the drag's own commit paints after it", async ({ page }) => {
+  await answerOpens(page)
+  await open(page, join(fixtures, "doe-heat-pumps.pptx"))
+  await page.locator('[data-slide-entry="4"]').click()
+  const picture = page.locator(`[data-canvas-element="${pictured}"]`)
+  const left = () => picture.evaluate((frame: HTMLElement) => Number.parseFloat(frame.style.left))
+  const before = await left()
+  await answerCommits(page)
+  const dragSent = page.waitForRequest((request) => request.url().endsWith("/decks/commit"))
+  await dragAndPressAtOnce(page, { x: 100, y: 100 }, { x: 20, y: 10 })
+  await dragSent
+  await expect.poll(left).toBeCloseTo(before + 20 - 12_700 / 11_430, 3)
+  await page.keyboard.up("ArrowLeft")
+  await expect.poll(() => boxRows(page)).toHaveLength(2)
+  await expect.poll(left).toBeCloseTo(before + 20 - 12_700 / 11_430, 3)
+})

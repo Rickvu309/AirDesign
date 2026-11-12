@@ -218,7 +218,6 @@ export function ThinDeck({ id }: { id: string }) {
       element,
       () => {
         setPending(true)
-        store.current.placeBox(target, box)
       },
       refused,
     )
