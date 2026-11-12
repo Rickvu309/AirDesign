@@ -26,6 +26,7 @@ const sections: {
 const settingsMenu = [
   { path: settingsPaths.usage, label: settingsCopy.usage },
   { path: settingsPaths.agents, label: settingsCopy.agents },
+  { path: settingsPaths.account, label: settingsCopy.account },
 ]
 
 const accountButton =
@@ -183,7 +184,7 @@ export function DecksShell({
           </div>
         )}
         <div className="mt-auto">
-          {realAccount ? null : firstVisit ? (
+          {firstVisit && !realAccount ? (
             <a
               href={deckRoutes.connectAgent}
               className="flex h-9 items-center justify-center gap-2 rounded-lg bg-background text-[length:var(--type-dense)] leading-none font-medium text-foreground shadow-[inset_0_0_0_1px_var(--field-edge),0_1px_2px_rgba(0,0,0,0.04)]"
@@ -192,7 +193,7 @@ export function DecksShell({
               Connect an agent
             </a>
           ) : (
-            <AgentPromo />
+            <AgentPromo {...(realAccount ? { href: settingsPaths.agents } : {})} />
           )}
         </div>
       </aside>

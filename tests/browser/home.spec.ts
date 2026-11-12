@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 import { join } from "node:path"
 import { openRegister } from "../../packages/document/src/index.ts"
+import { accountCopy } from "../../apps/web/src/copy/account-copy.ts"
 
 type Deck = { deck: string; name: string; edited: string; created: string; trashed?: string }
 const now = "2026-11-11T12:00:00Z"
@@ -382,17 +383,17 @@ test("delete account asks for the account's email, then removes the device copy 
     await page.getByRole("menuitem", { name: "Delete account" }).click()
   }
   await open()
-  const dialog = page.getByRole("dialog", { name: "Delete account" })
-  await expect(dialog.getByText("Removes your decks and credits for good.")).toBeVisible()
+  const dialog = page.getByRole("dialog", { name: "Delete your account?" })
+  await expect(dialog.getByText(accountCopy.deleteBody)).toBeVisible()
   const remove = dialog.getByRole("button", { name: "Delete account" })
   await expect(remove).toBeDisabled()
-  await dialog.getByLabel("Signed in with email").fill("other@example.com")
+  await dialog.getByLabel("Type your email to confirm").fill("other@example.com")
   await expect(remove).toBeDisabled()
   await dialog.getByRole("button", { name: "Cancel" }).click()
   await expect(dialog).toBeHidden()
   expect(posted).toEqual([])
   await open()
-  await dialog.getByLabel("Signed in with email").fill(" Home@Example.com ")
+  await dialog.getByLabel("Type your email to confirm").fill(" Home@Example.com ")
   await remove.click()
   await expect(page).toHaveURL(/\/sign-in\?next=%2F$/)
   expect(posted).toEqual([{ email: "home@example.com" }])

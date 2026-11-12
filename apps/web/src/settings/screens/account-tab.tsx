@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AccountCard } from "@/settings/account-card"
 import { ModuleRow } from "@/settings/module-row"
 import { SettingsFrame } from "@/settings/settings-frame"
 import { settingsCopy } from "@/settings/settings-sample"
@@ -46,33 +47,7 @@ export function AccountTab() {
           />
         </div>
       </Card>
-      <Card title={settingsCopy.account}>
-        <div className="flex flex-col gap-3.5">
-          <ModuleRow
-            title={settingsCopy.signedIn}
-            status={settingsCopy.email}
-            action={
-              <Button type="button" variant="outline" className={settingsAction} style={{ width: 79.84 }}>
-                {settingsCopy.signOut}
-              </Button>
-            }
-          />
-          <ModuleRow
-            title={settingsCopy.deleteAccount}
-            status={settingsCopy.deleteBody}
-            action={
-              <Button
-                type="button"
-                variant="outline"
-                className={`${settingsAction} text-destructive`}
-                style={{ width: 122.75 }}
-              >
-                {settingsCopy.deleteAccount}
-              </Button>
-            }
-          />
-        </div>
-      </Card>
+      <AccountCard email={settingsCopy.email} />
     </SettingsFrame>
   )
 }

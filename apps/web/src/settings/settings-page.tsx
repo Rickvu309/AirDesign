@@ -9,6 +9,7 @@ import { signInAddress } from "@/thin-notice"
 const tabs: { id: SettingsPath; label: string }[] = [
   { id: "usage", label: settingsCopy.usage },
   { id: "agents", label: settingsCopy.agents },
+  { id: "account", label: settingsCopy.account },
 ]
 
 export function SettingsPage({

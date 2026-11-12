@@ -201,6 +201,18 @@ async function usageLoading(kit) {
   await expect(kit.page.getByRole("meter", { name: "Weekly usage" })).toBeVisible()
 }
 
+async function accountTab(kit) {
+  const { email } = await kit.signIn()
+  await kit.page.goto("/settings/account")
+  await expect(kit.page.locator("[data-settings-content]").getByText(email, { exact: true })).toBeVisible()
+}
+
+async function accountDeleteAsk(kit) {
+  await accountTab(kit)
+  await kit.page.locator("[data-settings-content]").getByRole("button", { name: "Delete account", exact: true }).click()
+  await expect(kit.page.getByRole("dialog", { name: "Delete your account?" })).toBeVisible()
+}
+
 export const states = [
   { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
   { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
@@ -265,6 +277,8 @@ export const states = [
   { name: "usage-page", design: "/screens/s81-01-settings-settings-usage-tab", drive: usagePage },
   { name: "agent-out-of-usage", design: "/screens/s92-01-credits-out-of-usage-limit-reached", drive: outOfUsage },
   { name: "agent-not-offered", design: editor, drive: notOffered },
+  { name: "account-tab", design: "/screens/s81-03-settings-settings-account-tab", drive: accountTab },
+  { name: "account-delete-ask", design: null, drive: accountDeleteAsk },
   {
     name: "agents-empty",
     design: "/screens/s81-02-settings-settings-agents-tab",

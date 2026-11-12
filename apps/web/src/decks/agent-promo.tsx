@@ -1,11 +1,12 @@
 import { buttonVariants } from "@/components/ui/button"
+import { accountCopy } from "@/copy/account-copy"
 import { cn } from "@/lib/class-names"
 import { promoFill, promoMark, promoSlash } from "@/decks/agent-promo-art"
 import { claudeLogo, openAiLogo } from "@/decks/agent-logos"
 import { DeckGlyph } from "@/decks/deck-glyph"
 import { deckRoutes } from "@/decks/deck-routes"
 
-export function AgentPromo() {
+export function AgentPromo({ href = deckRoutes.connectAgent }: { href?: string }) {
   return (
     <section className="h-[254.31px] w-[224px] shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
       <div
@@ -78,9 +79,9 @@ export function AgentPromo() {
           Bring your own agent
         </h2>
         <p className="mt-2 h-[34.81px] text-[length:var(--type-caption)] leading-[17.405px] text-muted-foreground">
-          Claude or Codex can build decks here.
+          {accountCopy.agentCardBody}
         </p>
-        <a href={deckRoutes.connectAgent} className={cn(buttonVariants({ variant: "outline" }), "mt-5 w-full gap-1.5")}>
+        <a href={href} className={cn(buttonVariants({ variant: "outline" }), "mt-5 w-full gap-1.5")}>
           <DeckGlyph name="plug" size={14} />
           Connect an agent
         </a>

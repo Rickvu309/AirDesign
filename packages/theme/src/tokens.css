@@ -31,6 +31,7 @@
   --primary-strong: #2d6fcd;
   --danger-light: #f29a9a;
   --danger-edge: #b92f2f;
+  --danger-text: #b92f2f;
   --faint-foreground: #909090;
   --positive: #16a34a;
   --negative: #dc2626;
@@ -154,6 +155,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-danger-text: var(--danger-text);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
