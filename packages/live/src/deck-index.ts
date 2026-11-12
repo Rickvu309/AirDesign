@@ -1,7 +1,7 @@
 import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import { appendIndex, bytesOf, limits, readIndexPage, type DeckIndex, type IndexPage } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote } from "./remote.js"
-import { installSlots, readSlot, writeSlot } from "./store.js"
+import { installSlots, readSlot, replaceSlots, writeSlot } from "./store.js"
 
 type ImportIndex = Pick<DeckIndex, "slides" | "elements">
 type Queue = { readonly count: number; readonly sent: number }
@@ -48,8 +48,14 @@ function queue(raw: unknown): Queue | null {
   return { count: raw.count, sent: raw.sent }
 }
 
+export async function hasLayouts(deck: string): Promise<boolean> {
+  return (await readSlot(key(deck, "layered"))) === true
+}
+
 async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
-  if (queue(await readSlot(key(deck, "queue"))) !== null) return { ok: true as const }
+  const layered = index.slides.some((row) => row.layout !== undefined)
+  const upgrade = layered && !(await hasLayouts(deck))
+  if (queue(await readSlot(key(deck, "queue"))) !== null && !upgrade) return { ok: true as const }
   const pages: IndexPage[] = []
   let held: DeckIndex | undefined
   for (let offset = 0; offset < index.elements.length || pages.length === 0;) {
@@ -76,8 +82,10 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
     offset += elements.length
     if (offset === index.elements.length) break
   }
-  await installSlots(key(deck, "queue"), [
+  const write = upgrade ? (puts: Parameters<typeof replaceSlots>[0]) => replaceSlots(puts) : (puts: Parameters<typeof replaceSlots>[0]) => installSlots(key(deck, "queue"), puts)
+  await write([
     ...pages.flatMap((page, n) => pageSlots(deck, n, page)),
+    { key: key(deck, "layered"), value: layered },
     { key: key(deck, "queue"), value: { count: pages.length, sent: 0 } },
   ])
   return { ok: true as const }

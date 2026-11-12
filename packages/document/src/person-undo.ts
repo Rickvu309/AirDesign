@@ -2,7 +2,7 @@ import type { Box } from "./box.js"
 import { currentBox, currentValue, decide, type Command, type Register } from "./decide.js"
 import type { ElementId, SlideId } from "./element-id.js"
 import type { OrderKey } from "./order-key.js"
-import { foldSlides, type SlideCommand } from "./slide-order.js"
+import { foldSlides, type SlideCommand, type SlideState } from "./slide-order.js"
 import type { Value } from "./value.js"
 
 export type SlideSpot = { readonly present: boolean; readonly key: OrderKey }
@@ -81,4 +81,29 @@ export function undoOf(register: Register, undoable: Undoable): Turn {
 
 export function redoOf(register: Register, undoable: Undoable): Turn {
   return turn(register, undoable, "before")
+}
+
+function spotIn(state: SlideState, id: SlideId): SlideSpot | undefined {
+  const spot = foldSlides(state).find((each) => each.id === id)
+  return spot === undefined ? undefined : { present: spot.present, key: spot.key }
+}
+
+export function undoSlides(register: Register, runId: string): Register | null {
+  let current = register
+  for (let at = register.order.length - 1; at >= 0; at -= 1) {
+    const edit = register.order[at]
+    if (edit === undefined || edit.runId !== runId) continue
+    const after = spotIn({ file: register.file, order: register.order.slice(0, at + 1) }, edit.id)
+    if (after === undefined) return null
+    const before = spotIn({ file: register.file, order: register.order.slice(0, at) }, edit.id) ?? {
+      present: false,
+      key: after.key,
+    }
+    const undone = undoOf(current, { slide: edit.id, file: register.file, before, after })
+    if (!undone.ok) return null
+    const decision = decide(current, undone.command)
+    if (decision.decision !== "apply") return null
+    current = decision.register
+  }
+  return current
 }
