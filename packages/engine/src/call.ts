@@ -2,6 +2,7 @@ import { agentSlide } from "./agent-slides.js"
 import {
   bytesOf,
   decide,
+  undoSlides,
   storedElements,
   storedValue,
   limits,
@@ -236,10 +237,22 @@ function stopRun(deck: Deck, runId: string): CallResult {
 }
 
 function undoRun(deck: Deck, runId: string): CallResult {
-  if (deck.register.order.some((row) => row.runId === runId)) return refused("run-fenced")
-  const result = endOnTouched(deck, "undo", runId, (body) => showsRows(body, runId))
-  if (result.ok && result.deck === deck) return refused("run-fenced")
-  return result
+  const ordered = deck.register.order.some((row) => row.runId === runId)
+  const touched = everyElement(deck.register).some((node) => holdsRun(bodyOf(deck.register, node), runId))
+  if (!ordered && !touched) return refused("run-fenced")
+  let register = deck.register
+  if (touched) {
+    const ended = endOnTouched(deck, "undo", runId, (body) => showsRows(body, runId))
+    if (!ended.ok) return ended
+    register = ended.deck.register
+  }
+  if (ordered) {
+    const slides = undoSlides(register, runId)
+    if (slides === null) return refused("run-fenced")
+    register = slides
+  }
+  if (register === deck.register) return refused("run-fenced")
+  return landed(deck, register)
 }
 
 function namesOtherRun(caller: Caller, runId: string): boolean {

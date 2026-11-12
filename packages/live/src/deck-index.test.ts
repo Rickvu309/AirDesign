@@ -108,3 +108,23 @@ it("keeps opening text larger than an edit or a storage row without clipping it"
   const opened = await remote.open({ deck: "long-floor" })
   expect(opened.ok && opened.register.index?.elements[0]?.value).toBe(value)
 })
+
+it("upgrades an imported deck's index with its layouts once and then leaves it alone", async () => {
+  const remote = memoryRemote()
+  const cache = connect(remote)
+  const layout = [{ ...index.elements[0]!, node: elementId("258.2") }]
+  expect(await cache.layered("up")).toBe(false)
+  expect(await cache.index("up", index)).toEqual({ ok: true })
+  expect((await cache.flush("up")).ok).toBe(true)
+  expect(await cache.layered("up")).toBe(false)
+  const layered = { ...index, slides: [{ id: "258", position: 0, layout }] }
+  expect(await cache.index("up", layered)).toEqual({ ok: true })
+  expect((await cache.flush("up")).ok).toBe(true)
+  expect(await cache.layered("up")).toBe(true)
+  const upgraded = await remote.open({ deck: "up" })
+  expect(upgraded.ok && upgraded.register.index?.slides[0]?.layout).toEqual(layout)
+  expect(upgraded.ok && upgraded.register.index?.elements).toEqual(index.elements)
+  const queued = (await readSlot("up\u0002layouts\u0002queue")) as { count: number; sent: number }
+  expect(await cache.index("up", { ...layered, slides: [{ id: "258", position: 0 }] })).toEqual({ ok: true })
+  expect(await readSlot("up\u0002layouts\u0002queue")).toEqual(queued)
+})

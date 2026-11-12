@@ -1,5 +1,6 @@
 import { join } from "node:path"
 import { expect } from "@playwright/test"
+import { productCopy } from "../../apps/web/src/copy/product-copy.ts"
 import { forward, signInBrowser, test } from "./api-stack"
 
 test("Aira adds a slide and titles it live, and reload keeps the slide", async ({ page, context, stack }) => {
@@ -27,4 +28,6 @@ test("Aira adds a slide and titles it live, and reload keeps the slide", async (
   await page.reload()
   await expect(page.locator("[data-slide-entry]")).toHaveCount(2)
   await expect(page.locator('[data-slide-entry="2"]')).toContainText("Hello from Aira")
+  await page.locator("[data-editor-panel]").getByRole("button", { name: productCopy.undo }).click()
+  await expect(page.locator("[data-slide-entry]")).toHaveCount(1)
 })

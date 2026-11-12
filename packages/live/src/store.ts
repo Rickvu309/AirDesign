@@ -271,6 +271,10 @@ export function installSlots(
   return putSlots(puts, absent)
 }
 
+export function replaceSlots(puts: readonly { readonly key: string; readonly value: unknown }[]): Promise<void> {
+  return putSlots(puts)
+}
+
 function putSlots(puts: readonly { readonly key: string; readonly value: unknown }[], absent?: string): Promise<void> {
   return openDatabase().then(
     (database) =>

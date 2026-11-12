@@ -78,7 +78,7 @@ export const catalog = {
     destructive: true,
     read: slideReaders.add_slide,
     description:
-      "Add a slide after an existing slide, using the layout of the named slide. Read the deck first and send its revision as base. Returns the new slide id. Open the deck in AirDesign to index its layouts first. Slide edits cannot yet be undone by run Undo.",
+      "Add a slide after an existing slide, using the layout of the named slide. Read the deck first and send its revision as base. Returns the new slide id. Open the deck in AirDesign to index its layouts first.",
   },
   duplicate_slide: {
     kind: "command",
@@ -87,7 +87,7 @@ export const catalog = {
     destructive: true,
     read: slideReaders.duplicate_slide,
     description:
-      "Duplicate a slide after itself, including its current text and boxes. Read the deck first and send its revision as base. Returns the new slide id. Slide edits cannot yet be undone by run Undo.",
+      "Duplicate a slide after itself, including its current text and boxes. Read the deck first and send its revision as base. Returns the new slide id.",
   },
   delete_slide: {
     kind: "command",
@@ -96,7 +96,7 @@ export const catalog = {
     destructive: true,
     read: slideReaders.delete_slide,
     description:
-      "Delete the named slide. The last slide cannot be deleted. Read the deck first and send its revision as base. Slide edits cannot yet be undone by run Undo.",
+      "Delete the named slide. The last slide cannot be deleted. Read the deck first and send its revision as base.",
   },
   move_slide: {
     kind: "command",
@@ -105,7 +105,7 @@ export const catalog = {
     destructive: true,
     read: slideReaders.move_slide,
     description:
-      "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base. Slide edits cannot yet be undone by run Undo.",
+      "Move the named slide after another slide, or to the beginning with after: null. Read the deck first and send its revision as base.",
   },
   list_decks: {
     kind: "query",
