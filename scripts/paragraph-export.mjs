@@ -46,11 +46,12 @@ export const boxRoutes = [
 export const browserSpecs = [
   "tests/browser/thin-deck.spec.ts",
   "tests/browser/box-export.spec.ts",
+  "tests/browser/blank-deck.spec.ts",
   "tests/browser/slide-export.spec.ts",
 ]
 
-export const freshExports = ({ deck, paragraphs, box, slides, run }) =>
-  freshBrowserExport({ file: deck, also: [paragraphs, box, ...(slides === undefined ? [] : [slides])], run })
+export const freshExports = ({ deck, paragraphs, box, slides, also = [], run }) =>
+  freshBrowserExport({ file: deck, also: [paragraphs, box, ...(slides === undefined ? [] : [slides]), ...also], run })
 
 export const judgedExportNames = (spec) => (spec.ok ? [paragraphsExportName, boxExportName, slideExportName] : [])
 

@@ -42,14 +42,9 @@ const live = vi.hoisted(() => {
     flushed,
     state,
     reset() {
-      counts.fetchOriginal = 0
+      Object.assign(counts, { fetchOriginal: 0, openDeck: 0, flush: 0 })
       state.original = { ok: false, refusal: "missing" }
-      sent.length = 0
-      reads.length = 0
-      saved.length = 0
-      flushed.length = 0
-      counts.openDeck = 0
-      counts.flush = 0
+      for (const list of [sent, reads, saved, flushed]) list.length = 0
       waiters = []
       state.parts = { ok: false, refusal: "absent" }
       state.opened = { ok: false, refusal: "deck" }
@@ -101,9 +96,10 @@ const live = vi.hoisted(() => {
 })
 
 vi.mock("@airdesign/live", async () => {
-  const actual = await vi.importActual<Record<string, unknown>>("@airdesign/live")
   return {
-    ...actual,
+    ...(await vi.importActual<Record<string, unknown>>("@airdesign/live")),
+    queueOriginal: vi.fn(),
+    flushOriginal: vi.fn(),
     connect: live.connect,
     getParts: live.getParts,
     putParts: live.putParts,
@@ -359,7 +355,7 @@ it("saves every edit under the deck id in the address", async () => {
   expect(live.reads).toContain("address-deck")
 })
 
-it("saves two opened files under distinct valid deck ids", async () => {
+it("saves files with distinct valid deck ids", async () => {
   live.reset()
   const firstParts = new Map([["first", new Uint8Array([1])]])
   const secondParts = new Map([["second", new Uint8Array([2])]])

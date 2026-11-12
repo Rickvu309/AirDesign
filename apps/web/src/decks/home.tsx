@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { sendOriginal } from "@airdesign/live"
+import { flushOriginal } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { DeckRow, DeckTableHeader } from "@/decks/deck-row"
 import { ImportingPreview, ImportFailedPreview } from "@/decks/deck-status-preview"
 import { importFailureWords, type ImportFailureReason } from "@/decks/import-failure-words"
 import { NewDeckMenu } from "@/decks/new-deck-menu"
+import { blankDeck } from "@/decks/blank-deck"
 import { MovedToast, MovedToaster, movedToastOptions } from "@/decks/screens/deck-moved-toast"
 import { EmptyTrashButton, EmptyTrashDialog, RestoreButton, TrashNote } from "@/decks/screens/trash-list"
 import { starterDeckCards } from "@/decks/sample-decks"
@@ -153,7 +154,7 @@ export function Home({
         return
       }
       await nameImportedDeck(imported.deck)
-      await sendOriginal(imported.deck.id, imported.deck.file)
+      await flushOriginal(imported.deck.id)
       navigate(`/deck/${imported.deck.id}`)
     } catch {
       setImporting({ name: file.name, failed: true, reason: "save" })
@@ -172,7 +173,9 @@ export function Home({
       firstVisit={firstVisit}
       view={listView ? "list" : "grid"}
       home
-      menu={menu && <NewDeckMenu onImport={() => picker.current?.click()} />}
+      menu={
+        menu && <NewDeckMenu onImport={() => picker.current?.click()} onBlank={() => void blankDeck().then(choose)} />
+      }
       menuOpen={menu}
       onNewDeck={() => setMenu(!menu)}
       onSignOut={() => void signOut()}

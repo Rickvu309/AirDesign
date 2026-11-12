@@ -51,6 +51,7 @@ import {
 } from "./pptx-render.mjs"
 import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
+import { blankCase, blankExportLines, blankExportName } from "./blank-export.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 await takeMachineLock()
@@ -102,6 +103,7 @@ const browserSpec = freshExports({
   paragraphs: paragraphsExportPath,
   box: boxExportPath,
   slides: slideExportPath,
+  also: [path.join(root, "tests/browser", blankExportName)],
   run: () => run("pnpm", ["exec", "playwright", "test", ...browserSpecs]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
@@ -124,6 +126,7 @@ const browserExports = new Map([
   [paragraphsExportName, paragraphsExportPath],
   [boxExportName, boxExportPath],
   [slideExportName, slideExportPath],
+  [blankExportName, path.join(root, "tests/browser", blankExportName)],
 ])
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
@@ -231,6 +234,9 @@ if (spec.ok) {
   for (const name of judgedExportNames(spec)) {
     parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   }
+  parts.set(blankExportName, await pptx.readParts(fs.readFileSync(fixturePath(blankExportName))))
+  cases.push(blankCase)
+  waiting.push(blankExportName)
   waiting.push(browserExportName)
 } else {
   const index = cases.findIndex((row) => row.name === "browser-text-export")
@@ -300,7 +306,7 @@ if (!spec.ok) {
     failed += 1
     console.log(line)
   }
-  for (const line of slideExportLines({ pptx, parts, lists, ids, orders })) {
+  for (const line of [...slideExportLines({ pptx, parts, lists, ids, orders }), ...blankExportLines({ pptx, parts, lists })]) {
     failed += 1
     console.log(line)
   }

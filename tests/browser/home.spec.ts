@@ -88,7 +88,7 @@ test("empty home shows the designed first visit and import menu", async ({ page 
   await expect(page.getByText("Your first draft")).toBeVisible()
   await page.getByRole("button", { name: "New deck", exact: true }).click()
   await expect(page.getByRole("button", { name: "Import PowerPoint" })).toBeVisible()
-  await expect(page.getByText("Blank deck", { exact: true })).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Blank deck", exact: true })).toBeVisible()
 })
 
 test("choosing a file opens its deck and posts the filename rename", async ({ page }) => {

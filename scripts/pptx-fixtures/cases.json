@@ -1,5 +1,15 @@
 [
   {
+    "name": "blank-original",
+    "before": "blank.pptx",
+    "after": "blank.pptx",
+    "visible": false,
+    "targeted": [],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
     "name": "nasa-1d-cnn",
     "before": "nasa-1d-cnn.pptx",
     "after": "nasa-1d-cnn.pptx",

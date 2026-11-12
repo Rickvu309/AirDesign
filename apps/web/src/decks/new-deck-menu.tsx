@@ -1,19 +1,21 @@
 import { productCopy } from "@/copy/product-copy"
 
-export function NewDeckMenu({ onImport }: { onImport?: () => void }) {
+export function NewDeckMenu({ onImport, onBlank }: { onImport?: () => void; onBlank?: () => void }) {
   return (
     <div className="absolute top-[calc(100%+4.5px)] right-0 z-20 w-[180px] rounded-[var(--shape-card)] bg-background p-1 shadow-[inset_0_0_0_1px_var(--sheet),0_12px_32px_rgb(0_0_0/12%)]">
-      {!onImport && (
-        <div className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground">
-          <svg width="13" height="14" viewBox="8 9 13 14" aria-hidden="true">
-            <path
-              d="M16.69,9.16 L20.83,12.93 C20.95,13.04 21,13.17 21,13.31 L21,21.92 C21,22.52 20.47,23 19.82,23 L9.18,23 C8.53,23 8,22.52 8,21.92 L8,10.08 C8,9.48 8.53,9 9.18,9 L16.28,9 C16.43,9 16.57,9.05 16.69,9.16 Z M16.86,10.84 L18.98,12.77 L16.86,12.77 L16.86,10.84 Z M19.82,21.92 L9.18,21.92 L9.18,10.08 L15.68,10.08 L15.68,13.31 C15.68,13.61 15.95,13.85 16.28,13.85 L19.82,13.85 L19.82,21.92 Z"
-              fill="var(--muted-foreground)"
-            />
-          </svg>
-          {productCopy.blankDeck}
-        </div>
-      )}
+      <button
+        type="button"
+        onClick={onBlank}
+        className="flex h-8 items-center gap-2 rounded-md px-2 text-[length:var(--type-dense)] leading-[17px] text-foreground"
+      >
+        <svg width="13" height="14" viewBox="8 9 13 14" aria-hidden="true">
+          <path
+            d="M16.69,9.16 L20.83,12.93 C20.95,13.04 21,13.17 21,13.31 L21,21.92 C21,22.52 20.47,23 19.82,23 L9.18,23 C8.53,23 8,22.52 8,21.92 L8,10.08 C8,9.48 8.53,9 9.18,9 L16.28,9 C16.43,9 16.57,9.05 16.69,9.16 Z M16.86,10.84 L18.98,12.77 L16.86,12.77 L16.86,10.84 Z M19.82,21.92 L9.18,21.92 L9.18,10.08 L15.68,10.08 L15.68,13.31 C15.68,13.61 15.95,13.85 16.28,13.85 L19.82,13.85 L19.82,21.92 Z"
+            fill="var(--muted-foreground)"
+          />
+        </svg>
+        {productCopy.blankDeck}
+      </button>
       <button
         type="button"
         onClick={onImport}
