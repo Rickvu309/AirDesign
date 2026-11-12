@@ -52,9 +52,7 @@ const live = vi.hoisted(() => {
     },
     reached(kind: Counted, count: number): Promise<void> {
       if (counts[kind] >= count) return Promise.resolve()
-      return new Promise((resolve) => {
-        waiters.push({ kind, count, resolve })
-      })
+      return new Promise((resolve) => waiters.push({ kind, count, resolve }))
     },
     getParts: async (deck: string) => {
       reads.push(deck)
@@ -73,6 +71,7 @@ const live = vi.hoisted(() => {
       return state.original
     },
     connect: () => ({
+      index: async () => ({ ok: true }),
       layered: async () => true,
       async enqueue(deck: string, value: string, node: string, floor: string) {
         if (state.refuse) return { ok: false, refusal: "limit" }
@@ -88,9 +87,7 @@ const live = vi.hoisted(() => {
         happened("openDeck")
         return state.opened
       },
-      async open() {
-        return { ok: true }
-      },
+      open: async () => ({ ok: true }),
     }),
   }
 })
