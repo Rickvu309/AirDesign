@@ -9,7 +9,7 @@ const live = vi.hoisted(() => ({
 vi.mock("@airdesign/live", () => ({
   getParts: async () => live.stored,
   putParts: async () => ({ ok: false }),
-  isTrusted: async () => false,
+  adoptDeck: async () => false,
   connect: () => ({ openDeck: async () => ({ ok: false }) }),
   memoryRemote: () => ({}),
   fetchOriginal: async () => {
