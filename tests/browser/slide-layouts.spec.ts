@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { expect, test, type Page } from "@playwright/test"
 import { stored } from "./device-store"
 import { exportFromDialog } from "./export-dialog.ts"
+import { newBlankDeck } from "./new-deck"
 
 test.use({ viewport: { width: 1600, height: 1000 } })
 
@@ -34,8 +35,7 @@ async function settled(page: Page): Promise<void> {
 
 async function blank(page: Page): Promise<void> {
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
   await settled(page)
 }

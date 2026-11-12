@@ -9,6 +9,7 @@ import {
   currentSlideOriginalName,
   currentSlidePart,
 } from "../../scripts/slide-subset.mjs"
+import { newBlankDeck } from "./new-deck"
 
 type ZipEntry = {
   readonly filename: string
@@ -138,8 +139,7 @@ test("a range of a blank deck's slides exports only those slides @export", async
   const judged = join(process.cwd(), "tests/browser", blankRangeExportName)
   await rm(judged, { force: true })
   await page.goto("/")
-  await page.getByRole("button", { name: "New deck", exact: true }).click()
-  await page.getByRole("button", { name: "Blank deck", exact: true }).click()
+  await newBlankDeck(page)
   await settled(page)
   await page.getByRole("button", { name: "Add slide" }).click()
   await page.getByRole("button", { name: "Add slide" }).click()
