@@ -28,6 +28,7 @@ import {
 } from "./judge-proof.mjs"
 import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import { takeMachineLock } from "./machine-lock.mjs"
+import { localImage } from "./local-image.mjs"
 import { memoPptx } from "./pptx-memo.mjs"
 import { phaseClock } from "./pptx-phases.mjs"
 import {
@@ -111,7 +112,7 @@ const validatorLists = async (files) => {
 const renderCacheReady = readMachine({ soffice, pdftoppm: "pdftoppm", env: process.env }).then((machine) =>
   renderCache({
     folder: renderCacheFolder,
-    machine,
+    machine: machine.imageOs === null && machine.imageVersion === null ? { ...machine, ...localImage() } : machine,
     settings: renderSettings,
     code: renderCode(),
     render: (file) => renderPages(file, { soffice, pdftoppm: "pdftoppm", run }),
