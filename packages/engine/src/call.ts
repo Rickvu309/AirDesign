@@ -71,7 +71,12 @@ function openedRegister(
 ): { readonly ok: true; readonly register: Register } | { readonly ok: false; readonly refusal: CallRefusal } {
   if (register.nodes.includes(edit.node)) return { ok: true, register }
   const index = register.index
-  const notes = edit.node.endsWith(".notes") && index?.slides.some((slide) => `${slide.id}.notes` === edit.node)
+  const notes =
+    edit.node.endsWith(".notes") &&
+    (index?.slides.some((slide) => `${slide.id}.notes` === edit.node) === true ||
+      register.order.some(
+        (command) => (command.slide === "add" || command.slide === "clone") && `${command.id}.notes` === edit.node,
+      ))
   if (
     index !== undefined &&
     index.elements.length === index.total &&

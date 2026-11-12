@@ -2,6 +2,7 @@ import { writtenRoutes } from "./written-routes.js"
 
 export const routeOperations = [
   "notes.body",
+  "notes.new",
   "spPr.fill",
   "text",
   "move",
@@ -26,6 +27,7 @@ export const routeOperations = [
 
 export const routeName: Record<(typeof routeOperations)[number], string> = {
   "notes.body": "notes.body",
+  "notes.new": "notes.new",
   "spPr.fill": writtenRoutes.fill,
   text: writtenRoutes.text,
   move: writtenRoutes.move,

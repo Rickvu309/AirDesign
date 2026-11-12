@@ -56,6 +56,7 @@ import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 import { blankCase, blankExportLines, blankExportName } from "./blank-export.mjs"
+import { notesExportLines, notesExportNames } from "./notes-export.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 await takeMachineLock()
@@ -124,6 +125,7 @@ const browserSpec = freshExports({
     path.join(root, "tests/browser", slideEditsExportName),
     path.join(root, "tests/browser", diagramEditsExportName),
     path.join(root, "tests/browser", chartEditsExportName),
+    ...notesExportNames.map((name) => path.join(root, "tests/browser", name)),
   ],
   run: () => run("pnpm", ["exec", "playwright", "test", ...browserExportArgs]),
 })
@@ -152,6 +154,7 @@ const browserExports = new Map([
   [slideEditsExportName, path.join(root, "tests/browser", slideEditsExportName)],
   [diagramEditsExportName, path.join(root, "tests/browser", diagramEditsExportName)],
   [chartEditsExportName, path.join(root, "tests/browser", chartEditsExportName)],
+  ...notesExportNames.map((name) => [name, path.join(root, "tests/browser", name)]),
 ])
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
@@ -267,6 +270,7 @@ if (spec.ok) {
   parts.set(slideEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(slideEditsExportName))))
   parts.set(diagramEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(diagramEditsExportName))))
   parts.set(chartEditsExportName, await pptx.readParts(fs.readFileSync(fixturePath(chartEditsExportName))))
+  for (const name of notesExportNames) parts.set(name, await pptx.readParts(fs.readFileSync(fixturePath(name))))
   cases.push(blankCase)
   waiting.push(blankExportName)
   waiting.push(browserExportName)
@@ -356,6 +360,7 @@ if (!spec.ok) {
     ...slideEditsLines({ pptx, parts, lists, ids, orders }),
     ...diagramEditsLines({ pptx, parts, lists, ids, orders }),
     ...chartEditsLines({ pptx, parts, lists, ids, orders }),
+    ...notesExportLines({ pptx, parts, lists, ids, orders }),
   ]) {
     failed += 1
     console.log(line)

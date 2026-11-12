@@ -1,7 +1,28 @@
 import { expect, it } from "vitest"
-import { readNotes, writeNotes, routeRuns } from "./index.js"
+import { notesLinkFailures, readNotes, readPackage, writeNotes, routeRuns, touchMatches } from "./index.js"
 
 import { encodeUtf8 as encode, decodeUtf8 } from "./package-bytes.js"
+declare const process: {
+  cwd(): string
+  getBuiltinModule(name: "node:fs"): { readFileSync(path: string): Uint8Array }
+}
+
+async function fixture(name: string) {
+  const read = await readPackage(
+    process.getBuiltinModule("node:fs").readFileSync(`${process.cwd()}/scripts/pptx-fixtures/${name}`),
+  )
+  if (!read.ok) throw new Error(name)
+  return read.parts
+}
+
+function changedNames(before: ReadonlyMap<string, Uint8Array>, after: ReadonlyMap<string, Uint8Array>) {
+  const names = [...after.keys()].sort()
+  return {
+    changed: names.filter((name) => before.has(name) && before.get(name) !== after.get(name)),
+    added: names.filter((name) => !before.has(name)),
+  }
+}
+
 const body = `<p:notes><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="2"/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Speak</a:t></a:r></a:p></p:txBody></p:sp><p:sp><p:nvSpPr><p:nvPr><p:ph type="sldNum"/></p:nvPr></p:nvSpPr><p:txBody><a:p><a:r><a:t>1</a:t></a:r></a:p></p:txBody></p:sp></p:spTree></p:cSld></p:notes>`
 const part = "ppt/notesSlides/notesSlide1.xml"
 const parts = new Map([
@@ -30,12 +51,75 @@ it("reads the body placeholder and changes only its paragraphs", () => {
   for (const [name, bytes] of parts) if (name !== part) expect(next.get(name)).toBe(bytes)
 })
 
-it.fails("creates notes and a notes master for a slide without a notes part", () => {
-  const empty = new Map(parts)
-  empty.delete(part)
-  const next = writeNotes(empty, "256", "New notes")
-  expect(readNotes(next)[0]?.text).toBe("New notes")
-  expect([...next.keys()].some((name) => name.startsWith("ppt/notesMasters/"))).toBe(true)
+it("creates notes and a notes master for a slide without a notes part", async () => {
+  const blank = await fixture("blank.pptx")
+  const next = writeNotes(blank, "256", "New notes")
+  expect(readNotes(next)).toEqual([{ slide: "256", part, text: "New notes" }])
+  expect(changedNames(blank, next)).toEqual({
+    changed: [
+      "[Content_Types].xml",
+      "ppt/_rels/presentation.xml.rels",
+      "ppt/presentation.xml",
+      "ppt/slides/_rels/slide1.xml.rels",
+    ],
+    added: [
+      "ppt/notesMasters/_rels/notesMaster1.xml.rels",
+      "ppt/notesMasters/notesMaster1.xml",
+      "ppt/notesSlides/_rels/notesSlide1.xml.rels",
+      part,
+      "ppt/theme/theme2.xml",
+    ],
+  })
+  expect(decodeUtf8(next.get("ppt/presentation.xml")!)).toMatch(
+    /<\/p:sldMasterIdLst><p:notesMasterIdLst><p:notesMasterId r:id="rId\d+"\/><\/p:notesMasterIdLst><p:sldIdLst>/,
+  )
+  expect(next.get("ppt/theme/theme2.xml")).toBe(blank.get("ppt/theme/theme1.xml"))
+  expect(notesLinkFailures(next)).toEqual([])
+  expect(writeNotes(blank, "256", "")).toEqual(blank)
+  const run = routeRuns(blank).find((run) => run.operation === "notes.new")
+  expect(run?.error).toBeNull()
+  expect(touchMatches(blank, run!.parts!, run!.touch!)).toBe(true)
+})
+
+it("adds only the notes slide when the deck has a notes master", async () => {
+  const deck = await fixture("nasa-1d-cnn.pptx")
+  const next = writeNotes(deck, "452", "Second slide notes")
+  expect(readNotes(next).find((notes) => notes.slide === "452")?.text).toBe("Second slide notes")
+  expect(changedNames(deck, next)).toEqual({
+    changed: ["[Content_Types].xml", "ppt/slides/_rels/slide2.xml.rels"],
+    added: ["ppt/notesSlides/_rels/notesSlide2.xml.rels", "ppt/notesSlides/notesSlide2.xml"],
+  })
+  expect(decodeUtf8(next.get("ppt/notesSlides/_rels/notesSlide2.xml.rels")!)).toContain(
+    `Target="../notesMasters/notesMaster1.xml"`,
+  )
+  expect(notesLinkFailures(next)).toEqual([])
+})
+
+it("adds a body to a notes part that has none", () => {
+  const bare = new Map(parts)
+  bare.set(
+    part,
+    encode(
+      `<p:notes><p:cSld><p:spTree><p:sp><p:nvSpPr><p:cNvPr id="4"/></p:nvSpPr></p:sp></p:spTree></p:cSld></p:notes>`,
+    ),
+  )
+  expect(readNotes(bare)).toEqual([])
+  const next = writeNotes(bare, "256", "Body now")
+  expect(readNotes(next)).toEqual([{ slide: "256", part, text: "Body now" }])
+  expect(decodeUtf8(next.get(part)!)).toContain(`<p:cNvPr id="5" name="Notes Placeholder 4"/>`)
+})
+
+it("names a notes slide whose links point nowhere", () => {
+  const broken = new Map(parts)
+  broken.set(
+    "ppt/notesSlides/_rels/notesSlide1.xml.rels",
+    encode(`<Relationships><Relationship Id="r1" Type="x/slide" Target="../slides/slide9.xml"/></Relationships>`),
+  )
+  expect(notesLinkFailures(broken)).toEqual([
+    "ppt/notesSlides/notesSlide1.xml slide",
+    "ppt/notesSlides/notesSlide1.xml master",
+    "presentation notes master",
+  ])
 })
 
 it("judges edited notes as changing only the notes part", () => {

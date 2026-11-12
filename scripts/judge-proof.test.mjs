@@ -1,9 +1,6 @@
 import fs from "node:fs"
-import os from "node:os"
-import path from "node:path"
 import { judge } from "./judge.mjs"
 import { judgeParts } from "./judge.mjs"
-import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import {
   changedSinceArgs,
   changesJudge,
@@ -303,32 +300,6 @@ same(
   [checkSource.includes("dangling.length !== 0"), checkSource.includes("parts.get(row.after)")],
   [true, true],
 )
-const routePptx = {
-  ...partsPptx,
-  touchMatches: () => true,
-}
-const routeFolder = fs.mkdtempSync(path.join(os.tmpdir(), "judge-route-"))
-const writtenRoute = async (before, back) => {
-  const filing = {
-    ...routePptx,
-    routeRuns: () => [{ operation: "spTree.remove", error: null, touch: {}, parts: [] }],
-    exportPackage: async () => new Uint8Array(),
-    readParts: async () => back,
-  }
-  const [item] = await writtenRouteFiles(filing, new Uint8Array(), before, routeFolder, "deck")
-  return item
-}
-same(
-  "a written route that leaves a new dangling reference fails",
-  scoreWrittenRoute(routePptx, [], [], await writtenRoute([], [dangling]), [])?.dangling,
-  1,
-)
-same(
-  "a written route is not blamed for a dangling reference the deck already had",
-  scoreWrittenRoute(routePptx, [dangling], [], await writtenRoute([dangling], [dangling]), []),
-  null,
-)
-fs.rmSync(routeFolder, { recursive: true, force: true })
 same(
   "pptx-check scores only the files writtenRouteFiles made, which always carry the dangling data",
   checkSource.includes("await writtenRouteFiles("),

@@ -222,6 +222,7 @@ const pptx = {
   shapeIdCounts: () => new Map(),
   danglingShapeReferences: () => [],
   touchMatches: () => true,
+  newNotesLinkFailures: () => [],
 }
 const written = (name) => ({
   name,

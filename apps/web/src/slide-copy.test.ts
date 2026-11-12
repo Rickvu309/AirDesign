@@ -12,7 +12,7 @@ import {
   type SlideCommand,
   type SlideId,
 } from "@airdesign/document"
-import { readParts, readShapes, readSlides } from "@airdesign/pptx"
+import { notesLinkFailures, readNotes, readParts, readShapes, readSlides } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts, storedText } from "./exported-parts"
 import { shownValue } from "./live-repaint"
@@ -164,4 +164,35 @@ it("takes typed text in a placeholder of a new slide", async () => {
     if (name === "[Content_Types].xml") continue
     expect(exported.get(name), name).toBe(bytes)
   }
+})
+
+it("writes first notes on a blank deck's slide, a new slide and a copy that keeps its source's notes", async () => {
+  const parts = await fixture("blank.pptx")
+  const first = slideId("256")
+  const noted = (register: Register, node: string, value: string) =>
+    applied(opened(register, node), { command: "person", value, node: elementId(node) })
+  let register = noted(openRegister("", "deck"), "256.notes", "Opening line")
+  const added = slideId("300")
+  register = sliding(parts, register, {
+    slide: "add",
+    id: added,
+    after: first,
+    key: after(parts, register, first),
+    layout: first,
+  })
+  register = noted(register, "300.notes", "Second slide")
+  register = sliding(parts, register, {
+    slide: "clone",
+    id: slideId("301"),
+    source: first,
+    key: after(parts, register, first),
+  })
+  register = noted(register, "256.notes", "Opening line, later")
+  const exported = exportedParts(parts, register)
+  expect(Object.fromEntries(readNotes(exported).map((notes) => [notes.slide, notes.text]))).toEqual({
+    "256": "Opening line, later",
+    "300": "Second slide",
+    "301": "Opening line",
+  })
+  expect(notesLinkFailures(exported)).toEqual([])
 })

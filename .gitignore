@@ -21,3 +21,5 @@ tests/browser/exported-blank-slides.pptx
 tests/browser/exported-slide-edits.pptx
 tests/browser/exported-diagram-edits.pptx
 tests/browser/exported-chart-edits.pptx
+tests/browser/exported-notes.pptx
+tests/browser/exported-notes-imported.pptx

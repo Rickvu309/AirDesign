@@ -54,7 +54,7 @@ function nextNotes(parts: ReadonlyMap<string, Uint8Array>, directory: string): n
   return max + 1
 }
 
-function relativeTarget(from: string, to: string): string {
+export function relativeTarget(from: string, to: string): string {
   const source = folder(from)
     .split("/")
     .filter((segment) => segment !== "")

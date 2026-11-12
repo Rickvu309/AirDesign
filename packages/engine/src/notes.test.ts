@@ -1,5 +1,5 @@
 import { expect, it } from "vitest"
-import { currentValue, elementId } from "@airdesign/document"
+import { currentValue, elementId, orderKeyBetween } from "@airdesign/document"
 import { readDeckId } from "@airdesign/catalog"
 import { call, openDeck } from "./index.js"
 
@@ -50,4 +50,38 @@ it("edits notes on a deck indexed before notes were included", () => {
   )
   expect(edited.ok).toBe(true)
   if (edited.ok) expect(currentValue(edited.deck.register.elements[node]!)).toBe("Updated notes")
+})
+
+it("lets a person write the first note on a slide they added", () => {
+  const id = readDeckId("added-deck")
+  if (!id.ok) throw new Error("deck")
+  const opened = openDeck(id.deck)
+  const deck = {
+    ...opened,
+    register: {
+      ...opened.register,
+      index: { total: 0, elements: [], slides: [{ id: "256", position: 0 }], pages: [] },
+    },
+  }
+  const added = call(
+    "commit_edits",
+    deck,
+    { actor: "person" },
+    {
+      deck: id.deck,
+      batch: [
+        { slide: "add", id: "258", after: "256", key: orderKeyBetween(null, null), layout: "256", file: ["256"] },
+      ],
+    },
+  )
+  if (!added.ok) throw new Error(added.refusal)
+  const node = elementId("258.notes")
+  const edited = call(
+    "commit_edits",
+    added.deck,
+    { actor: "person" },
+    { deck: id.deck, batch: [{ node, floor: "", value: "First note" }] },
+  )
+  expect(edited.ok).toBe(true)
+  if (edited.ok) expect(currentValue(edited.deck.register.elements[node]!)).toBe("First note")
 })

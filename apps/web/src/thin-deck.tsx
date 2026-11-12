@@ -65,7 +65,7 @@ export function ThinDeck({ id }: { id: string }) {
   const structure = useRef("")
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<ElementId | null>(null)
-  const [notes, setNotes] = useState<readonly SlideNotes[]>([])
+  const [notes, setNotes] = useState<readonly Pick<SlideNotes, "slide" | "text">[]>([])
   const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
@@ -430,9 +430,11 @@ export function ThinDeck({ id }: { id: string }) {
   const currentNotes = notes.find((notes) => notes.slide === currentSlide)
 
   function editNotes(value: string) {
-    if (currentNotes === undefined) return
-    const note = currentNotes
-    const kept = connect(memoryRemote()).enqueue(id, value, elementId(`${note.slide}.notes`), note.text)
+    if (currentSlide === undefined) return
+    const slide = currentSlide
+    const floor = currentNotes?.text ?? ""
+    setNotes((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
+    const kept = connect(memoryRemote()).enqueue(id, value, elementId(`${slide}.notes`), floor)
     notesQueue.current = notesQueue.current.then(async () => {
       const outcome = await commitKept(connect, id, kept, () => setPending(true))
       if (outcome === "refused")
@@ -509,9 +511,7 @@ export function ThinDeck({ id }: { id: string }) {
             },
           }}
           notes={currentNotes?.text ?? ""}
-          {...(currentNotes === undefined
-            ? { notesLocked: "Speaker notes can't be edited on this slide yet." }
-            : { onNotes: editNotes })}
+          onNotes={editNotes}
           panel={panel}
           onPanel={setPanel}
           side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}

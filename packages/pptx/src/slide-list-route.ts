@@ -48,7 +48,7 @@ function nextNumbered(elements: readonly MarkupElement[], kind: string): number 
   return max + 1
 }
 
-function nextRelationshipId(elements: readonly MarkupElement[]): string {
+export function nextRelationshipId(elements: readonly MarkupElement[]): string {
   let max = 0
   for (const element of elements) {
     if (element.kind !== "Relationship") continue

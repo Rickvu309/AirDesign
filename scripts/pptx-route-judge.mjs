@@ -64,12 +64,15 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   const dupes = pptx.newDuplicateShapeIds(pptx.shapeIdCounts(beforeParts), pptx.shapeIdCounts(item.back))
   const dangling = item.dangling ?? []
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
-  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && partsMatch) return null
+  const notes = pptx.newNotesLinkFailures(beforeParts, item.back)
+  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && notes.length === 0 && partsMatch)
+    return null
   return {
     operation: item.run.operation,
     errors: errors.length,
     dupes: dupes.length,
     ...(dangling.length === 0 ? {} : { dangling: dangling.length }),
+    ...(notes.length === 0 ? {} : { notes }),
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

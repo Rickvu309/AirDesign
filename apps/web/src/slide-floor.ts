@@ -1,4 +1,5 @@
 import {
+  elementId,
   floorFor,
   shapeOf,
   type IndexElement,
@@ -27,9 +28,17 @@ export function flooredEdit(
     return { ...edit, floor: slideRows(orderedParts(parts, { file, order: [...register.order, edit] }), edit.id) }
   }
   if (edit.slide !== "clone") return edit
-  const rows = slideRows(slideBase(parts, register), edit.source).map((row) => {
+  const notes = elementId(`${edit.source}.notes`)
+  const found = slideRows(slideBase(parts, register), edit.source)
+  const rows = [
+    ...found,
+    ...(found.some((row) => row.node === notes)
+      ? []
+      : [{ node: notes, kind: "slide" as const, value: null, box: null, grouped: false }]),
+  ].flatMap((row) => {
     const value = shownValue(register, row.node, row.value ?? "")
-    return { ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }
+    if (row.node === notes && row.value === null && value === "") return []
+    return [{ ...row, value: value === "" ? null : value, box: shownBox(register, row.node, row.box) }]
   })
   return { ...edit, floor: floorFor(rows, edit.id) }
 }

@@ -78,14 +78,3 @@ test("a speaker note typed in the bar survives a reload and changes only its not
   field = await openNotes(page)
   await expect(field).toHaveValue(typed)
 })
-
-test("a slide with no notes part shows the bar read-only with a hint", async ({ page }) => {
-  await page.goto("/")
-  await page.locator("input[type=file]").setInputFiles(fixture)
-  await page.waitForURL(/\/deck\/[A-Za-z0-9_-]{1,64}$/)
-  await settled(page)
-  await page.locator('[data-slide-entry="2"]').click()
-  const field = await openNotes(page)
-  await expect(field).not.toBeEditable()
-  await expect(page.getByText("Speaker notes can't be edited on this slide yet.").first()).toBeVisible()
-})
