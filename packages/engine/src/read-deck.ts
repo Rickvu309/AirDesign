@@ -6,6 +6,8 @@ import {
   slideGone,
   currentBox,
   currentValue,
+  floorNodes,
+  openingElement,
   readElementId,
   shapeOf,
   version,
@@ -115,9 +117,10 @@ function elementOf(
 
 function knownNodes(register: Register): ElementId[] {
   const nodes: ElementId[] = []
-  for (const element of register.index?.elements ?? []) {
-    if (register.elements[element.node] !== undefined && !register.nodes.includes(element.node)) continue
-    nodes.push(element.node)
+  const opening = [...(register.index?.elements.map((element) => element.node) ?? []), ...floorNodes(register)]
+  for (const node of opening) {
+    if (register.elements[node] !== undefined && !register.nodes.includes(node)) continue
+    nodes.push(node)
   }
   for (const node of register.nodes) {
     if (readElementId(node) === undefined || register.elements[node] === undefined || nodes.includes(node)) continue
@@ -165,7 +168,6 @@ export function readDeckPage(
     return true
   })
   const index = deck.register.index
-  const indexed = new Map(index?.elements.map((element) => [element.node, element]))
   return packRead(
     {
       revision: deck.revision,
@@ -176,7 +178,7 @@ export function readDeckPage(
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,
-    (node) => elementOf(node, deck.register.elements[node], query.runId, indexed.get(node)),
+    (node) => elementOf(node, deck.register.elements[node], query.runId, openingElement(deck.register, node)),
   )
 }
 

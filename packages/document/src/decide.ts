@@ -2,6 +2,7 @@ import type { Box } from "./box.js"
 import type { DeckIndex } from "./deck-index.js"
 import { legacyElement, rootElement, shapeOf, type ElementId, type SlideId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
+import { floorFits, openingElement } from "./slide-floor.js"
 import { applySlide, openSlides, slideGone, type SlideCommand } from "./slide-order.js"
 import { storedValue, type Value } from "./value.js"
 
@@ -298,7 +299,7 @@ function addNode(register: Register, id: ElementId, floor: string, route: string
   if (id === rootElement || register.nodes.includes(id)) {
     return refuse("present")
   }
-  const indexed = register.index?.elements.find((element) => element.node === id)
+  const indexed = openingElement(register, id)
   if (register.nodes.length >= limits.elements && indexed === undefined) {
     return refuse("limit")
   }
@@ -377,6 +378,7 @@ export function decide(stored: StoredRegister, command: Command): Decision {
       return refuse("stale")
     const applied = applySlide(register, command.file, command.edit)
     if (!applied.ok) return refuse(applied.code)
+    if (!floorFits(register, command.edit)) return refuse("limit")
     return apply({ ...register, file: applied.state.file, order: applied.state.order }, register.route)
   }
   if (command.command === "add") {
@@ -387,7 +389,7 @@ export function decide(stored: StoredRegister, command: Command): Decision {
   if (
     (command.command === "person" || command.command === "agent") &&
     command.property === "box" &&
-    register.index?.elements.some((element) => element.node === node && element.grouped)
+    openingElement(register, node)?.grouped === true
   ) {
     return refuse("group-box")
   }

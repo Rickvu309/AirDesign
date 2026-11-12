@@ -61,6 +61,66 @@ it("reads current slide order after add, clone, remove and move, without removed
   ).toEqual({ ok: false, refusal: "dead" })
 })
 
+it("reads and edits the opening elements of added and cloned slides, and keeps a clone's copy when its source moves on", () => {
+  const key = orderKeyBetween(null, null)
+  const box = { x: 1, y: 2, cx: 3, cy: 4 }
+  const title = { node: "259.2", kind: "shape", value: "256", box, grouped: false }
+  let deck = edit(indexed(), [
+    {
+      slide: "add",
+      id: "258",
+      after: "256",
+      layout: "256",
+      key,
+      file,
+      floor: [{ ...title, node: "258.3", value: "" }],
+    },
+    {
+      slide: "clone",
+      id: "259",
+      source: "256",
+      key: orderKeyBetween(null, key),
+      file,
+      floor: [title, { ...title, node: "259.3", box: null }],
+    },
+  ])
+  const agent = { actor: "agent", runId: "run" } as const
+  const started = call("start_run", deck, agent, {
+    deck: deck.id,
+    runId: "run",
+    elements: [{ node: "256.2" }, { node: "258.3" }, { node: "259.2" }],
+  })
+  if (!started.ok) throw new Error(started.refusal)
+  const changed = call("edit_deck", started.deck, agent, {
+    deck: deck.id,
+    base: started.deck.revision,
+    changes: [
+      { node: "256.2", readAt: 0, value: "source moved on" },
+      { node: "258.3", readAt: 0, value: "typed" },
+    ],
+  })
+  if (!changed.ok) throw new Error(changed.refusal)
+  deck = changed.deck
+  expect(readDeckPage(deck, { runId: "run" }).elements).toEqual([
+    { node: "256.2", slide: "256", value: "source moved on", kind: "shape", grouped: false, version: 1, box: null },
+    { node: "257.2", slide: "257", value: "257", kind: "shape", grouped: false, version: 0, box: null },
+    { node: "258.3", slide: "258", value: "typed", kind: "shape", grouped: false, version: 1, box },
+    { node: "259.2", slide: "259", value: "256", kind: "shape", grouped: false, version: 0, box },
+    { node: "259.3", slide: "259", value: "256", kind: "shape", grouped: false, version: 0, box: null },
+  ])
+  deck = edit(deck, [{ slide: "remove", id: "259", file }])
+  const next = { actor: "agent", runId: "next" } as const
+  expect(readDeckPage(deck, { runId: null, slide: "259" }).elements).toEqual([])
+  expect(call("start_run", deck, next, { deck: deck.id, runId: "next", elements: [{ node: "259.3" }] })).toEqual({
+    ok: false,
+    refusal: "dead",
+  })
+  expect(call("start_run", deck, next, { deck: deck.id, runId: "next", elements: [{ node: "258.9" }] })).toEqual({
+    ok: false,
+    refusal: "dead",
+  })
+})
+
 it("refuses slide commands whose opening order disagrees with the import index", () => {
   expect(
     call("commit_edits", indexed(), person, {

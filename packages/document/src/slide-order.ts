@@ -1,6 +1,8 @@
+import type { IndexElement } from "./deck-index.js"
 import { readSlideId, slideId, type SlideId } from "./element-id.js"
 import { limits } from "./limits.js"
 import { orderKeyBetween, readOrderKey, type OrderKey } from "./order-key.js"
+import { readFloor } from "./slide-floor.js"
 
 export type SlideAdd = {
   readonly slide: "add"
@@ -8,6 +10,7 @@ export type SlideAdd = {
   readonly after: SlideId
   readonly key: OrderKey
   readonly layout: SlideId
+  readonly floor?: readonly IndexElement[]
 }
 
 export type SlideClone = {
@@ -15,6 +18,7 @@ export type SlideClone = {
   readonly id: SlideId
   readonly source: SlideId
   readonly key: OrderKey
+  readonly floor?: readonly IndexElement[]
 }
 
 export type SlideRemove = {
@@ -197,16 +201,19 @@ function commandOf(raw: Record<string, unknown>): SlideCommand | undefined {
   const key = readOrderKey(raw.key)
   if (key === undefined) return undefined
   if (raw.slide === "move") return { slide: "move", id, key }
+  const floor = Object.hasOwn(raw, "floor") ? readFloor(raw.floor, id) : null
+  if (floor === undefined) return undefined
+  const floored = floor === null ? {} : { floor }
   if (raw.slide === "clone") {
     const source = readSlideId(raw.source)
     if (source === undefined) return undefined
-    return { slide: "clone", id, source, key }
+    return { slide: "clone", id, source, key, ...floored }
   }
   if (raw.slide !== "add") return undefined
   const after = readSlideId(raw.after)
   const layout = readSlideId(raw.layout)
   if (after === undefined || layout === undefined) return undefined
-  return { slide: "add", id, after, key, layout }
+  return { slide: "add", id, after, key, layout, ...floored }
 }
 
 export function readSlideState(raw: unknown): SlideState | undefined {

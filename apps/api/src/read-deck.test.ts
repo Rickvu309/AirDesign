@@ -104,6 +104,26 @@ describe("an agent reads only decks its account owns", () => {
     expect(answerOf(read.text).elements).toEqual([{ node: "258.7", slide: "258", value: "Known", version: 1 }])
   })
 
+  it("reads and edits the opening elements of a cloned slide", async () => {
+    const cookie = await sign("read-clone@example.com")
+    expect((await ask(base, "POST", "/decks/open", { deck: "read-clone" }, cookie)).status).toBe(200)
+    const box = { x: 1, y: 2, cx: 3, cy: 4 }
+    const title = { node: "258.2", kind: "shape", value: "Title", box, grouped: false }
+    const clone = { slide: "clone", id: "258", source: "256", key: "a0", floor: [title], file: ["256", "257"] }
+    const committed = await ask(base, "POST", "/decks/commit", { deck: "read-clone", batch: [clone] }, cookie)
+    expect(committed.status).toBe(200)
+    const read = await mcp(cookie, "airdesign_read_deck", { deck: "read-clone" })
+    expect(answerOf(read.text).elements).toEqual([{ ...title, slide: "258", version: 0 }])
+    const edited = await mcp(cookie, "airdesign_edit_deck", {
+      deck: "read-clone",
+      base: 1,
+      changes: [{ node: "258.2", readAt: 0, value: "Agent" }],
+    })
+    expect(answerOf(edited.text)).toMatchObject({ ok: true, revision: 2 })
+    const again = await mcp(cookie, "airdesign_read_deck", { deck: "read-clone" })
+    expect(answerOf(again.text).elements).toEqual([{ ...title, slide: "258", value: "Agent", version: 1 }])
+  })
+
   it("refuses hostile arguments for the read tools before storage", async () => {
     const cookie = await sign("read-fuzz@example.com")
     expect((await ask(base, "POST", "/decks/open", { deck: "read-fuzz" }, cookie)).status).toBe(200)
