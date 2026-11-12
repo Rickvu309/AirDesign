@@ -31,16 +31,16 @@ describe("viewport", () => {
 })
 
 describe("theme-color", () => {
-  const light = '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">'
-  const dark = '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0a0a0a">'
+  const light = '<meta name="theme-color" media="(prefers-color-scheme: light)" content="white">'
+  const dark = '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="black">'
 
   it("accepts one tag for each scheme and reads each", () => {
     expect(themeColorFindings(`${light}${dark}`)).toEqual([])
-    expect(themeColorFor(`${light}${dark}`, "dark")).toBe("#0a0a0a")
+    expect(themeColorFor(`${light}${dark}`, "dark")).toBe("black")
   })
 
   it("refuses one tag for both schemes, and a scheme with none", () => {
-    expect(themeColorFindings('<meta name="theme-color" content="#ffffff">')).toContain(
+    expect(themeColorFindings('<meta name="theme-color" content="white">')).toContain(
       "a theme-color has no prefers-color-scheme media",
     )
     expect(themeColorFindings(light)).toEqual(["no theme-color for the dark scheme"])
