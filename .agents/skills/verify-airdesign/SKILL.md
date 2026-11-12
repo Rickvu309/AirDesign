@@ -125,7 +125,7 @@ Working is not the same as looking right. For every change a person sees:
 1. Find the states your change touches with `$V states`. Run `$V look <run> <state>` on each, before your change and after. A page no state covers: `$V look <run> <path>`, with `--import deck.pptx --slide n` for a slide.
 2. Run `$V compare <run> <state>` to put the state beside its design screen under `/screens/`.
 3. Open `annotated.png`, `compare.png` and the crops, and read them. Then write two or three sentences on what you see, as a designer would: what draws the eye, what looks off, how it differs from the design.
-4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add it to `look/states.mjs`.
+4. Fix every finding or explain it. A finding that is meant gets an entry in `look/allow.json` with a reason; a real fault you leave gets a `test.fail` in `tests/browser/design-states.spec.ts`. When you add a state a person can reach, add one file `look/states/<name>.mjs` and touch no other file. `look/states.mjs` reads the folder.
 5. Put the image paths, your sentences, and the finding counts before and after in the PR body.
 
 `$V sheet <run>` does all states at once and writes a contact sheet a person can open.
