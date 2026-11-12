@@ -1,27 +1,10 @@
 import { deckRoutes } from "@airdesign/catalog"
-import {
-  readElementId,
-  slideId,
-  writeTextValue,
-  type Box,
-  type ElementId,
-  type Register,
-  type TextValue,
-} from "@airdesign/document"
+import { type Box, type ElementId, type Register } from "@airdesign/document"
 import { connect, fetchOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
-import {
-  applyRoute,
-  exportPackage,
-  paintReader,
-  paintKind,
-  readPackage,
-  readShapes,
-  readSlides,
-  type ReadShape,
-} from "@airdesign/pptx"
-import { paintStore, SlideCanvas, textValue, type PaintStore } from "@airdesign/render"
+import { exportPackage, readPackage, type ReadShape } from "@airdesign/pptx"
+import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
+import { type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
 import { exportFileName } from "@/export/export-file-name"
 import { EditorFrame } from "@/editor/editor-frame"
@@ -30,134 +13,21 @@ import { slideThumbWidth } from "@/editor/slide-sidebar"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
 import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
-import { boxStorable, landedBox } from "@/element-move"
+import { landedBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
-import { pictureSources, type PictureSources } from "@/picture-fill"
+import { type PictureSources } from "@/picture-fill"
+import { paint, valueStorable } from "@/deck-paint"
+export { elementIds, valueStorable } from "@/deck-paint"
 import { followDeck } from "@/deck-follow"
 import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 
-type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
-
-function namedShapes(parts: ReadonlyMap<string, Uint8Array>): readonly NamedShape[] {
-  const named: NamedShape[] = []
-  for (const shape of readShapes(parts)) {
-    const id = readElementId(`${shape.slide}.${shape.shape}`)
-    if (id !== undefined) named.push({ id, shape })
-  }
-  return named
-}
-
-export function elementIds(parts: ReadonlyMap<string, Uint8Array>): readonly ElementId[] {
-  return namedShapes(parts).map((named) => named.id)
-}
-
 function thumbHeight(slide: { readonly width: number; readonly height: number } | null): number {
   if (slide === null || slide.width === 0) return Math.round((slideThumbWidth * 9) / 16)
   return Math.round((slideThumbWidth * slide.height) / slide.width)
-}
-
-function storedText(value: TextValue): string {
-  return value.length === 0 ? "" : writeTextValue(value)
-}
-
-function trialValue(value: TextValue): TextValue | null {
-  for (let paragraph = value.length - 1; paragraph >= 0; paragraph -= 1) {
-    const runs = value[paragraph]?.runs ?? []
-    for (let run = runs.length - 1; run >= 0; run -= 1) {
-      const found = runs[run]
-      if (found === undefined || found.text === "\n") continue
-      return value.map((each, index) =>
-        index === paragraph
-          ? {
-              from: each.from,
-              runs: runs.map((kept, at) => (at === run ? { ...kept, text: `${kept.text}.` } : kept)),
-            }
-          : each,
-      )
-    }
-  }
-  const first = value[0]
-  if (first === undefined) return null
-  return [{ from: first.from, runs: [...first.runs, { from: -1, text: "." }] }, ...value.slice(1)]
-}
-
-export function valueStorable(
-  parts: ReadonlyMap<string, Uint8Array>,
-  shape: ReadShape,
-  value: TextValue | null,
-): boolean {
-  if (value === null) return false
-  try {
-    applyRoute(parts, {
-      name: "text",
-      part: shape.part,
-      shape: shape.shape,
-      value,
-    })
-    return true
-  } catch {
-    return false
-  }
-}
-
-function paint(
-  store: PaintStore,
-  parts: ReadonlyMap<string, Uint8Array>,
-  register: Register | null,
-): {
-  readonly count: number
-  readonly canvases: SlideCanvases
-  readonly boxes: ReadonlyMap<ElementId, TextBox>
-  readonly movables: ReadonlyMap<ElementId, TextBox>
-  readonly shapes: ReadonlyMap<ElementId, ReadShape>
-  readonly pictures: PictureSources
-  readonly files: ReadonlyMap<ElementId, string>
-} {
-  const display = register !== null && register.order.length > 0 ? exportedParts(parts, register) : parts
-  const named = namedShapes(display)
-  const ids = named.map((each) => each.id)
-  const seen = new Map<ElementId, number>()
-  for (const id of ids) seen.set(id, (seen.get(id) ?? 0) + 1)
-  const boxes = new Map<ElementId, TextBox>()
-  const movables = new Map<ElementId, TextBox>()
-  const rows = new Map<ElementId, ReadShape>()
-  const files = new Map<ElementId, string>()
-  for (const { id, shape } of named) {
-    const kind = paintKind(shape.kind)
-    const file = storedText(shape.text)
-    files.set(id, file)
-    store.publish({ id, kind, text: shownValue(register, id, file), picture: kind === "picture" ? "" : null })
-    store.placeBox(id, landedBox(register, id))
-    const holding = parts.has(shape.part) ? parts : null
-    if (holding !== null && seen.get(id) === 1 && boxStorable(holding, shape)) movables.set(id, { id, file })
-    const storable =
-      holding !== null && seen.get(id) === 1 && !shape.locked && valueStorable(holding, shape, trialValue(shape.text))
-    if (!storable) continue
-    boxes.set(id, { id, file })
-    rows.set(id, shape)
-  }
-  const read = readSlides(display).map(({ slide, part }) => ({
-    slide,
-    part,
-    named: named.filter((each) => each.shape.slide === slide),
-  }))
-  store.setSlides(read.map((each) => ({ id: slideId(each.slide), elements: each.named.map((shape) => shape.id) })))
-  const sources = read.map((each) => ({
-    part: each.part,
-    shapes: new Map(
-      each.named.map(({ id, shape }) => [
-        shape.shape,
-        { id, kind: paintKind(shape.kind), editable: boxes.has(id), movable: movables.has(id) },
-      ]),
-    ),
-  }))
-  const pictures = pictureSources(display)
-  const canvases = slideCanvases(paintReader(display), sources, pictures.src)
-  return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files }
 }
 
 async function listedName(deck: string): Promise<string | undefined> {
@@ -199,6 +69,8 @@ export function ThinDeck({ id }: { id: string }) {
   const canvases = useRef<SlideCanvases>(() => null)
   const pictures = useRef<PictureSources | null>(null)
   const busy = useRef(busyElements())
+  const structure = useRef("")
+  const repaint = useRef<(register: Register) => void>(() => undefined)
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -232,16 +104,8 @@ export function ThinDeck({ id }: { id: string }) {
         .catch(() => null)
       if (!live) return
       const register = opened?.ok === true ? opened.register : null
-      const painted = paint(store.current, stored.parts, register)
-      const repaint = liveRepaint(store.current, painted.files, register, busy.current)
-      boxes.current = painted.boxes
-      movables.current = painted.movables
-      shapes.current = painted.shapes
       shownParts.current = stored.parts
-      canvases.current = painted.canvases
-      pictures.current?.release()
-      pictures.current = painted.pictures
-      setSlideCount(painted.count)
+      showRegister(register)
       setCurrent(0)
       setTitle(stored.name ?? "")
       setPaintedDeck(id)
@@ -252,7 +116,17 @@ export function ThinDeck({ id }: { id: string }) {
         id,
         async () => {
           const next = await connect(server).openDeck(id)
-          if (live && next.ok) repaint(next.register)
+          if (live && next.ok) {
+            const before = store.current.slides().map((slide) => slide.id)
+            if (structure.current !== JSON.stringify(next.register.order)) {
+              showRegister(next.register)
+              const after = store.current.slides().map((slide) => slide.id)
+              setCurrent((index) => {
+                const kept = after.findIndex((slide) => slide === before[index])
+                return kept >= 0 ? kept : Math.max(0, Math.min(index, after.length - 1))
+              })
+            } else repaint.current(next.register)
+          }
         },
         leaving.signal,
       )
@@ -372,18 +246,24 @@ export function ThinDeck({ id }: { id: string }) {
     URL.revokeObjectURL(url)
   }
 
-  async function showEdited(currentIndex: number) {
-    const next = await connect(memoryRemote()).openDeck(id)
-    if (!next.ok) return
-    const painted = paint(store.current, shownParts.current, next.register)
+  function showRegister(register: Register | null) {
+    const painted = paint(store.current, shownParts.current, register, busy.current)
     boxes.current = painted.boxes
     movables.current = painted.movables
     shapes.current = painted.shapes
     canvases.current = painted.canvases
     pictures.current?.release()
     pictures.current = painted.pictures
+    structure.current = JSON.stringify(register?.order ?? [])
+    repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
     setSlideCount(painted.count)
-    setCurrent(painted.count === 0 ? 0 : Math.min(currentIndex, painted.count - 1))
+  }
+
+  async function showEdited(currentIndex: number) {
+    const next = await connect(memoryRemote()).openDeck(id)
+    if (!next.ok) return
+    showRegister(next.register)
+    setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
     setPending(true)
   }
 
