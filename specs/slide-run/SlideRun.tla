@@ -5,10 +5,10 @@
 \* Each try loads the turn row, reads the deck and decides, and commitEdit writes the deck
 \* only if deck.saved still has the revision that try read. A write lost to another one
 \* sends the call back to load the turn and read the deck again. After the tries the
-\* request saves the turn row under the upsert's rule. An agent call (add_slide or
-\* read_deck) and the agent's stop_run of r are two such requests, and their steps
-\* interleave. element says whether r also holds an element, so that stopping it changes
-\* the deck. Run Undo is in the slide-undo model.
+\* request saves the turn row under the upsert's rule and answers once that save is done.
+\* An agent call (add_slide or read_deck) and the agent's stop_run of r are two such
+\* requests, and their steps interleave. element says whether r also holds an element,
+\* so that stopping it changes the deck and fences r. Run Undo is in the slide-undo model.
 EXTENDS Integers
 
 CONSTANT Tries
@@ -106,10 +106,15 @@ AgentLoadsTurn ==
 \* prepare's readSaved reads the deck, and callTool decides on it.
 \* read_deck writes nothing, and the agent's next base is the revision it read. settleTurn
 \* then saves the loaded turn again when it is live.
-\* slideTool with no live turn first stops every live run, which raises the deck's revision
-\* past the agent's base, so the call is refused stale. agentSlide checks the base and adds
-\* the slide under the turn's run, with no check of that run. A refused call ends.
+\* agentSlide checks the base, then runFence: a run that holds an element and has none
+\* running is refused run-fenced. A run that holds no element passes, so r with no element
+\* is never fenced. Otherwise the slide is added under the turn's run, or under the
+\* caller's run u when no turn is live. A refused call ends and saves no turn.
+\* slideTool with no live turn and a fresh base first stops every live run. That needs a
+\* running element with no live turn, which NoTurnWhileRunning says this model never holds.
 SlideRunOf == IF aTurn = "none" THEN "u" ELSE aTurn
+
+Fenced == SlideRunOf = "r" /\ element = "stopped"
 
 AgentLoadsDeck ==
   /\ aPc = "turn"
@@ -122,7 +127,7 @@ AgentLoadsDeck ==
                   /\ aOutRev' = aTurnRev
                   /\ UNCHANGED <<aKind, aTurn, aTurnRev, aRev, aTries, aLanded>>
      ELSE /\ UNCHANGED base
-          /\ IF base = rev /\ ~(aTurn = "none" /\ element = "running")
+          /\ IF base = rev /\ ~Fenced
              THEN /\ aPc' = "deck"
                   /\ aRev' = rev
                   /\ UNCHANGED <<aKind, aTurn, aTurnRev, aOut, aOutRev, aTries, aLanded>>
@@ -258,6 +263,14 @@ TurnNeverOlder == [][turnRev' >= turnRev]_vars
 \* No slide of r lands once Stop took effect. late counts the ones that did.
 StopFences == late = 0
 
-\* After stop_run of r answered ok, the turn row no longer names r.
+\* The part of StopFences runFence keeps: no slide of a run that holds an element lands
+\* once Stop took effect.
+StopFencesHeldRun == element # "none" => late = 0
+
+\* A turn row that names no run is saved only by a stop that already stopped r's element.
+NoTurnWhileRunning == turn = "none" => element # "running"
+
+\* After stop_run of r answered ok, the turn row no longer names r. serveMcp answers only
+\* after the turn save, so the answer is the request's last step.
 TurnStaysEnded == stopTold => turn # "r"
 ====
