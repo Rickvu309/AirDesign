@@ -60,16 +60,19 @@ export function scoreWrittenRoute(pptx, beforeParts, beforeErrors, item, afterEr
   if (item.back === null || item.run.touch === null || afterErrors === undefined) {
     return { operation: item.run.operation, error: "export" }
   }
-  const errors = pptx.newValidatorErrors(beforeErrors, afterErrors)
+  const errors = pptx.newValidatorErrors(beforeErrors, afterErrors, pptx.partCopies(beforeParts, item.back))
   const dupes = pptx.newDuplicateShapeIds(pptx.shapeIdCounts(beforeParts), pptx.shapeIdCounts(item.back))
   const dangling = item.dangling ?? []
+  const shared = pptx.newSharedOwnedParts(pptx.sharedOwnedParts(beforeParts), pptx.sharedOwnedParts(item.back))
   const partsMatch = pptx.touchMatches(beforeParts, item.back, item.run.touch)
-  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && partsMatch) return null
+  if (errors.length === 0 && dupes.length === 0 && dangling.length === 0 && shared.length === 0 && partsMatch)
+    return null
   return {
     operation: item.run.operation,
     errors: errors.length,
     dupes: dupes.length,
     ...(dangling.length === 0 ? {} : { dangling: dangling.length }),
+    ...(shared.length === 0 ? {} : { shared: shared.length }),
     parts: partsMatch,
     firstError: errors[0] ?? null,
   }

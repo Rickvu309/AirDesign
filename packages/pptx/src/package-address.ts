@@ -14,6 +14,21 @@ export function partOf(source: string, target: string): string {
   return path.join("/")
 }
 
+export function relativeTarget(from: string, to: string): string {
+  const source = from.split("/").slice(0, -1)
+  const target = to.split("/")
+  let shared = 0
+  while (shared < source.length && shared < target.length - 1 && source[shared] === target[shared]) shared += 1
+  return [...source.slice(shared).map(() => ".."), ...target.slice(shared)].join("/")
+}
+
+export function relsOwner(rels: string): string | null {
+  const marker = "_rels/"
+  const at = rels.lastIndexOf(marker)
+  if (at < 0 || !rels.endsWith(".rels")) return null
+  return `${rels.slice(0, at)}${rels.slice(at + marker.length, rels.length - ".rels".length)}`
+}
+
 export function relsOf(part: string): string {
   const path = part.split("/")
   const name = path.pop() ?? ""

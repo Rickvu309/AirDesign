@@ -221,6 +221,9 @@ const pptx = {
   newDuplicateShapeIds: () => [],
   shapeIdCounts: () => new Map(),
   danglingShapeReferences: () => [],
+  sharedOwnedParts: () => [],
+  partCopies: () => new Map(),
+  newSharedOwnedParts: () => [],
   touchMatches: () => true,
 }
 const written = (name) => ({

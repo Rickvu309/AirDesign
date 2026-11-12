@@ -71,6 +71,9 @@ const fakePptx = (failures) => ({
   slideExportFailures: (before, after, kept) => (kept === slideKeptParts ? failures : ["kept"]),
   danglingShapeReferences: () => [],
   newDanglingShapeReferences: (before, after) => after.filter((item) => !before.includes(item)),
+  partCopies: () => new Map(),
+  sharedOwnedParts: () => [],
+  newSharedOwnedParts: () => [],
   newValidatorErrors: (before, after) => after.filter((item) => !before.includes(item)),
   newDuplicateShapeIds: (before, after) => after.filter((item) => !before.includes(item)),
 })

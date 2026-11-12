@@ -22,6 +22,7 @@ export {
 export { applyRoute, oneRunValue } from "./slide-route.js"
 export { routeOperations, touchMatches } from "./route-parts.js"
 export { routeRuns } from "./route-runs.js"
+export { newSharedOwnedParts, partCopies, sharedOwnedParts, type SharedOwnedPart } from "./owned-parts.js"
 export { newValidatorErrors } from "./validator-error.js"
 export { writtenRoutes } from "./written-routes.js"
 export { sectionStarts, type SectionStart } from "./section-read.js"

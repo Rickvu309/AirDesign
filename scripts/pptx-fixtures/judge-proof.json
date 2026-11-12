@@ -8,5 +8,6 @@
   "unescaped ampersand in text": "caught",
   "slide id without relationship": "caught",
   "relationship id used twice": "caught",
-  "image content type removed": "caught"
+  "image content type removed": "caught",
+  "owned part shared": "caught"
 }
