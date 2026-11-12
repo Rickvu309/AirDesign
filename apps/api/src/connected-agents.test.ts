@@ -3,6 +3,7 @@ import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { ask, askForm, cookieFrom, postgresInfo, serve, testResource, verifierPair } from "./harness.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 type AgentRow = {
   readonly id: string
@@ -60,7 +61,7 @@ describe("connected agents routes", () => {
   async function signIn(email: string): Promise<string> {
     const index = mails.length
     await ask(base, "POST", signInRoutes.email.path, { email })
-    const code = mails[index]?.text.split("\n")[1]
+    const { code } = readSignInMail(mails[index]?.text ?? "")
     const signed = await ask(base, "POST", signInRoutes.code.path, { email, code })
     const cookie = cookieFrom(signed.headers)
     if (cookie === undefined) throw new Error("cookie")
@@ -211,7 +212,7 @@ describe("connected agents routes", () => {
     })
     try {
       await ask(custom.base, "POST", signInRoutes.email.path, { email: "resource@example.com" })
-      const code = localMails[0]?.text.split("\n")[1]
+      const { code } = readSignInMail(localMails[0]?.text ?? "")
       const signed = await ask(custom.base, "POST", signInRoutes.code.path, { email: "resource@example.com", code })
       const cookie = cookieFrom(signed.headers)
       const listed = await ask(custom.base, "POST", accountRoutes.agents.path, {}, cookie)

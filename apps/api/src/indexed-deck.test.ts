@@ -6,6 +6,7 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, askForm, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { challengeOf } from "./secrets.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 let base = ""
 let close = async () => {}
@@ -28,7 +29,7 @@ const elements: IndexElement[] = Array.from({ length: 120 }, (_, n) => ({
 
 async function sign(email: string): Promise<string> {
   await ask(base, "POST", signInRoutes.email.path, { email })
-  const code = mails.find((mail) => mail.to === email)?.text.split("\n")[1]
+  const { code } = readSignInMail(mails.find((mail) => mail.to === email)?.text ?? "")
   const signed = await ask(base, "POST", signInRoutes.code.path, { email, code })
   const cookie = cookieFrom(signed.headers)
   if (cookie === undefined) throw new Error("cookie")

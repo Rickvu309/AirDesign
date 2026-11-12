@@ -192,10 +192,8 @@ async function signIn(state, email = `verify${randomBytes(4).toString("hex")}@ex
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line))
-  const code = mails
-    .filter((mail) => mail.to === email)
-    .at(-1)
-    ?.text.split("\n")[1]
+  const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "sign-in-mail.js")).href)
+  const { code } = readSignInMail(mails.filter((mail) => mail.to === email).at(-1)?.text ?? "")
   const signed = await call(state.origin, signInRoutes.code.method, signInRoutes.code.path, { email, code })
   if (signed.status !== 200 || signed.cookie === undefined)
     throw new Error(`sign-in code answered ${String(signed.status)}`)

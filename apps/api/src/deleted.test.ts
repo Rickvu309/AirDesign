@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type OriginalUpload, type Sql } from "./index.js"
 import { LocalOriginalStore } from "./local-original-store.js"
 
@@ -32,15 +32,7 @@ function address(mark: string): string {
   return `${mark}${randomBytes(4).toString("hex")}@example.com`
 }
 
-async function sign(email: string): Promise<string> {
-  const index = mails.length
-  await ask(base, "POST", "/sign-in/email", { email })
-  const code = mails[index]?.text.split("\n")[1]
-  const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-  const session = cookieFrom(signed.headers)
-  if (session === undefined) throw new Error("session")
-  return session
-}
+const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
 async function post(path: string, body: unknown, session = cookie): Promise<Reply> {
   return ask(base, "POST", path, body, session)

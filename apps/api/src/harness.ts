@@ -1,4 +1,4 @@
-import { readCommit } from "@airdesign/catalog"
+import { readCommit, signInRoutes } from "@airdesign/catalog"
 import { createHash, randomBytes } from "node:crypto"
 import { request, type IncomingHttpHeaders, type Server } from "node:http"
 import { readFile } from "node:fs/promises"
@@ -7,7 +7,8 @@ import path from "node:path"
 import { Client } from "pg"
 import { afterAll } from "vitest"
 
-import { createApi, type ApiOptions, type Commit } from "./index.js"
+import { createApi, type ApiOptions, type Commit, type Mail } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 export type PostgresInfo = {
   readonly admin: string
@@ -143,6 +144,16 @@ export async function ask(
 export async function askForm(base: string, route: string, fields: Record<string, string>): Promise<Reply> {
   const payload = Buffer.from(new URLSearchParams(fields).toString())
   return send(base, "POST", route, payload, "application/x-www-form-urlencoded")
+}
+
+export async function signInByCode(base: string, mails: readonly Mail[], email: string): Promise<string> {
+  const index = mails.length
+  await ask(base, "POST", signInRoutes.email.path, { email })
+  const { code } = readSignInMail(mails[index]?.text ?? "")
+  const signed = await ask(base, "POST", signInRoutes.code.path, { email, code })
+  const cookie = cookieFrom(signed.headers)
+  if (cookie === undefined) throw new Error("cookie")
+  return cookie
 }
 
 export function wireCommit(raw: unknown): Commit {

@@ -4,7 +4,7 @@ import { call, openDeck } from "@airdesign/engine"
 import { Client } from "pg"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
-import { ask, cookieFrom, postgresInfo, serve, wireCommit } from "./harness.js"
+import { ask, signInByCode, postgresInfo, serve, wireCommit } from "./harness.js"
 import { DeckListen, commitEdits, openPool, readSaved, writeRevision, type Mail, type Sql } from "./index.js"
 
 function wait(ms: number): Promise<void> {
@@ -62,12 +62,7 @@ describe("deck routes", () => {
     })
     base = served.base
     const email = `person${randomBytes(4).toString("hex")}@example.com`
-    await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[0]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-    const sessionCookie = cookieFrom(signed.headers)
-    if (sessionCookie === undefined) throw new Error("cookie")
-    cookie = sessionCookie
+    cookie = await signInByCode(base, mails, email)
     close = async () => {
       await served.close()
       await listen.close()
@@ -80,15 +75,7 @@ describe("deck routes", () => {
     await close()
   })
 
-  async function sign(email: string): Promise<string> {
-    const index = mails.length
-    await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[index]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-    const sessionCookie = cookieFrom(signed.headers)
-    if (sessionCookie === undefined) throw new Error("cookie")
-    return sessionCookie
-  }
+  const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
   it("refuses a deck route without a session", async () => {
     for (const path of ["/decks/open", "/decks/commit", "/decks/watch"]) {

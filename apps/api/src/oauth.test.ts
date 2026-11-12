@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto"
 import type { Pool } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
-import { ask, askForm, cookieFrom, postgresInfo, serve } from "./harness.js"
+import { ask, askForm, signInByCode, postgresInfo, serve } from "./harness.js"
 import { bearerPrincipal, createApi, DeckListen, openPool, type Mail, type Sql } from "./index.js"
 
 const own = "https://mcp.example.test/mcp"
@@ -69,15 +69,7 @@ describe("oauth host", () => {
     clock = start
   })
 
-  async function sign(email: string): Promise<string> {
-    const index = mails.length
-    await ask(base, "POST", "/sign-in/email", { email })
-    const code = mails[index]?.text.split("\n")[1]
-    const signed = await ask(base, "POST", "/sign-in/code", { email, code })
-    const cookie = cookieFrom(signed.headers)
-    if (cookie === undefined) throw new Error("cookie")
-    return cookie
-  }
+  const sign = (email: string): Promise<string> => signInByCode(base, mails, email)
 
   async function register(uris: readonly string[] = [callback], name?: string): Promise<string> {
     const reply = await ask(base, "POST", "/oauth/register", {

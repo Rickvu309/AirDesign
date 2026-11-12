@@ -10,6 +10,7 @@ import { airaMaxTokens, airaModel, airaSystem, settleTurn, staleTurn } from "./a
 import { Replay } from "./aira-replay.js"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const fakeKey = "test-key-not-real"
@@ -98,7 +99,7 @@ beforeEach(() => {
 async function signIn(): Promise<Account> {
   const email = `aira${randomBytes(6).toString("hex")}@example.com`
   await ask(main, "POST", signInRoutes.email.path, { email })
-  const code = mails.find((mail) => mail.to === email)?.text.split("\n")[1]
+  const { code } = readSignInMail(mails.find((mail) => mail.to === email)?.text ?? "")
   const response = await ask(main, "POST", signInRoutes.code.path, { email, code })
   const cookie = cookieFrom(response.headers)
   if (cookie === undefined) throw new Error("cookie")

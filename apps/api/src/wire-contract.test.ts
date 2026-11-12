@@ -4,6 +4,7 @@ import { afterAll, beforeAll, expect, it } from "vitest"
 import { ask, cookieFrom, postgresInfo, serve } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { routes } from "./server.js"
+import { readSignInMail } from "./sign-in-mail.js"
 
 let base = ""
 let cookie = ""
@@ -41,7 +42,7 @@ beforeAll(async () => {
   }
   const email = `wire${randomBytes(6).toString("hex")}@example.com`
   await ask(base, "POST", signInRoutes.email.path, { email })
-  const code = mails[0]?.text.split("\n")[1]
+  const { code } = readSignInMail(mails[0]?.text ?? "")
   const response = await ask(base, "POST", signInRoutes.code.path, { email, code })
   cookie = cookieFrom(response.headers) ?? ""
   if (cookie === "") throw new Error("cookie")
