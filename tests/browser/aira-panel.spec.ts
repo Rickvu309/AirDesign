@@ -100,6 +100,27 @@ test("Stop ends the run before Aira's edit lands", async ({ page, context, stack
   expect((await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(base)
 })
 
+test("Stop ends an edit call the server has not answered, and the step says it stopped", async ({
+  page,
+  context,
+  stack,
+}) => {
+  const { deck, base, side } = await openDeck(page, context, stack)
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node } }, { name: "edited.sse" })
+  let reachedCall: () => void = () => undefined
+  const reached = new Promise<void>((resolve) => {
+    reachedCall = resolve
+  })
+  await page.route("**/mcp", () => reachedCall())
+  await ask(page, asked)
+  await reached
+  await expect(side.getByText("Editing slides", { exact: true })).toBeVisible()
+  await side.getByRole("button", { name: "Stop" }).click()
+  await expect(side.getByRole("button", { name: "Stop" })).toHaveCount(0)
+  await expect(side.getByRole("textbox", { name: "Ask Aira" })).toBeVisible()
+  await expect(side.getByText("Stopped editing slides", { exact: true })).toBeVisible()
+})
+
 test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {
   const { deck, base, side } = await openDeck(page, context, stack)
   await side.getByRole("button", { name: productCopy.usageTitle }).click()
