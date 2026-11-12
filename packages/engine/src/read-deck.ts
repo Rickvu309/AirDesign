@@ -204,7 +204,7 @@ export function readDeckPage(
   deck: Deck,
   query: { readonly slide?: string; readonly cursor?: string; readonly runId: string | null },
 ): ReadDeckAnswer {
-  const goneSlides = new Set(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
+  const goneSlides = new Set<string>(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
   const nodes = knownNodes(deck.register)
   const index = deck.register.index
   return packRead(
