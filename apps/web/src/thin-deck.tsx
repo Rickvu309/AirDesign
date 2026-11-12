@@ -23,6 +23,7 @@ import { paintStore, SlideCanvas, textValue, type PaintStore } from "@airdesign/
 import { useCallback, useEffect, useRef, useState } from "react"
 import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
+import { exportFileName } from "@/export/export-file-name"
 import { EditorFrame } from "@/editor/editor-frame"
 import { EditorShell } from "@/editor/editor-shell"
 import { slideFrame } from "@/editor/revenue-slide"
@@ -335,7 +336,7 @@ export function ThinDeck({ id, route = "thin" }: { id?: string; route?: "thin" |
     const url = URL.createObjectURL(new Blob([copy]))
     const link = document.createElement("a")
     link.href = url
-    link.download = "exported-deck.pptx"
+    link.download = exportFileName(stored.name)
     document.body.append(link)
     link.click()
     link.remove()

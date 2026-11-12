@@ -120,10 +120,12 @@ async function stored(page: Page, value: string): Promise<void> {
   }, value)
 }
 
-async function saveExport(page: Page, file: string): Promise<void> {
+async function saveExport(page: Page, file: string): Promise<string> {
   const download = page.waitForEvent("download")
   await page.getByRole("button", { name: "Export" }).click()
-  await (await download).saveAs(file)
+  const got = await download
+  await got.saveAs(file)
+  return got.suggestedFilename()
 }
 
 test.use({ viewport: { width: 1600, height: 1000 } })
@@ -142,7 +144,7 @@ test("an edit to Hello! survives reload and exports", async ({ page }, testInfo)
   await reload(page)
   expect(page.url()).toBe(address)
   await expect(page.locator('[contenteditable="true"]')).toHaveText("Hello!")
-  await saveExport(page, download)
+  expect(await saveExport(page, download)).toBe("clean.pptx")
   expect(await changedParts(fixture, download)).toEqual([slide])
   const saved = (await partsOf(download)).get(slide)?.toString("utf8") ?? ""
   expect(saved.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hello!</a:t>"])
