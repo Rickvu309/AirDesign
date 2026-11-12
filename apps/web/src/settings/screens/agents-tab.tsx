@@ -10,7 +10,7 @@ const settingsAction =
   "h-[var(--space-32)] border-0 bg-background px-3.5 text-[length:var(--type-dense)] leading-[17px] shadow-[inset_0_0_0_1px_var(--field-edge)] hover:bg-background"
 
 const settingsSwitch =
-  "h-5! w-9! border-transparent p-0! shadow-none after:hidden focus-visible:ring-0 data-checked:bg-primary! [&_[data-slot=switch-thumb]]:size-4! [&_[data-slot=switch-thumb]]:shadow-[0_1px_2px_rgba(0,0,0,0.2)] [&_[data-slot=switch-thumb]]:data-checked:translate-x-[18px]!"
+  "h-5! w-9! border-transparent p-0! shadow-none after:hidden data-checked:bg-primary! [&_[data-slot=switch-thumb]]:size-4! [&_[data-slot=switch-thumb]]:shadow-[0_1px_2px_rgba(0,0,0,0.2)] [&_[data-slot=switch-thumb]]:data-checked:translate-x-[18px]!"
 
 export function AgentsTab() {
   return (
@@ -57,7 +57,7 @@ export function AgentsTab() {
           </div>
           <button
             type="button"
-            className="mt-3.5 h-[var(--space-16)] border-0 bg-transparent p-0 text-left text-[length:var(--type-dense)] leading-[17px] font-medium text-ring focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="mt-3.5 h-[var(--space-16)] border-0 bg-transparent p-0 text-left text-[length:var(--type-dense)] leading-[17px] font-medium text-ring"
           >
             {settingsCopy.setupGuides}
           </button>

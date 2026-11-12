@@ -18,6 +18,9 @@
   --border: #eaeae7;
   --input: #d7d7d6;
   --ring: #2d6fcd;
+  --focus-ring: var(--ring);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
   --canvas: #f5f5f2;
   --quiet: #5b5b5b;
   --line: #eaeae7;
@@ -133,6 +136,16 @@
   --type-field: 16px;
   --rhythm-compact: 4px;
   --rhythm-comfortable: 8px;
+}
+
+:where(a[href], button, input, select, textarea, summary, [tabindex], [contenteditable="true"]):focus-visible:not(
+    [role^="menuitem"],
+    [role="option"],
+    [data-focus-ring] > :is(input, textarea)
+  ),
+[data-focus-ring]:has(> :is(input, textarea):focus-visible) {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
 
 @theme inline {

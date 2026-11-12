@@ -19,8 +19,18 @@ export function Card({
   children?: ReactNode
 }) {
   return (
-    <section className={cn("w-[860px] rounded-xl bg-background p-5 shadow-[inset_0_0_0_1px_var(--line)]", className)}>
-      <header className={cn("flex justify-between gap-4", align === "end" ? "items-end" : "items-center")}>
+    <section
+      className={cn(
+        "w-[860px] max-w-full rounded-xl bg-background p-5 shadow-[inset_0_0_0_1px_var(--line)]",
+        className,
+      )}
+    >
+      <header
+        className={cn(
+          "flex justify-between gap-4 max-md:flex-col max-md:items-start",
+          align === "end" ? "items-end" : "items-center",
+        )}
+      >
         <div className="min-w-0">
           <h2 className="text-[length:var(--type-section)] leading-5 font-semibold text-foreground">{title}</h2>
           {detail ? <p className="mt-1 text-[30px] leading-[39px] font-semibold text-foreground">{detail}</p> : null}

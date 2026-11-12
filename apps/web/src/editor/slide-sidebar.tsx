@@ -1,6 +1,16 @@
 import { Filmstrip } from "@airdesign/render"
-import { useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type ReactNode } from "react"
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type FocusEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react"
+import { Announcer, type Announcement } from "@/components/ui/announcer"
 import { Button } from "@/components/ui/button"
+import { slideListCopy } from "@/copy/slide-list-copy"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
 import { slideKey } from "@/editor/slide-keys"
@@ -63,6 +73,31 @@ export function SlideSidebar({
   )
 }
 
+const stops = "[data-slide-item], [data-section-head]"
+
+function stopsOf(list: HTMLElement): HTMLElement[] {
+  return [...list.querySelectorAll<HTMLElement>(stops)]
+}
+
+function rovedTo(key: string, count: number, at: number): number {
+  if (key === "ArrowDown") return Math.min(at + 1, count - 1)
+  if (key === "ArrowUp") return Math.max(at - 1, 0)
+  return key === "Home" ? 0 : count - 1
+}
+
+function onListKey(event: KeyboardEvent<HTMLDivElement>, strip: SlideStrip) {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+  if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return
+  const all = stopsOf(event.currentTarget)
+  const at = all.findIndex((each) => each === document.activeElement)
+  if (at === -1) return
+  event.preventDefault()
+  const target = all[rovedTo(event.key, all.length, at)]
+  target?.focus()
+  const entry = target?.getAttribute("data-slide-entry")
+  if (entry !== null && entry !== undefined) strip.onSelect(Number(entry) - 1)
+}
+
 function DeckStrip({ strip }: { strip: SlideStrip }) {
   const list = useRef<HTMLDivElement>(null)
   const following = useRef(false)
@@ -76,6 +111,9 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
   }, [current, count])
   const sections = strip.sections ?? noSections
   const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(new Set())
+  const [stop, setStop] = useState<string | null>(null)
+  const [message, setMessage] = useState<Announcement | null>(null)
+  const announce = (text: string) => setMessage((held) => ({ text, odd: held === null ? false : !held.odd }))
   const [seen, setSeen] = useState(strip.current)
   if (seen !== strip.current) {
     setSeen(strip.current)
@@ -86,9 +124,11 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
     <SlideItem
       key={index}
       index={index + 1}
+      count={strip.count}
       active={index === strip.current}
+      reachable={reachable === `slide:${String(index)}`}
       onSelect={() => strip.onSelect(index)}
-      onKeyDown={(event) => onSlideKey(strip, index, event)}
+      onKeyDown={(event) => onSlideKey(strip, index, event, announce)}
       onDragStart={(event) => {
         event.dataTransfer.setData("text/plain", String(index))
         event.dataTransfer.effectAllowed = "move"
@@ -108,6 +148,20 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
       />
     </SlideItem>
   )
+  const visible = (index: number) => {
+    const at = sectionAt(sections, index)
+    return at === -1 || !collapsed.has(at)
+  }
+  const fallback = visible(strip.current)
+    ? `slide:${String(strip.current)}`
+    : `section:${String(sectionAt(sections, strip.current))}`
+  const present = (key: string) => {
+    const [kind, number] = key.split(":")
+    const at = Number(number)
+    if (kind === "section") return at >= 0 && at < sections.length
+    return at >= 0 && at < strip.count && visible(at)
+  }
+  const reachable = stop !== null && present(stop) ? stop : fallback
   const toggle = (number: number) =>
     setCollapsed((held) =>
       held.has(number) ? new Set([...held].filter((each) => each !== number)) : new Set([...held, number]),
@@ -129,16 +183,25 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
             onClick={() => {
               following.current = true
               strip.onAdd?.()
+              announce(slideListCopy.added(strip.count + 1))
             }}
           >
             <EditorIcon name="plus" size={15} />
           </Button>
         </div>
       </div>
+      <Announcer message={message} />
       <div
         ref={list}
-        className="flex flex-col gap-1 overflow-y-auto px-2 pb-2"
+        role="group"
+        aria-label={slideListCopy.listName}
+        className="flex flex-col gap-1 overflow-y-auto px-2 py-1"
         data-slide-list
+        onFocus={(event: FocusEvent<HTMLDivElement>) => {
+          const key = event.target.getAttribute("data-stop")
+          if (key !== null) setStop(key)
+        }}
+        onKeyDown={(event) => onListKey(event, strip)}
         onKeyDownCapture={(event) => {
           if (slideKey(event) !== null) following.current = true
         }}
@@ -159,6 +222,8 @@ function DeckStrip({ strip }: { strip: SlideStrip }) {
                 <SectionBlock
                   key={`${number}:${section.name}`}
                   name={section.name}
+                  reachable={reachable === `section:${String(number)}`}
+                  stop={`section:${String(number)}`}
                   open={open}
                   range={open ? undefined : rangeOf(section.start, end)}
                   onToggle={() => toggle(number)}
@@ -194,6 +259,8 @@ function rangeOf(start: number, end: number): string {
 
 function SectionBlock({
   name,
+  stop,
+  reachable,
   open,
   range,
   onToggle,
@@ -201,6 +268,8 @@ function SectionBlock({
   children,
 }: {
   name: string
+  stop: string
+  reachable: boolean
   open: boolean
   range: string | undefined
   onToggle: () => void
@@ -209,7 +278,14 @@ function SectionBlock({
 }) {
   return (
     <>
-      <SectionHead name={name} open={open} {...(range === undefined ? {} : { range })} onToggle={onToggle} />
+      <SectionHead
+        name={name}
+        stop={stop}
+        reachable={reachable}
+        open={open}
+        {...(range === undefined ? {} : { range })}
+        onToggle={onToggle}
+      />
       {open ? (
         children
       ) : (
@@ -273,19 +349,39 @@ function SampleStrip({ run }: { run: SidebarRun }) {
   )
 }
 
-function onSlideKey(strip: SlideStrip, index: number, event: KeyboardEvent<HTMLButtonElement>) {
+function onSlideKey(
+  strip: SlideStrip,
+  index: number,
+  event: KeyboardEvent<HTMLButtonElement>,
+  announce: (text: string) => void,
+): void {
   const change = slideKey(event)
   if (change === null) return
   event.preventDefault()
-  if (change === "remove") strip.onRemove?.(index)
-  if (change === "clone") strip.onClone?.(index)
-  if (change === "up") strip.onMove?.(index, index - 1)
-  if (change === "down") strip.onMove?.(index, index + 1)
+  const number = index + 1
+  if (change === "remove") {
+    strip.onRemove?.(index)
+    announce(slideListCopy.deleted(number))
+  }
+  if (change === "clone") {
+    strip.onClone?.(index)
+    announce(slideListCopy.duplicated(number))
+  }
+  if (change === "up" && index > 0) {
+    strip.onMove?.(index, index - 1)
+    announce(slideListCopy.moved(number, number - 1))
+  }
+  if (change === "down" && index < strip.count - 1) {
+    strip.onMove?.(index, index + 1)
+    announce(slideListCopy.moved(number, number + 1))
+  }
 }
 
 function SlideItem({
   index,
+  count = 0,
   active,
+  reachable = true,
   working = false,
   onSelect,
   onKeyDown,
@@ -295,7 +391,9 @@ function SlideItem({
   children,
 }: {
   index: number
+  count?: number
   active: boolean
+  reachable?: boolean
   working?: boolean
   onSelect?: () => void
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
@@ -324,7 +422,10 @@ function SlideItem({
       type="button"
       draggable={onDragStart !== undefined}
       aria-current={active ? "true" : undefined}
+      aria-label={slideListCopy.slideName(index, count)}
+      tabIndex={reachable ? 0 : -1}
       className={cn(look, "text-left")}
+      data-stop={`slide:${String(index - 1)}`}
       data-slide-entry={index}
       data-slide-item
       onClick={onSelect}
@@ -341,11 +442,15 @@ function SlideItem({
 
 function SectionHead({
   name,
+  stop,
+  reachable = true,
   open = false,
   range,
   onToggle,
 }: {
   name: string
+  stop?: string
+  reachable?: boolean
   open?: boolean
   range?: string
   onToggle?: () => void
@@ -373,7 +478,10 @@ function SectionHead({
     <button
       type="button"
       aria-expanded={open}
+      aria-label={range === undefined ? name : `${name}, ${slideListCopy.sectionRange(range)}`}
+      tabIndex={reachable ? 0 : -1}
       className={cn(look, "w-full text-left")}
+      {...(stop === undefined ? {} : { "data-stop": stop })}
       data-section-head
       onClick={onToggle}
     >

@@ -37,7 +37,7 @@ export function DeckBrowser({
   search?: { value: string; onChange: (value: string) => void }
 }) {
   return (
-    <div className="screen-frame">
+    <div className="screen-frame reflow-frame">
       <div className="h-full bg-canvas">
         <DecksShell
           active={active}

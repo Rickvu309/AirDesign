@@ -24,7 +24,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
@@ -55,6 +55,27 @@ html:has(.screen-frame) #root {
   height: 923px;
   overflow: hidden;
   margin: 0;
+}
+
+html:has(.screen-frame) {
+  overflow: auto;
+}
+
+@media (max-width: 1469px) {
+  html:has(.reflow-frame),
+  html:has(.reflow-frame) body,
+  html:has(.reflow-frame) #root {
+    width: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .reflow-frame {
+    width: auto;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
 }
 
 @keyframes aira-shimmer {

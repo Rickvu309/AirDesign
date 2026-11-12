@@ -29,8 +29,7 @@ const settingsMenu = [
   { path: settingsPaths.account, label: settingsCopy.account },
 ]
 
-const accountButton =
-  "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+const accountButton = "flex h-10 w-full items-center gap-2.5 rounded-lg pr-2 pl-2 text-left hover:bg-black/4"
 
 function AccountFace({ account: realAccount }: { account?: { email: string } }) {
   const name =
@@ -81,8 +80,11 @@ export function DecksShell({
       ]
     : sections.slice(1)
   return (
-    <div className="flex h-full w-full">
-      <aside data-decks-sidebar className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3">
+    <div className="flex h-full w-full max-md:flex-col">
+      <aside
+        data-decks-sidebar
+        className="flex h-full w-[248px] shrink-0 flex-col bg-canvas px-3 pt-3 pb-3 max-md:h-auto max-md:w-full"
+      >
         {realAccount && onSignOut ? (
           <>
             {deletingAccount && (
@@ -144,14 +146,14 @@ export function DecksShell({
                   },
                 }
               : {})}
-            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-faint focus-visible:border-0 focus-visible:ring-2 focus-visible:ring-primary md:text-sm"
+            className="h-9 rounded-lg border-0 bg-background pl-[var(--space-32)] text-sm shadow-[0_0_0_1px_var(--line)] placeholder:text-faint md:text-sm"
           />
         </form>
         <nav className="mt-4" aria-label="Decks">
           <a
             href={primary.href}
             className={cn(
-              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)]",
               active === primary.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
             )}
             aria-current={active === primary.id ? "page" : undefined}
@@ -166,7 +168,7 @@ export function DecksShell({
                 key={section.id}
                 href={section.href}
                 className={cn(
-                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                  "flex h-9 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-[length:var(--type-body)] leading-[var(--leading-body)]",
                   active === section.id ? "bg-line font-medium text-foreground" : "text-quiet hover:bg-black/4",
                 )}
                 aria-current={active === section.id ? "page" : undefined}
@@ -194,7 +196,7 @@ export function DecksShell({
                 <button
                   key={folder}
                   type="button"
-                  className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex h-8 items-center gap-2.5 rounded-lg pr-2.5 pl-2.5 text-left text-[length:var(--type-dense)] leading-[var(--leading-body)] text-quiet hover:bg-black/4"
                 >
                   <span className="text-muted-foreground">
                     <DeckGlyph name="folder" size={15} />
@@ -219,7 +221,7 @@ export function DecksShell({
           )}
         </div>
       </aside>
-      <main data-decks-main className="min-w-0 flex-1 px-14 pt-10">
+      <main data-decks-main className="min-w-0 flex-1 px-14 pt-10 max-md:px-4">
         {children}
       </main>
     </div>

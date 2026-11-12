@@ -41,11 +41,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  a:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;
@@ -282,14 +277,6 @@
 
   .sign-in-email {
     box-shadow: 0 0 0 1px var(--field-edge);
-    outline: none;
-    transition: box-shadow var(--transition-micro);
-  }
-
-  .sign-in-email:focus-visible {
-    box-shadow:
-      0 0 0 1px var(--ring),
-      0 0 0 3px var(--strong-15);
   }
 
   .code-box {

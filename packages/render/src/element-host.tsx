@@ -177,6 +177,8 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
   return {
     role: "group",
     "aria-label": nameOf(text, fallback),
+    "aria-description":
+      "Arrow keys move. Alt and Shift with the arrow keys resize. Enter edits the text. Delete removes it.",
     tabIndex: canMove(element) && !typing ? 0 : -1,
     onPointerDown: (event: PointerEvent<HTMLElement>) => moves.press(event, element, "move"),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => moves.key(event, element),
@@ -269,7 +271,16 @@ function PlacedText(props: {
         ...promptOutline,
         ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
-      {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
+      {...(moves === null
+        ? {}
+        : reach(
+            element,
+            id,
+            shown,
+            moves,
+            typing,
+            element.kind === "picture" ? fallbackName : (element.prompt ?? fallbackName),
+          ))}
       {...(typing ? formatReach(formatting, id, moves, element) : {})}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />

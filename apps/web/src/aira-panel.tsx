@@ -18,7 +18,7 @@ import { AiraHistoryMenu } from "@/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
 import { useWeekUsage } from "@/usage-load"
 
-const headControl = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] active:translate-y-0"
+const headControl = "outline-hidden active:translate-y-0"
 
 export function AiraPanel({
   deck,
@@ -43,6 +43,7 @@ export function AiraPanel({
   const stopper = useRef<AbortController | null>(null)
   const finishing = useRef<Promise<unknown>>(Promise.resolve())
   const popId = useId()
+  const usageButton = useRef<HTMLButtonElement>(null)
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
   const { usage, available, refresh: refreshUsage } = useWeekUsage(chat.usage)
@@ -149,7 +150,17 @@ export function AiraPanel({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
+    <div
+      className="relative flex min-h-0 flex-1 flex-col"
+      hidden={hidden}
+      data-aira-panel
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !usageOpen) return
+        event.stopPropagation()
+        setUsageOpen(false)
+        usageButton.current?.focus()
+      }}
+    >
       <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-3">
         <span className="flex min-w-0 flex-1">
           <AiraHistoryMenu
@@ -165,6 +176,7 @@ export function AiraPanel({
         <span className="flex shrink-0 items-center gap-0.5">
           {usage === null ? null : (
             <Button
+              ref={usageButton}
               type="button"
               variant="ghost"
               size="icon"
@@ -208,7 +220,7 @@ export function AiraPanel({
             aria-label={productCopy.agentName}
             aria-relevant="additions"
             aria-busy={working}
-            className="overflow-y-auto outline-hidden focus-visible:shadow-[inset_0px_0px_0px_2px_var(--ring)]"
+            className="overflow-y-auto outline-hidden"
           >
             <ConversationContent ref={content} className="pb-4">
               {chat.exchanges.map((exchange, index) => (

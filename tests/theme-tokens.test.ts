@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { readdirSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { describe, expect, it } from "vitest"
@@ -31,5 +31,27 @@ describe("theme tokens", () => {
 
     const packageJson = JSON.parse(read("packages/theme/package.json")) as { exports: Record<string, string> }
     expect(packageJson.exports["./tokens.css"]).toBe("./src/tokens.css")
+  })
+
+  it("draws one focus ring from the theme tokens, and no component or page styles its own", () => {
+    const tokens = read("packages/theme/src/tokens.css")
+    expect(tokens).toMatch(/--focus-ring: var\(--ring\);/)
+    expect(tokens).toContain("--focus-ring-width: 2px;")
+    expect(tokens).toContain("--focus-ring-offset: 2px;")
+    expect(tokens).toMatch(/:focus-visible[^{]*\{[^}]*outline: var\(--focus-ring-width\) solid var\(--focus-ring\);/)
+
+    const own = /focus(?:-visible|-within)?:(?:ring|outline|shadow|border-ring)|outline-ring|:focus-visible\s*\{/
+    const sources: string[] = []
+    const walk = (folder: string) => {
+      for (const entry of readdirSync(path.join(repoRoot, folder), { withFileTypes: true })) {
+        const relative = path.join(folder, entry.name)
+        if (entry.isDirectory()) walk(relative)
+        else if (/\.(tsx|css|astro)$/.test(entry.name) && !entry.name.includes(".test.")) sources.push(relative)
+      }
+    }
+    walk("apps/web/src")
+    walk("apps/site/src")
+    const styled = sources.filter((relative) => own.test(read(relative)))
+    expect(styled).toEqual([])
   })
 })

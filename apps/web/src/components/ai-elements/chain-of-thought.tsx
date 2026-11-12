@@ -66,7 +66,7 @@ export function ChainOfThoughtHeader({
     <CollapsibleTrigger
       className={cn(
         lineClass,
-        "group/steps -mx-1 w-fit rounded-[var(--shape-control)] px-1 text-left outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] motion-reduce:transition-none",
+        "group/steps -mx-1 w-fit rounded-[var(--shape-control)] px-1 text-left outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground motion-reduce:transition-none",
         className,
       )}
       {...props}
