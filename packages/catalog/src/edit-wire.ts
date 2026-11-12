@@ -111,7 +111,7 @@ const nodeInput = z
   .transform((value) => elementId(value))
   .describe("Element id, <slide>.<shape>, such as 258.7.")
 const readAtInput = wholeInput.describe(
-  "Version of that element from your last read. Every answer carries each named element's value and version. 0 for an element nobody has changed.",
+  "Version of that element from airdesign_read_deck. 0 when that read omitted the element.",
 )
 const coordinateInput = z.int().min(coordinates.lowest).max(coordinates.highest)
 const extentInput = z.int().min(0).max(coordinates.highest)
@@ -141,7 +141,7 @@ const boxChange = z.strictObject({
 export const readAgentEdit = readInput(
   z.strictObject({
     deck: deckInput,
-    base: wholeInput.describe("Revision the edit was read from."),
+    base: wholeInput.describe("Revision from airdesign_read_deck."),
     changes: z
       .array(z.union([textChange, boxChange]))
       .min(1)

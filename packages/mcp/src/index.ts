@@ -1,3 +1,6 @@
+import { readSuite } from "./read-suite.js"
+import { suite as writtenSuite, type SuiteRow } from "./suite.js"
+
 export { admit, emptyLog, type CallerLog, type LimitKind } from "./admit.js"
 export { callTool, type AgentCaller, type Session, type ToolResult } from "./call-tool.js"
 export { editLanded, editRefusal } from "./edit-answer.js"
@@ -17,6 +20,9 @@ export {
   type Tool,
   type Write,
 } from "./score.js"
+
+export const suite: readonly SuiteRow[] = [...writtenSuite, ...readSuite]
+
 export {
   captureAbsentAttempt,
   captureAbsentTask,
@@ -24,7 +30,6 @@ export {
   landSourceTask,
   staleEditAttempt,
   staleEditTask,
-  suite,
   type SuiteRow,
 } from "./suite.js"
 export { createServer, type Host } from "./server.js"

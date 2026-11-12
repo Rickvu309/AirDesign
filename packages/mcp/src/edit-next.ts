@@ -21,7 +21,7 @@ export const editNext = {
   deck: "This session can reach no deck with this id. Check the deck id.",
   owner: "This deck belongs to another account. Work only on decks this account owns.",
   deleted: "This deck was deleted for good, and nothing landed. Do not send changes to it again.",
-  base: "The base is missing or not a whole number. Send the revision from your last answer as base.",
+  base: "The base is missing or not a whole number. Send the revision from airdesign_read_deck as base.",
   batch: "The changes are missing or not a list of one to one hundred changes. Send one to one hundred changes.",
   payload: "The deck's next revision could not be named for storage, and nothing landed. Tell the person.",
   field:

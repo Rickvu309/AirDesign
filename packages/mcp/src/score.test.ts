@@ -35,7 +35,11 @@ afterEach(() => {
 
 const title = elements.title
 
-const toolNames = { edit_deck: edit("deck", []).name, capture_slide: capture("deck").name } as const
+const toolNames = {
+  edit_deck: edit("deck", []).name,
+  capture_slide: capture("deck").name,
+  read_deck: "airdesign_read_deck",
+} as const
 
 function rowOf(id: string) {
   const row = suite.find((item) => item.task.id === id)
@@ -260,12 +264,12 @@ describe("score", () => {
     }
   })
 
-  it("scores forty tasks", () => {
-    expect(suite).toHaveLength(40)
+  it("scores every task", () => {
+    expect(suite).toHaveLength(41)
     const ids = suite.map((row) => row.task.id)
     const prompts = suite.map((row) => row.task.prompt)
-    expect(new Set(ids).size).toBe(40)
-    expect(new Set(prompts).size).toBe(40)
+    expect(new Set(ids).size).toBe(41)
+    expect(new Set(prompts).size).toBe(41)
     const starts = suite.map((row) => {
       const deck = row.task.deck()
       return JSON.stringify({
@@ -275,7 +279,7 @@ describe("score", () => {
         want: row.task.want,
       })
     })
-    expect(new Set(starts).size).toBe(40)
+    expect(new Set(starts).size).toBe(41)
     for (const row of suite) expect(score(row.task, row.reference).pass, row.task.id).toBe(true)
   })
 })

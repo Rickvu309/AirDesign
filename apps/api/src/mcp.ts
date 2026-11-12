@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { notifyKey, readDeckId, readNamedDeck } from "@airdesign/catalog"
-import { openDeck, type Deck } from "@airdesign/engine"
+import { openDeck, ownedDecks, type Deck } from "@airdesign/engine"
 import {
   afterWrite,
   agentCaller,
@@ -19,6 +19,7 @@ import {
 import { hostHeaderValidation, originValidation, toNodeHandler } from "@modelcontextprotocol/node"
 import { createMcpHandler } from "@modelcontextprotocol/server"
 
+import { readOwnedDecks } from "./deck-list.js"
 import type { Sql } from "./pool.js"
 import { deckAccess, readSaved, writeRevision } from "./saved.js"
 
@@ -67,7 +68,15 @@ export async function serveMcp(host: McpHost, req: IncomingMessage, res: ServerR
   }
   let loaded: Deck = session.deck
   const bridge: Host = {
-    prepare: async (_name, raw) => {
+    prepare: async (name, raw) => {
+      if (name === "airdesign_list_decks") {
+        try {
+          session.owned = ownedDecks(await readOwnedDecks(host.deck, host.email), host.email)
+        } catch {
+          return { ok: false, refusal: "store" }
+        }
+        return { ok: true }
+      }
       const named = readNamedDeck(raw)
       if (!named.ok) return named
       const seen = turns.read(named.deck)

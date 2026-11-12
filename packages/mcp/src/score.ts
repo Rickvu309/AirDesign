@@ -20,7 +20,7 @@ export const fixtureRun = "run"
 
 export type EditableName = Exclude<ElementName, "opened">
 
-export type Tool = "edit_deck" | "capture_slide"
+export type Tool = "edit_deck" | "capture_slide" | "read_deck"
 
 export type AttemptCall = {
   readonly name: string
@@ -78,7 +78,11 @@ function toolName(op: Tool): string {
   return name
 }
 
-const toolNames = { edit_deck: toolName("edit_deck"), capture_slide: toolName("capture_slide") } as const
+const toolNames = {
+  edit_deck: toolName("edit_deck"),
+  capture_slide: toolName("capture_slide"),
+  read_deck: toolName("read_deck"),
+} as const
 
 export function edit(deck: string, writes: readonly Write[], base = 0): AttemptCall {
   return {
@@ -98,6 +102,10 @@ export function edit(deck: string, writes: readonly Write[], base = 0): AttemptC
 
 export function capture(deck: string): AttemptCall {
   return { name: toolNames.capture_slide, raw: { deck } }
+}
+
+export function readDeck(deck: string): AttemptCall {
+  return { name: toolNames.read_deck, raw: { deck } }
 }
 
 function sameOrder(left: readonly string[], right: readonly string[]): boolean {

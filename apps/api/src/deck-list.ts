@@ -1,5 +1,6 @@
 import type { DeckAnswers } from "./deck-answer.js"
 import type { DeckId } from "@airdesign/catalog"
+import type { OwnedRow } from "@airdesign/engine"
 
 import type { Sql } from "./pool.js"
 import { discardOriginals, drainOriginals } from "./original.js"
@@ -63,6 +64,13 @@ where owner = $1 and deleted is null
 order by edited desc, created desc, id
 `
 
+const ownedSql = `
+select id, name, owner, deleted is not null as deleted, trashed is not null as trash
+from deck.saved
+where owner = $1 and deleted is null
+order by edited desc, created desc, id
+`
+
 const renameSql = "update deck.saved set name = $3 where id = $1 and owner = $2 and deleted is null returning id, name"
 
 const trashSql = `
@@ -103,6 +111,25 @@ function listed(row: ListRow): Listed {
     edited: row.edited.toISOString(),
     created: row.created.toISOString(),
   }
+}
+
+type OwnedSql = {
+  readonly id: string
+  readonly name: string
+  readonly owner: string
+  readonly deleted: boolean
+  readonly trash: boolean
+}
+
+export async function readOwnedDecks(db: Sql, email: string): Promise<OwnedRow[]> {
+  const result = await db.query<OwnedSql>(ownedSql, [email])
+  return result.rows.map((row) => ({
+    deck: row.id,
+    name: row.name,
+    owner: row.owner,
+    deleted: row.deleted === true,
+    trash: row.trash === true,
+  }))
 }
 
 export async function listDecks(
