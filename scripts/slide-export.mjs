@@ -4,22 +4,31 @@ export const slideOriginalName = "tall-glyph-before.pptx"
 export const slideExportName = "exported-slides.pptx"
 export const slideKeptParts = ["ppt/slides/slide1.xml"]
 
-export const slideExportLines = ({ pptx, parts, lists, ids, orders }) => {
-  const before = parts.get(slideOriginalName)
-  const after = parts.get(slideExportName)
+export const slideExportLines = ({
+  pptx,
+  parts,
+  lists,
+  ids,
+  orders,
+  original = slideOriginalName,
+  exported = slideExportName,
+  kept = slideKeptParts,
+}) => {
+  const before = parts.get(original)
+  const after = parts.get(exported)
   if (before === undefined || after === undefined) throw new Error("slide export")
-  const lines = pptx.slideExportFailures(before, after, slideKeptParts).map((failure) => `slide export ${failure}`)
+  const lines = pptx.slideExportFailures(before, after, kept).map((failure) => `slide export ${failure}`)
   const verdict = judge(
     pptx,
     {
-      list: lists.get(slideOriginalName),
-      ids: ids.get(slideOriginalName),
-      orders: orders.get(slideOriginalName),
+      list: lists.get(original),
+      ids: ids.get(original),
+      orders: orders.get(original),
     },
     {
-      list: lists.get(slideExportName),
-      ids: ids.get(slideExportName),
-      orders: orders.get(slideExportName),
+      list: lists.get(exported),
+      ids: ids.get(exported),
+      orders: orders.get(exported),
       dangling: pptx.newDanglingShapeReferences(
         pptx.danglingShapeReferences(before),
         pptx.danglingShapeReferences(after),

@@ -16,3 +16,5 @@ scripts/pptx-judge/obj/
 .stryker-tmp/
 tests/browser/exported-deck.pptx
 .wrangler
+
+tests/browser/exported-blank-slides.pptx
