@@ -78,6 +78,13 @@ async function slideRows(page: Page): Promise<string[]> {
 }
 
 async function answerOpens(page: Page): Promise<void> {
+  await page.route("**/decks/index", async (route) => {
+    const body = route.request().postDataJSON() as { deck: string }
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, deck: body.deck, revision: 0 }),
+    })
+  })
   await page.route("**/decks/open", async (route) => {
     const body = route.request().postDataJSON() as { deck: string }
     await route.fulfill({
