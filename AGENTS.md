@@ -97,6 +97,7 @@ A rule with a check fails `pnpm check`, `pnpm check:pptx` or the merge. A rule m
 | The branch of a pull request closed without merging does not stay on GitHub | the `closed-branch` workflow deletes it when the pull request closes. The pull request page can restore it. It leaves `main` and `archive/` branches alone |
 | Run `pnpm check` after your last edit, before every push | `pnpm check` records the files it passed, and the `pre-push` hook that `pnpm install` sets up refuses any other commit |
 | A test file sees only the rows it wrote | `postgresInfo` in `apps/api/src/harness.ts` gives each `apps/api` test file its own database, cloned from the template the globalSetup prepares, and `isolation.test.ts` fails when it sees another file's rows |
+| A shipped migration is never edited; a change is a new migration | `apps/api/src/frozen-migrations.test.ts` checks each migration's exact sql against `apps/api/src/frozen-migrations.json`, and `scripts/frozen-migrations.mjs` only appends |
 | Tests never retry | the Vitest and Playwright configs set no retries. A retry on one test is caught only in review |
 | `main` takes only a commit that passed `ci` on top of the latest `main` | branch protection and the merge queue |
 | A metric that moves away from its goal, and a changed PowerPoint case or deck that was already judged, is seen by the owner | the `bar` check labels the PR `lowers-the-bar`. It does not block |
