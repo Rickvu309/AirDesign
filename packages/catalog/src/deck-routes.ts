@@ -180,6 +180,7 @@ export const deckRoutes = {
 export const airaRoutes = {
   turn: { path: "/aira/turn", method: "POST" },
   usage: { path: "/aira/usage", method: "POST" },
+  stop: { path: "/aira/stop", method: "POST" },
 } as const
 
 export const countryHeader = "visitor-country"

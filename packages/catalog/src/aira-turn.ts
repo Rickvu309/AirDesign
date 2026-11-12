@@ -37,8 +37,15 @@ export type ModelTool = {
 }
 
 export type TurnRead =
-  | { readonly ok: true; readonly deck: DeckId; readonly messages: readonly ModelMessage[] }
+  | {
+      readonly ok: true
+      readonly deck: DeckId
+      readonly messages: readonly ModelMessage[]
+      readonly ask: string | undefined
+    }
   | { readonly ok: false }
+
+export type StopRead = { readonly ok: true; readonly ask: string } | { readonly ok: false }
 
 export const airaTools: readonly ModelTool[] = projectTools(catalog).map((tool) => ({
   name: tool.name,
@@ -48,6 +55,7 @@ export const airaTools: readonly ModelTool[] = projectTools(catalog).map((tool) 
 
 const toolNames: ReadonlySet<string> = new Set(airaTools.map((tool) => tool.name))
 const toolId = /^[A-Za-z0-9_-]{1,128}$/
+const askId = /^[A-Za-z0-9_-]{1,64}$/
 
 function fieldsOf(raw: unknown): Record<string, unknown> | undefined {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return undefined
@@ -127,7 +135,9 @@ function replied(raw: unknown): (ModelMessage & { readonly role: "assistant" }) 
 
 export function readTurn(raw: unknown): TurnRead {
   const body = fieldsOf(raw)
-  if (body === undefined || !named(body, ["deck", "messages"])) return { ok: false }
+  if (body === undefined || !named(body, ["deck", "messages"], ["ask"])) return { ok: false }
+  const ask = body.ask
+  if (ask !== undefined && !(typeof ask === "string" && askId.test(ask))) return { ok: false }
   const deck = readDeckId(body.deck)
   const list = body.messages
   if (!deck.ok || !Array.isArray(list) || list.length % 2 === 0 || list.length > airaMessageCap) return { ok: false }
@@ -142,5 +152,13 @@ export function readTurn(raw: unknown): TurnRead {
         : []
     messages.push(message)
   }
-  return { ok: true, deck: deck.deck, messages }
+  return { ok: true, deck: deck.deck, messages, ask }
+}
+
+export function readStop(raw: unknown): StopRead {
+  const body = fieldsOf(raw)
+  if (body === undefined || !named(body, ["ask"]) || typeof body.ask !== "string" || !askId.test(body.ask)) {
+    return { ok: false }
+  }
+  return { ok: true, ask: body.ask }
 }
