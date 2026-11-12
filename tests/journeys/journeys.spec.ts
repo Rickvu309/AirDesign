@@ -52,6 +52,7 @@ for (const name of [
   "person-undo",
   "usage-page",
   "sign-in-mail",
+  "sign-in-pages",
 ]) {
   test(name, async ({ page, context }) => {
     await drive(name, page, context)

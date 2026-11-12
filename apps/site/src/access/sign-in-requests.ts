@@ -17,9 +17,20 @@ async function postJson(apiBase: string, path: string, body: object): Promise<Re
   }
 }
 
-export async function requestSignInEmail(apiBase: string, email: string): Promise<string | null> {
+export type EmailFailure = "refused" | "failed"
+
+export async function askForSignInEmail(
+  apiBase: string,
+  email: string,
+): Promise<{ readonly path: string } | { readonly failure: EmailFailure }> {
   const response = await postJson(apiBase, signInRoutes.email.path, { email })
-  return response?.status === 202 ? checkPath : null
+  if (response?.status === 202) return { path: checkPath }
+  return { failure: response?.status === 400 ? "refused" : "failed" }
+}
+
+export async function requestSignInEmail(apiBase: string, email: string): Promise<string | null> {
+  const asked = await askForSignInEmail(apiBase, email)
+  return "path" in asked ? asked.path : null
 }
 
 export async function submitSignInCode(
@@ -39,20 +50,20 @@ export async function startEmailSignIn(
   apiBase: string,
   email: string,
   go: (path: string) => void,
-  onFail: () => void = () => undefined,
+  onFail: (failure: EmailFailure) => void = () => undefined,
 ): Promise<void> {
   if (emailInFlight) {
     return
   }
   emailInFlight = true
   try {
-    const destination = await requestSignInEmail(apiBase, email)
-    if (destination !== null) {
+    const asked = await askForSignInEmail(apiBase, email)
+    if ("path" in asked) {
       rememberPendingEmail(email)
-      go(destination)
+      go(asked.path)
       return
     }
-    onFail()
+    onFail(asked.failure)
   } finally {
     emailInFlight = false
   }

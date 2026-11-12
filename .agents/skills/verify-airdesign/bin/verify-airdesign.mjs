@@ -8,6 +8,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { serve } from "./serve.mjs"
 import { designContext, openBrowser, settle } from "./browser.mjs"
 import { loadLine } from "./load.mjs"
+import { builtSite, fakeOrigins } from "./site.mjs"
 
 const skill = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repo = process.env.VERIFY_AIRDESIGN_REPO
@@ -107,12 +108,13 @@ async function launch(args) {
   for (const built of [webDist, apiDist, catalogDist]) {
     if (!existsSync(built)) fail(`missing build output ${built}; run launch without --no-build`)
   }
+  const site = builtSite(repo)
   const log = path.join(scratchDir(run), "stack.log")
   const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "serve", run], {
     cwd: repo,
     detached: true,
     stdio: ["ignore", "ignore", "ignore"],
-    env: { ...process.env, VERIFY_AIRDESIGN_LOG: log },
+    env: { ...process.env, VERIFY_AIRDESIGN_LOG: log, VERIFY_AIRDESIGN_SITE: site.dist },
   })
   child.unref()
   for (let waited = 0; waited < 120_000; waited += 500) {
@@ -121,10 +123,10 @@ async function launch(args) {
       if (state.ready) {
         proof(
           run,
-          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- launched at ${loadLine()}`,
+          `# verify-airdesign run ${run}\n\n- commit ${state.commit}\n- origin ${state.origin}\n- site origin ${state.siteOrigin}, build ${site.built ? "made" : "reused"} at ${site.dist}\n- launched at ${loadLine()}`,
         )
         process.stdout.write(
-          `${JSON.stringify({ run, origin: state.origin, evidence: evidenceDir(run), pid: state.pid })}\n`,
+          `${JSON.stringify({ run, origin: state.origin, siteOrigin: state.siteOrigin, evidence: evidenceDir(run), pid: state.pid })}\n`,
         )
         return
       }
@@ -240,6 +242,7 @@ export async function journeyKit({ run, name, page, context }) {
   const kit = {
     repo,
     origin: state.origin,
+    siteOrigin: state.siteOrigin,
     page,
     context,
     deckRoutes,
@@ -261,6 +264,22 @@ export async function journeyKit({ run, name, page, context }) {
       const last = mails.at(-1)
       if (last !== undefined) writeFileSync(path.join(out, "mail.json"), JSON.stringify(last, null, 2))
       return last
+    },
+    async useSite() {
+      await context.route(
+        (url) => url.origin === "https://airdesign.app" && url.pathname === "/sign-in",
+        (route) => {
+          const asked = new URL(route.request().url())
+          route.fulfill({ status: 302, headers: { location: `${state.siteOrigin}/sign-in${asked.search}` } })
+        },
+      )
+    },
+    async mailParts(to) {
+      const { readSignInMail } = await import(pathToFileURL(path.join(apiDist, "sign-in-mail.js")).href)
+      const sent = kit.mail(to)
+      if (sent === undefined) throw new Error(`no mail was sent to ${to}`)
+      const { code, link } = readSignInMail(sent.text)
+      return { sent, code, link: link.replace(fakeOrigins.app, state.origin) }
     },
     async signIn() {
       const signed = await signIn(state)
@@ -403,7 +422,7 @@ try {
     process.stdout.write(`${JSON.stringify(await postComment({ pr: rest[0], file: rest[1] }))}\n`)
   } else if (command === "launch") await launch(rest)
   else if (command === "serve")
-    await serve(rest[0], { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head })
+    await serve(rest[0], { repo, apiDist, webDist, siteDist: process.env.VERIFY_AIRDESIGN_SITE, catalogDist, scratchDir, statePath, airaPath, head })
   else if (command === "doctor") await doctor(rest[0])
   else if (command === "sign-in")
     process.stdout.write(`${JSON.stringify(await signIn(readState(rest[0]), flag("--email")))}\n`)

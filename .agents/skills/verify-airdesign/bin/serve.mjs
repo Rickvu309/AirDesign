@@ -4,6 +4,7 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { randomBytes } from "node:crypto"
 import { scriptedAira } from "./scripted-aira.mjs"
+import { fakeOrigins, moveLocation, siteFile, withAppOrigin } from "./site.mjs"
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -17,12 +18,13 @@ const types = {
   ".ico": "image/x-icon",
 }
 
-function forward(req, res, apiPort, countryHeader) {
+function forward(req, res, apiPort, countryHeader, origins) {
   const headers = { ...req.headers, [countryHeader]: req.headers[countryHeader] ?? "US" }
   const outgoing = httpRequest(
     { host: "127.0.0.1", port: apiPort, method: req.method, path: req.url, headers },
     (answer) => {
-      res.writeHead(answer.statusCode ?? 502, answer.headers)
+      const location = moveLocation(answer.headers.location, origins)
+      res.writeHead(answer.statusCode ?? 502, location === undefined ? answer.headers : { ...answer.headers, location })
       answer.pipe(res)
     },
   )
@@ -41,6 +43,18 @@ function serveFile(pathname, res, webDist) {
       : path.join(webDist, "index.html")
   res.writeHead(200, { "content-type": types[path.extname(file)] ?? "application/octet-stream" })
   createReadStream(file).pipe(res)
+}
+
+function serveSite(pathname, res, siteDist, appOrigin) {
+  const file = siteFile(siteDist, pathname)
+  if (file === null) {
+    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("Not found")
+    return
+  }
+  const type = types[path.extname(file)] ?? "application/octet-stream"
+  res.writeHead(200, { "content-type": type })
+  if (type.startsWith("text/") || type === "image/svg+xml") res.end(withAppOrigin(readFileSync(file, "utf8"), appOrigin))
+  else createReadStream(file).pipe(res)
 }
 
 const originalBase = "/verify-original"
@@ -63,7 +77,7 @@ function serveOriginal(originals, pathname, req, res) {
   })
 }
 
-export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head }) {
+export async function serve(run, { repo, apiDist, webDist, siteDist, catalogDist, scratchDir, statePath, airaPath, head }) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
   const { startEmptyCluster } = await load("postgres-setup.js")
@@ -107,8 +121,8 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
     session,
     deck,
     listen,
-    publicOrigin: "https://app.example",
-    siteOrigin: "https://site.example",
+    publicOrigin: fakeOrigins.app,
+    siteOrigin: fakeOrigins.site,
     resource: "https://mcp.example.test/mcp",
     commit: state.commit,
     originals,
@@ -120,7 +134,14 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
   await new Promise((resolve) => api.listen(0, "127.0.0.1", resolve))
   const apiPort = api.address().port
   const apiPaths = new Set(routes.map((route) => route.path))
-  const { countryHeader } = await import(pathToFileURL(catalogDist).href)
+  const { countryHeader, signInPaths, signOutPaths } = await import(pathToFileURL(catalogDist).href)
+  const sitePaths = new Set([...signInPaths, ...signOutPaths])
+  const origins = { app: "", site: "" }
+  const site = createServer((req, res) => {
+    const pathname = new URL(req.url ?? "/", "http://front").pathname
+    if (sitePaths.has(pathname)) forward(req, res, apiPort, countryHeader, origins)
+    else serveSite(pathname, res, siteDist, origins.app)
+  })
   const front = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", "http://front").pathname
     if (pathname.startsWith(`${originalBase}/`)) {
@@ -128,13 +149,16 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
       return
     }
     if (apiPaths.has(pathname) && !(req.method === "GET" && pathname.startsWith("/oauth/authorize"))) {
-      forward(req, res, apiPort, countryHeader)
+      forward(req, res, apiPort, countryHeader, origins)
       return
     }
     serveFile(pathname, res, webDist)
   })
+  await new Promise((resolve) => site.listen(0, "127.0.0.1", resolve))
   await new Promise((resolve) => front.listen(0, "127.0.0.1", resolve))
+  origins.site = `http://127.0.0.1:${String(site.address().port)}`
   const origin = `http://127.0.0.1:${String(front.address().port)}`
+  origins.app = origin
   let stopping = false
   const stop = async (why) => {
     if (stopping) return
@@ -142,6 +166,8 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
     log(`stopping: ${String(why)} at ${new Date().toISOString()}`)
     front.close()
     front.closeAllConnections()
+    site.close()
+    site.closeAllConnections()
     api.close()
     api.closeAllConnections()
     await listen.close().catch(() => undefined)
@@ -154,6 +180,6 @@ export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchD
   process.on("SIGHUP", stop)
   process.on("uncaughtException", (error) => stop(`uncaught ${String(error?.stack ?? error)}`))
   process.on("unhandledRejection", (error) => stop(`unhandled ${String(error?.stack ?? error)}`))
-  writeFileSync(statePath(run), JSON.stringify({ ...state, apiPort, origin, mail: mailFile, ready: true }, null, 2))
+  writeFileSync(statePath(run), JSON.stringify({ ...state, apiPort, origin, siteOrigin: origins.site, mail: mailFile, ready: true }, null, 2))
   log(`ready ${origin}`)
 }
