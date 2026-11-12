@@ -2,7 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react"
 import { toast } from "sonner"
 import { Toaster } from "@/components/ui/sonner"
 import { StatusPill } from "@/components/ui/status-pill"
-import { productCopy } from "@/copy/product-copy"
+import { downloadedOf, productCopy } from "@/copy/product-copy"
 import { EditorToast } from "@/editor/agent-panel"
 import { undoCopy } from "@/copy/undo-copy"
 import { exportCopy } from "@/export/export-options"
@@ -11,6 +11,7 @@ export type ThinNotice = "offline" | "import-failed" | "export-failed" | "undo-c
 
 const noticeId = "thin-notice"
 const noticeWidth = "24rem"
+const downloadedFor = 4000
 
 export function signInAddress(page: { readonly pathname: string; readonly search: string }): string {
   const base = import.meta.env.VITE_SIGN_IN_URL ?? "/sign-in"
@@ -57,14 +58,26 @@ function FailureNotice({ text, action, onAct }: { text: string; action: string; 
   )
 }
 
-function StatusNotice({ text }: { text: string }) {
+function StatusNotice({ text, kind = "info" }: { text: string; kind?: "info" | "success" }) {
   useEffect(
     () => () => {
       toast.dismiss("editor-status")
     },
     [],
   )
-  return <EditorToast kind="info" text={text} place="canvas" />
+  return <EditorToast kind={kind} text={text} place="canvas" />
+}
+
+export function DownloadedNotice({ name, onDone }: { name: string; onDone: () => void }) {
+  const done = useRef(onDone)
+  useEffect(() => {
+    done.current = onDone
+  })
+  useEffect(() => {
+    const timer = window.setTimeout(() => done.current(), downloadedFor)
+    return () => window.clearTimeout(timer)
+  }, [name])
+  return <StatusNotice kind="success" text={downloadedOf(name)} />
 }
 
 export function ThinNoticeView({

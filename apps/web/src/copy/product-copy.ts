@@ -18,6 +18,10 @@ export function tabTitleOf(name: string): string {
   return `${name} - AirDesign`
 }
 
+export function downloadedOf(fileName: string): string {
+  return `${fileName} downloaded`
+}
+
 export function disconnectTitleOf(agent: string): string {
   return `Disconnect ${agent}?`
 }

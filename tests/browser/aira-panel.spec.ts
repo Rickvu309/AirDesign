@@ -155,7 +155,11 @@ test("a person out of weekly usage sees the limit from the server and when it re
   expect(paths).not.toContain("/mcp")
 })
 
-test("a failed run says so, and Design stays disabled while the conversation stays", async ({ page, context, stack }) => {
+test("a failed run says so, and Design stays disabled while the conversation stays", async ({
+  page,
+  context,
+  stack,
+}) => {
   const { side, log } = await openDeck(page, context, stack)
   stack.aira({ name: "overloaded.sse" })
   await ask(page, asked)
