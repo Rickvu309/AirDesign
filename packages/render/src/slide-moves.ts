@@ -141,7 +141,11 @@ export function useMoves(
     const start = startOf(element)
     if (start === null || !(grip === "move" ? canMove(element) : canResize(element))) return
     const from = { x: event.clientX, y: event.clientY }
-    follow({ by: "pointer", id, grip, pointer: event.pointerId, from, start, moved: false }, frame.ownerDocument)
+    const keepRatio = element.kind === "picture"
+    follow(
+      { by: "pointer", id, grip, pointer: event.pointerId, from, start, moved: false, keepRatio },
+      frame.ownerDocument,
+    )
   }
 
   function key(event: KeyboardEvent<HTMLElement>, element: CanvasElement) {

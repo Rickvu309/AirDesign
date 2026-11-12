@@ -11,6 +11,7 @@ import {
   type PaintTextScope,
 } from "./paint-text.js"
 import { paintShape, type PaintSource, type PaintStyles, type ShapePaint } from "./paint-shape.js"
+import { addedPicturePart } from "./picture-write.js"
 import { paintContentType, paintImage, paintPictureFill, type PaintImage, type PaintPicture } from "./paint-image.js"
 import type { ShapeKind } from "./shape-tree.js"
 import {
@@ -192,7 +193,8 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
 
   const picture = (part: string, id: string): ReturnType<PaintPicture> => {
     const target = relationshipsOf(part).get(`id:${id}`)
-    return target !== undefined && parts.has(target) ? { part: target, contentType: contentType(target) } : null
+    const held = target !== undefined && (parts.has(target) || addedPicturePart(target))
+    return held ? { part: target, contentType: contentType(target) } : null
   }
 
   const imageOf = (sheet: Sheet, item: Drawn): PaintImage | null =>

@@ -1,4 +1,5 @@
 import {
+  addedPictures,
   elementGone,
   currentBox,
   currentValue,
@@ -20,6 +21,10 @@ import { tableShape, tableWritten } from "@/table-edit"
 
 type Parts = ReadonlyMap<string, Uint8Array>
 
+export type PictureBytes = ReadonlyMap<string, Uint8Array>
+
+const noPictures: PictureBytes = new Map()
+
 export function storedText(value: TextValue): string {
   return value.length === 0 ? "" : writeTextValue(value)
 }
@@ -33,8 +38,14 @@ export function newSlideElement(register: Register | null, id: ElementId): Index
   return born ? openingElement(register, id) : undefined
 }
 
-export function slideBase(parts: Parts, register: Register): Parts {
-  return register.order.length === 0 ? parts : orderedParts(parts, register)
+export function slideBase(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
+  return register.order.length === 0 ? parts : orderedParts(parts, register, (sha256) => pictures.get(sha256))
+}
+
+export function missingPictures(register: Register, pictures: PictureBytes): readonly string[] {
+  return addedPictures(register)
+    .map((media) => media.sha256)
+    .filter((sha256) => !pictures.has(sha256))
 }
 
 function shapeFor(shapes: readonly ReadShape[], id: ElementId, refusal: string): ReadShape {
@@ -127,6 +138,6 @@ export function editedParts(base: Parts, register: Register): Parts {
   return next
 }
 
-export function exportedParts(parts: Parts, register: Register): Parts {
-  return editedParts(slideBase(parts, register), register)
+export function exportedParts(parts: Parts, register: Register, pictures: PictureBytes = noPictures): Parts {
+  return editedParts(slideBase(parts, register, pictures), register)
 }

@@ -42,6 +42,7 @@ for (const name of [
   "blank-slides",
   "slide-layouts",
   "element-edits",
+  "picture-add",
   "commit-once",
   "deck-list-trash",
   "slide-paint",

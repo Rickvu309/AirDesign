@@ -81,6 +81,19 @@ describe("resizedBox", () => {
     expect(resizedBox(start, corner, dx, dy)).toEqual(box)
   })
 
+  it("keeps a picture's ratio from the side that moved most and keeps the opposite corner", () => {
+    const grown = resizedBox(start, "bottom-right", 548_640, 0, true)
+    expect(grown).toEqual({ x: start.x, y: start.y, cx: start.cx + 548_640, cy: start.cy + 182_880 })
+    const shrunk = resizedBox(start, "top-left", 0, 914_400, true)
+    expect(shrunk).toEqual({
+      x: start.x + 2_743_200,
+      y: start.y + 914_400,
+      cx: start.cx - 2_743_200,
+      cy: start.cy - 914_400,
+    })
+    expect(resizedBox(start, "top-left", 20_000_000, 20_000_000, true).cy).toBe(minimumSide)
+  })
+
   it("stops at a quarter inch on each side and keeps the opposite corner", () => {
     const shrunk = resizedBox(start, "top-left", 20_000_000, 20_000_000)
     expect(shrunk).toEqual({

@@ -7,6 +7,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
+import { storageFuzzGood } from "./storage-fuzz.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
@@ -363,16 +364,7 @@ describe("hostile input over every route", () => {
       "POST /decks/trash": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
       "POST /decks/restore": [{ shape: "json", answers: 200, says: '"ok":true', fields: { deck } }],
       "POST /decks/delete": [{ shape: "json", answers: 200, says: '"ok":true', fields: { decks: ["fuzzmissing"] } }],
-      "POST /decks/original/upload": [
-        {
-          shape: "json",
-          answers: 200,
-          says: '"refusal":"storage"',
-          fields: { deck, bytes: 4, sha256: "a".repeat(64) },
-        },
-      ],
-      "POST /decks/original/done": [{ shape: "json", answers: 200, says: '"refusal":"storage"', fields: { deck } }],
-      "POST /decks/original": [{ shape: "json", answers: 200, says: '"refusal":"storage"', fields: { deck } }],
+      ...storageFuzzGood(deck),
     }
   })
 

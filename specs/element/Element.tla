@@ -1,9 +1,10 @@
 ---- MODULE Element ----
-\* A person adds one text box or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
+\* A person adds one text box or picture, or removes it. Their undo puts back whether it shows, only while their own edit still shows, and someone else may remove or bring it back in between.
+\* A picture's bytes upload after its add, and another device exports the deck only once every added picture's bytes are there.
 EXTENDS Naturals
 
-VARIABLES added, removed, typed, held, kind, told, last
-vars == <<added, removed, typed, held, kind, told, last>>
+VARIABLES added, removed, typed, held, kind, told, last, picture, uploaded, exported
+vars == <<added, removed, typed, held, kind, told, last, picture, uploaded, exported>>
 
 Shown == added /\ ~removed
 
@@ -15,6 +16,9 @@ Init ==
   /\ kind = "none"
   /\ told = FALSE
   /\ last = "none"
+  /\ picture = FALSE
+  /\ uploaded = FALSE
+  /\ exported = FALSE
 
 Add ==
   /\ ~added
@@ -22,9 +26,26 @@ Add ==
   /\ held' = "undo"
   /\ kind' = "add"
   /\ last' = "none"
-  /\ UNCHANGED <<removed, typed, told>>
+  /\ exported' = FALSE
+  /\ UNCHANGED <<removed, typed, told, picture, uploaded>>
 
-Type == Shown /\ ~typed /\ typed' = TRUE /\ UNCHANGED <<added, removed, held, kind, told, last>>
+AddPicture ==
+  /\ ~added
+  /\ added' = TRUE
+  /\ picture' = TRUE
+  /\ held' = "undo"
+  /\ kind' = "add"
+  /\ last' = "none"
+  /\ exported' = FALSE
+  /\ UNCHANGED <<removed, typed, told, uploaded>>
+
+Type ==
+  /\ Shown
+  /\ ~typed
+  /\ ~picture
+  /\ typed' = TRUE
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, removed, held, kind, told, last, picture, uploaded>>
 
 Remove ==
   /\ Shown
@@ -32,14 +53,41 @@ Remove ==
   /\ held' = "undo"
   /\ kind' = "remove"
   /\ last' = "none"
-  /\ UNCHANGED <<added, typed, told>>
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, typed, told, picture, uploaded>>
 
-\* Another tab or person removes the box, or brings a removed one back.
-OtherRemove == Shown /\ removed' = TRUE /\ last' = "none" /\ UNCHANGED <<added, typed, held, kind, told>>
+\* Another tab or person removes the element, or brings a removed one back.
+OtherRemove ==
+  /\ Shown
+  /\ removed' = TRUE
+  /\ last' = "none"
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, typed, held, kind, told, picture, uploaded>>
 
-OtherRestore == added /\ removed /\ removed' = FALSE /\ last' = "none" /\ UNCHANGED <<added, typed, held, kind, told>>
+OtherRestore ==
+  /\ added
+  /\ removed
+  /\ removed' = FALSE
+  /\ last' = "none"
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, typed, held, kind, told, picture, uploaded>>
 
-\* What the person's own edit left: the box shows after an add, and is gone after a removal.
+\* The device that added the picture sends its bytes.
+Upload ==
+  /\ picture
+  /\ ~uploaded
+  /\ uploaded' = TRUE
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, picture>>
+
+\* Another device exports the deck as it is now. An export describes that moment, so every later step clears it.
+ExportElsewhere ==
+  /\ ~exported
+  /\ (picture => uploaded)
+  /\ exported' = TRUE
+  /\ UNCHANGED <<added, removed, typed, held, kind, told, last, picture, uploaded>>
+
+\* What the person's own edit left: the element shows after an add, and is gone after a removal.
 EditShows == IF kind = "add" THEN Shown ELSE added /\ removed
 
 Undo ==
@@ -53,7 +101,8 @@ Undo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind>>
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, typed, kind, picture, uploaded>>
 
 Redo ==
   /\ held = "redo"
@@ -66,9 +115,12 @@ Redo ==
             /\ told' = TRUE
             /\ last' = "none"
             /\ UNCHANGED removed
-  /\ UNCHANGED <<added, typed, kind>>
+  /\ exported' = FALSE
+  /\ UNCHANGED <<added, typed, kind, picture, uploaded>>
 
-Next == Add \/ Type \/ Remove \/ OtherRemove \/ OtherRestore \/ Undo \/ Redo
+Next ==
+  \/ Add \/ AddPicture \/ Type \/ Remove \/ OtherRemove \/ OtherRestore \/ Undo \/ Redo
+  \/ Upload \/ ExportElsewhere
 Spec == Init /\ [][Next]_vars
 
 TypeOK ==
@@ -79,9 +131,15 @@ TypeOK ==
   /\ kind \in {"none", "add", "remove"}
   /\ told \in BOOLEAN
   /\ last \in {"none", "undone", "redone"}
+  /\ picture \in BOOLEAN
+  /\ uploaded \in BOOLEAN
+  /\ exported \in BOOLEAN
 
 RemovedWasAdded == removed => added
 TypedWhileShown == typed => added
+TypedIsText == typed => ~picture
+UploadedWasAdded == uploaded => picture /\ added
+ExportHasBytes == exported /\ picture => uploaded
 
 \* An undo shows what showed before the person's edit, and a redo shows the edit again.
 UndoShowsBefore ==

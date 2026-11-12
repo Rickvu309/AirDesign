@@ -3,6 +3,7 @@ import { exportPackage } from "@airdesign/pptx"
 import { chosenParts } from "@/export/chosen-parts"
 import { exportFileName } from "@/export/export-file-name"
 import { ensureMarkup } from "@/markup"
+import { exportablePictures, type PictureStore } from "@/picture-tool"
 
 export type ExportRequest = {
   readonly slides?: readonly number[]
@@ -11,7 +12,12 @@ export type ExportRequest = {
 
 const asked = new Map<string, readonly number[] | undefined>()
 
-export async function exportDeck(id: string, ready: Promise<void>, request?: ExportRequest): Promise<string | null> {
+export async function exportDeck(
+  id: string,
+  ready: Promise<void>,
+  pictures: PictureStore,
+  request?: ExportRequest,
+): Promise<string | null> {
   const slides = request === undefined ? asked.get(id) : request.slides
   asked.set(id, slides)
   await ready
@@ -20,7 +26,8 @@ export async function exportDeck(id: string, ready: Promise<void>, request?: Exp
   if (!stored.ok) throw new Error("parts")
   const opened = await connect(memoryRemote()).openDeck(id)
   if (!opened.ok) throw new Error("register")
-  const bytes = await exportPackage(stored.file, chosenParts(stored.parts, opened.register, slides))
+  const held = await exportablePictures(pictures, id, opened.register)
+  const bytes = await exportPackage(stored.file, chosenParts(stored.parts, opened.register, slides, held))
   if (request?.signal?.aborted === true) return null
   const copy = new Uint8Array(bytes.byteLength)
   copy.set(bytes)

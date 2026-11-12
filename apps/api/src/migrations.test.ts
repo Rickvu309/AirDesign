@@ -140,6 +140,7 @@ describe("database migrations", () => {
     )
     const sessionTables = "access account agent_turn aira_ask aira_ledger aira_turn caller_log code oauth_client"
     const named = [
+      "deck.media",
       "deck.once",
       "deck.original_delete",
       "deck.saved",
@@ -171,6 +172,7 @@ describe("database migrations", () => {
       ["sent", full],
     ]
     expect(grants.rows).toEqual([
+      { grantee: "deck", name: "deck.media", rights: "DELETE INSERT SELECT" },
       { grantee: "deck", name: "deck.once", rights: full },
       { grantee: "deck", name: "deck.original_delete", rights: full },
       { grantee: "deck", name: "deck.saved", rights: noDelete },

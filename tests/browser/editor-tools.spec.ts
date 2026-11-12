@@ -59,10 +59,11 @@ test("the tools that do nothing yet are disabled, the grid toggle too, and Actio
   page,
 }) => {
   await openClean(page)
-  for (const name of ["shape", "image", "Grid"]) {
+  for (const name of ["shape", "Grid"]) {
     await expect(page.getByRole("button", { name, exact: true }), name).toBeDisabled()
   }
   await expect(page.getByRole("button", { name: "Add text box", exact: true })).toBeEnabled()
+  await expect(page.getByRole("button", { name: "Add picture", exact: true })).toBeEnabled()
   await page.getByRole("button", { name: "Actions", exact: true }).click()
   await expect(page.getByRole("menuitem", { name: "Table", exact: true })).toBeEnabled()
   for (const name of ["Chart", "Icon", "Remove background", "Boost resolution"]) {

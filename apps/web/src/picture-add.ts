@@ -1,0 +1,123 @@
+import {
+  limits,
+  nextElementId,
+  readSlideId,
+  slideUndoable,
+  type Box,
+  type ElementId,
+  type Media,
+  type MediaType,
+  type Register,
+  type SlideCommand,
+  type Undoable,
+} from "@airdesign/document"
+import { connect, flushMedia, keepMedia, memoryRemote } from "@airdesign/live"
+import { freeShapeId, readSlides } from "@airdesign/pptx"
+import { flushPending, type CommitOutcome } from "@/commit-edit"
+import { slideBase } from "@/exported-parts"
+import { fileSlides } from "@/slide-edit"
+
+type Parts = ReadonlyMap<string, Uint8Array>
+
+export type PictureRefusal = "type" | "size" | "unread"
+
+export type PictureAt = {
+  readonly index: number
+  readonly slide: { readonly width: number; readonly height: number }
+  readonly keep: (sha256: string, bytes: Uint8Array) => void
+}
+
+export type PictureFile = {
+  readonly bytes: Uint8Array
+  readonly type: MediaType
+  readonly width: number
+  readonly height: number
+}
+
+const emuPerPixel = 9525
+const margin = 0.9
+
+const signatures: readonly (readonly [MediaType, readonly number[]])[] = [
+  ["image/png", [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  ["image/jpeg", [0xff, 0xd8, 0xff]],
+  ["image/gif", [0x47, 0x49, 0x46, 0x38]],
+]
+
+export function pictureType(bytes: Uint8Array): MediaType | null {
+  for (const [type, signature] of signatures) {
+    if (signature.every((byte, at) => bytes[at] === byte)) return type
+  }
+  return null
+}
+
+export function pictureRefusal(bytes: Uint8Array): PictureRefusal | null {
+  if (pictureType(bytes) === null) return "type"
+  return bytes.byteLength >= limits.media ? "size" : null
+}
+
+export function placedPicture(
+  natural: { readonly width: number; readonly height: number },
+  slide: { readonly width: number; readonly height: number },
+): Box {
+  const width = Math.max(1, natural.width) * emuPerPixel
+  const height = Math.max(1, natural.height) * emuPerPixel
+  const scale = Math.min(1, (slide.width * margin) / width, (slide.height * margin) / height)
+  const cx = Math.max(1, Math.round(width * scale))
+  const cy = Math.max(1, Math.round(height * scale))
+  return { x: Math.round((slide.width - cx) / 2), y: Math.round((slide.height - cy) / 2), cx, cy }
+}
+
+export function pictureCommand(
+  parts: Parts,
+  register: Register,
+  index: number,
+  media: Media,
+  box: Box,
+): SlideCommand | null {
+  const base = slideBase(parts, register)
+  const slide = readSlides(base)[index]
+  const id = slide === undefined ? undefined : readSlideId(slide.slide)
+  if (slide === undefined || id === undefined) return null
+  const node = nextElementId(register, id, freeShapeId(base, slide.part))
+  return { slide: "element-add", id, element: { node, kind: "picture", value: null, box, grouped: false }, media }
+}
+
+export async function readPicture(file: Blob): Promise<PictureFile | PictureRefusal> {
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const refusal = pictureRefusal(bytes)
+  const type = pictureType(bytes)
+  if (refusal !== null || type === null) return refusal ?? "type"
+  try {
+    const image = await createImageBitmap(new Blob([bytes], { type }))
+    const size = { width: image.width, height: image.height }
+    image.close()
+    return { bytes, type, ...size }
+  } catch {
+    return "unread"
+  }
+}
+
+export async function commitPicture(
+  deckId: string,
+  parts: Parts,
+  picture: PictureFile,
+  at: PictureAt,
+  paint: (added: ElementId, undoable: Undoable | null) => void | Promise<void>,
+): Promise<CommitOutcome> {
+  const opened = await connect(memoryRemote()).openDeck(deckId)
+  if (!opened.ok) return "refused"
+  const register = opened.register
+  const sha256 = await keepMedia(deckId, picture.bytes)
+  at.keep(sha256, picture.bytes)
+  const box = placedPicture(picture, at.slide)
+  const edit = pictureCommand(parts, register, at.index, { sha256, type: picture.type }, box)
+  if (edit === null || edit.slide !== "element-add") return "refused"
+  const file = fileSlides(parts, register)
+  const undoable = slideUndoable(register, file, edit)
+  const kept = await connect(memoryRemote()).enqueueSlide(deckId, file, edit)
+  if (!kept.ok) return "refused"
+  await paint(edit.element.node, undoable)
+  const outcome = await flushPending(connect, deckId)
+  await flushMedia(deckId)
+  return outcome
+}
