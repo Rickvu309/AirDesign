@@ -1,10 +1,9 @@
 import type { DeckId } from "@airdesign/catalog"
 import { readDeckId } from "@airdesign/catalog"
 import {
-  elementGone,
   bytesOf,
+  foldSlides,
   presentSlides,
-  slideGone,
   currentBox,
   currentValue,
   floorNodes,
@@ -116,19 +115,45 @@ function elementOf(
   return { ...withBox, closed: true }
 }
 
-function knownNodes(register: Register): ElementId[] {
+const sortedNodes = new WeakMap<Register, readonly ElementId[]>()
+
+function knownNodes(register: Register): readonly ElementId[] {
+  const kept = sortedNodes.get(register)
+  if (kept !== undefined) return kept
   const nodes: ElementId[] = []
+  const listed = new Set<ElementId>()
+  const registered = new Set(register.nodes)
   const opening = [...(register.index?.elements.map((element) => element.node) ?? []), ...floorNodes(register)]
   for (const node of opening) {
-    if (register.elements[node] !== undefined && !register.nodes.includes(node)) continue
+    if (register.elements[node] !== undefined && !registered.has(node)) continue
     nodes.push(node)
+    listed.add(node)
   }
   for (const node of register.nodes) {
-    if (readElementId(node) === undefined || register.elements[node] === undefined || nodes.includes(node)) continue
+    if (readElementId(node) === undefined || register.elements[node] === undefined || listed.has(node)) continue
     nodes.push(node)
+    listed.add(node)
+  }
+  const removed = new Set<ElementId>()
+  for (const command of register.order) {
+    if (command.slide === "element-remove") removed.add(command.node)
   }
   nodes.sort(byId)
-  return nodes.filter((node) => !elementGone(register, node))
+  const present = nodes.filter((node) => !removed.has(node))
+  sortedNodes.set(register, present)
+  return present
+}
+
+function firstAfter(nodes: readonly ElementId[], cursor: string): number {
+  let low = 0
+  let high = nodes.length
+  while (low < high) {
+    const middle = (low + high) >>> 1
+    const node = nodes[middle]
+    if (node !== undefined && node > cursor) high = middle
+    else low = middle + 1
+  }
+  return low
 }
 
 type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "index">
@@ -138,15 +163,31 @@ function readAnswer(head: ReadHead, elements: readonly ReadElement[], cursor?: s
   return { ok: true, ...head, elements, cursor }
 }
 
+function nextWanted(nodes: readonly ElementId[], from: number, wanted: (node: ElementId) => boolean): number {
+  let at = from
+  while (at < nodes.length) {
+    const node = nodes[at]
+    if (node !== undefined && wanted(node)) break
+    at += 1
+  }
+  return at
+}
+
 function packRead(
   head: ReadHead,
   nodes: readonly ElementId[],
+  start: number,
+  wanted: (node: ElementId) => boolean,
   elementOfNode: (node: ElementId) => ReadElement,
 ): ReadDeckAnswer {
   const chosen: ReadElement[] = []
-  for (const [index, node] of nodes.entries()) {
+  let at = nextWanted(nodes, start, wanted)
+  while (at < nodes.length) {
+    const node = nodes[at]
+    if (node === undefined) break
     const element = elementOfNode(node)
-    const more = index + 1 < nodes.length
+    const following = nextWanted(nodes, at + 1, wanted)
+    const more = following < nodes.length
     const trial = readAnswer(head, [...chosen, element], more ? element.node : undefined)
     if (chosen.length > 0 && !withinRead(readReport(readLead(head.revision), trial))) {
       const last = chosen[chosen.length - 1]
@@ -154,6 +195,7 @@ function packRead(
       return readAnswer(head, chosen, last.node)
     }
     chosen.push(element)
+    at = following
   }
   return readAnswer(head, chosen)
 }
@@ -162,12 +204,8 @@ export function readDeckPage(
   deck: Deck,
   query: { readonly slide?: string; readonly cursor?: string; readonly runId: string | null },
 ): ReadDeckAnswer {
-  const nodes = knownNodes(deck.register).filter((node) => {
-    if (slideGone(deck.register, shapeOf(node).slide)) return false
-    if (query.slide !== undefined && shapeOf(node).slide !== query.slide) return false
-    if (query.cursor !== undefined && !(node > query.cursor)) return false
-    return true
-  })
+  const goneSlides = new Set(foldSlides(deck.register).flatMap((spot) => (spot.present ? [] : [spot.id])))
+  const nodes = knownNodes(deck.register)
   const index = deck.register.index
   return packRead(
     {
@@ -179,6 +217,11 @@ export function readDeckPage(
       index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
     },
     nodes,
+    query.cursor === undefined ? 0 : firstAfter(nodes, query.cursor),
+    (node) => {
+      const slide = shapeOf(node).slide
+      return !goneSlides.has(slide) && (query.slide === undefined || slide === query.slide)
+    },
     (node) => elementOf(node, deck.register.elements[node], query.runId, openingElement(deck.register, node)),
   )
 }
