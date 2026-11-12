@@ -35,6 +35,11 @@ export function shownValue(register: Register | null, id: ElementId, file: strin
 
 type Landed = { readonly text: string; readonly box: Box | null }
 
+export function showText(store: PaintStore, id: ElementId, text: string): void {
+  const record = store.getElement(id)
+  if (record !== null) store.publish({ ...record, text })
+}
+
 export function liveRepaint(
   store: PaintStore,
   files: ReadonlyMap<ElementId, string>,

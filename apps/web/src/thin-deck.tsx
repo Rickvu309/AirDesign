@@ -1,8 +1,7 @@
-import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
+import { type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
 import { connect, flushOriginal, memoryRemote } from "@airdesign/live"
-import { readNotes, type ReadShape, type SectionStart, type SlideNotes } from "@airdesign/pptx"
+import { type ReadShape, type SectionStart } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textFormatting, textValue } from "@airdesign/render"
-import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { DownloadedNotice, signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
@@ -12,17 +11,8 @@ import { EditorShell } from "@/editor/editor-shell"
 import { thumbHeight } from "@/thumb-height"
 import { slideFrame } from "@/editor/revenue-slide"
 import { cn } from "@/lib/class-names"
-import {
-  commitBox,
-  commitEdit,
-  commitKept,
-  flushPending,
-  server,
-  type CommitOutcome,
-  type TextBox,
-} from "@/commit-edit"
+import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type TextBox } from "@/commit-edit"
 import { landedBox, paintedBox, shownBox } from "@/element-move"
-import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
@@ -35,11 +25,13 @@ import { paint, valueStorable } from "@/deck-paint"
 export { elementIds, valueStorable } from "@/deck-paint"
 import { followDeck } from "@/deck-follow"
 import { closesDeck, deckParts, deviceCopy } from "@/device-copy"
-import { busyElements, liveRepaint, shownValue } from "@/live-repaint"
+import { busyElements, liveRepaint, showText, shownValue } from "@/live-repaint"
 import { AiraPanel } from "@/aira-panel"
 import { useDeckTitle } from "@/editor/use-deck-title"
 import { structureOf, useTables } from "@/table-hook"
+import { notesShown, useNotes } from "@/notes-edit"
 import { useUndoKeys } from "@/editor/undo-keys"
+import { useNetwork } from "@/editor/use-network"
 import {
   emptyUndo,
   recorded,
@@ -66,8 +58,6 @@ export function ThinDeck({ id }: { id: string }) {
   const structure = useRef("")
   const repaint = useRef<(register: Register, from?: "person") => void>(() => undefined)
   const [entering, setEntering] = useState<ElementId | null>(null)
-  const [notes, setNotes] = useState<readonly Pick<SlideNotes, "slide" | "text">[]>([])
-  const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
   const [layouts, setLayouts] = useState<ReturnType<typeof layoutChoices>>([])
   const [sections, setSections] = useState<readonly SectionStart[]>([])
@@ -106,6 +96,8 @@ export function ThinDeck({ id }: { id: string }) {
     if (outcome !== "refused") setOffline(outcome === "offline")
     if (outcome === "signed-out") window.location.assign(signInAddress(window.location))
   }, [])
+  const leftNetwork = useCallback(() => setOffline(true), [])
+  const notesBar = useNotes({ id, typed, sessions, record, settle, sending: () => setPending(true) })
 
   useEffect(() => {
     let live = true
@@ -175,21 +167,7 @@ export function ThinDeck({ id }: { id: string }) {
     [],
   )
 
-  useEffect(() => {
-    function leftNetwork() {
-      setOffline(true)
-    }
-    async function returnedToNetwork() {
-      settle(await flushPending(connect, id))
-      await flushOriginal(id)
-    }
-    window.addEventListener("offline", leftNetwork)
-    window.addEventListener("online", returnedToNetwork)
-    return () => {
-      window.removeEventListener("offline", leftNetwork)
-      window.removeEventListener("online", returnedToNetwork)
-    }
-  }, [id, settle])
+  useNetwork(id, settle, leftNetwork)
 
   useEffect(() => {
     function closeSession() {
@@ -204,17 +182,6 @@ export function ThinDeck({ id }: { id: string }) {
     const clear = window.setTimeout(() => setTold(null), 4000)
     return () => window.clearTimeout(clear)
   }, [told])
-
-  function show(target: ElementId, text: string) {
-    const record = store.current.getElement(target)
-    if (record !== null)
-      store.current.publish({
-        id: record.id,
-        kind: record.kind,
-        text,
-        picture: record.picture,
-      })
-  }
 
   async function textBefore(target: ElementId): Promise<string> {
     const file = boxes.current.get(target)?.file ?? ""
@@ -239,7 +206,7 @@ export function ThinDeck({ id }: { id: string }) {
     const file = box.file
     async function refused() {
       const opened = await connect(memoryRemote()).openDeck(id)
-      show(target, shownValue(opened.ok ? opened.register : null, target, file))
+      showText(store.current, target, shownValue(opened.ok ? opened.register : null, target, file))
     }
     const shape = shapes.current.get(target)
     if (shape === undefined || !valueStorable(editParts.current, shape, textValue(value))) {
@@ -254,7 +221,7 @@ export function ThinDeck({ id }: { id: string }) {
       async () => {
         const before = await started
         setPending(true)
-        show(target, value)
+        showText(store.current, target, value)
         record({
           name: "text",
           session,
@@ -333,7 +300,7 @@ export function ThinDeck({ id }: { id: string }) {
       })
     } else {
       repaint.current(register)
-      setNotes(readNotes(exportedParts(shownParts.current, register)))
+      notesBar.show(notesShown(shownParts.current, register))
     }
   }
 
@@ -359,7 +326,7 @@ export function ThinDeck({ id }: { id: string }) {
     pictures.current = painted.pictures
     structure.current = structureOf(register)
     repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
-    setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
+    notesBar.show(notesShown(shownParts.current, register))
     setSlideCount(painted.count)
     setSections(painted.sections)
     void pictureTool.store.load(id, register).then((more) => {
@@ -405,7 +372,7 @@ export function ThinDeck({ id }: { id: string }) {
     if ("slide" in undoable || structure.current !== structureOf(next.register)) showRegister(next.register)
     else repaint.current(next.register, "person")
     if ("node" in undoable && undoable.node.endsWith(".notes"))
-      setNotes(readNotes(exportedParts(shownParts.current, next.register)))
+      notesBar.show(notesShown(shownParts.current, next.register))
     const slides = store.current.slides()
     const shown =
       "slide" in undoable
@@ -419,7 +386,7 @@ export function ThinDeck({ id }: { id: string }) {
     typed.current = null
     turning.current = turning.current.then(async () => {
       await records.current.landed()
-      await notesQueue.current
+      await notesBar.queue.current
       const turned = await turnBack(connect(memoryRemote()), id, undoList.current, direction)
       if (turned.outcome === "empty") return
       undoList.current = turned.list
@@ -461,7 +428,7 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function onExport(request?: ExportRequest) {
     try {
-      setDownloaded(await exportDeck(id, notesQueue.current, pictureTool.store, request))
+      setDownloaded(await exportDeck(id, notesBar.queue.current, pictureTool.store, request))
       setFailure(null)
     } catch (error) {
       setFailure(error instanceof PicturesUploading ? "picture-uploading" : "export-failed")
@@ -474,31 +441,7 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   const currentSlide = store.current.slides()[current]?.id
-  const currentNotes = notes.find((notes) => notes.slide === currentSlide)
-
-  function editNotes(value: string) {
-    if (currentSlide === undefined) return
-    const slide = currentSlide
-    const node = elementId(`${slide}.notes`)
-    const floor = currentNotes?.text ?? ""
-    if (typed.current?.node !== node) {
-      sessions.current += 1
-      typed.current = { node, session: sessions.current, before: Promise.resolve(floor) }
-    }
-    const { session, before } = typed.current
-    setNotes((shown) => [...shown.filter((row) => row.slide !== slide), { slide, text: value }])
-    const kept = connect(memoryRemote()).enqueue(id, value, node, floor)
-    notesQueue.current = notesQueue.current.then(async () => {
-      const outcome = await commitKept(connect, id, kept, async () => {
-        const from = await before
-        setPending(true)
-        record({ name: "notes", session, undoable: { node, floor: from, before: { value: from }, after: { value } } })
-      })
-      if (outcome === "refused")
-        toast.error("Unable to save speaker notes", { description: "Copy your notes, reload the deck and try again." })
-      settle(outcome)
-    })
-  }
+  const currentNotes = notesBar.notes.find((notes) => notes.slide === currentSlide)
 
   if (refused) {
     return (
@@ -574,7 +517,7 @@ export function ThinDeck({ id }: { id: string }) {
             },
           }}
           notes={currentNotes?.text ?? ""}
-          onNotes={editNotes}
+          onNotes={(value) => notesBar.edit(currentSlide, value)}
           panel={panel}
           onPanel={setPanel}
           side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}

@@ -22,16 +22,19 @@ import {
   dropAccount,
   dropDeck,
   getParts,
+  keepMedia,
   memoryRemote,
   putParts,
   queueOriginal,
   readChats,
+  readMedia,
   writeChat,
 } from "./index.js"
 import { keepUnsaved } from "./unsaved.js"
 import { rowKey } from "./store.js"
 
 const day = 86_400_000
+const picture = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 4, 5, 6])
 
 beforeEach(() => {
   installIndexedDb()
@@ -226,4 +229,38 @@ it(`keeps a deck not opened for ${String(idleDays)} days while its new name is n
   now += (idleDays + 1) * day
   expect([...(await cache.sweep())]).toEqual(["sent"])
   expect(await getParts("renamed")).toMatchObject({ ok: true })
+})
+
+it(`keeps a deck not opened for ${String(idleDays)} days while a picture's bytes are not sent`, async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
+  const { remote } = countingRemote()
+  let now = 1_000 * day
+  const cache = connect(remote, { now: () => now })
+  for (const deck of ["sent", "picture"]) {
+    await putParts(deck, parts, () => now)
+    await cache.enqueue(deck, `Text of ${deck}`, node, "file")
+    await cache.flush(deck)
+  }
+  await keepMedia("picture", picture)
+  now += (idleDays + 1) * day
+  expect([...(await cache.sweep())]).toEqual(["sent"])
+  expect(await getParts("picture")).toMatchObject({ ok: true })
+})
+
+it("lets the account that added a picture read its bytes from the device, and never another account on the same browser", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
+  const sha256 = await keepMedia("deck", picture)
+  expect((await readMedia("deck", [sha256])).get(sha256)).toEqual(picture)
+  signInAs(secondAccount)
+  expect([...(await readMedia("deck", [sha256])).keys()]).toEqual([])
+  await keepMedia("other-deck", picture)
+  expect([...(await readMedia("deck", [sha256])).keys()]).toEqual([])
+  signInAs(firstAccount)
+  expect((await readMedia("deck", [sha256])).get(sha256)).toEqual(picture)
+})
+
+it("never lists a picture waiting to upload among the deck's chats", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")))
+  await keepMedia("deck", picture)
+  expect(await readChats("deck")).toEqual([])
 })
