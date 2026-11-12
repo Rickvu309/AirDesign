@@ -21,6 +21,7 @@ describe("an agent edit that meets a person's edit on another element while it i
   const mails: Mail[] = []
   let base = ""
   let pool: Sql = openPool("postgres://deck@127.0.0.1/api")
+  let sessions: Sql = openPool("postgres://session@127.0.0.1/api")
   let personEdits = 0
   let racesLeft = 0
   let personWriting = false
@@ -30,6 +31,7 @@ describe("an agent edit that meets a person's edit on another element while it i
   beforeAll(async () => {
     const info = await postgresInfo()
     const session = openPool(info.session, "race-session")
+    sessions = session
     pool = openPool(info.deck, "race-deck")
     const racing = new Proxy(pool, {
       get(target, key) {
@@ -80,7 +82,7 @@ describe("an agent edit that meets a person's edit on another element while it i
   }
 
   async function toolCalls(email: string): Promise<number> {
-    const result = await pool.query<{ events: { kind: string }[] }>(
+    const result = await sessions.query<{ events: { kind: string }[] }>(
       "select events from session.caller_log where email = $1",
       [email],
     )
@@ -88,7 +90,7 @@ describe("an agent edit that meets a person's edit on another element while it i
   }
 
   async function turnRevision(email: string, id: string): Promise<number | undefined> {
-    const result = await pool.query<{ revision: number }>(
+    const result = await sessions.query<{ revision: number }>(
       "select revision from session.agent_turn where email = $1 and deck = $2",
       [email, id],
     )
