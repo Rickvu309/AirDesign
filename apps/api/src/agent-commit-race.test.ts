@@ -160,7 +160,7 @@ describe("an agent edit that meets a person's edit on another element while it i
       expect(elements[edited]?.landed.filter((row) => row.value.includes("agent"))).toHaveLength(1)
       expect(elements[other]?.landed.some((row) => row.visible && row.value.includes("person"))).toBe(true)
       expect(await toolCalls(email)).toBe(1)
-      expect(await turnRevision(email, id)).toBe(after.revision)
+      await expect.poll(() => turnRevision(email, id)).toBe(after.revision)
     } finally {
       racesLeft = 0
       await client.close()
@@ -202,7 +202,7 @@ describe("an agent edit that meets a person's edit on another element while it i
       const elements = after.register.elements as Landed
       expect(elements[edited]?.landed.filter((row) => row.value.includes("agent"))).toHaveLength(1)
       expect(await toolCalls(email)).toBe(1)
-      expect(await turnRevision(email, id)).toBe(after.revision)
+      await expect.poll(() => turnRevision(email, id)).toBe(after.revision)
     } finally {
       racesLeft = 0
       await client.close()
