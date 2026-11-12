@@ -1,41 +1,14 @@
-import type { WireRefusal } from "./index.js"
+import type { Reach } from "@airdesign/device"
 import type { Refusal } from "@airdesign/document"
+import type { CallRefusal, WireRefusal, readCommit } from "./index.js"
 
 type Assert<Proof extends true> = Proof
 
+type Refused<Result> = Result extends { ok: false; refusal: infer Code } ? Code : never
+
 export type UnknownRefusal = Assert<"not-a-refusal" extends WireRefusal ? false : true>
 export type DocumentRefusals = Assert<Exclude<Refusal, WireRefusal> extends never ? true : false>
-
-export const refusalHandlers = {
-  stale: true,
-  "person-protected": true,
-  "run-fenced": true,
-  dead: true,
-  present: true,
-  limit: true,
-  field: true,
-  deck: true,
-  batch: true,
-  base: true,
-  payload: true,
-  cursor: true,
-  session: true,
-  owner: true,
-  deleted: true,
-  storage: true,
-  missing: true,
-  size: true,
-  server: true,
-  code: true,
-  store: true,
-  "text-from": true,
-  device: true,
-  "no-open-tab": true,
-  "tab-hidden": true,
-  "tab-timeout": true,
-  "tab-outdated": true,
-} satisfies Record<WireRefusal, true>
-
-export type MissingHandler = Assert<
-  Omit<typeof refusalHandlers, "payload"> extends Record<WireRefusal, true> ? false : true
+export type DeviceRefusals = Assert<Exclude<Exclude<Reach, "ready">, WireRefusal> extends never ? true : false>
+export type CommitRefusals = Assert<
+  Exclude<Refused<ReturnType<typeof readCommit>>, CallRefusal> extends never ? true : false
 >

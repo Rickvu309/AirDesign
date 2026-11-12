@@ -62,7 +62,9 @@ export type Command =
   | { readonly command: "remove"; readonly node: ElementId }
   | { readonly command: "read"; readonly runId: string; readonly node: ElementId }
 
-export type Refusal = "stale" | "person-protected" | "run-fenced" | "dead" | "present" | "limit"
+export const refusals = ["stale", "person-protected", "run-fenced", "dead", "present", "limit"] as const
+
+export type Refusal = (typeof refusals)[number]
 
 export type Decision =
   | { readonly decision: "apply"; readonly register: Register; readonly route: string }

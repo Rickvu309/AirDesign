@@ -1,4 +1,5 @@
-import { foldRegister, type Refusal, type Register, type StoredRegister } from "@airdesign/document"
+import { unreachable } from "@airdesign/device"
+import { foldRegister, refusals, type Register, type StoredRegister } from "@airdesign/document"
 import {
   readCapture,
   readCommit,
@@ -11,56 +12,30 @@ import {
 } from "./wire.js"
 import { isRegister } from "./register-answer.js"
 
-type Refused<Result> = Result extends { ok: false; refusal: infer Code } ? Code : never
+const callRefusals = [...refusals, "field", "deck", "batch", "base", "payload"] as const
 
-export type CallRefusal = Refusal | Refused<ReturnType<typeof readCommit>> | "base" | "payload"
+const editRefusals = [...callRefusals, "text-from", "owner", "deleted", "store"] as const
 
-export type EditRefusal = CallRefusal | "text-from" | "owner" | "deleted" | "store"
+const wireRefusals = [
+  ...editRefusals,
+  "cursor",
+  "session",
+  "storage",
+  "missing",
+  "size",
+  "server",
+  "code",
+  "device",
+  ...unreachable,
+] as const
 
-export type WireRefusal =
-  | EditRefusal
-  | "cursor"
-  | "session"
-  | "storage"
-  | "missing"
-  | "size"
-  | "server"
-  | "code"
-  | "device"
-  | "no-open-tab"
-  | "tab-hidden"
-  | "tab-timeout"
-  | "tab-outdated"
+export type CallRefusal = (typeof callRefusals)[number]
 
-const wireRefusals = {
-  stale: true,
-  "person-protected": true,
-  "run-fenced": true,
-  dead: true,
-  present: true,
-  limit: true,
-  field: true,
-  deck: true,
-  batch: true,
-  base: true,
-  payload: true,
-  cursor: true,
-  session: true,
-  owner: true,
-  deleted: true,
-  storage: true,
-  missing: true,
-  size: true,
-  server: true,
-  code: true,
-  store: true,
-  "text-from": true,
-  device: true,
-  "no-open-tab": true,
-  "tab-hidden": true,
-  "tab-timeout": true,
-  "tab-outdated": true,
-} satisfies Record<WireRefusal, true>
+export type EditRefusal = (typeof editRefusals)[number]
+
+export type WireRefusal = (typeof wireRefusals)[number]
+
+const decodable: ReadonlySet<string> = new Set(wireRefusals)
 
 export type WireFailure = { readonly ok: false; readonly refusal: WireRefusal }
 export type WireResult<Value> = ({ readonly ok: true } & Value) | WireFailure
@@ -94,7 +69,7 @@ function decode<Value>(isValue: (raw: unknown) => raw is Value): (raw: unknown) 
 }
 
 function isWireRefusal(raw: string): raw is WireRefusal {
-  return Object.hasOwn(wireRefusals, raw)
+  return decodable.has(raw)
 }
 
 function openAnswer(raw: unknown): raw is RevisionAnswer & { readonly register: StoredRegister } {

@@ -21,6 +21,7 @@ export {
   foldRegister,
   history,
   openRegister,
+  refusals,
   version,
   type Command,
   type Decision,

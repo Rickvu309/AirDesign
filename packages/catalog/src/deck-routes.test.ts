@@ -1,8 +1,10 @@
+import { unreachable } from "@airdesign/device"
 import {
   decide,
   elementId,
   foldRegister,
   openRegister,
+  refusals,
   rootElement,
   legacyElement,
   type Command,
@@ -135,6 +137,14 @@ it("refuses malformed answer envelopes for every deck route", () => {
       expect(route.result(raw)).toEqual(payload)
     }
     expect(route.result({ ok: false, refusal: "owner" })).toEqual({ ok: false, refusal: "owner" })
+  }
+})
+
+it("decodes every code document refuses with and every code device cannot reach with", () => {
+  for (const route of Object.values(deckRoutes)) {
+    for (const refusal of [...refusals, ...unreachable]) {
+      expect(route.result({ ok: false, refusal })).toEqual({ ok: false, refusal })
+    }
   }
 })
 

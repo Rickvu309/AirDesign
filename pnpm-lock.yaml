@@ -405,6 +405,9 @@ importers:
 
   packages/catalog:
     dependencies:
+      '@airdesign/device':
+        specifier: workspace:*
+        version: link:../device
       '@airdesign/document':
         specifier: workspace:*
         version: link:../document

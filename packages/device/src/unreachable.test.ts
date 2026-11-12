@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { openTab, reach, timeoutMs, type Tab } from "./index.js"
+import { openTab, reach, timeoutMs, unreachable, type Tab } from "./index.js"
 
 function opened(tab: Tab | null): Tab {
   if (tab === null) {
@@ -43,6 +43,16 @@ describe("reach", () => {
   it("visible tab is ready", () => {
     const tab = opened(openTab({ presence: "visible", elapsedMs: 29999, version: 7, authority: 7 }))
     expect(reach(tab)).toBe("ready")
+  })
+
+  it("lists each code a tab that cannot take work answers", () => {
+    const tabs = [
+      openTab({ presence: "absent" }),
+      openTab({ presence: "hidden", elapsedMs: 0, version: 1, authority: 1 }),
+      openTab({ presence: "visible", elapsedMs: timeoutMs, version: 1, authority: 1 }),
+      openTab({ presence: "visible", elapsedMs: 0, version: 2, authority: 1 }),
+    ]
+    expect(tabs.map((tab) => reach(opened(tab)))).toEqual([...unreachable])
   })
 
   it("bad clock is refused", () => {

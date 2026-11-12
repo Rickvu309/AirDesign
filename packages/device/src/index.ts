@@ -9,7 +9,9 @@ export type Tab =
       readonly authority: number
     }
 
-type Reach = "ready" | "no-open-tab" | "tab-hidden" | "tab-timeout" | "tab-outdated"
+export const unreachable = ["no-open-tab", "tab-hidden", "tab-timeout", "tab-outdated"] as const
+
+export type Reach = "ready" | (typeof unreachable)[number]
 
 function elapsed(value: number): boolean {
   return Number.isFinite(value) && value >= 0
