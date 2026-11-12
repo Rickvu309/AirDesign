@@ -10,7 +10,9 @@ import { nextSlideFile, slideFileNumber } from "./slide-list-route.js"
 import { addedSlideTouch, clonedSlideTouch, removedSlideTouch, type PartTouch } from "./slide-touch.js"
 import { applyStructuralRoute, type StructuralEdit } from "./structural-route.js"
 import { markupChildren, shapeTextValue, shownText } from "./text-value-route.js"
-import { writtenRoutes } from "./written-routes.js"
+import { routeName, routeOperations } from "./route-operations.js"
+import { notesRuns } from "./notes-runs.js"
+export { routeOperations } from "./route-operations.js"
 
 export type RouteRun = {
   readonly operation: (typeof routeOperations)[number]
@@ -24,52 +26,6 @@ export type RouteRun = {
 const slidePrefix = "ppt/slides/slide"
 const slideSuffix = ".xml"
 const box = { x: 914400, y: 914400, cx: 914400, cy: 914400 }
-
-export const routeOperations = [
-  "spPr.fill",
-  "text",
-  "move",
-  "resize",
-  "spTree.add",
-  "spTree.remove",
-  "spTree.order",
-  "spTree.clone",
-  "sldIdLst.add",
-  "sldIdLst.remove",
-  "sldIdLst.order",
-  "sldIdLst.clone",
-  "sectionLst.add",
-  "sectionLst.remove",
-  "sectionLst.order",
-  "graphicFrame.addTable",
-  "tbl.addRow",
-  "tbl.removeRow",
-  "tbl.orderRow",
-  "element.export",
-] as const
-
-const routeName: Record<(typeof routeOperations)[number], string> = {
-  "spPr.fill": writtenRoutes.fill,
-  text: writtenRoutes.text,
-  move: writtenRoutes.move,
-  resize: writtenRoutes.resize,
-  "spTree.add": writtenRoutes.add,
-  "spTree.remove": writtenRoutes.remove,
-  "spTree.order": writtenRoutes.order,
-  "spTree.clone": writtenRoutes.clone,
-  "sldIdLst.add": writtenRoutes.addSlide,
-  "sldIdLst.remove": writtenRoutes.removeSlide,
-  "sldIdLst.order": writtenRoutes.orderSlide,
-  "sldIdLst.clone": writtenRoutes.cloneSlide,
-  "sectionLst.add": writtenRoutes.addSection,
-  "sectionLst.remove": writtenRoutes.removeSection,
-  "sectionLst.order": writtenRoutes.orderSection,
-  "graphicFrame.addTable": writtenRoutes.addTable,
-  "tbl.addRow": writtenRoutes.addRow,
-  "tbl.removeRow": writtenRoutes.removeRow,
-  "tbl.orderRow": writtenRoutes.orderRow,
-  "element.export": "element.export",
-}
 
 function sameBytes(left: Uint8Array, right: Uint8Array): boolean {
   if (left.length !== right.length) return false
@@ -492,7 +448,7 @@ function attempt(
 }
 
 export function routeRuns(parts: ReadonlyMap<string, Uint8Array>): readonly RouteRun[] {
-  const runs: RouteRun[] = []
+  const runs = notesRuns(parts)
   for (const part of slideNames(parts)) {
     const bytes = parts.get(part)
     if (bytes === undefined) continue

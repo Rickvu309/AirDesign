@@ -14,7 +14,7 @@ import {
   type Register,
   type TextValue,
 } from "@airdesign/document"
-import { applyRoute, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
+import { applyRoute, writeNotes, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
 import { sameBox, textValue } from "@airdesign/render"
 
 type Parts = ReadonlyMap<string, Uint8Array>
@@ -98,6 +98,11 @@ export function editedParts(base: Parts, register: Register): Parts {
     if (id.includes(".") && (slideGone(register, shapeOf(id).slide) || elementGone(register, id))) continue
     const body = register.nodes.includes(id) ? register.elements[id] : undefined
     const opening = newSlideElement(register, id)
+    if (id.endsWith(".notes")) {
+      const value = body !== undefined ? currentValue(body) : opening?.value
+      if (value !== undefined && value !== null) next = writeNotes(next, shapeOf(id).slide, value)
+      continue
+    }
     next = withText(next, shapes, id, body, opening)
     next = withBox(next, shapes, id, body, opening)
   }

@@ -120,7 +120,17 @@ async function usagePage(kit) {
   await expect(kit.page.getByText(/% used$/)).toBeVisible()
 }
 
+async function notesState(kit, open = false) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/nasa-1d-cnn.pptx"))
+  const expand = kit.page.getByRole("button", { name: "Expand speaker notes" }).first()
+  if (open && (await expand.isVisible())) await expand.click()
+}
+
 export const states = [
+  { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
+  { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
   {
     name: "decks-empty",
     design: "/screens/s31-01-decks-browse-empty-first-visit",

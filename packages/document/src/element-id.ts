@@ -4,7 +4,7 @@ type SlideMark = { readonly mark: "slide" }
 export type ElementId = string & ElementMark
 export type SlideId = string & SlideMark
 
-export const elementPattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12})$/
+export const elementPattern = /^(?:[0-9]{1,10}|n[0-9a-z]{12})\.(?:[0-9]{1,10}|n[0-9a-z]{12}|notes)$/
 
 export const rootElement = "a" as ElementId
 export const legacyElement = "b" as ElementId

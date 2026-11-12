@@ -1,8 +1,9 @@
 import { deckRoutes } from "@airdesign/catalog"
-import { type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
+import { elementId, type Box, type ElementId, type Register, type Undoable } from "@airdesign/document"
 import { connect, fetchOriginal, flushOriginal, getParts, memoryRemote, putParts } from "@airdesign/live"
-import { exportPackage, readPackage, type ReadShape } from "@airdesign/pptx"
+import { exportPackage, readNotes, readPackage, type SlideNotes, type ReadShape } from "@airdesign/pptx"
 import { paintStore, SlideCanvas, textValue } from "@airdesign/render"
+import { toast } from "sonner"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { type SlideCanvases } from "@/canvas-slide"
 import { signInAddress, ThinNoticeView, type ThinNotice } from "@/thin-notice"
@@ -89,6 +90,8 @@ export function ThinDeck({ id }: { id: string }) {
   const structure = useRef("")
   const repaint = useRef<(register: Register) => void>(() => undefined)
   const [entering, setEntering] = useState<ElementId | null>(null)
+  const [notes, setNotes] = useState<readonly SlideNotes[]>([])
+  const notesQueue = useRef(Promise.resolve())
   const [slideCount, setSlideCount] = useState(0)
   const [current, setCurrent] = useState(0)
   const [title, setTitle] = useState("")
@@ -135,7 +138,8 @@ export function ThinDeck({ id }: { id: string }) {
       setCurrent(0)
       setTitle(stored.name ?? "")
       setPaintedDeck(id)
-      await backfillIndex(id, stored.parts)
+      if (register?.index === undefined || register.index.elements.length !== register.index.total)
+        await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
       await flushOriginal(id)
       await followDeck(
@@ -152,7 +156,10 @@ export function ThinDeck({ id }: { id: string }) {
                 const kept = after.findIndex((slide) => slide === before[index])
                 return kept >= 0 ? kept : Math.max(0, Math.min(index, after.length - 1))
               })
-            } else repaint.current(next.register)
+            } else {
+              repaint.current(next.register)
+              setNotes(readNotes(exportedParts(shownParts.current, next.register)))
+            }
           }
         },
         leaving.signal,
@@ -300,6 +307,7 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   async function exportDeck() {
+    await notesQueue.current
     await ensureMarkup()
     const stored = await getParts(id)
     if (!stored.ok) throw new Error("parts")
@@ -329,6 +337,7 @@ export function ThinDeck({ id }: { id: string }) {
     pictures.current = painted.pictures
     structure.current = JSON.stringify(register?.order ?? [])
     repaint.current = liveRepaint(store.current, painted.files, register, busy.current)
+    setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
     setSlideCount(painted.count)
   }
 
@@ -416,6 +425,26 @@ export function ThinDeck({ id }: { id: string }) {
     if (notice === "export-failed") void onExport()
   }
 
+  const currentSlide = store.current.slides()[current]?.id
+  const currentNotes = notes.find((notes) => notes.slide === currentSlide)
+
+  function editNotes(value: string) {
+    if (currentNotes === undefined) return
+    const note = currentNotes
+    notesQueue.current = notesQueue.current.then(async () => {
+      const outcome = await commitEdit(
+        connect,
+        id,
+        value,
+        { id: elementId(`${note.slide}.notes`), file: note.text },
+        () => setPending(true),
+      )
+      if (outcome === "refused")
+        toast.error("Unable to save speaker notes", { description: "Copy your notes, reload the deck and try again." })
+      settle(outcome)
+    })
+  }
+
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
   const notice: ThinNotice | null = failure ?? toldNotice ?? (offline && pending ? "offline" : null)
 
@@ -468,6 +497,10 @@ export function ThinDeck({ id }: { id: string }) {
               )
             },
           }}
+          notes={currentNotes?.text ?? ""}
+          {...(currentNotes === undefined
+            ? { notesLocked: "Speaker notes can't be edited on this slide yet." }
+            : { onNotes: editNotes })}
           panel={panel}
           onPanel={setPanel}
           side={<AiraPanel key={id} deck={id} hidden={panel !== "agent"} />}

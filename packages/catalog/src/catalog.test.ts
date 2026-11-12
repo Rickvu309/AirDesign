@@ -40,7 +40,7 @@ describe("projectTools", () => {
       name: "airdesign_edit_deck",
       op: "edit_deck",
       description:
-        "Write values on one deck. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
+        "Write values on one deck. A slide element whose node ends in .notes holds plain-text speaker notes; send its value as plain text. Read it first with airdesign_read_deck and send that revision as base and each element's version as readAt. The server names the actor. Each answer carries the runId of your turn. Call airdesign_stop_run with it when your turn is finished.",
       runsOn: "server",
       readOnlyHint: false,
       destructiveHint: true,
