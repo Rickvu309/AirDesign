@@ -124,10 +124,8 @@ A deck's PowerPoint sections carried through the slide command log by `foldSecti
 This is a pure function of the log, with no concurrency, so it has no TLA+ model. A property test runs the real code on generated logs of add, duplicate, move, delete and restore over two sections: `packages/document/src/section-order.property.test.ts`.
 
 - Every present slide is in exactly one section, the sections are runs in slide order, and every section name is kept, an emptied one included. Harm if broken: export drops a section name or lists a slide twice.
-- A person's undo of an add, a duplicate, a delete or a restore gives back the sections from before it.
+- A person's undo of an add, a duplicate, a move, a delete or a restore gives back the sections from before it. A move back to a key the slide held before takes the section it had at that key, so Run Undo of a move does the same.
 
 Bounds: four slides in two sections split anywhere, logs of up to six commands, 300 runs each. Run: `pnpm vitest run packages/document/src/section-order.property.test.ts`. Code: `foldSections`, `slideUndoable` and `undoOf`. Leaves out: three or more sections, and export's own writing of the section list, which `pnpm check:pptx` judges.
 
-Known bug, from `43f2f2d1`: a moved slide joins the section of the slide before it, and the undo of a move is another move. A person moves the first slide of a section to the end and undoes it; the slide comes back after the last slide of the earlier section and stays in that section. Harm: a person who undid every edit exports a deck whose section list moved a slide into another section. Run Undo of an agent's move does the same. Reproduced by the `it.fails` test in the same file; the undo property leaves moves out until the fix moves them back in.
-
-Sync: `aea28fbf04d9ca40d9d566f02a0449e62f95ad44`.
+Sync: `c8223b3d38278202ddf0bc13d99cac00f85cc810`.

@@ -1,5 +1,6 @@
 import type { SlideId } from "./element-id.js"
-import { presentSlides, type SlideState } from "./slide-order.js"
+import type { OrderKey } from "./order-key.js"
+import { foldSlides, presentSlides, type SlideState } from "./slide-order.js"
 
 export type FileSection = { readonly name: string; readonly slides: readonly string[] }
 export type Section = { readonly name: string; readonly slides: readonly SlideId[] }
@@ -18,11 +19,21 @@ export function foldSections(state: SlideState, base: readonly FileSection[]): r
     for (const id of section.slides) member.set(id, number)
   }
   if (state.file.some((id) => !member.has(id))) return []
+  const held = new Map<SlideId, Map<OrderKey, number>>()
+  const hold = (id: SlideId, key: OrderKey) => {
+    const keys = held.get(id) ?? new Map<OrderKey, number>()
+    keys.set(key, member.get(id) ?? 0)
+    held.set(id, keys)
+  }
+  for (const spot of foldSlides({ file: state.file, order: [] })) hold(spot.id, spot.key)
   for (const [position, command] of state.order.entries()) {
     if (command.slide === "add") member.set(command.id, member.get(command.after) ?? 0)
     if (command.slide === "clone") member.set(command.id, member.get(command.source) ?? 0)
+    if (command.slide === "add" || command.slide === "clone") hold(command.id, command.key)
     if (command.slide !== "move") continue
-    member.set(command.id, neighbourSection(state, position, command.id, member) ?? 0)
+    const returned = held.get(command.id)?.get(command.key)
+    member.set(command.id, returned ?? neighbourSection(state, position, command.id, member) ?? 0)
+    hold(command.id, command.key)
   }
   const grouped = base.map((section): { name: string; slides: SlideId[] } => ({ name: section.name, slides: [] }))
   let current = 0
