@@ -134,14 +134,14 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
         onNavigate={navigate}
       >
         <div className="-mx-14 -mt-10 h-full overflow-y-auto pt-10 pb-12">
-          <div className="border-b border-line pb-6">
+          <div data-settings-header className="border-b border-line pb-6">
             <div className="mx-auto w-[860px]">
               <h1 className="text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground">
                 {settingsCopy.title}
               </h1>
             </div>
           </div>
-          <div className="mx-auto mt-7 flex w-[860px] flex-col gap-4">
+          <div data-settings-content className="mx-auto mt-7 flex w-[860px] flex-col gap-4">
             <Card title={settingsCopy.agents} description={settingsCopy.agentsBody}>
               {listing === null && unavailable ? (
                 <div

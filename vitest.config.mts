@@ -29,7 +29,13 @@ export default defineConfig({
         extends: true,
         test: {
           name: "unit",
-          include: ["apps/**/*.test.ts", "apps/**/*.test.tsx", "packages/**/*.test.ts", "tests/**/*.test.ts"],
+          include: [
+            "apps/**/*.test.ts",
+            "apps/**/*.test.tsx",
+            "packages/**/*.test.ts",
+            "tests/**/*.test.ts",
+            ".agents/skills/**/*.test.mjs",
+          ],
           exclude: [
             "tests/browser/**",
             "**/node_modules/**",
