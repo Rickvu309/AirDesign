@@ -1,7 +1,10 @@
+export const sharedPartLine = (row) => `Shared part: ${row.part} belongs to ${row.owners.join(" and ")}`
+
 export const judge = (pptx, before, after) => {
   const errors = [
-    ...pptx.newValidatorErrors(before.list, after.list),
+    ...pptx.newValidatorErrors(before.list, after.list, after.copies),
     ...pptx.newValidatorErrors(before.orders, after.orders),
+    ...(after.shared ?? []).map(sharedPartLine),
   ]
   const dupes = pptx.newDuplicateShapeIds(before.ids, after.ids)
   const dangling = after.dangling ?? []
@@ -14,4 +17,5 @@ export const judgeParts = (pptx, before, list, parts) =>
     ids: pptx.shapeIdCounts(parts),
     orders: pptx.branchOrderErrors(parts),
     dangling: pptx.newDanglingShapeReferences(before.references, pptx.danglingShapeReferences(parts)),
+    shared: pptx.newSharedOwnedParts(before.shared, pptx.sharedOwnedParts(parts)),
   })

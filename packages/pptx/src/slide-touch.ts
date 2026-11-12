@@ -1,6 +1,7 @@
 import { contentTypesPart, presentationPart, presentationRels, relsOf } from "./package-address.js"
+import { copyOwnedParts } from "./owned-parts.js"
 import { nextSlideFile } from "./slide-list-route.js"
-import { notesCopy, onlyNotes } from "./slide-notes.js"
+import { onlyNotes } from "./slide-notes.js"
 
 export type PartTouch = {
   readonly changed: readonly string[]
@@ -17,9 +18,12 @@ export function addedSlideTouch(parts: ReadonlyMap<string, Uint8Array>): PartTou
 
 export function clonedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, source: string): PartTouch {
   const added = addedSlideTouch(parts)
-  const copy = notesCopy(parts, source)
-  if (copy === null) return added
-  return { ...added, added: [...added.added, copy.to, ...(copy.rels ? [relsOf(copy.to)] : [])] }
+  const rels = parts.get(relsOf(source))
+  if (rels === undefined) return added
+  const written = new Map(parts)
+  copyOwnedParts(written, source, added.added[0] ?? "", rels)
+  const copies = [...written.keys()].filter((name) => !parts.has(name))
+  return { ...added, added: [...added.added, ...copies] }
 }
 
 export function removedSlideTouch(parts: ReadonlyMap<string, Uint8Array>, part: string): PartTouch {

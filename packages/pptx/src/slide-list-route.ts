@@ -1,5 +1,12 @@
 import type { MarkupElement } from "./element-span.js"
-import { contentTypesPart, partOf, presentationPart, presentationRels, relsOf } from "./package-address.js"
+import {
+  contentTypesPart,
+  partOf,
+  presentationPart,
+  presentationRels,
+  relativeTarget,
+  relsOf,
+} from "./package-address.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import {
   attribute,
@@ -13,7 +20,8 @@ import {
   requireMarkup,
   rootClose,
 } from "./part-markup.js"
-import { cloneNotes, dropNotes, onlyNotes } from "./slide-notes.js"
+import { copyOwnedParts } from "./owned-parts.js"
+import { dropNotes, onlyNotes } from "./slide-notes.js"
 import { layoutPart } from "./slide-placeholders.js"
 
 const slideRelType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide"
@@ -104,14 +112,6 @@ function namedSlideId(elements: readonly MarkupElement[], id: string | undefined
   return id
 }
 
-function relativeTarget(from: string, to: string): string {
-  const base = from.split("/").slice(0, -1)
-  const path = to.split("/")
-  let shared = 0
-  while (shared < base.length && shared < path.length - 1 && base[shared] === path[shared]) shared += 1
-  return [...base.slice(shared).map(() => ".."), ...path.slice(shared)].join("/")
-}
-
 function layoutOnlyRelationships(slide: string, layout: string): Uint8Array {
   return encodeUtf8(
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="${layoutRelType}" Target="${relativeTarget(slide, layout)}"/></Relationships>`,
@@ -164,7 +164,7 @@ export function addSlide(parts: Map<string, Uint8Array>, after: string, copy: bo
   parts.set(
     relsOf(part),
     copy
-      ? cloneNotes(parts, sourcePart, part, sourceRelBytes)
+      ? copyOwnedParts(parts, sourcePart, part, sourceRelBytes)
       : layout === undefined || layoutPart(parts, sourcePart) === layout
         ? layoutRelationships(sourceRelBytes)
         : layoutOnlyRelationships(part, layout),

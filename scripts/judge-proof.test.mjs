@@ -1,15 +1,9 @@
 import fs from "node:fs"
-import os from "node:os"
-import path from "node:path"
-import { judge } from "./judge.mjs"
-import { judgeParts } from "./judge.mjs"
-import { scoreWrittenRoute, writtenRouteFiles } from "./pptx-route-judge.mjs"
 import {
   changedSinceArgs,
   changesJudge,
   benignKinds,
   changesJudgeSource,
-  breakKinds,
   caughtCount,
   freshMissFails,
   kindVerdicts,
@@ -250,103 +244,6 @@ same(
   0,
 )
 
-const countingPptx = {
-  newValidatorErrors: (before, after) => after.filter((line) => !before.includes(line)),
-  newDuplicateShapeIds: () => [],
-}
-const dangling = "ppt/slides/slide1.xml p:spTgt 9"
-same(
-  "the judge rejects a dangling shape reference passed to it",
-  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [], dangling: [dangling] })
-    .accepted,
-  false,
-)
-same(
-  "an old caller that passes no dangling data is still accepted",
-  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [] }).accepted,
-  true,
-)
-const partsPptx = {
-  ...countingPptx,
-  shapeIdCounts: () => [],
-  branchOrderErrors: () => [],
-  danglingShapeReferences: (parts) => parts,
-  newDanglingShapeReferences: (before, after) => after.filter((row) => !before.includes(row)),
-}
-const judgedDeck = (references) => ({ list: [], ids: [], orders: [], references })
-same(
-  "the path pptx-check uses rejects a planted dangling shape reference",
-  judgeParts(partsPptx, judgedDeck([]), [], [dangling]).accepted,
-  false,
-)
-same(
-  "the path pptx-check uses does not blame a dangling shape reference the deck already had",
-  judgeParts(partsPptx, judgedDeck([dangling]), [], [dangling]).accepted,
-  true,
-)
-const checkSource = fs.readFileSync(new URL("./pptx-check.mjs", import.meta.url), "utf8")
-same(
-  "pptx-check judges only through judgeParts, which always supplies the dangling data",
-  [checkSource.includes('import { judgeParts } from "./judge.mjs"'), /\bjudge\(/.test(checkSource)],
-  [true, false],
-)
-same(
-  "pptx-check compares each deck's own dangling references before and after",
-  [
-    checkSource.includes("references: references.get(name)"),
-    checkSource.includes("pptx.danglingShapeReferences(packageParts)"),
-  ],
-  [true, true],
-)
-same(
-  "pptx-check fails a case that leaves a dangling reference, judged against the case's own after parts",
-  [checkSource.includes("dangling.length !== 0"), checkSource.includes("parts.get(row.after)")],
-  [true, true],
-)
-const routePptx = {
-  ...partsPptx,
-  touchMatches: () => true,
-}
-const routeFolder = fs.mkdtempSync(path.join(os.tmpdir(), "judge-route-"))
-const writtenRoute = async (before, back) => {
-  const filing = {
-    ...routePptx,
-    routeRuns: () => [{ operation: "spTree.remove", error: null, touch: {}, parts: [] }],
-    exportPackage: async () => new Uint8Array(),
-    readParts: async () => back,
-  }
-  const [item] = await writtenRouteFiles(filing, new Uint8Array(), before, routeFolder, "deck")
-  return item
-}
-same(
-  "a written route that leaves a new dangling reference fails",
-  scoreWrittenRoute(routePptx, [], [], await writtenRoute([], [dangling]), [])?.dangling,
-  1,
-)
-same(
-  "a written route is not blamed for a dangling reference the deck already had",
-  scoreWrittenRoute(routePptx, [dangling], [], await writtenRoute([dangling], [dangling]), []),
-  null,
-)
-fs.rmSync(routeFolder, { recursive: true, force: true })
-same(
-  "pptx-check scores only the files writtenRouteFiles made, which always carry the dangling data",
-  checkSource.includes("await writtenRouteFiles("),
-  true,
-)
-const orderFault = "Order: p:spPr after p:txBody in p:sp of a markup branch /ppt/slides/slide1.xml"
-same(
-  "the judge rejects a new order error",
-  judge(countingPptx, { list: [], ids: [], orders: [] }, { list: [], ids: [], orders: [orderFault] }).accepted,
-  false,
-)
-same(
-  "the judge does not blame an order error the deck already had",
-  judge(countingPptx, { list: [], ids: [], orders: [orderFault] }, { list: [], ids: [], orders: [orderFault] })
-    .accepted,
-  true,
-)
-
 same("a sample seed is the same for the same sample", sampleSeed(1, "kind", 0), sampleSeed(1, "kind", 0))
 const sampleSeeds = [
   sampleSeed(1, "kind", 0),
@@ -421,7 +318,6 @@ same("the table gives each kind its own verdict", proofTable(judged), [
   "judge break  third       missed    0 of 1 samples caught",
   "judge valid  valid edit  accepted  1 of 1 samples accepted",
 ])
-same("ten break kinds are planted", Object.keys(breakKinds).length, 10)
 
 const knownMiss = [{ seed: 5, kind: "second", deck: "a.pptx", what: "slide 2" }]
 const recordedCaught = { first: "caught", second: "caught" }

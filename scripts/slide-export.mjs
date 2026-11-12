@@ -33,6 +33,8 @@ export const slideExportLines = ({
         pptx.danglingShapeReferences(before),
         pptx.danglingShapeReferences(after),
       ),
+      copies: pptx.partCopies(before, after),
+      shared: pptx.newSharedOwnedParts(pptx.sharedOwnedParts(before), pptx.sharedOwnedParts(after)),
     },
   )
   for (const error of verdict.errors) lines.push(`slide export validator ${error}`)

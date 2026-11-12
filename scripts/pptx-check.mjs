@@ -52,6 +52,7 @@ import {
 import { slideEditsExportName, slideEditsLines } from "./slide-edits.mjs"
 import { diagramEditsExportName, diagramEditsLines } from "./diagram-edits.mjs"
 import { chartEditsExportName, chartEditsLines } from "./chart-edits.mjs"
+import { cloneEditsLines, writeCloneEdits } from "./clone-edits.mjs"
 import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
 import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
@@ -221,6 +222,7 @@ for (const name of decision.routeDecks) {
   )
   writtenDecks.push({ name, deckParts, written })
 }
+const cloneEditsFile = await writeCloneEdits({ pptx, root, parts, directory: routeDir })
 const routeFiles = writtenDecks.flatMap((deck) =>
   deck.written.flatMap((item) => (item.file === null ? [] : [item.file])),
 )
@@ -243,6 +245,7 @@ const judgedFiles = async () => {
         fixturePath,
         others: [
           ...routeFiles,
+          cloneEditsFile,
           ...runs.flatMap((run) => run.planted.map((_, index) => path.join(proofFolder, sampleFile(run.seed, index)))),
         ],
       }),
@@ -282,11 +285,13 @@ console.log((await renderCacheReady).line())
 const ids = new Map([...parts].map(([name, packageParts]) => [name, pptx.shapeIdCounts(packageParts)]))
 const orders = new Map([...parts].map(([name, packageParts]) => [name, pptx.branchOrderErrors(packageParts)]))
 const references = new Map([...parts].map(([name, packageParts]) => [name, pptx.danglingShapeReferences(packageParts)]))
+const shared = new Map([...parts].map(([name, packageParts]) => [name, pptx.sharedOwnedParts(packageParts)]))
 const judgedBefore = (name) => ({
   list: lists.get(name),
   ids: ids.get(name),
   orders: orders.get(name),
   references: references.get(name),
+  shared: shared.get(name),
 })
 const recorded = JSON.parse(fs.readFileSync(proofFile, "utf8"))
 let failed = 0
@@ -360,6 +365,10 @@ if (!spec.ok) {
     failed += 1
     console.log(line)
   }
+}
+for (const line of cloneEditsLines({ pptx, parts, lists, ids, orders })) {
+  failed += 1
+  console.log(line)
 }
 for (const row of cases) {
   const { errors, dupes, dangling } = judgeParts(
