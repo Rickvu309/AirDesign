@@ -7,6 +7,7 @@ import { boxStorable, landedBox } from "@/element-move"
 import { editedParts, slideBase, storedText } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
+import { fallbackPrompt } from "@/copy/placeholder-copy"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
 
@@ -122,6 +123,6 @@ export function paint(
     ),
   }))
   const pictures = pictureSources(display)
-  const canvases = slideCanvases(paintReader(display), sources, pictures.src)
+  const canvases = slideCanvases(paintReader(display, { fallbackPrompt }), sources, pictures.src)
   return { count: read.length, canvases, boxes, movables, shapes: rows, pictures, files, base }
 }

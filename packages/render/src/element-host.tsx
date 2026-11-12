@@ -9,11 +9,12 @@ import { ShapeArt, shapePaths } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
-import { anchored, textLook, type Scaled } from "./text-look.js"
+import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
 import { unshownFill } from "./unshown-fill.js"
 
 const defaultInsetX = 91_440
 const defaultInsetY = 45_720
+const defaultTextSize = 203_200
 const roundCorner = 0.16667
 const noText: CanvasText = {
   paragraphs: [],
@@ -173,6 +174,24 @@ function reach(element: CanvasElement, id: ElementId, text: string, moves: Moves
   }
 }
 
+function promptLook(text: CanvasText, look: TextLook, scaled: Scaled): CSSProperties {
+  const paragraph = text.paragraphs[0]
+  if (paragraph === undefined) {
+    return {
+      fontFamily: "var(--font-sans)",
+      fontSize: `${scaled(defaultTextSize)}px`,
+      lineHeight: "normal",
+      textAlign: "left",
+    }
+  }
+  const base = look.paragraph(0, false)
+  return {
+    ...base,
+    "--bullet": "none",
+    margin: 0,
+  } as CSSProperties
+}
+
 function PlacedText(props: {
   readonly store: PaintStore
   readonly element: CanvasElement
@@ -192,22 +211,65 @@ function PlacedText(props: {
   const look = textLook(text, scaled)
   const shown = record?.text ?? ""
   const typing = element.editable && onEdit !== undefined
+  const empty = isBlank(shown)
+  const isSelected = moves !== null && moves.selected === id
+  const showPrompt = element.placeholder && empty && Boolean(element.prompt)
+  const showQuietOutline = element.placeholder && empty && !isSelected
+  const promptOutline: CSSProperties = showQuietOutline
+    ? { outline: "1px dashed var(--placeholder-edge)", outlineOffset: -1 }
+    : moves === null
+      ? {}
+      : framedOutline
   return (
     <div
       data-canvas-element={element.key}
       style={{
         ...elementFrame(element, scaled, takesPointer(element, shown, moves !== null, drawnWhenBlank), unshown),
-        ...(moves === null ? {} : framedOutline),
+        ...promptOutline,
         ...(moves === null || typing || !canMove(element) ? {} : { cursor: "move", touchAction: "none" }),
       }}
       {...(moves === null ? {} : reach(element, id, shown, moves, typing, fallbackName))}
     >
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <div style={textLayer(element.box, text, scaled)}>
+        {showPrompt ? (
+          <div
+            aria-hidden="true"
+            data-placeholder-prompt={element.prompt}
+            style={{
+              position: "absolute",
+              left: scaled(text.insets.left),
+              top: scaled(text.insets.top),
+              right: scaled(text.insets.right),
+              bottom: scaled(text.insets.bottom),
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: anchored[text.anchor],
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            <div
+              style={{
+                ...promptLook(text, look, scaled),
+                color: "var(--placeholder-prompt)",
+              }}
+            >
+              {element.prompt}
+            </div>
+          </div>
+        ) : null}
         {element.editable && onEdit !== undefined ? (
-          <Passage framed={moves !== null} id={id} look={look} onEdit={(value) => onEdit(id, value)} store={store} />
+          <Passage
+            framed={moves !== null}
+            id={id}
+            look={look}
+            onEdit={(value) => onEdit(id, value)}
+            prompt={showPrompt ? (element.prompt ?? undefined) : undefined}
+            store={store}
+          />
         ) : (
-          <Passage id={id} look={look} store={store} />
+          <Passage id={id} look={look} prompt={showPrompt ? (element.prompt ?? undefined) : undefined} store={store} />
         )}
       </div>
     </div>

@@ -124,7 +124,7 @@ test("the offline notice shows its whole sentence", () => {
   expect(seen(["editor-offline"], "truncated-text"), "the offline notice is cut by an ellipsis").toEqual([])
 })
 
-test.fail("an empty placeholder on a blank slide shows that it is there", () => {
+test("an empty placeholder on a blank slide shows that it is there", () => {
   expect(seen(["blank-deck"], "invisible-control"), "an empty placeholder paints nothing").toEqual([])
 })
 
