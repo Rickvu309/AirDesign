@@ -171,6 +171,13 @@ async function notesState(kit, open = false) {
   if (open && (await expand.isVisible())) await expand.click()
 }
 
+async function usageLoading(kit) {
+  await kit.signIn()
+  await kit.page.route("**/aira/usage", () => new Promise(() => {}))
+  await kit.page.goto("/settings/usage")
+  await expect(kit.page.getByRole("meter", { name: "Weekly usage" })).toBeVisible()
+}
+
 export const states = [
   { name: "notes-closed", design: editor, drive: (kit) => notesState(kit) },
   { name: "notes-open", design: editor, drive: (kit) => notesState(kit, true) },
@@ -229,6 +236,7 @@ export const states = [
   { name: "history-open", design: editor, drive: historyOpen },
   { name: "history-long-title", design: editor, drive: historyLongTitle },
   { name: "chat-restored", design: editor, drive: chatRestored },
+  { name: "usage-loading", design: null, drive: usageLoading },
   { name: "usage-page", design: "/screens/s81-01-settings-settings-usage-tab", drive: usagePage },
   { name: "agent-out-of-usage", design: "/screens/s92-01-credits-out-of-usage-limit-reached", drive: outOfUsage },
   { name: "agent-not-offered", design: editor, drive: notOffered },
