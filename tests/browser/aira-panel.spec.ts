@@ -100,6 +100,23 @@ test("Stop ends the run before Aira's edit lands", async ({ page, context, stack
   expect((await stack.post("/decks/open", { deck }, cookie)).json.revision).toBe(base)
 })
 
+test("after Stop the usage ring shows what the stopped model call was charged", async ({ page, context, stack }) => {
+  const { deck, base, side } = await openDeck(page, context, stack)
+  await side.getByRole("button", { name: productCopy.usageTitle }).click()
+  const usage = side.getByRole("region", { name: productCopy.usageTitle })
+  await expect(usage).toContainText("0%")
+  stack.aira({ name: "edit.sse", fill: { deck, base: String(base), node }, holdAfter: 3 })
+  const reached = stack.hold()
+  await ask(page, asked)
+  await reached
+  await side.getByRole("button", { name: "Stop" }).click()
+  try {
+    await expect(usage).toContainText(/[1-9]\d*%/)
+  } finally {
+    stack.release()
+  }
+})
+
 test("a person out of weekly usage sees the limit from the server and when it resets", async ({
   page,
   context,
