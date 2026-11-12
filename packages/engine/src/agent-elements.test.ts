@@ -215,3 +215,18 @@ describe("a box a person typed in", () => {
     ).toBe(true)
   })
 })
+
+describe("a run that ended", () => {
+  it("cannot add or delete an element", () => {
+    const node = elementId("256.2")
+    const opening = decide(opened().register, { command: "add", node, floor: "Title", route: "" })
+    if (opening.decision !== "apply") throw new Error(opening.code)
+    const started = decide(opening.register, { command: "start", runId: "run", node })
+    if (started.decision !== "apply") throw new Error(started.code)
+    const stopped = decide(started.register, { command: "stop", runId: "run", node })
+    if (stopped.decision !== "apply") throw new Error(stopped.code)
+    const ended = { ...opened(), register: stopped.register }
+    expect(add(ended)).toEqual({ ok: false, refusal: "run-fenced" })
+    expect(remove(ended, "256.3")).toEqual({ ok: false, refusal: "run-fenced" })
+  })
+})

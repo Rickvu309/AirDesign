@@ -37,7 +37,9 @@ it("sends the layout upgrade that was queued while the last import page was in f
   expect(await cache.index("race", index)).toEqual({ ok: true })
   const sending = cache.flush("race")
   await inFlight
-  expect(await cache.index("race", { ...index, slides: [{ id: "258", position: 0, layout }] })).toEqual({ ok: true })
+  expect(await cache.index("race", { ...index, slides: [{ id: "258", position: 0, free: 5, layout }] })).toEqual({
+    ok: true,
+  })
   release()
   expect((await sending).ok).toBe(true)
   await cache.flush("race")

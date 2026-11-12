@@ -26,7 +26,7 @@ import type { Caller, Deck } from "./call.js"
 type Built =
   | { readonly ok: true; readonly register: Deck["register"] }
   | { readonly ok: false; readonly refusal: CallRefusal }
-function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+export function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
   const held = [...new Set([...register.nodes, ...storedElements(register)])].flatMap((node) => {
     const body = register.elements[node]
     const holds = body !== undefined && (body.runId === runId || body.landed.some((row) => row.runId === runId))

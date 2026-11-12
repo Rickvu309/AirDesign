@@ -137,6 +137,7 @@ function knownNodes(register: Register): readonly ElementId[] {
   const removed = new Set<ElementId>()
   for (const command of register.order) {
     if (command.slide === "element-remove") removed.add(command.node)
+    if (command.slide === "element-restore") removed.delete(command.node)
   }
   nodes.sort(byId)
   const present = nodes.filter((node) => !removed.has(node))
