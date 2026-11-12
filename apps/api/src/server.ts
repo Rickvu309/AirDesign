@@ -1,4 +1,4 @@
-import { createHash, randomUUID, timingSafeEqual } from "node:crypto"
+import { randomUUID } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
 import { bytesOf, limits } from "@airdesign/document"
 
@@ -39,6 +39,7 @@ import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
 import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
+import { sameSecret } from "./secrets.js"
 import { checkedResource, readUrl } from "./resource.js"
 import { authorizationMetadata, resourceChallenge, resourceMetadata } from "./discovery.js"
 import { chosenRevision, deckAccess, savedAnswers, readSaved } from "./saved.js"
@@ -63,6 +64,7 @@ export type ApiOptions = {
   readonly originals?: OriginalStore
   readonly aira?: AiraSettings
   readonly closing?: Closing
+  readonly forwardSecret?: string
 }
 
 type ServedOptions = ApiOptions & { readonly turns: Map<string, Turns>; readonly closing: Closing }
@@ -262,12 +264,6 @@ async function hold(
     if (revision !== undefined) return revision
     await options.listen.wait(signal)
   }
-}
-
-function sameSecret(given: string, expected: string): boolean {
-  const left = createHash("sha256").update(given).digest()
-  const right = createHash("sha256").update(expected).digest()
-  return timingSafeEqual(left, right)
 }
 
 function notFound(res: ServerResponse): void {

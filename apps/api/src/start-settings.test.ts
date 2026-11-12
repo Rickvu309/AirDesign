@@ -82,6 +82,7 @@ describe("readStartSettings", () => {
       resendKey: good.RESEND_API_KEY,
       resendFrom: good.RESEND_FROM,
       r2: undefined,
+      forwardSecret: undefined,
       aira: { on: false, key: undefined, secret: undefined },
     })
   })
@@ -105,6 +106,14 @@ describe("readStartSettings", () => {
 
   it("does not refuse to start for a missing commit or smoke token", () => {
     expect(refused({ RAILWAY_GIT_COMMIT_SHA: undefined, SMOKE_TOKEN: undefined })).toBeUndefined()
+  })
+
+  it("reads the forward secret when set and leaves it absent when empty or unset", () => {
+    expect(readStartSettings({ ...good, FORWARD_SECRET: "shared-secret" })).toMatchObject({
+      forwardSecret: "shared-secret",
+    })
+    expect(readStartSettings({ ...good, FORWARD_SECRET: "" })).toMatchObject({ forwardSecret: undefined })
+    expect(readStartSettings(good)).toMatchObject({ forwardSecret: undefined })
   })
 
   it("defaults the port, the cookie domain and the hosts", () => {

@@ -10,6 +10,7 @@ import {
   countryHeader,
   deckPaths,
   deckRoutes,
+  forwardSecretHeader,
   mcpPaths,
   oauthPaths,
   oauthRoutes,
@@ -25,6 +26,7 @@ type Seen = {
   cookie: string | undefined
   contentType: string | undefined
   country: string | string[] | undefined
+  forwardSecret: string | string[] | undefined
   body: string
 }
 
@@ -50,6 +52,7 @@ beforeEach(async () => {
         cookie: request.headers.cookie,
         contentType: request.headers["content-type"],
         country: request.headers[countryHeader],
+        forwardSecret: request.headers[forwardSecretHeader],
         body: Buffer.concat(chunks).toString(),
       })
       if (request.url === "/aira/turn") {
@@ -84,9 +87,10 @@ afterEach(async () => {
   await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
 })
 
-function env() {
+function env(extra: { FORWARD_SECRET?: string } = {}) {
   return {
     API_ORIGIN: origin,
+    ...extra,
     ASSETS: {
       fetch: async (request: Request) => {
         assets.push(request)
@@ -202,6 +206,36 @@ describe("API forwarding", () => {
     })
     await worker.fetch(request, env())
     expect(seen[0]?.country).toBeUndefined()
+  })
+
+  it("forwards the shared secret to the API when set in the worker environment", async () => {
+    const request = new Request("https://example.com/decks/open", { method: "POST" })
+    await worker.fetch(request, env({ FORWARD_SECRET: "worker-secret" }))
+    expect(seen[0]?.forwardSecret).toBe("worker-secret")
+  })
+
+  it("strips any forward secret header sent by the visitor", async () => {
+    const request = new Request("https://example.com/decks/open", {
+      method: "POST",
+      headers: { [forwardSecretHeader]: "visitor-secret" },
+    })
+    await worker.fetch(request, env({ FORWARD_SECRET: "worker-secret" }))
+    expect(seen[0]?.forwardSecret).toBe("worker-secret")
+  })
+
+  it("forwards no secret header when unset in worker environment, even if visitor sent one", async () => {
+    const request = new Request("https://example.com/decks/open", {
+      method: "POST",
+      headers: { [forwardSecretHeader]: "visitor-secret" },
+    })
+    await worker.fetch(request, env())
+    expect(seen[0]?.forwardSecret).toBeUndefined()
+  })
+
+  it("declares the forward secret in wrangler.jsonc for type generation without committing a value", () => {
+    const text = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8")
+    const config = JSON.parse(text.replace(/,(\s*[}\]])/g, "$1")) as { secrets?: { required?: string[] } }
+    expect(config.secrets?.required).toContain("FORWARD_SECRET")
   })
 
   it("closes the API's Aira turn when the person's request is cancelled, so the API stops the model call", async () => {

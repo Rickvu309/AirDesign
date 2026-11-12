@@ -5,10 +5,16 @@ import type { CallerLog } from "@airdesign/mcp"
 
 import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
 import type { Closing } from "./aira-closing.js"
+import { filterForwardedHeaders } from "./forward-secret.js"
 import type { Sql } from "./pool.js"
 
 type AiraVisit = {
-  readonly options: { readonly aira?: AiraSettings; readonly session: Sql; readonly closing: Closing }
+  readonly options: {
+    readonly aira?: AiraSettings
+    readonly session: Sql
+    readonly closing: Closing
+    readonly forwardSecret?: string
+  }
   readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
@@ -59,6 +65,7 @@ export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): r
       cap: airaBodyCap,
       serve: async (visit) => {
         const { options, logs, now, mint, req, res } = visit
+        filterForwardedHeaders(req.headers, options.forwardSecret)
         const signal = leftEarly(res)
         const email = await http.signedIn(visit)
         if (email === undefined) return
