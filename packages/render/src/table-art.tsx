@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react"
+import { elementFrame, type ElementPaintProps } from "./element-host.js"
 import type { CanvasLine, CanvasTable, PaintBox } from "./record.js"
 import { SheetText } from "./sheet-text.js"
 import { anchored, textLook, type Scaled } from "./text-look.js"
@@ -74,6 +75,20 @@ function CellArt(props: {
         <Border line={cell.borders.bottom} points={[0, "100%", "100%", "100%"]} scaled={scaled} />
       </svg>
     </div>
+  )
+}
+
+export function TablePaint(props: ElementPaintProps) {
+  const { element, scaled } = props
+  if (element.table === undefined) return null
+  return (
+    <TableArt
+      box={element.box}
+      elementKey={element.key}
+      scaled={scaled}
+      style={elementFrame(element, scaled, false, false)}
+      table={element.table}
+    />
   )
 }
 
