@@ -25,7 +25,7 @@ type ListRow = {
 
 type Refusal = "owner" | "deleted"
 
-const clearedColumns = `deleted = now(), register = null, name = '', trashed = null, original_key = null,
+const clearedColumns = `deleted = now(), register = null, import_index = null, name = '', trashed = null, original_key = null,
   original_bytes = null, original_sha256 = null, original_stored = false, original_until = null`
 
 function deletedSql(doomed: string): string {

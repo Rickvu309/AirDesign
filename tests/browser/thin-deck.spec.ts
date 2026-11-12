@@ -370,8 +370,8 @@ async function rowsOf(page: Page): Promise<{ kind: string; value: string; node?:
   )
 }
 
-async function answerOpens(page: Page): Promise<void> {
-  await page.route("**/decks/open", async (route) => {
+async function answerOpens(page: Page) {
+  await page.route("**/decks/{open,index}", async (route) => {
     const body = route.request().postDataJSON() as { deck: string }
     await route.fulfill({
       contentType: "application/json",

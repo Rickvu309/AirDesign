@@ -3,16 +3,25 @@ import {
   readCapture,
   readCommit,
   readWatch,
+  readDeckIndex,
+  type DeckId,
+  type WireRefusal,
   type WireEdit,
   type OpenResult,
   type CommitResult,
   type WatchResult,
 } from "@airdesign/catalog"
-import { decide, openRegister, storedValue, type Register } from "@airdesign/document"
+import { appendIndex, decide, openRegister, storedValue, type IndexPage, type Register } from "@airdesign/document"
 
 export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
 
 export type Remote = {
+  index?(
+    body: IndexPage & { readonly deck: string },
+  ): Promise<
+    | { readonly ok: true; readonly deck: DeckId; readonly revision: number }
+    | { readonly ok: false; readonly refusal: WireRefusal }
+  >
   open(body: { readonly deck: string }): Promise<OpenResult>
   commit(body: {
     readonly deck: string
@@ -50,6 +59,17 @@ export function memoryRemote(): Remote {
   }
 
   return {
+    async index(body) {
+      const parsed = readDeckIndex(body)
+      if (!parsed.ok) return parsed
+      const stored = decks.get(parsed.deck)
+      if (stored === undefined) return { ok: false, refusal: "deck" }
+      const { ok: _ok, deck: id, ...page } = parsed
+      const next = appendIndex(stored.register.index, page)
+      if (!next.ok) return next
+      decks.set(id, { ...stored, register: { ...stored.register, index: next.index } })
+      return { ok: true, deck: id, revision: stored.revision }
+    },
     async open(body) {
       const parsed = readCapture(body)
       if (!parsed.ok) return parsed
@@ -108,6 +128,7 @@ export function memoryRemote(): Remote {
 export function ownerRemote(): Remote {
   const refused = { ok: false as const, refusal: "owner" as const }
   return {
+    index: () => Promise.resolve(refused),
     open: () => Promise.resolve(refused),
     commit: () => Promise.resolve(refused),
     watch: () => Promise.resolve(refused),
@@ -128,6 +149,7 @@ export async function post(path: string, body: unknown): Promise<unknown> {
 
 export function httpRemote(): Remote {
   return {
+    index: async (body) => deckRoutes.index.result(await post(deckRoutes.index.path, body)),
     open: async (body) => deckRoutes.open.result(await post(deckRoutes.open.path, body)),
     commit: async (body) => deckRoutes.commit.result(await post(deckRoutes.commit.path, body)),
     watch: async (body) => deckRoutes.watch.result(await post(deckRoutes.watch.path, body)),

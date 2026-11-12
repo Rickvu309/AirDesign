@@ -1,5 +1,6 @@
 import { opened, viewed, personSplit } from "./spec-register.js"
-import { spawn } from "node:child_process"
+import { dumpTopics } from "./spec-dump.js"
+import { replayIndex } from "./index-replay.js"
 import { readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -31,6 +32,7 @@ import { group as usageGroup, state as usageState, step as usageStep } from "../
 import { group as oauthGroup, state as oauthState, step as oauthStep } from "../specs/oauth/view.mjs"
 import { group as rerunGroup, state as rerunState, step as rerunStep } from "../specs/rerun/view.mjs"
 import { group as turnGroup, state as turnState, step as turnStep } from "../specs/turn/view.mjs"
+import { group as indexGroup, state as indexState, step as indexStep } from "../specs/index/view.mjs"
 
 type Value = boolean | number | string
 type Spec = Record<string, Value>
@@ -1287,42 +1289,6 @@ function replayRerun(graph: Graph, view: View, failures: string[]) {
   return { replayed, stuttered }
 }
 
-function dumpTopics(
-  found: readonly { name: string; topic: string; spec: string; config: string }[],
-): Promise<readonly { name: string; graph: string; output: string }[]> {
-  const specifier = new URL("../scripts/check-specs.mjs", import.meta.url).href
-  return Promise.all(
-    found.map(
-      (topic) =>
-        new Promise<{ name: string; graph: string; output: string }>((resolve, reject) => {
-          const child = spawn(process.execPath, ["--input-type=module"], { stdio: ["pipe", "pipe", "pipe"] })
-          let out = ""
-          let err = ""
-          child.stdout.setEncoding("utf8")
-          child.stderr.setEncoding("utf8")
-          child.stdout.on("data", (chunk: string) => {
-            out += chunk
-          })
-          child.stderr.on("data", (chunk: string) => {
-            err += chunk
-          })
-          child.on("error", reject)
-          child.on("close", (code) => {
-            if (code !== 0) {
-              reject(new Error(`${topic.name} ${err || out}`))
-              return
-            }
-            const parsed = JSON.parse(out) as { graph: string; output: string }
-            resolve({ name: topic.name, graph: parsed.graph, output: parsed.output })
-          })
-          child.stdin.end(
-            `import { dumpSpec, javaBin, jarPath } from ${JSON.stringify(specifier)}\nconst dumped = dumpSpec(${JSON.stringify(topic.topic)}, javaBin(), jarPath(), ${JSON.stringify(topic.spec)}, ${JSON.stringify(topic.config)})\nprocess.stdout.write(JSON.stringify({ graph: dumped.graph, output: dumped.output }))\n`,
-          )
-        }),
-    ),
-  )
-}
-
 describe("spec replay", () => {
   it("replays every reachable spec edge through decide", async () => {
     assertJar(jarPath())
@@ -1347,6 +1313,7 @@ describe("spec replay", () => {
       oauth: { state: oauthState, step: oauthStep, group: oauthGroup },
       rerun: { state: rerunState, step: rerunStep, group: rerunGroup },
       turn: { state: turnState, step: turnStep, group: turnGroup },
+      index: { state: indexState, step: indexStep, group: indexGroup },
     }
     expect(Object.keys(views).sort()).toEqual(folders.filter((name) => name !== replayedByApi))
     for (const dumped of await dumpTopics(found)) {
@@ -1359,6 +1326,7 @@ describe("spec replay", () => {
       const graph = parseDot(dumped.graph)
       const view = views[topic.name]
       if (!view) throw new Error(`${topic.name} has no reader`)
+      if (topic.name === "index") reports.index = replayIndex(graph, failures)
       if (topic.name === "edit")
         reports.edit = { states: graph.states.size, edges: graph.edges.length, ...replayEdit(graph, view, failures) }
       if (topic.name === "undo")
@@ -1408,6 +1376,7 @@ describe("spec replay", () => {
     }
     expect(failures, JSON.stringify(reports)).toEqual([])
     expect(reports).toMatchObject({
+      index: { replayed: expect.any(Number), stuttered: expect.any(Number) },
       edit: { stuttered: expect.any(Number) },
       undo: { stuttered: expect.any(Number) },
       structure: { replayed: expect.any(Number) },

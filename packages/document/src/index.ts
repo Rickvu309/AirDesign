@@ -11,6 +11,14 @@ export {
   type SlideId,
 } from "./element-id.js"
 export { orderKeyBetween } from "./order-key.js"
+export {
+  appendIndex,
+  readIndexPage,
+  type DeckIndex,
+  type IndexElement,
+  type IndexPage,
+  type IndexSlide,
+} from "./deck-index.js"
 export { replay, unsent, type Queued } from "./replay.js"
 export { bytesOf, limits, overLimit } from "./limits.js"
 export {

@@ -11,6 +11,9 @@ import {
   type ElementId,
   type NodeRegister,
   type Register,
+  type IndexElement,
+  type IndexSlide,
+  type Kind,
 } from "@airdesign/document"
 
 import type { Deck } from "./call.js"
@@ -20,9 +23,11 @@ export const readTokens = 8000
 export type ReadElement = {
   readonly node: ElementId
   readonly slide: string
-  readonly value: string
+  readonly value: string | null
+  readonly kind?: Kind
+  readonly grouped?: boolean
   readonly version: number
-  readonly box?: Box
+  readonly box?: Box | null
   readonly closed?: true
 }
 
@@ -30,6 +35,8 @@ export type ReadDeckAnswer = {
   readonly ok: true
   readonly revision: number
   readonly elements: readonly ReadElement[]
+  readonly slides: readonly IndexSlide[]
+  readonly index: "missing" | "pending" | "ready"
   readonly cursor?: string
 }
 
@@ -85,21 +92,31 @@ function closedTo(body: NodeRegister, runId: string | null): boolean {
   return body.runId !== runId
 }
 
-function elementOf(node: ElementId, body: NodeRegister, runId: string | null): ReadElement {
-  const box = currentBox(body)
+function elementOf(
+  node: ElementId,
+  body: NodeRegister | undefined,
+  runId: string | null,
+  indexed?: IndexElement,
+): ReadElement {
+  const box = (body === undefined ? null : currentBox(body)) ?? indexed?.box ?? null
   const held = {
     node,
     slide: shapeOf(node).slide,
-    value: currentValue(body),
-    version: version(body),
+    value: body === undefined ? (indexed?.value ?? null) : currentValue(body),
+    version: body === undefined ? 0 : version(body),
+    ...(indexed === undefined ? {} : { kind: indexed.kind, grouped: indexed.grouped }),
   }
-  const withBox = box === null ? held : { ...held, box }
-  if (!closedTo(body, runId)) return withBox
+  const withBox = box === null && indexed === undefined ? held : { ...held, box }
+  if (body === undefined || !closedTo(body, runId)) return withBox
   return { ...withBox, closed: true }
 }
 
 function knownNodes(register: Register): ElementId[] {
   const nodes: ElementId[] = []
+  for (const element of register.index?.elements ?? []) {
+    if (register.elements[element.node] !== undefined && !register.nodes.includes(element.node)) continue
+    nodes.push(element.node)
+  }
   for (const node of register.nodes) {
     if (readElementId(node) === undefined || register.elements[node] === undefined || nodes.includes(node)) continue
     nodes.push(node)
@@ -108,24 +125,31 @@ function knownNodes(register: Register): ElementId[] {
   return nodes
 }
 
-function readAnswer(revision: number, elements: readonly ReadElement[], cursor?: string): ReadDeckAnswer {
-  if (cursor === undefined) return { ok: true, revision, elements }
-  return { ok: true, revision, elements, cursor }
+type ReadHead = Pick<ReadDeckAnswer, "revision" | "slides" | "index">
+
+function readAnswer(head: ReadHead, elements: readonly ReadElement[], cursor?: string): ReadDeckAnswer {
+  if (cursor === undefined) return { ok: true, ...head, elements }
+  return { ok: true, ...head, elements, cursor }
 }
 
-function packRead(revision: number, elements: readonly ReadElement[]): ReadDeckAnswer {
+function packRead(
+  head: ReadHead,
+  nodes: readonly ElementId[],
+  elementOfNode: (node: ElementId) => ReadElement,
+): ReadDeckAnswer {
   const chosen: ReadElement[] = []
-  for (const [index, element] of elements.entries()) {
-    const more = index + 1 < elements.length
-    const trial = readAnswer(revision, [...chosen, element], more ? element.node : undefined)
-    if (chosen.length > 0 && !withinRead(readReport(readLead(revision), trial))) {
+  for (const [index, node] of nodes.entries()) {
+    const element = elementOfNode(node)
+    const more = index + 1 < nodes.length
+    const trial = readAnswer(head, [...chosen, element], more ? element.node : undefined)
+    if (chosen.length > 0 && !withinRead(readReport(readLead(head.revision), trial))) {
       const last = chosen[chosen.length - 1]
       if (last === undefined) break
-      return readAnswer(revision, chosen, last.node)
+      return readAnswer(head, chosen, last.node)
     }
     chosen.push(element)
   }
-  return readAnswer(revision, chosen)
+  return readAnswer(head, chosen)
 }
 
 export function readDeckPage(
@@ -137,12 +161,17 @@ export function readDeckPage(
     if (query.cursor !== undefined && !(node > query.cursor)) return false
     return true
   })
-  const elements = nodes.flatMap((node) => {
-    const body = deck.register.elements[node]
-    if (body === undefined) return []
-    return [elementOf(node, body, query.runId)]
-  })
-  return packRead(deck.revision, elements)
+  const index = deck.register.index
+  const indexed = new Map(index?.elements.map((element) => [element.node, element]))
+  return packRead(
+    {
+      revision: deck.revision,
+      slides: index?.slides ?? [],
+      index: index === undefined ? "missing" : index.elements.length === index.total ? "ready" : "pending",
+    },
+    nodes,
+    (node) => elementOf(node, deck.register.elements[node], query.runId, indexed.get(node)),
+  )
 }
 
 export function ownedDecks(rows: readonly OwnedRow[], email: string): OwnedDeck[] {

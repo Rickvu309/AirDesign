@@ -35,6 +35,7 @@ import { commitBox, commitEdit, flushPending, server, type CommitOutcome, type T
 import { boxStorable, landedBox } from "@/element-move"
 import { exportedParts } from "@/exported-parts"
 import { ensureMarkup } from "@/markup"
+import { backfillIndex } from "@/index-deck"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 
 type NamedShape = { readonly id: ElementId; readonly shape: ReadShape }
@@ -236,6 +237,7 @@ export function ThinDeck({ id }: { id: string }) {
       setCurrent(0)
       setTitle(stored.name ?? "")
       setPaintedDeck(id)
+      await backfillIndex(id, stored.parts)
       settle(await flushPending(connect, id))
     })()
     return () => {

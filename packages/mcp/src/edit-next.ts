@@ -17,6 +17,8 @@ export const editNext = {
     "This turn's run has ended on an element this call names, or another run holds one of them, and nothing landed. Call airdesign_stop_run with the runId your edit answers carried to end the turn, then edit in a new turn.",
   limit: `The value is over ${valueBytes} bytes, or the deck is at its size, element or slide limit. Send a shorter value, or tell the person the deck is full.`,
   dead: "The deck has no element with this id. Check the element id.",
+  "group-box":
+    "This element is inside a group. Its box uses group coordinates, so moving or resizing it is not supported. Edit its text instead.",
   present: "This element is already in the deck. Check the element id.",
   deck: "This session can reach no deck with this id. Check the deck id.",
   owner: "This deck belongs to another account. Work only on decks this account owns.",

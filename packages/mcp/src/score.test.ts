@@ -265,11 +265,11 @@ describe("score", () => {
   })
 
   it("scores every task", () => {
-    expect(suite).toHaveLength(41)
+    expect(suite).toHaveLength(42)
     const ids = suite.map((row) => row.task.id)
     const prompts = suite.map((row) => row.task.prompt)
-    expect(new Set(ids).size).toBe(41)
-    expect(new Set(prompts).size).toBe(41)
+    expect(new Set(ids).size).toBe(42)
+    expect(new Set(prompts).size).toBe(42)
     const starts = suite.map((row) => {
       const deck = row.task.deck()
       return JSON.stringify({
@@ -279,7 +279,7 @@ describe("score", () => {
         want: row.task.want,
       })
     })
-    expect(new Set(starts).size).toBe(41)
+    expect(new Set(starts).size).toBe(42)
     for (const row of suite) expect(score(row.task, row.reference).pass, row.task.id).toBe(true)
   })
 })

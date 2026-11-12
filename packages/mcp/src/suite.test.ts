@@ -3,10 +3,10 @@ import { score, suite } from "./index.js"
 
 describe("suite", () => {
   it("scores the reference and the wrong attempt for every task", () => {
-    expect(suite).toHaveLength(41)
+    expect(suite).toHaveLength(42)
     for (const row of suite) {
       const passed = score(row.task, row.reference)
-      expect(passed.pass, row.task.id).toBe(true)
+      expect(passed.pass, `${row.task.id}: ${JSON.stringify(passed.answers)} ${passed.reason}`).toBe(true)
       expect(passed.reason, row.task.id).toBe("ok")
       const failed = score(row.task, row.wrong.attempt)
       expect(failed.pass, row.task.id).toBe(false)

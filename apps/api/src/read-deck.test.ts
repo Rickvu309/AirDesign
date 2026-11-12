@@ -109,7 +109,7 @@ describe("an agent reads only decks its account owns", () => {
     expect((await ask(base, "POST", "/decks/open", { deck: "read-fuzz" }, cookie)).status).toBe(200)
     const good = await mcp(cookie, "airdesign_read_deck", { deck: "read-fuzz" })
     expect(good.status).toBe(200)
-    expect(answerOf(good.text)).toEqual({ ok: true, revision: 0, elements: [] })
+    expect(answerOf(good.text)).toEqual({ ok: true, revision: 0, elements: [], slides: [], index: "missing" })
     const listed = await mcp(cookie, "airdesign_list_decks", {})
     expect(listed.status).toBe(200)
     expect(answerOf(listed.text).decks).toContainEqual({ deck: "read-fuzz", name: "", trash: false })

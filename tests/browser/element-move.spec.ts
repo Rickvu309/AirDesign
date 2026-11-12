@@ -75,7 +75,7 @@ async function drag(page: Page, from: { x: number; y: number }, by: { x: number;
 }
 
 async function answerOpens(page: Page): Promise<void> {
-  await page.route("**/decks/open", async (route) => {
+  await page.route("**/decks/{open,index}", async (route) => {
     const body = route.request().postDataJSON() as { deck: string }
     await route.fulfill({
       contentType: "application/json",

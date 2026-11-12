@@ -190,4 +190,11 @@ alter table session.oauth_grant
   add constraint oauth_grant_connected check (code = 'open' or connected is not null);
 `,
   },
+  {
+    id: 7,
+    sql: `
+alter table deck.saved add column import_index jsonb;
+alter table deck.saved add constraint saved_deleted_index_empty check (deleted is null or import_index is null);
+`,
+  },
 ]

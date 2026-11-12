@@ -1,5 +1,5 @@
 import { isShapeTag, type ShapeKind } from "./shape-tree.js"
-import type { TextValue } from "@airdesign/document"
+import type { Kind, TextValue } from "@airdesign/document"
 import { markupDocument, type MarkupElement } from "./element-span.js"
 import { slideAddresses } from "./package-address.js"
 import type { ShapeBox } from "./shape-write.js"
@@ -14,6 +14,8 @@ export type ReadShape = {
   readonly box: ShapeBox | null
   readonly text: TextValue
   readonly locked: boolean
+  readonly grouped?: true
+  readonly contentKind?: Kind
 }
 
 const slidePart = /^ppt\/slides\/[^/]+\.xml$/
@@ -28,36 +30,42 @@ type ShapeParts = {
   id: string | null
   off: MarkupElement | null
   ext: MarkupElement | null
+  contentKind: Kind | null
 }
 
 type SlideShapes = {
   readonly parts: ReadonlyMap<number, ShapeParts>
   readonly fallback: Uint8Array
+  readonly grouped: Uint8Array
 }
 
 const slideShapes = (elements: readonly MarkupElement[]): SlideShapes => {
   const below = new Int32Array(elements.length).fill(-1)
   const hidden = new Uint8Array(elements.length)
   const fallback = new Uint8Array(elements.length)
+  const grouped = new Uint8Array(elements.length)
   const parts = new Map<number, ShapeParts>()
   for (const element of elements) {
     const parent = element.parent
     const shape = parent >= 0 ? (below[parent] ?? -1) : -1
     const covered = parent >= 0 ? (hidden[parent] ?? 0) : 0
+    grouped[element.index] = parent >= 0 ? (grouped[parent] === 1 || elements[parent]?.kind === "p:grpSp" ? 1 : 0) : 0
     fallback[element.index] = covered
     below[element.index] = isShapeTag(element.kind) ? element.index : shape
     hidden[element.index] = element.kind === fallbackKind ? 1 : covered
     if (shape < 0) continue
     let found = parts.get(shape)
     if (found === undefined) {
-      found = { id: null, off: null, ext: null }
+      found = { id: null, off: null, ext: null, contentKind: null }
       parts.set(shape, found)
     }
     if (found.id === null && element.kind === "p:cNvPr") found.id = element.id
     if (found.off === null && element.kind === "a:off") found.off = element
     if (found.ext === null && element.kind === "a:ext" && attr(element, "cx") !== null) found.ext = element
+    if (element.kind === "a:tbl") found.contentKind = "table"
+    if (element.kind === "c:chart") found.contentKind = "chart"
   }
-  return { parts, fallback }
+  return { parts, fallback, grouped }
 }
 
 const emu = (value: string | null): number | null => {
@@ -89,10 +97,10 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
     const children = markupChildren(elements)
     const fallbackIds = new Set<string>()
     const kept: ReadShape[] = []
-    const { parts: found, fallback } = slideShapes(elements)
+    const { parts: found, fallback, grouped } = slideShapes(elements)
     for (const shape of elements) {
       if (!isShapeTag(shape.kind)) continue
-      const { id = null, off = null, ext = null } = found.get(shape.index) ?? {}
+      const { id = null, off = null, ext = null, contentKind = null } = found.get(shape.index) ?? {}
       if (id === null) continue
       if (fallback[shape.index] === 1) {
         fallbackIds.add(id)
@@ -110,6 +118,8 @@ export function readShapes(parts: ReadonlyMap<string, Uint8Array>): readonly Rea
         box: x === null || y === null || cx === null || cy === null ? null : { x, y, cx, cy },
         text: shapeTextValue(children, bytes, shape),
         locked: tableIn(shape, children) !== undefined,
+        ...(grouped[shape.index] === 1 ? { grouped: true } : {}),
+        ...(shape.kind === "p:graphicFrame" ? { contentKind: contentKind ?? "kept" } : {}),
       })
     }
     for (const row of kept) rows.push(fallbackIds.has(row.shape) ? { ...row, locked: true } : row)

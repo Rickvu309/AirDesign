@@ -124,7 +124,7 @@ describe("readDeckPage", () => {
 
   it("returns an empty element list for a deck nobody has edited", () => {
     const answer: ReadDeckAnswer = readDeckPage(deckOf(0, openRegister("", "")), { runId: null })
-    expect(answer).toEqual({ ok: true, revision: 0, elements: [] })
+    expect(answer).toEqual({ ok: true, revision: 0, elements: [], slides: [], index: "missing" })
     expect(withinRead(readReport(readLead(answer.revision), answer))).toBe(true)
     expect(readTokens).toBe(8000)
   })

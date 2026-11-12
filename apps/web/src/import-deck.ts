@@ -1,6 +1,6 @@
 import { deckName, deckRoutes } from "@airdesign/catalog"
 import { connect, putParts } from "@airdesign/live"
-import { readPackage } from "@airdesign/pptx"
+import { indexPackage, readPackage } from "@airdesign/pptx"
 import { server } from "@/commit-edit"
 import type { ImportFailureReason } from "@/decks/import-failure-words"
 import { ensureMarkup } from "@/markup"
@@ -20,8 +20,12 @@ export async function saveDeck(
   parts: ReadonlyMap<string, Uint8Array>,
   file: Uint8Array,
   name?: string,
+  options: { readonly mint?: () => string } = {},
 ): Promise<string | null> {
-  const deckId = crypto.randomUUID()
+  const mint = options.mint ?? crypto.randomUUID.bind(crypto)
+  const deckId = mint()
+  const indexed = await connect(server).index(deckId, indexPackage(parts))
+  if (!indexed.ok) return null
   const saved = await putParts(deckId, { parts, file, ...(name === undefined ? {} : { name }) })
   return saved.ok ? deckId : null
 }
@@ -41,6 +45,7 @@ export async function nameImportedDeck(imported: { readonly id: string; readonly
   try {
     const opened = await connect(server).open(imported.id)
     if (!opened.ok) return
+    await connect(server).flush(imported.id)
     await fetch(deckRoutes.rename.path, {
       method: "POST",
       headers: { "content-type": "application/json" },

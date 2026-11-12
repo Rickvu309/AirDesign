@@ -78,6 +78,7 @@ const live = vi.hoisted(() => {
       return state.original
     },
     connect: () => ({
+      index: async () => ({ ok: true }),
       async enqueue(deck: string, value: string, node: string, floor: string) {
         if (state.refuse) return { ok: false, refusal: "limit" }
         sent.push({ deck, value, node, floor })
@@ -103,11 +104,10 @@ vi.mock("@airdesign/live", async () => {
   const actual = await vi.importActual<Record<string, unknown>>("@airdesign/live")
   return {
     ...actual,
-    connect: () => live.connect(),
-    getParts: (deck: string) => live.getParts(deck),
-    putParts: (deck: string, stored: { parts: ReadonlyMap<string, Uint8Array>; file: Uint8Array; name?: string }) =>
-      live.putParts(deck, stored),
-    fetchOriginal: (deck: string) => live.fetchOriginal(deck),
+    connect: live.connect,
+    getParts: live.getParts,
+    putParts: live.putParts,
+    fetchOriginal: live.fetchOriginal,
   }
 })
 

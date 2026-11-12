@@ -248,11 +248,32 @@ export function readSlot(key: string): Promise<unknown> {
 }
 
 export function writeSlot(key: string, value: unknown): Promise<void> {
+  return putSlots([{ key, value }])
+}
+
+export function installSlots(
+  absent: string,
+  puts: readonly { readonly key: string; readonly value: unknown }[],
+): Promise<void> {
+  return putSlots(puts, absent)
+}
+
+function putSlots(puts: readonly { readonly key: string; readonly value: unknown }[], absent?: string): Promise<void> {
   return openDatabase().then(
     (database) =>
       new Promise((resolve, reject) => {
         const transaction = database.transaction(storeName, "readwrite")
-        transaction.objectStore(storeName).put(value, key)
+        const store = transaction.objectStore(storeName)
+        const put = () => {
+          for (const { key, value } of puts) store.put(value, key)
+        }
+        if (absent === undefined) put()
+        else {
+          const request = store.getAll(IDBKeyRange.bound(absent, absent))
+          request.onsuccess = () => {
+            if (request.result.length === 0) put()
+          }
+        }
         transaction.oncomplete = () => {
           database.close()
           resolve()
