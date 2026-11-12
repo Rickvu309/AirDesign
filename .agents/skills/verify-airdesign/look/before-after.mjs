@@ -136,7 +136,7 @@ export function composeBlock(block, sides, shots) {
       missing: side.missing,
       png: crop(image, frame, scale(image), 0),
       boxes: shot.boxes.map((box) => relative(box, frame)),
-      texts: shot.texts.map((box) => relative(box, frame)).filter((box) => box !== null),
+      texts: (shot.texts ?? []).map((box) => relative(box, frame)).filter((box) => box !== null),
     }
   })
   const fresh = sides.length > 1 && shots[0].error !== undefined
