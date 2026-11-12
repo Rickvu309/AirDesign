@@ -31,7 +31,7 @@ export const chatBytes = 262_144
 export const leftOut = "Left out to save space on this device."
 export const closedAnswer = "The page closed before this call finished. Read the deck before you rely on it."
 
-const titleLength = 40
+const titleLength = 120
 const ends: ReadonlySet<string> = new Set<AiraEnd>([
   "working",
   "done",
@@ -39,6 +39,7 @@ const ends: ReadonlySet<string> = new Set<AiraEnd>([
   "failed",
   "out-of-usage",
   "signed-out",
+  "country",
   "undone",
 ])
 const toolStates: ReadonlySet<string> = new Set(["working", "done", "refused", "stopped"])
@@ -205,7 +206,7 @@ export function readSavedChat(raw: unknown, deck: string): SavedChat | undefined
   return {
     id: chat.id,
     deck,
-    title: chat.title,
+    title: chatTitle(chat.asked),
     asked: chat.asked,
     started: chat.started,
     updated: chat.updated,

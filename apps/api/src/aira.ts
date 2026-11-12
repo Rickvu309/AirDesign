@@ -344,6 +344,10 @@ async function* answered(
   }
 }
 
+export function airaOffered(country: string | string[] | undefined): boolean {
+  return typeof country === "string" && supportedCountries.has(country.toUpperCase())
+}
+
 export async function airaTurn(
   host: AiraHost,
   account: string,
@@ -355,7 +359,7 @@ export async function airaTurn(
   if (settings === undefined || !settings.on || settings.key === undefined || settings.secret === undefined) {
     return refuse(403, "off")
   }
-  if (typeof country !== "string" || !supportedCountries.has(country.toUpperCase())) return refuse(403, "country")
+  if (!airaOffered(country)) return refuse(403, "country")
   const parsed = readTurn(raw)
   if (!parsed.ok) return refuse(400, "body")
   const followed = host.closing.follow(account, parsed.ask, left)

@@ -19,6 +19,7 @@ describe("states", () => {
       "agent-done",
       "agent-failed",
       "agent-out-of-usage",
+      "agent-not-offered",
     ])
   })
 
@@ -27,6 +28,7 @@ describe("states", () => {
     expect(grouped.map((unit) => unit.states.map((state) => state.name))).toEqual([
       ["agent-empty", "agent-working", "agent-done", "agent-failed"],
       ["agent-out-of-usage"],
+      ["agent-not-offered"],
     ])
     expect(grouped[0].aira).toBe(true)
   })

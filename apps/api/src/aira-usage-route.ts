@@ -1,7 +1,7 @@
-import { airaRoutes, readNoFields } from "@airdesign/catalog"
+import { airaRoutes, countryHeader, readNoFields } from "@airdesign/catalog"
 
 import { sessionBody, type AccountHttp, type AccountVisit } from "./account-route.js"
-import { readUsage } from "./aira.js"
+import { airaOffered, readUsage } from "./aira.js"
 
 type UsageVisit = AccountVisit & { readonly now: () => number }
 
@@ -24,7 +24,12 @@ export function airaUsageRoute<Visit extends UsageVisit>(
       }
       visit.res.setHeader("cache-control", "no-store")
       const usage = await readUsage(visit.options.session, session.email, visit.now())
-      http.sendJson(visit.res, 200, { ok: true, account: { email: session.email }, usage })
+      http.sendJson(visit.res, 200, {
+        ok: true,
+        account: { email: session.email },
+        usage,
+        available: airaOffered(visit.req.headers[countryHeader]),
+      })
     },
   }
 }

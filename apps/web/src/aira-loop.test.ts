@@ -345,6 +345,18 @@ describe("Aira's loop in the browser", () => {
     expect(done.exchanges[0]?.end).toBe("signed-out")
   })
 
+  it("ends as not offered in the person's country when the server answers 403 country, and as failed for any other refusal", async () => {
+    const country = scripted([{ status: 403, body: { ok: false, refusal: "country" } }], [])
+    expect((await asking(airaChat(deck), "Hello", country)).done.exchanges[0]?.end).toBe("country")
+    for (const refusal of [
+      { status: 403, body: { ok: false, refusal: "off" } },
+      { status: 500, body: {} },
+    ]) {
+      const link = scripted([refusal], [])
+      expect((await asking(airaChat(deck), "Hello", link)).done.exchanges[0]?.end).toBe("failed")
+    }
+  })
+
   it("undoes every run an exchange landed, once, and marks an exchange whose run can no longer be undone", async () => {
     const link = scripted(
       [{ lines: [ended([editCall])] }, { lines: [ended([{ type: "text", text: "Ok" }])] }],

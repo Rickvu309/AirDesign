@@ -213,7 +213,8 @@ async function apiCall(run, name, bodyText, cookie) {
 
 export async function journeyKit({ run, name, page, context }) {
   const state = readState(run)
-  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes } = await catalog(state)
+  const { deckRoutes, signInRoutes, accountRoutes, oauthRoutes, airaRoutes, mcpRoutes, countryHeader } =
+    await catalog(state)
   const out = path.join(evidenceDir(run), `${name}-${String(Date.now())}`)
   mkdirSync(out, { recursive: true })
   let step = 0
@@ -228,6 +229,7 @@ export async function journeyKit({ run, name, page, context }) {
     oauthRoutes,
     airaRoutes,
     mcpRoutes,
+    countryHeader,
     aira(scripts) {
       writeFileSync(airaPath(run), JSON.stringify({ at: Date.now(), scripts }))
     },

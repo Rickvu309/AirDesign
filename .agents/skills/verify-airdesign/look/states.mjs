@@ -81,7 +81,22 @@ async function usageOpen(kit) {
   await expect(kit.page.getByRole("region", { name: "Weekly usage" })).toContainText("%")
 }
 
-async function askedOnce(kit) {
+async function notOffered(kit) {
+  await kit.signIn()
+  await kit.page.route(
+    (url) => url.pathname === kit.airaRoutes.usage.path,
+    (route) => route.continue({ headers: { ...route.request().headers(), [kit.countryHeader]: "CN" } }),
+  )
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
+  await expect(
+    kit.page.locator("[data-editor-panel]").getByText("Aira isn't available in your country or region yet.", {
+      exact: true,
+    }),
+  ).toBeVisible()
+}
+
+async function askedOnce(kit, ask = "Make the Q3 investor update lead with the number. Keep it calm.") {
   await reach(find("agent-empty"), kit)
   const week = 7 * 24 * 60 * 60 * 1000
   const usage = { used: 0.76, allowed: 2, resets: new Date(Math.ceil(Date.now() / week) * week).toISOString() }
@@ -95,17 +110,24 @@ async function askedOnce(kit) {
       }),
   )
   const composer = kit.page.getByRole("textbox", { name: "Ask Aira" })
-  await composer.fill("Make the Q3 investor update lead with the number. Keep it calm.")
+  await composer.fill(ask)
   await composer.press("Enter")
   await expect(kit.page.getByText(text, { exact: true })).toBeVisible()
 }
 
-async function historyOpen(kit) {
-  await askedOnce(kit)
+async function historyOpen(kit, ask) {
+  await askedOnce(kit, ask)
   const panel = kit.page.locator("[data-editor-panel]")
   await panel.getByRole("button", { name: "New chat", exact: true }).click()
   await panel.locator("[data-aira-history]").click()
   await expect(kit.page.locator("[data-aira-chats]")).toBeVisible()
+}
+
+async function historyLongTitle(kit) {
+  await historyOpen(
+    kit,
+    "Make the Q3 investor update lead with the number that matters most to the board, then the three risks behind it. Keep it calm.",
+  )
 }
 
 async function chatRestored(kit) {
@@ -171,9 +193,11 @@ export const states = [
   },
   { name: "usage-open", design: editor, drive: usageOpen },
   { name: "history-open", design: editor, drive: historyOpen },
+  { name: "history-long-title", design: editor, drive: historyLongTitle },
   { name: "chat-restored", design: editor, drive: chatRestored },
   { name: "usage-page", design: "/screens/s81-01-settings-settings-usage-tab", drive: usagePage },
   { name: "agent-out-of-usage", design: "/screens/s92-01-credits-out-of-usage-limit-reached", drive: outOfUsage },
+  { name: "agent-not-offered", design: editor, drive: notOffered },
   {
     name: "agents-empty",
     design: "/screens/s81-02-settings-settings-agents-tab",

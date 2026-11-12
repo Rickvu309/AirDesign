@@ -218,7 +218,7 @@ export async function signInBrowser(context: BrowserContext, cookie: string): Pr
 const forwarded = ["/decks/", "/sign-in/"]
 const streamed = "/aira/"
 
-export async function forward(page: Page, stack: Stack): Promise<string[]> {
+export async function forward(page: Page, stack: Stack, country = "US"): Promise<string[]> {
   const asked: string[] = []
   const { countryHeader } = await import("../../packages/catalog/src/index.ts")
   await page.route(
@@ -230,7 +230,7 @@ export async function forward(page: Page, stack: Stack): Promise<string[]> {
       const request = route.request()
       const { pathname, search } = new URL(request.url())
       asked.push(pathname)
-      const headers = { ...(await request.allHeaders()), [countryHeader]: "US" }
+      const headers = { ...(await request.allHeaders()), [countryHeader]: country }
       if (pathname.startsWith(streamed)) {
         await route.continue({ url: `${stack.hop}${pathname}${search}`, headers })
         return
