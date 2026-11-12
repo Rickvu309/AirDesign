@@ -52,6 +52,7 @@ import {
 import { slideEditsExportName, slideEditsLines } from "./slide-edits.mjs"
 import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
+import { browserEnv } from "../.agents/skills/verify-airdesign/bin/browser.mjs"
 import { blankCase, blankExportLines, blankExportName } from "./blank-export.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -71,7 +72,7 @@ const inputs = corpusInputs(root)
 
 const run = (command, args) =>
   new Promise((resolve, reject) => {
-    execFile(command, args, { cwd: root, env: process.env, maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
+    execFile(command, args, { cwd: root, env: browserEnv(process.env), maxBuffer: 64 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
         const failure = new Error([stdout, stderr].filter(Boolean).join("\n").trim() || `${command} failed`)
         failure.stdout = stdout
