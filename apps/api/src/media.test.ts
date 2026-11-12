@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { Client } from "pg"
 import { afterAll, beforeAll, expect, it } from "vitest"
+import { accountRoutes } from "@airdesign/catalog"
 import { limits } from "@airdesign/document"
 
 import { ask, signInByCode, postgresInfo, serve } from "./harness.js"
@@ -17,6 +18,25 @@ let cookie = ""
 let admin = new Client()
 let sequence = 0
 let close = async () => {}
+
+it("removes an account's picture rows and its device key when the person deletes the account", async () => {
+  const email = "media-device-leaving@example.com"
+  const leaving = await signInByCode(base, mails, email)
+  const id = `media-device-leaving${String(++sequence)}`
+  await post("/decks/open", { deck: id }, leaving)
+  await post("/decks/media/upload", { deck: id, bytes: bytes.length, sha256 }, leaving)
+  const device = await admin.query<{ device: string }>("select device from session.account where email = $1", [email])
+  const key = device.rows[0]?.device ?? ""
+  expect(key).toMatch(/^[0-9a-f]{32}$/)
+  const [media] = await keys(id)
+  const deleted = await post(accountRoutes.delete.path, { email }, leaving)
+  expect(deleted.json).toEqual({ ok: true })
+  expect(await keys(id)).toEqual([])
+  expect((await admin.query("select key from deck.original_delete where key = $1", [media])).rows).toEqual([
+    { key: media },
+  ])
+  expect((await admin.query("select email from session.account where device = $1", [key])).rows).toEqual([])
+})
 
 async function post(path: string, body: unknown, session = cookie, origin = base) {
   return ask(origin, "POST", path, body, session)

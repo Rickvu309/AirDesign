@@ -3,17 +3,25 @@ import { getPart, hex, owned, putPart } from "./part.js"
 import { post } from "./remote.js"
 import { readSlot, writeSlot } from "./store.js"
 
-const queueKey = (deck: string) => `${deck}\u0004media`
+const queueKey = (deck: string) => `${deck}\u0003media`
+const heldKey = (deck: string) => `${deck}\u0003pictures`
 
-async function queued(deck: string): Promise<readonly string[]> {
-  const stored = await readSlot(queueKey(deck))
+async function hashes(key: string): Promise<readonly string[]> {
+  const stored = await readSlot(key)
   return Array.isArray(stored) ? stored.filter((item): item is string => typeof item === "string") : []
 }
 
+async function listed(key: string, sha256: string): Promise<void> {
+  const known = await hashes(key)
+  if (!known.includes(sha256)) await writeSlot(key, [...known, sha256])
+}
+
+const queued = (deck: string) => hashes(queueKey(deck))
+
 export async function keepMedia(deck: string, bytes: Uint8Array): Promise<string> {
   const sha256 = await putPart(bytes)
-  const waiting = await queued(deck)
-  if (!waiting.includes(sha256)) await writeSlot(queueKey(deck), [...waiting, sha256])
+  await listed(heldKey(deck), sha256)
+  await listed(queueKey(deck), sha256)
   return sha256
 }
 
@@ -54,14 +62,16 @@ async function fetchMedia(deck: string, sha256: string): Promise<Uint8Array | un
     const digest = hex(await crypto.subtle.digest("SHA-256", owned(bytes)))
     if (bytes.byteLength !== signed.bytes || digest !== sha256) return undefined
     await putPart(bytes)
+    await listed(heldKey(deck), sha256)
     return bytes
   } catch {
     return undefined
   }
 }
 
-async function deviceMedia(sha256: string): Promise<Uint8Array | undefined> {
+async function deviceMedia(deck: string, sha256: string): Promise<Uint8Array | undefined> {
   try {
+    if (!(await hashes(heldKey(deck))).includes(sha256)) return undefined
     return await getPart(sha256)
   } catch {
     return undefined
@@ -71,7 +81,7 @@ async function deviceMedia(sha256: string): Promise<Uint8Array | undefined> {
 export async function readMedia(deck: string, hashes: readonly string[]): Promise<ReadonlyMap<string, Uint8Array>> {
   const found = new Map<string, Uint8Array>()
   for (const sha256 of hashes) {
-    const bytes = (await deviceMedia(sha256)) ?? (await fetchMedia(deck, sha256))
+    const bytes = (await deviceMedia(deck, sha256)) ?? (await fetchMedia(deck, sha256))
     if (bytes !== undefined) found.set(sha256, bytes)
   }
   return found
