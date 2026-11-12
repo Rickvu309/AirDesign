@@ -1,13 +1,13 @@
-import { accountRoutes, signOutRoutes } from "@airdesign/catalog"
+import { accountRoutes } from "@airdesign/catalog"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { disconnectBodyOf, disconnectTitleOf, productCopy } from "@/copy/product-copy"
 import { DangerDialog } from "@/decks/danger-dialog"
 import { DeckGlyph } from "@/decks/deck-glyph"
-import { DecksShell } from "@/decks/decks-shell"
 import { deckTime } from "@/decks/deck-time"
 import { ModuleRow } from "@/settings/module-row"
+import { SettingsPage, signOut } from "@/settings/settings-page"
 import { AgentTile } from "@/settings/settings-controls"
 import { settingsCopy } from "@/settings/settings-sample"
 import { signInAddress } from "@/thin-notice"
@@ -41,11 +41,6 @@ async function post(path: string, body: object) {
     window.location.assign(signInAddress(window.location))
   }
   return answer
-}
-
-async function signOut(): Promise<void> {
-  const response = await fetch(signOutRoutes.session.path, { method: signOutRoutes.session.method })
-  if (response.ok) window.location.assign(signInAddress(window.location))
 }
 
 function agentLabel(item: ConnectedAgent): string {
@@ -126,81 +121,13 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
   }
 
   return (
-    <div className="h-dvh w-full bg-background text-foreground">
-      <DecksShell
-        active="settings"
-        account={listing?.account ?? { email: "" }}
-        onSignOut={() => void signOut()}
-        onNavigate={navigate}
-      >
-        <div className="-mx-14 -mt-10 h-full overflow-y-auto pt-10 pb-12">
-          <div data-settings-header className="border-b border-line pb-6">
-            <div className="mx-auto w-[860px]">
-              <h1 className="text-[26px] leading-[34px] font-semibold tracking-[-0.5px] text-foreground">
-                {settingsCopy.title}
-              </h1>
-            </div>
-          </div>
-          <div data-settings-content className="mx-auto mt-7 flex w-[860px] flex-col gap-4">
-            <Card title={settingsCopy.agents} description={settingsCopy.agentsBody}>
-              {listing === null && unavailable ? (
-                <div
-                  role="alert"
-                  className="flex items-center justify-between gap-4 py-3 shadow-[inset_0_1px_0_0_var(--line)]"
-                >
-                  <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
-                    {productCopy.agentsFailed}
-                  </span>
-                  <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
-                    {productCopy.payTryAgain}
-                  </Button>
-                </div>
-              ) : listing === null ? undefined : listing.agents.length === 0 ? (
-                <div className="py-3 text-[length:var(--type-body)] leading-[18px] text-muted-foreground shadow-[inset_0_1px_0_0_var(--line)]">
-                  {settingsCopy.notConnected}
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  {listing.agents.map((item) => (
-                    <ModuleRow
-                      key={item.id}
-                      title={agentLabel(item)}
-                      status={connectedStatus(item.connected, now())}
-                      mark={agentMark(item)}
-                      action={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className={settingsAction}
-                          onClick={() => setDisconnecting(item)}
-                        >
-                          {productCopy.disconnect}
-                        </Button>
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </Card>
-            <Card title={settingsCopy.mcp} description={settingsCopy.mcpBody}>
-              <div className="flex h-10 w-full items-center rounded-lg bg-muted pr-1 pl-3">
-                <span className="min-w-0 flex-1 truncate text-[length:var(--type-dense)] leading-[17px] text-foreground">
-                  {listing?.mcp ?? ""}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={listing === null}
-                  className={settingsAction}
-                  onClick={() => void copyAddress()}
-                >
-                  {copied ? productCopy.done : settingsCopy.copy}
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </div>
-        {disconnecting !== null && (
+    <SettingsPage
+      tab="agents"
+      email={listing?.account.email ?? ""}
+      navigate={navigate}
+      onSignOut={() => void signOut()}
+      overlay={
+        disconnecting !== null && (
           <DangerDialog
             title={disconnectTitleOf(agentLabel(disconnecting))}
             body={disconnectBodyOf(agentLabel(disconnecting))}
@@ -223,8 +150,65 @@ export function AgentsPage({ now = Date.now, navigate }: { now?: () => number; n
               </p>
             ) : null}
           </DangerDialog>
+        )
+      }
+    >
+      <Card title={settingsCopy.agents} description={settingsCopy.agentsBody}>
+        {listing === null && unavailable ? (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-4 py-3 shadow-[inset_0_1px_0_0_var(--line)]"
+          >
+            <span className="text-[length:var(--type-body)] leading-[18px] text-muted-foreground">
+              {productCopy.agentsFailed}
+            </span>
+            <Button type="button" variant="outline" className={settingsAction} onClick={() => void refresh()}>
+              {productCopy.payTryAgain}
+            </Button>
+          </div>
+        ) : listing === null ? undefined : listing.agents.length === 0 ? (
+          <div className="py-3 text-[length:var(--type-body)] leading-[18px] text-muted-foreground shadow-[inset_0_1px_0_0_var(--line)]">
+            {settingsCopy.notConnected}
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {listing.agents.map((item) => (
+              <ModuleRow
+                key={item.id}
+                title={agentLabel(item)}
+                status={connectedStatus(item.connected, now())}
+                mark={agentMark(item)}
+                action={
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={settingsAction}
+                    onClick={() => setDisconnecting(item)}
+                  >
+                    {productCopy.disconnect}
+                  </Button>
+                }
+              />
+            ))}
+          </div>
         )}
-      </DecksShell>
-    </div>
+      </Card>
+      <Card title={settingsCopy.mcp} description={settingsCopy.mcpBody}>
+        <div className="flex h-10 w-full items-center rounded-lg bg-muted pr-1 pl-3">
+          <span className="min-w-0 flex-1 truncate text-[length:var(--type-dense)] leading-[17px] text-foreground">
+            {listing?.mcp ?? ""}
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={listing === null}
+            className={settingsAction}
+            onClick={() => void copyAddress()}
+          >
+            {copied ? productCopy.done : settingsCopy.copy}
+          </Button>
+        </div>
+      </Card>
+    </SettingsPage>
   )
 }

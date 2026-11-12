@@ -124,12 +124,23 @@ function inputCeiling(system: string, messages: readonly ModelMessage[]): number
   return bytesOf(system) + bytesOf(JSON.stringify(airaTools)) + bytesOf(JSON.stringify(messages)) + framing
 }
 
-function weekUsage(ledger: Stored): WeekUsage {
+function weekUsage(ledger: Pick<Stored, "spent" | "monday">): WeekUsage {
   return {
     used: ledger.spent / nano,
     allowed: allowance / nano,
     resets: new Date(ledger.monday + weekLength).toISOString(),
   }
+}
+
+export async function readUsage(db: Sql, account: string, now: number): Promise<WeekUsage> {
+  const found = await db.query<{ spent: string; monday: Date }>(
+    "select spent, monday from session.aira_ledger where email = $1",
+    [account],
+  )
+  const row = found.rows[0]
+  const current = weekStart(now)
+  if (row === undefined || row.monday.getTime() < current) return weekUsage({ spent: 0, monday: current })
+  return weekUsage({ spent: Number(row.spent), monday: row.monday.getTime() })
 }
 
 function refuse(status: number, refusal: string, extra: Record<string, unknown> = {}): AiraAnswer {

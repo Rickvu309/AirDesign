@@ -18,7 +18,7 @@ import type { OriginalStore } from "./original-store.js"
 import type { Sql } from "./pool.js"
 import { readUrl } from "./resource.js"
 
-type AccountVisit = {
+export type AccountVisit = {
   readonly options: {
     readonly session: Sql
     readonly deck: Sql
@@ -33,7 +33,7 @@ type AccountVisit = {
   readonly body: () => Promise<Buffer | undefined>
 }
 
-type AccountHttp<Visit extends AccountVisit> = {
+export type AccountHttp<Visit extends AccountVisit> = {
   readonly signedIn: (visit: Visit) => Promise<string | undefined>
   readonly answerSize: (res: ServerResponse) => void
   readonly parsedJson: (body: Buffer) => unknown
@@ -87,7 +87,7 @@ where g.principal = $1 and g.code = 'used' and not g.revoked
 order by g.connected desc, g.id desc
 `
 
-async function sessionBody<Visit extends AccountVisit>(
+export async function sessionBody<Visit extends AccountVisit>(
   http: AccountHttp<Visit>,
   visit: Visit,
 ): Promise<{ readonly email: string; readonly body: Buffer } | undefined> {

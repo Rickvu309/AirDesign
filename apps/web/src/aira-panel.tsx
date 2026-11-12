@@ -14,6 +14,7 @@ import { Asked, ExchangeView, UsagePop } from "@/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira-usage"
 import { AiraWelcome } from "@/aira-welcome"
 import { signInAddress } from "@/thin-notice"
+import { useWeekUsage } from "@/usage-load"
 
 const headControl = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] active:translate-y-0"
 
@@ -29,7 +30,7 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const popId = useId()
   const last = chat.exchanges.at(-1)
   const working = last?.end === "working"
-  const usage = chat.usage
+  const { usage, refresh: refreshUsage } = useWeekUsage(chat.usage)
   const limit = last?.end === "out-of-usage" && usage !== null ? airaBackOn(resetsWhen(usage.resets)) : undefined
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
@@ -112,7 +113,10 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
               aria-expanded={usageOpen}
               aria-controls={popId}
               className={cn("size-6 rounded-[var(--shape-control)]", headControl, usageOpen && "bg-line")}
-              onClick={() => setUsageOpen((open) => !open)}
+              onClick={() => {
+                if (!usageOpen) refreshUsage()
+                setUsageOpen(!usageOpen)
+              }}
             >
               <UsageRing fraction={usagePercent(usage) / 100} />
             </Button>

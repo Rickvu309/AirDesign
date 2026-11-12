@@ -11,14 +11,16 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message"
 import { airaCopy, airaLimitBodyOn } from "@/copy/aira-copy"
 import { productCopy, usageResetsOn } from "@/copy/product-copy"
+import { usageCopy } from "@/copy/usage-copy"
 import { LimitMark } from "@/credits/limit-panel"
 import { FailedMark } from "@/editor/agent-panel"
 import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon, SparkIcon } from "@/editor/editor-icons"
 import type { AiraExchange, AiraStep, ToolState } from "@/aira-loop"
 import { replyPieces, type ReplyPiece } from "@/aira-steps"
-import { resetsWhen, usagePercent } from "@/aira-usage"
+import { resetsShort, resetsWhen, usagePercent } from "@/aira-usage"
 import type { WeekUsage } from "@/aira-wire"
+import { settingsPaths } from "@/settings/settings-routes"
 
 type Segment =
   | { readonly from: "user"; readonly text: string }
@@ -198,7 +200,7 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
       id={id}
       role="region"
       aria-label={productCopy.usageTitle}
-      className="absolute top-[100px] right-3 z-10 flex w-[220px] flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]"
+      className="absolute top-11 right-3 z-10 flex w-[220px] flex-col gap-2 rounded-[var(--shape-card)] bg-white p-3 shadow-[0px_0px_0px_1px_var(--black-8),0px_8px_24px_var(--black-10)]"
     >
       <span className="flex items-center justify-between text-xs font-medium text-foreground">
         {productCopy.usageTitle}
@@ -207,8 +209,18 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
       <span className="flex h-1 rounded-full bg-line">
         <span className="block h-1 rounded-full bg-primary" style={{ width: `${String(percent)}%` }} />
       </span>
-      <span className="text-[length:var(--type-caption)] text-muted-foreground">
-        {usageResetsOn(resetsWhen(usage.resets))}
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-[length:var(--type-caption)] text-muted-foreground">
+          {usageResetsOn(resetsShort(usage.resets))}
+        </span>
+        <a
+          href={settingsPaths.usage}
+          aria-label={usageCopy.seeAllName}
+          className="-mr-1 flex shrink-0 items-center gap-0.5 rounded-[var(--shape-control)] px-1 text-[length:var(--type-caption)] font-medium text-foreground outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)]"
+        >
+          {usageCopy.seeAll}
+          <EditorIcon name="arrowr" size={11} />
+        </a>
       </span>
     </div>
   )

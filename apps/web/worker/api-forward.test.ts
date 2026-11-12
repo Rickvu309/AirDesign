@@ -256,6 +256,7 @@ describe("API forwarding", () => {
     "/decks/undo",
     "/mcp",
     "/aira/turn",
+    "/aira/usage",
     "/.well-known/oauth-protected-resource",
     "/.well-known/oauth-authorization-server",
   ])("forwards %s", async (path) => {
