@@ -1,5 +1,6 @@
 import {
   legacyElement,
+  readBox,
   readElementId,
   rootElement,
   type ElementId,
@@ -24,11 +25,16 @@ function element(raw: unknown): raw is ElementId {
   return raw === rootElement || raw === legacyElement || readElementId(raw) !== undefined
 }
 
+function rowValue(raw: Record<string, unknown>): boolean {
+  if (!Object.hasOwn(raw, "property")) return typeof raw.value === "string"
+  return raw.property === "box" && readBox(raw.value) !== null
+}
+
 function landed(raw: unknown): raw is Landed {
   return (
     record(raw) &&
     (raw.actor === "person" || raw.actor === "agent") &&
-    typeof raw.value === "string" &&
+    rowValue(raw) &&
     typeof raw.visible === "boolean" &&
     (raw.runId === undefined || typeof raw.runId === "string")
   )

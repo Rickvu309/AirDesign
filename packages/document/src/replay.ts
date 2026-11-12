@@ -1,9 +1,9 @@
 import { decide, foldRegister, version, type Register, type StoredRegister } from "./decide.js"
 import { rootElement, type ElementId } from "./element-id.js"
+import { storedValue, type Value } from "./value.js"
 
-export type Queued = {
+export type Queued = Value & {
   readonly base: number
-  readonly value: string
   readonly node?: ElementId
 }
 
@@ -28,8 +28,8 @@ export function replay(register: StoredRegister, pending: readonly Queued[]): Re
     const decision = decide(
       current,
       edit.node === undefined
-        ? { command: "person", value: edit.value }
-        : { command: "person", value: edit.value, node: edit.node },
+        ? { command: "person", ...storedValue(edit) }
+        : { command: "person", ...storedValue(edit), node: edit.node },
     )
     if (decision.decision !== "apply") {
       throw new Error("person edit refused")

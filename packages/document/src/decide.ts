@@ -1,13 +1,14 @@
+import type { Box } from "./box.js"
 import { legacyElement, rootElement, type ElementId } from "./element-id.js"
 import { limits, overLimit } from "./limits.js"
+import { storedValue, type Value } from "./value.js"
 
 export type Phase = "idle" | "running" | "stopped" | "undone"
 
 export type Actor = "person" | "agent"
 
-export type Landed = {
+export type Landed = Value & {
   readonly actor: Actor
-  readonly value: string
   readonly visible: boolean
   readonly runId?: string
 }
@@ -47,14 +48,13 @@ export type RootRegister = NodeRegister & {
 export type StoredRegister = Register | RootRegister
 
 export type Command =
-  | { readonly command: "person"; readonly value: string; readonly node?: ElementId }
-  | {
+  | (Value & { readonly command: "person"; readonly node?: ElementId })
+  | (Value & {
       readonly command: "agent"
       readonly runId: string
       readonly readAt: number
-      readonly value: string
       readonly node?: ElementId
-    }
+    })
   | { readonly command: "start"; readonly runId: string; readonly node?: ElementId }
   | { readonly command: "stop"; readonly runId: string; readonly node?: ElementId }
   | { readonly command: "undo"; readonly runId: string; readonly node?: ElementId }
@@ -114,13 +114,21 @@ export function version(register: NodeRegister): number {
   return register.version ?? register.landed.length + hiddenRows(register).length
 }
 
+function textRows(register: NodeRegister): readonly string[] {
+  return visibleRows(register).flatMap((row) => (row.property === "box" ? [] : [row.value]))
+}
+
 export function currentValue(register: NodeRegister): string {
-  const last = visibleRows(register).at(-1)
-  return last === undefined ? register.floor : last.value
+  return textRows(register).at(-1) ?? register.floor
 }
 
 export function history(register: NodeRegister): readonly string[] {
-  return visibleRows(register).map((row) => row.value)
+  return textRows(register)
+}
+
+export function currentBox(register: NodeRegister): Box | null {
+  const boxes = visibleRows(register).flatMap((row) => (row.property === "box" ? [row.value] : []))
+  return boxes.at(-1) ?? null
 }
 
 function nodeOf(register: NodeRegister): NodeRegister {
@@ -187,9 +195,9 @@ function place(register: Register, id: ElementId, body: NodeRegister): Decision 
   return apply({ ...register, elements: { ...register.elements, [id]: body } }, body.route)
 }
 
-function personEdit(register: NodeRegister, value: string): NodeRegister {
+function personEdit(register: NodeRegister, edit: Value): NodeRegister {
   const guarded = register.phase === "running" ? true : register.guarded
-  const landed = [...register.landed, { actor: "person" as const, value, visible: true }]
+  const landed = [...register.landed, { actor: "person" as const, ...storedValue(edit), visible: true }]
   return { ...register, landed, version: version(register) + 1, guarded }
 }
 
@@ -211,7 +219,7 @@ function startRun(register: NodeRegister, runId: string): Edited {
   }
 }
 
-function agentEdit(register: NodeRegister, runId: string, readAt: number, value: string): Edited {
+function agentEdit(register: NodeRegister, runId: string, readAt: number, edit: Value): Edited {
   if (register.phase !== "running" || register.runId !== runId) {
     return { decision: "refuse", code: "run-fenced" }
   }
@@ -221,7 +229,7 @@ function agentEdit(register: NodeRegister, runId: string, readAt: number, value:
   if (readAt !== version(register) && readAt !== register.claimed) {
     return { decision: "refuse", code: "stale" }
   }
-  const landed = [...register.landed, { actor: "agent" as const, value, visible: true, runId }]
+  const landed = [...register.landed, { actor: "agent" as const, ...storedValue(edit), visible: true, runId }]
   return { decision: "apply", body: { ...register, landed, version: version(register) + 1, claimed: readAt } }
 }
 
@@ -301,11 +309,11 @@ function editNode(register: Register, id: ElementId, command: Command): Decision
     throw new Error("missing node")
   }
   if (command.command === "person") {
-    return place(register, id, personEdit(current, command.value))
+    return place(register, id, personEdit(current, command))
   }
   const edited =
     command.command === "agent"
-      ? agentEdit(current, command.runId, command.readAt, command.value)
+      ? agentEdit(current, command.runId, command.readAt, command)
       : command.command === "start"
         ? startRun(current, command.runId)
         : command.command === "stop"

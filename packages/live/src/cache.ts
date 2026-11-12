@@ -1,19 +1,25 @@
 import { readDeckId, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
 import {
-  bytesOf,
+  currentBox,
   currentValue,
   decide,
   legacyElement,
   rootElement,
   limits,
   openRegister,
+  readBox,
   readElementId,
   replay,
+  storedValue,
   unsent,
+  valueBytes,
   version,
+  type Box,
   type ElementId,
+  type NodeRegister,
   type Queued,
   type Register,
+  type Value,
 } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote, WatchResult } from "./remote.js"
 import {
@@ -43,7 +49,9 @@ export type OpenDeckResult =
     }
   | { ok: false; readonly refusal: WireRefusal }
 
-export type EnqueueResult = { ok: true; readonly painted: string } | { ok: false; readonly refusal: WireRefusal }
+export type EnqueueResult<Painted = string> =
+  | { ok: true; readonly painted: Painted }
+  | { ok: false; readonly refusal: WireRefusal }
 
 function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
   const into: ConfirmedRow[] = []
@@ -54,13 +62,15 @@ function rowsFromRegister(deck: DeckId, register: Register): ConfirmedRow[] {
     const node = id === rootElement ? undefined : id
     for (const landed of body.landed) {
       if (!landed.visible) continue
-      revision = fitConfirmed(deck, revision, landed.value, node, into)
+      revision = fitConfirmed(deck, revision, landed, node, into)
     }
   }
   return into
 }
 
 type WiredRow = PendingRow & { readonly node: ElementId }
+
+type Enqueued = { ok: true; readonly body: NodeRegister | undefined } | { ok: false; readonly refusal: WireRefusal }
 
 function wired(row: PendingRow): row is WiredRow {
   return readElementId(row.node) !== undefined
@@ -81,12 +91,12 @@ function played(deck: DeckId, confirmed: readonly ConfirmedRow[], pending: reado
     if (row.node !== undefined && !register.nodes.includes(row.node)) continue
     const base = versions.get(row.node ?? "") ?? 0
     versions.set(row.node ?? "", base + 1)
-    seeded.push(row.node === undefined ? { base, value: row.value } : { base, value: row.value, node: row.node })
+    seeded.push(row.node === undefined ? { base, ...storedValue(row) } : { base, ...storedValue(row), node: row.node })
   }
   for (const row of pending) register = opened(register, row.node, row.floor ?? "")
   const queued = pending
     .filter((row) => register.nodes.includes(row.node))
-    .map((row) => ({ base: row.base, value: row.value, node: row.node }))
+    .map((row) => ({ base: row.base, ...storedValue(row), node: row.node }))
   return replay(replay(register, seeded), queued)
 }
 
@@ -123,8 +133,8 @@ async function readDeck(deck: DeckId): Promise<StoredRow[]> {
 }
 
 function wireOf(row: WiredRow): WireEdit {
-  if (row.floor === undefined) return { value: row.value, node: row.node }
-  return { value: row.value, node: row.node, floor: row.floor }
+  if (row.floor === undefined) return { ...storedValue(row), node: row.node }
+  return { ...storedValue(row), node: row.node, floor: row.floor }
 }
 
 function view(
@@ -206,7 +216,7 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
         return { ok: false, refusal: "payload" }
       }
       const stored: ConfirmedRow[] = []
-      for (const row of rowsInBatch) revision = fitConfirmed(deck, revision, row.value, row.node, stored)
+      for (const row of rowsInBatch) revision = fitConfirmed(deck, revision, row, row.node, stored)
       await writeRows(
         stored.map((row) => ({ key: rowKey(deck, "confirmed", row.revision), row })),
         rowsInBatch.map((row) => rowKey(deck, "pending", row.order)),
@@ -216,35 +226,45 @@ export function connect(remote: Remote, options: { readonly once?: () => string 
     return result
   }
 
+  function enqueueValue(deck: string, edit: Value, node: ElementId, floor: string): Promise<Enqueued> {
+    const parsed = readDeckId(deck)
+    if (!parsed.ok) return Promise.resolve({ ok: false, refusal: "deck" })
+    const named = readElementId(node)
+    if (named === undefined) return Promise.resolve({ ok: false, refusal: "dead" })
+    return changeRows<Enqueued>(parsed.deck, (rows) => {
+      const { confirmed, pending } = split(rows)
+      let editing = played(parsed.deck, confirmed, pending)
+      let first: string | undefined
+      if (!editing.nodes.includes(named)) {
+        const added = decide(editing, { command: "add", node: named, floor, route: editing.route })
+        if (added.decision === "refuse") return { puts: [], result: { ok: false, refusal: added.code } }
+        editing = added.register
+        first = floor
+      }
+      const decision = decide(editing, { command: "person", ...edit, node: named })
+      if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
+      if (valueBytes(edit) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
+      const body = decision.register.elements[named]
+      const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
+      const before = editing.elements[named]
+      const base = before === undefined ? 0 : version(before)
+      const row = pendingRow(parsed.deck, order, base, edit, named, first)
+      return { puts: [{ key: rowKey(parsed.deck, "pending", order), row }], result: { ok: true, body } }
+    })
+  }
+
   return {
     async enqueue(deck: string, value: string, node: ElementId, floor: string): Promise<EnqueueResult> {
-      const parsed = readDeckId(deck)
-      if (!parsed.ok) return { ok: false, refusal: "deck" }
-      const named = readElementId(node)
-      if (named === undefined) return { ok: false, refusal: "dead" }
-      return changeRows<EnqueueResult>(parsed.deck, (rows) => {
-        const { confirmed, pending } = split(rows)
-        let editing = played(parsed.deck, confirmed, pending)
-        let first: string | undefined
-        if (!editing.nodes.includes(named)) {
-          const added = decide(editing, { command: "add", node: named, floor, route: editing.route })
-          if (added.decision === "refuse") return { puts: [], result: { ok: false, refusal: added.code } }
-          editing = added.register
-          first = floor
-        }
-        const decision = decide(editing, { command: "person", value, node: named })
-        if (decision.decision === "refuse") return { puts: [], result: { ok: false, refusal: decision.code } }
-        if (bytesOf(value) > limits.valueBytes) return { puts: [], result: { ok: false, refusal: "limit" } }
-        const order = rows.filter(isPending).reduce((max, row) => Math.max(max, row.order + 1), 0)
-        const before = editing.elements[named]
-        const base = before === undefined ? 0 : version(before)
-        const row = pendingRow(parsed.deck, order, base, value, named, first)
-        const body = decision.register.elements[named]
-        return {
-          puts: [{ key: rowKey(parsed.deck, "pending", order), row }],
-          result: { ok: true, painted: body === undefined ? value : currentValue(body) },
-        }
-      })
+      const result = await enqueueValue(deck, { value }, node, floor)
+      if (!result.ok) return result
+      return { ok: true, painted: result.body === undefined ? value : currentValue(result.body) }
+    },
+    async enqueueBox(deck: string, box: Box, node: ElementId, floor: string): Promise<EnqueueResult<Box>> {
+      const read = readBox(box)
+      if (read === null) return { ok: false, refusal: "field" }
+      const result = await enqueueValue(deck, { property: "box", value: read }, node, floor)
+      if (!result.ok) return result
+      return { ok: true, painted: (result.body === undefined ? null : currentBox(result.body)) ?? read }
     },
     async open(deck: string): Promise<OpenOnceResult> {
       const parsed = readDeckId(deck)

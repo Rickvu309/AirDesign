@@ -1,4 +1,5 @@
-import { readAgentEdit, readCapture, readRun, type WireReader } from "./wire.js"
+import { readAgentEdit } from "./edit-wire.js"
+import { readCapture, readRun, type WireReader } from "./wire.js"
 
 type OpDetails = {
   readonly kind: "query" | "command" | "action" | "stream"

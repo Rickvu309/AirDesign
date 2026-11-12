@@ -8,7 +8,7 @@ import {
   type CommitResult,
   type WatchResult,
 } from "@airdesign/catalog"
-import { decide, openRegister, type Register } from "@airdesign/document"
+import { decide, openRegister, storedValue, type Register } from "@airdesign/document"
 
 export type { OpenResult, CommitResult, WatchResult } from "@airdesign/catalog"
 
@@ -79,7 +79,7 @@ export function memoryRemote(): Remote {
           if (opened.decision === "refuse") return { ok: false, refusal: opened.code }
           register = opened.register
         }
-        const decision = decide(register, { command: "person", value: edit.value, node: edit.node })
+        const decision = decide(register, { command: "person", ...storedValue(edit), node: edit.node })
         if (decision.decision === "refuse") return { ok: false, refusal: decision.code }
         register = decision.register
       }

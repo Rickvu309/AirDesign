@@ -2,6 +2,10 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import {
+  boxExportLines,
+  boxExportName,
+  boxOriginalName,
+  boxRoutes,
   freshExports,
   judgedExportNames,
   paragraphExportLines,
@@ -16,23 +20,27 @@ process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }))
 
 const deck = path.join(dir, "exported-deck.pptx")
 const paragraphs = path.join(dir, paragraphsExportName)
+const box = path.join(dir, boxExportName)
 fs.writeFileSync(deck, "old deck")
 fs.writeFileSync(paragraphs, "old paragraphs")
+fs.writeFileSync(box, "old box")
 let seen = ""
 const spec = await freshExports({
   deck,
   paragraphs,
+  box,
   run: async () => {
-    seen = `${fs.existsSync(deck)} ${fs.existsSync(paragraphs)}`
+    seen = `${fs.existsSync(deck)} ${fs.existsSync(paragraphs)} ${fs.existsSync(box)}`
     fs.writeFileSync(deck, "fresh deck")
+    fs.writeFileSync(paragraphs, "fresh paragraphs")
   },
 })
-if (seen !== "false false") throw new Error(`a stale export was there when the spec ran: ${seen}`)
-if (spec.ok) throw new Error("a spec that wrote no exported-paragraphs.pptx passed")
-if (!spec.line.includes(`wrote no tests/browser/${paragraphsExportName}`)) throw new Error(spec.line)
+if (seen !== "false false false") throw new Error(`a stale export was there when the spec ran: ${seen}`)
+if (spec.ok) throw new Error("a spec that wrote no exported-box.pptx passed")
+if (!spec.line.includes(`wrote no tests/browser/${boxExportName}`)) throw new Error(spec.line)
 
-if (judgedExportNames({ ok: true }).join() !== paragraphsExportName) {
-  throw new Error("a good spec must judge both exports")
+if (judgedExportNames({ ok: true }).join() !== [paragraphsExportName, boxExportName].join()) {
+  throw new Error("a good spec must judge the paragraph and box exports")
 }
 if (judgedExportNames({ ok: false }).length !== 0) {
   throw new Error("a failed spec must judge no export")
@@ -56,26 +64,35 @@ if (!files.includes("route.pptx") || !files.includes(path.join("fixtures", "clea
 
 const fakePptx = (failures) => ({
   paragraphExportFailures: () => failures,
+  routeExportFailures: (before, after, routes) => (routes === boxRoutes ? failures : ["routes"]),
   newValidatorErrors: (before, after) => after.filter((item) => !before.includes(item)),
   newDuplicateShapeIds: (before, after) => after.filter((item) => !before.includes(item)),
 })
 const judgedParts = new Map([
   [paragraphsOriginalName, new Map()],
   [paragraphsExportName, new Map()],
+  [boxOriginalName, new Map()],
+  [boxExportName, new Map()],
 ])
 const answers = ({ before = [], after = [], idsBefore = [], idsAfter = [] } = {}) => ({
   parts: judgedParts,
   lists: new Map([
     [paragraphsOriginalName, before],
     [paragraphsExportName, after],
+    [boxOriginalName, before],
+    [boxExportName, after],
   ]),
   ids: new Map([
     [paragraphsOriginalName, idsBefore],
     [paragraphsExportName, idsAfter],
+    [boxOriginalName, idsBefore],
+    [boxExportName, idsAfter],
   ]),
   orders: new Map([
     [paragraphsOriginalName, []],
     [paragraphsExportName, []],
+    [boxOriginalName, []],
+    [boxExportName, []],
   ]),
 })
 const lines = (failures, input) => paragraphExportLines({ pptx: fakePptx(failures), ...answers(input) })
@@ -99,5 +116,17 @@ try {
 }
 if (missing !== "paragraph export") throw new Error("a missing export was not refused")
 if (paragraphsExpected.value.length !== 5) throw new Error("the expected value changed")
+
+const boxLines = (failures, input) => boxExportLines({ pptx: fakePptx(failures), ...answers(input) })
+if (boxLines([]).length !== 0) throw new Error("a clean box export produced a failure")
+if (!boxLines(["ppt/slides/slide1.xml bytes"]).includes("box export ppt/slides/slide1.xml bytes")) {
+  throw new Error("the box route failures were dropped")
+}
+if (!boxLines([], { before: ["old"], after: ["old", "new"] }).some((line) => line.startsWith("box export validator"))) {
+  throw new Error("a new validator error on the box export was ignored")
+}
+if (boxRoutes.some((route) => route.part !== "ppt/slides/slide1.xml" || route.shape !== "2")) {
+  throw new Error("the box routes left the shape the box export spec moves")
+}
 
 console.log("paragraph export tests passed")

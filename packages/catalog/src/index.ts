@@ -18,17 +18,14 @@ export {
 export {
   notifyKey,
   parseNotifyKey,
-  readAgentEdit,
   readApprovalRequest,
   readBearer,
   readCapture,
   readClientMetadata,
   readClientRequest,
   readCode,
-  readCommit,
   readDeckId,
   readDecks,
-  readEdit,
   readEmail,
   readHost,
   readLinkToken,
@@ -45,9 +42,8 @@ export {
   type DeckId,
   type FormPairs,
   type TokenRequest,
-  type WireChange,
-  type WireEdit,
   type WireRunElement,
 } from "./wire.js"
+export { readAgentEdit, readCommit, readEdit, type WireChange, type WireEdit } from "./edit-wire.js"
 
 export { mcpRoutes, mcpPaths, oauthAuthorizePath } from "./mcp-routes.js"

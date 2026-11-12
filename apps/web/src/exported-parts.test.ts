@@ -1,4 +1,5 @@
-import { decide, elementId, openRegister, writeTextValue } from "@airdesign/document"
+import { decide, elementId, openRegister, writeTextValue, type Box, type Command } from "@airdesign/document"
+import { applyRoute } from "@airdesign/pptx"
 import { expect, it } from "vitest"
 import { exportedParts } from "./exported-parts"
 import { editedRegister, fallbackSlide, onSlide, twoBoxSlide, xml } from "./slide-fixtures"
@@ -76,4 +77,69 @@ it("an export of a stored edit refuses the fallback box that shares the edited i
   const parts = onSlide(slide)
   expect(() => exportedParts(parts, editedRegister([["256.2", "typed"]]))).toThrow(/text-shape/)
   expect(parts.get("ppt/slides/slide1.xml")).toEqual(saved)
+})
+
+const box = { x: 914400, y: 457200, cx: 1828800, cy: 914400 }
+const part = "ppt/slides/slide1.xml"
+
+function moved(edits: readonly (readonly [string, Box | string])[]) {
+  let register = openRegister("", "clean")
+  const commands: Command[] = []
+  for (const [id, value] of edits) {
+    const node = elementId(id)
+    if (!commands.some((command) => command.node === node))
+      commands.push({ command: "add", node, floor: "", route: "clean" })
+    commands.push(
+      typeof value === "string"
+        ? { command: "person", node, value }
+        : { command: "person", node, property: "box", value },
+    )
+  }
+  for (const command of commands) {
+    const decision = decide(register, command)
+    if (decision.decision === "refuse") throw new Error(decision.code)
+    register = decision.register
+  }
+  return register
+}
+
+it("an export writes an element's box through the move and resize routes and keeps every other part", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const next = exportedParts(parts, moved([["256.3", box]]))
+  const routed = applyRoute(applyRoute(parts, { name: "move", part, shape: "3", ...box }), {
+    name: "resize",
+    part,
+    shape: "3",
+    ...box,
+  })
+  expect(next.get(part)).toEqual(routed.get(part))
+  expect(new TextDecoder().decode(next.get(part))).toContain(
+    '<p:cNvPr id="3" name="Body"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="914400" y="457200"/><a:ext cx="1828800" cy="914400"/></a:xfrm></p:spPr>',
+  )
+  for (const name of parts.keys()) if (name !== part) expect(next.get(name)).toBe(parts.get(name))
+})
+
+it("an export writes an element's text and its last box together", () => {
+  const parts = onSlide(xml(twoBoxSlide))
+  const last = { x: 0, y: 0, cx: 1, cy: 2 }
+  const next = new TextDecoder().decode(
+    exportedParts(
+      parts,
+      moved([
+        ["256.2", box],
+        ["256.2", "Hi"],
+        ["256.2", last],
+      ]),
+    ).get(part),
+  )
+  expect(next.match(/<a:t>[^<]*<\/a:t>/g)).toEqual(["<a:t>Hi</a:t>", "<a:t>World</a:t>"])
+  expect(next.match(/<a:xfrm>.*?<\/a:xfrm>/g)).toEqual(['<a:xfrm><a:off x="0" y="0"/><a:ext cx="1" cy="2"/></a:xfrm>'])
+})
+
+it("an export of a box refuses the fallback box that shares the moved id and writes nothing", () => {
+  const slide = new TextEncoder().encode(fallbackSlide)
+  const saved = Uint8Array.from(slide)
+  const parts = onSlide(slide)
+  expect(() => exportedParts(parts, moved([["256.2", box]]))).toThrow(/box-shape/)
+  expect(parts.get(part)).toEqual(saved)
 })

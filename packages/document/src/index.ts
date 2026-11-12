@@ -15,6 +15,7 @@ export { replay, unsent, type Queued } from "./replay.js"
 export { bytesOf, limits, overLimit } from "./limits.js"
 export {
   compactChain,
+  currentBox,
   currentValue,
   decide,
   decideUndo,
@@ -33,6 +34,8 @@ export {
   type StoredRegister,
   type Refusal,
 } from "./decide.js"
+export { coordinates, readBox, type Box } from "./box.js"
+export { storedValue, valueBytes, type Value } from "./value.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"

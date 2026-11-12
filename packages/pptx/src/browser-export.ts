@@ -4,7 +4,7 @@ import { markupDocument, type MarkupElement } from "./element-span.js"
 import { encodeUtf8 } from "./package-bytes.js"
 import { readShapes } from "./read-shapes.js"
 import { xmlText } from "./shape-write.js"
-import { applyRoute } from "./slide-route.js"
+import { applyRoute, type SlideRoute } from "./slide-route.js"
 import { shownText } from "./text-value-route.js"
 
 const slidePart = "ppt/slides/slide1.xml"
@@ -146,5 +146,21 @@ export function paragraphExportFailures(
   }
   const routed = applyRoute(original, { name: "text", part, shape, value }).get(part)
   if (routed === undefined || !sameBytes(routed, afterSlide)) failures.push(`${part} bytes`)
+  return failures
+}
+
+export function routeExportFailures(
+  original: ReadonlyMap<string, Uint8Array>,
+  exported: ReadonlyMap<string, Uint8Array>,
+  routes: readonly Exclude<SlideRoute, { readonly name: "add" }>[],
+): readonly string[] {
+  const part = routes[0]?.part
+  if (part === undefined || routes.some((route) => route.part !== part)) throw new Error("route part")
+  const failures = packageFailures(original, exported, part)
+  const afterSlide = exported.get(part)
+  if (original.get(part) === undefined || afterSlide === undefined) return failures
+  const routed = routes.reduce<ReadonlyMap<string, Uint8Array>>((parts, route) => applyRoute(parts, route), original)
+  const written = routed.get(part)
+  if (written === undefined || !sameBytes(written, afterSlide)) failures.push(`${part} bytes`)
   return failures
 }

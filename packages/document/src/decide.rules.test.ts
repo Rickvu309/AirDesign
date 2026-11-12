@@ -11,7 +11,16 @@ import {
   type Refusal,
 } from "./decide.js"
 import { elementId, rootElement, type ElementId } from "./element-id.js"
-import { bodyFrom, copyRegister, freezeRegister, openedBody, walkRegisters, withOpened } from "./decide.walk.js"
+import {
+  bodyFrom,
+  copyRegister,
+  freezeRegister,
+  openedBody,
+  walkRegisters,
+  walkStart,
+  withOpened,
+} from "./decide.walk.js"
+import { storedValue } from "./value.js"
 
 type View = NodeRegister & { readonly nodes: readonly ElementId[]; readonly readNodes: readonly ElementId[] | null }
 
@@ -625,7 +634,7 @@ function nextRegister(register: View, command: Command, effect: Effect): View {
       }
       return {
         ...register,
-        landed: [...register.landed, { actor: "person", value: command.value, visible: true }],
+        landed: [...register.landed, { actor: "person", ...storedValue(command), visible: true }],
         version: version(register) + 1,
         guarded: effect.guarded === "set" ? true : register.guarded,
       }
@@ -666,7 +675,7 @@ function nextRegister(register: View, command: Command, effect: Effect): View {
       }
       return {
         ...register,
-        landed: [...register.landed, { actor: "agent", value: command.value, visible: true, runId: command.runId }],
+        landed: [...register.landed, { actor: "agent", ...storedValue(command), visible: true, runId: command.runId }],
         version: version(register) + 1,
         claimed: command.readAt,
       }
@@ -701,14 +710,6 @@ function writtenBack(register: Register, view: View, target: ElementId | null): 
     readNodes: view.readNodes,
     elements: { ...register.elements, [target ?? rootElement]: bodyFrom(view) },
   }
-}
-
-function walkStart(target: ElementId | null): Register {
-  const opened = openRegister("floor", "slide")
-  if (target === null) return freezeRegister(opened)
-  const added = decide(opened, { command: "add", node: target, floor: "floor", route: "part" })
-  if (added.decision !== "apply") throw new Error("add")
-  return freezeRegister(added.register)
 }
 
 function aimedAt(command: Command, target: ElementId | null): Command {
