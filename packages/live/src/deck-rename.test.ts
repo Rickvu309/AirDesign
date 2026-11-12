@@ -69,3 +69,21 @@ it("refuses a deck that is not on the device", async () => {
   vi.stubGlobal("fetch", answering([]))
   await expect(renameDeck("absent-deck", "Name")).resolves.toEqual({ ok: false })
 })
+
+it("never has two renames of one deck in flight, so the newest name is the one the server keeps", async () => {
+  let open = 0
+  let most = 0
+  const sent: string[] = []
+  vi.stubGlobal("fetch", async (_path: string, init: RequestInit) => {
+    const body: { deck: string; name: string } = JSON.parse(String(init.body))
+    open++
+    most = Math.max(most, open)
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    open--
+    sent.push(body.name)
+    return new Response(JSON.stringify({ ok: true, deck: body.deck, name: body.name }))
+  })
+  await Promise.all([renameDeck("blank-one", "First"), renameDeck("blank-one", "Second")])
+  expect(most).toBe(1)
+  expect(sent.at(-1)).toBe("Second")
+})

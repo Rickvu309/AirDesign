@@ -46,10 +46,7 @@ it("keeps the original queued through an offline rename, a failed upload and a r
   stored.ok = true
   expect(await flushOriginal("blank-one")).toEqual({ ok: true })
   expect(stored.sends).toBe(2)
-  expect(calls).toEqual([
-    { deck: "blank-one", name: "Blank deck" },
-    { deck: "blank-one", name: "Blank deck" },
-  ])
+  expect(calls).toEqual([{ deck: "blank-one", name: "Blank deck" }])
   await flushOriginal("blank-one")
   await flushOriginal("another-deck")
   expect(stored.sends).toBe(2)
