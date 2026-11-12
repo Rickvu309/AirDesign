@@ -16,7 +16,7 @@ import { editRefusal, runEnded, runRefusal, type EditAnswer } from "./edit-answe
 import { agentCaller, stopLiveRuns } from "./run.js"
 import { editNext, type EditCode } from "./edit-next.js"
 import { listDecksTool, readDeckTool } from "./read-tool.js"
-import { heldRun, liveTurn, type Turn, type Turns } from "./turn.js"
+import { liveTurn, type Turn, type Turns } from "./turn.js"
 
 export type AgentCaller = Extract<Caller, { readonly actor: "agent" }>
 
