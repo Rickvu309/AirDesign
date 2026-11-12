@@ -13,12 +13,27 @@ import { AiraComposer } from "@/aira-composer"
 import { Asked, ExchangeView, UsagePop } from "@/aira-reply"
 import { resetsWhen, usagePercent } from "@/aira-usage"
 import { AiraWelcome } from "@/aira-welcome"
+import { chatTitle } from "@/aira-history"
+import { deviceChats, useChatHistory, type ChatStore } from "@/aira-history-hook"
+import { AiraHistoryMenu } from "@/aira-history-menu"
 import { signInAddress } from "@/thin-notice"
 import { useWeekUsage } from "@/usage-load"
 
 const headControl = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] active:translate-y-0"
 
-export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
+export function AiraPanel({
+  deck,
+  hidden,
+  now = Date.now,
+  mint = () => crypto.randomUUID(),
+  store = deviceChats,
+}: {
+  deck: string
+  hidden: boolean
+  now?: () => number
+  mint?: () => string
+  store?: ChatStore
+}) {
   const [chat, setChat] = useState(() => airaChat(deck))
   const [draft, setDraft] = useState("")
   const [queued, setQueued] = useState<readonly string[]>([])
@@ -36,12 +51,26 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
   const empty = chat.exchanges.length === 0
   const asked = chat.exchanges[0]?.asked
   const { viewport, content, away, toLatest, onScroll } = useConversationFollow(empty)
+  const history = useChatHistory({
+    deck,
+    now,
+    mint,
+    store,
+    onRestore: display,
+    empty: () => latest.current.exchanges.length === 0,
+  })
+  const title = history.current?.title ?? (asked === undefined ? creditsCopy.newChat : chatTitle(asked))
 
   useEffect(() => () => stopper.current?.abort(), [])
 
-  function shown(next: AiraChat) {
+  function display(next: AiraChat) {
     latest.current = next
     setChat(next)
+  }
+
+  function shown(next: AiraChat) {
+    display(next)
+    history.remember(next)
   }
 
   function takeQueued(): string | undefined {
@@ -104,14 +133,33 @@ export function AiraPanel({ deck, hidden }: { deck: string; hidden: boolean }) {
     waiting.current = []
     setQueued([])
     setUsageOpen(false)
-    shown({ ...airaChat(deck), usage: latest.current.usage })
+    history.start()
+    display({ ...airaChat(deck), usage: latest.current.usage })
+  }
+
+  function pick(id: string) {
+    if (working || undoing) return
+    const picked = history.pick(id)
+    if (picked === undefined) return
+    waiting.current = []
+    setQueued([])
+    setDraft("")
+    display({ ...picked, usage: latest.current.usage })
   }
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col" hidden={hidden} data-aira-panel>
-      <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-4">
-        <span className="min-w-0 truncate text-xs text-quiet" {...(asked === undefined ? {} : { title: asked })}>
-          {asked ?? creditsCopy.newChat}
+      <div data-slot="conversation-head" className="flex h-11 shrink-0 items-center justify-between gap-2 pr-3 pl-3">
+        <span className="flex min-w-0 flex-1">
+          <AiraHistoryMenu
+            title={title}
+            asked={asked}
+            chats={history.chats}
+            openId={history.openId}
+            now={now()}
+            disabled={working || undoing}
+            onPick={pick}
+          />
         </span>
         <span className="flex shrink-0 items-center gap-0.5">
           {usage === null ? null : (

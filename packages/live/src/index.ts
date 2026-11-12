@@ -11,4 +11,5 @@ export {
   type Remote,
   type WatchResult,
 } from "./remote.js"
+export { dropChats, readChats, writeChat } from "./chat-slot.js"
 export { databaseName, deleteDatabase, rowKey, storeName } from "./store.js"

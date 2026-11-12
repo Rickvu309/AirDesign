@@ -81,6 +81,39 @@ async function usageOpen(kit) {
   await expect(kit.page.getByRole("region", { name: "Weekly usage" })).toContainText("%")
 }
 
+async function askedOnce(kit) {
+  await reach(find("agent-empty"), kit)
+  const week = 7 * 24 * 60 * 60 * 1000
+  const usage = { used: 0.76, allowed: 2, resets: new Date(Math.ceil(Date.now() / week) * week).toISOString() }
+  const text = "Your title now leads with the Q3 number."
+  await kit.page.route(
+    (url) => url.pathname === kit.airaRoutes.turn.path,
+    (route) =>
+      route.fulfill({
+        contentType: "application/x-ndjson",
+        body: `${JSON.stringify({ type: "text", text })}\n${JSON.stringify({ type: "end", ok: true, stop: "end_turn", content: [{ type: "text", text }], usage })}\n`,
+      }),
+  )
+  const composer = kit.page.getByRole("textbox", { name: "Ask Aira" })
+  await composer.fill("Make the Q3 investor update lead with the number. Keep it calm.")
+  await composer.press("Enter")
+  await expect(kit.page.getByText(text, { exact: true })).toBeVisible()
+}
+
+async function historyOpen(kit) {
+  await askedOnce(kit)
+  const panel = kit.page.locator("[data-editor-panel]")
+  await panel.getByRole("button", { name: "New chat", exact: true }).click()
+  await panel.locator("[data-aira-history]").click()
+  await expect(kit.page.locator("[data-aira-chats]")).toBeVisible()
+}
+
+async function chatRestored(kit) {
+  await askedOnce(kit)
+  await kit.page.reload()
+  await expect(kit.page.getByText("Your title now leads with the Q3 number.", { exact: true })).toBeVisible()
+}
+
 async function usagePage(kit) {
   await kit.signIn()
   await kit.page.goto("/settings/usage")
@@ -137,6 +170,8 @@ export const states = [
     aira: true,
   },
   { name: "usage-open", design: editor, drive: usageOpen },
+  { name: "history-open", design: editor, drive: historyOpen },
+  { name: "chat-restored", design: editor, drive: chatRestored },
   { name: "usage-page", design: "/screens/s81-01-settings-settings-usage-tab", drive: usagePage },
   { name: "agent-out-of-usage", design: "/screens/s92-01-credits-out-of-usage-limit-reached", drive: outOfUsage },
   {

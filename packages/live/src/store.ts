@@ -127,7 +127,7 @@ function piece(part: number, value: string, offset: number, count: number): stri
   return `\u0001${text}`
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+export function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, 1)
     request.onupgradeneeded = () => {

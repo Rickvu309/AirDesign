@@ -52,6 +52,14 @@ export function airaLimitBodyOn(when: string): string {
   return `Your weekly usage resets ${when}. Ask again then.`
 }
 
+export function airaHistoryNameOf(title: string): string {
+  return `${title}, chat history`
+}
+
+export function airaChatsKeptOf(count: number): string {
+  return `This device keeps your last ${new Intl.NumberFormat("en").format(count)} chats.`
+}
+
 export const airaCopy = {
   welcome: "Aira can read this deck, rewrite its text, and move or resize what's on its slides.",
   caution: "Aira can be wrong. Check a number, a quote, or a slide before you rely on it.",
@@ -66,4 +74,7 @@ export const airaCopy = {
   failedTitle: "Unable to finish your request",
   failedKept: "Aira's changes so far are kept. Ask again, or undo them.",
   failedNothing: "Nothing in your deck changed. Ask again to try once more.",
+  undoRefused: "Couldn't undo. These slides changed after Aira's edit.",
+  chatsTitle: "Chats on this deck",
+  chatsEmpty: "Your chats with Aira on this deck show here.",
 } as const

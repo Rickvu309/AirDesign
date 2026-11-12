@@ -26,6 +26,7 @@ export type AiraExchange = {
   readonly steps: readonly AiraStep[]
   readonly end: AiraEnd
   readonly runs: readonly string[]
+  readonly undoRefused?: true
 }
 
 export type AiraChat = {
@@ -55,6 +56,7 @@ export type AiraEvent =
     }
   | { readonly type: "end"; readonly end: AiraEnd; readonly usage?: WeekUsage | undefined }
   | { readonly type: "undone"; readonly exchange: number }
+  | { readonly type: "undo-refused"; readonly exchange: number }
 
 export type AskOptions = {
   readonly signal: AbortSignal
@@ -72,6 +74,7 @@ type Turned =
 type Called = { readonly answer: ToolAnswer; readonly ok: boolean; readonly run: string | undefined }
 
 const accept = "application/json, text/event-stream"
+const lasting: ReadonlySet<string> = new Set(["run-fenced", "person-protected", "dead"])
 
 const tools = projectTools(catalog)
 const opOf: ReadonlyMap<string, AgentOp> = new Map(tools.map((tool) => [tool.name, tool.op]))
@@ -151,6 +154,13 @@ export function airaStep(chat: AiraChat, event: AiraEvent): AiraChat {
         ...chat,
         exchanges: chat.exchanges.map((exchange, index) =>
           index === event.exchange ? { ...exchange, end: "undone" } : exchange,
+        ),
+      }
+    case "undo-refused":
+      return {
+        ...chat,
+        exchanges: chat.exchanges.map((exchange, index) =>
+          index === event.exchange ? { ...exchange, undoRefused: true } : exchange,
         ),
       }
   }
@@ -315,7 +325,13 @@ export async function undoExchange(
   send: typeof fetch = fetch,
 ): Promise<AiraChat | undefined> {
   const found = chat.exchanges[exchange]
-  if (found === undefined || found.end === "working" || found.end === "undone" || found.runs.length === 0) {
+  if (
+    found === undefined ||
+    found.end === "working" ||
+    found.end === "undone" ||
+    found.undoRefused === true ||
+    found.runs.length === 0
+  ) {
     return undefined
   }
   for (const runId of [...found.runs].reverse()) {
@@ -326,7 +342,8 @@ export async function undoExchange(
         body: JSON.stringify({ deck: chat.deck, runId }),
       })
       const undone = deckRoutes.undo.result(await response.json())
-      if (!undone.ok) return undefined
+      if (!undone.ok)
+        return lasting.has(undone.refusal) ? airaStep(chat, { type: "undo-refused", exchange }) : undefined
     } catch {
       return undefined
     }

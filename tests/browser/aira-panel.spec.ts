@@ -145,7 +145,7 @@ test("a failed run says so, and the panel switch keeps the conversation", async 
   await expect(log.getByText(asked, { exact: true })).toBeHidden()
   await page.getByRole("button", { name: "Agent" }).click()
   await expect(log.getByText(asked, { exact: true })).toBeVisible()
-  await side.getByRole("button", { name: "New chat" }).click()
+  await side.getByRole("button", { name: "New chat", exact: true }).click()
   await expect(log.getByText(asked, { exact: true })).toHaveCount(0)
 })
 
@@ -219,7 +219,7 @@ test("a new deck's panel says who Aira is, and Enter sends while Shift+Enter sta
   await expect(side.getByRole("heading", { name: productCopy.agentName })).toBeVisible()
   await expect(side.getByText(airaCopy.welcome, { exact: true })).toBeVisible()
   await expect(side.getByText(airaCopy.caution, { exact: true })).toBeVisible()
-  await expect(side.getByRole("button", { name: "New chat" })).toBeDisabled()
+  await expect(side.getByRole("button", { name: "New chat", exact: true })).toBeDisabled()
   await expect(side.getByRole("button", { name: "Send" })).toBeDisabled()
   stack.aira({ name: "turn.sse" })
   const composer = side.getByRole("textbox", { name: "Ask Aira" })

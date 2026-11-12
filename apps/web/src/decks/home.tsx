@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { flushOriginal } from "@airdesign/live"
+import { dropChats, flushOriginal } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -299,6 +299,7 @@ export function Home({
                   setDeleteFailed(true)
                   return
                 }
+                await Promise.all(deleting.map((deck) => dropChats(deck.deck).catch(() => undefined)))
                 setDeleting(null)
                 await refresh()
               })

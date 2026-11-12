@@ -153,3 +153,120 @@ test("the real editor's sidebar, canvas, toolbar and panel head sit where the de
   expect(real.cardLook).toEqual(design.cardLook)
   expect(real.activeLook).toEqual(design.activeLook)
 })
+
+type Head = {
+  readonly head: Box
+  readonly group: Box
+  readonly icon: Box
+  readonly chevron: Box
+  readonly ring: Box
+  readonly ringMark: Box
+  readonly pen: Box
+  readonly titleLook: Look
+  readonly ringStroke: readonly string[]
+}
+
+async function headRegions(page: Page): Promise<Head> {
+  return page.evaluate(() => {
+    const head = document.querySelector("[data-editor-panel] [data-slot=conversation-head]")
+    if (head === null) throw new Error("missing head")
+    const box = (element: Element | null | undefined) => {
+      if (element === null || element === undefined) throw new Error("missing head region")
+      const { x, y, width, height } = element.getBoundingClientRect()
+      return { x, y, width, height }
+    }
+    const group = head.querySelector("[data-aira-history]") ?? head.firstElementChild
+    const marks = group?.querySelectorAll("svg") ?? []
+    const right = head.lastElementChild
+    const ring = right?.firstElementChild
+    const style = group === null ? undefined : getComputedStyle(group)
+    return {
+      head: box(head),
+      group: box(group),
+      icon: box(marks[0]),
+      chevron: box(marks[marks.length - 1]),
+      ring: box(ring),
+      ringMark: box(ring?.querySelector("svg")),
+      pen: box(right?.lastElementChild),
+      titleLook: {
+        "font-size": style?.fontSize ?? "",
+        color: style?.color ?? "",
+        "line-height": style?.lineHeight ?? "",
+      },
+      ringStroke: [...(ring?.querySelectorAll("circle") ?? [])].map(
+        (circle) => circle.getAttribute("stroke-width") ?? "",
+      ),
+    }
+  })
+}
+
+const usage = { used: 0.76, allowed: 2, resets: "2026-11-16T00:00:00.000Z" }
+const answer = "Your title now leads with the Q3 number."
+
+async function mockAira(page: Page, hold: boolean): Promise<void> {
+  await page.route("**/aira/usage", (route) =>
+    route.fulfill({ json: { ok: true, account: { email: "person@example.com" }, usage } }),
+  )
+  await page.route("**/aira/turn", async (route) => {
+    if (hold) return
+    const lines = [
+      { type: "text", text: answer },
+      { type: "end", ok: true, stop: "end_turn", content: [{ type: "text", text: answer }], usage },
+    ]
+    await route.fulfill({
+      contentType: "application/x-ndjson",
+      body: lines.map((line) => `${JSON.stringify(line)}\n`).join(""),
+    })
+  })
+}
+
+function expectHead(real: Head, design: Head, state: string) {
+  expectNear(real.head, design.head, `${state} head`)
+  expectNear(real.group, design.group, `${state} history control`, ["x", "y", "height"])
+  expectNear(real.icon, design.icon, `${state} history icon`)
+  expectNear(real.chevron, design.chevron, `${state} chevron`, ["y", "width", "height"])
+  expect(
+    Math.abs(
+      real.group.x +
+        real.group.width -
+        (real.chevron.x + real.chevron.width) -
+        (design.group.x + design.group.width - (design.chevron.x + design.chevron.width)),
+    ),
+    `${state} chevron inset`,
+  ).toBeLessThanOrEqual(1)
+  expectNear(real.ring, design.ring, `${state} usage ring`)
+  expectNear(real.ringMark, design.ringMark, `${state} usage ring mark`)
+  expect(real.ringStroke).toEqual(design.ringStroke)
+  expectNear(real.pen, design.pen, `${state} new chat`)
+  expect(real.titleLook).toEqual(design.titleLook)
+}
+
+for (const [state, screen, ask, hold] of [
+  ["empty", designed, undefined, false],
+  ["working", "/screens/s42-01-editor-agent-working", "Make the Q3 investor update lead with the number", true],
+  ["done", designed, "Make the Q3 investor update lead with the number", false],
+  [
+    "done with a long title",
+    designed,
+    "Rewrite_every_slide_title_so_each_one_leads_with_its_number_and_reads_well_on_its_own_without_the_body",
+    false,
+  ],
+] as const) {
+  test(`the Agent panel head sits where the designed head puts it when ${state}`, async ({ page }) => {
+    await page.goto(screen)
+    const design = await headRegions(page)
+    await mockAira(page, hold)
+    await openClean(page)
+    const side = page.locator("[data-editor-panel]")
+    await expect(side.getByRole("button", { name: "Weekly usage" })).toBeVisible()
+    if (ask !== undefined) {
+      await side.getByRole("textbox", { name: "Ask Aira" }).fill(ask)
+      await page.keyboard.press("Enter")
+      if (hold) await expect(side.getByRole("button", { name: "Stop" })).toBeVisible()
+      else await expect(side.getByText(answer, { exact: true })).toBeVisible()
+    }
+    const real = await headRegions(page)
+    expectHead(real, design, state)
+    expect(real.group.x + real.group.width).toBeLessThanOrEqual(real.ring.x)
+  })
+}

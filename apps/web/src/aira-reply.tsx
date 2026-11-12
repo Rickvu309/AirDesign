@@ -108,6 +108,14 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   )
 }
 
+function UndoRefused() {
+  return (
+    <p className="flex min-h-6 items-center text-xs text-muted-foreground" data-undo-refused>
+      {airaCopy.undoRefused}
+    </p>
+  )
+}
+
 function FailedCard({ changed, onUndo }: { changed: boolean; onUndo: (() => void) | undefined }) {
   return (
     <div className={cardClass}>
@@ -150,9 +158,14 @@ function endingOf(
   onUndo: (() => void) | undefined,
 ): ReactNode | null {
   const undoable = exchange.runs.length > 0
+  const refused = exchange.undoRefused === true
   if (exchange.end === "out-of-usage") return <LimitCard resets={resets} />
-  if (exchange.end === "failed") return <FailedCard changed={undoable} onUndo={undoable ? onUndo : undefined} />
-  if ((exchange.end === "done" || exchange.end === "stopped") && undoable) return <UndoLink onUndo={onUndo} />
+  if (exchange.end === "failed") {
+    return <FailedCard changed={undoable} onUndo={undoable && !refused ? onUndo : undefined} />
+  }
+  if ((exchange.end === "done" || exchange.end === "stopped") && undoable) {
+    return refused ? <UndoRefused /> : <UndoLink onUndo={onUndo} />
+  }
   if (exchange.end === "working" && !running(exchange.steps)) return <Working />
   return null
 }
