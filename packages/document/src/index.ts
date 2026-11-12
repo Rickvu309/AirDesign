@@ -45,13 +45,13 @@ export {
   type Refusal,
 } from "./decide.js"
 export { coordinates, readBox, type Box } from "./box.js"
-export { placeNewBox, type PlacementArea } from "./box-placement.js"
+export { placeNewBox } from "./box-placement.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, openingElement } from "./slide-floor.js"
-export { slideMeasure, type SlideMeasure } from "./slide-measure.js"
+export { slideMeasure } from "./slide-measure.js"
 export { elementCommand, elementGone, nextElementId, type ElementCommand } from "./element-order.js"
 export {
   foldSlides,

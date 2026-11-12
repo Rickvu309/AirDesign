@@ -393,7 +393,7 @@ export function connect(remote: Remote, options: Options = {}) {
 
   return {
     index: (deck: string, index: Parameters<typeof queueIndex>[1]) => queueIndex(deck, index, nextOnce),
-    measured: hasMeasures,
+    sized: hasMeasures,
     async enqueueSlide(
       deck: string,
       file: readonly SlideId[],
