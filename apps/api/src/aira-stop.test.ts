@@ -27,8 +27,8 @@ const mails: Mail[] = []
 const lines: string[] = []
 const replay = new Replay()
 const sockets: Socket[] = []
-const closing = new Closing()
-const brief = new Closing(50)
+let closing: Closing
+let brief: Closing
 let main = ""
 let briefBase = ""
 let session: Sql = openPool("postgres://session@127.0.0.1/api")
@@ -40,6 +40,8 @@ beforeAll(async () => {
   session = openPool(info.session, "aira-stop-session")
   const decks = openPool(info.deck, "aira-stop-deck")
   const listen = new DeckListen(info.listen)
+  closing = new Closing({ db: session, listen })
+  brief = new Closing({ db: session, listen }, 50)
   admin = new Client({ connectionString: info.admin, application_name: "aira-stop-admin" })
   await admin.connect()
   const settings = {
@@ -266,7 +268,7 @@ describe("a new ask right after a stop", () => {
     await client.leave()
     const second = turn(account)
     await vi.waitFor(() => {
-      expect(waited).toHaveBeenCalledWith(account.email)
+      expect(waited).toHaveBeenCalledWith(account.email, expect.anything())
     })
     replay.release()
     const answer = await second
@@ -301,7 +303,7 @@ describe("a new ask right after a stop", () => {
     const second = await turn(account, briefBase)
     expect(second.status).toBe(409)
     expect(second.json).toMatchObject({ ok: false, refusal: "open" })
-    expect(stopped).toHaveBeenCalledWith(account.email)
+    expect(stopped).toHaveBeenCalledWith(account.email, expect.anything())
     replay.release()
     await closedAt(account.email, stoppedCharge, "dropped")
     stopped.mockRestore()

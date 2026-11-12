@@ -2,7 +2,6 @@ import { createHmac, randomBytes } from "node:crypto"
 
 import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
-import type { CallerLog } from "@airdesign/mcp"
 import { Client } from "pg"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
@@ -32,7 +31,6 @@ type Line = { readonly type: string; readonly content?: unknown }
 const mails: Mail[] = []
 const lines: string[] = []
 const replay = new Replay()
-const logs = new Map<string, CallerLog>()
 let clock = wednesday
 let main = ""
 let off = ""
@@ -47,7 +45,6 @@ function serveWith(listen: DeckListen, deck: Sql, aira: { on: boolean; key: stri
     session,
     deck,
     listen,
-    logs,
     now: () => clock,
     send: async (mail) => {
       mails.push(mail)
@@ -134,6 +131,15 @@ async function ledgerOf(email: string): Promise<LedgerRow | undefined> {
   return found.rows[0]
 }
 
+async function turnEventsOf(email: string): Promise<number> {
+  const found = await admin.query<{ turns: number }>(
+    `select count(*)::int as turns from session.caller_log, jsonb_array_elements(events) as event
+     where email = $1 and event ->> 'kind' = 'turn'`,
+    [email],
+  )
+  return found.rows[0]?.turns ?? 0
+}
+
 async function turnsOf(email: string): Promise<TurnRow[]> {
   const found = await admin.query<TurnRow>(
     "select id, outcome, charged, ceiling, request from session.aira_turn where email = $1 order by started, id",
@@ -172,7 +178,7 @@ describe("POST /aira/turn settles a model turn once", () => {
     expect(await turnsOf(account.email)).toMatchObject([
       { outcome: "settled", charged: String(turnCharge), request: "req_fixture_turn" },
     ])
-    expect(logs.get(account.email)?.events.filter((event) => event.kind === "turn")).toHaveLength(1)
+    expect(await turnEventsOf(account.email)).toBe(1)
   })
 
   it("charges once for a replayed message_delta and for a second settlement of the same turn", async () => {
@@ -315,9 +321,11 @@ describe("POST /aira/turn refuses before it reserves or calls the model", () => 
 
   it("refuses at the turn limit of the log the account's MCP calls share", async () => {
     const account = await signIn()
-    logs.set(account.email, {
-      events: Array.from({ length: 20 }, (_, index) => ({ kind: "turn" as const, at: clock - index })),
-    })
+    const events = Array.from({ length: 20 }, (_, index) => ({ kind: "turn" as const, at: clock - index }))
+    await admin.query("insert into session.caller_log (email, events) values ($1, $2)", [
+      account.email,
+      JSON.stringify(events),
+    ])
     await refusedWith(account, turn(account), 429, "rate")
     expect(await ledgerOf(account.email)).toBeUndefined()
   })
@@ -331,7 +339,7 @@ describe("POST /aira/turn refuses before it reserves or calls the model", () => 
     )
     await refusedWith(account, turn(account), 402, "allowance")
     expect(await ledgerOf(account.email)).toMatchObject({ spent: String(spent), hold: "0", turn: null })
-    expect(logs.get(account.email)).toBeUndefined()
+    expect(await turnEventsOf(account.email)).toBe(0)
   })
 
   it("refuses a second open turn for the same account", async () => {

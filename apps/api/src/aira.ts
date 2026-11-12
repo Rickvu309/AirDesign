@@ -2,11 +2,12 @@ import { createHmac } from "node:crypto"
 
 import { airaTools, readTurn, type ModelMessage, type ModelTool, type ReplyBlock } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
-import { admit, emptyLog, type CallerLog } from "@airdesign/mcp"
+import { admit } from "@airdesign/mcp"
 import { allowance, usage, type Command, type Ledger } from "@airdesign/usage"
 
 import { withAddress } from "./account.js"
 import type { Closing, Followed } from "./aira-closing.js"
+import { lockedLog, writeLog } from "./caller-log.js"
 import { play, type AiraEvent, type Counts, type Played, type Reported } from "./aira-stream.js"
 import type { Sql } from "./pool.js"
 
@@ -71,7 +72,6 @@ export type AiraSettings = {
 export type AiraHost = {
   readonly settings: AiraSettings | undefined
   readonly db: Sql
-  readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
   readonly closing: Closing
@@ -109,6 +109,7 @@ type Stored = Ledger & { readonly monday: number }
 type Reserved =
   | { readonly ok: true; readonly ledger: Stored }
   | { readonly ok: false; readonly refusal: "open" | "allowance"; readonly ledger: Stored }
+  | { readonly ok: false; readonly refusal: "rate"; readonly text: string }
 
 const noUsage = { search: 0, searchOn: false, usOnly: false } as const
 
@@ -245,6 +246,8 @@ function unseenCounts(input: number, started: Reported | null): Counts {
 
 async function reserveTurn(db: Sql, account: string, id: string, input: number, now: number): Promise<Reserved> {
   return withAddress(db, account, async (client) => {
+    const admission = admit(await lockedLog(client, account), "turn", now)
+    if (!admission.ok) return { ok: false, refusal: "rate", text: admission.text }
     const stored = await readLedger(client, account, now)
     const ledger = turnOver(await dropStale(client, account, stored, now), now)
     const result = applied(ledger, {
@@ -260,6 +263,7 @@ async function reserveTurn(db: Sql, account: string, id: string, input: number, 
       return { ok: false, refusal: ledger.open === null ? "allowance" : "open", ledger }
     }
     await writeLedger(client, account, result.ledger)
+    await writeLog(client, account, admission.log)
     await client.query(
       `insert into session.aira_turn (id, email, outcome, input, ceiling, started)
        values ($1, $2, 'open', $3, $4, $5)`,
@@ -340,7 +344,7 @@ async function* answered(
     }
     yield { type: "end", ok: false, refusal: played.kind === "dropped" ? "dropped" : "unavailable", usage }
   } finally {
-    followed.done()
+    await followed.done()
   }
 }
 
@@ -362,15 +366,19 @@ export async function airaTurn(
   if (!airaOffered(country)) return refuse(403, "country")
   const parsed = readTurn(raw)
   if (!parsed.ok) return refuse(400, "body")
-  const followed = host.closing.follow(account, parsed.ask, left)
-  const answer = await admitted(
-    host,
-    { ...settings, key: settings.key, secret: settings.secret },
-    account,
-    parsed,
-    followed,
-  )
-  if (!("lines" in answer)) followed.done()
+  const followed = await host.closing.follow(account, parsed.ask, left)
+  let answer: AiraAnswer | AiraStream | undefined
+  try {
+    answer = await admitted(
+      host,
+      { ...settings, key: settings.key, secret: settings.secret },
+      account,
+      parsed,
+      followed,
+    )
+  } finally {
+    if (answer === undefined || !("lines" in answer)) await followed.done()
+  }
   return answer
 }
 
@@ -382,19 +390,17 @@ async function admitted(
   followed: Followed,
 ): Promise<AiraAnswer | AiraStream> {
   const now = host.now()
-  const admission = admit(host.logs.get(account) ?? emptyLog(), "turn", now)
-  if (!admission.ok) return refuse(429, "rate", { text: admission.text })
   const id = host.mint()
   const system = airaSystem(parsed.deck)
   const input = inputCeiling(system, parsed.messages)
   let reserved = await reserveTurn(host.db, account, id, input, now)
-  if (!reserved.ok && reserved.refusal === "open" && (await host.closing.closed(account)))
+  if (!reserved.ok && reserved.refusal === "open" && (await host.closing.closed(account, followed)))
     reserved = await reserveTurn(host.db, account, id, input, host.now())
+  if (!reserved.ok && reserved.refusal === "rate") return refuse(429, "rate", { text: reserved.text })
   if (!reserved.ok)
     return refuse(reserved.refusal === "open" ? 409 : 402, reserved.refusal, {
       usage: weekUsage(reserved.ledger),
     })
-  host.logs.set(account, admission.log)
   const user = accountId(settings.secret, account)
   const call: ModelCall = {
     model: airaModel,

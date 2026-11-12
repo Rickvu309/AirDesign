@@ -8,7 +8,6 @@ import { fuzzGood, fuzzAira } from "./aira-fuzz.js"
 import { attacks, hostileEscapes, hostileValues, indexFuzzGood, leaks, type Attack } from "./fuzz-attack.js"
 import { badTargets } from "./fuzz-target.js"
 import { ask, askForm, signInByCode, postgresInfo, serve, testResource } from "./harness.js"
-import type { CallerLog } from "@airdesign/mcp"
 import { DeckListen, openPool, type Mail } from "./index.js"
 import { serveMcp } from "./mcp.js"
 import { challengeOf } from "./secrets.js"
@@ -193,7 +192,6 @@ describe("hostile input over every route", () => {
   let base = ""
   let port = 0
   let cookie = ""
-  const toolLogs = new Map<string, CallerLog>()
   let brokenBase = ""
   let sessionDb: Pool | undefined
   let apiServer: Server | undefined
@@ -215,7 +213,6 @@ describe("hostile input over every route", () => {
       publicOrigin: "https://app.example",
       siteOrigin: "https://site.example",
       smokeToken,
-      logs: toolLogs,
       send: async (mail) => {
         mails.push(mail)
       },
@@ -383,8 +380,8 @@ describe("hostile input over every route", () => {
     await close()
   })
 
-  function send(wire: Wire): Promise<Answer> {
-    toolLogs.clear()
+  async function send(wire: Wire): Promise<Answer> {
+    await sessionDb?.query("delete from session.caller_log")
     return exchange(port, wire)
   }
 
@@ -533,8 +530,7 @@ describe("hostile input over every route", () => {
         {
           deck: {} as Pool,
           email: "a@example.com",
-          logs: new Map(),
-          turns: new Map(),
+          session: {} as Pool,
           now: () => 0,
           mint: () => "id",
           hosts: ["127.0.0.1"],

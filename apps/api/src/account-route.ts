@@ -8,7 +8,6 @@ import {
   readSessionCookie,
   signOutRoutes,
 } from "@airdesign/catalog"
-import type { CallerLog, Turns } from "@airdesign/mcp"
 
 import { deleteAccess } from "./account.js"
 import { screenFor } from "./clients.js"
@@ -24,10 +23,8 @@ export type AccountVisit = {
     readonly deck: Sql
     readonly originals?: OriginalStore
     readonly cookieDomain?: string
-    readonly turns: Map<string, Turns>
     readonly resource: string
   }
-  readonly logs: Map<string, CallerLog>
   readonly req: IncomingMessage
   readonly res: ServerResponse
   readonly body: () => Promise<Buffer | undefined>
@@ -52,7 +49,7 @@ function jsonBody(req: IncomingMessage): boolean {
 }
 
 async function deleteAccount<Visit extends AccountVisit>(http: AccountHttp<Visit>, visit: Visit): Promise<void> {
-  const { options, logs, req, res } = visit
+  const { options, req, res } = visit
   const email = await http.signedIn(visit)
   if (email === undefined) return
   const body = await visit.body()
@@ -66,8 +63,6 @@ async function deleteAccount<Visit extends AccountVisit>(http: AccountHttp<Visit
     return
   }
   await options.session.query("select session.delete_account($1)", [email])
-  logs.delete(email)
-  options.turns.delete(email)
   await drainOriginals(options.deck, options.originals, { owner: email })
   http.sendJson(res, 200, { ok: true }, http.clearSessionCookie(options.cookieDomain))
 }

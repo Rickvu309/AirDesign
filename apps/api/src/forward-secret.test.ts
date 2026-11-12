@@ -1,7 +1,6 @@
 import { randomBytes } from "node:crypto"
 
 import { countryHeader, forwardSecretHeader } from "@airdesign/catalog"
-import type { CallerLog } from "@airdesign/mcp"
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest"
 
 import { Replay } from "./aira-replay.js"
@@ -24,7 +23,6 @@ type Account = { readonly email: string; readonly cookie: string }
 const mails: Mail[] = []
 const lines: string[] = []
 const replay = new Replay()
-const logs = new Map<string, CallerLog>()
 let clock = wednesday
 let protectedBase = ""
 let unprotectedBase = ""
@@ -37,7 +35,6 @@ function serveWith(listen: DeckListen, deck: Sql, forwardSecret?: string) {
     session,
     deck,
     listen,
-    logs,
     now: () => clock,
     ...(forwardSecret === undefined ? {} : { forwardSecret }),
     send: async (mail) => {

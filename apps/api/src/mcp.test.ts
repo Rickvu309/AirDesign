@@ -4,7 +4,7 @@ import { request as httpRequest } from "node:http"
 
 import { catalog, projectTools, readDeckId } from "@airdesign/catalog"
 import { rootElement } from "@airdesign/document"
-import { type CallerLog, editNext, runNext } from "@airdesign/mcp"
+import { editNext, runNext } from "@airdesign/mcp"
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
@@ -100,11 +100,13 @@ describe("mcp route", () => {
   let base = ""
   let publicBase = ""
   let deck: Sql = openPool("postgres://deck@127.0.0.1/api")
+  let sessionDb: Sql = openPool("postgres://session@127.0.0.1/api")
   let close = async () => {}
 
   beforeAll(async () => {
     const info = await postgresInfo()
     const session = openPool(info.session, "mcp-session")
+    sessionDb = session
     deck = openPool(info.deck, "mcp-handler")
     const listen = new DeckListen(info.listen)
     const served = await serve({
@@ -274,7 +276,6 @@ describe("mcp route", () => {
       readonly deck?: Sql
       readonly now?: () => number
       readonly session?: (pool: Sql) => Sql
-      readonly logs?: Map<string, CallerLog>
     },
   ): Promise<{ readonly base: string; readonly close: () => Promise<void> }> {
     const info = await postgresInfo()
@@ -287,7 +288,6 @@ describe("mcp route", () => {
       deck: fields.deck ?? stored,
       listen,
       now: fields.now ?? (() => 1_000_000),
-      ...(fields.logs === undefined ? {} : { logs: fields.logs }),
       send: async () => undefined,
     })
     return {
@@ -379,32 +379,38 @@ describe("mcp route", () => {
   })
 
   it("counts a call refused as deck, owner, field or a store failure toward the thirty", async () => {
-    const logs = new Map<string, CallerLog>()
-    function nearLimit(mark: string): string {
-      const email = address(mark)
-      logs.set(email, { events: Array.from({ length: 29 }, () => ({ kind: "tool" as const, at: 1_000_000 })) })
+    const events = JSON.stringify(Array.from({ length: 29 }, () => ({ kind: "tool", at: 1_000_000 })))
+    async function nearLimit(email: string): Promise<string> {
+      await sessionDb.query("insert into session.caller_log (email, events) values ($1, $2)", [email, events])
       return email
     }
-    const counting = await ownServer("counted", { logs })
+    async function signedNear(mark: string): Promise<string> {
+      const email = address(mark)
+      const cookie = await sign(email)
+      await nearLimit(email)
+      return cookie
+    }
+    const counting = await ownServer("counted", {})
     const broken = await ownServer("uncounted", {
       deck: { query: () => Promise.reject(new Error("connect ECONNREFUSED")) } as unknown as Sql,
-      logs,
     })
     try {
       const foreign = await openedDeck("theirs")
-      const opened = await openedDeck("field", nearLimit("field"))
+      const fieldEmail = address("field")
+      const opened = await openedDeck("field", fieldEmail)
+      await nearLimit(fieldEmail)
       const cases = [
         {
           text: editNext.deck,
           target: counting.base,
-          cookie: await sign(nearLimit("nodeck")),
+          cookie: await signedNear("nodeck"),
           id: deckName(),
           extra: {},
         },
         {
           text: editNext.owner,
           target: counting.base,
-          cookie: await sign(nearLimit("noowner")),
+          cookie: await signedNear("noowner"),
           id: foreign.id,
           extra: {},
         },
@@ -418,7 +424,7 @@ describe("mcp route", () => {
         {
           text: storeFailure,
           target: broken.base,
-          cookie: await sign(nearLimit("nostore")),
+          cookie: await signedNear("nostore"),
           id: deckName(),
           extra: {},
         },
@@ -892,33 +898,6 @@ describe("mcp route", () => {
       )
     } finally {
       await served.close()
-    }
-  })
-
-  it("counts a process restart as idle", async () => {
-    const restarted = await ownServer("restart-turn", {})
-    try {
-      const { id, cookie } = await openedDeck("restart-turn")
-      let firstRun = ""
-      await withMcp(cookie, async (client) => {
-        firstRun = (await editAnswer(client, firstEdit(id))).runId
-      })
-      await typed(id, cookie, "person", 2)
-      await withMcp(
-        cookie,
-        async (client) => {
-          const later = await editAnswer(client, {
-            deck: id,
-            base: 2,
-            changes: [{ value: "later", node: element, readAt: 2 }],
-          })
-          expect(later).toEqual(landedAnswer(3, [{ node: element, value: "later", version: 3 }]))
-          expect(later.runId).not.toBe(firstRun)
-        },
-        restarted.base,
-      )
-    } finally {
-      await restarted.close()
     }
   })
 

@@ -1,7 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
 import { airaRoutes, countryHeader, readStop } from "@airdesign/catalog"
-import type { CallerLog } from "@airdesign/mcp"
 
 import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
 import type { Closing } from "./aira-closing.js"
@@ -15,7 +14,6 @@ type AiraVisit = {
     readonly closing: Closing
     readonly forwardSecret?: string
   }
-  readonly logs: Map<string, CallerLog>
   readonly now: () => number
   readonly mint: () => string
   readonly req: IncomingMessage
@@ -64,7 +62,7 @@ export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): r
       path: airaRoutes.turn.path,
       cap: airaBodyCap,
       serve: async (visit) => {
-        const { options, logs, now, mint, req, res } = visit
+        const { options, now, mint, req, res } = visit
         filterForwardedHeaders(req.headers, options.forwardSecret)
         const signal = leftEarly(res)
         const email = await http.signedIn(visit)
@@ -75,7 +73,7 @@ export function airaRouteList<Visit extends AiraVisit>(http: AiraHttp<Visit>): r
           return
         }
         const answer = await airaTurn(
-          { settings: options.aira, db: options.session, logs, now, mint, closing: options.closing },
+          { settings: options.aira, db: options.session, now, mint, closing: options.closing },
           email,
           req.headers[countryHeader],
           http.parsedJson(body),
