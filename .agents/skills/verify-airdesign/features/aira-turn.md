@@ -20,7 +20,7 @@ Preconditions:
 
 - `$V doctor <run>` is ok.
 - The stack's model is a stand-in: `bin/scripted-aira.mjs` plays the recorded streams in `apps/api/src/aira-streams/`. A journey picks them with `kit.aira([{ name, fill }])`, one per model call, the last one repeating. `fill` writes each value where the stream says `@name@`.
-- The front server adds `cf-ipcountry: US` when the request has none, as Cloudflare does.
+- The front server adds `visitor-country: US` (`countryHeader` in the catalog) when the request has none, as the web worker does from Cloudflare's `request.cf.country`.
 
 - **Run it.** `$V journey <run> aira-turn`. Prints `"passed":true` and the evidence dir.
 - **Import.** Home's file input takes `clean.pptx`. Evidence `NN-imported`.

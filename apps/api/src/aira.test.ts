@@ -3,7 +3,7 @@ import { once } from "node:events"
 import { request, type Server } from "node:http"
 import type { Socket } from "node:net"
 
-import { airaTools, signInRoutes } from "@airdesign/catalog"
+import { airaTools, countryHeader, signInRoutes } from "@airdesign/catalog"
 import { bytesOf } from "@airdesign/document"
 import type { CallerLog } from "@airdesign/mcp"
 import { Client } from "pg"
@@ -17,7 +17,7 @@ import { DeckListen, openPool, type Mail, type Sql } from "./index.js"
 const origins = { publicOrigin: "https://app.example", siteOrigin: "https://site.example" }
 const fakeKey = "test-key-not-real"
 const secret = "test-user-secret-not-real-0123456789abcdef"
-const vietnam = { "cf-ipcountry": "VN" }
+const vietnam = { [countryHeader]: "VN" }
 const words = "How should slide two open?"
 const deck = "airadeck"
 const asked = [{ role: "user", content: words }]
@@ -326,7 +326,7 @@ describe("POST /aira/turn refuses before it reserves or calls the model", () => 
   it("refuses an unsupported country and a missing country header", async () => {
     const account = await signIn()
     for (const code of ["CN", "RU", "XX", "T1", "HK"]) {
-      await refusedWith(account, turn(account, undefined, { "cf-ipcountry": code }), 403, "country")
+      await refusedWith(account, turn(account, undefined, { [countryHeader]: code }), 403, "country")
     }
     await refusedWith(account, turn(account, undefined, {}), 403, "country")
     expect(await ledgerOf(account.email)).toBeUndefined()

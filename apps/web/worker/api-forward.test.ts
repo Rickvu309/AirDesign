@@ -7,6 +7,7 @@ import {
   accountPaths,
   accountRoutes,
   airaPaths,
+  countryHeader,
   deckPaths,
   deckRoutes,
   mcpPaths,
@@ -23,6 +24,7 @@ type Seen = {
   url: string | undefined
   cookie: string | undefined
   contentType: string | undefined
+  country: string | string[] | undefined
   body: string
 }
 
@@ -45,6 +47,7 @@ beforeEach(async () => {
         url: request.url,
         cookie: request.headers.cookie,
         contentType: request.headers["content-type"],
+        country: request.headers[countryHeader],
         body: Buffer.concat(chunks).toString(),
       })
       if (request.url === "/aira/turn") {
@@ -142,7 +145,14 @@ describe("API forwarding", () => {
       env(),
     )
     expect(seen).toEqual([
-      { method: "POST", url: "/decks/commit", cookie: "airdesign.session=abc", contentType: "application/json", body },
+      {
+        method: "POST",
+        url: "/decks/commit",
+        cookie: "airdesign.session=abc",
+        contentType: "application/json",
+        country: undefined,
+        body,
+      },
     ])
     expect(response.status).toBe(201)
     expect(await response.text()).toBe("saved")
@@ -163,6 +173,30 @@ describe("API forwarding", () => {
     expect(decoder.decode((await reader.read()).value)).toBe('{"type":"end","ok":true}\n')
     expect((await reader.read()).done).toBe(true)
     expect(assets).toEqual([])
+  })
+
+  it("passes the visitor's country from Cloudflare to the API", async () => {
+    const request = new Request("https://example.com/decks/open", { method: "POST" })
+    await worker.fetch(Object.assign(request, { cf: { country: "VN" } }), env())
+    expect(seen[0]?.country).toBe("VN")
+  })
+
+  it("replaces a country the visitor sent with the one Cloudflare saw", async () => {
+    const request = new Request("https://example.com/decks/open", {
+      method: "POST",
+      headers: { [countryHeader]: "US" },
+    })
+    await worker.fetch(Object.assign(request, { cf: { country: "VN" } }), env())
+    expect(seen[0]?.country).toBe("VN")
+  })
+
+  it("forwards no country when Cloudflare gave none, even one the visitor sent", async () => {
+    const request = new Request("https://example.com/decks/open", {
+      method: "POST",
+      headers: { [countryHeader]: "US" },
+    })
+    await worker.fetch(request, env())
+    expect(seen[0]?.country).toBeUndefined()
   })
 
   it("returns the link redirect and cookie without following it", async () => {

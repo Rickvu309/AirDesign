@@ -17,8 +17,8 @@ const types = {
   ".ico": "image/x-icon",
 }
 
-function forward(req, res, apiPort) {
-  const headers = { ...req.headers, "cf-ipcountry": req.headers["cf-ipcountry"] ?? "US" }
+function forward(req, res, apiPort, countryHeader) {
+  const headers = { ...req.headers, [countryHeader]: req.headers[countryHeader] ?? "US" }
   const outgoing = httpRequest(
     { host: "127.0.0.1", port: apiPort, method: req.method, path: req.url, headers },
     (answer) => {
@@ -63,7 +63,7 @@ function serveOriginal(originals, pathname, req, res) {
   })
 }
 
-export async function serve(run, { repo, apiDist, webDist, scratchDir, statePath, airaPath, head }) {
+export async function serve(run, { repo, apiDist, webDist, catalogDist, scratchDir, statePath, airaPath, head }) {
   const log = (line) => appendFileSync(process.env.VERIFY_AIRDESIGN_LOG ?? "/dev/null", `${line}\n`)
   const load = (name) => import(pathToFileURL(path.join(apiDist, name)).href)
   const { startEmptyCluster } = await load("postgres-setup.js")
@@ -119,6 +119,7 @@ export async function serve(run, { repo, apiDist, webDist, scratchDir, statePath
   await new Promise((resolve) => api.listen(0, "127.0.0.1", resolve))
   const apiPort = api.address().port
   const apiPaths = new Set(routes.map((route) => route.path))
+  const { countryHeader } = await import(pathToFileURL(catalogDist).href)
   const front = createServer((req, res) => {
     const pathname = new URL(req.url ?? "/", "http://front").pathname
     if (pathname.startsWith(`${originalBase}/`)) {
@@ -126,7 +127,7 @@ export async function serve(run, { repo, apiDist, webDist, scratchDir, statePath
       return
     }
     if (apiPaths.has(pathname) && !(req.method === "GET" && pathname.startsWith("/oauth/authorize"))) {
-      forward(req, res, apiPort)
+      forward(req, res, apiPort, countryHeader)
       return
     }
     serveFile(pathname, res, webDist)

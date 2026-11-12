@@ -137,7 +137,7 @@ Proof standards:
 - Drive the user's path: the file input on Home, typing in the slide, the buttons on Home and Trash. Never call internal setters or test-only routes.
 - Capture the action and the result, not only the last screen.
 - Prove side effects through a second view: after a UI action, read the server copy with `deckRoutes.open` or `deckRoutes.list`. A UI that looks right while the server disagrees is a failure.
-- The only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), and the country header (the front server adds `cf-ipcountry: US` as Cloudflare would). Each sits behind a production seam.
+- The only stand-ins are the mail sender (writes a file instead of calling Resend), the original store (in memory instead of R2, its signed URLs served by the front server under `/verify-original/`), Aira's model (`bin/scripted-aira.mjs` plays recorded streams instead of calling Claude), and the country header (the front server adds `visitor-country: US` as the web worker would from Cloudflare's `request.cf.country`). Each sits behind a production seam.
 - Put the run id, the journey and the evidence path in your PR or review comment.
 
 ## Cleanup

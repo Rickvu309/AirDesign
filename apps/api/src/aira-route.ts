@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http"
 
-import { airaRoutes } from "@airdesign/catalog"
+import { airaRoutes, countryHeader } from "@airdesign/catalog"
 import type { CallerLog } from "@airdesign/mcp"
 
 import { airaBodyCap, airaTurn, type AiraLine, type AiraSettings } from "./aira.js"
@@ -57,7 +57,7 @@ export function airaRoute<Visit extends AiraVisit>(
       const answer = await airaTurn(
         { settings: options.aira, db: options.session, logs, now, mint },
         email,
-        req.headers["cf-ipcountry"],
+        req.headers[countryHeader],
         http.parsedJson(body),
       )
       if ("lines" in answer) await streamLines(res, answer.lines)
