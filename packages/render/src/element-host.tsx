@@ -8,6 +8,7 @@ import type { CanvasElement, CanvasText, PaintBox } from "./record.js"
 import { ShapeArt, shapePaths } from "./shape-art.js"
 import { SheetText } from "./sheet-text.js"
 import { DiagramArt } from "./diagram-art.js"
+import { ChartArt } from "./chart-art.js"
 import { canMove, type Moves } from "./slide-moves.js"
 import type { PaintStore } from "./store.js"
 import { anchored, textLook, type Scaled, type TextLook } from "./text-look.js"
@@ -138,6 +139,7 @@ function QuietElement(props: {
     <div style={elementFrame(element, scaled, false, unshown)}>
       <ShapeArt element={element} scaled={scaled} />
       <DiagramArt element={element} scaled={scaled} />
+      <ChartArt box={element.box} chart={element.chart} described={false} scaled={scaled} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           {element.id === null ? (
@@ -159,6 +161,7 @@ function SheetElement(props: { readonly element: CanvasElement; readonly scaled:
       <ShapeArt element={element} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
+      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       {text === null ? null : (
         <div style={textLayer(element.box, text, scaled)}>
           <SheetText look={textLook(text, scaled)} text={text} />
@@ -219,7 +222,8 @@ function PlacedText(props: {
   const empty = isBlank(shown)
   const isSelected = moves !== null && moves.selected === id
   const showPrompt = typing && element.placeholder && empty && Boolean(element.prompt)
-  const showQuietOutline = element.placeholder && empty && !isSelected && element.diagram === undefined
+  const filledFrame = element.diagram !== undefined || element.chart !== undefined
+  const showQuietOutline = element.placeholder && empty && !isSelected && !filledFrame
   const promptOutline: CSSProperties = showQuietOutline
     ? { outline: "1px dashed var(--placeholder-edge)", outlineOffset: -1 }
     : moves === null
@@ -238,6 +242,7 @@ function PlacedText(props: {
       <ShapeArt element={element} grab={moves !== null && canMove(element)} scaled={scaled} />
       <UnshownLabel box={element.box} scaled={scaled} text={element.unshownText} />
       <DiagramArt element={element} scaled={scaled} />
+      <ChartArt box={element.box} chart={element.chart} described scaled={scaled} />
       <div style={textLayer(element.box, text, scaled)}>
         {showPrompt ? (
           <div

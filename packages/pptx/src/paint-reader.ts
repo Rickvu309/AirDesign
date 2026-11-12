@@ -30,6 +30,7 @@ import { paintTable, type PaintTable } from "./paint-table.js"
 import { placeholderPrompt } from "./placeholder-prompt.js"
 import { tableStyles } from "./table-style.js"
 import { paintDiagram } from "./paint-diagram.js"
+import { frameChart, type PaintChart } from "./paint-chart.js"
 
 export type PaintBox = {
   x: number
@@ -54,6 +55,7 @@ export type PaintElement = {
   text: PaintText | null
   table?: PaintTable
   diagram?: readonly PaintElement[]
+  chart?: PaintChart
 } & ShapePaint
 
 export type SlidePaint = {
@@ -420,6 +422,13 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
         })
         return { diagram }
       }
+      const charts = {
+        parts,
+        target: (part: string, id: string) => relationshipsOf(part).get(`id:${id}`),
+        colors: (part: string) => relationshipsOf(part).get("chartColorStyle"),
+        palette: context.palette,
+        fonts: () => scope().fonts,
+      }
       const painted = sheet.drawn
         .filter((item) => !item.hidden)
         .map((item): PaintElement => {
@@ -437,6 +446,7 @@ export function paintReader(parts: ReadonlyMap<string, Uint8Array>, options?: Pa
             text: textOf(item, sheet, layoutSheet, masterSheet, scope),
             ...tableOf(item, sheet, scope),
             ...diagramOf(item, box),
+            ...frameChart(item.element, sheet.children, slidePart, charts),
             ...paints.get(item)!,
           }
         })

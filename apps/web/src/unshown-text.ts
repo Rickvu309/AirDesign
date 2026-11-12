@@ -9,7 +9,7 @@ function formatOf(part: string): string | null {
 }
 
 export function unshownText(row: PaintElement, src: PictureSource): string | null {
-  if (row.table !== undefined || row.diagram !== undefined) return null
+  if (row.table !== undefined || row.diagram !== undefined || row.chart !== undefined) return null
   if (row.image !== null) return src(row.image) === null ? unshownCopy.picture(formatOf(row.image.part)) : null
   return row.kind === "p:graphicFrame" ? unshownCopy.frame : null
 }

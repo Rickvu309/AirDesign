@@ -50,6 +50,11 @@ describe("unshownText", () => {
     ).toBeNull()
   })
 
+  it("says nothing of a chart frame it paints", () => {
+    const chart = { kind: "pie" } as unknown as PaintElement["chart"]
+    expect(unshownText(row({ kind: "p:graphicFrame", chart }), () => null)).toBeNull()
+  })
+
   it("says nothing of text and shapes", () => {
     expect(unshownText(row({ kind: "p:sp" }), () => null)).toBeNull()
   })

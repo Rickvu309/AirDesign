@@ -50,6 +50,7 @@ export const browserSpecs = [
   "tests/browser/slide-export.spec.ts",
   "tests/browser/slide-edits.spec.ts",
   "tests/browser/diagram-export.spec.ts",
+  "tests/browser/chart-export.spec.ts",
 ]
 
 export const browserExportTag = "@export"

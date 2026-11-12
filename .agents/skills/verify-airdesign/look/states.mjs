@@ -55,10 +55,11 @@ async function slideSections(kit) {
   await expect(first).toHaveAttribute("aria-current", "true")
 }
 
-async function unshownChart(kit) {
+async function slideChart(kit) {
   await kit.signIn()
   await kit.page.goto("/")
-  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/census-updating-spm.pptx"), 14)
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/census-updating-spm.pptx"), 19)
+  await expect(kit.page.locator("[data-slide-paint] svg[data-chart]")).toHaveCount(3)
   await kit.page.evaluate(() => document.fonts.ready)
 }
 
@@ -334,7 +335,7 @@ export const states = [
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },
   { name: "table-cells", design: null, drive: tableCells },
   { name: "imported-text", design: null, drive: importedText },
-  { name: "unshown-chart", design: null, drive: unshownChart },
+  { name: "slide-chart", design: null, drive: slideChart },
   { name: "deck-refused", design: null, drive: deckRefused },
   { name: "slide-diagram", design: null, drive: slideDiagram },
   { name: "agent-empty", design: editor, journey: "aira-panel", at: "agent-panel" },
