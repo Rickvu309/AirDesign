@@ -47,9 +47,22 @@ export const pushedRefs = (pushed) =>
     .split("\n")
     .map((line) => line.trim().split(/\s+/))
     .filter((words) => words.length >= 2 && /^[0-9a-f]{40}$/.test(words[1]) && !/^0+$/.test(words[1]))
-    .map(([ref, commit, , remote]) => ({ ref, commit, remote: /^0*$/.test(remote ?? "") ? undefined : remote }))
+    .map(([ref, commit, to, remote]) => ({
+      ref,
+      commit,
+      to,
+      remote: /^0*$/.test(remote ?? "") ? undefined : remote,
+    }))
+
+export const proofBranch = "archive/proof"
+
+export const onlyImages = (root, commit) => {
+  const files = git(root, ["ls-tree", "-r", "--name-only", commit]).split("\n")
+  return files.every((file) => file.endsWith(".png"))
+}
 
 export const uncheckedPushes = (root, pushed) =>
   pushedRefs(pushed)
+    .filter(({ commit, to }) => !(to === `refs/heads/${proofBranch}` && onlyImages(root, commit)))
     .filter(({ commit }) => !isChecked(root, commit))
     .map(({ ref, commit }) => ({ ref, commit }))

@@ -3,7 +3,7 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
-import { isChecked, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
+import { isChecked, proofBranch, stampChecked, uncheckedPushes, workingTree } from "./checked.mjs"
 import { installHooks } from "./install-hooks.mjs"
 
 const same = (name, actual, expected) => {
@@ -23,12 +23,15 @@ const configured = (key) => {
 }
 const identity =
   configured("user.email") === "" ? ["-c", "user.name=fixture", "-c", "user.email=fixture@example.com"] : []
-const git = (cwd, ...args) =>
-  execFileSync("git", [...identity, "-c", "commit.gpgsign=false", ...args], {
+const git = (cwd, ...args) => {
+  const options = typeof args.at(-1) === "object" ? args.pop() : {}
+  return execFileSync("git", [...identity, "-c", "commit.gpgsign=false", ...args], {
     cwd,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: [options.input === undefined ? "ignore" : "pipe", "pipe", "pipe"],
+    input: options.input,
   }).trim()
+}
 const root = path.join(folder, "repo")
 const remote = path.join(folder, "remote.git")
 fs.mkdirSync(path.join(root, "scripts"), { recursive: true })
@@ -81,6 +84,26 @@ same(
   `git push takes the checked commit${hooksPath ? ` (through ${hooksPath})` : ""}`,
   [allowed.status, allowed.stderr.trim()],
   [0, ""],
+)
+
+const blob = git(root, "hash-object", "-w", "--stdin", { input: "bytes" })
+const only = (name) =>
+  git(root, "commit-tree", git(root, "mktree", { input: `100644 blob ${blob}\t${name}\n` }), "-m", name)
+const proof = only("shot.png")
+same(
+  "an image-only commit pushed to the proof branch needs no check",
+  uncheckedPushes(root, `${proof} ${proof} refs/heads/${proofBranch} ${zero}\n`),
+  [],
+)
+same(
+  "the same commit pushed to any other branch still needs a check",
+  uncheckedPushes(root, `${proof} ${proof} refs/heads/main ${zero}\n`).length,
+  1,
+)
+same(
+  "code pushed to the proof branch still needs a check",
+  uncheckedPushes(root, `${only("run.mjs")} ${only("run.mjs")} refs/heads/${proofBranch} ${zero}\n`).length,
+  1,
 )
 
 console.log("checked tests passed")

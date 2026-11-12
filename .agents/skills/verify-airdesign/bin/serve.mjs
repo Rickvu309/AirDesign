@@ -90,6 +90,7 @@ export async function serve(run, { repo, apiDist, webDist, scratchDir, statePath
   const state = {
     run,
     pid: process.pid,
+    repo,
     commit: head(),
     postgres: { pid: postgresPid, dataDir, port: cluster.port },
     ready: false,

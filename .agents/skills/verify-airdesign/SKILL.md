@@ -1,6 +1,6 @@
 ---
 name: verify-airdesign
-description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under ~/tmp/verify-airdesign/<run>/), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
+description: "Drive the real AirDesign app (apps/web product UI served with the real apps/api server on its own Postgres) the way a user does, capture proof (screenshots, ARIA snapshots, API answers, proof.md under ~/tmp/verify-airdesign/<run>/), and look at it as a design: ranked design faults, the real page beside its design screen, a contact sheet of every state, and an annotated before and after image for the PR. Use to prove a change to the editor, import, save, deck list, Trash, sign-in or anything a person sees."
 ---
 
 # Verify AirDesign
@@ -124,6 +124,31 @@ Working is not the same as looking right. For every change a person sees:
 
 Zero findings is not a design sign-off. The tool cannot judge taste, hierarchy, whether words are true for their situation, or whether a flow makes sense; only your reading of the images can. `look/README.md` lists what each detector reads and cannot see.
 
+## Before / after in the PR
+
+Every PR that changes what a person sees gets a `## Before / after` section. The `bar` check labels a PR without one `needs-before-after`.
+
+1. Write a callouts file, one block per changed state from `$V states`:
+
+   ```json
+   [
+     {
+       "state": "agent-empty",
+       "title": "Agent panel, empty",
+       "crop": "[data-editor-panel]",
+       "callouts": [{ "at": "[data-aira-welcome] h2", "note": "Empty panel names Aira and what to check (was blank)" }]
+     }
+   ]
+   ```
+
+   `crop` and `at` are CSS selectors, or a box `{"x","y","width","height"}` in CSS px. `click` lists selectors to click after the state is reached. A note is one sentence that names what changed and by how much: "Card corners 22px to 16px", "Step reads Edited the deck, not airdesign_edit_deck". Never "Improved styling".
+
+2. Run `$V before-after callouts.json`. It builds and launches the merge base with `origin/main` in a scratch worktree, launches this checkout, drives each state on both with that side's own journey, and writes `annotated-N.png`, each full screenshot, and `before-after.md`. `--base` and `--head` take other commits. `--keep` keeps both stacks and prints their runs, so the next try takes `--before-run` and `--after-run` and costs seconds. Stop them with `$V stop` when done.
+3. Open every `annotated-N.png`. Check each arrow points at the thing its note names on both sides, each note is true, and a stranger sees what changed in ten seconds. A selector missing on one side shows a grey number and says so in the legend; that is right only when the thing is new or gone.
+4. `$V publish <out-dir> --pr <number>` commits the PNGs to the `archive/proof` branch and writes `before-after.published.md`. Paste it into the PR body as is.
+
+`$V annotate <run> callouts.json` draws the same callouts on one run, for a comment or a `look`.
+
 ## Saved proof
 
 Everything lands in `~/tmp/verify-airdesign/<run>/` and survives `stop`:
@@ -162,6 +187,7 @@ Run `stop` after every run, passed or failed. A failed `launch` prints the run i
 
 ## Helpers
 
-- `bin/verify-airdesign.mjs`: the only helper. `$V` with no command prints usage.
-- `look/`: the design commands' parts: the detectors, the state list, compare and the sheet. See `look/README.md`.
+- `bin/verify-airdesign.mjs`: the entry point for every command. `$V` with no command prints usage.
+- `look/`: the design commands' parts: the detectors, the state list, compare, the sheet, and the callouts, placement and drawing behind `before-after` and `annotate`. See `look/README.md`.
+- `bin/proof.mjs` and `bin/publish.mjs`: `before-after`, `annotate` and `publish`.
 - `journeys/*.mjs`: Playwright journeys run by `$V journey <run> <name>` and by `pnpm test:journeys`.
