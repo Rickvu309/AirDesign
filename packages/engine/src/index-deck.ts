@@ -12,6 +12,12 @@ export function indexDeck(
   if (!parsed.ok) return parsed
   if (parsed.deck !== deck.id) return { ok: false, refusal: "deck" }
   const { ok: _ok, deck: _deck, ...page } = parsed
+  const file = deck.register.file
+  if (
+    file.length > 0 &&
+    (file.length !== page.slides.length || file.some((id, position) => id !== page.slides[position]?.id))
+  )
+    return { ok: false, refusal: "stale" }
   const next = appendIndex(deck.register.index, page)
   if (!next.ok) return next
   if (next.index === deck.register.index) return { ok: true, deck }
