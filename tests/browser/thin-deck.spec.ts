@@ -802,9 +802,7 @@ test("the offline words go when the next commit is answered 404 on a device that
   await expect(page.getByText(offlineWords)).toHaveCount(0)
 })
 
-test("a deck the device and the server do not have says it cannot open, and Go to your decks goes home", async ({
-  page,
-}) => {
+test("a deck the device and the server do not have says it cannot open, and its button goes home", async ({ page }) => {
   await page.goto("/deck/missing-deck")
   await expect(page.getByText(openFailedWords)).toBeVisible()
   expect(new URL(page.url()).pathname).toBe("/deck/missing-deck")
