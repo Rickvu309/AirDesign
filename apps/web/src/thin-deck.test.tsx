@@ -577,7 +577,7 @@ it("names the opened file and shows no sample deck words", async () => {
   const text = window.document.body.textContent ?? ""
   expect(text).toContain("Quarterly review")
   expect(text).not.toContain("Q3 Investor Update")
-  expect(text).not.toContain("New slide")
+  expect(text).toContain("New slide")
   expect(text).not.toContain("Opening")
 })
 

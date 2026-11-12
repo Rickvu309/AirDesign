@@ -18,12 +18,14 @@ import {
   readCommit,
   readRun,
   readRunStart,
+  slideEditCommand,
   type CallRefusal,
   type CommandOp,
   type DeckId,
   type WireChange,
   type WireEdit,
   type WireRunElement,
+  type WireSlide,
 } from "@airdesign/catalog"
 
 export type Deck = {
@@ -88,6 +90,30 @@ function landed(deck: Deck, register: Register): CallResult {
   const notified = notifyKey(deck.id, revision)
   if (!notified.ok) return refused("payload")
   return { ok: true, deck: changed ? { id: deck.id, revision, register } : deck, key: notified.key }
+}
+
+function applyPersonEdits(deck: Deck, edits: readonly (WireEdit | WireSlide)[]): CallResult {
+  let register = deck.register
+  for (const edit of edits) {
+    if ("slide" in edit) {
+      const decision = decide(register, { command: "slide", file: edit.file, edit: slideEditCommand(edit) })
+      if (decision.decision === "refuse") return refused(decision.code)
+      register = decision.register
+      continue
+    }
+    const bytes = valueBytes(edit)
+    if (bytes > limits.valueBytes) return refused("limit")
+    if (edit.floor !== undefined && bytesOf(edit.floor) > limits.valueBytes) return refused("limit")
+    const opened = openedRegister(register, edit)
+    if (!opened.ok) return refused(opened.refusal)
+    register = opened.register
+    const next = register.bytes + bytes
+    if (next >= limits.bytes) return refused("limit")
+    const decision = decide(register, personCommand(edit))
+    if (decision.decision === "refuse") return refused(decision.code)
+    register = { ...decision.register, bytes: next }
+  }
+  return landed(deck, register)
 }
 
 function applyEdits<Edit extends Touched>(
@@ -243,7 +269,7 @@ export function call(op: CommandOp, deck: Deck, caller: Caller, raw: unknown): C
     const parsed = readCommit(raw)
     if (!parsed.ok) return refused(parsed.refusal)
     if (parsed.deck !== deck.id) return refused("deck")
-    return applyEdits(deck, parsed.batch, personCommand)
+    return applyPersonEdits(deck, parsed.batch)
   }
   if (caller.actor !== "agent") return refused("field")
   const parsed = readAgentEdit(raw)

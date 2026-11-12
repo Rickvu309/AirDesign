@@ -84,9 +84,8 @@ function names(hasA: boolean, hasB: boolean): ElementId[] {
 }
 
 function targetOf(command: Command): ElementId {
-  if (command.command === "add") {
-    return command.node
-  }
+  if (command.command === "add") return command.node
+  if (command.command === "slide") return opened
   return command.node ?? opened
 }
 

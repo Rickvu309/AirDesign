@@ -3,6 +3,7 @@ export {
   elementPattern,
   legacyElement,
   readElementId,
+  readSlideId,
   rootElement,
   shapeOf,
   slideId,
@@ -10,7 +11,7 @@ export {
   type ElementId,
   type SlideId,
 } from "./element-id.js"
-export { orderKeyBetween } from "./order-key.js"
+export { orderKeyBetween, type OrderKey } from "./order-key.js"
 export {
   appendIndex,
   readIndexPage,
@@ -46,4 +47,14 @@ export { coordinates, readBox, type Box } from "./box.js"
 export { storedValue, valueBytes, type Value } from "./value.js"
 export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
+export {
+  foldSlides,
+  nextSlideId,
+  orderKeyAfter,
+  presentSlides,
+  readSlideState,
+  slideGone,
+  type SlideCommand,
+  type SlideState,
+} from "./slide-order.js"
 export { readTextValue, writeTextValue, type TextParagraph, type TextRun, type TextValue } from "./text-value.js"

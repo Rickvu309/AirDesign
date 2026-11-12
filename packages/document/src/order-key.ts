@@ -169,3 +169,16 @@ function generate(before: string | null, after: string | null): string {
 export function orderKeyBetween(before: OrderKey | null, after: OrderKey | null): OrderKey {
   return generate(before, after) as OrderKey
 }
+
+export function readOrderKey(raw: unknown): OrderKey | undefined {
+  if (typeof raw !== "string" || raw.length === 0 || raw.length > 64) return undefined
+  for (const char of raw) {
+    if (!digits.includes(char)) return undefined
+  }
+  try {
+    validateOrderKey(raw)
+  } catch {
+    return undefined
+  }
+  return raw as OrderKey
+}

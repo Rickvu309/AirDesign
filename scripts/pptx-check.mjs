@@ -49,6 +49,7 @@ import {
   renderUse,
   readMachine,
 } from "./pptx-render.mjs"
+import { slideExportLines, slideExportName } from "./slide-export.mjs"
 import { storedZip } from "./stored-zip.mjs"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
@@ -61,6 +62,7 @@ const browserExportName = "exported-deck.pptx"
 const browserExportPath = path.join(root, "tests/browser", browserExportName)
 const paragraphsExportPath = path.join(root, "tests/browser", paragraphsExportName)
 const boxExportPath = path.join(root, "tests/browser", boxExportName)
+const slideExportPath = path.join(root, "tests/browser", slideExportName)
 const browserShape = "2"
 const browserText = "Hello!"
 const inputs = corpusInputs(root)
@@ -99,6 +101,7 @@ const browserSpec = freshExports({
   deck: browserExportPath,
   paragraphs: paragraphsExportPath,
   box: boxExportPath,
+  slides: slideExportPath,
   run: () => run("pnpm", ["exec", "playwright", "test", ...browserSpecs]),
 })
 const pptx = await import(pathToFileURL(path.join(root, "packages/pptx/dist/index.js")).href)
@@ -120,6 +123,7 @@ const browserExports = new Map([
   [browserExportName, browserExportPath],
   [paragraphsExportName, paragraphsExportPath],
   [boxExportName, boxExportPath],
+  [slideExportName, slideExportPath],
 ])
 const fixturePath = (name) => browserExports.get(name) ?? path.join(root, decision.deckPath(name))
 const rendered = new Map()
@@ -293,6 +297,10 @@ if (!spec.ok) {
     console.log(line)
   }
   for (const line of boxExportLines({ pptx, parts, lists, ids, orders })) {
+    failed += 1
+    console.log(line)
+  }
+  for (const line of slideExportLines({ pptx, parts, lists, ids, orders })) {
     failed += 1
     console.log(line)
   }

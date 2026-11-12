@@ -1,8 +1,9 @@
 import { Filmstrip } from "@airdesign/render"
-import type { ReactNode } from "react"
+import type { DragEvent, KeyboardEvent, ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { EditorIcon } from "@/editor/editor-icons"
 import { hairlineShadow, SidebarHead, surfaceShadow } from "@/editor/editor-chrome"
+import { slideKey } from "@/editor/slide-keys"
 import { SlideThumb } from "@/editor/slide-thumb"
 import { cn } from "@/lib/class-names"
 
@@ -18,6 +19,10 @@ export type SlideStrip = {
   readonly count: number
   readonly current: number
   readonly onSelect: (index: number) => void
+  readonly onAdd?: () => void
+  readonly onClone?: (index: number) => void
+  readonly onRemove?: (index: number) => void
+  readonly onMove?: (from: number, to: number) => void
   readonly thumbHeight: number
   readonly thumb: (index: number, width: number) => ReactNode
 }
@@ -42,23 +47,54 @@ export function SlideSidebar({ run, title, strip }: { run: SidebarRun; title: st
 
 function DeckStrip({ strip }: { strip: SlideStrip }) {
   return (
-    <div className="flex flex-col gap-1 overflow-y-auto px-2 pb-2" data-slide-list>
-      {Array.from({ length: strip.count }, (_, index) => (
-        <SlideItem
-          key={index}
-          index={index + 1}
-          active={index === strip.current}
-          onSelect={() => strip.onSelect(index)}
-        >
-          <Filmstrip
-            className={thumbCard}
-            height={strip.thumbHeight}
-            paint={() => strip.thumb(index, thumbWidth)}
-            width={thumbWidth}
-          />
-        </SlideItem>
-      ))}
-    </div>
+    <>
+      <div className="flex px-3 pb-2">
+        <div className={cn("flex h-8 flex-1 items-center rounded-lg bg-white", surfaceShadow)}>
+          <span className="flex flex-1 items-center justify-center gap-1 text-[length:var(--type-dense)] font-medium text-foreground">
+            New slide
+            <EditorIcon name="chev" size={13} className="text-faint" />
+          </span>
+          <span className="block h-8 w-px bg-[var(--field-edge)]" />
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 w-8 rounded-none px-0 text-foreground hover:bg-transparent active:translate-y-0"
+            aria-label="Add slide"
+            onClick={() => strip.onAdd?.()}
+          >
+            <EditorIcon name="plus" size={15} />
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1 overflow-y-auto px-2 pb-2" data-slide-list>
+        {Array.from({ length: strip.count }, (_, index) => (
+          <SlideItem
+            key={index}
+            index={index + 1}
+            active={index === strip.current}
+            onSelect={() => strip.onSelect(index)}
+            onKeyDown={(event) => onSlideKey(strip, index, event)}
+            onDragStart={(event) => {
+              event.dataTransfer.setData("text/plain", String(index))
+              event.dataTransfer.effectAllowed = "move"
+            }}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={(event) => {
+              event.preventDefault()
+              const from = Number(event.dataTransfer.getData("text/plain"))
+              if (Number.isInteger(from)) strip.onMove?.(from, index)
+            }}
+          >
+            <Filmstrip
+              className={thumbCard}
+              height={strip.thumbHeight}
+              paint={() => strip.thumb(index, thumbWidth)}
+              width={thumbWidth}
+            />
+          </SlideItem>
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -110,17 +146,35 @@ function SampleStrip({ run }: { run: SidebarRun }) {
   )
 }
 
+function onSlideKey(strip: SlideStrip, index: number, event: KeyboardEvent<HTMLButtonElement>) {
+  const change = slideKey(event)
+  if (change === null) return
+  event.preventDefault()
+  if (change === "remove") strip.onRemove?.(index)
+  if (change === "clone") strip.onClone?.(index)
+  if (change === "up") strip.onMove?.(index, index - 1)
+  if (change === "down") strip.onMove?.(index, index + 1)
+}
+
 function SlideItem({
   index,
   active,
   working = false,
   onSelect,
+  onKeyDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
   children,
 }: {
   index: number
   active: boolean
   working?: boolean
   onSelect?: () => void
+  onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
+  onDragStart?: (event: DragEvent<HTMLButtonElement>) => void
+  onDragOver?: (event: DragEvent<HTMLButtonElement>) => void
+  onDrop?: (event: DragEvent<HTMLButtonElement>) => void
   children: ReactNode
 }) {
   const look = cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")
@@ -141,11 +195,16 @@ function SlideItem({
   return (
     <button
       type="button"
+      draggable={onDragStart !== undefined}
       aria-current={active ? "true" : undefined}
       className={cn(look, "text-left")}
       data-slide-entry={index}
       data-slide-item
       onClick={onSelect}
+      onKeyDown={onKeyDown}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
     >
       {number}
       {children}

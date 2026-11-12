@@ -1,5 +1,13 @@
-import { currentBox, currentValue, history, type ElementId, type Register } from "@airdesign/document"
-import { applyRoute, readShapes, type ReadShape } from "@airdesign/pptx"
+import {
+  currentBox,
+  currentValue,
+  history,
+  shapeOf,
+  slideGone,
+  type ElementId,
+  type Register,
+} from "@airdesign/document"
+import { applyRoute, orderedParts, readShapes, type ReadShape } from "@airdesign/pptx"
 import { textValue } from "@airdesign/render"
 
 function shapeFor(shapes: readonly ReadShape[], id: ElementId, refusal: string): ReadShape {
@@ -16,6 +24,7 @@ export function exportedParts(
   const shapes = readShapes(parts)
   let next: ReadonlyMap<string, Uint8Array> = parts
   for (const id of register.nodes) {
+    if (id.includes(".") && slideGone(register, shapeOf(id).slide)) continue
     const body = register.elements[id]
     if (body === undefined) continue
     if (history(body).length > 0) {
@@ -30,5 +39,5 @@ export function exportedParts(
     next = applyRoute(next, { name: "move", part, shape, x: box.x, y: box.y })
     next = applyRoute(next, { name: "resize", part, shape, cx: box.cx, cy: box.cy })
   }
-  return next
+  return register.order.length === 0 ? next : orderedParts(next, register)
 }

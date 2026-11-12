@@ -1,5 +1,5 @@
 import type { DeckAnswers } from "./deck-answer.js"
-import { notifyKey, type DeckId, type WireEdit, type WireRefusal } from "@airdesign/catalog"
+import { notifyKey, type DeckId, type WireEdit, type WireRefusal, type WireSlide } from "@airdesign/catalog"
 import { foldRegister, type DeckIndex, type StoredRegister } from "@airdesign/document"
 import { call, openDeck, type Deck } from "@airdesign/engine"
 
@@ -189,7 +189,7 @@ export async function writeRevision(db: Sql, input: RevisionWrite): Promise<bool
 
 export type Commit = {
   readonly deck: DeckId
-  readonly batch: readonly WireEdit[]
+  readonly batch: readonly (WireEdit | WireSlide)[]
   readonly once?: string
 }
 

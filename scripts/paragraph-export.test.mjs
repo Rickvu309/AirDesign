@@ -14,6 +14,7 @@ import {
   paragraphsOriginalName,
   validatorFiles,
 } from "./paragraph-export.mjs"
+import { slideExportLines, slideExportName, slideKeptParts, slideOriginalName } from "./slide-export.mjs"
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "paragraph-export-"))
 process.on("exit", () => fs.rmSync(dir, { recursive: true, force: true }))
@@ -39,8 +40,8 @@ if (seen !== "false false false") throw new Error(`a stale export was there when
 if (spec.ok) throw new Error("a spec that wrote no exported-box.pptx passed")
 if (!spec.line.includes(`wrote no tests/browser/${boxExportName}`)) throw new Error(spec.line)
 
-if (judgedExportNames({ ok: true }).join() !== [paragraphsExportName, boxExportName].join()) {
-  throw new Error("a good spec must judge the paragraph and box exports")
+if (judgedExportNames({ ok: true }).join() !== [paragraphsExportName, boxExportName, slideExportName].join()) {
+  throw new Error("a good spec must judge the paragraph, box and slide exports")
 }
 if (judgedExportNames({ ok: false }).length !== 0) {
   throw new Error("a failed spec must judge no export")
@@ -65,6 +66,9 @@ if (!files.includes("route.pptx") || !files.includes(path.join("fixtures", "clea
 const fakePptx = (failures) => ({
   paragraphExportFailures: () => failures,
   routeExportFailures: (before, after, routes) => (routes === boxRoutes ? failures : ["routes"]),
+  slideExportFailures: (before, after, kept) => (kept === slideKeptParts ? failures : ["kept"]),
+  danglingShapeReferences: () => [],
+  newDanglingShapeReferences: (before, after) => after.filter((item) => !before.includes(item)),
   newValidatorErrors: (before, after) => after.filter((item) => !before.includes(item)),
   newDuplicateShapeIds: (before, after) => after.filter((item) => !before.includes(item)),
 })
@@ -73,6 +77,8 @@ const judgedParts = new Map([
   [paragraphsExportName, new Map()],
   [boxOriginalName, new Map()],
   [boxExportName, new Map()],
+  [slideOriginalName, new Map()],
+  [slideExportName, new Map()],
 ])
 const answers = ({ before = [], after = [], idsBefore = [], idsAfter = [] } = {}) => ({
   parts: judgedParts,
@@ -81,18 +87,24 @@ const answers = ({ before = [], after = [], idsBefore = [], idsAfter = [] } = {}
     [paragraphsExportName, after],
     [boxOriginalName, before],
     [boxExportName, after],
+    [slideOriginalName, before],
+    [slideExportName, after],
   ]),
   ids: new Map([
     [paragraphsOriginalName, idsBefore],
     [paragraphsExportName, idsAfter],
     [boxOriginalName, idsBefore],
     [boxExportName, idsAfter],
+    [slideOriginalName, idsBefore],
+    [slideExportName, idsAfter],
   ]),
   orders: new Map([
     [paragraphsOriginalName, []],
     [paragraphsExportName, []],
     [boxOriginalName, []],
     [boxExportName, []],
+    [slideOriginalName, []],
+    [slideExportName, []],
   ]),
 })
 const lines = (failures, input) => paragraphExportLines({ pptx: fakePptx(failures), ...answers(input) })
@@ -128,5 +140,41 @@ if (!boxLines([], { before: ["old"], after: ["old", "new"] }).some((line) => lin
 if (boxRoutes.some((route) => route.part !== "ppt/slides/slide1.xml" || route.shape !== "2")) {
   throw new Error("the box routes left the shape the box export spec moves")
 }
+
+const slideLines = (failures, input) => slideExportLines({ pptx: fakePptx(failures), ...answers(input) })
+if (slideLines([]).length !== 0) throw new Error("a clean slide export produced a failure")
+if (!slideLines(["ppt/slides/slide1.xml"]).includes("slide export ppt/slides/slide1.xml")) {
+  throw new Error("the untouched slide failures were dropped")
+}
+if (
+  !slideLines([], { before: ["old"], after: ["old", "new"] }).some((line) => line.startsWith("slide export validator"))
+) {
+  throw new Error("a new validator error on the slide export was ignored")
+}
+const dangling = slideExportLines({
+  pptx: {
+    ...fakePptx([]),
+    danglingShapeReferences: (parts) =>
+      parts === judgedParts.get(slideExportName) ? [{ kind: "p:spTgt", id: "9" }] : [],
+  },
+  ...answers(),
+})
+if (!dangling.includes("slide export dangling p:spTgt 9")) throw new Error("a new dangling reference was ignored")
+const slides = path.join(dir, slideExportName)
+fs.writeFileSync(slides, "old slides")
+const slideSpec = await freshExports({
+  deck,
+  paragraphs,
+  box,
+  slides,
+  run: async () => {
+    if (fs.existsSync(slides)) throw new Error("stale")
+    fs.writeFileSync(deck, "fresh deck")
+    fs.writeFileSync(paragraphs, "fresh paragraphs")
+    fs.writeFileSync(box, "fresh box")
+    fs.writeFileSync(slides, "fresh slides")
+  },
+})
+if (!slideSpec.ok) throw new Error(slideSpec.line)
 
 console.log("paragraph export tests passed")

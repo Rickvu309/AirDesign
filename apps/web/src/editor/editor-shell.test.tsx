@@ -10,7 +10,6 @@ const sampleWords = [
   "Ask Aira",
   "stroke-dasharray",
   "64%",
-  "New slide",
   "Opening",
   "Revenue grew",
   'aria-label="Panel"',
@@ -71,6 +70,8 @@ describe("editor shell", () => {
     expect(markup).toContain(">Export<")
     expect(markup).toContain('data-real-slide="800"')
     expect(markup).toContain(">63%<")
+    expect(markup).toContain("New slide")
+    expect(markup).toContain('aria-label="Add slide"')
     expect(markup.match(/data-slide-entry=/g)).toHaveLength(2)
     expect(markup.match(/<aside/g)).toHaveLength(2)
     for (const word of sampleWords) expect(markup).not.toContain(word)

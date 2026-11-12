@@ -5,6 +5,7 @@ test-results/
 tests/browser/exported-deck.pptx
 tests/browser/exported-paragraphs.pptx
 tests/browser/exported-box.pptx
+tests/browser/exported-slides.pptx
 playwright-report/
 blob-report/
 

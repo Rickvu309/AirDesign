@@ -1,4 +1,4 @@
-import type { WireEdit } from "@airdesign/catalog"
+import type { WireEdit, WireSlide } from "@airdesign/catalog"
 import { currentBox, currentValue, decide, version, type Register } from "@airdesign/document"
 import { afterEach, beforeEach, expect, it, vi } from "vitest"
 import { installIndexedDb, node } from "./browser-fixtures.js"
@@ -22,7 +22,7 @@ function shown(register: Register) {
   return { text: currentValue(body), box: currentBox(body), version: version(body) }
 }
 
-function sending(remote: Remote, sent: WireEdit[]): Remote {
+function sending(remote: Remote, sent: (WireEdit | WireSlide)[]): Remote {
   return {
     ...remote,
     commit: (body) => {
@@ -33,7 +33,7 @@ function sending(remote: Remote, sent: WireEdit[]): Remote {
 }
 
 it("keeps a box on the device, replays it after a reopen and sends it as a box", async () => {
-  const sent: WireEdit[] = []
+  const sent: (WireEdit | WireSlide)[] = []
   const remote = sending(memoryRemote(), sent)
   const cache = connect(remote)
   expect(await cache.enqueue("deck", "typed", node, "file text")).toEqual({ ok: true, painted: "typed" })

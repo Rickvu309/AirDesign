@@ -1,5 +1,13 @@
 import type { DeckId } from "@airdesign/catalog"
-import { bytesOf, limits, storedValue, type ElementId, type Value } from "@airdesign/document"
+import {
+  bytesOf,
+  limits,
+  storedValue,
+  type ElementId,
+  type SlideCommand,
+  type SlideId,
+  type Value,
+} from "@airdesign/document"
 
 export const databaseName = "airdesign"
 export const storeName = "rows"
@@ -9,6 +17,8 @@ export type ConfirmedRow = Value & {
   readonly deck: DeckId
   readonly revision: number
   readonly node?: ElementId
+  readonly slideFile?: readonly SlideId[]
+  readonly slideEdit?: SlideCommand
 }
 
 export type PendingRow = Value & {
@@ -19,6 +29,8 @@ export type PendingRow = Value & {
   readonly base: number
   readonly node?: ElementId
   readonly floor?: string
+  readonly slideFile?: readonly SlideId[]
+  readonly slideEdit?: SlideCommand
 }
 
 export type StoredRow = ConfirmedRow | PendingRow
@@ -98,6 +110,7 @@ export type LogicalValue = Value & { readonly node?: ElementId }
 export function logicalValues(rows: readonly ConfirmedRow[]): LogicalValue[] {
   const values: LogicalValue[] = []
   for (const row of rows) {
+    if (row.slideEdit !== undefined) continue
     const last = values.at(-1)
     if (row.property !== "box" && row.value.startsWith("\u0001") && last !== undefined && last.property !== "box") {
       values[values.length - 1] = { ...last, value: `${last.value}${row.value.slice(1)}` }
