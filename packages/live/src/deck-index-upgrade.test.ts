@@ -11,7 +11,7 @@ const index = {
 }
 const layout = [{ ...index.elements[0]!, node: elementId("258.2") }]
 
-it.fails("sends the layout upgrade that was queued while the last import page was in flight", async () => {
+it("sends the layout upgrade that was queued while the last import page was in flight", async () => {
   const real = memoryRemote()
   let release = () => {}
   let reached = () => {}

@@ -128,6 +128,19 @@ it("copies a duplicate of a duplicate from the first copy as it was then", async
   })
 })
 
+it("leaves a box the person removed out of their duplicate and out of the exported copy", async () => {
+  const parts = await fixture("clean.pptx")
+  let register = sliding(parts, openRegister("", "deck"), {
+    slide: "element-remove",
+    id: source,
+    node: elementId("256.2"),
+  })
+  register = sliding(parts, register, { slide: "clone", id: copy, source, key: after(parts, register, source) })
+  const clone = register.order.at(-1)
+  expect(clone?.slide === "clone" ? clone.floor : undefined).toEqual([])
+  expect(shown(exportedParts(parts, register))).toEqual({})
+})
+
 it("takes typed text in a placeholder of a new slide", async () => {
   const parts = await fixture("blank.pptx")
   const first = slideId(readSlides(parts)[0]?.slide ?? "")

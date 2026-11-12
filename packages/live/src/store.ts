@@ -261,39 +261,48 @@ export function readSlot(key: string): Promise<unknown> {
 }
 
 export function writeSlot(key: string, value: unknown): Promise<void> {
-  return putSlots([{ key, value }])
+  return putSlots([{ key, value }]).then(() => undefined)
 }
 
 export function installSlots(
   absent: string,
   puts: readonly { readonly key: string; readonly value: unknown }[],
 ): Promise<void> {
-  return putSlots(puts, absent)
+  return putSlots(puts, { key: absent, keep: (value) => value === undefined }).then(() => undefined)
 }
 
 export function replaceSlots(puts: readonly { readonly key: string; readonly value: unknown }[]): Promise<void> {
-  return putSlots(puts)
+  return putSlots(puts).then(() => undefined)
 }
 
-function putSlots(puts: readonly { readonly key: string; readonly value: unknown }[], absent?: string): Promise<void> {
+export function swapSlot(key: string, value: unknown, keep: (current: unknown) => boolean): Promise<boolean> {
+  return putSlots([{ key, value }], { key, keep })
+}
+
+function putSlots(
+  puts: readonly { readonly key: string; readonly value: unknown }[],
+  guard?: { readonly key: string; readonly keep: (current: unknown) => boolean },
+): Promise<boolean> {
   return openDatabase().then(
     (database) =>
       new Promise((resolve, reject) => {
         const transaction = database.transaction(storeName, "readwrite")
         const store = transaction.objectStore(storeName)
+        let written = false
         const put = () => {
           for (const { key, value } of puts) store.put(value, key)
+          written = true
         }
-        if (absent === undefined) put()
+        if (guard === undefined) put()
         else {
-          const request = store.getAll(IDBKeyRange.bound(absent, absent))
+          const request = store.getAll(IDBKeyRange.bound(guard.key, guard.key))
           request.onsuccess = () => {
-            if (request.result.length === 0) put()
+            if (guard.keep((request.result as unknown[])[0])) put()
           }
         }
         transaction.oncomplete = () => {
           database.close()
-          resolve()
+          resolve(written)
         }
         transaction.onerror = () => {
           database.close()

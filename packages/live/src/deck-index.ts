@@ -1,10 +1,10 @@
 import { readDeckId, type DeckId, type WireRefusal } from "@airdesign/catalog"
 import { appendIndex, bytesOf, limits, readIndexPage, type DeckIndex, type IndexPage } from "@airdesign/document"
 import type { CommitResult, OpenResult, Remote } from "./remote.js"
-import { installSlots, readSlot, replaceSlots, writeSlot } from "./store.js"
+import { installSlots, readSlot, replaceSlots, swapSlot } from "./store.js"
 
 type ImportIndex = Pick<DeckIndex, "slides" | "elements">
-type Queue = { readonly count: number; readonly sent: number }
+type Queue = { readonly count: number; readonly sent: number; readonly once?: string }
 const key = (deck: string, part: string) => `${deck}\u0002layouts\u0002${part}`
 const chunkSize = Math.floor(limits.row / 4)
 
@@ -45,7 +45,9 @@ async function storedPage(deck: string, n: number): Promise<IndexPage | null> {
 function queue(raw: unknown): Queue | null {
   if (typeof raw !== "object" || raw === null || !("count" in raw) || !("sent" in raw)) return null
   if (typeof raw.count !== "number" || typeof raw.sent !== "number") return null
-  return { count: raw.count, sent: raw.sent }
+  if (!("once" in raw)) return { count: raw.count, sent: raw.sent }
+  if (typeof raw.once !== "string") return null
+  return { count: raw.count, sent: raw.sent, once: raw.once }
 }
 
 export async function hasLayouts(deck: string): Promise<boolean> {
@@ -88,7 +90,7 @@ async function keepIndex(deck: DeckId, index: ImportIndex, once: () => string) {
   await write([
     ...pages.flatMap((page, n) => pageSlots(deck, n, page)),
     { key: key(deck, "layered"), value: layered },
-    { key: key(deck, "queue"), value: { count: pages.length, sent: 0 } },
+    { key: key(deck, "queue"), value: { count: pages.length, sent: 0, once: pages[0]!.once } },
   ])
   return { ok: true as const }
 }
@@ -121,8 +123,14 @@ export async function sendIndex(
     if (!answer.ok) return answer
     if (answer.deck !== deck) return { ok: false, refusal: "payload" }
     revision = answer.revision
-    pending = { ...pending, sent: pending.sent + 1 }
-    await writeSlot(key(deck, "queue"), pending)
+    const was: Queue = pending
+    const next: Queue = { ...was, sent: was.sent + 1 }
+    const kept = await swapSlot(key(deck, "queue"), next, (current) => {
+      const stored = queue(current)
+      return stored !== null && stored.count === was.count && stored.sent === was.sent && stored.once === was.once
+    })
+    pending = kept ? next : queue(await readSlot(key(deck, "queue")))
+    if (pending === null) return { ok: false, refusal: "payload" }
   }
   return { ok: true, deck, revision, key: `${deck}:${revision}` }
 }

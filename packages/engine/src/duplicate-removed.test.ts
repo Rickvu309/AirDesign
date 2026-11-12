@@ -3,7 +3,7 @@ import { elementId } from "@airdesign/document"
 import { expect, it } from "vitest"
 import { call, indexDeck, openDeck, readDeckPage } from "./index.js"
 
-it.fails("leaves an element the person removed out of an agent's duplicate of its slide", () => {
+it("leaves an element the person removed out of an agent's duplicate of its slide", () => {
   const id = readDeckId("deck")
   if (!id.ok) throw new Error(id.refusal)
   const box = {

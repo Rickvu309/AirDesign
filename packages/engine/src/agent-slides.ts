@@ -1,6 +1,7 @@
 import { slideReaders, type SlideOp, type CallRefusal } from "@airdesign/catalog"
 import {
   decide,
+  elementGone,
   floorFor,
   floorNodes,
   openingElement,
@@ -11,16 +12,33 @@ import {
   presentSlides,
   readSlideId,
   shapeOf,
+  storedElements,
   currentValue,
   currentBox,
-  type SlideCommand,
   type IndexElement,
+  type Register,
+  type SlideCommand,
+  type SlideId,
 } from "@airdesign/document"
 import type { Caller, Deck } from "./call.js"
 
 type Built =
   | { readonly ok: true; readonly register: Deck["register"] }
   | { readonly ok: false; readonly refusal: CallRefusal }
+function runFence(register: Register, runId: string, deleted: SlideId | null): CallRefusal | null {
+  const held = [...new Set([...register.nodes, ...storedElements(register)])].flatMap((node) => {
+    const body = register.elements[node]
+    const holds = body !== undefined && (body.runId === runId || body.landed.some((row) => row.runId === runId))
+    return holds ? [{ node, body }] : []
+  })
+  const live = held.filter(({ body }) => body.phase === "running" && body.runId === runId)
+  if (held.length > 0 && live.length === 0) return "run-fenced"
+  const protectedHere = live.some(
+    ({ node, body }) => body.guarded && node.includes(".") && shapeOf(node).slide === deleted,
+  )
+  return protectedHere ? "person-protected" : null
+}
+
 export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown): Built {
   if (caller.actor !== "agent") return { ok: false, refusal: "field" }
   const parsed = slideReaders[op](raw)
@@ -28,6 +46,8 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
   if (parsed.deck !== deck.id) return { ok: false, refusal: "deck" }
   if (parsed.base !== deck.revision) return { ok: false, refusal: "stale" }
   const register = deck.register
+  const fenced = runFence(register, caller.runId, op === "delete_slide" && "slide" in parsed ? parsed.slide : null)
+  if (fenced !== null) return { ok: false, refusal: fenced }
   const index = register.index
   if (index === undefined || index.elements.length !== index.total) return { ok: false, refusal: "indexing" }
   const file = index.slides.flatMap((row) => {
@@ -74,7 +94,7 @@ export function agentSlide(op: SlideOp, deck: Deck, caller: Caller, raw: unknown
       if (row !== undefined) rows.push(row)
     }
     const floor = rows
-      .filter((row) => shapeOf(row.node).slide === parsed.slide)
+      .filter((row) => shapeOf(row.node).slide === parsed.slide && !elementGone(register, row.node))
       .map((row) => {
         const body = register.elements[row.node]
         return body === undefined ? row : { ...row, value: currentValue(body), box: currentBox(body) ?? row.box }
