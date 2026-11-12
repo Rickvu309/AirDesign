@@ -145,13 +145,30 @@ export function Home({
     window.history.replaceState(null, "", addressOf(window.location.pathname, { list: listView, query: next }))
   }
 
+  function onDeck(): boolean {
+    return document.activeElement?.closest("[data-decks-main] article") != null
+  }
+
+  function keepFocus() {
+    const heading = document.querySelector("h1")
+    if (!(heading instanceof HTMLElement)) return
+    heading.tabIndex = -1
+    heading.focus()
+  }
+
   async function restore(deck: Deck) {
-    if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) await refresh()
+    const held = onDeck()
+    if ((await post(deckRoutes.restore.path, { deck: deck.deck })).ok) {
+      await refresh()
+      if (held) keepFocus()
+    }
   }
 
   async function move(deck: Deck) {
+    const held = onDeck()
     if (!(await post(deckRoutes.trash.path, { deck: deck.deck })).ok) return
     await refresh()
+    if (held) keepFocus()
     toast.custom(
       (id) => (
         <MovedToast
@@ -161,7 +178,7 @@ export function Home({
           }}
         />
       ),
-      movedToastOptions,
+      { ...movedToastOptions, duration: 9_000 },
     )
   }
 
@@ -311,7 +328,7 @@ export function Home({
                     trash ? (
                       <RestoreButton onClick={() => void restore(deck)} />
                     ) : (
-                      <Button variant="outline" size="sm" onClick={() => void move(deck)}>
+                      <Button variant="outline" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
                         {productCopy.moveToTrash}
                       </Button>
                     )
@@ -332,7 +349,7 @@ export function Home({
               created={deckTime(deck.created, now()).created}
               href={`/deck/${deck.deck}`}
               action={
-                <Button variant="ghost" size="sm" onClick={() => void move(deck)}>
+                <Button variant="ghost" size="sm" aria-description={deck.name} onClick={() => void move(deck)}>
                   {productCopy.moveToTrash}
                 </Button>
               }

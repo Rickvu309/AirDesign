@@ -99,7 +99,7 @@ function UndoLink({ onUndo }: { onUndo: (() => void) | undefined }) {
   return (
     <button
       type="button"
-      className="-ml-1.5 flex h-6 items-center gap-1.5 self-start rounded-[var(--shape-control)] px-1.5 text-xs text-muted-foreground outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] disabled:opacity-50 motion-reduce:transition-none"
+      className="-ml-1.5 flex h-6 items-center gap-1.5 self-start rounded-[var(--shape-control)] px-1.5 text-xs text-muted-foreground outline-hidden [transition:color_var(--ease-micro)] hover:text-foreground disabled:opacity-50 motion-reduce:transition-none"
       disabled={onUndo === undefined}
       onClick={onUndo}
     >
@@ -262,7 +262,7 @@ export function UsagePop({ id, usage }: { id: string; usage: WeekUsage }) {
         <a
           href={settingsPaths.usage}
           aria-label={usageCopy.seeAllName}
-          className="-mr-1 flex shrink-0 items-center gap-0.5 rounded-[var(--shape-control)] px-1 text-[length:var(--type-caption)] font-medium text-foreground outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--ring)]"
+          className="-mr-1 flex shrink-0 items-center gap-0.5 rounded-[var(--shape-control)] px-1 text-[length:var(--type-caption)] font-medium text-foreground outline-hidden"
         >
           {usageCopy.seeAll}
           <EditorIcon name="arrowr" size={11} />

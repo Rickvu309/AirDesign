@@ -33,7 +33,7 @@ export function NotesBar({
           </label>
           <textarea
             id="speaker-notes"
-            className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-quiet outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mt-2 block h-24 w-full resize-y bg-transparent text-[length:var(--type-dense)] text-quiet outline-none"
             value={draft}
             readOnly={onEdit === undefined}
             placeholder="Add speaker notes"

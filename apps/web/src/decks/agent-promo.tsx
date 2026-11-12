@@ -8,7 +8,7 @@ import { deckRoutes } from "@/decks/deck-routes"
 
 export function AgentPromo({ href = deckRoutes.connectAgent }: { href?: string }) {
   return (
-    <section className="h-[254.31px] w-[224px] shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
+    <section className="h-[254.31px] w-[224px] max-md:hidden shrink-0 overflow-hidden rounded-[var(--shape-dialog)] bg-background shadow-[0_0_0_1px_var(--line),0_4px_12px_rgb(0_0_0/4%)]">
       <div
         className="relative h-[112px]"
         style={{

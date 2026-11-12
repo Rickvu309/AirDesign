@@ -26,7 +26,11 @@ export function BrowseHeader({
   return (
     <header
       data-decks-header
-      className={compact ? "flex h-9 items-center justify-between" : "flex h-[39px] items-center justify-between"}
+      className={
+        compact
+          ? "flex h-9 items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
+          : "flex h-[39px] items-center justify-between max-md:h-auto max-md:flex-wrap max-md:gap-2"
+      }
     >
       <h1
         className={

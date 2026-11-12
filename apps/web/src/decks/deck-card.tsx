@@ -55,7 +55,7 @@ export function DeckGrid({
   ...props
 }: { children: ReactNode; className?: string } & ComponentProps<"div">) {
   return (
-    <div className={cn("mt-8 grid grid-cols-3 gap-5", className)} {...props}>
+    <div className={cn("mt-8 grid grid-cols-3 gap-5 max-md:grid-cols-1", className)} {...props}>
       {children}
     </div>
   )

@@ -5,6 +5,7 @@ import {
   draggedBox,
   isArrow,
   nudgedBox,
+  resizedByKey,
   sameBox,
   travelled,
   type Drag,
@@ -18,6 +19,7 @@ import type { PaintStore } from "./store.js"
 
 export type Moves = {
   readonly selected: Selection
+  readonly message: string
   readonly select: (id: ElementId) => void
   readonly press: (event: PointerEvent<HTMLElement>, element: CanvasElement, grip: Grip) => void
   readonly key: (event: KeyboardEvent<HTMLElement>, element: CanvasElement) => void
@@ -75,6 +77,8 @@ export function useMoves(
   onRemove?: (id: ElementId) => void,
 ): Moves {
   const [selected, setSelected] = useState<Selection>(null)
+  const [message, setMessage] = useState("")
+  const keyed = useRef({ verb: "", label: "" })
   const gesture = useRef<Gesture | null>(null)
   const cancelling = useRef<(() => void) | null>(null)
 
@@ -165,6 +169,17 @@ export function useMoves(
       if (onRemove === undefined) return
       event.preventDefault()
       onRemove(id)
+      setMessage(`${frame.getAttribute("aria-label") ?? ""} deleted`)
+      return
+    }
+    const resizing = event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey
+    if (resizing && start !== null && canResize(element) && now?.by !== "pointer") {
+      const grown = resizedByKey(start, event.key)
+      if (grown === null) return
+      event.preventDefault()
+      if (now === null) gesture.current = { by: "keys", id, start }
+      keyed.current = { verb: "Resized", label: frame.getAttribute("aria-label") ?? "" }
+      store.placeBox(id, grown)
       return
     }
     if (start === null || chord || !canMove(element) || now?.by === "pointer") return
@@ -172,6 +187,7 @@ export function useMoves(
     if (next === null) return
     event.preventDefault()
     if (now === null) gesture.current = { by: "keys", id, start }
+    keyed.current = { verb: "Moved", label: frame.getAttribute("aria-label") ?? "" }
     store.placeBox(id, next)
   }
 
@@ -192,9 +208,12 @@ export function useMoves(
     },
     onKeyUp(event: KeyboardEvent<HTMLDivElement>) {
       const now = gesture.current
-      if (now?.by === "keys" && isArrow(event.key)) finish(now)
+      if (now?.by === "keys" && isArrow(event.key)) {
+        finish(now)
+        setMessage(`${keyed.current.verb} ${keyed.current.label}`)
+      }
     },
   }
 
-  return { selected, select: setSelected, press, key, slide }
+  return { selected, message, select: setSelected, press, key, slide }
 }

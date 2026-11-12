@@ -85,6 +85,12 @@ export function nudgedBox(start: Box, key: string, large: boolean, slide: SlideS
   return movedBox(start, arrow.x * step, arrow.y * step, slide)
 }
 
+export function resizedByKey(start: Box, key: string): Box | null {
+  const arrow = arrows.get(key)
+  if (arrow === undefined) return null
+  return resizedBox(start, "bottom-right", arrow.x * nudgeStep, arrow.y * nudgeStep)
+}
+
 export function draggedBox(gesture: Drag, at: Point, width: number, slide: SlideSize): Box {
   const dx = emuOf(at.x - gesture.from.x, width, slide)
   const dy = emuOf(at.y - gesture.from.y, width, slide)

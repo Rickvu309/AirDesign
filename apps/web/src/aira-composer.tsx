@@ -5,10 +5,7 @@ import { surfaceShadow } from "@/editor/editor-chrome"
 import { EditorIcon } from "@/editor/editor-icons"
 import { cn } from "@/lib/class-names"
 
-const focusRing =
-  "focus-within:shadow-[0px_0px_0px_1px_var(--ring),0px_0px_0px_3px_var(--strong-15),0px_2px_8px_var(--black-5)]"
-
-const buttonRing = "outline-hidden focus-visible:shadow-[0px_0px_0px_2px_var(--background),0px_0px_0px_4px_var(--ring)]"
+const buttonRing = "outline-hidden"
 
 export function AiraComposer({
   draft,
@@ -45,10 +42,8 @@ export function AiraComposer({
     >
       <PromptInput
         data-waiting={waiting}
-        className={cn(
-          "min-h-12 cursor-text items-end gap-2 py-2 pr-2 pl-3 [transition:box-shadow_var(--ease-micro)] motion-reduce:transition-none",
-          waiting ? "cursor-not-allowed" : focusRing,
-        )}
+        {...(waiting ? {} : { "data-focus-ring": true })}
+        className={cn("min-h-12 cursor-text items-end gap-2 py-2 pr-2 pl-3", waiting && "cursor-not-allowed")}
         onClick={() => field.current?.focus()}
       >
         <PromptInputTextarea

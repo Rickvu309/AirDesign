@@ -11,6 +11,18 @@ import type { TextFormatting } from "./text-formatting.js"
 
 const defaultTextSize = 203_200
 
+const visuallyHidden = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  margin: -1,
+  padding: 0,
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const
+
 export { unshownFill } from "./unshown-fill.js"
 
 export function SlideCanvas(props: {
@@ -71,6 +83,11 @@ export function SlideCanvas(props: {
           store={props.store}
         />
       ))}
+      {moving === null ? null : (
+        <div role="status" aria-live="polite" aria-atomic="true" style={visuallyHidden}>
+          {moving.message}
+        </div>
+      )}
       {moving === null || selected === undefined || selected.id === null ? null : (
         <SelectionFrame
           element={selected}

@@ -39,7 +39,7 @@ export function AiraHistoryMenu({
         aria-label={airaHistoryNameOf(title)}
         {...(asked === undefined ? {} : { title: asked })}
         data-aira-history
-        className="flex h-6 max-w-full min-w-0 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet outline-hidden hover:bg-line focus-visible:shadow-[0px_0px_0px_2px_var(--ring)] data-popup-open:bg-line"
+        className="flex h-6 max-w-full min-w-0 items-center gap-1.5 rounded-[var(--shape-control)] pr-1.5 pl-1 text-xs text-quiet outline-hidden hover:bg-line data-popup-open:bg-line"
       >
         <EditorIcon name="history" size={13} className="shrink-0 text-faint" />
         <span className="min-w-0 truncate">{title}</span>
