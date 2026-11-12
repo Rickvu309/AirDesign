@@ -32,6 +32,7 @@ function session(): Session {
 }
 it("adds, reads, titles, duplicates, moves and deletes through MCP with the same run", async () => {
   const held = session()
+  expect(readDeckPage(held.deck, { runId: null }).slides).toEqual([{ id: "256", position: 0 }])
   const server = createServer(held)
   const [a, b] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: "test", version: "1" })
