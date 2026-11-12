@@ -113,14 +113,14 @@ it("upgrades an imported deck's index with its layouts once and then leaves it a
   const remote = memoryRemote()
   const cache = connect(remote)
   const layout = [{ ...index.elements[0]!, node: elementId("258.2") }]
-  expect(await cache.measured("up")).toBe(false)
+  expect(await cache.sized("up")).toBe(false)
   expect(await cache.index("up", index)).toEqual({ ok: true })
   expect((await cache.flush("up")).ok).toBe(true)
-  expect(await cache.measured("up")).toBe(false)
+  expect(await cache.sized("up")).toBe(false)
   const layered = { ...index, slides: [{ id: "258", position: 0, free: 5, layout }] }
   expect(await cache.index("up", layered)).toEqual({ ok: true })
   expect((await cache.flush("up")).ok).toBe(true)
-  expect(await cache.measured("up")).toBe(true)
+  expect(await cache.sized("up")).toBe(true)
   const upgraded = await remote.open({ deck: "up" })
   expect(upgraded.ok && upgraded.register.index?.slides[0]?.layout).toEqual(layout)
   expect(upgraded.ok && upgraded.register.index?.elements).toEqual(index.elements)
