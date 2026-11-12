@@ -1,5 +1,5 @@
 import { deckRoutes, signOutRoutes } from "@airdesign/catalog"
-import { dropChats } from "@airdesign/live"
+import { distrustDevice, dropChats } from "@airdesign/live"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ async function post(path: string, body: object) {
 }
 
 async function signOut(): Promise<void> {
+  await distrustDevice()
   const response = await fetch(signOutRoutes.session.path, { method: signOutRoutes.session.method })
   if (response.ok) window.location.assign(signInAddress(window.location))
 }

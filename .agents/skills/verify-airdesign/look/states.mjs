@@ -46,6 +46,26 @@ async function slideSections(kit) {
   await expect(first).toHaveAttribute("aria-current", "true")
 }
 
+async function unshownDiagram(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/doe-heat-pumps.pptx"), 3)
+  await kit.page.evaluate(() => document.fonts.ready)
+}
+
+async function deckRefused(kit) {
+  await kit.signIn()
+  await kit.page.goto("/")
+  await openDeck(kit.page, path.join(kit.repo, "scripts/pptx-fixtures/clean.pptx"))
+  const address = kit.page.url()
+  await kit.page.route(
+    (url) => url.pathname === kit.deckRoutes.open.path || url.pathname === kit.deckRoutes.watch.path,
+    (route) => route.fulfill({ json: { ok: false, refusal: "deleted" } }),
+  )
+  await kit.page.goto(address)
+  await expect(kit.page.locator("[data-deck-refused]")).toBeVisible()
+}
+
 async function listFailed(kit) {
   await kit.signIn()
   await kit.page.route(
@@ -253,6 +273,8 @@ export const states = [
   { name: "editor-offline", design: "/screens/s49-02-editor-errors-offline", drive: offline },
   { name: "table-cells", design: null, drive: tableCells },
   { name: "imported-text", design: null, drive: importedText },
+  { name: "unshown-diagram", design: null, drive: unshownDiagram },
+  { name: "deck-refused", design: null, drive: deckRefused },
   { name: "agent-empty", design: editor, journey: "aira-panel", at: "agent-panel" },
   {
     name: "agent-working",
