@@ -307,7 +307,14 @@ function SlideItem({
   const look = cn("flex items-start gap-2 rounded-[var(--shape-card)] p-2", active && "bg-[var(--row)]")
   const number = (
     <span className="flex w-4 flex-col items-center gap-1.5 pt-0.5">
-      <span className={cn("text-xs", active ? "font-medium text-[color:color-mix(in_oklch,var(--primary-strong),black_15%)]" : "text-quiet")}>{index}</span>
+      <span
+        className={cn(
+          "text-xs",
+          active ? "font-medium text-[color:color-mix(in_oklch,var(--primary-strong),black_15%)]" : "text-quiet",
+        )}
+      >
+        {index}
+      </span>
       {working ? <span className="block size-1.5 rounded-full bg-primary" /> : null}
     </span>
   )
