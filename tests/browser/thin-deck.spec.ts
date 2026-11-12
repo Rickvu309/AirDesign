@@ -667,7 +667,7 @@ const sampleWords = [
 ]
 const sampleControls = ["Attach", "Microphone"]
 
-async function expectNoSample(page: Page): Promise<void> {
+async function expectNoSample(page: Page) {
   const body = (await page.locator("body").textContent()) ?? ""
   for (const word of sampleWords) expect(body, word).not.toContain(word)
   for (const name of sampleControls) {
