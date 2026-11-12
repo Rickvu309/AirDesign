@@ -1,5 +1,6 @@
 import { readDeckId } from "@airdesign/catalog"
 import {
+  addedPictures,
   changedTable,
   elementId,
   nextElementId,
@@ -9,6 +10,7 @@ import {
   slideId,
   undoOf,
   writeTableValue,
+  type Register,
   type Undoable,
 } from "@airdesign/document"
 import { call, openDeck, readDeckPage, type Deck } from "@airdesign/engine"
@@ -34,9 +36,12 @@ const kinds = {
   },
 }
 let kind: keyof typeof kinds = "box"
+const media = { sha256: "d".repeat(64), type: "image/png" }
+const picture = { node, kind: "picture", value: null, box, grouped: false }
 
 function batches(action: string): unknown {
   if (action === "Add") return { slide: "element-add", id: "256", element: kinds[kind].element, file }
+  if (action === "AddPicture") return { slide: "element-add", id: "256", element: picture, media, file }
   if (action === "Type") return { node, value: kinds[kind].typed }
   if (action === "OtherRestore") return { slide: "element-restore", id: "256", node, file }
   return { slide: "element-remove", id: "256", node, file }
@@ -52,9 +57,13 @@ function landed(current: Deck, action: string): Deck {
   return answer.deck
 }
 
+function exportable(register: Register, uploaded: boolean): boolean {
+  return addedPictures(register).every((each) => uploaded && each.sha256 === media.sha256)
+}
+
 function built(state: Record<string, unknown>): Deck {
   let current = openDeck(deck)
-  if (state.added === true) current = landed(current, "Add")
+  if (state.added === true) current = landed(current, state.picture === true ? "AddPicture" : "Add")
   if (state.typed === true) current = landed(current, "Type")
   if (state.removed === true) current = landed(current, "Remove")
   return current
@@ -96,6 +105,15 @@ function replayKind(graph: Graph, failures: string[]): number {
     const target = graph.states.get(edge.to)
     const source = graph.states.get(edge.from)
     if (source === undefined || target === undefined) throw new Error("state")
+    if (edge.action === "Upload") {
+      if (addedPictures(built(source).register).length !== 1) failures.push("element Upload has no picture to send")
+      continue
+    }
+    if (edge.action === "ExportElsewhere") {
+      if (!exportable(built(source).register, source.uploaded === true))
+        failures.push("element ExportElsewhere refused a deck whose pictures all uploaded")
+      continue
+    }
     const turn = edge.action === "Undo" || edge.action === "Redo"
     const answer = turn ? turned(source, edge.action) : act(built(source), edge.action)
     const dropped = target.held === "dropped" && source.held !== "dropped"
@@ -124,13 +142,15 @@ function replayKind(graph: Graph, failures: string[]): number {
     }
     const forbidden =
       state.removed === true
-        ? ["Add", "Type", "Remove"]
+        ? ["Add", "AddPicture", "Type", "Remove"]
         : state.added === true
-          ? ["Add", "OtherRestore"]
+          ? ["Add", "AddPicture", "OtherRestore"]
           : ["OtherRestore"]
     for (const action of forbidden) {
       if (act(built(state), action).ok) failures.push(`element ${action} lands where the spec forbids it`)
     }
+    if (state.picture === true && state.uploaded !== true && exportable(built(state).register, false))
+      failures.push("element ExportElsewhere lands without the picture's bytes")
   }
   return told
 }

@@ -102,6 +102,19 @@ describe("editor shell", () => {
     expect(disabledLabels(markup)).toEqual(["Grid", "shape", "image", "actions", "Undo", "Redo"])
   })
 
+  it("turns on the picture tool when the deck can add a picture, with no file input left in the page", () => {
+    const markup = renderToStaticMarkup(
+      <EditorShell
+        title="Real deck"
+        slideLabel="1"
+        deck={{ ...deck, onText: () => undefined, onPicture: () => undefined }}
+      />,
+    )
+    expect(markup).toContain('aria-label="Add picture"')
+    expect(markup).not.toContain('type="file"')
+    expect(disabledLabels(markup)).toEqual(["Grid", "shape", "actions", "Undo", "Redo"])
+  })
+
   it("gallery screen keeps its copy", () => {
     const markup = renderToStaticMarkup(<AgentWorking />)
     expect(markup).toContain('font-medium text-foreground">Q3 Investor Update')

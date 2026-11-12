@@ -138,5 +138,35 @@
     "errors": 0,
     "dupes": 0,
     "pages": false
+  },
+  {
+    "name": "picture-png-blank",
+    "before": "blank.pptx",
+    "after": "picture-png.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "picture-jpeg-blank",
+    "before": "blank.pptx",
+    "after": "picture-jpeg.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
+  },
+  {
+    "name": "picture-jpeg-pictures",
+    "before": "picture-png.pptx",
+    "after": "pictures-jpeg.pptx",
+    "visible": true,
+    "targeted": [1],
+    "errors": 0,
+    "dupes": 0,
+    "pages": true
   }
 ]

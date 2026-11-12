@@ -26,6 +26,8 @@ import { exportedParts } from "@/exported-parts"
 import { commitSlideChange, type SlideChange } from "@/slide-edit"
 import { layoutChoices } from "@/slide-layout"
 import { commitElement, type ElementChange } from "@/element-edit"
+import { PicturesUploading, usePictureTool } from "@/picture-tool"
+import { commitPicture } from "@/picture-add"
 import { ensureMarkup } from "@/markup"
 import { backfillIndex } from "@/index-deck"
 import { type PictureSources } from "@/picture-fill"
@@ -49,6 +51,7 @@ import {
   type UndoEntry,
 } from "@/undo-list"
 import { boxName, elementNames, slideNames } from "@/undo-names"
+import type { UndoName } from "@/copy/undo-copy"
 
 export function ThinDeck({ id }: { id: string }) {
   const store = useRef(paintStore())
@@ -74,7 +77,7 @@ export function ThinDeck({ id }: { id: string }) {
   const [paintedDeck, setPaintedDeck] = useState<string | undefined>(undefined)
   const [pending, setPending] = useState(false)
   const [offline, setOffline] = useState(() => navigator.onLine === false)
-  const [failure, setFailure] = useState<"import-failed" | "export-failed" | null>(null)
+  const [failure, setFailure] = useState<"import-failed" | "export-failed" | "picture-uploading" | null>(null)
   const [refused, setRefused] = useState(false)
   const [downloaded, setDownloaded] = useState<string | null>(null)
   const [panel, setPanel] = useState<"agent" | "design">("agent")
@@ -90,6 +93,12 @@ export function ThinDeck({ id }: { id: string }) {
       typed.current = null
     }),
   )
+  const pictureTool = usePictureTool(paintedDeck === id, async (picture) => {
+    const slide = canvases.current(current)
+    if (slide === null) return
+    const at = { index: current, slide, keep: pictureTool.store.keep }
+    settle(await commitPicture(id, shownParts.current, picture, at, recordAdded("add-picture")))
+  })
 
   const settle = useCallback((outcome: CommitOutcome) => {
     if (outcome === "sent") setPending(false)
@@ -336,7 +345,7 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   function showRegister(register: Register | null) {
-    const painted = paint(store.current, shownParts.current, register, busy.current)
+    const painted = paint(store.current, shownParts.current, register, busy.current, pictureTool.store.bytes)
     boxes.current = painted.boxes
     movables.current = painted.movables
     shapes.current = painted.shapes
@@ -349,6 +358,9 @@ export function ThinDeck({ id }: { id: string }) {
     setNotes(readNotes(register === null ? shownParts.current : exportedParts(shownParts.current, register)))
     setSlideCount(painted.count)
     setSections(painted.sections)
+    void pictureTool.store.load(id, register).then((more) => {
+      if (more && structure.current === structureOf(register)) showRegister(register)
+    })
   }
 
   async function showEdited(currentIndex: number) {
@@ -357,6 +369,14 @@ export function ThinDeck({ id }: { id: string }) {
     showRegister(next.register)
     setCurrent(Math.max(0, Math.min(currentIndex, store.current.slides().length - 1)))
     setPending(true)
+  }
+
+  function recordAdded(name: UndoName) {
+    return async (added: ElementId | null, undoable: Undoable | null) => {
+      if (undoable !== null) record({ name, undoable })
+      await showEdited(current)
+      setEntering(added)
+    }
   }
 
   async function changeSlide(change: SlideChange, index: number, to = index, layoutPart?: string) {
@@ -413,11 +433,7 @@ export function ThinDeck({ id }: { id: string }) {
     const opened = await connect(memoryRemote()).openDeck(id)
     if (!opened.ok) return
     settle(
-      await commitElement(id, shownParts.current, opened.register, change, async (added, undoable) => {
-        if (undoable !== null) record({ name: elementNames[change.change], undoable })
-        await showEdited(current)
-        setEntering(added)
-      }),
+      await commitElement(id, shownParts.current, opened.register, change, recordAdded(elementNames[change.change])),
     )
   }
 
@@ -441,16 +457,16 @@ export function ThinDeck({ id }: { id: string }) {
 
   async function onExport(request?: ExportRequest) {
     try {
-      setDownloaded(await exportDeck(id, notesQueue.current, request))
+      setDownloaded(await exportDeck(id, notesQueue.current, pictureTool.store, request))
       setFailure(null)
-    } catch {
-      setFailure("export-failed")
+    } catch (error) {
+      setFailure(error instanceof PicturesUploading ? "picture-uploading" : "export-failed")
     }
   }
 
   function tryAgain(notice: ThinNotice) {
     if (notice === "import-failed") window.location.assign("/")
-    if (notice === "export-failed") void onExport()
+    if (notice === "export-failed" || notice === "picture-uploading") void onExport()
   }
 
   const currentSlide = store.current.slides()[current]?.id
@@ -490,7 +506,8 @@ export function ThinDeck({ id }: { id: string }) {
   }
 
   const toldNotice: ThinNotice | null = told === null ? null : told === "undo" ? "undo-changed" : "redo-changed"
-  const notice: ThinNotice | null = failure ?? toldNotice ?? (offline && pending ? "offline" : null)
+  const notice: ThinNotice | null =
+    failure ?? toldNotice ?? pictureTool.notice ?? (offline && pending ? "offline" : null)
 
   return (
     <div className="thin-page" data-deck-ready={paintedDeck}>
@@ -514,6 +531,7 @@ export function ThinDeck({ id }: { id: string }) {
             onRename: rename,
             formatting: formatting.current,
             onTable: tables.insert,
+            onPicture: pictureTool.pick,
             size: canvases.current(current),
             slides: {
               count: slideCount,

@@ -1,5 +1,6 @@
 import { decodedXmlText, markupDocument, type MarkupElement } from "./element-span.js"
 import { decodeUtf8, encodeUtf8 } from "./package-bytes.js"
+import { danglingPackageReferences } from "./package-reference.js"
 
 export const shapePart = /^ppt\/(slides|notesSlides|slideLayouts|slideMasters)\/[^/]+\.xml$/
 const maxShapeId = 4294967295
@@ -151,7 +152,7 @@ export function danglingShapeReferences(parts: ReadonlyMap<string, Uint8Array>):
       if (id !== null && !ids.has(id)) rows.push({ part: name, kind: element.kind, id })
     }
   }
-  return rows
+  return [...rows, ...danglingPackageReferences(parts)]
 }
 
 export function newDanglingShapeReferences(

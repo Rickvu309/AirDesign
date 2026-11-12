@@ -35,6 +35,7 @@ import { answeredDeckRoutes, type DeckAnswers } from "./deck-answer.js"
 import type { Sender } from "./mail.js"
 import { serveMcp } from "./mcp.js"
 import type { Sql } from "./pool.js"
+import { mediaAnswers } from "./media.js"
 import { originalAnswers } from "./original.js"
 import type { OriginalStore } from "./original-store.js"
 import { sameSecret } from "./secrets.js"
@@ -481,6 +482,7 @@ export const deckAnswers: DeckAnswers = {
   ...savedAnswers,
   ...deckListAnswers,
   ...originalAnswers,
+  ...mediaAnswers,
   ...undoAnswers,
 }
 

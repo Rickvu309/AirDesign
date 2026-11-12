@@ -13,7 +13,7 @@ import type { PaintStore } from "@airdesign/render"
 import { slideCanvases, type SlideCanvases } from "@/canvas-slide"
 import type { TextBox } from "@/commit-edit"
 import { boxStorable, landedBox } from "@/element-move"
-import { editedParts, slideBase, storedText } from "@/exported-parts"
+import { editedParts, slideBase, storedText, type PictureBytes } from "@/exported-parts"
 import { pictureSources, type PictureSources } from "@/picture-fill"
 import { shownValue, type BusyElements } from "@/live-repaint"
 import { fallbackPrompt } from "@/copy/placeholder-copy"
@@ -79,6 +79,7 @@ export function paint(
   parts: ReadonlyMap<string, Uint8Array>,
   register: Register | null,
   busy: BusyElements,
+  pictureBytes: PictureBytes = new Map(),
 ): {
   readonly count: number
   readonly sections: readonly SectionStart[]
@@ -90,7 +91,7 @@ export function paint(
   readonly files: ReadonlyMap<ElementId, string>
   readonly base: ReadonlyMap<string, Uint8Array>
 } {
-  const base = register === null ? parts : slideBase(parts, register)
+  const base = register === null ? parts : slideBase(parts, register, pictureBytes)
   const display = register !== null && register.order.length > 0 ? editedParts(base, register) : parts
   const named = namedShapes(display)
   const based = new Map(namedShapes(base).map((each) => [each.id, each.shape]))

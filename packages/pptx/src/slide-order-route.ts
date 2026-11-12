@@ -7,6 +7,7 @@ import {
   shapeOf,
   type ElementCommand,
   type IndexElement,
+  type Media,
   type SlideCommand,
   type SlideId,
   type SlideState,
@@ -17,6 +18,7 @@ import { presentationPart, slideAddresses, slidePart } from "./package-address.j
 import { editPart } from "./part-markup.js"
 import { readSections } from "./section-read.js"
 import { writeSectionSlides } from "./section-write.js"
+import { addPicture } from "./picture-write.js"
 import { layoutPart, withLayoutPlaceholders } from "./slide-placeholders.js"
 import { applyRoute } from "./slide-route.js"
 import { applyStructuralRoute } from "./structural-route.js"
@@ -46,7 +48,12 @@ function placed(parts: ReadonlyMap<string, Uint8Array>, wanted: readonly string[
   return next
 }
 
-type Shown = { readonly start: boolean; readonly now: boolean; readonly element?: IndexElement }
+type Shown = {
+  readonly start: boolean
+  readonly now: boolean
+  readonly element?: IndexElement
+  readonly media?: Media | undefined
+}
 
 type Pending = Map<SlideId, Map<string, Shown>>
 
@@ -54,7 +61,8 @@ function pendingAfter(pending: Pending, command: ElementCommand): void {
   const shapes = pending.get(command.id) ?? new Map<string, Shown>()
   pending.set(command.id, shapes)
   if (command.slide === "element-add") {
-    shapes.set(shapeOf(command.element.node).shape, { start: false, now: true, element: command.element })
+    const shown = { start: false, now: true, element: command.element, media: command.media }
+    shapes.set(shapeOf(command.element.node).shape, shown)
     return
   }
   const shape = shapeOf(command.node).shape
@@ -66,11 +74,15 @@ function elementAdded(
   parts: ReadonlyMap<string, Uint8Array>,
   part: string,
   shape: string,
-  element: IndexElement | undefined,
+  shown: Shown,
+  media: MediaBytes,
 ): ReadonlyMap<string, Uint8Array> {
+  const { element } = shown
   const box = element?.box ?? null
   if (element === undefined || box === null) throw new Error("box")
   const id = Number(shape)
+  if (shown.media !== undefined)
+    return addPicture(parts, part, { id, box, media: shown.media, bytes: media(shown.media.sha256) })
   if (element.kind !== "table") return applyRoute(parts, { name: "add", part, id, text: "", ...box })
   const table = readTableValue(element.value ?? "")
   const columns = table?.rows[0]?.cells.length
@@ -89,6 +101,7 @@ function elementsShown(
   parts: ReadonlyMap<string, Uint8Array>,
   slide: string,
   shapes: ReadonlyMap<string, Shown> | undefined,
+  media: MediaBytes,
 ): ReadonlyMap<string, Uint8Array> {
   const part = slidePart(parts, slide)
   if (part === null) throw new Error("slide")
@@ -99,7 +112,7 @@ function elementsShown(
       next = applyRoute(next, { name: "remove", part, shape })
       continue
     }
-    next = elementAdded(next, part, shape, shown.element)
+    next = elementAdded(next, part, shape, shown, media)
   }
   return next
 }
@@ -144,9 +157,14 @@ function withSectionSlides(
   return next
 }
 
+export type MediaBytes = (sha256: string) => Uint8Array | undefined
+
+const noMedia: MediaBytes = () => undefined
+
 export function orderedParts(
   parts: ReadonlyMap<string, Uint8Array>,
   state: SlideState,
+  media: MediaBytes = noMedia,
 ): ReadonlyMap<string, Uint8Array> {
   if (state.order.length === 0) return parts
   const minted = new Map<string, string>(state.file.map((id) => [id, id]))
@@ -172,13 +190,13 @@ export function orderedParts(
     const id = createdId(before, idsOf(next))
     minted.set(command.id, id)
     if (command.slide === "clone") {
-      next = elementsShown(next, id, pending.get(command.source))
+      next = elementsShown(next, id, pending.get(command.source), media)
       continue
     }
     const born = slidePart(next, id)
     if (born !== null && layout !== null) next = withLayoutPlaceholders(next, born, layout)
   }
-  for (const [slide, shapes] of pending) next = elementsShown(next, minted.get(slide) ?? "", shapes)
+  for (const [slide, shapes] of pending) next = elementsShown(next, minted.get(slide) ?? "", shapes, media)
   for (const spot of foldSlides(state)) {
     if (spot.present) continue
     const id = minted.get(spot.id)

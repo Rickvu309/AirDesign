@@ -49,7 +49,7 @@ export { kinds, properties, type ExportRoute, type Kind } from "./properties.js"
 export { structure, type StructuralRoute } from "./structure.js"
 export { foldSections, type FileSection } from "./section-order.js"
 export { floorFor, floorNodes, openingElement } from "./slide-floor.js"
-export { elementCommand, elementGone, nextElementId, type ElementCommand } from "./element-order.js"
+export { addedPictures, elementCommand, elementGone, mediaTypes, nextElementId, type ElementCommand, type Media, type MediaType } from "./element-order.js"
 export {
   foldSlides,
   nextSlideId,

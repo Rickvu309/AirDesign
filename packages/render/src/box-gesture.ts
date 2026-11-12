@@ -17,6 +17,7 @@ export type Drag = {
   readonly from: Point
   readonly start: Box
   readonly moved: boolean
+  readonly keepRatio?: boolean
 }
 
 export type Nudge = { readonly by: "keys"; readonly id: ElementId; readonly start: Box }
@@ -66,11 +67,21 @@ function side(size: number, change: number): number {
   return Math.max(size + change, Math.min(minimumSide, size))
 }
 
-export function resizedBox(start: Box, corner: Corner, dx: number, dy: number): Box {
+function ratioKept(start: Box, cx: number, cy: number): { readonly cx: number; readonly cy: number } {
+  if (start.cx <= 0 || start.cy <= 0) return { cx, cy }
+  const across = cx / start.cx
+  const down = cy / start.cy
+  const chosen = Math.abs(across - 1) >= Math.abs(down - 1) ? across : down
+  const smallest = Math.min(1, minimumSide / Math.min(start.cx, start.cy))
+  const scale = Math.max(chosen, smallest)
+  return { cx: Math.round(start.cx * scale), cy: Math.round(start.cy * scale) }
+}
+
+export function resizedBox(start: Box, corner: Corner, dx: number, dy: number, keepRatio = false): Box {
   const left = corner === "top-left" || corner === "bottom-left"
   const top = corner === "top-left" || corner === "top-right"
-  const cx = side(start.cx, left ? -dx : dx)
-  const cy = side(start.cy, top ? -dy : dy)
+  const free = { cx: side(start.cx, left ? -dx : dx), cy: side(start.cy, top ? -dy : dy) }
+  const { cx, cy } = keepRatio ? ratioKept(start, free.cx, free.cy) : free
   return { x: left ? start.x + start.cx - cx : start.x, y: top ? start.y + start.cy - cy : start.y, cx, cy }
 }
 
@@ -96,7 +107,7 @@ export function draggedBox(gesture: Drag, at: Point, width: number, slide: Slide
   const dy = emuOf(at.y - gesture.from.y, width, slide)
   return gesture.grip === "move"
     ? movedBox(gesture.start, dx, dy, slide)
-    : resizedBox(gesture.start, gesture.grip, dx, dy)
+    : resizedBox(gesture.start, gesture.grip, dx, dy, gesture.keepRatio === true)
 }
 
 export function travelled(from: Point, at: Point): boolean {

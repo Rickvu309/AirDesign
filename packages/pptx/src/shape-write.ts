@@ -56,25 +56,15 @@ function textBody(text: string): string {
 }
 
 function shapeProperties(box: ShapeBox): string {
-  const x = requireEmu(box.x)
-  const y = requireEmu(box.y)
-  const cx = requireEmu(box.cx)
-  const cy = requireEmu(box.cy)
   let xml = "<p:spPr></p:spPr>"
-  xml = insertChild(
-    "p:spPr",
-    "a:xfrm",
-    `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`,
-    xml,
-  )
+  xml = insertChild("p:spPr", "a:xfrm", shapeBox(box), xml)
   xml = insertChild("p:spPr", "a:prstGeom", `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>`, xml)
   return xml
 }
 
-export function addTextShape(
+export function appendShape(
   slideXml: string,
-  text: string,
-  box: ShapeBox,
+  markup: (id: string) => string,
   id?: number,
 ): { readonly xml: string; readonly id: number } {
   const shapeId = id ?? nextShapeId(slideXml)
@@ -83,13 +73,34 @@ export function addTextShape(
   const bytes = encodeUtf8(slideXml)
   const document = markupDocument(bytes)
   if (shapeIdsIn(bytes).includes(idText)) throw new Error("shape id")
-  const shape = `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`
   const tree = document.elements.find((element) => element.kind === "p:spTree")
   if (!document.wellFormed || tree === undefined || tree.selfClosing || tree.closeStart < 0) throw new Error("p:spTree")
-  const shapeBytes = encodeUtf8(shape)
+  const shapeBytes = encodeUtf8(markup(idText))
   const merged = new Uint8Array(tree.closeStart + shapeBytes.length + bytes.length - tree.closeStart)
   merged.set(bytes.subarray(0, tree.closeStart), 0)
   merged.set(shapeBytes, tree.closeStart)
   merged.set(bytes.subarray(tree.closeStart), tree.closeStart + shapeBytes.length)
   return { xml: decodeUtf8(merged), id: shapeId }
+}
+
+export function shapeBox(box: ShapeBox): string {
+  const x = requireEmu(box.x)
+  const y = requireEmu(box.y)
+  const cx = requireEmu(box.cx)
+  const cy = requireEmu(box.cy)
+  return `<a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`
+}
+
+export function addTextShape(
+  slideXml: string,
+  text: string,
+  box: ShapeBox,
+  id?: number,
+): { readonly xml: string; readonly id: number } {
+  return appendShape(
+    slideXml,
+    (idText) =>
+      `<p:sp><p:nvSpPr><p:cNvPr id="${idText}" name="Shape ${idText}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr>${shapeProperties(box)}${textBody(text)}</p:sp>`,
+    id,
+  )
 }

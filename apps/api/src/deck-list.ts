@@ -44,6 +44,14 @@ queued as (
   insert into deck.original_delete (key, owner, expires)
   select original_key, owner, coalesce(original_until, now()) from removed where original_key is not null
   on conflict (key) do nothing
+),
+media_queued as (
+  insert into deck.original_delete (key, owner, expires)
+  select media.key, removed.owner, now() + interval '15 minutes' from deck.media join removed on media.deck = removed.id
+  on conflict (key) do nothing
+),
+media_removed as (
+  delete from deck.media using removed where deck.media.deck = removed.id
 )
 select id, original_key, pg_notify('deck', id) as notified from removed
 `
