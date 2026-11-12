@@ -10,7 +10,6 @@ import { find, reach } from "./states.mjs"
 
 const skillPath = ".agents/skills/verify-airdesign"
 const ownStates = fileURLToPath(new URL("./states.mjs", import.meta.url))
-const wholeFrame = { x: 0, y: 0, ...designViewport }
 
 let shared = false
 
@@ -110,14 +109,18 @@ export async function captureSide({ browser, side, block, runtime }) {
     }
     await settle(page)
     const full = await page.screenshot({ animations: "disabled" })
-    const places = await measure(page, [block.crop ?? wholeFrame, ...block.callouts.map((callout) => callout.at)])
+    const viewport = page.viewportSize() ?? designViewport
+    const places = await measure(page, [
+      block.crop ?? { x: 0, y: 0, ...viewport },
+      ...block.callouts.map((callout) => callout.at),
+    ])
     const broken = places.find((place) => place.error)
     if (broken) throw new Error(`${block.state}: ${broken.error}`)
     const [frame, ...boxes] = places.map((place, index) =>
       index === 0 ? place.box : aimAt(place.box, place.ink ?? null),
     )
     const texts = await textBoxes(page)
-    return { full, frame, boxes, texts, skipped }
+    return { full, frame, boxes, texts, skipped, viewport }
   } finally {
     await context.close()
   }
@@ -132,18 +135,20 @@ export function composeBlock(block, sides, shots) {
     for (const selector of shot.skipped ?? [])
       warnings.push(`${block.state}: click ${selector} found nothing on ${sides[index].label || sides[index].key}`)
   }
+  const viewportOf = (shot) => shot.viewport ?? designViewport
+  const first = reached[0] ? viewportOf(reached[0].shot) : designViewport
+  const whole = { x: 0, y: 0, ...first }
   const found = reached.map(({ shot }) => shot.frame).findLast((each) => each !== null)
-  const frame = relative(found ?? wholeFrame, wholeFrame) ?? wholeFrame
+  const frame = relative(found ?? whole, whole) ?? whole
   if (block.crop !== null && reached.every(({ shot }) => shot.frame === null))
     warnings.push(`${block.state}: crop ${JSON.stringify(block.crop)} found nothing; showing the whole frame`)
-  const scale = (image) => image.width / designViewport.width
   const drawn = reached.map(({ side, shot }) => {
     const image = PNG.sync.read(shot.full)
     return {
       key: side.key,
       label: side.label,
       missing: side.missing,
-      png: crop(image, frame, scale(image), 0),
+      png: crop(image, frame, image.width / viewportOf(shot).width, 0),
       boxes: shot.boxes.map((box) => relative(box, frame)),
       texts: (shot.texts ?? []).map((box) => relative(box, frame)).filter((box) => box !== null),
     }
