@@ -31,41 +31,47 @@ export async function flushPending(open: (remote: Remote) => FlushLink, deckId: 
   }
 }
 
-export async function commitEdit(
+type Paint = () => Promise<void> | void
+
+export function commitEdit(
   open: (remote: Remote) => EditLink,
   deckId: string,
   value: string,
   box: TextBox,
-  paint?: () => void,
+  paint?: Paint,
   refused?: () => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  const kept = await open(memoryRemote()).enqueue(deckId, value, box.id, box.file)
-  return sendKept(kept.ok, open, deckId, paint, refused)
+  return commitKept(open, deckId, open(memoryRemote()).enqueue(deckId, value, box.id, box.file), paint, refused)
 }
 
-export async function commitBox(
+export function commitBox(
   open: (remote: Remote) => BoxLink,
   deckId: string,
   box: Box,
   element: TextBox,
-  paint?: () => void,
+  paint?: Paint,
   refused?: () => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  const kept = await open(memoryRemote()).enqueueBox(deckId, box, element.id, element.file)
-  return sendKept(kept.ok, open, deckId, paint, refused)
+  return commitKept(
+    open,
+    deckId,
+    open(memoryRemote()).enqueueBox(deckId, box, element.id, element.file),
+    paint,
+    refused,
+  )
 }
 
-async function sendKept(
-  kept: boolean,
+export async function commitKept(
   open: (remote: Remote) => FlushLink,
   deckId: string,
-  paint?: () => void,
+  kept: Promise<{ readonly ok: boolean }>,
+  paint?: Paint,
   refused?: () => Promise<void> | void,
 ): Promise<CommitOutcome> {
-  if (!kept) {
+  if (!(await kept).ok) {
     await refused?.()
     return "refused"
   }
-  paint?.()
+  await paint?.()
   return flushPending(open, deckId)
 }
