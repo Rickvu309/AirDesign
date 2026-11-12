@@ -1,13 +1,13 @@
 ---
 name: verify-airdesign-formal
-description: "Check AirDesign's 14 TLA+ specs under specs/ and their replays against the code they describe: run one spec or all with TLC, read a counterexample step by step, tell a code bug from a model error, and keep each spec in step with the code. Use when a change touches edit order, runs, undo, person undo, slides and elements, the import index, offline replay, agent turns, Aira stop, usage, OAuth or deck ownership, or when a spec or replay fails."
+description: "Check AirDesign's 16 TLA+ specs under specs/ and their replays against the code they describe: run one spec or all with TLC, read a counterexample step by step, tell a code bug from a model error, and keep each spec in step with the code. Use when a change touches edit order, runs, undo, person undo, slides and elements, the import index, offline replay, agent turns, a run's slide commands and their Stop and Undo, slide sections, Aira stop, usage, OAuth or deck ownership, or when a spec or replay fails."
 ---
 
 # Verify AirDesign formally
 
 Each folder in `specs/<topic>` holds a TLA+ model (`<Module>.tla`), its bounds and checked properties (`<Module>.cfg`), and a reader view (`view.mjs`) that turns a model state and step into words. TLC checks every reachable state of the model. A replay then drives the model's edges through the real functions, so a model that drifts from the code fails a test. A pass covers the model under its bounds and the code the replay drives. It does not cover code outside them.
 
-The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps, the known bugs and the sync commit. [checks-document.md](checks-document.md) holds edit, undo, rerun, run, structure, offline, person-undo, element and index. [checks-server.md](checks-server.md) holds turn, stop, usage, oauth and owner. Read the entry for every check your change touches before you trust a pass.
+The coverage record has one entry per check: the properties, the code it covers, the bounds, the command, the replay, the gaps, the known bugs and the sync commit. [checks-document.md](checks-document.md) holds edit, undo, rerun, run, structure, offline, person-undo, element, index and sections. [checks-server.md](checks-server.md) holds turn, stop, usage, oauth, owner, slide-run and slide-undo. Read the entry for every check your change touches before you trust a pass.
 
 ## 1. Find the checks your change touches
 
@@ -26,13 +26,13 @@ pnpm check:specs                 # every spec, then each known failure
 pnpm check:specs turn index      # only the named specs
 ```
 
-Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 35 s for all 14. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
+Each line says the distinct state count, the verdict and the time. TLC takes 1 to 5 s per spec, mostly JVM start, and about 40 s for all 16. A spec must stay under 500 distinct states. Results are cached by a hash of every `.tla` and `.cfg` file in the folder, so any edit to them reruns TLC, and an unchanged spec answers from the cache. `pnpm check` keeps its cache in `~/.cache/airdesign/spec-results`. To force a fresh run, set `AIRDESIGN_SPEC_CACHE` to an empty folder.
 
 Then run the replays:
 
 ```sh
 pnpm vitest run tests/spec-replay.test.ts
-pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/src/aira-closing.test.ts
+pnpm vitest run apps/api/src/owner.test.ts apps/api/src/turn.test.ts apps/api/src/aira-closing.test.ts apps/api/src/slide-run.test.ts apps/api/src/slide-undo.test.ts
 ```
 
 `node scripts/spec-replays.mjs` lists which test replays each spec. It is the `spec-replays` step of `pnpm check`, and it warns when a spec has no replay and no listed reason.
